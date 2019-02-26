@@ -1,0 +1,2037 @@
+dnl   *****************************************************************
+dnl   Copyright (c) 2001-2016  Smithsonian  Astrophysical  Observatory
+dnl   The contents of this file are protected under the copyright
+dnl   notice  contained in the file  COPYRIGHT_SAO located in the
+dnl   root directory of this distribution.
+dnl   ******************************************************************
+
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT()
+AC_DEFINE([SVR4], [], [Description])
+major_ver="4"
+minor_ver="4.1"
+
+AC_MSG_RESULT([Running CXC configure, v$major_ver.$minor_ver]) 
+
+dnl user_root is used in conjunction with the multiple virtual ciao
+dnl script.
+
+AC_SUBST(user_lib)
+AC_SUBST(user_bin)
+AC_SUBST(user_share)
+
+AC_ARG_WITH(user_root, [  --with-user_root  Virtual install location setup],
+            user_bin="user/bin" user_lib="user/lib" user_share="user/share",
+	    user_bin="bin" user_lib="lib" user_share="share")
+
+dnl Switch to add to users gtk path.
+
+AC_SUBST(GTK_PATH)
+GTK_PATH=""
+test_gtk_path="yes"
+AC_ARG_WITH(gtk_path, [  --with-gtk_path  , Adds to CIAO's GTK_PATH search],
+ GTK_PATH="$withval", GTK_PATH="" )
+
+if test "x$GTK_PATH" = "xno"
+then
+  GTK_PATH=""
+  test_gtk_path="no"
+elif test "x$GTK_PATH" = "xyes"
+then
+  if test -d "/usr/lib64/gtk-2.0"
+  then
+    GTK_PATH=":/usr/lib64/gtk-2.0"
+   elif test -d "/usr/lib/gtk-2.0"
+   then
+     GTK_PATH=":/usr/lib/gtk-2.0"
+   else
+      AC_MSG_ERROR([Argument expected with --with-gtk_path])
+   fi
+elif test "x$GTK_PATH" != "x"
+then
+  if test -d "$GTK_PATH"
+  then
+    GTK_PATH=":$GTK_PATH"
+  else
+    AC_MSG_ERROR([Invalid path in --with-gtk_path=$GTK_PATH])
+  fi
+fi
+
+AC_SUBST(lstat)
+AC_ARG_WITH(static-proptools, 
+[  --with-static-proptools  Statically link proposal toolkit (when installed,
+         and rebuilding from source  --with-compile is assumed)],
+ lstat=$withval
+ compl="yes",
+ lstat="no" )
+
+dnl Setup flag to force static linking of proposal tools
+
+AC_SUBST(prop_link_dyn_or_stat)
+if test "$lstat" = "yes"
+then
+  prop_link_dyn_or_stat="-dn"
+else
+  prop_link_dyn_or_stat=" "
+fi
+
+dnl Setup flag for linking prism without chips
+
+AC_SUBST(chips_defines)
+AC_SUBST(chips_libs)
+chips_defines=""
+chips_libs=""
+AC_ARG_WITH(chips, 
+[  --with-chips   Compile with chips enabled],
+ compl="yes"
+ chips_defines="-DCXC_USE_CHIPS"
+ chips_libs="-lchips -lscs",
+ chips_defines=""
+ chips_libs="")
+
+dnl determine the top level directory. The use may supply a different
+dnl value for installation on read-only systems. The value should
+dnl reflect where the users will 'see' ciao
+
+local_top=`pwd`
+AC_SUBST(top)
+AC_SUBST(install_top)
+AC_ARG_WITH(top, [  --with-top=DIR Explictly specify top of CIAO distrbution],
+            top=$withval, top=$local_top)
+if test "$top" = "yes"
+then
+ top=$local_top
+fi
+
+if test "x$prefix" = "xNONE"
+then
+   install_top=$top
+   prefix=$top
+else
+   install_top=$prefix
+fi
+
+# determine python version
+
+AC_SUBST(pyver)
+AC_SUBST(pymajver)
+AC_SUBST(pyminver)
+AC_SUBST(pyinc)
+AC_SUBST(pythonlib)
+
+dnl Test for python version
+
+nopython="n"
+if test x${CIAO_PYTHON} != "x"
+then
+    if test -d ${CIAO_PYTHON}
+    then
+        pytmp="`dirname ${CIAO_PYTHON}`"
+    else  
+        pytmp="${top}/ots/bin"
+    fi
+else
+    pytmp="${top}/ots/bin"
+fi
+if test -e ${pytmp}/../lib/python3.5
+then
+    pyver="3.5"
+elif test -e ${pytmp}/../lib/python2.7
+then
+    pyver="2.7"
+else
+    nopython="y"
+fi
+
+AC_ARG_WITH(pyversion, [ --with-pyversion=<version of python> ],
+     pyver="$withval")
+
+if test "${pyver}" = "3.5"
+then
+    pyminver="5"
+    pymajver="3"
+    pyinc="python${pyver}m"
+    pythonlib="-L\$(PYTHON)/lib -lpython\$(PYTHONVER)m"
+elif test "${pyver}" = "2.7"
+then
+    pyminver="7"
+    pymajver="2"
+    pyinc="python${pyver}"
+    pythonlib="-L\$(PYTHON)/lib -lpython\$(PYTHONVER)"
+fi
+
+dnl setup switch that forces us into compile mode (as opposed to setup)
+dnl usings the switch --with-fits will also force compile mode
+
+AC_ARG_WITH(compile,
+[  --with-compile  When you want to rebuild CIAO from the source],
+            compl=$withval, compl="no" )
+
+local_only="no"
+if test "$compl" = "localinc"
+then 
+  compl="yes"
+  local_only="yes"
+fi
+
+AC_SUBST(flag64)
+
+AC_SUBST(cxc_os)
+AC_SUBST(cxc_sys)
+AC_SUBST(lccflag)
+
+AC_SUBST(template_dir)
+AC_SUBST(template_obj_dir)
+AC_SUBST(cppstdlib)
+AC_SUBST(strflags)
+AC_SUBST(booldef)
+AC_SUBST(share_ext)
+AC_SUBST(mod_ext)
+AC_SUBST(so_pre)
+AC_SUBST(so_post)
+AC_SUBST(SET_LD_LIBRARY_PATH)
+AC_SUBST(OSX_ONLY)
+AC_SUBST(forlinkflags)
+forlinkflags=""
+AC_SUBST(setupcfgextra)
+setupcfgextra=""
+AC_SUBST(nostdlib)
+AC_SUBST(c_nonshared)
+AC_SUBST(mfmcfitsio)
+AC_SUBST(stldef)
+AC_SUBST(helpbrowser)
+AC_SUBST(helpbrowserdelay)
+AC_SUBST(helpbrowseropenurl)
+AC_SUBST(helpbrowseropenfile)
+AC_SUBST(rpathflagcc)
+AC_SUBST(slmodule_install)
+AC_SUBST(sybase_ctlib)
+AC_SUBST(sybase_srvlib)
+AC_SUBST(sybase_comlibs)
+AC_SUBST(sybase_syslibs)
+AC_SUBST(sybase_defs)
+
+AC_SUBST(stl_defs)
+AC_SUBST(gllibs)
+
+gllibs="-lGLU -lGL"
+stldef=""
+AC_SUBST(tcl_xlibs)
+
+dnl ghostscript setup
+
+AC_SUBST(gs_lib)
+gs_lib="ots/share/ghostscript/8.56/lib/"
+
+dnl Defaults of some variables
+
+lccflag="-t"
+alpha_ld_fix=""
+mtflag="-mt"
+makeprog="make"
+ieee_flag=""
+share_ext="so"
+mod_ext="$share_ext"
+so_post=""
+so_pre="${share_ext}."
+SET_LD_LIBRARY_PATH="LD_LIBRARY_PATH"
+OSX_ONLY="#"
+nostdlib=""
+c_nonshared=""
+mfmcfitsio="\$(CFITSIO_LIB)"
+helpbrowser="netscape"
+helpbrowserdelay="3"
+helpbrowseropenurl="netscape -remote 'openURL(\$)'"
+helpbrowseropenfile="netscape -remote 'openFile(\$)'"
+
+
+AC_CANONICAL_SYSTEM
+
+AC_SUBST(ssl_lib)
+AC_ARG_WITH(ssl_lib,
+[  --with-ssl_lib=<location of ssl and crypto libraries>],
+            ssl_lib=$withval, ssl_lib="" )
+
+
+sunver=""
+sunversub=""
+
+case "$build_os" in
+
+darwin* )
+  cxc_os="apple"
+  cxc_sys="apple"
+  lccflag=" "
+  makeprog="make"
+  share_ext="dylib"
+dnl mod_ext should be bundle however so does work and it is
+dnl hardcoded into slang for now.
+dnl  mod_ext="bundle"
+  mod_ext="so"
+  pythonlib="-F\$(PYTHON)/Library/Frameworks/ -framework Python"
+  so_post=".${share_ext}"
+  so_pre=""
+  SET_LD_LIBRARY_PATH="DYLD_LIBRARY_PATH"
+  OSX_ONLY=" "
+  helpbrowser=""
+  helpbrowserdelay=""
+  helpbrowseropenurl="open \$ &"
+  helpbrowseropenfile="open \$ &"
+  if test -d ots/gs/Library/Frameworks/Ghostscript.framework
+  then
+     gs_lib="ots/gs/Library/Frameworks/Ghostscript.framework/Resources/lib/"
+  else
+     gs_lib="ots/Library/Frameworks/Ghostscript.framework/Resources/lib/"
+  fi
+  if test -f bin/mac_lib_fix.sh ; then
+     if test -f lib/libpix.dylib ; then
+	bin/mac_lib_fix.sh
+     fi
+  fi
+dnl  setupcfgextra="extra-fortran-link-flags =-m64"
+;;
+* )
+dnl For now assume all other systems are linux
+  cxc_os="linux"
+  cxc_sys="linux"
+  sybase_syslibs="-ldl -lnsl -lm"
+  if test `uname -m` != "x86_64"
+  then
+    sybase_ctlib="-lsybct"
+    sybase_srvlib="-lsybsrv"
+    sybase_comlibs="-lsybcs -lsybtcl -lsybcomn -lsybintl -lsybunic"
+    sybase_defs="-DSYBPLATFORM=linux"
+    stl_defs=" -DOS_LINUX_2_6 -DOS_USE_ALTERNATE_STD -DOS_NO_WSTRING -DOS_NO_ALLOCATOR_REBIND -DOS_ENABLE_MEMBER_TEMPLATE_FEATURES -DUSE_COUT -D_FILE_OFFSET_BITS=64  -DOS_MULTI_THREADED -DOS_LINUX_PTHREADS -DOS_PTHREADS -DOS_REALTIME -D_REENTRANT -D_GNU_SOURCE"
+  else
+    sybase_ctlib="-lsybct64"
+    sybase_srvlib="-lsybsrv64"
+    sybase_comlibs="-lsybcs64 -lsybtcl64 -lsybcomn64 -lsybintl64 -lsybunic64"
+    sybase_defs="-DSYBPLATFORM=linuxamd64 -DSYB_LP64"
+    stl_defs=" -DOS_LINUX_2_6 -DOS_USE_ALTERNATE_STD -DOS_NO_WSTRING -DOS_NO_ALLOCATOR_REBIND -DOS_ENABLE_MEMBER_TEMPLATE_FEATURES -DUSE_COUT -DOS_LP64  -DOS_MULTI_THREADED -DOS_LINUX_PTHREADS -DOS_PTHREADS -DOS_REALTIME -D_REENTRANT -D_GNU_SOURCE"
+  fi
+
+  if test "x$test_gtk_path" != "xno"
+  then
+    if test "x$GTK_PATH" = "x"
+    then
+      if test -d "/usr/lib64/gtk-2.0"
+      then
+        GTK_PATH=":/usr/lib64/gtk-2.0"
+      elif test -d "/usr/lib/gtk-2.0"
+      then
+        GTK_PATH=":/usr/lib/gtk-2.0"
+      fi
+    fi
+  fi
+;;
+esac
+
+dnl gcc redefines va_args stuff and thus if we are using gcc on
+dnl a non-linux system we might want to look somplace else for
+dnl files found in /usr/include
+
+AC_SUBST(ccinc)
+AC_ARG_WITH(include,
+[  --with-include=DIR Location of system includes (--with-compile is assumed)
+           (default=/usr/include)],
+ ccinc=$withval
+ compl="yes",
+ ccinc="/usr/include")
+if test "x$ccinc" = "xyes"
+then
+  ccinc="/usr/include"
+fi
+
+dnl Check for IRAF Kernel (Depecrated from ciao)
+AC_SUBST(irafdir)
+AC_SUBST(irafdef)
+AC_SUBST(iqkernel)
+AC_SUBST(irafklibs)
+AC_SUBST(stclibs)
+AC_SUBST(irafall)
+AC_SUBST(irafinst)
+AC_SUBST(irafcln)
+AC_SUBST(iraflnt)
+AC_SUBST(stcall)
+AC_SUBST(irafswitch)
+AC_SUBST(iqobjs)
+
+dnl Check for ASCII Kernel
+
+AC_SUBST(asciidef)
+AC_SUBST(afkernel)
+AC_SUBST(afobjs)
+
+AC_ARG_WITH(ascii,
+[  --with-ascii Include ASCII kernel when building CXC DataModel
+          (--with-compile is assumed)],
+  compl="yes"
+  asciidef="-DTEXT_KERNEL"
+  afkernel="afkernel"
+  afobjs="../afkernel/*.o",
+
+  asciidef=" "
+  afkernel="noafkernel"
+  afobjs=" "
+)
+
+dnl Some stuff to support local (SAO) building in clearcase
+
+AC_SUBST(makeprog)
+AC_SUBST(ascroot)
+AC_SUBST(ascdmroot)
+AC_SUBST(dsots)
+AC_SUBST(dsots_install)
+AC_SUBST(makedevflags)
+AC_SUBST(gccprog)
+AC_SUBST(irafclibs)
+AC_SUBST(lnextraflags)
+AC_SUBST(cflags)
+cflags="$CFLAGS"
+AC_SUBST(latex)
+AC_SUBST(dvips)
+AC_SUBST(port)
+AC_SUBST(noport)
+AC_SUBST(linuxnoport)
+AC_SUBST(externalinst)
+AC_SUBST(xhome)
+AC_SUBST(quietlink)
+AC_SUBST(cc_sys)
+
+dnl X stuff
+
+AC_SUBST(x_includes)
+AC_SUBST(xhome)
+AC_SUBST(x6home)
+AC_SUBST(x11inc)
+AC_SUBST(x11lib)
+AC_SUBST(xmlib)
+AC_SUBST(xminc)
+AC_SUBST(x_libraries)
+AC_SUBST(x11)
+AC_SUBST(xt)
+AC_SUBST(mmo_X_LIBS)
+AC_SUBST(mmo_x11inc)
+AC_SUBST(mmo_x_includes)
+AC_SUBST(mmo_x11lib)
+AC_SUBST(mmo_xtlib)
+AC_SUBST(mmo_xlib)
+AC_SUBST(cfitsioname)
+AC_SUBST(dbport)
+AC_SUBST(gtk_install)
+AC_SUBST(extra_fortran_link_flags)
+dbport=""
+
+ots_def="$top/ots"
+
+dnl get the information needed to generate cxcds_version.h
+
+AC_SUBST(version)
+AC_SUBST(ciaover)
+AC_SUBST(yyyy)
+
+yyyy="`date +%Y`"
+ciaover=""
+version="`cat VERSION | cut -f1 -d ' '`"
+
+AC_ARG_WITH(ver,
+[  --with-ver=version   Specify version to populate src/include/cxcds_version.h],
+   version="$withval",
+   version="`cat VERSION | cut -f1 -d ' '`")
+
+if test "x$version" = "x"
+then
+  if test -f "src/include/cxcds_version.h.in"
+  then
+      if test "`whoami`" == "cm"
+      then
+          AC_MSG_ERROR([VERSION file empty or missing.])
+      else
+          AC_MSG_WARN([VERSION file empty or missing.])
+	  version="Test"
+      fi
+  fi
+fi
+if test "$version" == "CIAO"
+then
+   ciaover="`cat VERSION | cut -f2 -d ' '`"
+   version="$version $ciaover"
+elif test "${version:0:1}" == "1"
+then
+   version="DS $version"
+fi
+
+AC_ARG_WITH(ots,
+[  --with-ots=DIR  Specify location of Off-The-Shelf software used by CIAO],
+  dsots="$withval",
+  dsots="$ots_def")
+
+if test "x${dsots}" = "xyes"
+then
+  dsots="$ots_def"
+fi
+if test "x${dsots}" = "x"
+then 
+  dsots="$ots_def"
+fi
+
+dsots_install="$dsots"
+AC_ARG_WITH(ots_install,
+[  --with-ots_install=DIR  Specify the installed OTS location CfA Internal only],
+  dsots_install="$withval",
+  dsots_install="$dsots")
+
+if test "x${dsots_install}" = "xyes"
+then
+  dsots_install="$dsots"
+fi
+if test "x${dsots_install}" = "x"
+then 
+  dsots_install="$dsots"
+fi
+
+dnl extra-fortran-link-flags used for building sherpa
+extra_fortran_link_flags=""
+AC_ARG_WITH(sherpa-fortran-flags, [  --with-sherpa-fortran-flags=<flags>],
+   extra_fortran_link_flags="$withval",
+    extra_fortran_link_flags="")
+
+dnl setup offscreen rednering
+
+AC_SUBST(chips_os_libs)
+AC_SUBST(offscreen)
+
+offscreen="false"
+chips_os_libs=""
+if test -f ${dsots}/Mesa-7.0.3.${BuildOS}/lib/libGL.so
+then
+   offscreen="true"
+   chips_os_libs="\$ASCDS_BLD_INSTALL/ots/lib/offscreen"
+fi
+if test -e ${top}/ots/lib/offscreen/libGL.so
+then
+   offscreen="true"
+   chips_os_libs="${top}/ots/lib/offscreen"
+fi
+if test -e ${top}/ots/lib/offscreen/libGL.dylib
+then
+   offscreen="true"
+   chips_os_libs="${top}/ots/lib/offscreen"
+fi
+
+dnl Set gtk to dsots for now
+
+AC_ARG_WITH(gtk,
+    [  --with-gtk=<path> Root of GTK install], gtk_pkg=$withval, gtk_pkg="ots")
+
+
+AC_ARG_WITH(pkgconfig,
+    [  --with-pkgconfig=<path> Root of GTK pkgconfig], pc=$withval, pc="`pwd`/ots")
+
+gtk_install="$gtk_pkg"
+if test "${gtk_install}" = "ots"
+then
+   gtk_install="${install_top}/ots"
+fi
+
+AC_SUBST(gtk_includes)
+AC_SUBST(gtkgl_includes)
+AC_SUBST(gtk_libs)
+AC_SUBST(gtkgl_libs)
+
+if test "x${pc}" = "xots"
+then
+   pc="`pwd`/ots"
+fi
+if test $compl = "yes"
+then
+   if test -f $pc/bin/pkg-config
+   then
+      if test "x${PKG_CONFIG_PATH}" = "x"
+      then
+	 PKG_CONFIG_PATH="${pc}/lib/pkgconfig"
+      else
+	 PKG_CONFIG_PATH="${pc}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+      fi
+      export PKG_CONFIG_PATH
+dnl      PKG_CHECK_MODULES( , gtk+-2.0 >= 2.10.0 gtkglext-x11-1.0 >= 1.0.6)
+      if test -f ${pc}/lib/pkgconfig/gtk+-3.0.pc
+      then
+        gtk_includes="`$pc/bin/pkg-config gtk+-3.0 --cflags`"
+        gtk_libs="`$pc/bin/pkg-config gtk+-3.0 --libs`"
+      else
+        gtk_includes="`$pc/bin/pkg-config gtk+-2.0 --cflags`"
+        gtk_libs="`$pc/bin/pkg-config gtk+-2.0 --libs`"
+      fi
+      gtkgl_includes="$gtk_includes"
+      gtkgl_libs="$gtk_libs"
+   else
+      AC_MSG_WARN([pkgconfig not found.Please use --with-pkgconfig=])
+      gtk_includes=""
+      gtk_libs=""
+      gtkgl_includes=""
+      gtkgl_libs=""
+   fi
+fi
+
+port=""
+noport="#"
+linuxnoport=""
+dnl Internal CXC switches
+
+AC_SUBST(link_ots)
+AC_SUBST(copy_ots)
+link_ots=""
+copy_ots="#"
+AC_ARG_WITH(ots_copy,
+[  --with-ots_copy  Copy ots instead of linking (SAO Internal ONLY)],
+ link_ots="#"
+ copy_ots="",
+ link_ots=""
+ copy_ots="#"
+)
+
+AC_SUBST(dboflags)
+dboflags=""
+AC_SUBST(csh_run_ciao_setup)
+AC_SUBST(sh_run_ciao_setup)
+csh_run_ciao_setup=""
+sh_run_ciao_setup=""
+
+AC_SUBST(no_sunos_targets)
+no_sunos_targets=""
+
+dnl Dumb test for gfortran libraries TO BE REPLACED
+dnl Only used by sherpa setup.cfg
+
+AC_SUBST(gfort_loc)
+gfort_loc=""
+AC_ARG_WITH(gfortloc, [ --with-gfortloc=DIR Location of libgfortran ],
+gfort_loc="$withval"
+gfortran_lib="gfortran")
+
+if test "x${gfort_loc}" == "x"
+then
+   if test -f "/usr/lib64/libgfortran.so.3.0.0"
+   then
+    gfort_loc="/usr/lib64"
+  elif test -f "/usr/lib/libgfortran.so.3.0.0"
+  then
+    gfort_loc="/usr/lib"
+  elif test -e "/usr/local/lib/libgfortran.a"
+  then
+    gfort_loc="/usr/local/lib"
+  elif test -e "/opt/local/lib/libgfortran.a"
+  then
+    gfort_loc="/opt/local/lib"
+  elif test -e "/opt/local/lib/libf95.a"
+  then
+    gfort_loc="/opt/local/lib"
+  else
+    gfort_loc=""
+  fi
+fi 
+
+AC_ARG_WITH(devel,
+[  --with-devel  Use the SAO development environment(clearcase etc)], \
+ envir="sao", envir="port")
+
+if test "$envir" = "sao" ; then
+ csh_run_ciao_setup="source \$ASCDS_INSTALL/bin/ciao_setup.csh"
+ sh_run_ciao_setup=". \$ASCDS_INSTALL/bin/ciao_setup.sh"
+ cfitsioname="cfitsio"
+ cc_sys="gnu"
+ AC_PATH_PROG(latex, latex)
+ AC_PATH_PROG(dvips, dvips)
+ x11lib="-lXm $xt"
+ mmo_x_includes="$x_includes"
+ mmo_x11inc="$x11inc"
+ mmo_x11lib="$x11lib"
+ mmo_xtlib="$xt"
+ mmo_xlib="$x11"
+ x6home="$xhome"
+ port="#"
+ noport="#"
+ dbport="#"
+ linuxnoport=""
+ compl="yes"
+ top="/vobs/ASC_BUILD"
+ touch /vobs/ASC_BUILD/VERSION
+ quietlink="\$(QUIETLINK)"
+ makeprog="/usr/rational/clearcase/bin/clearmake -C $cc_sys"
+ ascroot="/vobs/ASC_BUILD"
+ ascdmroot="$top/src/lib/datamodel"
+ gfort_loc="\$ASCDS_INSTALL/ots/lib"
+else
+ cfitsioname="cfitsio"
+ ascroot="$top"
+ ascdmroot="$top/src/lib/datamodel"
+ makedevflags=" "
+ irafclibs="-lirafinit -lstcbind"
+ lnextraflags=" "
+ latex="latex"
+ dvips="dvips"
+ port=" "
+ noport="#"
+ ccasecxx=""
+dnl Test expect exactly one space
+ xhome=" "
+ externalinst="$top"
+fi
+
+dnl Check for FITS Kernel (Moved here as we need to know the name of the
+dnl cfitsio library (cxccfitio for ciao to avoid conflicts)
+
+AC_SUBST(fitsdef)
+AC_SUBST(ftkernel)
+AC_SUBST(fitslibs)
+AC_SUBST(ftobjs)
+
+AC_ARG_WITH(fits,
+[  --with-fits  Include FITS kernel when building CXC DataModel
+          (--with-compile is assumed)],
+  compl="yes"
+  fitsdef="-DFITS_KERNEL"
+  ftkernel="ftkernel"
+  fitslibs="-L\$(CFITSIO_LIB) -l$cfitsioname"
+  ftobjs="../ftkernel/*.o",
+
+  fitsdef=" "
+  ftkernel="noftkernel"
+  fitslibs=" "
+  ftobjs=" "
+)
+
+dnl setup the more generic systems stuff
+
+AC_SUBST(arch_pimms)
+AC_SUBST(config_os)
+AC_SUBST(config_swapped)
+AC_SUBST(config_forcc)
+AC_SUBST(config_recl)
+AC_SUBST(config_opena)
+AC_SUBST(extra)
+AC_SUBST(sysflag)
+AC_SUBST(system)
+AC_SUBST(dmplatform)
+AC_SUBST(irafsys)
+AC_SUBST(irafusys)
+AC_SUBST(iraff2c)
+AC_SUBST(curses_lib)
+AC_SUBST(ccasecxx)
+AC_SUBST(ccasecxxreal)
+AC_SUBST(systemcflags)
+AC_SUBST(socketlibs)
+socketlibs=""
+AC_SUBST(xanaduextraflags)
+AC_SUBST(sherpag2c)
+AC_SUBST(dmfix)
+
+xanaduextraflags=""
+systemcflags=""
+
+AC_SUBST(more)
+AC_PATH_PROG(more, more, "more")
+
+if test "$compl" = "yes"
+then
+
+dnl setup switches for which compiler we are using
+
+  AC_SUBST(ascfitlibs)
+  AC_SUBST(bundlelibflag)
+  AC_SUBST(ccc)
+  AC_SUBST(ccextraflags)
+  AC_SUBST(cclibs)
+  AC_SUBST(ccname)
+  AC_SUBST(ccpixflags)
+  AC_SUBST(ccvflags)
+  AC_SUBST(cppextraflags)
+  AC_SUBST(cppflags)
+  cppflags="$CPPFLAGS"
+  AC_SUBST(cshrlibflag)
+  AC_SUBST(cstaticlib)
+  AC_SUBST(dasho)
+  AC_SUBST(dasht)
+  AC_SUBST(dllib)
+  AC_SUBST(dmclibs)
+  AC_SUBST(dmsyslibs)
+  AC_SUBST(dynflag)
+  AC_SUBST(dynlink)
+  AC_SUBST(f2c)
+  AC_SUBST(f2cflag)
+  AC_SUBST(f77)
+  AC_SUBST(f95)
+  AC_SUBST(f95lib)
+  AC_SUBST(for)
+  AC_SUBST(fflags)
+  fflags="$FFLAGS"
+  AC_SUBST(fflags_pimms)
+  AC_SUBST(gccflags)
+  AC_SUBST(gen)
+  AC_SUBST(hostflibs)
+  AC_SUBST(hostlibs)
+  AC_SUBST(iraff2clib)
+  AC_SUBST(iraff77)
+  AC_SUBST(iraffor)
+  AC_SUBST(iraflibs)
+  AC_SUBST(irafsys)
+  AC_SUBST(irafusys)
+  AC_SUBST(ldflags)
+  AC_SUBST(tldflags)
+  ldflags="$LDFLAGS"
+  AC_SUBST(mldflags)
+  AC_SUBST(mldflags2)
+  AC_SUBST(lexbuild)
+  AC_SUBST(lnextraflag)
+  AC_SUBST(ocflags)
+  AC_SUBST(rmfar)
+  AC_SUBST(rmfcflags)
+  AC_SUBST(shared_link_flags)
+  AC_SUBST(static_cpp_lib_flags)
+  AC_SUBST(stl)
+  AC_SUBST(syslibs)
+  AC_SUBST(unixlibs)
+  AC_SUBST(vflags)
+  AC_SUBST(CPPwarnflag)
+  AC_SUBST(CCwarnflag)
+  AC_SUBST(yacclibs)
+  AC_SUBST(yflags)
+  AC_SUBST(bigccinc)
+  AC_SUBST(littleccinc)
+  AC_SUBST(f77inc)
+  AC_SUBST(littlecc)
+  AC_SUBST(bigcc)
+  AC_SUBST(ranlib)
+  AC_SUBST(realcc)
+  AC_SUBST(realCC)
+  AC_SUBST(realf77)
+  AC_SUBST(realccinc)
+  AC_SUBST(realCCinc)
+  AC_SUBST(realf77inc)
+  AC_SUBST(tclstaticlink)
+  AC_SUBST(fortran_lib)
+
+dnl test for compilers
+
+  AC_PROG_CC
+  if test "x$CC" == "x" ; then
+     AC_MSG_ERROR([Cannot find C compiler!])
+  fi
+  AC_PROG_CXX
+  if test "x$CXX" == "x" ; then
+     AC_MSG_ERROR([Cannot find C++ compiler!])
+  fi
+  AC_PROG_F77
+  if test "x$F77" == "x" ; then
+     AC_MSG_ERROR([Cannot find Fortran compiler!])
+  fi
+  AC_PROG_FC
+  if test "x$FC" == "x" ; then
+     AC_MSG_ERROR([Cannot find Fortran compiler!])
+  fi
+
+  AC_PATH_X
+  AC_PATH_XTRA
+  xerror_on="no"
+  if test -f src/ui/Makefile ; then 
+     xerror_on="yes"
+  fi
+  if test -f src/pkg/chips/Makefile ; then
+     xerror_on="yes"
+  fi
+  if test "x$x_libraries" ==  "x" ; then
+    AC_MSG_RESULT([Cannot find x libraries Please use --x-libraries=DIR])
+    if test -d /usr/lib64 ; then
+        AC_MSG_RESULT([Attempting to use libraries from /usr/lib64])
+        x_libraries="/usr/lib64"
+    else
+        AC_MSG_RESULT([Attempting to use libraries from /usr/lib])
+    	x_libraries="/usr/lib"
+    fi
+  fi
+  if test "x$x_includes" ==  "x" ; then
+    AC_MSG_RESULT([Cannot find x headers Please use --x-includes=DIR])
+    x_includes="`dirname $x_libraries`/include"
+    AC_MSG_RESULT([Attempting to use Headers from $x_includes])
+  fi
+
+  case "$build_os" in
+  darwin* )
+	   tcl_xlibs="-L$x_libraries -lXft -lfontconfig -lXss -framework CoreFoundation"
+	   ;;
+  * )
+	   tcl_xlibs="-L$x_libraries -lXft -lpthread"
+	   ;;
+  esac
+  x11="-lX11"
+  xt="-lXt -lXmu -lXext $x11"
+  x11inc="$x_includes"
+  x11lib="-lXm $xt"
+  dnl Only set xmlib when statically linking in libXm
+  xmlib=""
+  forlibs=""
+  fortype=""
+  AC_ARG_WITH(g2cloc, [ --with-g2cloc=DIR Location of libg2c ],
+     forlibs="-L$withval"
+     fortype="-lg2c")
+  AC_ARG_WITH(f2cloc, [ --with-f2cloc=DIR Location of libf2c ],
+     forlibs="-L$withval"
+     fortype="-lf2c")
+  AC_ARG_WITH(f95loc, [ --with-f95loc=DIR Location of libf95 ],
+     forlibs="-L$withval"
+     fortype="-lf95")
+  AC_ARG_WITH(gfortranloc, [ --with-gfortranloc=DIR Location of libgfortran ],
+     forlibs="-L$withval"
+     gforloc="$withval"
+     fortype="-lgfortran")
+
+  if test "x$forlibs" = "xyes"
+  then
+    forlibs=""
+  fi
+
+  if test "x$forlibs" == "x"
+  then
+    F77_full="`which $F77`"
+    basef77="`basename $F77_full`"
+    tmp="`dirname $F77_full`"
+    f77lib=`dirname $tmp`/lib
+  fi
+
+  if test "$GCC" = "yes" ; then
+     if test "x$fortype" == "x" ; then
+       case "$FC" in
+         *77* ) dnl AC_CHECK_LIB(g2c, main, fortype=-lg2c)
+	      dnl Make sure g77 really isn't g95
+	      $F77 -v 2> test_gcc_version.tmp
+	      g95_test_string="`grep g95 test_gcc_version.tmp`"
+	      if test "x$g95_test_string" == "x" ; then
+		 fortype="-lgfortran"
+		 fortran_lib="gfortran"
+	      else
+		 fortype="-lf95"
+		 fortran_lib="f95"
+	      fi
+	      ;;
+         *95* ) dnl AC_CHECK_LIB(f95, main, fortype=-lf95)
+	      fortype="-lf95"
+	      fortran_lib="f95"
+	      ;;
+         *gfortran* ) dnl AC_CHECK_LIB(gfortran, main, fortype=-lgfortran)
+	      fortype="-lgfortran"
+	      fortran_lib="gfortran"
+	      ;;
+         * ) AC_MSG_WARN([Unknown gnu fortran])
+	      ;;
+       esac
+     fi
+     if test "x$forlibs" = "x" ; then
+	forlibs="-L$f77lib"
+     fi
+  fi
+
+  f77=$F77
+  f95=$FC
+  for=$FC
+  bigcc=$CXX
+  littlecc=$CC
+  realf77=$F77
+  realcc=$CC
+  realCC=$CXX
+  ccname=$CC
+  ccc=$CXX
+  defopt="-O3"
+  ulink=""
+  uflag=""
+
+  if test "$GCC" = "yes"
+  then
+    rm -f test_gcc_version.tmp
+    $CC -v 2> test_gcc_version.tmp
+    ver34=" 3\.4"
+    ver4=" 4\."
+    ver335=" 3.3.5"
+    gcc34_test_string="`grep $ver34 test_gcc_version.tmp`"
+    gcc4_test_string="`grep $ver4 test_gcc_version.tmp`"
+    gcc335_test_string="`grep $ver335 test_gcc_version.tmp`"
+    rm -f test_gcc_version.tmp
+    good_gcc="no"
+    if test "x$gcc34_test_string" != "x"
+    then
+	good_gcc="yes"
+    fi
+    if test "x$gcc4_test_string" != "x"
+    then
+	good_gcc="yes"
+    fi
+    if test "x$gcc335_test_string" != "x"
+    then
+	AC_MSG_ERROR([[Found gcc 3.3.5 CIAO will NOT compile with this version due to a compiler bug.]])
+    fi
+    if test "$good_gcc" = "no"
+    then
+	AC_MSG_WARN([[Unsupported Version of gcc found!]])
+    fi
+  fi
+
+  case "$build_os" in
+  *darwin* )
+    arch_pimms="darwin"
+    config_os="darwin"
+    config_swapped="FALSE"
+    if test "`uname -m`" = "i386"
+    then
+      config_swapped="TRUE"
+    fi
+    config_forcc="FALSE"
+    config_recl="1"
+    config_opena="vms"
+    sysflag="-Ddarwin"
+    system="darwin"
+    dmplatform="LINUX_X86"
+    extra="dummy"
+    iraff2c=""
+    irafsys="darwin" 
+    irafusys="darwin"
+    curses_lib="-lncurses"
+    systemcflags=""
+    forlinkflags="-L/usr/lib $uflag"
+    x11lib="$x11lib -lXp"
+  ;;
+  * )
+    arch_pimms="linux"
+    config_os="Linux"
+    config_swapped="TRUE"
+    config_forcc="FALSE"
+    config_recl="1"
+    config_opena="vms"
+    sysflag="-Dlinux"
+    system="linux"
+    dmplatform="LINUX_X86"
+    extra="dummy"
+    iraff2c=""
+    irafsys="linux" 
+    irafusys="linux"
+    curses_lib="-lncurses"
+    systemcflags=""
+  ;;
+  esac
+
+dnl Allow users to specify optimization level
+
+  AC_SUBST(oflags)
+  oflags=""
+  AC_ARG_WITH(opt, 
+  [  --with-opt=<level>  Set optimization level (default=-O3, -xO4 on Solaris)],
+  oflags="$withval")
+  if test "$oflags" = "yes"
+  then
+     oflags="$defopt" 
+  fi
+
+dnl Turn on optimization for DB tree on Solaris (Internal system only)
+
+  if test "x$dboflags" = "xsolaris"
+  then
+     dboflags=$oflags
+  fi
+
+dnl Allow user to specify debug flag
+
+  AC_SUBST(dflags)
+  AC_ARG_WITH(debug,
+  [  --with-debug Compile with debug enabled],
+   dflags="-gdwarf-2 -g2 -ggdb2 -O0",
+   dflags=" ")
+
+dnl test for programs
+
+  AC_PROG_AWK
+  AC_PROG_YACC
+  AC_PROG_LEX
+  AC_PROG_MAKE_SET
+  AC_PROG_RANLIB
+  AC_PROG_LN_S
+  AC_SUBST(ranlib)
+  AC_CHECK_TOOL(ranlib, ranlib, touch)
+
+dnl Checks for libraries.
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+  AC_C_BIGENDIAN
+  AC_C_CONST
+  AC_TYPE_UID_T
+  AC_TYPE_MODE_T
+  AC_TYPE_OFF_T
+  AC_TYPE_PID_T
+  AC_TYPE_SIZE_T
+  AC_STRUCT_ST_BLKSIZE
+  AC_STRUCT_ST_BLOCKS
+  AC_STRUCT_ST_RDEV
+  AC_HEADER_TIME
+  AC_STRUCT_TM
+  AC_EXEEXT
+dnl  AC_CYGWIN
+  AC_OBJEXT
+
+dnl Checks for header files.
+
+  AC_HEADER_DIRENT
+  AC_HEADER_STDC
+  AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h termio.h unistd.h)
+  AC_HEADER_DIRENT
+  AC_HEADER_SYS_WAIT
+  AC_CHECK_HEADERS(limits.h malloc.h sgtty.h strings.h sys/file.h sys/window.h)
+  AC_CHECK_HEADERS(poll.h sys/poll.h select.h sys/select.h)
+  AC_CHECK_HEADERS(ieeefp.h)
+
+dnl  AC_CHECK_TYPE(bool, int)
+
+dnl Checks for library functions.
+
+dnl Checks for library functions.
+  AC_FUNC_ALLOCA
+  AC_FUNC_MEMCMP
+  AC_FUNC_MMAP
+dnl  AC_FUNC_SETVBUF_REVERSED
+  AC_TYPE_SIGNAL
+  AC_FUNC_STRFTIME
+  AC_FUNC_VFORK
+  AC_FUNC_VPRINTF
+  AC_CHECK_FUNCS(getcwd mkfifo mktime putenv regcomp socket strcspn)
+  AC_CHECK_FUNCS(strdup strerror strspn strtoul uname)
+  AC_CHECK_FUNCS(gethostname mkdir rmdir select strftime strstr)
+  AC_CHECK_FUNCS(strtod strtol setpgrp)
+
+dnl AC_FUNC_SETPGRP does not work if cross compiling
+dnl Instead, assume we will have a prototype for setpgrp if cross compiling.
+
+  if test "$cross_compiling" = "no"; then
+    AC_FUNC_SETPGRP
+  else
+    AC_CACHE_CHECK([whether setpgrp takes no argument], ac_cv_func_setpgrp_void,
+[AC_TRY_COMPILE([
+#include <unistd.h>
+], [
+if (setpgrp(1,1) == -1)
+exit (0);
+else
+exit (1);
+], ac_cv_func_setpgrp_void=no, ac_cv_func_setpgrp_void=yes)])
+    if test "$ac_cv_func_setpgrp_void" = "yes"; then
+      AC_DEFINE(SETPGRP_VOID, 1)
+    fi
+  fi
+  AC_SUBST(CC)
+fi
+
+dnl Allow user to define a different paramater interface
+dnl the default is cxcparam
+
+defparam="cxcparam"
+
+AC_SUBST(paramlibs)
+AC_SUBST(paramdir)
+AC_SUBST(param)
+AC_SUBST(paramdef)
+
+AC_ARG_WITH(param,
+[  --with-param=<libsuffix> Set name of param lib to use in -l<param> 
+           (default=$defparam)],
+param=$withval, param="$defparam")
+if test "$param" = "yes"
+then
+  param="$defparam"
+fi
+
+if test "$param" = "$defparam" ; then 
+   paramdef="-DCXC_PARAM_IFACE"
+fi
+
+AC_ARG_WITH(paramdir,
+[  --with-paramdir=<location of param lib> Set parameter library location],
+  paramdir=$withval
+  paramsw="yes",
+  if test -d src/lib/cxcparam/main ; then
+     paramdir="\$(MK_TOP)/lib/cxcparam/main"
+  else
+     paramdir="\$(MK_TOP)/lib/defparam"
+  fi
+  paramsw="no")
+
+if test "$paramdir" = "yes"
+then
+  if test -d src/lib/cxcparam/main ; then
+     paramdir="\$(MK_TOP)/lib/cxcparam/main"
+  else
+     paramdir="\$(MK_TOP)/lib/defparam"
+  fi
+fi
+
+paramlibs="-L$paramdir -l$param"
+
+dnl do not let user specify a different paramlib without specifying
+dnl a new paramdir. Note however that looking for $defparam in a
+dnl different directory is valid.
+
+if test "$param" != "$defparam"
+then
+  if test "$paramsw" = "no"
+  then
+    AC_MSG_ERROR([ --with-paramdir switch required with  --with-param \
+            --with-paramdir tells make where to look for your \
+	     parameter library.])
+  fi
+fi
+
+dnl test if we should use threads (default is we should) Also allow
+dnl user to turn off threads if desired.
+
+AC_CHECK_LIB(pthread, main,
+ tthreadflags="-DTHREADS_ENABLED -D_REENTRANT"
+ tlibthreads="-lpthread $mtflag"
+  ,
+ tthreadflags=" "
+ tlibthreads=" "
+)
+
+AC_SUBST(threadflags)
+AC_SUBST(libthreads)
+AC_ARG_WITH(nothreads, [  --with-nothreads Disable threads],
+ threadflags=" "
+ libthreads=" "
+  ,
+ threadflags="$tthreadflags"
+ libthreads="$tlibthreads"
+)
+
+dnl Allow user to specify path for CIAO imager (SAOds9; SAOtng is deprecated)
+AC_SUBST(imagerdir)
+AC_ARG_WITH(imagerdir,
+[  --with-imagerdir=<ds9 location>  path to directory/tree containing DS9 (the
+           CIAO imager)])
+if test x$with_imagerdir = xyes ; then
+  imagerdir="saord"
+else
+  imagerdir=$with_imagerdir
+fi
+if test -z "$imagerdir" ; then
+  if test -e $dsots/saord/ds9 ; then
+     imagerdir=$dsots/saord
+  else
+     imagerdir=$dsots/bin
+  fi
+  AC_MSG_RESULT([[  --with-imagerdir not specified, defaulting to $imagerdir]])
+fi
+
+dnl Setup variables needed for smoke tests
+
+AC_SUBST(test_ds9)
+AC_SUBST(test_ahelp)
+AC_SUBST(test_dm)
+AC_SUBST(test_ui)
+AC_SUBST(test_crates)
+AC_SUBST(test_tools)
+AC_SUBST(test_ipython)
+AC_SUBST(test_ipython1)
+AC_SUBST(test_ipython2)
+AC_SUBST(test_ipython3)
+AC_SUBST(test_sherpa)
+AC_SUBST(test_chips)
+AC_SUBST(test_obsvis)
+AC_SUBST(include_test_ds9)
+AC_SUBST(include_test_ahelp)
+AC_SUBST(include_test_tools)
+AC_SUBST(include_test_ipython)
+AC_SUBST(include_test_ipython1)
+AC_SUBST(include_test_ipython2)
+AC_SUBST(include_test_ipython3)
+test_ipython=""
+include_test_ipython=""
+test_ipython1=""
+include_test_ipython1=""
+test_ipython2=""
+include_test_ipython2=""
+test_ipython3=""
+include_test_ipython3=""
+AC_SUBST(include_test_dm)
+AC_SUBST(include_test_crates)
+AC_SUBST(include_test_ui)
+AC_SUBST(include_test_chips)
+AC_SUBST(include_test_sherpa)
+AC_SUBST(include_test_obsvis)
+AC_SUBST(cfg_targets)
+cfg_targets=""
+
+dnl Setup stuff for compiling
+
+case "$compl" in
+yes )
+
+   dnl generic stuff that should be constant
+
+   AC_SUBST(yacc)
+   AC_PATH_PROGS(yacc, bison yacc, "bison")
+   AC_SUBST(lex)
+   AC_PATH_PROGS(lex, flex lex, "flex")
+   AC_SUBST(sed)
+   AC_PATH_PROG(sed, sed, "sed")
+   AC_SUBST(awk)
+   AC_PATH_PROG(awk, awk, "awk")
+   AC_SUBST(uname)
+   AC_PATH_PROG(uname, uname, "uname")
+
+   slmodule_install="slang/v2/modules"
+
+   AC_ARG_WITH(slang1,
+   [  --with-slang1 ], slmodule_install="slang/modules")
+
+   AC_ARG_WITH(slang2,
+   [  --with-slang2 ], slmodule_install="slang/v2/modules")
+
+dnl Set the location and version for tcl
+
+   AC_SUBST(tcltkinc)
+   AC_SUBST(tcltklib)
+   AC_SUBST(tcltkver)
+
+   if test x$def_tcl = "x"
+   then
+     def_tcl=$dsots
+   fi
+
+   AC_ARG_WITH(tcltk,
+   [  --with-tcltk=DIR Specify where to find the Tcl/Tk installation
+        (default=$dsots)],
+    tcltkdir="$withval",
+    tcltkdir="$def_tcl")
+
+   if test "x${tcltkdir}" = "xyes"
+   then
+     tcltkdir="$dsots"
+   fi
+
+   tcltkinc="$tcltkdir/include"
+   tcltklib="$tcltkdir/lib"
+   if test -f $tcltkdir/lib/tclConfig.sh
+   then
+	testtclver="`grep TCL_VERSION $tcltkdir/lib/tclConfig.sh`"
+	case "$testtclver" in
+	     TCL_VERSION=\'8\.3\' )
+		tcltkver="8.3";;
+	     TCL_VERSION=\'8\.4\' )
+		tcltkver="8.4";;
+	     TCL_VERSION=\'8\.5\' )
+		tcltkver="8.5";;
+	     TCL_VERSION=\'8\.6\' )
+		tcltkver="8.6";;
+	     TCL_VERSION=\'8\.7\' )
+		tcltkver="8.7";;
+	     TCL_VERSION=\'8\.8\' )
+		tcltkver="8.8";;
+	     * ) AC_MSG_RESULT([unknown version of tcltk])
+	        ;;
+	esac
+        AC_MSG_RESULT([found tcl version $tcltkver])
+   else
+	AC_MSG_RESULT([tcl not found.])
+   fi
+
+   AC_CHECK_FILE($tcltkdir/lib/libtcl$tcltkver.a,
+   tclstaticlink="-Bstatic -ltk\$(TCLTKVER) -ltcl\$(TCLTKVER) -Bdynamic",
+   tclstaticlink="-ltk\$(TCLTKVER) -ltcl\$(TCLTKVER)")
+
+   xmlib="-L$dsots/lib"
+   xminc="$dsots/include"
+
+dnl Allow user to specify lesstif root
+
+   AC_ARG_WITH(xmroot, 
+  [  --with-xmroot=DIR Location of Motif / Lesstif root (default=$dsots)],
+    xmlib="-L$withval/lib"
+    xminc="$withval/include"
+    atest="$withval",
+    atest="$withval"
+    xmlib="-L$dsots/lib"
+    xminc="$dsots/include")
+
+   if test "$atest" = "yes"
+   then
+     xmlib="-L$dsots/lib"
+     xminc="$dsots/include"
+   fi
+
+dnl Test for location of libGL.so
+
+   AC_SUBST(gllib)
+   AC_CHECK_FILE("/usr/lib/libGL.$share_ext", gllib="/usr/lib")
+   AC_CHECK_FILE("/usr/lib64/libGL.$share_ext", gllib="/usr/lib64")
+   AC_CHECK_FILE("$x_libraries/libGL.$share_ext", gllib="$x_libraries")
+   AC_ARG_WITH(gllibdir,
+   [  --with-gllibdir=DIR  path to directory containing libGL ],
+   AC_CHECK_FILE("$withval/libGL.$share_ext", gllib="$withval"))
+
+   AC_CHECK_LIB(dl, main, dllib="-ldl", dllib=" ")
+
+   if test "x$GCC" = "xyes"
+   then
+     f2c="$forlibs $fortype"
+     f95lib="$forlibs $fortype"
+     ldflags="$ulink $ldflags"
+     CCwarnflag="-Wall -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations"
+     CPPwarnflag="$CCwarnflag"
+     fflags="-fno-backslash -fexceptions $ieee_flag -fPIC $fflags"
+     fflags_pimms=" "
+
+dnl add systemcflags to ccextraflags and cppextraflags after Kenny
+dnl gives the OK
+
+     ccextraflags="$CCwarnflag $ieee_flag"
+     cppextraflags="$fsjlj $ieee_flag"
+dnl    ccextraflags="$CCwarnflag $ieee_flag $systemcflags"
+dnl    cppextraflags="$fsjlj $ieee_flag $systemcflags"
+
+     cppflags="$cppflags -fPIC $CPPwarnflag $ieee_flag $uflag"
+     cclibs=" "
+     cflags="-fexceptions $ccextraflags -fPIC $cflags $uflag"
+     cshrlibflag="-shared $alpha_ld_fix"
+     stl="\$(STLPORT)"
+     syslibs="-L/lib $dllib"
+     unixlibs=""
+     dasht=" "
+     dmsyslibs=" "
+     lexbuild="lex"
+     dmclibs="-lm" 
+     ccpixflags=" "
+     hostflibs="\$(HOSTFLIBS)"
+     ccvflags=" "
+     dynflag="-fPIC"
+     lnextraflag=" "
+     dasho=" "
+     rmfcflags=" "
+     rmfar="ar -rv"
+     vflags=" "
+     shared_link_flags="-shared $alpha_ld_fix"
+     bundlelibflag="$shared_link_flags \$(LIBPATH)"
+     static_cpp_lib_flags=" "
+     yacclibs=" "
+     yflags="-d -t -v"
+     x11inc="$xminc -I$x11inc $lesstif_inc"
+     x11lib="$x11lib $lesstif_lib"
+     gen=" "
+     iraff2clib=""
+     cstaticlib="ar -r"
+     booldef=" "
+     ocflags="\$(OFLAGS)"
+     f2cflag="-Df2cFortran"
+     rpathflagcc="-Wl,--rpath,"
+   else
+     echo "Only GCC is supported"
+   fi
+
+dnl over-write some options on Mac OS X
+
+   if test "x$cxc_os" = "xapple"
+   then
+     clangtest="`${CC} --version | grep clang`"
+     echo "output of clang test:"
+     echo ${clangtest}
+     if test "x${clangtest}" != "x"
+     then
+	flat_namespace="-undefined dynamic_lookup"
+	rp="-rpath @loader_path/../lib -rpath @loader_path/../ots/lib"
+	insname="-install_name @rpath/\$@"
+	trp=" -rpath @executable_path/../../../lib -rpath @executable_path/../../../ots/lib"
+	ldp="-rpath @loader_path/../lib -rpath @loader_path/../ots/lib -rpath @loader_path/../../../ots/lib -rpath @loader_path/../../../lib -rpath @loader_path/../../../../ots/lib -rpath @loader_path/../../../../lib -rpath @loader_path/../../../../../../lib -rpath @loader_path/../../../../../../ots/lib -rpath @loader_path/../../../../../../../lib -rpath @loader_path/../../../../../../../ots/lib"
+     else
+        flat_namespace="-undefined dynamic_lookup"
+         rp="-Wl,-rpath=\\\$\$ORIGIN/../lib -Wl,-rpath=\\\$\$ORIGIN/../ots/lib"
+         trp="-Wl,-rpath=\\\$\$ORIGIN/../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../ots/lib"
+ 	ldp="-shared $rp -Wl,-rpath=\\\$\$ORIGIN/../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../ots/lib -Wl,-rpath=\\\$\$ORIGIN/../../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../../ots/lib -Wl,-rpath=\\\$\$ORIGIN/../../../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../../../ots/lib -Wl,-rpath=\\\$\$ORIGIN/../../../../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../../../../ots/lib -Wl,-rpath=\\\$\$ORIGIN/../../../../../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../../../../../ots/lib"
+        mldflags2="-shared ${ldp}"
+        mldflags="-shared '-Wl,-rpath=\$\$ORIGIN/../lib:\$\$ORIGIN/../ots/lib:\$\$ORIGIN/../../../lib:\$\$ORIGIN/../../../ots/lib:\$\$ORIGIN/../../../../lib:\$\$ORIGIN/../../../../ots/lib:\$\$ORIGIN/../../../../../lib:\$\$ORIGIN/../../../../../ots/lib:\$\$ORIGIN/../../../../../../lib:\$\$ORIGIN/../../../../../../ots/lib:\$\$ORIGIN/../../../../../../../lib:\$\$ORIGIN/../../../../../../../ots/lib'"
+	insname=""
+     fi
+     fflags="$fflags -fno-backslash -fno-common $flat_namespace $ieee_flag"
+     cppflags="$cppflags -fno-common  $flat_namespace"
+     cflags="$cflags -fno-common  $flat_namespace"
+     cshrlibflag="-dynamiclib -undefined dynamic_lookup  ${insname}"
+     dynflag="$dynflag"
+     lnextraflag=""
+     shared_link_flags="-dynamiclib -undefined dynamic_lookup ${insname}"
+     bundlelibflag="-bundle $flat_namespace"
+     RANLIB="$RANLIB -sc"
+     ldflags="$ldflags -headerpad_max_install_names ${rp}"
+     tldflags="$ldflags -headerpad_max_install_names ${trp}"
+     mldflags="-headerpad_max_install_names ${ldp}"
+     mldflags2="${mldflags}"
+     forlinkflags="-headerpad_max_install_names ${rp}"
+   else
+      rp="-Wl,-rpath=\\\$\$ORIGIN/../lib -Wl,-rpath=\\\$\$ORIGIN/../ots/lib"
+      trp="-Wl,-rpath=\\\$\$ORIGIN/../../../lib -Wl,-rpath=\\\$\$ORIGIN/../../../ots/lib"
+      ldp="'-Wl,-rpath=\\\$\$ORIGIN/../lib:\\\$\$ORIGIN/../ots/lib\\\$\$ORIGIN/../../../lib:\\\$\$ORIGIN/../../../ots/lib:\\\$\$ORIGIN/../../../../lib:\\\$\$ORIGIN/../../../../ots/lib:\\\$\$ORIGIN/../../../../../lib:\\\$\$ORIGIN/../../../../../ots/lib:\\\$\$ORIGIN/../../../../../../lib:\\\$\$ORIGIN/../../../../../../ots/lib:\\\$\$ORIGIN/../../../../../../../lib:\\\$\$ORIGIN/../../../../../../../ots/lib'"
+      ldflags="$ldflags ${rp}"
+      tldflags="$ldflags ${trp}"
+      mldflags2="-shared ${ldp}"
+      mldflags="-shared '-Wl,-rpath=\$\$ORIGIN/../lib:\$\$ORIGIN/../ots/lib:\$\$ORIGIN/../../../lib:\$\$ORIGIN/../../../ots/lib:\$\$ORIGIN/../../../../lib:\$\$ORIGIN/../../../../ots/lib:\$\$ORIGIN/../../../../../lib:\$\$ORIGIN/../../../../../ots/lib:\$\$ORIGIN/../../../../../../lib:\$\$ORIGIN/../../../../../../ots/lib:\$\$ORIGIN/../../../../../../../lib:\$\$ORIGIN/../../../../../../../ots/lib'"
+      forlinkflags="${rp}"
+   fi
+
+   hostlibs=" "
+
+   AC_CHECK_SIZEOF(short, 2)
+   AC_CHECK_SIZEOF(int, 4)
+   AC_CHECK_SIZEOF(long, 4)
+   AC_CHECK_SIZEOF(float, 4)
+   AC_CHECK_SIZEOF(double, 8)
+   AC_CHECK_SIZEOF(char *)
+   AC_CHECK_SIZEOF(unsigned char,1)
+
+   AC_CONFIG_HEADER(config.h)
+
+
+dnl add lib/sm files only if they exist (they should exist for all
+dnl builds EXCEPT builds from the extracted clearcase source i.e.
+dnl ciaox and portable ciaod builds)
+
+   if test -f "config/system/CXCdefaults.in"
+   then
+     setup_conf="config/system/CXCdefaults"
+   fi
+
+   if test -f "lib/sm/sm.cxcds.in"
+   then
+     setup_conf="lib/sm/sm.cxcds \
+	   lib/sm/graphcap.local \
+	   $setup_conf"
+    fi
+
+    port_conf=""
+
+dnl see what we have installed for smoke tests
+
+    if test -f "src/lib/help/Makefile"
+    then
+	test_ahelp="test-ahelp"
+	include_test_ahelp="include smoke/Makefile.test.ahelp"
+    else
+	test_ahelp=""
+	include_test_ahelp=""
+    fi
+
+    if test -f "src/pkg/sherpa/sherpa/setup.py"
+    then
+	test_sherpa="test-sherpa"
+	include_test_sherpa="include smoke/Makefile.test.sherpa"
+	test_ipython2="test-ipython2"
+	include_test_ipython2="include smoke/Makefile.test.ipython2"
+    else
+        if test -f "src/pkg/sherpa/setup.py"
+        then
+	    test_sherpa="test-sherpa"
+	    include_test_sherpa="include smoke/Makefile.test.sherpa"
+        else
+	    test_sherpa=""
+	    include_test_sherpa=""
+	fi
+    fi
+
+    if test -f "src/obs/ui/newobsvis/Makefile"
+    then
+	test_obsvis="test-obsvis"
+	include_test_obsvis="include smoke/Makefile.test.obsvis"
+    else
+        if test -f "src/obs/ui/obsvis/Makefile"
+        then
+	    test_obsvis="test-obsvis"
+	    include_test_obsvis="include smoke/Makefile.test.obsvis"
+        else
+	    test_obsvis=""
+	    include_test_obsvis=""
+	fi
+    fi
+
+    if test -f "src/lib/datamodel/include/ascdm.h"
+    then
+	test_dm="test-dm"
+	test_crates="test-crates"
+	include_test_dm="include smoke/Makefile.test.dm"
+	include_test_crates="include smoke/Makefile.test.crates"
+    else
+	test_dm=""
+	test_crates=""
+	include_test_dm=""
+	include_test_crates=""
+    fi
+
+    if test -f "src/da/acis/acis_process_events/acis_process_events.par"
+    then
+	test_tools="test-tools"
+	include_test_tools="include smoke/Makefile.test.tools"
+    else
+	test_tools=""
+	include_test_tools=""
+    fi
+
+    if test -f "src/ui/prism/Makefile"
+    then
+	test_ui="test-ui"
+	include_test_ui="include smoke/Makefile.test.ui"
+    else
+	test_ui=""
+	include_test_ui=""
+    fi
+
+    if test -f "src/pkg/chips/smoke/Makefile"
+    then
+	test_chips="test-chips"
+	include_test_chips="include smoke/Makefile.test.chips"
+	test_ipython3="test-ipython3"
+	include_test_ipython3="include smoke/Makefile.test.ipython3"
+    else
+	test_chips=""
+	include_test_chips=""
+    fi
+
+
+dnl These files need to be setup for the portable distributions
+
+    if test -f "src/common/smoke/Makefile.test.in"
+    then
+	smoke_set="src/common/smoke/Makefile.test"
+    else
+	smoke_set=""
+    fi
+    if test -f "src/common/smoke/bin/setup.sh.in"
+    then
+	smoke_set="$smoke_set src/common/smoke/bin/setup.sh"
+    fi
+
+    if test -f "src/lib/datamodel/Makevars.ascdm.in"
+    then
+	dm_set="src/lib/datamodel/Makevars.ascdm src/lib/datamodel/Makefile"
+    else
+        dm_set=""
+    fi
+
+    if test -f "src/pkg/sherpa/setup.cfg.in"
+    then
+	sherpa_set="src/pkg/sherpa/setup.cfg"
+    else
+	sherpa_set=""
+    fi
+
+    if test -f src/config/ciao.sh.in
+    then
+	srccfg="src/config"
+    else
+	srccfg="src/ui/cli"
+    fi
+dnl Test to see if we are using the wrapper system
+
+    if test -f "$srccfg/ciao_setup.sh.in"
+    then
+	ciao_setup="$srccfg/ciao_setup.sh"
+        cfg_targets="ciao_setup.sh.in ciao_setup.sh $cfg_targets"
+    else
+	ciao_setup=""
+    fi
+    if test -f "$srccfg/ciao_setup.csh.in"
+    then
+        ciao_setup="$srccfg/ciao_setup.csh $ciao_setup"
+        cfg_targets="ciao_setup.csh.in ciao_setup.csh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_chips.csh.in"
+    then
+        ciao_setup="$srccfg/setup_chips.csh $ciao_setup"
+        cfg_targets="setup_chips.csh.in setup_chips.csh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_chips.sh.in"
+    then
+        ciao_setup="$srccfg/setup_chips.sh $ciao_setup"
+        cfg_targets="setup_chips.sh.in setup_chips.sh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_tools.csh.in"
+    then
+        ciao_setup="$srccfg/setup_tools.csh $ciao_setup"
+        cfg_targets="setup_tools.csh.in setup_tools.csh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_tools.sh.in"
+    then
+        ciao_setup="$srccfg/setup_tools.sh $ciao_setup"
+        cfg_targets="setup_tools.sh.in setup_tools.sh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_sherpa.csh.in"
+    then
+        ciao_setup="$srccfg/setup_sherpa.csh $ciao_setup"
+        cfg_targets="setup_sherpa.csh.in setup_sherpa.csh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_sherpa.sh.in"
+    then
+        ciao_setup="$srccfg/setup_sherpa.sh $ciao_setup"
+        cfg_targets="setup_sherpa.sh.in setup_sherpa.sh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_obsvis.csh.in"
+    then
+        ciao_setup="$srccfg/setup_obsvis.csh $ciao_setup"
+        cfg_targets="setup_obsvis.csh.in setup_obsvis.csh $cfg_targets"
+    fi
+    if test -f "$srccfg/setup_obsvis.sh.in"
+    then
+        ciao_setup="$srccfg/setup_obsvis.sh $ciao_setup"
+        cfg_targets="setup_obsvis.sh.in setup_obsvis.sh $cfg_targets"
+    fi
+    if test -f "$srccfg/ciao-python-fix.in"
+    then
+        ciao_setup="$srccfg/ciao-python-fix $ciao_setup"
+        cfg_targets="ciao-python-fix ciao-python-fix.in $cfg_targets"
+    fi
+    if test -f "ots/lib/python2.7/config/Makefile.in"
+    then
+        ciao_setup="ots/lib/python2.7/config/Makefile $ciao_setup"
+    fi
+    if test -f "ots/lib/python3.5/config-3.5m/Makefile.in"
+    then
+        ciao_setup="ots/lib/python3.5/config-3.5m/Makefile $ciao_setup"
+    fi
+    if test -f "ots/lib/python3.5/config/Makefile.in"
+    then
+        ciao_setup="ots/lib/python3.5/config/Makefile $ciao_setup"
+    fi
+    if test -f "ots/lib/python2.7/_sysconfigdata.py.in"
+    then
+        ciao_setup="ots/lib/python2.7/_sysconfigdata.py $ciao_setup"
+    fi
+    if test -f "ots/lib/python3.5/_sysconfigdata.py.in"
+    then
+        ciao_setup="ots/lib/python3.5/_sysconfigdata.py $ciao_setup"
+    fi
+
+
+  if test "$envir" != "sao"
+  then
+	port_conf="src/Makefile.master \
+           src/Makefile.module \
+	   src/include/Makefile.inc.dirs \
+	   $dm_set $smoke_set $sherpa_set \
+	   $srccfg/ciao.sh \
+	   $srccfg/ciao.ksh \
+	   $srccfg/ciao.bash \
+	   $srccfg/ciao.csh $ciao_setup"		
+   else
+
+dnl These files need to be setup for internal builds
+
+    	 if test -f src/build-env.properties.in
+	 then
+		port_conf="${port_conf} src/build-env.properties"
+	 else
+		port_conf=""
+	 fi
+	 port_conf="$port_conf src/include/Makefile.db \
+	   $dm_set $smoke_set $sherpa_set \
+	   $srccfg/ciao.sh \
+	   $srccfg/ciao.ksh \
+	   $srccfg/ciao.bash \
+	   $srccfg/ciao.csh $ciao_setup"
+  fi
+
+dnl these files need to be setup everywhere when we compile
+
+dnl this file is soon to be obsolete and can be removed.
+
+  if test -f "src/obs/prop/tools/jcm_misc/Makevars.in"
+  then 
+       jcmpath="src/obs/prop/tools/jcm_misc/Makevars"
+  else
+       if test -f "src/obs/prop/tools/jcmutils/jcmpath.inc.in"
+       then
+       	    jcmpath="src/obs/prop/tools/jcmutils/jcmpath.inc"
+       else
+	    jcmpath=""
+       fi
+  fi
+
+  if test -f "src/include/cxcds_version.h.in"
+  then
+	cxcds_version="src/include/cxcds_version.h"
+  else
+	cxcds_version=""
+  fi
+
+  if test -f "src/common/smoke/bin/run_smoke_test.sh.in"
+  then
+	cxcds_version="src/common/smoke/bin/run_smoke_test.sh $cxcds_version"
+  fi
+
+dnl this file is still needed but may not exist in all ciao builds.
+
+  if test -f "src/obs/prop/tools/jcm_misc/inc32/utconfig.h.in"
+  then 
+       os_f="src/obs/prop/tools/jcm_misc/inc32/utconfig.h"
+  else
+       if test -f "src/obs/prop/tools/jcmutils/os.f.in"
+       then
+       	  os_f="src/obs/prop/tools/jcmutils/os.f"
+       else
+          os_f=""
+       fi
+  fi
+
+  if test -f "src/include/Makefile.obscycle.in"
+  then
+      obscycle="src/include/Makefile.obscycle"
+  else
+      obscycle=""
+  fi
+
+  conffiles="src/include/Makefile.scidev \
+	   src/include/Makefile.cxc \
+           src/Makefile.master.overrides \
+	   src/include/gettmpl \
+	   src/include/Makefile.prop $obscycle \
+	   src/lib/datamodel/Makevars.ascdm \
+	   src/lib/datamodel/Makefile \
+	   $jcmpath $os_f \
+	   $port_conf \
+           $setup_conf \
+	   $newchipsmf \
+	   $cxcds_version"
+;;
+*)
+dnl setup output files for pre-installed binaries.
+
+dnl see what we have installed for binary smoke tests
+
+    if test -f VERSION
+    then
+       isciao="x`grep ^CIAO VERSION`"
+    else
+       isciao="x"
+    fi
+    if test -f "bin/ahelp"
+    then
+	test_ahelp="test-ahelp"
+	include_test_ahelp="include smoke/Makefile.test.ahelp"
+    else
+	test_ahelp=""
+	include_test_ahelp=""
+    fi
+
+    if test -f "bin/sherpa"
+    then
+	test_sherpa="test-sherpa"
+	include_test_sherpa="include smoke/Makefile.test.sherpa"
+	test_ipython2="test-ipython2"
+	include_test_ipython2="include smoke/Makefile.test.ipython2"
+    else
+	test_sherpa=""
+	include_test_sherpa=""
+    fi
+
+    if test -f "bin/obsvis"
+    then
+	test_obsvis="test-obsvis"
+	include_test_obsvis="include smoke/Makefile.test.obsvis"
+    else
+	test_obsvis=""
+	include_test_obsvis=""
+    fi
+
+    if test -f "lib/libascdm.$share_ext"
+    then
+	test_dm="test-dm"
+	test_crates="test-crates"
+	include_test_dm="include smoke/Makefile.test.dm"
+	include_test_crates="include smoke/Makefile.test.crates"
+    else
+	test_dm=""
+	test_crates=""
+	include_test_dm=""
+	include_test_crates=""
+    fi
+
+dnl moved ds9 test to tool area as it now depends on dmdiff
+
+    if test -f "bin/acis_process_events"
+    then
+	test_ds9="test-ds9"
+	include_test_ds9="include smoke/Makefile.test.ds9"
+	test_tools="test-tools"
+	include_test_tools="include smoke/Makefile.test.tools"
+    else
+	test_tools=""
+	include_test_tools=""
+	test_ds9=""
+	include_test_ds9=""
+    fi
+
+    if test -f "bin/prism"
+    then
+	test_ui="test-ui"
+	include_test_ui="include smoke/Makefile.test.ui"
+    else
+	test_ui=""
+	include_test_ui=""
+    fi
+
+    if test -f "bin/chipsServer"
+    then
+	test_chips="test-chips"
+	include_test_chips="include smoke/Makefile.test.chips"
+	test_ipython3="test-ipython3"
+	include_test_ipython3="include smoke/Makefile.test.ipython3"
+    else
+	test_chips=""
+	include_test_chips=""
+    fi
+
+    smoke_conf=""
+    if test -f "test/smoke/bin/setup.sh.in"
+    then
+	smoke_conf="test/smoke/bin/setup.sh test/Makefile"
+    fi
+
+dnl these files are generated for binary installs
+
+dnl If doing a virtual installation we do not need to create
+dnl config/system/CXCdefaults
+
+   if test "$user_bin" = "bin"
+   then
+	if test -f "config/system/CXCdefaults.in"
+	then
+		cxcdefaults="config/system/CXCdefaults"
+	else
+		cxcdefaults=""
+	fi	
+   else
+	cxcdefaults=""
+   fi
+
+dnl test if we are using wrapper scripts
+
+   if test -f "$user_bin/ciao_setup.sh.in"   
+   then
+	ciao_setup_bin="$user_bin/ciao_setup.sh"
+   else
+	ciao_setup_bin=""
+   fi
+
+   if test -f "$user_bin/ciao_setup.csh.in"
+   then
+	ciao_setup_bin="$user_bin/ciao_setup.csh $ciao_setup_bin"
+   fi
+
+dnl
+   if test -f "$user_bin/ciao.sh.in"
+   then
+     startup="$user_bin/ciao.sh \
+	      $user_bin/ciao.csh \
+	      $user_bin/ciao.ksh \
+	      $user_bin/ciao.bash"
+   fi
+   if test -f "$user_bin/setup_obsvis.sh.in"
+   then
+     startup="$startup $user_bin/setup_obsvis.sh $user_bin/setup_obsvis.csh"
+   fi
+   if test -f "$user_bin/setup_chips.sh.in"
+   then
+     startup="$startup $user_bin/setup_chips.sh $user_bin/setup_chips.csh"
+   fi
+   if test -f "$user_bin/setup_sherpa.sh.in"
+   then
+     startup="$startup $user_bin/setup_sherpa.sh $user_bin/setup_sherpa.csh"
+   fi
+   if test -f "$user_bin/setup_tools.sh.in"
+   then
+     startup="$startup $user_bin/setup_tools.sh $user_bin/setup_tools.csh"
+   fi
+   if test -f "ots/lib/python2.7/config/Makefile.in"
+   then
+      startup="ots/lib/python2.7/config/Makefile $startup"
+   fi
+   if test -f "ots/lib/python3.5/config/Makefile.in"
+   then
+      startup="ots/lib/python3.5/config/Makefile $startup"
+   fi
+   if test -f "ots/lib/python3.5/config-3.5m/Makefile.in"
+   then
+      startup="ots/lib/python3.5/config-3.5m/Makefile $startup"
+   fi
+   if test -f "$user_bin/ciao-python-fix.in"
+   then
+     startup="$startup $user_bin/ciao-python-fix"
+   fi
+   if test -f "$user_bin/ciao_app_setup.sh.in"
+   then
+     startup="$startup $user_bin/ciao_app_setup.sh"
+   fi
+
+
+   conffiles=" \
+     $cxcdefaults $ciao_setup_bin \
+     $startup $smoke_conf"
+;;
+esac
+
+if test "$nopython" != "y"
+then
+   test_ipython="test-ipython"
+   include_test_ipython="include smoke/Makefile.test.ipython"
+   test_ipython1="test-ipython1"
+   include_test_ipython1="include smoke/Makefile.test.ipython1"
+fi
+
+dnl Setup gtk files if needed
+
+if test -f "$gtk_pkg/etc/pango/pangorc.in"
+then
+   conffiles="$conffiles $gtk_pkg/etc/pango/pangorc"
+fi
+if test -f "$gtk_pkg/etc/pango/pango.modules.in"
+then
+   conffiles="$conffiles $gtk_pkg/etc/pango/pango.modules"
+fi
+if test -f "$gtk_pkg/etc/gtk-2.0/gtk.immodules.in"
+then
+   conffiles="$conffiles $gtk_pkg/etc/gtk-2.0/gtk.immodules"
+fi
+if test -f "$gtk_pkg/etc/gtk-2.0/gdk-pixbuf.loaders.in"
+then
+   conffiles="$conffiles $gtk_pkg/etc/gtk-2.0/gdk-pixbuf.loaders"
+fi
+if test -f "$gtk_pkg/etc/gtk-3.0/gtk.immodules.in"
+then
+   conffiles="$conffiles $gtk_pkg/etc/gtk-3.0/gtk.immodules"
+fi
+if test -f "$gtk_pkg/etc/gtk-3.0/gdk-pixbuf.loaders.in"
+then
+   conffiles="$conffiles $gtk_pkg/etc/gtk-3.0/gdk-pixbuf.loaders"
+fi
+
+if test -f src/obs/prop/tools/jcm_misc/configure
+then
+  AC_MSG_RESULT([Found src/obs/prop/tools/jcm_misc/configure])
+  AC_CONFIG_SUBDIRS(src/obs/prop/tools/jcm_misc)
+fi
+if test -f src/libdev/caldb4/configure
+then
+  AC_MSG_RESULT([Found src/libdev/caldb4/configure])
+  AC_CONFIG_SUBDIRS(src/libdev/caldb4)
+fi
+if test -f src/libdev/grplib/configure
+then
+  AC_SUBST(GROUP_CFLAGS, ["-I$install_top/include -I$install_top/ots/lib/python${pyver}/site-packages/numpy/core/include -I$install_top/ots/include/python${pyver} -L$install_top/lib -lerr"])
+  export GROUP_CFLAGS="-I$install_top/include -I$install_top/ots/lib/python${pyver}/site-packages/numpy/core/include -I$install_top/ots/include/python${pyver} -L$install_top/lib -lerr"
+  AC_MSG_RESULT([Found src/libdev/grplib/configure])
+  AC_CONFIG_SUBDIRS(src/libdev/grplib)
+fi
+if test -f src/lib/region/configure
+then
+  AC_MSG_RESULT([Found src/lib/region/configure])
+  AC_CONFIG_SUBDIRS(src/lib/region)
+fi
+
+AC_OUTPUT($conffiles)
