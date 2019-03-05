@@ -23,7 +23,9 @@ import numpy
 import random
 
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
-from sherpa.optmethods.opt import Opt, Polytope, tst_opt
+from sherpa.optmethods.opt import Opt, SimplexRandom
+# from ncoresnm import ncoresNelderMead
+# from opt import Opt, SimplexRandom
 from sherpa.utils import parallel_map, _ncpus, Knuth_close, sao_fcmp
 
 
@@ -291,7 +293,9 @@ class MyDifEvo(Opt):
         xpar = numpy.asarray(xpar)
         if step is None:
             step = xpar * 1.2 + 1.2
-        self.polytope = Polytope(func, npop, xpar, xmin, xmax, step, seed)
+        factor = 10
+        self.polytope = \
+            SimplexRandom(func, npop, xpar, xmin, xmax, step, seed, factor)
         self.local_opt = self.ncores_nm.algo
         return
 
@@ -333,11 +337,9 @@ class MyDifEvo(Opt):
     def apply_local_opt(self, arg, index):
         local_opt = self.local_opt[index % len(self.local_opt)]
         result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
-        if numpy.isinf(result[1]) is False:
-            arg[0] += result[0]
-            arg[1:-1] = result[2][:]
-            arg[-1] = result[1]
-        return arg
+        tmp = numpy.append(result[0], result[2])
+        result = numpy.append(tmp, result[1])
+        return result
 
     def calc_key(self, indices, start=0, end=65536):
         result = numpy.empty(len(indices), dtype=numpy.int64)
@@ -418,8 +420,9 @@ class DifEvo:
         if maxnfev is None:
             maxnfev = 8192 * npar
 
-        mydifevo = MyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, step)
-        return mydifevo(maxnfev, tol, seed, step)
+        seed = 123
+        mydifevo = MyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, step, seed)
+        return mydifevo(maxnfev, tol)
 
 
 class ncoresDifEvo:
@@ -487,7 +490,8 @@ class ncoresDifEvoNelderMead:
 
 if '__main__' == __name__:
 
-    from sherpa.optmethods.opt import tst_opt, Rosenbrock
+    # from sherpa.optmethods.opt import tst_opt, tst_unc_opt
+    from opt import tst_opt, tst_unc_opt
     
     import argparse
     parser = argparse.ArgumentParser()
@@ -495,15 +499,34 @@ if '__main__' == __name__:
                         default=False, help='run simple difevo', dest="difevo")
     parser.add_argument('-c', '--combine', action="store_true",
                         default=False, help='run nm & difevo', dest="combine")
+    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True, \
+                      action="store_false", help="do not run tst_unc_opt")
+    parser.add_argument("-o", "--opt", dest="global_func", default=True, \
+                      action="store_false", help="do not run tst_opt")    
     parser.add_argument('-N', action="store", dest="num", default=4, type=int)
 
     options = parser.parse_args()
-    print('options =', options)
-
+    # print('options =', options)
     npar = options.num
+    if npar % 2 != 0:
+        raise ValueError("-N option must be an even number")
+
     if options.difevo:
-        tst_opt([DifEvo()], npar)
+        algo = [DifEvo()]
+        if options.unc_opt:
+            tst_unc_opt(algo, npar)
+        if options.global_func:
+            tst_opt(algo, npar)
     elif options.combine:
-        tst_opt([ncoresDifEvoNelderMead()], npar)
+        algo = [ncoresDifEvoNelderMead()]
+        if options.unc_opt:
+            tst_unc_opt(algo, npar)
+        if options.global_func:
+            tst_opt(algo, npar)
     else:
-        tst_opt([ncoresDifEvo()], npar)
+        algo = [ncoresDifEvo()]
+        if options.unc_opt:
+            tst_unc_opt(algo, npar)
+        if options.global_func:
+            tst_opt(algo, npar)
+

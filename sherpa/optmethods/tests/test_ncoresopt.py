@@ -53,13 +53,6 @@ class test_optmethods(SherpaTestCase):
         self.tst_func(self.ncores_nm, tstopt.Ackley, x0, xmin, xmax, 0.0)
         self.tst_func(self.ncores_de, tstopt.Ackley, x0, xmin, xmax, 0.0)
 
-    def test_Beale(self):
-        xmin = [-4.5, -4.5]
-        xmax = [4.5, 4.5]
-        x0 = [-1.0, 2.0]
-        self.tst_func(self.ncores_nm, tstopt.Ackley, x0, xmin, xmax, 0.0)
-        self.tst_func(self.ncores_de, tstopt.Ackley, x0, xmin, xmax, 0.0)
-
     def test_Bohachevsky1(self):
         xmin = [-100, -100]
         xmax = [100, 100]
@@ -102,13 +95,6 @@ class test_optmethods(SherpaTestCase):
         x0 = [-3.2, 5.0]
         self.tst_func(self.ncores_nm, tstopt.Branin, x0, xmin, xmax, 0.397887)
         self.tst_func(self.ncores_de, tstopt.Branin, x0, xmin, xmax, 0.397887)
-
-    def test_BrownBadlyScaled(self):
-        xmin = self.numpar * [-1.0e2]
-        xmax = self.numpar * [1.0e9]
-        x0 = self.numpar * [1]
-        self.tst_func(self.ncores_de, tstopt.BrownBadlyScaled, x0, xmin, xmax,
-                      0.0)
 
     def test_DixonPrixe(self):
         xmin = self.numpar * [-10]
@@ -181,13 +167,6 @@ class test_optmethods(SherpaTestCase):
         x0	 = self.numpar * [-2.0]
         self.tst_func(self.ncores_nm, tstopt.Rastrigin, x0, xmin, xmax, 0.0)
         self.tst_func(self.ncores_de, tstopt.Rastrigin, x0, xmin, xmax, 0.0)
-
-    def test_Rosenbrock(self):
-        xmin = self.numpar * [-1000, -1000]
-        xmax = self.numpar * [1000, 1000]
-        x0 = self.numpar * [-1.2, 1.0]
-        self.tst_func(self.ncores_nm, tstopt.Rosenbrock, x0, xmin, xmax, 0.0)
-        self.tst_func(self.ncores_de, tstopt.Rosenbrock, x0, xmin, xmax, 0.0)
 
     def test_Shubert(self):
         xmin = [-10, -10]
