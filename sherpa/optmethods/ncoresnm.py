@@ -54,33 +54,6 @@ class MyNelderMead(Opt):
         # print('MyNelderMead::__call__ result =', result)        
         return result
 
-    ########
-    def calc_covar(self, simplex):
-        polytope = self.simplex.polytope
-        npar1 = len(polytope)
-        sim = polytope[:npar1, :npar1-1]
-        fsim = polytope[:, -1]
-        mygrid = mgrid[0:npar1, 0:npar1]
-        
-        x = 0.5 * (sim[mygrid][1] + sim[mygrid][0])
-    
-        y = np.empty((npar1, npar1))
-        for ii in range(npar1):
-            y[ii, ii] = fsim[ii]
-            for jj in range(ii + 1, npar1):
-                y[ii, jj] = y[jj, ii] = self.func(x[ii, jj])
-
-        y0i = y[mygrid][0][1:,1:, 0]
-        y0j = y[mygrid][0][0, 1:, 1:]
-        b = 2 * (y[1:, 1:] + y[0, 0] - y0i - y0j)
-        q = (sim - sim[0])[1:].T
-        try:
-            covar = np.dot(q, np.dot(np.linalg.inv(b), q.T))
-        except LinAlgError:
-            covar = None
-        return covar
-    #######
-
     def contract_in_out(self, simplex, centroid, reflection_pt, rho_gamma,
                          contraction_coef, badindex, maxnfev, verbose):
 
