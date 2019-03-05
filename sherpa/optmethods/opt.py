@@ -24,7 +24,8 @@ import multiprocessing
 import random
 from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks, func_counter
 
-__all__ = ('Opt', 'Polytope', 'Simplex', 'MyNcores', 'tst_opt', 'tst_unc_opt')
+__all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
+           'SimplexStep', 'tst_opt', 'tst_unc_opt')
 
 
 # import autograd.numpy as np
