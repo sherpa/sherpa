@@ -479,13 +479,6 @@ def Rastrigin(x):
     N = len(x)
     return 10*N + sum(x**2 - 10*np.cos(2*np.pi*x))
 
-
-    n = len(x)
-    s = 0
-    for ii in range(n):
-        s += x[ii] * x[ii] - 10.0 * np.cos(2.0 * np.pi * x[ii])
-    return 10 * n + s
-
 def Rosenbrock(x):
     """Rosenbrock(1, 1, ..., 1) = 0"""
     x = np.asarray(x)
