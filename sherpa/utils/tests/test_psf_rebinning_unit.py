@@ -60,7 +60,7 @@ from sherpa.models import SigmaGauss2D
 
 
 @attr.s
-class FixtureConfiguration:
+class FixtureConfiguration(object):
     image_size = attr.ib()
     psf_size = attr.ib()
     source_amplitude = attr.ib()
