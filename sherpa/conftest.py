@@ -104,7 +104,9 @@ if sys.version_info >= (3, 2):
             [r"invalid value encountered in sqrt",
              # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
              r"numpy.dtype size changed, may indicate binary " +
-             r"incompatibility. Expected 96, got 88"
+             r"incompatibility. Expected 96, got 88",
+             # See https://github.com/numpy/numpy/pull/432
+             r"numpy.ufunc size changed"
              ],
     }
     known_warnings.update(python3_warnings)
