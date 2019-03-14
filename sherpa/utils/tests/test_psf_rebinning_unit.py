@@ -58,17 +58,16 @@ from sherpa.astro.instrument import PSFModel
 from sherpa.models import SigmaGauss2D
 
 
-@attr.s
-class FixtureConfiguration(object):
-    image_size = attr.ib()
-    psf_size = attr.ib()
-    source_amplitude = attr.ib()
-    source_sigma = attr.ib()
-    psf_sigma = attr.ib()
-    resolution_ratio = attr.ib()
-
-
 def generate_fixtures():
+    @attr.s
+    class FixtureConfiguration(object):
+        image_size = attr.ib()
+        psf_size = attr.ib()
+        source_amplitude = attr.ib()
+        source_sigma = attr.ib()
+        psf_sigma = attr.ib()
+        resolution_ratio = attr.ib()
+
     return FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
                                 source_sigma=50, psf_sigma=5, resolution_ratio=1.5), \
            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
@@ -140,15 +139,21 @@ def psf_fixture(request):
     psf, psf_x, psf_y = symmetric_gaussian_image(amplitude=psf_amplitude, sigma=psf_sigma,
                                                  position=psf_position, n_bins=configuration.psf_size)
 
-    ui.load_arrays(1, image_x, image_y,
-                   image,
-                   (configuration.image_size, configuration.image_size),
-                   DataIMG)
+    sherpa_image = DataIMG("image", image_x, image_y, image,
+                           shape=(configuration.image_size, configuration.image_size),
+                           sky = WcsStub(1)
+                           )
+
+    ui.set_data(1, sherpa_image)
+
+    psf_wcs = WcsStub(1 / configuration.resolution_ratio)
 
     # Create a Sherpa PSF model object using the psf arrays
     sherpa_kernel = DataIMG('kernel_data',
-                           psf_x.flatten(), psf_y.flatten(), psf.flatten(),
-                           shape=(configuration.psf_size, configuration.psf_size))
+                            psf_x, psf_y, psf,
+                            shape=(configuration.psf_size, configuration.psf_size),
+                            sky=psf_wcs
+                           )
     sherpa_psf = PSFModel('psf_model', kernel=sherpa_kernel)
     sherpa_psf.norm = 1
     sherpa_psf.origin = (psf_position, psf_position)
@@ -167,3 +172,8 @@ def psf_fixture(request):
     ui.set_psf(sherpa_psf)
 
     return ui, sherpa_source, approx_expected_sigma
+
+
+@attr.s
+class WcsStub(object):
+    cdelt = attr.ib()
