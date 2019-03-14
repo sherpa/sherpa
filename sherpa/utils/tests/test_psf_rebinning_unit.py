@@ -54,7 +54,6 @@ import numpy as np
 
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataIMG
-from sherpa.data import Data2D
 from sherpa.astro.instrument import PSFModel
 from sherpa.models import SigmaGauss2D
 
@@ -147,7 +146,7 @@ def psf_fixture(request):
                    DataIMG)
 
     # Create a Sherpa PSF model object using the psf arrays
-    sherpa_kernel = Data2D('kernel_data',
+    sherpa_kernel = DataIMG('kernel_data',
                            psf_x.flatten(), psf_y.flatten(), psf.flatten(),
                            shape=(configuration.psf_size, configuration.psf_size))
     sherpa_psf = PSFModel('psf_model', kernel=sherpa_kernel)
