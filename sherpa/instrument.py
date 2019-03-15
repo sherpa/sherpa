@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import warnings
+import math
 
 import numpy
 import logging
@@ -27,6 +28,7 @@ from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, CompositeModel, Model
 from sherpa.models.parameter import Parameter
+from sherpa.models.regrid import EvaluationSpace2D
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
@@ -37,7 +39,7 @@ info = logging.getLogger(__name__).info
 
 
 __all__ = ('Kernel', 'PSFKernel', 'RadialProfileKernel', 'PSFModel',
-           'ConvolutionModel')
+           'ConvolutionModel', 'PSFSpace2D')
 
 
 class ConvolutionModel(CompositeModel, ArithmeticModel):
@@ -733,3 +735,15 @@ class PSFModel(Model):
                 warnings.warn("NOTE: The PSF pixel size ({}) does not correspond to the Image Pixel Size ({})".format(
                     psf_pixel_size, data_pixel_size
                 ))
+
+class PSFSpace2D(EvaluationSpace2D):
+    def __init__(self, data_space, psf_model):
+        x_start, y_start = data_space.start
+        x_end, y_end = data_space.end
+        step = psf_model.kernel.sky.cdelt
+        x_range_end, y_range_end = x_end + 1, y_end + 1
+        n_x_bins = math.ceil((x_range_end - x_start) / step)
+        n_y_bins = math.ceil((y_range_end - y_start) / step)
+        x = numpy.linspace(x_start, x_range_end, n_x_bins)
+        y = numpy.linspace(y_start, y_range_end, n_y_bins)
+        super(PSFSpace2D, self).__init__(x, y)

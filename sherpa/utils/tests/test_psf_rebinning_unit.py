@@ -55,19 +55,44 @@ import numpy as np
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataIMG
 from sherpa.astro.instrument import PSFModel
+from sherpa.instrument import PSFSpace2D
 from sherpa.models import SigmaGauss2D
+from sherpa.models.regrid import EvaluationSpace2D
 
 
-def generate_fixtures():
-    @attr.s
-    class FixtureConfiguration(object):
-        image_size = attr.ib()
-        psf_size = attr.ib()
-        source_amplitude = attr.ib()
-        source_sigma = attr.ib()
-        psf_sigma = attr.ib()
-        resolution_ratio = attr.ib()
+@attr.s
+class FixtureConfiguration(object):
+    image_size = attr.ib()
+    psf_size = attr.ib()
+    source_amplitude = attr.ib()
+    source_sigma = attr.ib()
+    psf_sigma = attr.ib()
+    resolution_ratio = attr.ib()
+    psf_amplitude = attr.ib(default=1)
+    image_resolution = attr.ib(default=1)
 
+    def __attrs_post_init__(self):
+        self.source_position = self.image_size / 2
+        self.psf_position = self.psf_size / 2
+
+
+@attr.s
+class FixtureData(object):
+    image = attr.ib()
+    psf = attr.ib()
+    psf_model = attr.ib()
+    configuration = attr.ib()
+
+    def __attrs_post_init__(self):
+        # PSF-NOTE: there should be a built-in way of doing this in Sherpa
+        min_x, max_x = self.image._x0.min(), self.image._x1.max()
+        min_y, max_y = self.image._x1.min(), self.image._x1.max()
+        x_array = np.arange(min_x, max_x + self.configuration.image_resolution, self.configuration.image_resolution)
+        y_array = np.arange(min_y, max_y + self.configuration.image_resolution, self.configuration.image_resolution)
+        self.data_space = EvaluationSpace2D(x_array, y_array)
+
+
+def generate_configurations():
     return FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
                                 source_sigma=50, psf_sigma=5, resolution_ratio=1.5), \
            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
@@ -86,13 +111,32 @@ def generate_fixtures():
                                 source_sigma=1, psf_sigma=15, resolution_ratio=0.7),
 
 
-@mark.parametrize("psf_fixture", generate_fixtures(), indirect=True)
+@mark.parametrize("psf_fixture", generate_configurations(), indirect=True)
 def test_psf_resolution_bug(psf_fixture):
     session, source, expected_sigma = psf_fixture
     session.fit()
 
     assert source.sigma_a.val == expected_sigma
     assert source.sigma_b.val == expected_sigma
+
+
+@mark.parametrize("configuration", generate_configurations())
+def test_psf_space(configuration):
+
+    fixture_data = make_images(configuration)
+
+    psf_space = PSFSpace2D(fixture_data.data_space, fixture_data.psf_model)
+
+    # Test that the PSF space has the same boundaries of the data space, but a number of
+    # bins equal to the bins the data image would have if it had the same pixel size as the PSF.
+    # Also, we want this space to be larger, if not the same, than the data space, to avoid introducing
+    # more boundary effects in the convolution.
+    n_bins = configuration.image_size
+    assert psf_space.start == (0, 0)
+    assert psf_space.x_axis.size ==\
+           psf_space.y_axis.size ==\
+           n_bins * configuration.resolution_ratio
+    assert psf_space.end == (n_bins, n_bins)
 
 
 def symmetric_gaussian_image(amplitude, sigma, position, n_bins):
@@ -110,41 +154,48 @@ def symmetric_gaussian_image(amplitude, sigma, position, n_bins):
     return model(x_array, y_array).flatten(), x_array, y_array
 
 
-@fixture
-def psf_fixture(request):
-    configuration = request.param
-    ui = Session()
+def make_images(configuration):
 
-    source_position = configuration.image_size / 2
+    data_image = make_image(configuration)
+    psf, psf_model = make_psf(configuration)
 
+    return FixtureData(data_image, psf, psf_model, configuration)
+
+
+def make_image(configuration):
+    source_position = configuration.source_position
+
+    # The convolution of two gaussians is a gaussian with a stddev which is the sum
+    # of those convolved, so we model the image as a Gaussian itself.
+    image_sigma = sqrt(configuration.source_sigma ** 2 + configuration.psf_sigma ** 2)
+    image_amplitude = configuration.source_amplitude * configuration.psf_amplitude
+    image, image_x, image_y = symmetric_gaussian_image(amplitude=image_amplitude, sigma=image_sigma,
+                                                       position=source_position, n_bins=configuration.image_size)
+
+    data_image = DataIMG("image", image_x, image_y, image,
+                           shape=(configuration.image_size, configuration.image_size),
+                           sky = WcsStub(1)
+                           )
+
+    return data_image
+
+
+
+def make_psf(configuration):
     # The psf parameters in terms of the input parameters. To simulate the different pixel size
     # we set the sigma of the psf to be a multiple (according to the ratio input)
     # of the actual sigma in data pixel units.
     # This should correspond, when ratio>1 to the case when the PSF's resolution is bigger
     # than the image. If the ratio is 1 than they have the same pixel size.
     psf_sigma = configuration.psf_sigma * configuration.resolution_ratio
-    psf_amplitude = 1
-    psf_position = configuration.psf_size / 2
-
-    # The convolution of two gaussians is a gaussian with a stddev which is the sum
-    # of those convolved, so we model the image as a Gaussian itself.
-    image_sigma = sqrt(configuration.source_sigma ** 2 + configuration.psf_sigma ** 2)
-    image_amplitude = configuration.source_amplitude * psf_amplitude
-    image, image_x, image_y = symmetric_gaussian_image(amplitude=image_amplitude, sigma=image_sigma,
-                                                       position=source_position, n_bins=configuration.image_size)
+    psf_amplitude = configuration.psf_amplitude
+    psf_position = configuration.psf_position
 
     # We model the PSF as a gaussian as well. Note we are using the psf_sigma variable,
     # that is the one which is scaled through the ration. In other terms, we are working in
     # units of Data Pixels to simulate the conditions of the bug, when the ratio != 1.
     psf, psf_x, psf_y = symmetric_gaussian_image(amplitude=psf_amplitude, sigma=psf_sigma,
                                                  position=psf_position, n_bins=configuration.psf_size)
-
-    sherpa_image = DataIMG("image", image_x, image_y, image,
-                           shape=(configuration.image_size, configuration.image_size),
-                           sky = WcsStub(1)
-                           )
-
-    ui.set_data(1, sherpa_image)
 
     psf_wcs = WcsStub(1 / configuration.resolution_ratio)
 
@@ -154,22 +205,35 @@ def psf_fixture(request):
                             shape=(configuration.psf_size, configuration.psf_size),
                             sky=psf_wcs
                            )
-    sherpa_psf = PSFModel('psf_model', kernel=sherpa_kernel)
-    sherpa_psf.norm = 1
-    sherpa_psf.origin = (psf_position, psf_position)
+
+    psf_model = PSFModel('psf_model', kernel=sherpa_kernel)
+    psf_model.norm = 1
+    psf_model.origin = (psf_position, psf_position)
+
+    return psf, psf_model
+
+
+@fixture
+def psf_fixture(request):
+    configuration = request.param
+
+    fixture_data = make_images(configuration)
+
+    ui = Session()
+
+    ui.set_data(1, fixture_data.image)
 
     exact_expected_sigma = configuration.source_sigma
     approx_expected_sigma = approx(exact_expected_sigma, rel=1e-4)
 
     # Set the source model as a 2D Gaussian, and set the PSF in Sherpa
+    source_position = configuration.source_position
     sherpa_source = SigmaGauss2D('source')
     sherpa_source.ampl = configuration.source_amplitude
-    sherpa_source.sigma_a = exact_expected_sigma
-    sherpa_source.sigma_b = exact_expected_sigma
     sherpa_source.xpos = source_position
     sherpa_source.ypos = source_position
     ui.set_source(sherpa_source)
-    ui.set_psf(sherpa_psf)
+    ui.set_psf(fixture_data.psf_model)
 
     return ui, sherpa_source, approx_expected_sigma
 

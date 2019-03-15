@@ -381,6 +381,7 @@ class EvaluationSpace2D(object):
         x_unique, y_unique, xhi_unique, yhi_unique = self._clean_arrays(x, y, xhi, yhi)
         self.x_axis = Axis(x_unique, xhi_unique)
         self.y_axis = Axis(y_unique, yhi_unique)
+        self._cached_grid = None
 
     def _clean_arrays(self, x, y, xhi, yhi):
         return self._clean(x), self._clean(y), self._clean(xhi), self._clean(yhi)
@@ -492,12 +493,18 @@ class EvaluationSpace2D(object):
             A tuple representing the x and y axes. The tuple will contain four arrays if the dataset is
             integrated, two otherwise.
         """
+
+        if self._cached_grid is not None:
+            return self._cached_grid
+
         x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
         if self.x_axis.is_integrated:
             xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
-            return x, y, xhi, yhi
+            self._cached_grid = x, y, xhi, yhi
         else:
-            return x, y
+            self._cached_grid = x, y
+
+        return self._cached_grid
 
     def zeros_like(self):
         """
