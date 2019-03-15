@@ -381,7 +381,6 @@ class EvaluationSpace2D(object):
         x_unique, y_unique, xhi_unique, yhi_unique = self._clean_arrays(x, y, xhi, yhi)
         self.x_axis = Axis(x_unique, xhi_unique)
         self.y_axis = Axis(y_unique, yhi_unique)
-        self._cached_grid = None
 
     def _clean_arrays(self, x, y, xhi, yhi):
         return self._clean(x), self._clean(y), self._clean(xhi), self._clean(yhi)
@@ -456,6 +455,10 @@ class EvaluationSpace2D(object):
         """
         return self.x_axis.end, self.y_axis.end
 
+    @property
+    def shape(self):
+        return self.x_axis.size, self.y_axis.size
+
     def overlaps(self, other):
         """
         Check if this evaluation space overlaps with another
@@ -494,17 +497,12 @@ class EvaluationSpace2D(object):
             integrated, two otherwise.
         """
 
-        if self._cached_grid is not None:
-            return self._cached_grid
-
         x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
         if self.x_axis.is_integrated:
             xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
-            self._cached_grid = x, y, xhi, yhi
+            return x, y, xhi, yhi
         else:
-            self._cached_grid = x, y
-
-        return self._cached_grid
+            return x, y
 
     def zeros_like(self):
         """
@@ -815,17 +813,19 @@ class ModelDomainRegridder2D(object):
         return rebin_2d(y, self.evaluation_space, requested_space).ravel()
 
 
-def rebin_2d(y, custom_space, requested_space):
-    # we assume that the spaces have an integer ratio, and other regularities, for now.
-    requested_x_dim = requested_space.x_axis.size
-    requested_y_dim = requested_space.y_axis.size
+def rebin_2d(y, from_space, to_space):
+    to_x_dim = to_space.x_axis.size
+    to_y_dim = to_space.y_axis.size
 
-    custom_x_dim = custom_space.x_axis.size
-    custom_y_dim = custom_space.y_axis.size
+    from_x_dim = from_space.x_axis.size
+    from_y_dim = from_space.y_axis.size
 
-    reshaped_y = y.reshape(custom_x_dim, custom_y_dim)
+    if (from_x_dim, from_y_dim) == (to_x_dim, to_y_dim):
+        return y
 
-    return rebin_flux(reshaped_y, dimensions=(requested_x_dim, requested_y_dim))
+    reshaped_y = y.reshape(from_x_dim, from_y_dim)
+
+    return rebin_flux(reshaped_y, dimensions=(to_x_dim, to_y_dim))
 
 
 def rebin_flux(array, dimensions=None, scale=None):
@@ -900,7 +900,7 @@ def rebin_flux(array, dimensions=None, scale=None):
         result[J_, I] += array[j, i] * (1 - dy) * dx
         result[J, I_] += array[j, i] * dy * (1 - dx)
         result[J_, I_] += array[j, i] * (1 - dx) * (1 - dy)
-    allowError = 0.1
+    allowError = 0.001
     assert array.sum() == 0 or \
            (array.sum() < result.sum() * (1 + allowError)) and \
            (array.sum() > result.sum() * (1 - allowError))

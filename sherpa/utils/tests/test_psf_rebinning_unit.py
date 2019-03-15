@@ -84,34 +84,58 @@ class FixtureData(object):
     configuration = attr.ib()
 
     def __attrs_post_init__(self):
-        # PSF-NOTE: there should be a built-in way of doing this in Sherpa
-        min_x, max_x = self.image._x0.min(), self.image._x1.max()
-        min_y, max_y = self.image._x1.min(), self.image._x1.max()
-        x_array = np.arange(min_x, max_x + self.configuration.image_resolution, self.configuration.image_resolution)
-        y_array = np.arange(min_y, max_y + self.configuration.image_resolution, self.configuration.image_resolution)
-        self.data_space = EvaluationSpace2D(x_array, y_array)
+        self.data_space = EvaluationSpace2D(*self.image.get_indep(filter=False))
 
 
-def generate_configurations():
-    return FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
-                                source_sigma=50, psf_sigma=5, resolution_ratio=1.5), \
-           FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
-                                source_sigma=1, psf_sigma=15, resolution_ratio=1.5), \
-           FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
-                                source_sigma=50, psf_sigma=5, resolution_ratio=2.5), \
-           FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
-                                source_sigma=1, psf_sigma=15, resolution_ratio=2.5), \
-           FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
-                                source_sigma=50, psf_sigma=5, resolution_ratio=0.5), \
-           FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
-                                source_sigma=1, psf_sigma=15, resolution_ratio=0.5), \
-           FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
-                                source_sigma=50, psf_sigma=5, resolution_ratio=0.7), \
-           FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
-                                source_sigma=1, psf_sigma=15, resolution_ratio=0.7),
+def generate_psf_space_configurations():
+    return (FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=1.5),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=1.5),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=2.5),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=2.5),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=0.5),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=0.5),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=0.7),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=0.7),
+            )
 
 
-@mark.parametrize("psf_fixture", generate_configurations(), indirect=True)
+def generate_rebinning_configurations():
+    return (FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=1.43),
+            FixtureConfiguration(image_size=64, psf_size=128, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=1.78),
+            FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=5, psf_sigma=5, resolution_ratio=2.15),
+            FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=0.8),
+            FixtureConfiguration(image_size=64, psf_size=64, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=20, resolution_ratio=0.65),
+            FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=5, psf_sigma=20, resolution_ratio=0.2),
+            FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=1),
+            FixtureConfiguration(image_size=64, psf_size=128, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=1),
+            FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=5, psf_sigma=5, resolution_ratio=1),
+            FixtureConfiguration(image_size=128, psf_size=64, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=1),
+            FixtureConfiguration(image_size=64, psf_size=512, source_amplitude=100,
+                                 source_sigma=10, psf_sigma=5, resolution_ratio=1),
+            FixtureConfiguration(image_size=128, psf_size=512, source_amplitude=100,
+                                 source_sigma=5, psf_sigma=5, resolution_ratio=1),
+            )
+
+
+@mark.parametrize("psf_fixture", generate_rebinning_configurations(), indirect=True)
 def test_psf_resolution_bug(psf_fixture):
     session, source, expected_sigma = psf_fixture
     session.fit()
@@ -120,7 +144,7 @@ def test_psf_resolution_bug(psf_fixture):
     assert source.sigma_b.val == expected_sigma
 
 
-@mark.parametrize("configuration", generate_configurations())
+@mark.parametrize("configuration", generate_psf_space_configurations())
 def test_psf_space(configuration):
 
     fixture_data = make_images(configuration)
@@ -133,9 +157,7 @@ def test_psf_space(configuration):
     # more boundary effects in the convolution.
     n_bins = configuration.image_size
     assert psf_space.start == (0, 0)
-    assert psf_space.x_axis.size ==\
-           psf_space.y_axis.size ==\
-           n_bins * configuration.resolution_ratio
+    assert psf_space.x_axis.size == psf_space.y_axis.size == n_bins * configuration.resolution_ratio
     assert psf_space.end == (n_bins, n_bins)
 
 
@@ -173,12 +195,11 @@ def make_image(configuration):
                                                        position=source_position, n_bins=configuration.image_size)
 
     data_image = DataIMG("image", image_x, image_y, image,
-                           shape=(configuration.image_size, configuration.image_size),
-                           sky = WcsStub(1)
-                           )
+                         shape=(configuration.image_size, configuration.image_size),
+                         sky=WcsStub([1, 1])
+                         )
 
     return data_image
-
 
 
 def make_psf(configuration):
@@ -197,14 +218,15 @@ def make_psf(configuration):
     psf, psf_x, psf_y = symmetric_gaussian_image(amplitude=psf_amplitude, sigma=psf_sigma,
                                                  position=psf_position, n_bins=configuration.psf_size)
 
-    psf_wcs = WcsStub(1 / configuration.resolution_ratio)
+    cdelt = 1 / configuration.resolution_ratio
+    psf_wcs = WcsStub([cdelt, cdelt])
 
     # Create a Sherpa PSF model object using the psf arrays
     sherpa_kernel = DataIMG('kernel_data',
                             psf_x, psf_y, psf,
                             shape=(configuration.psf_size, configuration.psf_size),
                             sky=psf_wcs
-                           )
+                            )
 
     psf_model = PSFModel('psf_model', kernel=sherpa_kernel)
     psf_model.norm = 1
@@ -224,12 +246,14 @@ def psf_fixture(request):
     ui.set_data(1, fixture_data.image)
 
     exact_expected_sigma = configuration.source_sigma
-    approx_expected_sigma = approx(exact_expected_sigma, rel=1e-4)
+    approx_expected_sigma = approx(exact_expected_sigma, rel=3e-2)
 
     # Set the source model as a 2D Gaussian, and set the PSF in Sherpa
     source_position = configuration.source_position
     sherpa_source = SigmaGauss2D('source')
     sherpa_source.ampl = configuration.source_amplitude
+    sherpa_source.sigma_a = exact_expected_sigma
+    sherpa_source.sigma_b = exact_expected_sigma
     sherpa_source.xpos = source_position
     sherpa_source.ypos = source_position
     ui.set_source(sherpa_source)
