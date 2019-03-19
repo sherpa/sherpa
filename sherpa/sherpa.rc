@@ -1,7 +1,7 @@
 # SHERPA_VERSION 4.10.0
 [options]
 # Plotting packages available- pylab, chips
-plot_pkg   : chips
+plot_pkg   : pylab
 
 # IO packages available- pyfits, crates
 io_pkg     : crates
