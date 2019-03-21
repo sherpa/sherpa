@@ -1330,12 +1330,16 @@ def print_fields(names, vals, converters=None):
 
     """
 
+    # This is the part of the deprecated typeNA dictionary Sherpa
+    # would use up to v4.11.0. We included the dictionaty verbatim,
+    # excluding the complex mapping which where wrong in typeNA.
+    # Note only the class -> string mappings have been copied over.
     if converters is None:
         converters = {numpy.bool_: 'Bool',
                       numpy.bytes_: 'Bytes0',
-                      numpy.complex128: 'Complex64',
-                      numpy.complex256: 'Complex128',
-                      numpy.complex64: 'Complex32',
+                      numpy.complex128: 'Complex128',
+                      numpy.complex256: 'Complex256',
+                      numpy.complex64: 'Complex64',
                       numpy.datetime64: 'Datetime64',
                       numpy.float128: 'Float128',
                       numpy.float16: 'Float16',
