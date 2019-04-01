@@ -79,7 +79,7 @@ except Exception as e:
 del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 
 
-__all__ = ('NoNewAttributesAfterInit',
+__all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'dataspace1d', 'dataspace2d', 'demuller',
@@ -1060,7 +1060,7 @@ def bool_cast(val):
 
     Parameters
     ----------
-    val : str or sequence
+    val : bool, str or sequence
        The input value to decode.
 
     Returns

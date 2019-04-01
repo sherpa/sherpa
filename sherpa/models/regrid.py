@@ -120,7 +120,7 @@ class EvaluationSpace1D(object):
         if self.x_axis.is_integrated:
             return self.x_axis.lo, self.x_axis.hi
         else:
-            return self.x_axis.lo
+            return self.x_axis.lo,
 
     @property
     def midpoint_grid(self):
@@ -423,7 +423,7 @@ class ModelDomainRegridder1D(object):
                 return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
                                    function=self.method)
         else:
-            y = modelfunc(pars, evaluation_space.grid, **kwargs)
+            y = modelfunc(pars, evaluation_space.grid[0], **kwargs)
             return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
                                function=self.method)
 
