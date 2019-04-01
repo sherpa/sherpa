@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2012, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,10 +23,19 @@ import six
 from sherpa.utils.testing import SherpaTestCase, requires_data
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
-from sherpa.utils.err import StatErr, SessionErr
+from sherpa.models.parameter import hugeval
+from sherpa.utils.err import IdentifierErr, StatErr, SessionErr
 from sherpa import ui
+
+# As the user model is called UserModel, refer to the Sherpa version
+# by its full module name
+import sherpa.models.basic
+
 import numpy
 import logging
+
+import pytest
+
 
 logger = logging.getLogger("sherpa")
 
@@ -41,6 +50,13 @@ class UserModel(ArithmeticModel):
 
     def calc(self, p, x, *args, **kwargs):
         return p[0] * x + p[1]
+
+
+# A function-based version of this
+#
+def um_line(pars, xlo, *args, **kwargs):
+    """A test user model: straight line with slope and intercept"""
+    return pars[0] * numpy.asarray(xlo) + pars[1]
 
 
 @requires_data
@@ -265,3 +281,244 @@ class test_psf_ui(SherpaTestCase):
             except:
                 print(model)
                 raise
+
+
+@pytest.mark.usefixtures("clean_ui")
+def test_does_user_model_get_cleaned():
+    """Do user models get removed from the session by clean?"""
+
+    mname = "test_model"
+    with pytest.raises(IdentifierErr):
+        ui.get_model_component(mname)
+
+    ui.load_user_model(um_line, mname)
+    mdl = ui.get_model_component(mname)
+    assert mdl.name == "usermodel.{}".format(mname)
+    assert isinstance(mdl, sherpa.models.basic.UserModel)
+
+    ui.clean()
+
+    with pytest.raises(IdentifierErr):
+        ui.get_model_component(mname)
+
+
+# Test simple use of load_user_model and add_user_pars
+#
+@pytest.mark.usefixtures("clean_ui")
+def test_user_model_create_pars_default():
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+
+    mdl = ui.get_model_component(mname)
+    assert len(mdl.pars) == 1
+    par = mdl.pars[0]
+    assert par.name == "ampl"
+    assert par.val == pytest.approx(1.0)
+    assert not par.frozen
+    assert par.units == ''
+    assert par.min == pytest.approx(-1 * hugeval)
+    assert par.max == pytest.approx(hugeval)
+
+
+@pytest.mark.usefixtures("clean_ui")
+def test_user_model_create_pars_names():
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+
+    mdl = ui.get_model_component(mname)
+    assert len(mdl.pars) == 1
+
+    # add user pars doesn't change the existing instance, you have
+    # to "get" the new version to see the change
+    #
+    ui.add_user_pars(mname, ['X1', 'x'])
+
+    mdl = ui.get_model_component(mname)
+    assert len(mdl.pars) == 2
+    p0 = mdl.pars[0]
+    p1 = mdl.pars[1]
+
+    assert p0.name == 'X1'
+    assert p0.val == pytest.approx(0.0)
+    assert p0.units == ''
+    assert not p0.frozen
+    assert p0.min == pytest.approx(-1 * hugeval)
+    assert p0.max == pytest.approx(hugeval)
+
+    assert p1.name == 'x'
+    assert p1.val == pytest.approx(0.0)
+    assert p1.units == ''
+    assert not p1.frozen
+    assert p1.min == pytest.approx(-1 * hugeval)
+    assert p1.max == pytest.approx(hugeval)
+
+
+@pytest.mark.usefixtures("clean_ui")
+def test_user_model_create_pars_full():
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+    ui.add_user_pars(mname, ['pAr1', '_p'], [23.2, 3.1e2],
+                     parunits=['', 'cm^2 s'],
+                     parfrozen=[True, False],
+                     parmins=[0, -100],
+                     parmaxs=[100, 1e5])
+
+    mdl = ui.get_model_component(mname)
+    assert len(mdl.pars) == 2
+    p0 = mdl.pars[0]
+    p1 = mdl.pars[1]
+
+    assert p0.name == 'pAr1'
+    assert p0.val == pytest.approx(23.2)
+    assert p0.units == ''
+    assert p0.frozen
+    assert p0.min == pytest.approx(0)
+    assert p0.max == pytest.approx(100)
+
+    assert p1.name == '_p'
+    assert p1.val == pytest.approx(3.1e2)
+    assert p1.units == 'cm^2 s'
+    assert not p1.frozen
+    assert p1.min == pytest.approx(-100)
+    assert p1.max == pytest.approx(1e5)
+
+
+# diagnose and test out GitHub issue #609; the inability to change
+# parameter values for a user model using direct access
+#
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.xfail(msg="bug 609")
+def test_user_model_change_par():
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+    ui.add_user_pars(mname, ['xXx', 'Y2'])
+
+    mdl = ui.get_model_component(mname)
+    assert len(mdl.pars) == 2
+    p0 = mdl.pars[0]
+    p1 = mdl.pars[1]
+
+    assert p0.name == 'xXx'
+    assert p1.name == 'Y2'
+    assert p0.val == pytest.approx(0.0)
+    assert p1.val == pytest.approx(0.0)
+
+    # Use the user-supplied names:
+    #
+    mdl.xXx = 2.0
+    assert p0.val == pytest.approx(2.0)
+
+    mdl.Y2 = 3.0
+    assert p1.val == pytest.approx(3.0)
+
+    # Now all lower case
+    #
+    mdl.xxx = 4.0
+    assert p0.val == pytest.approx(4.0)
+
+    mdl.y2 = 12.0
+    assert p1.val == pytest.approx(12.0)
+
+    # Try with the set_par function
+    #
+    ui.set_par('test_model.xxx', 12.2)
+    assert p0.val == pytest.approx(12.2)
+
+    ui.set_par('test_model.y2', 14.0, frozen=True)
+    assert p1.val == pytest.approx(14.0)
+    assert p1.frozen
+
+    ui.clean()
+
+
+@pytest.mark.usefixtures("clean_ui")
+def test_user_model1d_eval_fail():
+    """This is expected to fail as the number of pars does not match."""
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+    mdl = ui.get_model_component(mname)
+    with pytest.raises(IndexError):
+        mdl([2.3, 5.4, 8.7])
+
+
+@pytest.mark.usefixtures("clean_ui")
+def test_user_model1d_eval():
+    """Simple evaluation check for 1D case."""
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+    ui.add_user_pars(mname, ["slope", "intercept"])
+
+    m = 2.1
+    c = -4.8
+
+    mdl = ui.get_model_component(mname)
+    mdl.slope = m
+    mdl.intercept = c
+
+    x = numpy.asarray([2.3, 5.4, 8.7])
+    y = mdl(x)
+
+    yexp = x * m + c
+
+    # This check require pytest >= 3.2.0
+    #
+    assert y == pytest.approx(yexp)
+
+
+@pytest.mark.usefixtures("clean_ui")
+def test_user_model1d_fit():
+    """Check can use in a fit."""
+
+    mname = "test_model"
+    ui.load_user_model(um_line, mname)
+    ui.add_user_pars(mname, ["slope", "intercept"],
+                     parvals = [1.0, 1.0])
+
+    mdl = ui.get_model_component(mname)
+
+    x = numpy.asarray([-2.4, 2.3, 5.4, 8.7, 12.3])
+
+    # Set up the data to be scattered around y = -0.2 x + 2.8
+    # Pick the deltas so that they sum to 0 (except for central
+    # point)
+    #
+    slope = -0.2
+    intercept = 2.8
+
+    dy = numpy.asarray([0.1, -0.2, 0.14, -0.1, 0.2])
+    ydata = x * slope + intercept + dy
+
+    ui.load_arrays(1, x, ydata)
+
+    ui.set_source(mname)
+    ui.ignore(5.0, 6.0)  # drop the central bin
+
+    ui.set_stat('leastsq')
+    ui.set_method('simplex')
+    ui.fit()
+
+    fres = ui.get_fit_results()
+    assert fres.succeeded
+    assert fres.parnames == ('test_model.slope', 'test_model.intercept')
+    assert fres.numpoints == 4
+    assert fres.dof == 2
+
+    # Tolerance has been adjusted to get the tests to pass on my
+    # machine. It's really just to check that the values have chanegd
+    # from their default values.
+    #
+    assert fres.parvals[0] == pytest.approx(slope, abs=0.01)
+    assert fres.parvals[1] == pytest.approx(intercept, abs=0.05)
+
+    # Thse should be the same values, so no need to use pytest.approx
+    # (unless there's some internal translation between types done
+    # somewhere?).
+    #
+    assert mdl.slope.val == fres.parvals[0]
+    assert mdl.intercept.val == fres.parvals[1]
