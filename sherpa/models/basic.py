@@ -1843,7 +1843,8 @@ class UserModel(ArithmeticModel):
             pars = (self.ampl,)
         else:
             for par in pars:
-                self.__dict__[par.name] = par
+                setattr(self, par.name, par)
+
         ArithmeticModel.__init__(self, name, pars)
 
 

@@ -390,7 +390,6 @@ def test_user_model_create_pars_full():
 # parameter values for a user model using direct access
 #
 @pytest.mark.usefixtures("clean_ui")
-@pytest.mark.xfail(msg="bug 609")
 def test_user_model_change_par():
 
     mname = "test_model"
