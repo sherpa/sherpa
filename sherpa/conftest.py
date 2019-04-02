@@ -46,6 +46,20 @@ except ImportError:
     has_xspec = False
 
 
+# In some instances, if some xvfb processes did not stop cleanly
+# pytest-xfvb starts complaining that a virtual screen is already on
+# the following code works around that. The issue is hard to reproduce
+# but I (OL) tested it locally as it reappeared on my workstation.
+try:
+    import random
+    from pyvirtualdisplay import abstractdisplay
+    abstractdisplay.RANDOMIZE_DISPLAY_NR = True
+    abstractdisplay.random = random
+    random.seed()
+except ImportError:
+    pass
+
+
 TEST_DATA_OPTION = "--test-data"
 
 

@@ -1319,7 +1319,7 @@ def get_num_args(func):
     return (npos + nkw, npos, nkw)
 
 
-def print_fields(names, vals, converters={}):
+def print_fields(names, vals, converters=None):
     """
 
     Given a list of strings names and mapping vals, where names is a
@@ -1330,23 +1330,43 @@ def print_fields(names, vals, converters={}):
 
     """
 
+    # This is the part of the deprecated typeNA dictionary Sherpa
+    # would use up to v4.11.0. We included the dictionaty verbatim,
+    # excluding the complex mapping which where wrong in typeNA.
+    # Note only the class -> string mappings have been copied over.
+    if converters is None:
+        converters = {numpy.bool_: 'Bool',
+                      numpy.bytes_: 'Bytes0',
+                      numpy.complex128: 'Complex128',
+                      numpy.complex256: 'Complex256',
+                      numpy.complex64: 'Complex64',
+                      numpy.datetime64: 'Datetime64',
+                      numpy.float128: 'Float128',
+                      numpy.float16: 'Float16',
+                      numpy.float32: 'Float32',
+                      numpy.float64: 'Float64',
+                      numpy.int16: 'Int16',
+                      numpy.int32: 'Int32',
+                      numpy.int64: 'Int64',
+                      numpy.int8: 'Int8',
+                      numpy.object_: 'Object0',
+                      numpy.str_: 'Str0',
+                      numpy.timedelta64: 'Timedelta64',
+                      numpy.uint16: 'UInt16',
+                      numpy.uint32: 'UInt32',
+                      numpy.uint64: 'UInt64',
+                      numpy.uint8: 'UInt8',
+                      numpy.void: 'Void0'
+                      }
+
     width = max(len(n) for n in names)
     fmt = '%%-%ds = %%s' % width
     lines = []
     for n in names:
         v = vals[n]
 
-        conv = None
-        if converters:
-            for t in converters:
-                if isinstance(v, t):
-                    conv = converters[t]
-                    break
-
-        if conv is not None:
-            v = conv(v)
-        elif isinstance(v, numpy.ndarray):
-            v = '%s[%d]' % (numpy.typeNA[v.dtype.type], v.size)
+        if isinstance(v, numpy.ndarray):
+            v = '%s[%d]' % (converters[v.dtype.type], v.size)
         else:
             v = str(v)
         lines.append(fmt % (n, v))
