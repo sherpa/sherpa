@@ -396,15 +396,16 @@ def clean_astro_ui():
 
     This also resets the XSPEC settings (if XSPEC support is provided).
 
+    See Also
+    --------
+    clean_ui
+
     Notes
     -----
     It does NOT change the logging level; perhaps it should, but the
     screen output is useful for debugging at this time.
     """
     from sherpa.astro import ui
-
-    # old_lgr_level = logger.getEffectiveLevel()
-    # logger.setLevel(logging.CRITICAL)
 
     if has_xspec:
         old_xspec = xspec.get_xsstate()
@@ -418,7 +419,26 @@ def clean_astro_ui():
     if old_xspec is not None:
         xspec.set_xsstate(old_xspec)
 
-    # logger.setLevel(old_lgr_level)
+
+@pytest.fixture
+def clean_ui():
+    """Ensure sherpa.ui.clean is called before AND after the test.
+
+    See Also
+    --------
+    clean_astro_ui
+
+    Notes
+    -----
+    It does NOT change the logging level; perhaps it should, but the
+    screen output is useful for debugging at this time.
+    """
+    from sherpa import ui
+
+    ui.clean()
+    yield
+
+    ui.clean()
 
 
 @pytest.fixture
