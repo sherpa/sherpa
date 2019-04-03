@@ -205,10 +205,13 @@ from six import string_types
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
-
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
-from sherpa.stats import Cash, CStat, WStat
+from sherpa.stats import Cash, CStat, WStat, LeastSq
+
+from sherpa.fit import Fit
+from sherpa.data import Data1D, Data1DAsymmetricErrs
+from sherpa.optmethods import LevMar
 
 import numpy
 import logging
@@ -758,3 +761,71 @@ class MCMC(NoNewAttributesAfterInit):
         stats = -2.0 * stats
 
         return (stats, accept, params)
+
+
+class ReSampleData(NoNewAttributesAfterInit):
+
+    def __init__(self, data, model):
+        self.data = data
+        self.model = model
+        NoNewAttributesAfterInit.__init__(self)
+        return
+
+    def __call__(self, niter=1000, seed=123):
+
+        pars = {}
+        pars_index = {}
+        index = 0
+        for par in self.model.pars:
+            if par.frozen is False:
+                pars[par.name] = []
+                pars_index[index] = par.name
+                index += 1
+
+        data = self.data
+        y = data.y
+        x = data.x
+        if type(data) == Data1DAsymmetricErrs:
+            y_l = y - data.elo
+            y_h = y + data.ehi
+        elif isinstance(data, (Data1D,)):
+            y_l = data.staterror
+            y_h = data.staterror
+        else:
+            msg ="{0} {1}".format(ReSampleData.__name__, type(data))
+            raise NotImplementedError(msg)
+        
+        numpy.random.seed(seed)
+        for j in range(niter):
+            ry = []
+            for i in range(len(y_l)): 
+                a = y_l[i]
+                b = y_h[i]
+                r = -1
+                while r < a or r > b:
+                    sigma = b - y[i]
+                    u = numpy.random.random_sample()
+                    if u < 0.5:
+                        sigma=y[i]-a
+                    r = numpy.random.normal(loc=y[i],scale=sigma,size=None)
+                    if u < 0.5 and r > y[i]:
+                        r = -1
+                    if u > 0.5 and r < y[i]:
+                        r = -1
+                ry.append(r)
+
+            # fit is performed for each simulated data point
+            fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq( ), LevMar())
+            fit_result = fit.fit()
+
+            for index, val in enumerate(fit_result.parvals):
+                name = pars_index[index]
+                pars[name].append(val)
+            
+        result = []
+        for index, name in pars_index.items():
+            result.append(numpy.average(pars[name]))
+            result.append(numpy.std(pars[name]))
+
+        print(result)
+        return result

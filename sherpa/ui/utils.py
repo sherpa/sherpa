@@ -341,7 +341,7 @@ class Session(NoNewAttributesAfterInit):
         self._projection_results = None
 
         self._pyblocxs = sherpa.sim.MCMC()
-
+        
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
         self._dataplot = sherpa.plot.DataPlot()
@@ -10415,6 +10415,13 @@ class Session(NoNewAttributesAfterInit):
             fit, covar_matrix, niter=niter)
         return (stats, accept, params)
 
+    def resample_data(self, id=None, niter=1000, seed=123):
+
+        data = self.get_data(id)
+        model = self.get_model(id)
+        resampledata = sherpa.sim.ReSampleData(data, model)
+        resampledata(niter=niter, seed=seed)
+        
     ###########################################################################
     # Basic plotting
     ###########################################################################

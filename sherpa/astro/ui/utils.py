@@ -32,7 +32,7 @@ from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
-from sherpa.data import Data1D
+from sherpa.data import Data1D, Data1DAsymmetricErrs
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
@@ -1300,6 +1300,124 @@ class Session(sherpa.ui.utils.Session):
 
         return data
 
+    def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ', 
+                               comment='#', func=numpy.average, delta=False):
+        """Load an ASCII file with asymmetric errors as a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Selection of the relevant
+           column depends on the I/O library in use (Crates or
+           AstroPy).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        func: python function, optional
+           A python function shall be used to populate the errors, it is of
+           the form:
+                 def avg(lo, hi):
+                     return 0.5 * (lo + hi)
+           The default is the numpy average function.
+        delta: boolean, optional
+           The flag is used to indicate if the asymmetric errors for the
+           third and fourth columns are delta values from the second (y)
+           column or not.
+           The default value is False
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
+        The column order for the different data types are as follows,
+        where ``x`` indicates an independent axis, ``y`` the dependent
+        axis, the asymmetric errors ``elo`` and ``ehi``.
+
+        +----------------------+-----------------+--------------------+
+        | Identifier           | Required Fields |   Optional Fields  |
+        +======================+=================+====================+
+        | Data1DAsymmetricErrs | x, y, elo, ehi  |                    | 
+        +----------------------+-----------------+--------------------+
+
+        Examples
+        --------
+
+        Read in the first four columns of the file, as the independent
+        (X), dependent (Y), error low (ELO) and error high (EHI) columns
+        of the default data set:
+
+        >>> load_ascii_with_errors('sources.dat')
+
+        Read in the first four columns (x, y, elo, ehi) where elo and ehi
+        are of the form y - delta_lo and y + delta_hi, respectively.
+
+        >>> load_ascii_with_errors('sources.dat', delta=True)
+
+        Read in the first four columns (x, y, elo, ehi) where elo and ehi
+        are of the form delta_lo and delta_hi, respectively.
+
+        >>> load_ascii_with_errors('sources.dat', func=rms)
+
+        Read in the first four columns (x, y, elo, ehi) where elo and ehi
+        are of the form delta_lo and delta_hi, respectively. The optional
+        function rms is of the form:
+
+        def rms(lo, hi):
+           return numpy.sqrt(lo * lo + hi * hi)
+
+        shall be used to define the elo and ehi.
+
+        See Also
+        --------
+        load_ascii: Load an ASCII file as a data set.
+        load_arrays : Create a data set from array values.
+        load_table : Load a FITS binary file as a data set.
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
+        """
+
+        # self.load_ascii(id, filename, ncols=4, colkeys=colkeys,
+        #                         dstype=Data1DAsymmetricErrs, sep=sep,
+        #                         comment=comment)
+        # datas = self.get_data(id)
+        if filename is None:
+            id, filename = filename, id
+        self.set_data(id, self.unpack_ascii(filename, ncols=4,
+                                            colkeys=colkeys,
+                                            dstype=Data1DAsymmetricErrs,
+                                            sep=sep, comment=comment))
+        datas = self.get_data(id)
+        def calc_err(data):
+            return data.y - data.elo, data.ehi - data.y
+
+        def calc_staterror(data):
+            if func is numpy.average:
+                return func([data.elo, data.ehi], axis=0)
+            else:
+                return func(data.elo, data.ehi)
+            
+        if type(datas) is list:
+            for data in datas:
+                if delta is False:
+                    data.elo, data.ehi = calc_err(data)
+                data.staterror = calc_staterror(data)
+        else:
+            if delta is False:
+                datas.elo, datas.ehi = calc_err(datas)
+            datas.staterror = calc_staterror(datas)
+
     # DOC-NOTE: also in sherpa.utils
     def load_data(self, id, filename=None, *args, **kwargs):
         """Load a data set from a file.
@@ -1324,6 +1442,12 @@ class Session(sherpa.ui.utils.Session):
         kwargs
            The keyword arguments supported by `load_pha`, `load_image`,
            `load_table`, and `load_ascii`.
+
+        Returns
+        -------
+        instance
+           The type of the returned object is controlled by the
+           `dstype` parameter.
 
         See Also
         --------
