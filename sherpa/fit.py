@@ -49,7 +49,11 @@ def evaluates_model(func):
     """
     @wraps(func)
     def run(fit, *args, **kwargs):
-        fit.model.startup()
+        if 'cache' in kwargs:
+            fit.model.startup(kwargs['cache'])
+            kwargs.pop('cache', None)
+        else:
+            fit.model.startup(True)
         result = func(fit, *args, **kwargs)
         fit.model.teardown()
         return result
@@ -760,7 +764,7 @@ class IterFit(NoNewAttributesAfterInit):
         return final_fit_results
 
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
-                 statkwargs=None):
+                 statkwargs=None, cache=True):
         """Exclude points that are significately far away from the best fit.
 
         The `sigmarej` scheme is based on the IRAF `sfit` function
@@ -875,7 +879,7 @@ class IterFit(NoNewAttributesAfterInit):
                 # from data, so callback function will work properly
                 self._dep, self._staterror, self._syserror = self.data.to_fit(
                     self.stat.calc_staterror)
-                self.model.startup()
+                self.model.startup(cache)
                 final_fit_results = self.method.fit(statfunc,
                                                     self.model.thawedpars,
                                                     parmins, parmaxes,
@@ -949,14 +953,14 @@ class IterFit(NoNewAttributesAfterInit):
             # from data, so callback function will work properly
             self._dep, self._staterror, self._syserror = self.data.to_fit(
                 self.stat.calc_staterror)
-            self.model.startup()
+            self.model.startup(cache)
             raise
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
         # QUS: shouldn't this be teardown, not startup?
-        self.model.startup()
+        self.model.startup(cache)
 
         # N.B. -- If sigma-rejection in Sherpa 3.4 succeeded,
         # it did *not* restore the filter to its state before

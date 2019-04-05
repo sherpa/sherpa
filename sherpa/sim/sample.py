@@ -291,12 +291,12 @@ class Evaluate(object):
         return self.fit.calc_stat()
 
 
-def _sample_stat(fit, samples, numcores=None):
+def _sample_stat(fit, samples, numcores=None, cache=True):
 
     oldvals = fit.model.thawedpars
 
     try:
-        fit.model.startup()
+        fit.model.startup(cache)
         stats = numpy.asarray(parallel_map(Evaluate(fit), samples, numcores))
     finally:
         fit.model.teardown()

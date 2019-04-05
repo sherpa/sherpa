@@ -147,9 +147,9 @@ class RMFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
 
-    def startup(self):
-        self.model.startup()
-        CompositeModel.startup(self)
+    def startup(self, cache):
+        self.model.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         self.model.teardown()
@@ -249,9 +249,9 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.rmfargs = ()
         self.arfargs = ()
 
-    def startup(self):
-        self.model.startup()
-        CompositeModel.startup(self)
+    def startup(self, cache):
+        self.model.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         self.model.teardown()
@@ -309,7 +309,7 @@ class RMFModelPHA(RMFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self):
+    def startup(self, cache):
         rmf = self._rmf  # original
 
         # Create a view of original RMF
@@ -327,7 +327,7 @@ class RMFModelPHA(RMFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-        RMFModel.startup(self)
+        RMFModel.startup(self, cache)
 
     def teardown(self):
         self.rmf = self._rmf
@@ -522,7 +522,7 @@ class RSPModelPHA(RSPModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self):
+    def startup(self, cache):
         arf = self._arf
         rmf = self._rmf
 
@@ -545,7 +545,7 @@ class RSPModelPHA(RSPModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-        RSPModel.startup(self)
+        RSPModel.startup(self, cache)
 
     def teardown(self):
         self.arf = self._arf  # restore originals
@@ -994,13 +994,13 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
                                 ('%s(%s)' % ('apply_rmf', self.model.name)),
                                 (self.model,))
 
-    def startup(self):
+    def startup(self, cache):
         pha = self.pha
         pha.notice_response(False)
         self.channel = pha.get_noticed_channels()
         self.mask = pha.get_mask()
-        self.model.startup()
-        CompositeModel.startup(self)
+        self.model.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
 
