@@ -34,6 +34,8 @@ import sherpa.all
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, export_method
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, IOErr, ModelErr, SessionErr
+from sherpa.stats import Cash, CStat, WStat
+from sherpa.sim.mhtest import mhTest
 
 # There are three "raise AttributeErr(..)" lines below which have been changed
 # to the Python AttributeError class, as Sherpa has no AttributeErr class.
@@ -10412,6 +10414,46 @@ class Session(NoNewAttributesAfterInit):
             fit, covar_matrix, niter=niter)
         return (stats, accept, params)
 
+    def mh_sampling_newdata(self, parnames, mu, df, PCAfname, fixARFname, \
+                            id=None, niter=1000, covar_matrix=None, \
+                            improvedBayes=False, num_within=10, \
+                            num_subiter=10, p_M=.5, comp=8, p_M_arf=.5, \
+                            sd_arf=.1, thin=1, scale=1, seed=123):
+        """
+        p_M is mixing proportion of MH draws in the mixture of MH and Metropolis parameter draws
+        p_M = 0, all m draws; p_M = 1, all mh draws
+        p_M_arf is mixing proportion of MH draws in the mixture of MH and Metropolis arf draws
+        p_M_arf = 0, all m draws; p_M_arf = 1, all mh draws
+        """
+        if hasattr(id, '__iter__'):
+            id = id[0]
+        if id is None:
+            # Not sure why this is necessary since it works for get_draws
+            fit_result = self.get_fit_results()
+            ids = fit_result.datasets
+            id = ids[0]
+        ids, fit = self._get_fit(id, ())
+        if len(ids) > 1:
+            msg = "Fit for multiple datasets (%d) is not suppported" % len(ids)
+            raise RuntimeError(msg)
+        if not isinstance(fit.stat, (Cash, CStat, WStat)):
+            raise ValueError("Fit statistic must be cash, cstat or " +
+                             "wstat, not %s" % fit.stat.name)
+
+        if covar_matrix is None:
+            covar_results = self.get_covar_results()
+            if covar_results is None:
+                raise TypeError("Covariance has not been calculated")
+            covar_matrix = covar_results.extra_output
+            
+        mhtest = mhTest()
+        result = mhtest(fit, parnames, mu, covar_matrix, niter, df, PCAfname, \
+                        fixARFname, ids=ids, improvedBayes=improvedBayes, \
+                        num_within=num_within, num_subiter=num_subiter, \
+                        p_M=p_M, comp=comp, p_M_arf=p_M_arf, \
+                        sd_arf=sd_arf, thin=thin, scale=scale, seed=seed)
+        return result
+        
     ###########################################################################
     # Basic plotting
     ###########################################################################

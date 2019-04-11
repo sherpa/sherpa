@@ -137,6 +137,10 @@ if have_astropy:
         [
             r"Invalid keyword for column.*",
         ],
+        ResourceWarning:
+        [
+            r"unclosed file*",
+        ],
     }
     known_warnings.update(astropy_warnings)
 
