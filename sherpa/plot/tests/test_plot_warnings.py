@@ -213,8 +213,11 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
     # to True, or not included, in the plot preferences. So check this
     # assumption.
     #
+    # I am skipping model plot here, since it is assumed that there
+    # are no errors on the model.
+    #
     prefname = 'yerrorbars'
-    for plot in [dplot, mplot, fplot]:
+    for plot in [dplot, fplot]:
         prefs = plot.plot_prefs
         assert (prefname not in prefs) or prefs[prefname]
 
@@ -275,8 +278,11 @@ def test_fit_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
     # to True, or not included, in the plot preferences. So check this
     # assumption.
     #
+    # I am skipping model plot here, since it is assumed that there
+    # are no errors on the model.
+    #
     prefname = 'yerrorbars'
-    for plot in [dplot, mplot, fplot, rplot]:
+    for plot in [dplot, fplot, rplot]:
         prefs = plot.plot_prefs
         assert (prefname not in prefs) or prefs[prefname]
 
