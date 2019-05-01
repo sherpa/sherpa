@@ -288,6 +288,10 @@ def test_fit_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
 
     stat = statClass()
 
+    print("INTERNAL DEBUGGING 1")
+    print(" isinstance(fplot, FitPlot) = {}".format(isinstance(fplot, FitPlot)))
+    print(" type(fplot) = {}".format(type(fplot)))
+
     # Ensure that the logging is set to WARNING since there
     # appears to be some test that changes it to ERROR.
     #
@@ -298,6 +302,10 @@ def test_fit_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
         fplot.prepare(dplot, mplot)
 
         rplot.prepare(d, m, stat)
+
+        print("INTERNAL DEBUGGING 2")
+        print(" isinstance(fplot, FitPlot) = {}".format(isinstance(fplot, FitPlot)))
+        print(" type(fplot) = {}".format(type(fplot)))
 
         jplot.plottop(fplot)
         jplot.plotbot(rplot)
