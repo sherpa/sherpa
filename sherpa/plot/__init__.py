@@ -564,6 +564,10 @@ class JointPlot(SplitPlot):
         clearaxes = kwargs.get('clearwindow', True)
         self._clear_window(0, 0, clearaxes)
 
+        print("INTERNAL DEBUGGING: JointPlot")
+        print(" isinstance(plot, FitPlot) = {}".format(isinstance(plot, FitPlot)))
+        print(" type(plot) = {}".format(type(plot)))
+
         # FIXME: should not know about FitPlot, terrible hack to remove label
         if isinstance(plot, FitPlot):
             plot.dataplot.xlabel = ''
