@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -39,6 +40,7 @@ from six.moves.configparser import ConfigParser
 
 warning = logging.getLogger(__name__).warning
 
+# TODO: why is this module globally chaning the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
 
 config = ConfigParser()
@@ -55,10 +57,10 @@ if plot_opt == 'none_backend':
 try:
     importlib.import_module('.' + plot_opt, package='sherpa.plot')
     backend = sys.modules['sherpa.plot.' + plot_opt]
-except:
+except (ImportError, KeyError):
     # if the user inputs a malformed backend or it is not found,
     # give a useful warning and fall back on dummy_backend of noops
-    warning('failed to import sherpa.plot.%s;' % plot_opt +
+    warning('failed to import sherpa.plot.{};'.format(plot_opt) +
             ' plotting routines will not be available')
     from . import dummy_backend as backend
     plot_opt = 'dummy_backend'
@@ -73,7 +75,7 @@ __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'ResidPlot', 'ResidContour', 'RatioPlot', 'RatioContour',
            'IntervalProjection', 'IntervalUncertainty', 'ChisqrPlot',
            'RegionProjection', 'RegionUncertainty', 'ComponentSourcePlot',
-           'PSFPlot','PSFContour','begin', 'end', 'exceptions', 'backend',
+           'PSFPlot', 'PSFContour', 'begin', 'end', 'exceptions', 'backend',
            'SourcePlot', 'SourceContour', 'Histogram', 'plotter')
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
@@ -234,7 +236,7 @@ class HistogramPlot(Histogram):
     def __init__(self):
         self.xlo = None
         self.xhi = None
-        self.y  = None
+        self.y = None
         self.xlabel = None
         self.ylabel = None
         self.title = None
@@ -299,7 +301,7 @@ class PDFPlot(HistogramPlot):
         self.xhi = xx[1:]
         self.ylabel = "probability density"
         self.xlabel = xlabel
-        self.title  = "PDF: %s" % name
+        self.title = "PDF: {}".format(name)
 
 
 class CDFPlot(Plot):
@@ -314,12 +316,12 @@ class CDFPlot(Plot):
     plot_prefs = backend.get_cdf_plot_defaults()
 
     def __init__(self):
-        self.x  = None
-        self.y  = None
+        self.x = None
+        self.y = None
         self.points = None
         self.median = None
-        self.lower  = None
-        self.upper  = None
+        self.lower = None
+        self.upper = None
         self.xlabel = None
         self.ylabel = None
         self.title = None
@@ -369,8 +371,8 @@ class CDFPlot(Plot):
         xsize = len(self.x)
         self.y = (numpy.arange(xsize) + 1.0) / xsize
         self.xlabel = xlabel
-        self.ylabel = "p(<=%s)" % (xlabel)
-        self.title  = "CDF: %s" % (name)
+        self.ylabel = "p(<={})".format(xlabel)
+        self.title = "CDF: {}".format(name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title,
@@ -475,7 +477,7 @@ class SplitPlot(Plot, Contour):
         self._used = numpy.zeros((self.rows, self.cols), numpy.bool_)
 
     def _next_subplot(self):
-        row, col = numpy.where(self._used == False)
+        row, col = numpy.where(~self._used)
         if row.size != 0:
             row, col = row[0], col[0]
         else:
@@ -628,8 +630,8 @@ class DataPlot(Plot):
     plot_prefs = backend.get_data_plot_defaults()
 
     def __init__(self):
-        self.x  = None
-        self.y  = None
+        self.x = None
+        self.y = None
         self.yerr = None
         self.xerr = None
         self.xlabel = None
@@ -688,7 +690,17 @@ class DataPlot(Plot):
             else:
                 try:
                     self.yerr = data.get_yerr(True, stat.calc_staterror)
-                except:
+                except Exception:
+                    # TODO: can we report a useful error here?
+                    #
+                    # It is possible that this is actually an unrelated
+                    # error: it's unclear what error class is expected to
+                    # be thrown, but likely ValueError as this is raised
+                    # by Chi2DataVar when sent values < 0
+                    # (note that over time the behavior has changed from
+                    #  <= 0 to < 0, but this error message has not been
+                    # changed).
+                    #
                     warning(msg + "\nzeros or negative values found")
 
         self.title = data.name
@@ -707,7 +719,7 @@ class TracePlot(DataPlot):
         self.y = points
         self.xlabel = "iteration"
         self.ylabel = name
-        self.title  = "Trace: %s" % (name)
+        self.title = "Trace: {}".format(name)
 
 
 class ScatterPlot(DataPlot):
@@ -719,7 +731,7 @@ class ScatterPlot(DataPlot):
         self.y = numpy.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.title  = "Scatter: %s" % (name)
+        self.title = "Scatter: {}".format(name)
 
 
 class PSFKernelPlot(DataPlot):
@@ -730,7 +742,7 @@ class PSFKernelPlot(DataPlot):
         DataPlot.prepare(self, psfdata, stat)
         # self.ylabel = 'PSF value'
         # self.xlabel = 'PSF Kernel size'
-        self.title  = 'PSF Kernel'
+        self.title = 'PSF Kernel'
 
 
 class DataContour(Contour):
@@ -758,7 +770,7 @@ class DataContour(Contour):
     def __init__(self):
         self.x0 = None
         self.x1 = None
-        self.y  = None
+        self.y = None
         self.xlabel = None
         self.ylabel = None
         self.title = None
@@ -817,7 +829,7 @@ class PSFKernelContour(DataContour):
         DataContour.prepare(self, psfdata)
         # self.xlabel = 'PSF Kernel size x0'
         # self.ylabel = 'PSF Kernel size x1'
-        self.title  = 'PSF Kernel'
+        self.title = 'PSF Kernel'
 
 
 class ModelPlot(Plot):
@@ -843,8 +855,8 @@ class ModelPlot(Plot):
     plot_prefs = backend.get_model_plot_defaults()
 
     def __init__(self):
-        self.x  = None
-        self.y  = None
+        self.x = None
+        self.y = None
         self.yerr = None
         self.xerr = None
         self.xlabel = None
@@ -917,7 +929,7 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
         self.y = model.get_y()
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Model component: %s' % model.name
+        self.title = 'Model component: {}'.format(model.name)
 
 
 class SourcePlot(ModelPlot):
@@ -953,7 +965,7 @@ class ComponentSourcePlot(SourcePlot):
         (self.x, self.y, self.yerr, self.xerr,
          self.xlabel, self.ylabel) = data.to_component_plot(yfunc=model)
         self.y = self.y[1]
-        self.title = 'Source model component: %s' % model.name
+        self.title = 'Source model component: {}'.format(model.name)
 
 
 class ComponentTemplateSourcePlot(ComponentSourcePlot):
@@ -970,7 +982,7 @@ class ComponentTemplateSourcePlot(ComponentSourcePlot):
 
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Source model component: %s' % model.name
+        self.title = 'Source model component: {}'.format(model.name)
 
 
 class PSFPlot(DataPlot):
@@ -989,7 +1001,7 @@ class ModelContour(Contour):
     def __init__(self):
         self.x0 = None
         self.x1 = None
-        self.y  = None
+        self.y = None
         self.xlabel = None
         self.ylabel = None
         self.title = 'Model'
@@ -1047,7 +1059,7 @@ class PSFContour(DataContour):
     def prepare(self, psf, data=None, stat=None):
         psfdata = psf.get_kernel(data, False)
         DataContour.prepare(self, psfdata)
-        self.title  = psf.kernel.name
+        self.title = psf.kernel.name
 
 
 class SourceContour(ModelContour):
@@ -1901,7 +1913,7 @@ class RegionProjectionWorker(object):
         self.fit = fit
 
     def __call__(self, pars):
-        for ii in [0,1]:
+        for ii in [0, 1]:
             if self.log[ii]:
                 pars[ii] = numpy.power(10, pars[ii])
         (self.par0.val, self.par1.val) = pars
