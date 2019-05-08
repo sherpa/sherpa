@@ -1274,7 +1274,7 @@ class ResidPlot(ModelPlot):
     x : array_like
        The X value for each point.
     y : array_like
-       The Y value for each point: data-model.
+       The Y value for each point: data - model.
     xerr : array_like
        The half-width of each X "bin", if set.
     yerr : array_like
@@ -1349,7 +1349,7 @@ class RatioPlot(ModelPlot):
     x : array_like
        The X value for each point.
     y : array_like
-       The Y value for each point: data-model.
+       The Y value for each point: data / model.
     xerr : array_like
        The half-width of each X "bin", if set.
     yerr : array_like
