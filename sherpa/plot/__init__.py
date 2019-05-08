@@ -110,6 +110,25 @@ def _make_title(title, name=''):
         return "{} for {}".format(title, name)
 
 
+def _errorbar_warning(stat):
+    """The warning message to display when error bars are being "faked".
+
+    Parameters
+    ----------
+    stat : sherpa.stats.Stat instance
+        The name attribute is used in the error message.
+
+    Returns
+    -------
+    msg : str
+        The warning message
+    """
+
+    return "The displayed errorbars have been supplied with the " + \
+        "data or calculated using chi2xspecvar; the errors are not " + \
+        "used in fits with {}".format(stat.name)
+
+
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
     plot_prefs = backend.get_plot_defaults()
@@ -681,9 +700,24 @@ class DataPlot(Plot):
         (self.x, self.y, self.yerr, self.xerr, self.xlabel,
          self.ylabel) = data.to_plot()
 
-        # if self.yerr is None and stat is not None:
-        if stat is not None:
-            msg = ("The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with %s" % stat.name)
+        # Do we warn about adding in error values? The logic here isn't
+        # quite the same as the other times _errorbar_warning is used.
+        # This suggests that the code really should be re-worked to
+        # go through a common code path.
+        #
+        # Do we require that self.yerr is always set, even if the
+        # value is not used in a plot? I am going to assume not
+        # (since the existing code will not change self.yerr if
+        # the stat.name is not in _stats_noerr but an exception is
+        # raised by get_yerr).
+        #
+        try:
+            yerrorbars = self.plot_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
+        if yerrorbars and stat is not None:
+            msg = _errorbar_warning(stat)
             if stat.name in _stats_noerr:
                 self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
                 warning(msg)
@@ -1263,7 +1297,7 @@ class ResidPlot(ModelPlot):
         # if self.yerr is None:
         if stat.name in _stats_noerr:
             self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-            warning("The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with %s" % stat.name)
+            warning(_errorbar_warning(stat))
         else:
             self.yerr = data.get_yerr(True, stat.calc_staterror)
 
@@ -1344,7 +1378,7 @@ class RatioPlot(ModelPlot):
         if stat.name in _stats_noerr:
             self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
             self.yerr = self.yerr / y[1]
-            warning("The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with %s" % stat.name)
+            warning(_errorbar_warning(stat))
         else:
             staterr = data.get_yerr(True, stat.calc_staterror)
             self.yerr = staterr / y[1]
