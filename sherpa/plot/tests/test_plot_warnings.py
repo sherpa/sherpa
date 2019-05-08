@@ -133,9 +133,8 @@ def test_data_plot_see_errorbar_warnings(caplog, statClass, flag):
 
 
 @pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar,
-                                       LeastSq])
-#                                       pytest.param(LeastSq,
-#                                                    marks=pytest.mark.xfail)])
+                                       pytest.param(LeastSq,
+                                                    marks=pytest.mark.xfail)])
 def test_data_plot_no_errors_no_errorbar_warnings(caplog, statClass):
     """Should not see warnings when no error bars are drawn (See #621).
 
