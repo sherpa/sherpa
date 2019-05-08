@@ -711,6 +711,17 @@ class DataPlot(Plot):
         # the stat.name is not in _stats_noerr but an exception is
         # raised by get_yerr).
         #
+        # This assumes that the error bars calculated by data.to_plot are
+        # over-ridden once a statistic is given. However, how does this
+        # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
+        # but the user has given explicit errors (i.e. they are not to
+        # be calcualted by the "DataVar" part but used as is). Does
+        # data.get_yerr handle this for us, or are invalid errors
+        # used here? It appears that the correct answers are being
+        # returned, but should we only call data.get_yerr if yerr
+        # is None/empty/whatever is returned by to_plot? This also
+        # holds for the Resid/RatioPlot classes.
+        #
         try:
             yerrorbars = self.plot_prefs['yerrorbars']
         except KeyError:
