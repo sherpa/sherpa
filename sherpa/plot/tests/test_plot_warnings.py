@@ -143,17 +143,13 @@ def test_data_plot_no_errors_no_errorbar_warnings(caplog, statClass):
 
     Parameters
     ----------
-    stat : sherpa.stats.Stat instance
+    statClass : sherpa.stats.Stat instance
 
     """
 
     d = example_data()
     plot = DataPlot()
 
-    # Internal check: this test requires that either yerrorbars is set
-    # to True, or not included, in the plot preferences. So check this
-    # assumption.
-    #
     prefs = plot.plot_prefs
     prefname = 'yerrorbars'
     prefs[prefname] = False
@@ -219,6 +215,41 @@ def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, fla
         nwarn = 0
         
     check_for_warning(caplog, nwarn, stat.name)
+
+
+@pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
+@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar, LeastSq])
+def test_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statClass):
+    """Should see no warnings (see #621)
+
+    This is a copy of test_residstyle_plot_see_errorbar_warnings
+    but with yerrorbars preference set to False.
+
+    Parameters
+    ----------
+    plotClass : {sherpa.plot.ResidPlot, sherpa.plot.RatioPlot}
+        The plot to test.
+    statClass : sherpa.stats.Stat instance
+
+    """
+
+    d = example_data()
+    m = example_model()
+    plot = plotClass()
+
+    prefs = plot.plot_prefs
+    prefname = 'yerrorbars'
+    prefs[prefname] = False
+
+    stat = statClass()
+
+    # Ensure that the logging is set to WARNING since there
+    # appears to be some test that changes it to ERROR.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        plot.prepare(d, m, stat)
+
+    check_for_warning(caplog, 0, stat.name)
 
 
 @pytest.mark.parametrize("statClass,flag",
