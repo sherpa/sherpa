@@ -722,16 +722,24 @@ class DataPlot(Plot):
         # is None/empty/whatever is returned by to_plot? This also
         # holds for the Resid/RatioPlot classes.
         #
+        # Note that we should probably return a value for yerr if
+        # we can, even if 'yerrorbars' is set to False, so that
+        # downstream users can make use of the value even if the
+        # plot doesn't. This is similar to how labels or xerr
+        # attributes are created even if they don't get used by the
+        # plot.
+        #
         try:
             yerrorbars = self.plot_prefs['yerrorbars']
         except KeyError:
             yerrorbars = True
 
-        if yerrorbars and stat is not None:
+        if stat is not None:
             msg = _errorbar_warning(stat)
             if stat.name in _stats_noerr:
                 self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-                warning(msg)
+                if yerrorbars:
+                    warning(msg)
             else:
                 try:
                     self.yerr = data.get_yerr(True, stat.calc_staterror)
@@ -746,7 +754,8 @@ class DataPlot(Plot):
                     #  <= 0 to < 0, but this error message has not been
                     # changed).
                     #
-                    warning(msg + "\nzeros or negative values found")
+                    if yerrorbars:
+                        warning(msg + "\nzeros or negative values found")
 
         self.title = data.name
 
@@ -1305,10 +1314,17 @@ class ResidPlot(ModelPlot):
          self.xlabel, self.ylabel) = data.to_plot(model)
 
         self.y = self._calc_resid(y)
-        # if self.yerr is None:
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.plot_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
         if stat.name in _stats_noerr:
             self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-            warning(_errorbar_warning(stat))
+            if yerrorbars:
+                warning(_errorbar_warning(stat))
         else:
             self.yerr = data.get_yerr(True, stat.calc_staterror)
 
@@ -1385,11 +1401,18 @@ class RatioPlot(ModelPlot):
          self.xlabel, self.ylabel) = data.to_plot(model)
 
         self.y = self._calc_ratio(y)
-        # if self.yerr is None:
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.plot_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
         if stat.name in _stats_noerr:
             self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
             self.yerr = self.yerr / y[1]
-            warning(_errorbar_warning(stat))
+            if yerrorbars:
+                warning(_errorbar_warning(stat))
         else:
             staterr = data.get_yerr(True, stat.calc_staterror)
             self.yerr = staterr / y[1]
