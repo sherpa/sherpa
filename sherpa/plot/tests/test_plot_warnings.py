@@ -382,3 +382,57 @@ def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass,
         nwarn = 0
         
     check_for_warning(caplog, nwarn, stat.name)
+
+
+@pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
+@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar, LeastSq])
+def test_fit_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statClass):
+    """Should not see warnings when no error bars are drawn (See #621).
+
+    This is a copy of test_fit_residstyle_plot_see_errorbar_warnings
+    except that the 'yerrorbars' preference setting for all plots is
+    'False'.
+
+    Parameters
+    ----------
+    plotClass : {sherpa.plot.ResidPlot, sherpa.plot.RatioPlot}
+        The plot to test.
+    statClass : sherpa.stats.Stat instance
+
+    Notes
+    -----
+    Is this an accurate example of how 'plot_fit_resid' is created?
+    """
+
+    d = example_data()
+    m = example_model()
+
+    dplot = DataPlot()
+    mplot = ModelPlot()
+    fplot = FitPlot()
+    rplot = plotClass()
+
+    jplot = JointPlot()
+
+    prefname = 'yerrorbars'
+    for plot in [dplot, rplot]:
+        prefs = plot.plot_prefs
+        prefs[prefname] = False
+
+    stat = statClass()
+
+    # Ensure that the logging is set to WARNING since there
+    # appears to be some test that changes it to ERROR.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+
+        dplot.prepare(d, stat)
+        mplot.prepare(d, m, stat)
+        fplot.prepare(dplot, mplot)
+
+        rplot.prepare(d, m, stat)
+
+        jplot.plottop(fplot)
+        jplot.plotbot(rplot)
+
+    check_for_warning(caplog, 0, stat.name)
