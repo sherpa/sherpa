@@ -218,7 +218,9 @@ def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, fla
 
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
-@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar, LeastSq])
+@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar,
+                                       pytest.param(LeastSq,
+                                                    marks=pytest.mark.xfail)])
 def test_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statClass):
     """Should see no warnings (see #621)
 
