@@ -87,6 +87,7 @@ def check_for_warning(caplog, nwarn, statname=None):
 
 @pytest.mark.parametrize("statClass,flag",
                          [(Chi2DataVar, False),
+                          (Chi2ModVar, False),
                           (LeastSq, True)])
 def test_data_plot_see_errorbar_warnings(caplog, statClass, flag):
     """Do we see the warning when expected - data plot?
@@ -168,6 +169,7 @@ def test_data_plot_no_errors_no_errorbar_warnings(caplog, statClass):
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
 @pytest.mark.parametrize("statClass,flag",
                          [(Chi2DataVar, False),
+                          (Chi2ModVar, False),
                           (LeastSq, True)])
 def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
     """Do we see the warning when expected - residual/ratio plots?
@@ -254,6 +256,7 @@ def test_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statC
 
 @pytest.mark.parametrize("statClass,flag",
                          [(Chi2DataVar, False),
+                          (Chi2ModVar, False),
                           (LeastSq, True)])
 def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
     """Do we see the warning when expected - fit plot?
@@ -314,6 +317,7 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
 @pytest.mark.parametrize("statClass,flag",
                          [(Chi2DataVar, False),
+                          (Chi2ModVar, False),
                           (LeastSq, True)])
 def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
     """Do we see the warning when expected - fit + resid/ratio plot?
