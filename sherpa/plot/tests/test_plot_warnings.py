@@ -35,7 +35,7 @@ from sherpa.data import Data1D
 from sherpa.models.basic import Const1D
 from sherpa.plot import DataPlot, ModelPlot, ResidPlot, RatioPlot, \
     FitPlot, JointPlot
-from sherpa.stats import LeastSq, Chi2DataVar, Chi2ModVar
+from sherpa.stats import LeastSq, Cash, Chi2DataVar, Chi2ModVar
 
 def example_data():
     """Create a 1D example dataset"""
@@ -84,11 +84,14 @@ def check_for_warning(caplog, nwarn, statname=None):
 # NOTE: the following tests contain a lot of repeated code but I don't
 #       want to refactor them until things have stabilized
 #
+_stats_with_flags = [(Chi2DataVar, False),
+                     (Chi2ModVar, False),
+                     (Cash, True),
+                     (LeastSq, True)]
+_stats_no_flags = [s[0] for s in _stats_with_flags]
 
-@pytest.mark.parametrize("statClass,flag",
-                         [(Chi2DataVar, False),
-                          (Chi2ModVar, False),
-                          (LeastSq, True)])
+
+@pytest.mark.parametrize("statClass,flag", _stats_with_flags)
 def test_data_plot_see_errorbar_warnings(caplog, statClass, flag):
     """Do we see the warning when expected - data plot?
 
@@ -134,7 +137,7 @@ def test_data_plot_see_errorbar_warnings(caplog, statClass, flag):
     check_for_warning(caplog, nwarn, stat.name)
 
 
-@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar, LeastSq])
+@pytest.mark.parametrize("statClass", _stats_no_flags)
 def test_data_plot_no_errors_no_errorbar_warnings(caplog, statClass):
     """Should not see warnings when no error bars are drawn (See #621).
 
@@ -167,10 +170,7 @@ def test_data_plot_no_errors_no_errorbar_warnings(caplog, statClass):
 
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
-@pytest.mark.parametrize("statClass,flag",
-                         [(Chi2DataVar, False),
-                          (Chi2ModVar, False),
-                          (LeastSq, True)])
+@pytest.mark.parametrize("statClass,flag", _stats_with_flags)
 def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
     """Do we see the warning when expected - residual/ratio plots?
 
@@ -220,7 +220,7 @@ def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, fla
 
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
-@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar, LeastSq])
+@pytest.mark.parametrize("statClass", _stats_no_flags)
 def test_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statClass):
     """Should see no warnings (see #621)
 
@@ -254,10 +254,7 @@ def test_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statC
     check_for_warning(caplog, 0, stat.name)
 
 
-@pytest.mark.parametrize("statClass,flag",
-                         [(Chi2DataVar, False),
-                          (Chi2ModVar, False),
-                          (LeastSq, True)])
+@pytest.mark.parametrize("statClass,flag", _stats_with_flags)
 def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
     """Do we see the warning when expected - fit plot?
 
@@ -315,10 +312,7 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
 
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
-@pytest.mark.parametrize("statClass,flag",
-                         [(Chi2DataVar, False),
-                          (Chi2ModVar, False),
-                          (LeastSq, True)])
+@pytest.mark.parametrize("statClass,flag", _stats_with_flags)
 def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
     """Do we see the warning when expected - fit + resid/ratio plot?
 
@@ -389,7 +383,7 @@ def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass,
 
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
-@pytest.mark.parametrize("statClass", [Chi2DataVar, Chi2ModVar, LeastSq])
+@pytest.mark.parametrize("statClass", _stats_no_flags)
 def test_fit_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statClass):
     """Should not see warnings when no error bars are drawn (See #621).
 
