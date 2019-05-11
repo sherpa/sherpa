@@ -33,7 +33,8 @@ import numpy as np
 
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D
-from sherpa.plot import DataPlot, ModelPlot, ResidPlot, FitPlot, JointPlot
+from sherpa.plot import DataPlot, ModelPlot, ResidPlot, RatioPlot, \
+    FitPlot, JointPlot
 from sherpa.stats import LeastSq, Chi2DataVar, Chi2ModVar
 
 def example_data():
@@ -168,11 +169,12 @@ def test_data_plot_no_errors_no_errorbar_warnings(caplog, statClass):
     check_for_warning(caplog, 0, stat.name)
 
 
+@pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
 @pytest.mark.parametrize("statClass,flag",
                          [(Chi2DataVar, False),
                           (LeastSq, True)])
-def test_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
-    """Do we see the warning when expected - residual plot?
+def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
+    """Do we see the warning when expected - residual/ratio plots?
 
     This looks for the 'The displayed errorbars have been supplied with
     the data or calculated using chi2xspecvar; the errors are not used in
@@ -183,7 +185,9 @@ def test_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
 
     Parameters
     ----------
-    stat : sherpa.stats.Stat instance
+    plotClass : {sherpa.plot.ResidPlot, sherpa.plot.RatioPlot}
+        The plot to test.
+    statClass : sherpa.stats.Stat instance
     flag : bool
         True if the warning should be created, False otherwise
 
@@ -191,7 +195,7 @@ def test_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
 
     d = example_data()
     m = example_model()
-    plot = ResidPlot()
+    plot = plotClass()
 
     # Internal check: this test requires that either yerrorbars is set
     # to True, or not included, in the plot preferences. So check this
@@ -276,11 +280,12 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
     check_for_warning(caplog, nwarn, stat.name)
 
 
+@pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
 @pytest.mark.parametrize("statClass,flag",
                          [(Chi2DataVar, False),
                           (LeastSq, True)])
-def test_fit_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
-    """Do we see the warning when expected - fit + resid plot?
+def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
+    """Do we see the warning when expected - fit + resid/ratio plot?
 
     This looks for the 'The displayed errorbars have been supplied with
     the data or calculated using chi2xspecvar; the errors are not used in
@@ -291,7 +296,9 @@ def test_fit_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
 
     Parameters
     ----------
-    stat : sherpa.stats.Stat instance
+    plotClass : {sherpa.plot.ResidPlot, sherpa.plot.RatioPlot}
+        The plot to test.
+    statClass : sherpa.stats.Stat instance
     flag : bool
         True if the warning should be created, False otherwise
 
@@ -306,7 +313,7 @@ def test_fit_resid_plot_see_errorbar_warnings(caplog, statClass, flag):
     dplot = DataPlot()
     mplot = ModelPlot()
     fplot = FitPlot()
-    rplot = ResidPlot()
+    rplot = plotClass()
 
     jplot = JointPlot()
     
