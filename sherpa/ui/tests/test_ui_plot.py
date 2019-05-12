@@ -42,13 +42,13 @@ def example_model():
     return cpt
 
 
-@pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_fit_plot(idval):
-    """Basic testing of get_fit_plot
+def setup_example(idval):
+    """Set up a simple dataset for use in the tests.
 
-    Ideally would also test ui.plot_fit but that is harder to
-    test.
+    Parameters
+    ----------
+    idval : None, int, str
+        The dataset identifier.
     """
 
     d = example_data()
@@ -56,11 +56,22 @@ def test_get_fit_plot(idval):
     if idval is None:
         ui.set_data(d)
         ui.set_source(m)
-        f = ui.get_fit_plot()
 
     else:
         ui.set_data(idval, d)
         ui.set_source(idval, m)
+
+
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_fit_plot(idval):
+    """Basic testing of get_fit_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        f = ui.get_fit_plot()
+    else:
         f = ui.get_fit_plot(idval)
 
     # Should we be checking exact class?
@@ -95,3 +106,19 @@ def test_get_fit_plot(idval):
     assert dp.title == 'example'
     assert mp.title == 'Model'
 
+
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_fit_plot(idval):
+    """How bad do things fail on Travis with this?
+
+    The idea is just to see what the failure modes on Travis are
+    for the "no-plot-backend" cases, so there's no actual test
+    to see if the plot did anything.
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.plot_fit()
+    else:
+        ui.plot_fit(idval)
