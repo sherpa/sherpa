@@ -109,16 +109,24 @@ def test_get_fit_plot(idval):
 
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_fit_plot(idval):
-    """How bad do things fail on Travis with this?
+@pytest.mark.parametrize("pfunc", [ui.plot_data,
+                                   ui.plot_model,
+                                   ui.plot_source,
+                                   ui.plot_resid,
+                                   ui.plot_ratio,
+                                   ui.plot_delchi,
+                                   ui.plot_fit,
+                                   ui.plot_fit_resid,
+                                   ui.plot_fit_delchi])
+def test_fit_plot_xxx(idval, pfunc):
+    """Can we call a plot_xxx routine?
 
-    The idea is just to see what the failure modes on Travis are
-    for the "no-plot-backend" cases, so there's no actual test
-    to see if the plot did anything.
+    Currently this just tests that the call succeeds. There is no
+    test to see if the plot did anything.
     """
 
     setup_example(idval)
     if idval is None:
-        ui.plot_fit()
+        pfunc()
     else:
-        ui.plot_fit(idval)
+        pfunc(idval)
