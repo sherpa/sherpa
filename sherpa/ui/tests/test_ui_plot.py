@@ -24,6 +24,7 @@ these - or most of them - can be run even when there is no plot backend.
 
 from sherpa import ui
 from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.utils.testing import requires_plotting
 
 import pytest
 
@@ -107,6 +108,7 @@ def test_get_fit_plot(idval):
     assert mp.title == 'Model'
 
 
+@requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("pfunc", [ui.plot_data,
@@ -123,6 +125,10 @@ def test_fit_plot_xxx(idval, pfunc):
 
     Currently this just tests that the call succeeds. There is no
     test to see if the plot did anything.
+
+    Some tests fail due to missing plot preferences when there's
+    no plotting backend (e.g. missing 'xlog' settings), so skip
+    these tests in this case.
     """
 
     setup_example(idval)
