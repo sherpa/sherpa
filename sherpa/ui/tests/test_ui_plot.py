@@ -42,6 +42,7 @@ def example_model():
     return cpt
 
 
+@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_fit_plot(idval):
     """Basic testing of get_fit_plot
@@ -50,8 +51,6 @@ def test_get_fit_plot(idval):
     test.
     """
 
-    ui.clean()  # TODO: use auto-clean
-    
     d = example_data()
     m = example_model()
     if idval is None:
