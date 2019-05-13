@@ -220,3 +220,58 @@ def test_plot_data_change(idval):
 
     # just check that the previous value has been updated too
     assert pvals1.y == pytest.approx(pvals2.y)
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_plot_data_replot(idval):
+    """Can we plot, change data, plot with reploat and see no difference?
+
+    This relies on accessing the undelying session object directly,
+    as ui.get_data_plot always recreates the plot objects, which
+    isn't helpful here.
+
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.plot_data()
+        pvals1 = ui.get_data_plot()
+        dset = ui.get_data()
+    else:
+        ui.plot_data(idval)
+        pvals1 = ui.get_data_plot(idval)
+        dset = ui.get_data(idval)
+
+    # the fields returned by get_data_plot have already been tested
+    # by test_plot_data_change, so no need to repeat this here.
+    #
+
+    # Modify the data values; rely on changing the dataset object
+    # directly means that we do not need to call set_data here.
+    #
+    yold = [10, 40, 30, 50]
+    ynew = [12, 45, 33, 49]
+    dset.y = ynew
+
+    # Check the new value
+    #
+    if idval is None:
+        ui.plot_data(replot=True)
+    else:
+        ui.plot_data(idval, replot=True)
+
+    # access the data-plot object directly, since get_data_plot
+    # would cause this to be changed.
+    pvals2 = ui._session._dataplot
+
+    assert pvals2.xlabel == 'x'
+    assert pvals2.ylabel == 'y'
+    assert pvals2.title == 'example'
+    assert pvals2.x == pytest.approx([10, 20, 40, 90])
+    assert pvals2.y == pytest.approx(yold)
+    assert pvals2.xerr is None
+
+    # Should use approximate equality here
+    assert pvals2.yerr == pytest.approx(Chi2Gehrels.calc_staterror(yold))
