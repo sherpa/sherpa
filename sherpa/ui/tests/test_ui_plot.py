@@ -24,6 +24,7 @@ these - or most of them - can be run even when there is no plot backend.
 
 from sherpa import ui
 from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.stats import Chi2Gehrels
 from sherpa.utils.testing import requires_plotting
 
 import pytest
@@ -88,17 +89,9 @@ def test_get_fit_plot(idval):
     dp = f.dataplot
     mp = f.modelplot
 
-    # Are we guaranteed that arrays are Numpy arrays?
-    def are_equal(a, b):
-        r = a == b
-        try:
-            return all(r)
-        except TypeError:
-            return r
-        
-    assert are_equal(dp.x, mp.x)
-    assert are_equal(dp.y, [10, 40, 30, 50])
-    assert are_equal(mp.y, [35, 35, 35, 35])
+    assert dp.x == pytest.approx(mp.x)
+    assert dp.y == pytest.approx([10, 40, 30, 50])
+    assert mp.y == pytest.approx([35, 35, 35, 35])
 
     assert dp.xerr is None
     assert mp.xerr is None
@@ -166,3 +159,64 @@ def test_fit_plot_xxx(idval, pfunc):
         pfunc()
     else:
         pfunc(idval)
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_plot_data_change(idval):
+    """Can we plot, change data, plot and see the difference?
+
+    This relies on checking the plot structure (returned by get_data_plot)
+    to approximate what the plot would be like.
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.plot_data()
+        pvals1 = ui.get_data_plot()
+        dset = ui.get_data()
+    else:
+        ui.plot_data(idval)
+        pvals1 = ui.get_data_plot(idval)
+        dset = ui.get_data(idval)
+
+    # do not test the plot_prefs field
+    yold = [10, 40, 30, 50]
+    assert pvals1.xlabel == 'x'
+    assert pvals1.ylabel == 'y'
+    assert pvals1.title == 'example'
+    assert pvals1.x == pytest.approx([10, 20, 40, 90])
+    assert pvals1.y == pytest.approx(yold)
+    assert pvals1.xerr is None
+
+    assert pvals1.yerr == pytest.approx(Chi2Gehrels.calc_staterror(yold))
+
+    # Modify the data values; rely on changing the dataset object
+    # directly means that we do not need to call set_data here.
+    #
+    ynew = [12, 45, 33, 49]
+    dset.y = ynew
+
+    # Check the new value (could just check pvals1, but make the
+    # explicit call to get_data_plot)
+    #
+    if idval is None:
+        ui.plot_data()
+        pvals2 = ui.get_data_plot(idval)
+    else:
+        ui.plot_data(idval)
+        pvals2 = ui.get_data_plot(idval)
+
+    assert pvals2.xlabel == 'x'
+    assert pvals2.ylabel == 'y'
+    assert pvals2.title == 'example'
+    assert pvals2.x == pytest.approx([10, 20, 40, 90])
+    assert pvals2.y == pytest.approx(ynew)
+    assert pvals2.xerr is None
+
+    # Should use approximate equality here
+    assert pvals2.yerr == pytest.approx(Chi2Gehrels.calc_staterror(ynew))
+
+    # just check that the previous value has been updated too
+    assert pvals1.y == pytest.approx(pvals2.y)
