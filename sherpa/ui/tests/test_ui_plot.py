@@ -110,6 +110,36 @@ def test_get_fit_plot(idval):
 
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("get_prefs", [ui.get_data_plot_prefs,
+                                       ui.get_model_plot_prefs])
+def test_plot_prefs_xxx(get_prefs):
+    """Can we change and reset a preference.
+
+    Pick the 'xlog' field, since the assumption is that: a) this
+    defaults to 'False'; b) each plot type has this setting; c) we
+    do not need to check all settings.
+
+    Some tests fail due to missing plot preferences when there's
+    no plotting backend (e.g. missing 'xlog' settings), so skip
+    these tests in this case.
+    """
+
+    prefs1 = get_prefs()
+    assert not prefs1['xlog']
+    prefs1['xlog'] = True
+
+    prefs2 = get_prefs()
+    assert prefs2['xlog']
+
+    ui.clean()
+    prefs3 = get_prefs()
+    assert prefs1['xlog']
+    assert prefs2['xlog']
+    assert not prefs3['xlog']
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("pfunc", [ui.plot_data,
                                    ui.plot_model,
