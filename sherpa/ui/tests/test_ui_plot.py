@@ -256,12 +256,12 @@ def change_fit(idval):
     change_model(idval)
 
 
-def check_example():
+def check_example(xlabel='x'):
     """Check that the data plot has not changed"""
 
     dplot = ui._session._dataplot
 
-    assert dplot.xlabel == 'x'
+    assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
     assert dplot.title == 'example'
     assert dplot.x == pytest.approx(_data_x)
@@ -272,10 +272,10 @@ def check_example():
     assert dplot.yerr == pytest.approx(calc_errors(_data_y))
 
     
-def check_model_plot(plot, title):
+def check_model_plot(plot, title='Model', xlabel='x'):
     """Helper for check_model/source"""
 
-    assert plot.xlabel == 'x'
+    assert plot.xlabel == xlabel
     assert plot.ylabel == 'y'
     assert plot.title == title
     assert plot.x == pytest.approx(_data_x)
@@ -284,25 +284,27 @@ def check_model_plot(plot, title):
     assert plot.yerr is None
 
 
-def check_model():
+def check_model(xlabel='x'):
     """Check that the model plot has not changed"""
 
-    check_model_plot(ui._session._modelplot, 'Model')
+    check_model_plot(ui._session._modelplot,
+                     title='Model', xlabel=xlabel)
 
 
 def check_source():
     """Check that the source plot has not changed"""
 
-    check_model_plot(ui._session._sourceplot, 'Source')
+    check_model_plot(ui._session._sourceplot,
+                     title='Source')
 
     
-def check_resid():
+def check_resid(title='Residuals for example'):
     """Check that the resid plot has not changed"""
 
     rplot = ui._session._residplot
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
-    assert rplot.title == 'Residuals for example'
+    assert rplot.title == title
     assert rplot.x == pytest.approx(_data_x)
     assert rplot.y == pytest.approx([y - 35 for y in _data_y])
     assert rplot.xerr is None
@@ -362,6 +364,14 @@ def check_fit():
     check_model()
 
 
+def check_fit_resid():
+    """Check that the fit + resid plot has not changed"""
+
+    check_example(xlabel='')
+    check_model(xlabel='')
+    check_resid(title='')
+
+
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -374,6 +384,7 @@ def check_fit():
                           (ui.plot_delchi, change_example, check_delchi),
                           (ui.plot_chisqr, change_example, check_chisqr),
                           (ui.plot_fit, change_fit, check_fit),
+                          (ui.plot_fit_resid, change_fit, check_fit_resid),
                          ])
 def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
     """Can we plot, change data, plot with reploat and see a difference?
