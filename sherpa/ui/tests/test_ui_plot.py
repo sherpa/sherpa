@@ -325,13 +325,13 @@ def check_ratio():
     assert rplot.yerr == pytest.approx(dy)
 
     
-def check_delchi():
+def check_delchi(title='Sigma Residuals for example'):
     """Check that the delchi plot has not changed"""
 
     rplot = ui._session._delchiplot
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
-    assert rplot.title == 'Sigma Residuals for example'
+    assert rplot.title == title
     assert rplot.x == pytest.approx(_data_x)
 
     dy = calc_errors(_data_y)
@@ -372,6 +372,14 @@ def check_fit_resid():
     check_resid(title='')
 
 
+def check_fit_delchi():
+    """Check that the fit + delchi plot has not changed"""
+
+    check_example(xlabel='')
+    check_model(xlabel='')
+    check_delchi(title='')
+
+
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -385,6 +393,7 @@ def check_fit_resid():
                           (ui.plot_chisqr, change_example, check_chisqr),
                           (ui.plot_fit, change_fit, check_fit),
                           (ui.plot_fit_resid, change_fit, check_fit_resid),
+                          (ui.plot_fit_delchi, change_fit, check_fit_delchi),
                          ])
 def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
     """Can we plot, change data, plot with reploat and see a difference?
