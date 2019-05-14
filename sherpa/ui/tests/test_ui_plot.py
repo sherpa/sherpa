@@ -144,97 +144,6 @@ def test_plot_prefs_xxx(get_prefs):
     assert not prefs3['xlog']
 
 
-@requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("idval", [None, 1, "one", 23])
-@pytest.mark.parametrize("pfunc", [ui.plot_data,
-                                   ui.plot_model,
-                                   ui.plot_source,
-                                   ui.plot_resid,
-                                   ui.plot_ratio,
-                                   ui.plot_delchi,
-                                   ui.plot_fit,
-                                   ui.plot_fit_resid,
-                                   ui.plot_fit_delchi])
-def test_fit_plot_xxx(idval, pfunc):
-    """Can we call a plot_xxx routine?
-
-    Currently this just tests that the call succeeds. There is no
-    test to see if the plot did anything.
-
-    Some tests fail due to missing plot preferences when there's
-    no plotting backend (e.g. missing 'xlog' settings), so skip
-    these tests in this case.
-    """
-
-    setup_example(idval)
-    if idval is None:
-        pfunc()
-    else:
-        pfunc(idval)
-
-
-@requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_plot_data_change(idval):
-    """Can we plot, change data, plot and see the difference?
-
-    This relies on checking the plot structure (returned by get_data_plot)
-    to approximate what the plot would be like.
-    """
-
-    setup_example(idval)
-    if idval is None:
-        ui.plot_data()
-        pvals1 = ui.get_data_plot()
-        dset = ui.get_data()
-    else:
-        ui.plot_data(idval)
-        pvals1 = ui.get_data_plot(idval)
-        dset = ui.get_data(idval)
-
-    # do not test the plot_prefs field
-    yold = [10, 40, 30, 50]
-    assert pvals1.xlabel == 'x'
-    assert pvals1.ylabel == 'y'
-    assert pvals1.title == 'example'
-    assert pvals1.x == pytest.approx([10, 20, 40, 90])
-    assert pvals1.y == pytest.approx(yold)
-    assert pvals1.xerr is None
-
-    assert pvals1.yerr == pytest.approx(calc_errors(yold))
-
-    # Modify the data values; rely on changing the dataset object
-    # directly means that we do not need to call set_data here.
-    #
-    ynew = [12, 45, 33, 49]
-    dset.y = ynew
-
-    # Check the new value (could just check pvals1, but make the
-    # explicit call to get_data_plot)
-    #
-    if idval is None:
-        ui.plot_data()
-        pvals2 = ui.get_data_plot(idval)
-    else:
-        ui.plot_data(idval)
-        pvals2 = ui.get_data_plot(idval)
-
-    assert pvals2.xlabel == 'x'
-    assert pvals2.ylabel == 'y'
-    assert pvals2.title == 'example'
-    assert pvals2.x == pytest.approx([10, 20, 40, 90])
-    assert pvals2.y == pytest.approx(ynew)
-    assert pvals2.xerr is None
-
-    # Should use approximate equality here
-    assert pvals2.yerr == pytest.approx(calc_errors(ynew))
-
-    # just check that the previous value has been updated too
-    assert pvals1.y == pytest.approx(pvals2.y)
-
-
 def change_example(idval):
     """Change the example y values (created by setup_example)"""
 
@@ -380,21 +289,122 @@ def check_fit_delchi():
     check_delchi(title='')
 
 
+_plot_replot_opts = [
+    (ui.plot_data, change_example, check_example),
+    (ui.plot_model, change_model, check_model),
+    (ui.plot_source, change_model, check_source),
+    (ui.plot_resid, change_model, check_resid),
+    (ui.plot_ratio, change_example, check_ratio),
+    (ui.plot_delchi, change_example, check_delchi),
+    (ui.plot_chisqr, change_example, check_chisqr),
+    (ui.plot_fit, change_fit, check_fit),
+    (ui.plot_fit_resid, change_fit, check_fit_resid),
+    (ui.plot_fit_delchi, change_fit, check_fit_delchi)]
+
+_plot_opts = [(a, c) for (a, b, c) in _plot_replot_opts]
+
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-@pytest.mark.parametrize("plotfunc,changefunc,checkfunc",
-                         [(ui.plot_data, change_example, check_example),
-                          (ui.plot_model, change_model, check_model),
-                          (ui.plot_source, change_model, check_source),
-                          (ui.plot_resid, change_model, check_resid),
-                          (ui.plot_ratio, change_example, check_ratio),
-                          (ui.plot_delchi, change_example, check_delchi),
-                          (ui.plot_chisqr, change_example, check_chisqr),
-                          (ui.plot_fit, change_fit, check_fit),
-                          (ui.plot_fit_resid, change_fit, check_fit_resid),
-                          (ui.plot_fit_delchi, change_fit, check_fit_delchi),
-                         ])
+@pytest.mark.parametrize("pfunc, checkfunc", _plot_opts)
+def test_plot_xxx(idval, pfunc, checkfunc):
+    """Can we call a plot_xxx routine?
+
+    There is limited testing that the plot call worked (this
+    tests that the underlying data objects in the UI session
+    were updated, not that the plot was created by the backend).
+
+    Parameters
+    ----------
+    idval : None, int, str
+        The dataset identifier to use
+    plotfunc
+        The function to call to create the plot. If idval is None it
+        is called with no argument, otherwise with idval.
+    checkfunc
+        The function which performs the checks on the plot. It is called
+        with no argument.
+
+    See Also
+    --------
+    test_plot_xxx_replot
+
+    """
+
+    setup_example(idval)
+    if idval is None:
+        pfunc()
+    else:
+        pfunc(idval)
+
+    checkfunc()
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_plot_data_change(idval):
+    """Can we plot, change data, plot and see the difference?
+
+    This relies on checking the plot structure (returned by get_data_plot)
+    to approximate what the plot would be like.
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.plot_data()
+        pvals1 = ui.get_data_plot()
+        dset = ui.get_data()
+    else:
+        ui.plot_data(idval)
+        pvals1 = ui.get_data_plot(idval)
+        dset = ui.get_data(idval)
+
+    # do not test the plot_prefs field
+    yold = [10, 40, 30, 50]
+    assert pvals1.xlabel == 'x'
+    assert pvals1.ylabel == 'y'
+    assert pvals1.title == 'example'
+    assert pvals1.x == pytest.approx([10, 20, 40, 90])
+    assert pvals1.y == pytest.approx(yold)
+    assert pvals1.xerr is None
+
+    assert pvals1.yerr == pytest.approx(calc_errors(yold))
+
+    # Modify the data values; rely on changing the dataset object
+    # directly means that we do not need to call set_data here.
+    #
+    ynew = [12, 45, 33, 49]
+    dset.y = ynew
+
+    # Check the new value (could just check pvals1, but make the
+    # explicit call to get_data_plot)
+    #
+    if idval is None:
+        ui.plot_data()
+        pvals2 = ui.get_data_plot(idval)
+    else:
+        ui.plot_data(idval)
+        pvals2 = ui.get_data_plot(idval)
+
+    assert pvals2.xlabel == 'x'
+    assert pvals2.ylabel == 'y'
+    assert pvals2.title == 'example'
+    assert pvals2.x == pytest.approx([10, 20, 40, 90])
+    assert pvals2.y == pytest.approx(ynew)
+    assert pvals2.xerr is None
+
+    # Should use approximate equality here
+    assert pvals2.yerr == pytest.approx(calc_errors(ynew))
+
+    # just check that the previous value has been updated too
+    assert pvals1.y == pytest.approx(pvals2.y)
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+@pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_replot_opts)
 def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
     """Can we plot, change data, plot with reploat and see a difference?
 
@@ -416,6 +426,11 @@ def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
     checkfunc
         The function which performs the checks on the plot. It is called
         with no argument.
+
+    See Also
+    --------
+    test_plot_xxx
+
     """
 
     setup_example(idval)
