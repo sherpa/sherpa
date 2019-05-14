@@ -67,6 +67,16 @@ def setup_example(idval):
         ui.set_source(idval, m)
 
 
+def calc_errors(ys):
+    """Return errors for ys using the default statistic.
+
+    Consolidate this code to make it easier to change if the
+    default statistic ever changes.
+    """
+
+    return Chi2Gehrels.calc_staterror(ys)
+
+
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_fit_plot(idval):
@@ -193,7 +203,7 @@ def test_plot_data_change(idval):
     assert pvals1.y == pytest.approx(yold)
     assert pvals1.xerr is None
 
-    assert pvals1.yerr == pytest.approx(Chi2Gehrels.calc_staterror(yold))
+    assert pvals1.yerr == pytest.approx(calc_errors(yold))
 
     # Modify the data values; rely on changing the dataset object
     # directly means that we do not need to call set_data here.
@@ -219,7 +229,7 @@ def test_plot_data_change(idval):
     assert pvals2.xerr is None
 
     # Should use approximate equality here
-    assert pvals2.yerr == pytest.approx(Chi2Gehrels.calc_staterror(ynew))
+    assert pvals2.yerr == pytest.approx(calc_errors(ynew))
 
     # just check that the previous value has been updated too
     assert pvals1.y == pytest.approx(pvals2.y)
@@ -259,7 +269,7 @@ def check_example():
     assert dplot.xerr is None
 
     # Should use approximate equality here
-    assert dplot.yerr == pytest.approx(Chi2Gehrels.calc_staterror(_data_y))
+    assert dplot.yerr == pytest.approx(calc_errors(_data_y))
 
     
 def check_model_plot(plot, title):
@@ -296,7 +306,7 @@ def check_resid():
     assert rplot.x == pytest.approx(_data_x)
     assert rplot.y == pytest.approx([y - 35 for y in _data_y])
     assert rplot.xerr is None
-    assert rplot.yerr == pytest.approx(Chi2Gehrels.calc_staterror(_data_y))
+    assert rplot.yerr == pytest.approx(calc_errors(_data_y))
 
     
 def check_ratio():
@@ -309,7 +319,7 @@ def check_ratio():
     assert rplot.x == pytest.approx(_data_x)
     assert rplot.y == pytest.approx([y / 35 for y in _data_y])
     assert rplot.xerr is None
-    dy = [dy / 35 for dy in Chi2Gehrels.calc_staterror(_data_y)]
+    dy = [dy / 35 for dy in calc_errors(_data_y)]
     assert rplot.yerr == pytest.approx(dy)
 
     
@@ -322,7 +332,7 @@ def check_delchi():
     assert rplot.title == 'Sigma Residuals for example'
     assert rplot.x == pytest.approx(_data_x)
 
-    dy = Chi2Gehrels.calc_staterror(_data_y)
+    dy = calc_errors(_data_y)
     assert rplot.y == pytest.approx([(y - 35) / dy
                                      for y,dy in zip(_data_y, dy)])
     assert rplot.xerr is None
@@ -338,7 +348,7 @@ def check_chisqr():
     assert rplot.title == '$\\chi^2$ for example'
     assert rplot.x == pytest.approx(_data_x)
 
-    dy = Chi2Gehrels.calc_staterror(_data_y)
+    dy = calc_errors(_data_y)
     assert rplot.y == pytest.approx([((y - 35) / dy)**2
                                      for y,dy in zip(_data_y, dy)])
     assert rplot.xerr is None
