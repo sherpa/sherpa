@@ -30,10 +30,13 @@ from sherpa.utils.testing import requires_plotting
 import pytest
 
 
+_data_x = [10, 20, 40, 90]
+_data_y = [10, 40, 30, 50]
+      
 def example_data():
     """Create an example data set."""
 
-    return ui.Data1D('example', [10, 20, 40, 90], [10, 40, 30, 50])
+    return ui.Data1D('example', _data_x, _data_y)
 
 def example_model():
     """Create an example model."""
@@ -222,56 +225,139 @@ def test_plot_data_change(idval):
     assert pvals1.y == pytest.approx(pvals2.y)
 
 
+def change_example(idval):
+    """Change the example y values (created by setup_example)"""
+
+    d = ui.get_data(idval)
+    d.y = [12, 45, 33, 49]
+
+
+def check_example(idval):
+    """Check that the data plot has not changed"""
+
+    dplot = ui._session._dataplot
+
+    assert dplot.xlabel == 'x'
+    assert dplot.ylabel == 'y'
+    assert dplot.title == 'example'
+    assert dplot.x == pytest.approx(_data_x)
+    assert dplot.y == pytest.approx(_data_y)
+    assert dplot.xerr is None
+
+    # Should use approximate equality here
+    assert dplot.yerr == pytest.approx(Chi2Gehrels.calc_staterror(_data_y))
+
+    
+def change_model(idval):
+    """Change the example model values (created by setup_model)"""
+
+    cpt = ui.get_model_component('cpt')
+    cpt.c0 = 41
+
+
+def check_model_plot(plot, title):
+    """Helper for check_model/source"""
+
+    assert plot.xlabel == 'x'
+    assert plot.ylabel == 'y'
+    assert plot.title == title
+    assert plot.x == pytest.approx(_data_x)
+    assert plot.y == pytest.approx([35 for x in _data_x])
+    assert plot.xerr is None
+    assert plot.yerr is None
+
+
+def check_model(idval):
+    """Check that the model plot has not changed"""
+
+    check_model_plot(ui._session._modelplot, 'Model')
+
+
+def check_source(idval):
+    """Check that the source plot has not changed"""
+
+    check_model_plot(ui._session._sourceplot, 'Source')
+
+    
+def check_resid(idval):
+    """Check that the resid plot has not changed"""
+
+    rplot = ui._session._residplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Data - Model'
+    assert rplot.title == 'Residuals for example'
+    assert rplot.x == pytest.approx(_data_x)
+    assert rplot.y == pytest.approx([y - 35 for y in _data_y])
+    assert rplot.xerr is None
+    assert rplot.yerr == pytest.approx(Chi2Gehrels.calc_staterror(_data_y))
+
+    
+def check_ratio(idval):
+    """Check that the ratio plot has not changed"""
+
+    rplot = ui._session._ratioplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Data / Model'
+    assert rplot.title == 'Ratio of Data to Model for example'
+    assert rplot.x == pytest.approx(_data_x)
+    assert rplot.y == pytest.approx([y / 35 for y in _data_y])
+    assert rplot.xerr is None
+    dy = [dy / 35 for dy in Chi2Gehrels.calc_staterror(_data_y)]
+    assert rplot.yerr == pytest.approx(dy)
+
+    
+def check_delchi(idval):
+    """Check that the delchi plot has not changed"""
+
+    rplot = ui._session._delchiplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Sigma'
+    assert rplot.title == 'Sigma Residuals for example'
+    assert rplot.x == pytest.approx(_data_x)
+
+    dy = Chi2Gehrels.calc_staterror(_data_y)
+    assert rplot.y == pytest.approx([(y - 35) / dy
+                                     for y,dy in zip(_data_y, dy)])
+    assert rplot.xerr is None
+    assert rplot.yerr == pytest.approx([1.0 for y in _data_y])
+
+    
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_plot_data_replot(idval):
-    """Can we plot, change data, plot with reploat and see no difference?
+@pytest.mark.parametrize("setupfunc,plotfunc,changefunc,checkfunc",
+                         [(setup_example, ui.plot_data, change_example, check_example),
+                          (setup_example, ui.plot_model, change_model, check_model),
+                          (setup_example, ui.plot_source, change_model, check_source),
+                          (setup_example, ui.plot_resid, change_model, check_resid),
+                          (setup_example, ui.plot_ratio, change_example, check_ratio),
+                          (setup_example, ui.plot_delchi, change_example, check_delchi),
+                         ])
+def test_plot_xxx_replot(idval, setupfunc, plotfunc, changefunc, checkfunc):
+    """Can we plot, change data, plot with reploat and see a difference?
 
     This relies on accessing the undelying session object directly,
-    as ui.get_data_plot always recreates the plot objects, which
-    isn't helpful here.
+    as the user-supplied accessors either aren't suited (e.g.
+    ui.get_data_plot always recreates the plot structure) or don't
+    exist.
 
     """
 
-    setup_example(idval)
+    setupfunc(idval)
     if idval is None:
-        ui.plot_data()
-        pvals1 = ui.get_data_plot()
+        plotfunc()
         dset = ui.get_data()
     else:
-        ui.plot_data(idval)
-        pvals1 = ui.get_data_plot(idval)
+        plotfunc(idval)
         dset = ui.get_data(idval)
 
-    # the fields returned by get_data_plot have already been tested
-    # by test_plot_data_change, so no need to repeat this here.
-    #
-
-    # Modify the data values; rely on changing the dataset object
-    # directly means that we do not need to call set_data here.
-    #
-    yold = [10, 40, 30, 50]
-    ynew = [12, 45, 33, 49]
-    dset.y = ynew
-
-    # Check the new value
+    changefunc(idval)
+    
+    # Recreate the plot
     #
     if idval is None:
-        ui.plot_data(replot=True)
+        plotfunc(replot=True)
     else:
-        ui.plot_data(idval, replot=True)
+        plotfunc(idval, replot=True)
 
-    # access the data-plot object directly, since get_data_plot
-    # would cause this to be changed.
-    pvals2 = ui._session._dataplot
-
-    assert pvals2.xlabel == 'x'
-    assert pvals2.ylabel == 'y'
-    assert pvals2.title == 'example'
-    assert pvals2.x == pytest.approx([10, 20, 40, 90])
-    assert pvals2.y == pytest.approx(yold)
-    assert pvals2.xerr is None
-
-    # Should use approximate equality here
-    assert pvals2.yerr == pytest.approx(Chi2Gehrels.calc_staterror(yold))
+    checkfunc(idval)
