@@ -232,7 +232,7 @@ def change_example(idval):
     d.y = [12, 45, 33, 49]
 
 
-def check_example(idval):
+def check_example():
     """Check that the data plot has not changed"""
 
     dplot = ui._session._dataplot
@@ -267,19 +267,19 @@ def check_model_plot(plot, title):
     assert plot.yerr is None
 
 
-def check_model(idval):
+def check_model():
     """Check that the model plot has not changed"""
 
     check_model_plot(ui._session._modelplot, 'Model')
 
 
-def check_source(idval):
+def check_source():
     """Check that the source plot has not changed"""
 
     check_model_plot(ui._session._sourceplot, 'Source')
 
     
-def check_resid(idval):
+def check_resid():
     """Check that the resid plot has not changed"""
 
     rplot = ui._session._residplot
@@ -292,7 +292,7 @@ def check_resid(idval):
     assert rplot.yerr == pytest.approx(Chi2Gehrels.calc_staterror(_data_y))
 
     
-def check_ratio(idval):
+def check_ratio():
     """Check that the ratio plot has not changed"""
 
     rplot = ui._session._ratioplot
@@ -306,7 +306,7 @@ def check_ratio(idval):
     assert rplot.yerr == pytest.approx(dy)
 
     
-def check_delchi(idval):
+def check_delchi():
     """Check that the delchi plot has not changed"""
 
     rplot = ui._session._delchiplot
@@ -322,7 +322,7 @@ def check_delchi(idval):
     assert rplot.yerr == pytest.approx([1.0 for y in _data_y])
 
     
-def check_chisqr(idval):
+def check_chisqr():
     """Check that the chisqr plot has not changed"""
 
     rplot = ui._session._chisqrplot
@@ -341,16 +341,16 @@ def check_chisqr(idval):
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-@pytest.mark.parametrize("setupfunc,plotfunc,changefunc,checkfunc",
-                         [(setup_example, ui.plot_data, change_example, check_example),
-                          (setup_example, ui.plot_model, change_model, check_model),
-                          (setup_example, ui.plot_source, change_model, check_source),
-                          (setup_example, ui.plot_resid, change_model, check_resid),
-                          (setup_example, ui.plot_ratio, change_example, check_ratio),
-                          (setup_example, ui.plot_delchi, change_example, check_delchi),
-                          (setup_example, ui.plot_chisqr, change_example, check_chisqr),
+@pytest.mark.parametrize("plotfunc,changefunc,checkfunc",
+                         [(ui.plot_data, change_example, check_example),
+                          (ui.plot_model, change_model, check_model),
+                          (ui.plot_source, change_model, check_source),
+                          (ui.plot_resid, change_model, check_resid),
+                          (ui.plot_ratio, change_example, check_ratio),
+                          (ui.plot_delchi, change_example, check_delchi),
+                          (ui.plot_chisqr, change_example, check_chisqr),
                          ])
-def test_plot_xxx_replot(idval, setupfunc, plotfunc, changefunc, checkfunc):
+def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
     """Can we plot, change data, plot with reploat and see a difference?
 
     This relies on accessing the undelying session object directly,
@@ -358,15 +358,26 @@ def test_plot_xxx_replot(idval, setupfunc, plotfunc, changefunc, checkfunc):
     ui.get_data_plot always recreates the plot structure) or don't
     exist.
 
+    Parameters
+    ----------
+    idval : None, int, str
+        The dataset identifier to use
+    plotfunc
+        The function to call to create the plot. If idval is None it
+        is called with no argument, otherwise with idval.
+    changefunc
+        The function to call to change the setup (e.g. data or model).
+        It is called with idval.
+    checkfunc
+        The function which performs the checks on the plot. It is called
+        with no argument.
     """
 
-    setupfunc(idval)
+    setup_example(idval)
     if idval is None:
         plotfunc()
-        dset = ui.get_data()
     else:
         plotfunc(idval)
-        dset = ui.get_data(idval)
 
     changefunc(idval)
     
@@ -377,4 +388,4 @@ def test_plot_xxx_replot(idval, setupfunc, plotfunc, changefunc, checkfunc):
     else:
         plotfunc(idval, replot=True)
 
-    checkfunc(idval)
+    checkfunc()
