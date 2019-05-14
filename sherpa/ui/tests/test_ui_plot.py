@@ -32,11 +32,18 @@ import pytest
 
 _data_x = [10, 20, 40, 90]
 _data_y = [10, 40, 30, 50]
+_data_y2 = [12, 45, 33, 49]
       
 def example_data():
     """Create an example data set."""
 
-    return ui.Data1D('example', _data_x, _data_y)
+    # Note: we copy the x and y arrays just so there's no accidental
+    # aliasing.
+    #
+    x = [d for d in _data_x]
+    y = [d for d in _data_y]
+    return ui.Data1D('example', x, y)
+
 
 def example_model():
     """Create an example model."""
@@ -148,7 +155,8 @@ def change_example(idval):
     """Change the example y values (created by setup_example)"""
 
     d = ui.get_data(idval)
-    d.y = [12, 45, 33, 49]
+    # copy the values to ensure _data_y2 isn't changed by accident
+    d.y = [d for d in _data_y2]
 
 
 def change_model(idval):
@@ -181,14 +189,33 @@ def check_example(xlabel='x'):
     assert dplot.yerr == pytest.approx(calc_errors(_data_y))
 
     
-def check_model_plot(plot, title='Model', xlabel='x'):
+def check_example_changed(xlabel='x'):
+    """Check that the data plot has changed
+
+    Assumes change_example has been called
+    """
+
+    dplot = ui._session._dataplot
+
+    assert dplot.xlabel == xlabel
+    assert dplot.ylabel == 'y'
+    assert dplot.title == 'example'
+    assert dplot.x == pytest.approx(_data_x)
+    assert dplot.y == pytest.approx(_data_y2)
+    assert dplot.xerr is None
+
+    # Should use approximate equality here
+    assert dplot.yerr == pytest.approx(calc_errors(_data_y2))
+
+
+def check_model_plot(plot, title='Model', xlabel='x', modelval=35):
     """Helper for check_model/source"""
 
     assert plot.xlabel == xlabel
     assert plot.ylabel == 'y'
     assert plot.title == title
     assert plot.x == pytest.approx(_data_x)
-    assert plot.y == pytest.approx([35 for x in _data_x])
+    assert plot.y == pytest.approx([modelval for x in _data_x])
     assert plot.xerr is None
     assert plot.yerr is None
 
@@ -200,6 +227,17 @@ def check_model(xlabel='x'):
                      title='Model', xlabel=xlabel)
 
 
+def check_model_changed(xlabel='x'):
+    """Check that the model plot has changed
+
+    Assumes change_model has been called
+    """
+
+    check_model_plot(ui._session._modelplot,
+                     title='Model', xlabel=xlabel,
+                     modelval=41)
+
+
 def check_source():
     """Check that the source plot has not changed"""
 
@@ -207,6 +245,16 @@ def check_source():
                      title='Source')
 
     
+def check_source_changed():
+    """Check that the source plot has changed
+
+    Assumes change_model has been called
+    """
+
+    check_model_plot(ui._session._sourceplot,
+                     title='Source', modelval=41)
+
+
 def check_resid(title='Residuals for example'):
     """Check that the resid plot has not changed"""
 
@@ -220,6 +268,38 @@ def check_resid(title='Residuals for example'):
     assert rplot.yerr == pytest.approx(calc_errors(_data_y))
 
     
+def check_resid_changed(title='Residuals for example'):
+    """Check that the resid plot has changed
+
+    Assumes that change_model has been called
+    """
+
+    rplot = ui._session._residplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Data - Model'
+    assert rplot.title == title
+    assert rplot.x == pytest.approx(_data_x)
+    assert rplot.y == pytest.approx([y - 41 for y in _data_y])
+    assert rplot.xerr is None
+    assert rplot.yerr == pytest.approx(calc_errors(_data_y))
+
+
+def check_resid_changed2(title='Residuals for example'):
+    """Check that the resid plot has changed
+
+    Assumes that change_example and change_model has been called
+    """
+
+    rplot = ui._session._residplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Data - Model'
+    assert rplot.title == title
+    assert rplot.x == pytest.approx(_data_x)
+    assert rplot.y == pytest.approx([y - 41 for y in _data_y2])
+    assert rplot.xerr is None
+    assert rplot.yerr == pytest.approx(calc_errors(_data_y2))
+
+
 def check_ratio():
     """Check that the ratio plot has not changed"""
 
@@ -233,7 +313,24 @@ def check_ratio():
     dy = [dy / 35 for dy in calc_errors(_data_y)]
     assert rplot.yerr == pytest.approx(dy)
 
-    
+
+def check_ratio_changed():
+    """Check that the ratio plot has changed
+
+    Assumes that change_example has been called
+    """
+
+    rplot = ui._session._ratioplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Data / Model'
+    assert rplot.title == 'Ratio of Data to Model for example'
+    assert rplot.x == pytest.approx(_data_x)
+    assert rplot.y == pytest.approx([y / 35 for y in _data_y2])
+    assert rplot.xerr is None
+    dy = [dy / 35 for dy in calc_errors(_data_y2)]
+    assert rplot.yerr == pytest.approx(dy)
+
+
 def check_delchi(title='Sigma Residuals for example'):
     """Check that the delchi plot has not changed"""
 
@@ -249,7 +346,45 @@ def check_delchi(title='Sigma Residuals for example'):
     assert rplot.xerr is None
     assert rplot.yerr == pytest.approx([1.0 for y in _data_y])
 
-    
+
+def check_delchi_changed(title='Sigma Residuals for example'):
+    """Check that the delchi plot has changed
+
+    Assumes that change_example has been called
+    """
+
+    rplot = ui._session._delchiplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Sigma'
+    assert rplot.title == title
+    assert rplot.x == pytest.approx(_data_x)
+
+    dy = calc_errors(_data_y2)
+    assert rplot.y == pytest.approx([(y - 35) / dy
+                                     for y,dy in zip(_data_y2, dy)])
+    assert rplot.xerr is None
+    assert rplot.yerr == pytest.approx([1.0 for y in _data_x])
+
+
+def check_delchi_changed2(title='Sigma Residuals for example'):
+    """Check that the delchi plot has changed
+
+    Assumes that change_example and change_model has been called
+    """
+
+    rplot = ui._session._delchiplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Sigma'
+    assert rplot.title == title
+    assert rplot.x == pytest.approx(_data_x)
+
+    dy = calc_errors(_data_y2)
+    assert rplot.y == pytest.approx([(y - 41) / dy
+                                     for y,dy in zip(_data_y2, dy)])
+    assert rplot.xerr is None
+    assert rplot.yerr == pytest.approx([1.0 for y in _data_x])
+
+
 def check_chisqr():
     """Check that the chisqr plot has not changed"""
 
@@ -266,11 +401,40 @@ def check_chisqr():
     assert rplot.yerr is None
 
 
+def check_chisqr_changed():
+    """Check that the chisqr plot has changed
+
+    Assumes that change_example has been called
+    """
+
+    rplot = ui._session._chisqrplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == '$\\chi^2$'
+    assert rplot.title == '$\\chi^2$ for example'
+    assert rplot.x == pytest.approx(_data_x)
+
+    dy = calc_errors(_data_y2)
+    assert rplot.y == pytest.approx([((y - 35) / dy)**2
+                                     for y,dy in zip(_data_y2, dy)])
+    assert rplot.xerr is None
+    assert rplot.yerr is None
+
+
 def check_fit():
     """Check that the fit plot has not changed"""
 
     check_example()
     check_model()
+
+
+def check_fit_changed():
+    """Check that the fit plot has changed
+
+    Assumes that change_fit has been called
+    """
+
+    check_example_changed()
+    check_model_changed()
 
 
 def check_fit_resid():
@@ -281,6 +445,17 @@ def check_fit_resid():
     check_resid(title='')
 
 
+def check_fit_resid_changed():
+    """Check that the fit + resid plot has changed
+
+    Assumes that change_fit has been called
+    """
+
+    check_example_changed(xlabel='')
+    check_model_changed(xlabel='')
+    check_resid_changed2(title='')
+
+
 def check_fit_delchi():
     """Check that the fit + delchi plot has not changed"""
 
@@ -289,19 +464,44 @@ def check_fit_delchi():
     check_delchi(title='')
 
 
-_plot_replot_opts = [
-    (ui.plot_data, change_example, check_example),
-    (ui.plot_model, change_model, check_model),
-    (ui.plot_source, change_model, check_source),
-    (ui.plot_resid, change_model, check_resid),
-    (ui.plot_ratio, change_example, check_ratio),
-    (ui.plot_delchi, change_example, check_delchi),
-    (ui.plot_chisqr, change_example, check_chisqr),
-    (ui.plot_fit, change_fit, check_fit),
-    (ui.plot_fit_resid, change_fit, check_fit_resid),
-    (ui.plot_fit_delchi, change_fit, check_fit_delchi)]
+def check_fit_delchi_changed():
+    """Check that the fit + delchi plot has changed
 
-_plot_opts = [(a, c) for (a, b, c) in _plot_replot_opts]
+    Assumes that change_fit has been called
+    """
+
+    check_example_changed(xlabel='')
+    check_model_changed(xlabel='')
+    check_delchi_changed2(title='')
+
+
+_plot_all = [
+    {'plot': ui.plot_data, 'change': change_example,
+     'check': check_example, 'check_changed': check_example_changed},
+    {'plot': ui.plot_model, 'change': change_model,
+     'check': check_model, 'check_changed': check_model_changed},
+    {'plot': ui.plot_source, 'change': change_model,
+     'check': check_source, 'check_changed': check_source_changed},
+    {'plot': ui.plot_resid, 'change': change_model,
+     'check': check_resid, 'check_changed': check_resid_changed},
+    {'plot': ui.plot_ratio, 'change': change_example,
+     'check': check_ratio, 'check_changed': check_ratio_changed},
+    {'plot': ui.plot_delchi, 'change': change_example,
+     'check': check_delchi, 'check_changed': check_delchi_changed},
+    {'plot': ui.plot_chisqr, 'change': change_example,
+     'check': check_chisqr, 'check_changed': check_chisqr_changed},
+    {'plot': ui.plot_fit, 'change': change_fit,
+     'check': check_fit, 'check_changed': check_fit_changed},
+    {'plot': ui.plot_fit_resid, 'change': change_fit,
+     'check': check_fit_resid, 'check_changed': check_fit_resid_changed},
+    {'plot': ui.plot_fit_delchi, 'change': change_fit,
+     'check': check_fit_delchi, 'check_changed': check_fit_delchi_changed}]
+
+_plot_opts = [(p['plot'], p['check']) for p in _plot_all]
+_plot_replot_opts = [(p['plot'], p['change'], p['check']) for p in _plot_all]
+_plot_change_opts = [(p['plot'], p['change'], p['check_changed'])
+                     for p in _plot_all]
+
 
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
@@ -327,7 +527,7 @@ def test_plot_xxx(idval, pfunc, checkfunc):
 
     See Also
     --------
-    test_plot_xxx_replot
+    test_plot_xxx_change, test_plot_xxx_replot
 
     """
 
@@ -343,75 +543,9 @@ def test_plot_xxx(idval, pfunc, checkfunc):
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_plot_data_change(idval):
-    """Can we plot, change data, plot and see the difference?
-
-    This relies on checking the plot structure (returned by get_data_plot)
-    to approximate what the plot would be like.
-    """
-
-    setup_example(idval)
-    if idval is None:
-        ui.plot_data()
-        pvals1 = ui.get_data_plot()
-        dset = ui.get_data()
-    else:
-        ui.plot_data(idval)
-        pvals1 = ui.get_data_plot(idval)
-        dset = ui.get_data(idval)
-
-    # do not test the plot_prefs field
-    yold = [10, 40, 30, 50]
-    assert pvals1.xlabel == 'x'
-    assert pvals1.ylabel == 'y'
-    assert pvals1.title == 'example'
-    assert pvals1.x == pytest.approx([10, 20, 40, 90])
-    assert pvals1.y == pytest.approx(yold)
-    assert pvals1.xerr is None
-
-    assert pvals1.yerr == pytest.approx(calc_errors(yold))
-
-    # Modify the data values; rely on changing the dataset object
-    # directly means that we do not need to call set_data here.
-    #
-    ynew = [12, 45, 33, 49]
-    dset.y = ynew
-
-    # Check the new value (could just check pvals1, but make the
-    # explicit call to get_data_plot)
-    #
-    if idval is None:
-        ui.plot_data()
-        pvals2 = ui.get_data_plot(idval)
-    else:
-        ui.plot_data(idval)
-        pvals2 = ui.get_data_plot(idval)
-
-    assert pvals2.xlabel == 'x'
-    assert pvals2.ylabel == 'y'
-    assert pvals2.title == 'example'
-    assert pvals2.x == pytest.approx([10, 20, 40, 90])
-    assert pvals2.y == pytest.approx(ynew)
-    assert pvals2.xerr is None
-
-    # Should use approximate equality here
-    assert pvals2.yerr == pytest.approx(calc_errors(ynew))
-
-    # just check that the previous value has been updated too
-    assert pvals1.y == pytest.approx(pvals2.y)
-
-
-@requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_replot_opts)
 def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
-    """Can we plot, change data, plot with reploat and see a difference?
-
-    This relies on accessing the undelying session object directly,
-    as the user-supplied accessors either aren't suited (e.g.
-    ui.get_data_plot always recreates the plot structure) or don't
-    exist.
+    """Can we plot, change data, plot with replot and see no difference?
 
     Parameters
     ----------
@@ -429,7 +563,7 @@ def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
 
     See Also
     --------
-    test_plot_xxx
+    test_plot_xxx, test_plot_xxx_change
 
     """
 
@@ -440,12 +574,60 @@ def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
         plotfunc(idval)
 
     changefunc(idval)
-    
+
     # Recreate the plot
     #
     if idval is None:
         plotfunc(replot=True)
     else:
         plotfunc(idval, replot=True)
+
+    checkfunc()
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+@pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_change_opts)
+def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc):
+    """Can we plot, change data, plot and see a difference?
+
+    Unlike test_plot_xxx_replot, this does not set replot to True,
+    so it should see the changed data in the plot structures.
+
+    Parameters
+    ----------
+    idval : None, int, str
+        The dataset identifier to use
+    plotfunc
+        The function to call to create the plot. If idval is None it
+        is called with no argument, otherwise with idval.
+    changefunc
+        The function to call to change the setup (e.g. data or model).
+        It is called with idval.
+    checkfunc
+        The function which performs the checks on the plot. It is called
+        with no argument.
+
+    See Also
+    --------
+    test_plot_xxx, test_plot_xxx_replot
+
+    """
+
+    setup_example(idval)
+    if idval is None:
+        plotfunc()
+    else:
+        plotfunc(idval)
+
+    changefunc(idval)
+
+    # Recreate the plot
+    #
+    if idval is None:
+        plotfunc()
+    else:
+        plotfunc(idval)
 
     checkfunc()
