@@ -322,6 +322,22 @@ def check_delchi(idval):
     assert rplot.yerr == pytest.approx([1.0 for y in _data_y])
 
     
+def check_chisqr(idval):
+    """Check that the chisqr plot has not changed"""
+
+    rplot = ui._session._chisqrplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == '$\\chi^2$'
+    assert rplot.title == '$\\chi^2$ for example'
+    assert rplot.x == pytest.approx(_data_x)
+
+    dy = Chi2Gehrels.calc_staterror(_data_y)
+    assert rplot.y == pytest.approx([((y - 35) / dy)**2
+                                     for y,dy in zip(_data_y, dy)])
+    assert rplot.xerr is None
+    assert rplot.yerr is None
+
+
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -332,6 +348,7 @@ def check_delchi(idval):
                           (setup_example, ui.plot_resid, change_model, check_resid),
                           (setup_example, ui.plot_ratio, change_example, check_ratio),
                           (setup_example, ui.plot_delchi, change_example, check_delchi),
+                          (setup_example, ui.plot_chisqr, change_example, check_chisqr),
                          ])
 def test_plot_xxx_replot(idval, setupfunc, plotfunc, changefunc, checkfunc):
     """Can we plot, change data, plot with reploat and see a difference?
