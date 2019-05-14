@@ -232,6 +232,20 @@ def change_example(idval):
     d.y = [12, 45, 33, 49]
 
 
+def change_model(idval):
+    """Change the example model values (created by setup_model)"""
+
+    cpt = ui.get_model_component('cpt')
+    cpt.c0 = 41
+
+
+def change_fit(idval):
+    """Change both the model and the data."""
+
+    change_example(idval)
+    change_model(idval)
+
+
 def check_example():
     """Check that the data plot has not changed"""
 
@@ -248,13 +262,6 @@ def check_example():
     assert dplot.yerr == pytest.approx(Chi2Gehrels.calc_staterror(_data_y))
 
     
-def change_model(idval):
-    """Change the example model values (created by setup_model)"""
-
-    cpt = ui.get_model_component('cpt')
-    cpt.c0 = 41
-
-
 def check_model_plot(plot, title):
     """Helper for check_model/source"""
 
@@ -338,6 +345,13 @@ def check_chisqr():
     assert rplot.yerr is None
 
 
+def check_fit():
+    """Check that the fit plot has not changed"""
+
+    check_example()
+    check_model()
+
+
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -349,6 +363,7 @@ def check_chisqr():
                           (ui.plot_ratio, change_example, check_ratio),
                           (ui.plot_delchi, change_example, check_delchi),
                           (ui.plot_chisqr, change_example, check_chisqr),
+                          (ui.plot_fit, change_fit, check_fit),
                          ])
 def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
     """Can we plot, change data, plot with reploat and see a difference?
