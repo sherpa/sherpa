@@ -8338,8 +8338,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11902,7 +11902,7 @@ class Session(NoNewAttributesAfterInit):
         functions, with ``plot_`` prepended to the plot type, such as
         `plot_data` (the ``bkg`` variants use a prefix of
         ``plot_bkg_``). There are also several multiple-plot commands
-        (e.g. `plot_fit_resid`).
+        (e.g. `plot_fit_resid` and `plot_fit_delchi`).
 
         ``arf``
            The ARF for the data set (only for `DataPHA` data sets).
@@ -12025,6 +12025,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12057,6 +12060,18 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_data("jet")
         >>> plot_data("core", overplot=True)
 
+        The following example requires that the Matplotlib backend
+        is selected, and uses a Matplotlib function to create a
+        subplot (in this case one filling the bottom half of the
+        plot area) and then calls `plot_data` with the `clearwindow`
+        argument set to `False` to use this subplot. If the
+        `clearwindow` argument had not been used then the plot area
+        would have been cleared and the plot would have filled the
+        area.
+
+        >>> plt.subplot(2, 1, 2)
+        >>> plot_data(clearwindow=False)
+
         """
         self._plot(id, self._dataplot, **kwargs)
 
@@ -12079,6 +12094,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12135,6 +12153,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12202,6 +12223,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12273,6 +12297,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12323,6 +12350,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12378,6 +12408,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12437,6 +12470,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12491,6 +12527,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12544,6 +12583,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12597,6 +12639,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12649,6 +12694,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12705,8 +12753,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12789,8 +12837,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12884,8 +12932,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12956,8 +13004,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -13031,8 +13079,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -13110,8 +13158,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------

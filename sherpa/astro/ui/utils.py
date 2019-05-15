@@ -11024,6 +11024,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11123,6 +11126,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11191,6 +11197,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11238,6 +11247,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11301,6 +11313,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11351,6 +11366,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11404,6 +11422,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11456,6 +11477,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11508,6 +11532,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11556,6 +11583,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11614,6 +11644,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11697,6 +11730,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11798,6 +11834,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11866,8 +11905,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11949,8 +11988,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
