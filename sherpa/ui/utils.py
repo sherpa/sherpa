@@ -12734,6 +12734,75 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._kernelplot, **kwargs)
 
+    def _plot_jointplot(self, plot2, id=None, replot=False,
+                        overplot=False, clearwindow=True):
+        """Create a joint plot, vertically aligned, fit data on the top.
+
+        Parameters
+        ----------
+        plot2 : sherpa.plot.Plot instance
+           The plot to appear in the bottom panel.
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit_resid`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        """
+
+        plot1 = self._fitplot
+        self._jointplot.reset()
+        if not sherpa.utils.bool_cast(replot):
+            # The assumption is that _prepare_plotobj doesn't actually
+            # create a new object but modifies the input object (so
+            # the re-assignment could be dropped here). If a new instance is
+            # created then plot2 should be returned by this routine
+            #
+            plot1 = self._prepare_plotobj(id, plot1)
+            plot2 = self._prepare_plotobj(id, plot2)
+
+        try:
+            sherpa.plot.begin()
+            self._jointplot.plottop(plot1, overplot=overplot,
+                                    clearwindow=clearwindow)
+
+            # The two plots are intended to have the same scaling
+            # on the X axis (log or linear), and the approach is
+            # to use log if either of the components of the top
+            # plot (i.e. it is assumed that this is a fit plot)
+            # use a log scale.
+            #
+            # DJB believes that the following preference check is
+            # more-complicated than it needs to be: it should be
+            # sufficient to just use the preferences in the
+            # plot1 and plot2 objects, rather than dig around
+            # in the self.{_data/_model}plot structures (as they
+            # should be the same object), but we do not have enough
+            # tests to check this.
+            #
+            oldval = plot2.plot_prefs['xlog']
+            if (('xlog' in self._dataplot.plot_prefs and
+                 self._dataplot.plot_prefs['xlog']) or
+                ('xlog' in self._modelplot.plot_prefs and
+                 self._modelplot.plot_prefs['xlog'])):
+                plot2.plot_prefs['xlog'] = True
+
+            self._jointplot.plotbot(plot2, overplot=overplot)
+
+            plot2.plot_prefs['xlog'] = oldval
+        except:
+            sherpa.plot.exceptions()
+            raise
+        else:
+            sherpa.plot.end()
+
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True):
         """Plot the fit results, and the residuals, for a data set.
@@ -12791,32 +12860,10 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_resid('core', overplot=True)
 
         """
-        self._jointplot.reset()
-        fp = self._fitplot
-        rp = self._residplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp)
-            rp = self._prepare_plotobj(id, rp)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = rp.plot_prefs['xlog']
-            if (('xlog' in self._dataplot.plot_prefs and
-                 self._dataplot.plot_prefs['xlog']) or
-                ('xlog' in self._modelplot.plot_prefs and
-                 self._modelplot.plot_prefs['xlog'])):
-                rp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(rp, overplot=overplot)
-
-            rp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_jointplot(self._residplot,
+                             id=id, replot=replot, overplot=overplot,
+                             clearwindow=clearwindow)
 
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
                         clearwindow=True):
@@ -12875,32 +12922,10 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_delchi('core', overplot=True)
 
         """
-        self._jointplot.reset()
-        fp = self._fitplot
-        dp = self._delchiplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp)
-            dp = self._prepare_plotobj(id, dp)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = dp.plot_prefs['xlog']
-            if (('xlog' in self._dataplot.plot_prefs and
-                 self._dataplot.plot_prefs['xlog']) or
-                ('xlog' in self._modelplot.plot_prefs and
-                 self._modelplot.plot_prefs['xlog'])):
-                dp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(dp, overplot=overplot)
-
-            dp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_jointplot(self._delchiplot,
+                             id=id, replot=replot, overplot=overplot,
+                             clearwindow=clearwindow)
 
     #
     # Statistical plotting routines
