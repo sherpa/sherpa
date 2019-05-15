@@ -646,11 +646,6 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc):
     behavior. The test may be "obvious behavior" given how
     get_data_plot_prefs works, but DJB wanted to ensure this
     behavior/assumption was tested.
-
-    TODO: plot_fit uses the ui._session._fitplot.[data|modeplot]
-    settings which are initially None but set to the
-    ui._session._[data|model]plot objects after a call to plot_fit.
-    This needs to be looked at.
     """
 
     # This has to be retrieved here, rather than passed in in the
@@ -683,4 +678,50 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc):
     # has been updated with the new preference setting.
     #
     assert not session.plot_prefs['xlog']
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+def test_prefs_change_session_objects_fit():
+    """Is plot-preference change reflected in the fitplot session object?
+
+    This is test_prefs_change_session_objects but for the _fitplot
+    attribute. This test encodes the current behavior - so we can see
+    if things change in the future - rather than being a statement
+    about what we expect/want to happen.
+    """
+
+    plotobj = ui._session._fitplot
+    assert plotobj.dataplot is None
+    assert plotobj.modelplot is None
     
+    dprefs = ui.get_data_plot_prefs()
+    mprefs = ui.get_model_plot_prefs()
+
+    # Ensure we are actually changing a preference setting
+    #
+    assert not dprefs['xlog']
+    assert not mprefs['ylog']
+
+    dprefs['xlog'] = True
+    mprefs['ylog'] = True
+
+    setup_example(12)
+    ui.plot_fit(12)
+
+    # We have already checked this in previous tests, but
+    # just in case
+    #
+    assert ui._session._dataplot.plot_prefs['xlog']
+    assert ui._session._modelplot.plot_prefs['ylog']
+
+    # Now check that the fit plot has picked up these changes;
+    # the simplest way is to check that the data/model plots
+    # are now referencing the underlying _data/_model plot
+    # attributes. An alternative would be to check that
+    # plotobj.dataplot.plot_prefs['xlog'] is True
+    # which is less restrictive, but for not check the
+    # equality
+    #
+    assert plotobj.dataplot is ui._session._dataplot
+    assert plotobj.modelplot is ui._session._modelplot
