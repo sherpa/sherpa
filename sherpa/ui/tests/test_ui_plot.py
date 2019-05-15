@@ -631,3 +631,56 @@ def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc):
         plotfunc(idval)
 
     checkfunc()
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("getprefs,attr, plotfunc",
+                         [(ui.get_data_plot_prefs, "_dataplot", ui.plot_data),
+                          (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)])
+def test_prefs_change_session_objects(getprefs, attr, plotfunc):
+    """Is a plot-preference change also reflected in the session object?
+
+    This is intended to test an assumption that will be used in the
+    plot_fit_xxx routines rather than of an explicit user-visible
+    behavior. The test may be "obvious behavior" given how
+    get_data_plot_prefs works, but DJB wanted to ensure this
+    behavior/assumption was tested.
+
+    TODO: plot_fit uses the ui._session._fitplot.[data|modeplot]
+    settings which are initially None but set to the
+    ui._session._[data|model]plot objects after a call to plot_fit.
+    This needs to be looked at.
+    """
+
+    # This has to be retrieved here, rather than passed in in the
+    # parametrize list, as the ui._session object is changed by
+    # the clean_ui fixture.
+    #
+    session = getattr(ui._session, attr)
+    
+    # All but the last assert are just to check things are behaving
+    # as expected (and stuck into one routine rather than have a
+    # bunch of tests that repeat a subset of this test)
+    #
+    prefs = getprefs()
+    assert not prefs['xlog']
+    assert not session.plot_prefs['xlog']
+    assert session.x is None
+
+    prefs['xlog'] = True
+    assert session.plot_prefs['xlog']
+
+    setup_example(None)
+    plotfunc()
+    
+    assert session.plot_prefs['xlog']
+    assert session.x is not None
+
+    prefs['xlog'] = False
+
+    # The aim of the test is to check that the session plot object
+    # has been updated with the new preference setting.
+    #
+    assert not session.plot_prefs['xlog']
+    
