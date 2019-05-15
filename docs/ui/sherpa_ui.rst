@@ -194,6 +194,7 @@ hidden away. This needs better explanation...
       plot_delchi
       plot_fit
       plot_fit_delchi
+      plot_fit_ratio
       plot_fit_resid
       plot_kernel
       plot_model

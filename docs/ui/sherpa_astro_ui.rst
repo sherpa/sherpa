@@ -288,6 +288,7 @@ burden...
       plot_energy_flux
       plot_fit
       plot_fit_delchi
+      plot_fit_ratio
       plot_fit_resid
       plot_kernel
       plot_model

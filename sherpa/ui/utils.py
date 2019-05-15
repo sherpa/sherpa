@@ -11901,8 +11901,8 @@ class Session(NoNewAttributesAfterInit):
         include the following list. There are also individual
         functions, with ``plot_`` prepended to the plot type, such as
         `plot_data` (the ``bkg`` variants use a prefix of
-        ``plot_bkg_``). There are also several multiple-plot commands
-        (e.g. `plot_fit_resid` and `plot_fit_delchi`).
+        ``plot_bkg_``). There are also several multiple-plot commands,
+        such as `plot_fit_ratio`, `plot_fit_resid`, and `plot_fit_delchi`.
 
         ``arf``
            The ARF for the data set (only for `DataPHA` data sets).
@@ -12366,6 +12366,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_fit_ratio : Plot the fit results, and the ratio of data to model, for a data set.
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         plot_data : Plot the data values.
         plot_model : Plot the model for a data set.
@@ -12816,8 +12817,8 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to ``True`` to use the values calculated by the last
-           call to `plot_fit_resid`. The default is ``False``.
+           Set to ``True`` to use the previous values. The default is
+           ``False``.
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
@@ -12838,8 +12839,10 @@ class Session(NoNewAttributesAfterInit):
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_fit_ratio : Plot the fit results, and the ratio of data to model, for a data set.
         plot_data : Plot the data values.
         plot_model : Plot the model for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
@@ -12862,6 +12865,70 @@ class Session(NoNewAttributesAfterInit):
         """
 
         self._plot_jointplot(self._residplot,
+                             id=id, replot=replot, overplot=overplot,
+                             clearwindow=clearwindow)
+
+    def plot_fit_ratio(self, id=None, replot=False, overplot=False,
+                       clearwindow=True):
+        """Plot the fit results, and the ratio of data to model, for a data set.
+
+        This creates two plots - the first from `plot_fit` and the
+        second from `plot_ratio` - for a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit_ratio`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
+
+        See Also
+        --------
+        get_fit_plot : Return the data used to create the fit plot.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit : Plot the fit results for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Examples
+        --------
+
+        Plot the results for the default data set:
+
+        >>> plot_fit_ratio()
+
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit_ratio('jet')
+        >>> plot_fit_ratio('core', overplot=True)
+
+        """
+
+        self._plot_jointplot(self._ratioplot,
                              id=id, replot=replot, overplot=overplot,
                              clearwindow=clearwindow)
 
@@ -12899,8 +12966,10 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
+        plot_fit_ratio : Plot the fit results, and the ratio of data to model, for a data set.
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         plot_data : Plot the data values.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
         plot_model : Plot the model for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.

@@ -300,13 +300,13 @@ def check_resid_changed2(title='Residuals for example'):
     assert rplot.yerr == pytest.approx(calc_errors(_data_y2))
 
 
-def check_ratio():
+def check_ratio(title='Ratio of Data to Model for example'):
     """Check that the ratio plot has not changed"""
 
     rplot = ui._session._ratioplot
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
-    assert rplot.title == 'Ratio of Data to Model for example'
+    assert rplot.title == title
     assert rplot.x == pytest.approx(_data_x)
     assert rplot.y == pytest.approx([y / 35 for y in _data_y])
     assert rplot.xerr is None
@@ -328,6 +328,23 @@ def check_ratio_changed():
     assert rplot.y == pytest.approx([y / 35 for y in _data_y2])
     assert rplot.xerr is None
     dy = [dy / 35 for dy in calc_errors(_data_y2)]
+    assert rplot.yerr == pytest.approx(dy)
+
+
+def check_ratio_changed2(title='Ratio of Data to Model for example'):
+    """Check that the ratio plot has changed
+
+    Assumes that change_example and change_model has been called
+    """
+
+    rplot = ui._session._ratioplot
+    assert rplot.xlabel == 'x'
+    assert rplot.ylabel == 'Data / Model'
+    assert rplot.title == title
+    assert rplot.x == pytest.approx(_data_x)
+    assert rplot.y == pytest.approx([y / 41 for y in _data_y2])
+    assert rplot.xerr is None
+    dy = [dy / 41 for dy in calc_errors(_data_y2)]
     assert rplot.yerr == pytest.approx(dy)
 
 
@@ -456,6 +473,25 @@ def check_fit_resid_changed():
     check_resid_changed2(title='')
 
 
+def check_fit_ratio():
+    """Check that the fit + ratio plot has not changed"""
+
+    check_example(xlabel='')
+    check_model(xlabel='')
+    check_ratio(title='')
+
+
+def check_fit_ratio_changed():
+    """Check that the fit + ratio plot has changed
+
+    Assumes that change_fit has been called
+    """
+
+    check_example_changed(xlabel='')
+    check_model_changed(xlabel='')
+    check_ratio_changed2(title='')
+
+
 def check_fit_delchi():
     """Check that the fit + delchi plot has not changed"""
 
@@ -494,6 +530,8 @@ _plot_all = [
      'check': check_fit, 'check_changed': check_fit_changed},
     {'plot': ui.plot_fit_resid, 'change': change_fit,
      'check': check_fit_resid, 'check_changed': check_fit_resid_changed},
+    {'plot': ui.plot_fit_ratio, 'change': change_fit,
+     'check': check_fit_ratio, 'check_changed': check_fit_ratio_changed},
     {'plot': ui.plot_fit_delchi, 'change': change_fit,
      'check': check_fit_delchi, 'check_changed': check_fit_delchi_changed}]
 
