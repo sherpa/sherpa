@@ -11928,6 +11928,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
         Examples
@@ -12011,6 +12012,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
         Examples
