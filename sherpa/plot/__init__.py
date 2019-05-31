@@ -57,13 +57,28 @@ if plot_opt == 'none_backend':
 try:
     importlib.import_module('.' + plot_opt, package='sherpa.plot')
     backend = sys.modules['sherpa.plot.' + plot_opt]
-except (ImportError, KeyError):
+except ImportError:
     # if the user inputs a malformed backend or it is not found,
     # give a useful warning and fall back on dummy_backend of noops
-    warning('failed to import sherpa.plot.{};'.format(plot_opt) +
-            ' plotting routines will not be available')
-    from . import dummy_backend as backend
-    plot_opt = 'dummy_backend'
+    if plot_opt == 'chips_backend':
+        warning('chips is not supported in CIAO 4.12+, falling back to matplotlib.')
+        warning('Please consider updating your $HOME/.sherpa.rc file to suppress this warning.')
+        plot_opt = 'pylab_backend'
+
+        try:
+            importlib.import_module('.' + plot_opt, package='sherpa.plot')
+            backend = sys.modules['sherpa.plot.' + plot_opt]
+        except ImportError:
+            warning('failed to import sherpa.plot.%s;' % plot_opt +
+                    ' plotting routines will not be available')
+            from . import dummy_backend as backend
+
+            plot_opt = 'dummy_backend'
+    else:
+        warning('failed to import sherpa.plot.%s;' % plot_opt +
+                ' plotting routines will not be available')
+        from . import dummy_backend as backend
+        plot_opt = 'dummy_backend'
 
 backend.init()
 
