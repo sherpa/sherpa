@@ -13920,8 +13920,9 @@ class Session(NoNewAttributesAfterInit):
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._intunc.prepare(min, max, nloop, delv, fac,
-                                 sherpa.utils.bool_cast(log), numcores)
+            self._intunc.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                                 fac=fac, log=sherpa.utils.bool_cast(log),
+                                 numcores=numcores)
             self._intunc.calc(fit, par)
         return self._intunc
 
