@@ -13814,8 +13814,9 @@ class Session(NoNewAttributesAfterInit):
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._intproj.prepare(min, max, nloop, delv, fac,
-                                  sherpa.utils.bool_cast(log), numcores)
+            self._intproj.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                                  fac=fac, log=sherpa.utils.bool_cast(log),
+                                  numcores=numcores)
             self._intproj.calc(fit, par, self._methods)
         return self._intproj
 
