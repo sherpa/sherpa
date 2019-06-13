@@ -1030,14 +1030,7 @@ class Fit(NoNewAttributesAfterInit):
         # that is, in case an exception is raised and
         # this parameter needs to be thawed in the
         # exception handler.
-        self.thaw_indices = ()
-        iter = 0
-        for current_par in self.model.pars:
-            if current_par.frozen:
-                pass
-            else:
-                self.thaw_indices = self.thaw_indices + (iter,)
-            iter = iter + 1
+        self.calc_thaw_indices()
         self.current_frozen = -1
 
         # The number of times that reminimization has occurred
@@ -1052,6 +1045,16 @@ class Fit(NoNewAttributesAfterInit):
                                 itermethod_opts)
         NoNewAttributesAfterInit.__init__(self)
 
+    def calc_thaw_indices(self):
+        iter = 0
+        self.thaw_indices = ()
+        for current_par in self.model.pars:
+            if current_par.frozen:
+                pass
+            else:
+                self.thaw_indices = self.thaw_indices + (iter,)
+            iter = iter + 1
+        
     def __setstate__(self, state):
         self.__dict__.update(state)
 
@@ -1260,6 +1263,11 @@ class Fit(NoNewAttributesAfterInit):
             print(' '.join(vals), file=self._iterfit._file)
             self._iterfit._file.close()
             self._iterfit._file = None
+
+        # if a re-fit was performed with more/less thawed pars then
+        # self.thaw_indices must be re-calculated otherwise Confidence
+        # will get IndexError, see issue #342 for details
+        self.calc_thaw_indices()
 
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
