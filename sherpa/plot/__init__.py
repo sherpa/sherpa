@@ -886,11 +886,9 @@ class JointPlot(SplitPlot):
         if not self._cleared_window:
             if erase:
                 backend.clear_window()
-            # FIXME: misuse of kwarg clearaxes for chips backend
             backend.set_jointplot(row, col, self.rows, self.cols, False)
             self._cleared_window = True
         else:
-            # FIXME: misuse of kwarg clearaxes for chips backend
             backend.set_jointplot(row, col, self.rows, self.cols)
 
     def plottop(self, plot, *args, **kwargs):

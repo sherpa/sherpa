@@ -394,8 +394,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         if parlist is None:
             parlist = [p for p in fit.model.pars if not p.frozen]
 
-        from sherpa.estmethods import est_success, est_hardmin, \
-            est_hardmax, est_hardminmax
+        from sherpa.estmethods import est_hardmin, est_hardmax, \
+            est_hardminmax
 
         warning_hmin = "hard minimum hit for parameter "
         warning_hmax = "hard maximum hit for parameter "
@@ -411,11 +411,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.parmins = ()
         self.parmaxes = ()
         self.nfits = 0
-        # The success flag is currently unused
-        # success = True
+
         for i in range(len(parlist)):
-            # if results[2][i] != est_success:
-            #     success = False
             if (results[2][i] == est_hardmin or
                     results[2][i] == est_hardminmax):
                 self.parmins = self.parmins + (None,)

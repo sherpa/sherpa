@@ -25,8 +25,8 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 import os.path
 import logging
 import warnings
+
 import numpy
-import hashlib
 
 from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, IntegratedDataSpace2D
 from sherpa.models.regrid import EvaluationSpace1D
