@@ -48,11 +48,18 @@ fi
 if [ "${DOCS}" == true ];
  then export DOCSBUILD="sphinx sphinx_rtd_theme graphviz";
 fi
+
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
+
+# Hack to force AstroPy < 3.2 (see https://github.com/sherpa/sherpa/issues/632)
+# This is a short-term hack just to get travis tests to pass
+# Should there be better a way of specifying versions for these dependencies?
+#
+if [ "${FITS}" == astropy ]; then FITSBUILD="'astropy<3.2'"; else FITSBUILD="${FITS}"; fi
 
 # Create and activate conda build environment
 # We create a new environment so we don't care about the python version in the root environment.
-conda create --yes -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITS} ${DOCSBUILD} ${compilers}\
+conda create --yes -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}\
   libgfortran=${libgfortranver}
 
 source activate build
