@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
+import numpy as np
 
 from sherpa.fit import Fit
 from sherpa.data import Data1DAsymmetricErrs
@@ -26,8 +26,8 @@ from sherpa.utils.testing import SherpaTestCase
 from sherpa.models import PowLaw1D
 from sherpa.stats import Chi2Gehrels
 from sherpa.estmethods import Covariance
-from sherpa.astro.ui import load_ascii_with_errors, get_data
 from sherpa.sim import ReSampleData
+from sherpa.astro import ui
 
 class test_sim(SherpaTestCase):
 
@@ -40,8 +40,8 @@ class test_sim(SherpaTestCase):
         'istatval': 248263792.37785548,
         'statval': 84.73314450713231,
         'parnames': ('p1.gamma', 'p1.ampl'),
-        'parvals': numpy.array([-0.5983957573984262, 332.5326662832957]),
-        'parerrs': numpy.array([2.07753267e-02, 3.82647498e+01])
+        'parvals': np.array([-0.5983957573984262, 332.5326662832957]),
+        'parerrs': np.array([2.07753267e-02, 3.82647498e+01])
     }
 
     _results_bench_rms = {
@@ -53,13 +53,24 @@ class test_sim(SherpaTestCase):
         'istatval': 114123785.83302237,
         'statval': 39.26386659188803,
         'parnames': ('p1.gamma', 'p1.ampl'),
-        'parvals': numpy.array([-0.5984085135559107, 333.537172525073]),
-        'parerrs': numpy.array([3.01965392e-02, 5.57390091e+01])
+        'parvals': np.array([-0.5984085135559107, 333.537172525073]),
+        'parerrs': np.array([3.01965392e-02, 5.57390091e+01])
     }
 
-    _resample_bench = numpy.array([-0.4697257926643954, 0.075012829992575,
+    _resample_bench = np.array([-0.4697257926643954, 0.075012829992575,
                                    177.2066436604025, 60.50264184911246])
-    
+
+    _resample_bench_10 = \
+        {'p1.gamma': np.array([-0.2944668147469516, -0.4802566080292259,
+                               -0.4529002661840189, -0.5238444562856526,
+                               -0.3549169211972059, -0.2911998274429656,
+                               -0.5136099861403167, -0.4989971477937067,
+                               -0.530802555677153, -0.5645228923616015]),
+         'p1.ampl': np.array([60.75374932719593, 172.73752299705234,
+                              149.67141746787001, 222.60620753449422,
+                              87.33459341923499, 59.25767249100198,
+                              212.86125707290233, 194.83475286415504,
+                              233.3323867603084, 275.7531516242366])}
     def setUp(self):
         self.method = LevMar()
         self.stat = Chi2Gehrels()
@@ -72,14 +83,11 @@ class test_sim(SherpaTestCase):
         for key in ["numpoints", "succeeded", "dof"]:
             assert bench[key] == int(getattr(results, key))
         for key in ["rstat", "qval", "istatval", "statval"]:
-            assert numpy.allclose(float(bench[key]),
+            assert np.allclose(float(bench[key]),
                                         float(getattr(results, key)), tol, tol)
-        for index, val in enumerate(bench['parvals']):
-            assert numpy.allclose(val, results.parvals[index], tol, tol)
-
-        parerrs = numpy.sqrt(results.extra_output['covar'].diagonal())
-        for index, val in enumerate(bench['parerrs']):
-            assert numpy.allclose(val, parerrs[index], tol, tol)
+        self.assertEqualWithinTol(bench['parvals'], results.parvals, tol)
+        parerrs = np.sqrt(results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(bench['parerrs'], parerrs, tol)
         
     def fit_asymmetric_err(self, bench, data):
         model = PowLaw1D('p1')
@@ -88,49 +96,53 @@ class test_sim(SherpaTestCase):
         self.cmp(bench, results)
         
     def test_gro_ascii(self):
-        load_ascii_with_errors(1, self.gro_fname, delta=False)
-        data = get_data(1)
+        ui.load_ascii_with_errors(1, self.gro_fname, delta=False)
+        data = ui.get_data(1)
         self.fit_asymmetric_err(self._results_bench_avg, data)
 
     def test_gro_delta(self):
-        load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        data = get_data(1)        
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
+        data = ui.get_data(1)        
         self.fit_asymmetric_err(self._results_bench_avg, data)
 
     def test_AsymmetricErrs_avg(self):
-        load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        tmp = get_data(1)
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
+        tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
         self.fit_asymmetric_err(self._results_bench_avg, data)        
 
     def rms(self, a, b):
-        return numpy.sqrt(a * a + b * b)
+        return np.sqrt(a * a + b * b)
         
     def test_gro_ascii_rms(self):
-        load_ascii_with_errors(1, self.gro_fname, func=self.rms,
+        ui.load_ascii_with_errors(1, self.gro_fname, func=self.rms,
                                delta=False)
-        data = get_data(1)
+        data = ui.get_data(1)
         self.fit_asymmetric_err(self._results_bench_rms, data)
 
     def test_gro_delta_rms(self):
-        load_ascii_with_errors(1, self.gro_delta_fname, func=self.rms,
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, func=self.rms,
                                delta=True)
-        data = get_data(1)
+        data = ui.get_data(1)
         self.fit_asymmetric_err(self._results_bench_rms, data)
 
     def test_AsymmetricErrs_rms(self):
-        load_ascii_with_errors(1, self.gro_delta_fname, func=self.rms,
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, func=self.rms,
                                      delta=True)
-        tmp = get_data(1)
+        tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
         self.fit_asymmetric_err(self._results_bench_rms, data)        
 
-    def cmp_resample_data(self, bench, rd, tol=1.0e-3):
-        for a, b in zip(bench, rd):
-            assert numpy.allclose(bench, rd, tol, tol)
-
+    def cmp_resample_data(self, bench, result, tol=1.0e-3):
+        gamma = result['p1.gamma']
+        ampl = result['p1.ampl']
+        self.assertEqualWithinTol(bench, np.array([np.average(gamma),
+                                                   np.std(gamma),
+                                                   np.average(ampl),
+                                                   np.std(ampl)]), tol)
+        
     def resample_data(self, data, bench):
         model = PowLaw1D('p1')        
         rd = ReSampleData(data, model)
@@ -138,17 +150,28 @@ class test_sim(SherpaTestCase):
         self.cmp_resample_data(bench, result)
         
     def test_AsymmetricErros_resample_avg(self):
-        load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        tmp = get_data(1)
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
+        tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(1, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
         self.resample_data(data, self._resample_bench)
 
     def test_AsymmetricErros_resample_rms(self):
-        load_ascii_with_errors(1, self.gro_delta_fname, delta=True,
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True,
                                func=self.rms)
-        tmp = get_data(1)
+        tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
         self.resample_data(data, self._resample_bench)
-        
+
+    def test_ui(self, tol=1.0e-3):
+        # from shepa.astro.ui import *
+        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
+        ui.set_stat('leastsq')
+        ui.set_model('powlaw1d.p1')
+        ui.fit()
+        sample = ui.resample_data(1, 10)
+        self.assertEqualWithinTol(self._resample_bench_10['p1.gamma'],
+                                  sample['p1.gamma'])
+        self.assertEqualWithinTol(self._resample_bench_10['p1.ampl'],
+                                  sample['p1.ampl'])

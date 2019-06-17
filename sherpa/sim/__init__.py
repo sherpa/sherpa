@@ -768,6 +768,7 @@ class ReSampleData(NoNewAttributesAfterInit):
     def __init__(self, data, model):
         self.data = data
         self.model = model
+        self.orig_pars = model.thawedpars
         NoNewAttributesAfterInit.__init__(self)
         return
 
@@ -778,8 +779,9 @@ class ReSampleData(NoNewAttributesAfterInit):
         index = 0
         for par in self.model.pars:
             if par.frozen is False:
-                pars[par.name] = []
-                pars_index[index] = par.name
+                name = '%s.%s' % (par.modelname, par.name)
+                pars_index[index] = name
+                pars[name] = []
                 index += 1
 
         data = self.data
@@ -794,7 +796,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         else:
             msg ="{0} {1}".format(ReSampleData.__name__, type(data))
             raise NotImplementedError(msg)
-        
+
         numpy.random.seed(seed)
         for j in range(niter):
             ry = []
@@ -821,11 +823,13 @@ class ReSampleData(NoNewAttributesAfterInit):
             for index, val in enumerate(fit_result.parvals):
                 name = pars_index[index]
                 pars[name].append(val)
-            
-        result = []
-        for index, name in pars_index.items():
-            result.append(numpy.average(pars[name]))
-            result.append(numpy.std(pars[name]))
 
-        print(result)
+        self.model.thawedpars = self.orig_pars
+        result = {}
+        for index, name in pars_index.items():
+            avg = numpy.average(pars[name])
+            std = numpy.std(pars[name])
+            print(name, ': avg =', avg, ', std =', std)
+            result[name] = pars[name]
+
         return result

@@ -10416,11 +10416,28 @@ class Session(NoNewAttributesAfterInit):
         return (stats, accept, params)
 
     def resample_data(self, id=None, niter=1000, seed=123):
+        """The function performs a parametric bootstrap assuming a skewed
+        normal distribution centered on the observed data point with the
+        variance given by the low and high measurement errors. The function
+        simulates niter realizations of the data and fits each realization
+        with the assumed model to obtain the best fit parameters. The function
+        returns the best fit parameters for each realization, and average and
+        standard deviation for the total number of realizations.
 
+        Example
+        -------
+        Account for of asymmetric errors when calculating parameter
+        uncertainties:
+
+        >>> load_ascii_with_errors(1,’test.dat’)
+        >>> set_model(‘polynom1d.p0’)
+        >>> fit()
+        >>> resample_data(1,niter=100)
+        """
         data = self.get_data(id)
         model = self.get_model(id)
         resampledata = sherpa.sim.ReSampleData(data, model)
-        resampledata(niter=niter, seed=seed)
+        return resampledata(niter=niter, seed=seed)
         
     ###########################################################################
     # Basic plotting
