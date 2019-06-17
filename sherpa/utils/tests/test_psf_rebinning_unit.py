@@ -60,6 +60,9 @@ from sherpa.models import SigmaGauss2D
 from sherpa.models.regrid import EvaluationSpace2D
 
 
+DATA_PIXEL_SIZE = 2
+
+
 @attr.s
 class FixtureConfiguration(object):
     image_size = attr.ib()
@@ -149,7 +152,7 @@ def test_psf_space(configuration):
 
     fixture_data = make_images(configuration)
 
-    psf_space = PSFSpace2D(fixture_data.data_space, fixture_data.psf_model)
+    psf_space = PSFSpace2D(fixture_data.data_space, fixture_data.psf_model, data_pixel_size=fixture_data.image.sky.cdelt)
 
     # Test that the PSF space has the same boundaries of the data space, but a number of
     # bins equal to the bins the data image would have if it had the same pixel size as the PSF.
@@ -196,7 +199,7 @@ def make_image(configuration):
 
     data_image = DataIMG("image", image_x, image_y, image,
                          shape=(configuration.image_size, configuration.image_size),
-                         sky=WcsStub([1, 1])
+                         sky=WcsStub([DATA_PIXEL_SIZE, DATA_PIXEL_SIZE])
                          )
 
     return data_image
@@ -218,7 +221,7 @@ def make_psf(configuration):
     psf, psf_x, psf_y = symmetric_gaussian_image(amplitude=psf_amplitude, sigma=psf_sigma,
                                                  position=psf_position, n_bins=configuration.psf_size)
 
-    cdelt = 1 / configuration.resolution_ratio
+    cdelt = DATA_PIXEL_SIZE / configuration.resolution_ratio
     psf_wcs = WcsStub([cdelt, cdelt])
 
     # Create a Sherpa PSF model object using the psf arrays

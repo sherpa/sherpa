@@ -558,7 +558,7 @@ class PSFModel(Model):
             self._must_rebin = False
         elif pixel_size_comparison == self.BETTER_RESOLUTION:  # Evaluate model in PSF space
             self.data_space = EvaluationSpace2D(*data.get_indep())
-            self.psf_space = PSFSpace2D(self.data_space, self)
+            self.psf_space = PSFSpace2D(self.data_space, self, data.sky.cdelt)
             kargs['args'] = self.psf_space.grid
             dshape = self.psf_space.shape
             self._must_rebin = True
@@ -737,10 +737,15 @@ class PSFModel(Model):
 # range to + 1 (that assumes they are bins).
 # Also, I am using the step in the first dimension only.
 class PSFSpace2D(EvaluationSpace2D):
-    def __init__(self, data_space, psf_model):
+    def __init__(self, data_space, psf_model, data_pixel_size=None):
+        if data_pixel_size is None:
+            data_pixel_size = [1, 1]
+
         x_start, y_start = data_space.start
         x_end, y_end = data_space.end
-        step = psf_model.kernel.sky.cdelt[0]
+        psf_pixel_size_axis0 = psf_model.kernel.sky.cdelt[0]
+        data_pixel_size_axis0 = data_pixel_size[0]
+        step = psf_pixel_size_axis0 / data_pixel_size_axis0
         x_range_end, y_range_end = x_end + 1, y_end + 1
         n_x_bins = math.ceil((x_range_end - x_start) / step)
         n_y_bins = math.ceil((y_range_end - y_start) / step)
