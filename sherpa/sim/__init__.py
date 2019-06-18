@@ -768,11 +768,26 @@ class ReSampleData(NoNewAttributesAfterInit):
     def __init__(self, data, model):
         self.data = data
         self.model = model
-        self.orig_pars = model.thawedpars
         NoNewAttributesAfterInit.__init__(self)
         return
-
+    
     def __call__(self, niter=1000, seed=123):
+        orig_pars = self.model.thawedpars
+        _level = _log.getEffectiveLevel()
+        result = None
+        try:
+            result = self.call(niter, seed)
+        except:
+            raise
+        finally:
+            # set the model back to original state
+            self.model.thawedpars = orig_pars
+            
+            # set the logger back to previous level
+            _log.setLevel(_level)
+        return result
+            
+    def call(self, niter, seed):
 
         pars = {}
         pars_index = {}
@@ -824,7 +839,6 @@ class ReSampleData(NoNewAttributesAfterInit):
                 name = pars_index[index]
                 pars[name].append(val)
 
-        self.model.thawedpars = self.orig_pars
         result = {}
         for index, name in pars_index.items():
             avg = numpy.average(pars[name])

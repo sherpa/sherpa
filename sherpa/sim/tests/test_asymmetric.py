@@ -94,7 +94,8 @@ class test_sim(SherpaTestCase):
         fit = Fit(data, model, self.stat, self.method, self.est)
         results = fit.fit()
         self.cmp(bench, results)
-        
+        return model
+    
     def test_gro_ascii(self):
         ui.load_ascii_with_errors(1, self.gro_fname, delta=False)
         data = ui.get_data(1)
@@ -143,18 +144,21 @@ class test_sim(SherpaTestCase):
                                                    np.average(ampl),
                                                    np.std(ampl)]), tol)
         
-    def resample_data(self, data, bench):
-        model = PowLaw1D('p1')        
+    def resample_data(self, data, bench, results_bench, tol=1.0e-3):
+        model = self.fit_asymmetric_err(results_bench, data)
         rd = ReSampleData(data, model)
         result = rd(niter=100)
         self.cmp_resample_data(bench, result)
+        self.assertEqualWithinTol(results_bench['parvals'],
+                                  model.thawedpars, tol)
         
     def test_AsymmetricErros_resample_avg(self):
         ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
         tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(1, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
-        self.resample_data(data, self._resample_bench)
+        self.resample_data(data, self._resample_bench,
+                           self._results_bench_avg)
 
     def test_AsymmetricErros_resample_rms(self):
         ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True,
@@ -162,7 +166,8 @@ class test_sim(SherpaTestCase):
         tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
-        self.resample_data(data, self._resample_bench)
+        self.resample_data(data, self._resample_bench,
+                           self._results_bench_rms)
 
     def test_ui(self, tol=1.0e-3):
         # from shepa.astro.ui import *
