@@ -10429,8 +10429,8 @@ class Session(NoNewAttributesAfterInit):
         Account for of asymmetric errors when calculating parameter
         uncertainties:
 
-        >>> load_ascii_with_errors(1,’test.dat’)
-        >>> set_model(‘polynom1d.p0’)
+        >>> load_ascii_with_errors(1,'test.dat')
+        >>> set_model('polynom1d.p0')
         >>> fit()
         >>> resample_data(1,niter=100)
         """
