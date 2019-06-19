@@ -1,6 +1,12 @@
 
 If you are writing a paper and would like to cite Sherpa, we recommend
-the following papers:
+the native software citation and the following two papers. Note how it is advisable
+(http://help.zenodo.org/#versioning) to cite the specific version of your record in citation.
+
+
+Doug Burke, Omar Laurino, dtnguyen2, Jamie Budynkiewicz, Tom Aldcroft, Aneta Siemiginowska, … Katrin Leinweber.
+(2019, February 20). sherpa/sherpa: Sherpa 4.11.0 (Version 4.11.0).
+Zenodo. http://doi.org/10.5281/zenodo.2573885
 
 Sherpa: a mission-independent data analysis application
 http://adsabs.harvard.edu/abs/2001SPIE.4477...76F
@@ -12,7 +18,26 @@ http://adsabs.harvard.edu/abs/2007ASPC..376..543D
 S. Doe, et al.
 Astronomical Data Analysis Software and Systems XVI, 376, 543
 
+
 BibTeX entries for LaTeX users are
+
+@misc{doug_burke_2019_2573885,
+  author       = {Doug Burke and
+                  Omar Laurino and
+                  dtnguyen2 and
+                  Jamie Budynkiewicz and
+                  Tom Aldcroft and
+                  Aneta Siemiginowska and
+                  Christoph Deil and
+                  wmclaugh and
+                  Brigitta Sipocz and
+                  Katrin Leinweber},
+  title        = {sherpa/sherpa: Sherpa 4.11.0},
+  month        = feb,
+  year         = 2019,
+  doi          = {10.5281/zenodo.593753},
+  url          = {https://doi.org/10.5281/zenodo. 593753}
+}
 
 @INPROCEEDINGS{2001SPIE.4477...76F,
    author = {{Freeman}, P. and {Doe}, S. and {Siemiginowska}, A.},
