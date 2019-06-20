@@ -764,14 +764,47 @@ class MCMC(NoNewAttributesAfterInit):
 
 
 class ReSampleData(NoNewAttributesAfterInit):
+    """
+    The underlying low-level for the resample_data
 
+    Parameters
+    ----------
+    data
+       The data class Data1DAsymmetricErrs
+    model
+       The model to fit the data
+
+    Returns
+    -------
+    The class returns the best fit parameters for each realization.
+    
+    See Also
+    --------
+    resample_data
+
+    Example
+    -------
+
+    >>> load_ascii_with_errors(1, 'gro.txt', delta=False)
+    >>> data = get_data(1)
+    >>> method = LevMar()
+    >>> model = PowLaw1D('p1')
+    >>> set_model(1, model)
+    >>> fit = Fit(data, model, Chi2Gehrels(), method, Covariance())
+    >>> results = fit.fit()
+    >>> rd = ReSampleData(data, model)
+    >>> rd_results = rd(niter=10)
+    >>> print(rd_results)
+    rd_results = {'p1.gamma': [-0.2944764463053398, -0.48025660808404, -0.45290026618472473, -0.5238444562856396, -0.3549169211965681, -0.29119982744489403, -0.5136099861402832, -0.49899714779391674, -0.5308025556771122, -0.5645228923615183], 'p1.ampl': [60.757254200932465, 172.7375230511183, 149.6714174684889, 222.60620753447844, 87.33459341889869, 59.257672491708, 212.86125707286197, 194.83475286439503, 233.33238676025326, 275.75315162410527]}
+
+    """
     def __init__(self, data, model):
         self.data = data
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
         return
     
-    def __call__(self, niter=1000, seed=123):
+    def __call__(self, niter=1000, seed=None):
         orig_pars = self.model.thawedpars
         _level = _log.getEffectiveLevel()
         result = None

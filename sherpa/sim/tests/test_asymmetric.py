@@ -149,12 +149,12 @@ class test_sim(SherpaTestCase):
     def resample_data(self, data, bench, results_bench, tol=1.0e-3):
         model = self.fit_asymmetric_err(results_bench, data)
         rd = ReSampleData(data, model)
-        result = rd(niter=100)
+        result = rd(niter=100, seed=123)
         self.cmp_resample_data(bench, result)
         self.assertEqualWithinTol(results_bench['parvals'],
                                   model.thawedpars, tol)
         
-    def test_AsymmetricErros_resample_avg(self):
+    def test_AsymmetricErrors_resample_avg(self):
         ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
         tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(1, tmp.x, tmp.y, tmp.elo,
@@ -162,7 +162,7 @@ class test_sim(SherpaTestCase):
         self.resample_data(data, self._resample_bench,
                            self._results_bench_avg)
 
-    def test_AsymmetricErros_resample_rms(self):
+    def test_AsymmetricErrors_resample_rms(self):
         ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True,
                                func=self.rms)
         tmp = ui.get_data(1)
@@ -177,7 +177,7 @@ class test_sim(SherpaTestCase):
         ui.set_stat('leastsq')
         ui.set_model('powlaw1d.p1')
         ui.fit()
-        sample = ui.resample_data(1, 10)
+        sample = ui.resample_data(1, 10, seed=123)
         self.assertEqualWithinTol(self._resample_bench_10['p1.gamma'],
                                   sample['p1.gamma'])
         self.assertEqualWithinTol(self._resample_bench_10['p1.ampl'],
