@@ -825,10 +825,26 @@ def rebin_2d(y, from_space, to_space):
 
     reshaped_y = y.reshape(from_x_dim, from_y_dim)
 
-    return rebin_flux(reshaped_y, dimensions=(to_x_dim, to_y_dim))
+    if (from_x_dim % to_x_dim) != 0 or (from_y_dim % to_y_dim) != 0:
+        return rebin_no_int(reshaped_y, dimensions=(to_x_dim, to_y_dim))
+
+    return rebin_int(reshaped_y, int(from_x_dim/to_x_dim), int(from_y_dim/to_y_dim))
 
 
-def rebin_flux(array, dimensions=None, scale=None):
+def rebin_int(array, factorx, factory):
+    xedge = np.shape(array)[0] % factorx
+    yedge = np.shape(array)[1] % factory
+    array_binned1 = array[xedge:, yedge:]
+
+    binim = np.reshape(array_binned1,
+                       (np.shape(array_binned1)[0]//factorx,factorx,np.shape(array_binned1)[1]//factory, factory))
+    binim = np.sum(binim, axis=3)
+    binim = np.sum(binim, axis=1)
+
+    return binim
+
+
+def rebin_no_int(array, dimensions=None, scale=None):
     """Rebin the array, conserving flux.
 
     Return the array ``array`` to the new ``dimensions`` conserving flux,
@@ -854,7 +870,7 @@ def rebin_flux(array, dimensions=None, scale=None):
     ...    [1,2,3],
     ...    [2,3,4],
     ...    ])
-    >>> rebin_flux(ar, (2,2))
+    >>> rebin_no_int(ar, (2,2))
     array([[1.5, 4.5],
            [4.5, 7.5]])
 
