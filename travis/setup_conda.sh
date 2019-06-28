@@ -38,6 +38,7 @@ fi
 
 conda config --add channels ${sherpa_channel}
 conda config --add channels ${xspec_channel}
+conda config --add channels anaconda
 
 # Figure out requested dependencies
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
