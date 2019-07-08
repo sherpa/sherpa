@@ -825,10 +825,13 @@ def rebin_2d(y, from_space, to_space):
 
     reshaped_y = y.reshape(from_x_dim, from_y_dim)
 
-    if (from_x_dim % to_x_dim) != 0 or (from_y_dim % to_y_dim) != 0:
-        return rebin_no_int(reshaped_y, dimensions=(to_x_dim, to_y_dim))
+    scale = (from_x_dim / to_x_dim) * (from_y_dim / to_y_dim)
+    reshaped_scaled_y = reshaped_y / scale
 
-    return rebin_int(reshaped_y, int(from_x_dim/to_x_dim), int(from_y_dim/to_y_dim))
+    if (from_x_dim % to_x_dim) != 0 or (from_y_dim % to_y_dim) != 0:
+        return rebin_no_int(reshaped_scaled_y, dimensions=(to_x_dim, to_y_dim))
+
+    return rebin_int(reshaped_scaled_y, int(from_x_dim/to_x_dim), int(from_y_dim/to_y_dim))
 
 
 def rebin_int(array, factorx, factory):

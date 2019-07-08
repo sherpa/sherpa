@@ -43,7 +43,7 @@ def test_psf_rebin_warning(setup):
     ui.load_image(image)
     ui.load_psf('psf', psf_bin1)
 
-    with pytest.warns(UserWarning):
+    with pytest.raises(AttributeError):
         ui.set_psf('psf')
 
 

@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import math
+import warnings
 
 import numpy
 import logging
@@ -562,8 +563,8 @@ class PSFModel(Model):
             kargs['args'] = self.psf_space.grid
             dshape = self.psf_space.shape
             self._must_rebin = True
-        else:  # PSF has worse resolution, what shall we do here?
-            raise NotImplementedError()
+        else:  # PSF has worse resolution, error out
+            raise AttributeError("The PSF has a worse resolution than the data.")
 
         if isinstance(self.kernel, Data):
 
@@ -709,14 +710,19 @@ class PSFModel(Model):
         """
         if hasattr(self.kernel, "sky"):
             # This corresponds to the case when the kernel is actually a psf image, not just a model.
+
             try:
                 psf_pixel_size = self.kernel.sky.cdelt
-            except AttributeError:
+            except AttributeError: # If the kernel does not have a pixel size, issue a warning and keep going
+                warnings.warn("PSF Image does not have a pixel size. Sherpa will assume the pixel size is the same"
+                              "as the data")
                 return self.SAME_RESOLUTION
 
             try:
                 data_pixel_size = data.sky.cdelt
             except AttributeError:
+                warnings.warn("Data Image does not have a pixel size. Sherpa will assume the pixel size is the same"
+                              "as the PSF")
                 return self.SAME_RESOLUTION
 
             if numpy.allclose(psf_pixel_size, data_pixel_size):
@@ -733,9 +739,6 @@ class PSFModel(Model):
     WORSE_RESOLUTION = -1
 
 
-# PSF-NOTE: This needs attention. I am not sure it always makes sense to set the end of the
-# range to + 1 (that assumes they are bins).
-# Also, I am using the step in the first dimension only.
 class PSFSpace2D(EvaluationSpace2D):
     def __init__(self, data_space, psf_model, data_pixel_size=None):
         if data_pixel_size is None:
@@ -744,11 +747,12 @@ class PSFSpace2D(EvaluationSpace2D):
         x_start, y_start = data_space.start
         x_end, y_end = data_space.end
         psf_pixel_size_axis0 = psf_model.kernel.sky.cdelt[0]
+        psf_pixel_size_axis1 = psf_model.kernel.sky.cdelt[1]
         data_pixel_size_axis0 = data_pixel_size[0]
-        step = psf_pixel_size_axis0 / data_pixel_size_axis0
+        data_pixel_size_axis1 = data_pixel_size[1]
+        step_x = psf_pixel_size_axis0 / data_pixel_size_axis0
+        step_y = psf_pixel_size_axis1 / data_pixel_size_axis1
         x_range_end, y_range_end = x_end + 1, y_end + 1
-        n_x_bins = math.ceil((x_range_end - x_start) / step)
-        n_y_bins = math.ceil((y_range_end - y_start) / step)
-        x = numpy.linspace(x_start, x_range_end, n_x_bins)
-        y = numpy.linspace(y_start, y_range_end, n_y_bins)
+        x = numpy.arange(x_start, x_range_end, step_x)
+        y = numpy.arange(y_start, y_range_end, step_y)
         super(PSFSpace2D, self).__init__(x, y)

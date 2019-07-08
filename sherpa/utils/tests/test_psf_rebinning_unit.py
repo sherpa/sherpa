@@ -56,7 +56,7 @@ from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataIMG
 from sherpa.astro.instrument import PSFModel
 from sherpa.instrument import PSFSpace2D
-from sherpa.models import SigmaGauss2D
+from sherpa.models import SigmaGauss2D, NormGauss2D
 from sherpa.models.regrid import EvaluationSpace2D
 
 
@@ -107,6 +107,22 @@ def generate_psf_space_configurations():
                                  source_sigma=50, psf_sigma=5, resolution_ratio=0.7),
             FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
                                  source_sigma=1, psf_sigma=15, resolution_ratio=0.7),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=1),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=2),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=3),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=4),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=5),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=6),
+            FixtureConfiguration(image_size=500, psf_size=100, source_amplitude=100,
+                                 source_sigma=50, psf_sigma=5, resolution_ratio=7),
+            FixtureConfiguration(image_size=300, psf_size=150, source_amplitude=100,
+                                 source_sigma=1, psf_sigma=15, resolution_ratio=8),
             )
 
 
@@ -161,7 +177,8 @@ def test_psf_space(configuration):
     n_bins = configuration.image_size
     assert psf_space.start == (0, 0)
     assert psf_space.x_axis.size == psf_space.y_axis.size == n_bins * configuration.resolution_ratio
-    assert psf_space.end == (n_bins, n_bins)
+    assert psf_space.end == (approx(n_bins - 1 / configuration.resolution_ratio),
+                             approx(n_bins - 1 / configuration.resolution_ratio))
 
 
 def symmetric_gaussian_image(amplitude, sigma, position, n_bins):
@@ -181,8 +198,8 @@ def symmetric_gaussian_image(amplitude, sigma, position, n_bins):
 
 def make_images(configuration):
 
-    data_image = make_image(configuration)
     psf, psf_model = make_psf(configuration)
+    data_image = make_image(configuration)
 
     return FixtureData(data_image, psf, psf_model, configuration)
 
@@ -220,20 +237,22 @@ def make_psf(configuration):
     # units of Data Pixels to simulate the conditions of the bug, when the ratio != 1.
     psf, psf_x, psf_y = symmetric_gaussian_image(amplitude=psf_amplitude, sigma=psf_sigma,
                                                  position=psf_position, n_bins=configuration.psf_size)
+    # Normalize PSF
+    norm_psf = psf / psf.sum()
 
     cdelt = DATA_PIXEL_SIZE / configuration.resolution_ratio
     psf_wcs = WcsStub([cdelt, cdelt])
 
     # Create a Sherpa PSF model object using the psf arrays
     sherpa_kernel = DataIMG('kernel_data',
-                            psf_x, psf_y, psf,
+                            psf_x, psf_y, norm_psf,
                             shape=(configuration.psf_size, configuration.psf_size),
                             sky=psf_wcs
                             )
 
     psf_model = PSFModel('psf_model', kernel=sherpa_kernel)
     psf_model.norm = 1
-    psf_model.origin = (psf_position, psf_position)
+    psf_model.origin = (psf_position + 1, psf_position + 1)
 
     return psf, psf_model
 
