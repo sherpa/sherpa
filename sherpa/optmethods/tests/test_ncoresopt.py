@@ -18,8 +18,8 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves.configparser import ConfigParser
 
+from sherpa.utils import _ncpus
 from sherpa import get_config
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.optmethods import optfcts
@@ -35,10 +35,6 @@ class test_optmethods(SherpaTestCase):
         self.ncores_nm = ncoresNelderMead()
         self.ncores_de = ncoresDifEvo()
         self.numpar = 10
-        config = ConfigParser()
-        config.read(get_config())
-        # using numcores != 1 is more robust algorithm
-        self._ncpu_val = config.get('parallel', 'numcores').strip().upper()
         
     def print_result( self, name, f, x, nfev ):
         print('%s(%s) = %g in %d nfev' % (name, x, f, nfev))
@@ -57,7 +53,7 @@ class test_optmethods(SherpaTestCase):
         xmin = self.numpar * [-32.768]
         xmax = self.numpar * [32.768]
         x0 = self.numpar * [12.3]
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.tst_func(self.ncores_nm, tstopt.Ackley, x0, xmin, xmax, 0.0)
         self.tst_func(self.ncores_de, tstopt.Ackley, x0, xmin, xmax, 0.0)
 
@@ -159,7 +155,7 @@ class test_optmethods(SherpaTestCase):
         xmin = [-1.5, -3.0]
         xmax = [4.0, 4.0]
         x0 = [0.0, 0.0]
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.tst_func(self.ncores_nm, tstopt.McCormick, x0, xmin, xmax,
                           -1.91)
         # self.tst_func(self.ncores_de, tstopt.McCormick, x0, xmin, xmax, -1.91)
@@ -175,7 +171,7 @@ class test_optmethods(SherpaTestCase):
         xmin = self.numpar * [-5.12]
         xmax = self.numpar * [5.12]
         x0	 = self.numpar * [-2.0]
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.tst_func(self.ncores_nm, tstopt.Rastrigin, x0, xmin, xmax,
                           0.0)
         self.tst_func(self.ncores_de, tstopt.Rastrigin, x0, xmin, xmax, 0.0)
@@ -184,7 +180,7 @@ class test_optmethods(SherpaTestCase):
         xmin = [-10, -10]
         xmax = [10, 10]
         x0	 = [-2.0, 5.0]
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.tst_func(self.ncores_nm, tstopt.Shubert, x0, xmin, xmax,
                           -186.7309)
         self.tst_func(self.ncores_de, tstopt.Shubert, x0, xmin, xmax,

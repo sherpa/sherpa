@@ -23,8 +23,8 @@ import warnings
 from numpy import sqrt
 from pytest import approx
 import pytest
-from six.moves.configparser import ConfigParser
 
+from sherpa.utils import _ncpus
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
 from sherpa import get_config
@@ -60,10 +60,6 @@ class test_threads(SherpaTestCase):
         except ImportError:
             self.is_crates_io = False
 
-        config = ConfigParser()
-        config.read(get_config())
-        self._ncpu_val = config.get('parallel', 'numcores').strip().upper()
-        
         self.old_state = ui._session.__dict__.copy()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
@@ -135,7 +131,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_pha_intro(fit_results, self.locals['p1'], covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(7, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -181,7 +177,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_test_basic(fit_results, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(3, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -218,7 +214,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_simultaneous(fit_results, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(8, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -257,7 +253,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_sourceanddbg(fit_results, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(23, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -308,7 +304,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_radpro(fit_results, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(22, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -414,7 +410,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_linepro(fit_results, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(4, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -445,7 +441,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_kernel(fit_results, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(5, fit_results.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
@@ -482,7 +478,7 @@ class test_threads(SherpaTestCase):
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_spectrum(fres, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(3, fres.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fres.extra_output['num_parallel_map'])
@@ -525,7 +521,7 @@ class test_threads(SherpaTestCase):
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_xmm(fres, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(23, fres.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fres.extra_output['num_parallel_map'])
@@ -555,7 +551,7 @@ class test_threads(SherpaTestCase):
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_grouped_ciao4_5(fres, self.locals, covarerr)
-        if self._ncpu_val != '1':
+        if _ncpus != 1:
             self.assertEqual(8, fres.extra_output['num_parallel_map'])
         else:
             self.assertEqual(0, fres.extra_output['num_parallel_map'])
