@@ -95,7 +95,7 @@ namespace sherpa {
       const real FIVE = 5.0;
       real RSQ = 0.0;
       real W = 0.0;
-      int I, J, K;
+      int I=0, J, K;
 
       IFAULT = 1;
       if (N <= 0) goto g100;
