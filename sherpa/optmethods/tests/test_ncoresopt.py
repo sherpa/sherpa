@@ -18,6 +18,9 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves.configparser import ConfigParser
+
+from sherpa import get_config
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.optmethods import optfcts
 from sherpa.optmethods import _tstoptfct
@@ -32,6 +35,10 @@ class test_optmethods(SherpaTestCase):
         self.ncores_nm = ncoresNelderMead()
         self.ncores_de = ncoresDifEvo()
         self.numpar = 10
+        config = ConfigParser()
+        config.read(get_config())
+        # using numcores != 1 is more robust algorithm
+        self._ncpu_val = config.get('parallel', 'numcores').strip().upper()
         
     def print_result( self, name, f, x, nfev ):
         print('%s(%s) = %g in %d nfev' % (name, x, f, nfev))
@@ -50,7 +57,8 @@ class test_optmethods(SherpaTestCase):
         xmin = self.numpar * [-32.768]
         xmax = self.numpar * [32.768]
         x0 = self.numpar * [12.3]
-        self.tst_func(self.ncores_nm, tstopt.Ackley, x0, xmin, xmax, 0.0)
+        if self._ncpu_val != '1':
+            self.tst_func(self.ncores_nm, tstopt.Ackley, x0, xmin, xmax, 0.0)
         self.tst_func(self.ncores_de, tstopt.Ackley, x0, xmin, xmax, 0.0)
 
     def test_Bohachevsky1(self):
@@ -151,7 +159,9 @@ class test_optmethods(SherpaTestCase):
         xmin = [-1.5, -3.0]
         xmax = [4.0, 4.0]
         x0 = [0.0, 0.0]
-        self.tst_func(self.ncores_nm, tstopt.McCormick, x0, xmin, xmax, -1.91)
+        if self._ncpu_val != '1':
+            self.tst_func(self.ncores_nm, tstopt.McCormick, x0, xmin, xmax,
+                          -1.91)
         # self.tst_func(self.ncores_de, tstopt.McCormick, x0, xmin, xmax, -1.91)
         
     def test_Paviani(self):
@@ -165,15 +175,18 @@ class test_optmethods(SherpaTestCase):
         xmin = self.numpar * [-5.12]
         xmax = self.numpar * [5.12]
         x0	 = self.numpar * [-2.0]
-        self.tst_func(self.ncores_nm, tstopt.Rastrigin, x0, xmin, xmax, 0.0)
+        if self._ncpu_val != '1':
+            self.tst_func(self.ncores_nm, tstopt.Rastrigin, x0, xmin, xmax,
+                          0.0)
         self.tst_func(self.ncores_de, tstopt.Rastrigin, x0, xmin, xmax, 0.0)
 
     def test_Shubert(self):
         xmin = [-10, -10]
         xmax = [10, 10]
         x0	 = [-2.0, 5.0]
-        self.tst_func(self.ncores_nm, tstopt.Shubert, x0, xmin, xmax,
-                      -186.7309)
+        if self._ncpu_val != '1':
+            self.tst_func(self.ncores_nm, tstopt.Shubert, x0, xmin, xmax,
+                          -186.7309)
         self.tst_func(self.ncores_de, tstopt.Shubert, x0, xmin, xmax,
                       -186.7309)
 
@@ -197,109 +210,3 @@ class test_optmethods(SherpaTestCase):
         x0   = self.numpar * [0.5, -2]
         self.tst_func(self.ncores_nm, tstopt.Zakharov, x0, xmin, xmax, 0.0)
         self.tst_func(self.ncores_de, tstopt.Zakharov, x0, xmin, xmax, 0.0)
-
-    # def test_BrownAlmostLinear(self):
-    #     def BrownAlmostLinear(opt):
-    #         name = 'BrownAlmostLinear'
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, self.numpar)
-    #         self.tst_opt(opt, _tstoptfct.brown_almost_linear, x0, xmin, xmax, fmin)
-    #     BrownAlmostLinear(self.ncores_nm)
-    #     # BrownAlmostLinear(self.ncores_de)
-
-    # def test_FreudensteinRoth(self):
-    #     def FreudensteinRoth(opt):
-    #         name = 'freudenstein_roth'
-    #         npar = 8
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.freudenstein_roth, x0, xmin, xmax,
-    #                      fmin)
-    #     FreudensteinRoth(self.ncores_nm)
-    #     FreudensteinRoth(self.ncores_de)
-
-    # def test_PowellSingular(self):
-    #     def PowellSingular(opt):
-    #         name = 'powell_singular'
-    #         npar = 4
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.powell_singular, x0, xmin, xmax, fmin)
-    #     PowellSingular(self.ncores_nm)
-    #     PowellSingular(self.ncores_de)
-
-    # def test_BrownDennis(self):
-    #     def BrownDennis(opt):
-    #         name = 'BrownDennis'
-    #         npar = 4
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.brown_dennis, x0, xmin, xmax, fmin)
-    #     BrownDennis(self.ncores_nm)
-    #     # BrownDennis(self.ncores_de)
-
-    # def test_Box3d(self):
-    #     def Box3d(opt):
-    #         name = 'Box3d'
-    #         npar = 3
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.box3d, x0, xmin, xmax, fmin)
-    #     Box3d(self.ncores_nm)
-    #     Box3d(self.ncores_de)
-        
-    ###################################################
-    # def test_Osborne1(self):
-    #     def Osborne1(opt):
-    #         name = 'Osborne1'
-    #         npar = 5
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.osborne1, x0, xmin, xmax, fmin)
-    #     Osborne1(self.ncores_nm)
-    #     Osborne1(self.ncores_de)
-
-    # def test_PenaltyII(self):
-    #     def PenaltyII(opt):
-    #         name = 'PenaltyII'
-    #         npar = 4
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.penaltyII, x0, xmin, xmax, fmin)
-    #     PenaltyII(self.ncores_nm)
-    #     PenaltyII(self.ncores_de)
-        
-    # def test_Osborne2(self):
-    #     def Osborne2(opt):
-    #         name = 'Osborne2'
-    #         npar = 11
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.osborne2, x0, xmin, xmax, fmin)
-    #     Osborne2(self.ncores_nm)
-    #     # Osborne2(self.ncores_de)
-
-    # def test_PenaltyI(self):
-    #     def PenaltyI(opt):
-    #         name = 'PenaltyI'
-    #         npar = 4
-    #         x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    #         self.tst_opt(opt, _tstoptfct.penaltyI, x0, xmin, xmax, fmin)
-    #     PenaltyI(self.ncores_nm)
-    #     # PenaltyI(self.ncores_de)
-
-    # def test_Colville(self):
-    #     xmin = [-10, -10, -10, -10]
-    #     xmax = [10, 10, 10, 10.]
-    #     x0 = [-3.2, -5.0, -6.0, -1.0]
-    #     self.tst_func(self.ncores_nm, tstopt.Colville, x0, xmin, xmax, 0.0)
-    #     self.tst_func(self.ncores_de, tstopt.Colville, x0, xmin, xmax, 0.0)
-
-    # def test_Griewank(self):
-    #     xmin = self.numpar * [-600]
-    #     xmax = self.numpar * [600]
-    #     x0 = self.numpar * [-100.]
-    #     self.tst_func(self.ncores_nm, tstopt.Griewank, x0, xmin, xmax, 0.0)
-    #     self.tst_func(self.ncores_de, tstopt.Griewank, x0, xmin, xmax, 0.0)
-    # def test_Trid(self):
-    #     if self.numpar == 6 or self.numpar == 10:
-    #         xmin = self.numpar * [- self.numpar * self.numpar]
-    #         xmax = self.numpar * [self.numpar * self.numpar]
-    #         x0 = self.numpar * [10]
-    #         self.tst_func(self.ncores_nm, tstopt.Trid, x0, xmin, xmax, -200.0)
-    #         self.tst_func(self.ncores_de, tstopt.Trid, x0, xmin, xmax, -200.0)    
-    ###################################################
-    
-    

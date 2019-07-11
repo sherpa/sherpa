@@ -42,9 +42,6 @@ class test_optmethods(SherpaTestCase):
                   x0, xmin, xmax, iprint=iprint )
         self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
                   x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0) )
-        self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
-                  x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0),
-                  numcores=_ncpus )
         self.tst( optfcts.lmdif, name + self.lm, fct, fmin,
                   x0, xmin, xmax, iprint=iprint )
 
