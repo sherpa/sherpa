@@ -756,4 +756,5 @@ class PSFSpace2D(EvaluationSpace2D):
         x_range_end, y_range_end = x_end + 1, y_end + 1
         x = numpy.arange(x_start, x_range_end, step_x)
         y = numpy.arange(y_start, y_range_end, step_y)
+        self.data_2_psf_pixel_size_ratio = (step_x, step_y)
         super(PSFSpace2D, self).__init__(x, y)
