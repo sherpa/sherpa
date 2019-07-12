@@ -37,6 +37,10 @@ __all__ = 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D', 'Data2DInt', 'Data'
 
 
 def _check(array):
+    if array is None:
+        # There may be valid reasons for the array to be None, e.g. that's what we do in fake_pha
+        return array
+
     if hasattr(array, "shape"):
         if len(array.shape) != 1:
             raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {})".format(array))
