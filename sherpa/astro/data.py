@@ -2052,7 +2052,7 @@ class DataPHA(Data1DInt):
             elif self.units == 'wavelength':
                 ebin = self._hc / elo - self._hc / ehi
             elif self.units == 'channel':
-                ebin = ehi - elo
+                ebin = 1
             else:
                 raise DataErr("bad", "quantity", self.units)
 
@@ -2123,8 +2123,8 @@ class DataPHA(Data1DInt):
                 ylabel += '/keV'
             elif self.units == 'wavelength':
                 ylabel += '/Angstrom'
-            elif self.units == 'channel':
-                ylabel += '/channel'
+            # elif self.units == 'channel':
+                # ylabel += '/channel'
 
         if self.plot_fac:
             from sherpa.plot import backend
