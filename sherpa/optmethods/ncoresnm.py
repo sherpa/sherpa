@@ -350,8 +350,8 @@ class nmNcores(MyNcores):
         MyNcores.__init__(self)
         return
     
-    def my_worker(self, opt, id, fcn, x, xmin, xmax, tol, maxnfev, out_q,
-                  err_q, lock):
+    def my_worker(self, opt, id, out_q, err_q, lock, \
+                  fcn, x, xmin, xmax, tol, maxnfev):
         try:
             vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
         except Exception as e:

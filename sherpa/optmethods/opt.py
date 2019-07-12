@@ -71,7 +71,7 @@ class MyNcores:
         procs = []
 
         for id, func in enumerate(funcs):
-            myargs=(func, id, *args, out_q, err_q, lock)
+            myargs=(func, id, out_q, err_q, lock) + args
             try:
                 procs.append(multiprocessing.Process(target=self.my_worker,
                                                      args=myargs))
@@ -559,7 +559,7 @@ def myprint(name, func, result):
 
 def tst_unc_opt(algorithms, npar):
     """
-    Moré, J.J., Garbow, B.S. and Hillstrom, K.E., Testing Unconstrained Optimization Software, ACM Trans. Math. Software 7 (1981), 17-41.
+    More, J.J., Garbow, B.S. and Hillstrom, K.E., Testing Unconstrained Optimization Software, ACM Trans. Math. Software 7 (1981), 17-41.
     """
     
     from sherpa.optmethods import _tstoptfct
