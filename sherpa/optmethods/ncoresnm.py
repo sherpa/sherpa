@@ -372,11 +372,10 @@ class ncoresNelderMead:
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=_ncpus):
         try:
-            num_algo = min(numcores, len(self.algo))
-            algo = self.algo[0:num_algo]
+            num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)
             nm_ncores = nmNcores()
-            results = nm_ncores.calc(algo, numcores, *args)
+            results = nm_ncores.calc(self.algo, numcores, *args)
             nfev, fmin, par = self.unpack_results(num_algo, results)
             return nfev, fmin, par
         except NotImplementedError as nie:
@@ -423,11 +422,10 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=_ncpus, fval=np.inf, nfev=0):
         try:
-            num_algo = min(numcores, len(self.algo))
-            algo = self.algo[0:num_algo]
+            num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)
             nm_ncores = nmNcores()
-            results = nm_ncores.calc(algo, numcores, *args)
+            results = nm_ncores.calc(self.algo, numcores, *args)
             tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
             nfev += tmp_nfev
             # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)

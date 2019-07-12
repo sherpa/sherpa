@@ -51,10 +51,10 @@ class MyNcores:
             if not callable(func):
                 raise TypeError("input func '%s' is not callable" % repr(func))
 
-        # fix me
         if numcores is None:
             numcores = _ncpus
-        numcores = min(numcores, len(funcs))
+        num_funcs = len(funcs)
+        numcores = min(numcores, num_funcs)
         
         # Returns a started SyncManager object which can be used for sharing
         # objects between processes. The returned manager object corresponds
@@ -77,7 +77,7 @@ class MyNcores:
                                                      args=myargs))
             except NotImplementedError as nie:
                 raise nie
-        return run_tasks(procs, err_q, out_q, numcores)
+        return run_tasks(procs, err_q, out_q, num_funcs)
 
     def my_worker(self, *args):
         raise NotImplementedError("my_worker has not been implemented")
