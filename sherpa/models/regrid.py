@@ -39,6 +39,9 @@ import logging
 warning = logging.getLogger(__name__).warning
 
 
+PIXEL_RATIO_THRESHOLD = 0.1
+
+
 class Axis(object):
     """
     Class for representing N-D axes objects, for both "integrated" and "non-integrated" datasets
@@ -820,18 +823,26 @@ def rebin_2d(y, from_space, to_space):
     from_x_dim = from_space.x_axis.size
     from_y_dim = from_space.y_axis.size
 
-    if (from_x_dim, from_y_dim) == (to_x_dim, to_y_dim):
+    if hasattr(from_space, "data_2_psf_pixel_size_ratio"):
+        ratio = from_space.data_2_psf_pixel_size_ratio
+        scale_x, scale_y = 1/ratio[0], 1/ratio[1]
+    else:
+        scale_x = from_x_dim / to_x_dim
+        scale_y = from_y_dim / to_y_dim
+
+    scale = scale_x * scale_y
+
+    if scale == 1:
         return y
 
     reshaped_y = y.reshape(from_x_dim, from_y_dim)
-
-    scale = (from_x_dim / to_x_dim) * (from_y_dim / to_y_dim)
     reshaped_scaled_y = reshaped_y / scale
 
-    if (from_x_dim % to_x_dim) != 0 or (from_y_dim % to_y_dim) != 0:
+    if (abs(scale_x - round(scale_x)) > PIXEL_RATIO_THRESHOLD
+            or abs(scale_y - round(scale_y)) > PIXEL_RATIO_THRESHOLD):
         return rebin_no_int(reshaped_scaled_y, dimensions=(to_x_dim, to_y_dim))
 
-    return rebin_int(reshaped_scaled_y, int(from_x_dim/to_x_dim), int(from_y_dim/to_y_dim))
+    return rebin_int(reshaped_scaled_y, int(round(scale_x)), int(round(scale_y)))
 
 
 def rebin_int(array, factorx, factory):

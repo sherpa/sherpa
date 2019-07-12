@@ -182,6 +182,53 @@ def test_psf_space(configuration):
                              approx(n_bins - 1 / configuration.resolution_ratio))
 
 
+def test_rebin_int_no_int():
+    """
+    Test that the correct rebin_* function is called depending on whether the pixel size is an integer or close to
+    an integer with a tolerance that can be changed by the user.
+    """
+    from sherpa.models.regrid import rebin_2d
+    import six
+    if six.PY2:
+        import mock
+    else:
+        from unittest import mock
+
+    rebin_int = mock.MagicMock()
+    rebin_no_int = mock.MagicMock()
+
+    to_space = mock.MagicMock()
+    y = mock.MagicMock()
+
+    with mock.patch('sherpa.models.regrid.rebin_int', rebin_int):
+        # The pixel ratio is 2, perfect integer, rebin_int should be called
+        from_space = mock.MagicMock(data_2_psf_pixel_size_ratio=(0.5, 0.5))
+        rebin_2d(y, from_space, to_space)
+        rebin_int.assert_called()
+        rebin_no_int.assert_not_called()
+        rebin_int.reset_mock()
+        rebin_no_int.reset_mock()
+
+    with mock.patch('sherpa.models.regrid.rebin_int', rebin_int):
+        # Not a perfect integer, but close to an integer within the default tolerance
+        from_space = mock.MagicMock(data_2_psf_pixel_size_ratio=(0.333, 0.333))
+        rebin_2d(y, from_space, to_space)
+        rebin_int.assert_called()
+        rebin_no_int.assert_not_called()
+        rebin_int.reset_mock()
+        rebin_no_int.reset_mock()
+
+    with mock.patch('sherpa.models.regrid.rebin_no_int', rebin_no_int):
+        # Same case as above, but I am changing the tolerance so the ratio is not equal to an integer within
+        # the new tolerance.
+        from_space = mock.MagicMock(data_2_psf_pixel_size_ratio=(0.333, 0.333))
+        from sherpa.models import regrid
+        regrid.PIXEL_RATIO_THRESHOLD = 0.000001
+        rebin_2d(y, from_space, to_space)
+        rebin_int.assert_not_called()
+        rebin_no_int.assert_called()
+
+
 def symmetric_gaussian_image(amplitude, sigma, position, n_bins):
     model = SigmaGauss2D()
     model.ampl = amplitude
