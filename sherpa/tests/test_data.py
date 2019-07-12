@@ -963,3 +963,17 @@ def test_data2d_int_wrong_y_array_size(array_sizes_fixture):
         Data2DInt('name', x0.flatten(), x0.flatten(), x1.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
 
 
+# https://github.com/sherpa/sherpa/issues/628
+def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
+    from sherpa.fit import Fit
+    from sherpa.optmethods import LevMar
+    from sherpa.stats import Chi2
+    from sherpa.models import Gauss2D
+
+    x0, x1, dx, y = array_sizes_fixture
+    data2 = Data2DInt('name', x0.flatten(), x0.flatten() + dx, x1.flatten(), x1.flatten() + dx, y.flatten(),
+                      staterror=numpy.sqrt(y).flatten())
+
+    model2 = Gauss2D()
+    fitter = Fit(data2, model2, Chi2(), LevMar())
+    fitter.fit()  # Failed in Sherpa 4.11.0
