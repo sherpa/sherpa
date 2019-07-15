@@ -27,7 +27,7 @@ import six
 from six.moves import zip as izip
 import numpy
 
-from sherpa.models.regrid import EvaluationSpace1D
+from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, calc_total_error, bool_cast, \
@@ -52,11 +52,36 @@ def _check(array):
 
 
 class DataSpace1D(EvaluationSpace1D):
+    """
+    Class for representing 1-D Data Space. Data Spaces are spaces that describe the data domain. As models can be
+    evaluated over data spaces, data spaces can be considered evaluation spaces themselves. However this "is-a"
+    relationship is in the code mostly for convenience and could be removed in future versions.
+    """
     def __init__(self, filter, x):
+        """
+        Parameters
+        ----------
+        filter : Filter
+            a filter object that initialized this data space
+        x : array_like
+            the x axis of this data space
+        """
         self.filter = filter
         EvaluationSpace1D.__init__(self, x)
 
     def get(self, filter=False):
+        """
+        Get a filtered representation of this data set. If `filter` is `False` this object is returned.
+
+        Parameters
+        ----------
+        filter : bool
+            whether the data set should be filtered before being returned
+
+        Returns
+        -------
+        DataSpace1D
+        """
         filter = bool_cast(filter)
 
         if not filter:
@@ -68,6 +93,22 @@ class DataSpace1D(EvaluationSpace1D):
         return DataSpace1D(self.filter, data)
 
     def for_model(self, model):
+        """
+        Models can be defined over arbitrary evaluation spaces. However, at evaluation time during a fit, the model's
+        evaluation space and the data space will be joined together and the model will be evaluated over the joined
+        domain. This makes sure that when the models are rebinned back to the data space the evaluation does not have
+        to be extrapolated from the model's evaluation space alone.
+
+        Parameters
+        ----------
+        model : The model whose evaluation space needs to be joined with the dataset's data space.
+
+        Returns
+        -------
+        DataSpace1D
+            A data space that joins this data space with the model's evaluation space. if the model does not have an
+            evaluation space assigned to itself then `self` is returned.
+        """
         evaluation_space = None
 
         if model is not None and hasattr(model, "evaluation_space"):
@@ -81,11 +122,36 @@ class DataSpace1D(EvaluationSpace1D):
 
 
 class IntegratedDataSpace1D(EvaluationSpace1D):
+    """
+    Same as DataSpace1D, but for supporting integrated data sets.
+    """
     def __init__(self, filter, xlo, xhi):
+        """
+        Parameters
+        ----------
+        filter : Filter
+            a filter object that initialized this data space
+        xlo : array_like
+            the lower bounds array of this data space
+        xhi : array_like
+            the higher bounds array of this data space
+        """
         self.filter = filter
         EvaluationSpace1D.__init__(self, xlo, xhi)
 
     def get(self, filter=False):
+        """
+        Get a filtered representation of this data set. If `filter` is `False` this object is returned.
+
+        Parameters
+        ----------
+        filter : bool
+            whether the data set should be filtered before being returned
+
+        Returns
+        -------
+        IntegratedDataSpace1D
+        """
         filter = bool_cast(filter)
 
         if not filter:
@@ -97,6 +163,22 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         return IntegratedDataSpace1D(self.filter, *data)
 
     def for_model(self, model):
+        """
+        Models can be defined over arbitrary evaluation spaces. However, at evaluation time during a fit, the model's
+        evaluation space and the data space will be joined together and the model will be evaluated over the joined
+        domain. This makes sure that when the models are rebinned back to the data space the evaluation does not have
+        to be extrapolated from the model's evaluation space alone.
+
+        Parameters
+        ----------
+        model : The model whose evaluation space needs to be joined with the dataset's data space.
+
+        Returns
+        -------
+        IntegratedDataSpace1D
+            A data space that joins this data space with the model's evaluation space. if the model does not have an
+            evaluation space assigned to itself then `self` is returned.
+        """
         evaluation_space = None
 
         if model is not None and hasattr(model, "evaluation_space"):
@@ -110,12 +192,37 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
 
 
 class DataSpace2D(object):
+    """
+    Class for representing 2-D Data Spaces. Data Spaces are spaces that describe the data domain.
+    """
     def __init__(self, filter, x0, x1):
+        """
+        Parameters
+        ----------
+        filter : Filter
+            a filter object that initialized this data space
+        x0 : array_like
+            the first axis of this data space
+        x1 : array_like
+            the second axis of this data space
+        """
         self.filter = filter
         self.x0 = _check(x0)
         self.x1 = _check(x1)
 
     def get(self, filter=False):
+        """
+        Get a filtered representation of this data set. If `filter` is `False` this object is returned.
+
+        Parameters
+        ----------
+        filter : bool
+            whether the data set should be filtered before being returned
+
+        Returns
+        -------
+        DataSpace2D
+        """
         filter = bool_cast(filter)
 
         if not filter:
@@ -128,11 +235,39 @@ class DataSpace2D(object):
 
     @property
     def grid(self):
+        """
+        Return the grid representation of this dataset.
+
+        The x0 and x1 arrays in the grid are one-dimensional representations of the meshgrid obtained
+        from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
+
+        Returns
+        -------
+        tuple
+            A tuple representing the x0 and x1 axes. The tuple will contain two arrays.
+        """
         return self.x0, self.x1
 
 
 class IntegratedDataSpace2D(object):
+    """
+    Same as DataSpace2D, but for supporting integrated data sets.
+    """
     def __init__(self, filter, x0lo, x1lo, x0hi, x1hi):
+        """
+        Parameters
+        ----------
+        filter : Filter
+            a filter object that initialized this data space
+        x0lo : array_like
+            the lower bounds array of the x0 axis
+        x0hi : array_like
+            the higher bounds array of the xhi axis
+        x1lo : array_like
+            the lower bounds array of the x0 axis
+        x1hi : array_like
+            the higher bounds array of the xhi axis
+        """
         self.filter = filter
         self.x0lo = _check(x0lo)
         self.x1lo = _check(x1lo)
@@ -140,6 +275,18 @@ class IntegratedDataSpace2D(object):
         self.x1hi = _check(x1hi)
 
     def get(self, filter=False):
+        """
+        Get a filtered representation of this data set. If `filter` is `False` this object is returned.
+
+        Parameters
+        ----------
+        filter : bool
+            whether the data set should be filtered before being returned
+
+        Returns
+        -------
+        IntegratedDataSpace2D
+        """
         filter = bool_cast(filter)
 
         if not filter:
@@ -152,15 +299,49 @@ class IntegratedDataSpace2D(object):
 
     @property
     def grid(self):
+        """
+        Return the grid representation of this dataset.
+
+        The x0 and x1 arrays in the grid are one-dimensional representations of the meshgrid obtained
+        from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
+
+        Returns
+        -------
+        tuple
+            A tuple representing the x and y axes. The tuple will contain four arrays.
+        """
         return self.x0lo, self.x1lo, self.x0hi, self.x1hi
 
 
 class DataSpaceND(object):
+    """
+    Class for representing arbitray N-Dimensional data domains
+    """
     def __init__(self, filter, indep):
+        """
+        Parameters
+        ----------
+        filter : Filter
+            a filter object that initialized this data space
+        indep : tuple of array_like
+            the tuple of independent axes.
+        """
         self.filter = filter
         self.indep = indep
 
     def get(self, filter=False):
+        """
+        Get a filtered representation of this data set. If `filter` is `False` this object is returned.
+
+        Parameters
+        ----------
+        filter : bool
+            whether the data set should be filtered before being returned
+
+        Returns
+        -------
+        DataSpaceND
+        """
         filter = bool_cast(filter)
 
         if not filter:
@@ -171,10 +352,23 @@ class DataSpaceND(object):
 
     @property
     def grid(self):
+        """
+        Return the grid representation of this dataset.
+
+        The independent arrays are returned unchanged, i.e. unlike the DataSpace2D class they are not meshed
+
+        Returns
+        -------
+        tuple
+            A tuple representing the independent axes.
+        """
         return self.indep
 
 
 class Filter(object):
+    """
+    A class for representing filters of N-Dimentional datasets.
+    """
     def __init__(self):
         self._mask = True
 
@@ -199,6 +393,18 @@ class Filter(object):
             self._mask = numpy.asarray(val, numpy.bool_)
 
     def apply(self, array):
+        """
+        Apply this filter to an array
+
+        Parameters
+        ----------
+        array : array_like
+            Array to be filtered
+
+        Returns
+        -------
+        array_like : filtered array
+        """
         if array is None:
             return
 
@@ -241,14 +447,43 @@ class Filter(object):
 
 @six.add_metaclass(ABCMeta)
 class BaseData(object):
+    """
+    Base class for all data classes. Left for compatibility with older versions.
+    """
     pass
 
 
 # DATA-NOTE: ND Data cannot be plotted
 class Data(NoNewAttributesAfterInit, BaseData):
+    """
+    Data class for generic, N-Dimensional data sets, where N depends on the number of independent axes passed during
+    initialization.
+
+    A data class is the collection of a data space and a number of data array for the dependent variable and
+    associated errors.
+
+    This class can be extended by classes definining data sets of specific dimensionality. Extending classes should
+    override the `_init_data_space` method.
+
+    This classe provides most of the infrastructure for extending classes for free.
+    """
     _fields = ("name", "indep", "dep", "staterror", "syserror")
 
     def __init__(self, name, indep, y, staterror=None, syserror=None):
+        """
+        Parameters
+        ----------
+        name : basestring
+            name of this dataset
+        indep: tuple of array_like
+            the tuple of independent arrays
+        y : array_like
+            the values of the dependent observable
+        staterror : array_like
+            the statistical error associated with the data
+        syserror : array_like
+            the systematic error associated with the data
+        """
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y = _check(y)
@@ -257,6 +492,22 @@ class Data(NoNewAttributesAfterInit, BaseData):
         NoNewAttributesAfterInit.__init__(self)
 
     def _init_data_space(self, filter, *data):
+        """
+        Extending classes should implement this method to provide the proper data space construction.
+
+        Parameters
+        ----------
+        filter : Filter
+            a filter object passed by the initializer upon initialization of extending classes.
+        data : tuple of array_like
+            the tuple of independent arrays used to build the data space.
+
+        Returns
+        -------
+        object
+            an instance of the dataspace associated with this data set.
+
+        """
         return DataSpaceND(filter, data)
 
     @property
@@ -286,11 +537,25 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._data_space.filter.mask = val
 
     def get_dims(self):
+        """
+        Return the dimensions of this data space as a tuple of tuples.
+        The first element in the tuple is a tuple with the dimensions of the data space, while the second element
+        provides the size of the dependent array.
+        Returns
+        -------
+        tuple
+        """
         indep_size = tuple(indep.size for indep in self.indep)
         return indep_size, self.dep.size
 
     @property
     def indep(self):
+        """
+        Return the grid of the data space associated with this data set.
+        Returns
+        -------
+        tuple of array_like
+        """
         return self._data_space.get().grid
 
     @indep.setter
