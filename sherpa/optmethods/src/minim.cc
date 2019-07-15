@@ -5,7 +5,6 @@
 #include "minim.hh"
 #include "tests/tstopt.hh"
 
-
 void tst_minim( ) {
 
   const int npar=2;
@@ -66,7 +65,7 @@ void tstminim( Init init, Fct fct, int npar, std::vector<double>& par,
     sherpa::Minim< Fct, const sherpa::Bounds<double>&, double > nm( fct,
                                                                     bounds );
 
-    int verbose=0, maxnfev=npar*npar*maxfev, nfev;
+    int verbose=0, maxnfev=npar*npar*maxfev, nfev=0;
     double fmin;
     int initsimplex=1;
     nm( verbose, maxnfev, tol, npar, initsimplex, finalsimplex, lo, hi,
@@ -128,7 +127,7 @@ int main( int argc, char* argv[] ) {
     int npop=0, maxfev=1024;
     double c1=0.0, c2=0.0;
     if ( uncopt )
-      tst_unc_opt( npar, tol, tstminim, npop, maxfev, c1, c2 );
+      tst_unc_opt<tstFct, double>( npar, tol, tstminim, npop, maxfev, c1, c2 );
 
     if ( globalopt )
       tst_global( npar, tol, tstminim, npop, maxfev, c1, c2 );
@@ -145,15 +144,16 @@ int main( int argc, char* argv[] ) {
   return 0;
 }
 #endif
-//
-// g++ -o minim -DtestMinim -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
-//
 /*
-==9066== Memcheck, a memory error detector
-==9066== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
-==9066== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
-==9066== Command: minim
-==9066==
+g++ -o minim -DtestMinim -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
+*/
+/*
+(sherpa3) [dtn@devel12 src]$ valgrind minim
+==2581== Memcheck, a memory error detector
+==2581== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==2581== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==2581== Command: minim
+==2581==
 #
 #:npar = 6
 #:tol=1e-08
@@ -164,7 +164,7 @@ S	N	N	N	N
 Minim_Rosenbrock	-961	0	1.29567	0.184248,0.0284826,1.63673,2.68041,0.529682,0.278636
 Minim_FreudensteinRoth	-574	0	146.953	11.4128,-0.896805,11.4128,-0.896805,11.4128,-0.896805
 Minim_PowellBadlyScaled	1003	0	1.63198e-06	1.50587e-05,6.64168,8.25696e-06,12.1085,1.30173e-05,7.68102
-Minim_BrownBadlyScaled	4547	0	1.10634e-17	1e+06,1.99977e-06,1e+06,1.99819e-06,1e+06,2e-06
+Minim_BrownBadlyScaled	572	0	1.10634e-17	1e+06,1.99977e-06,1e+06,1.99819e-06,1e+06,2e-06
 Minim_Beale	399	0	2.70425e-16	3,0.5,3,0.5,3,0.5
 Minim_JennrichSampson	861	373.086	373.087	0.257825,0.257825,0.257825,0.257825,0.257825,0.257825
 Minim_HelicalValley	145	0	1.12431e-16	1,4.47078e-09,6.95162e-09
@@ -194,20 +194,20 @@ Minim_LinearFullRank	326	0	1.77494e-30	-1,-1,-1,-1,-1,-1
 Minim_LinearFullRank1	247	1.15385	1.15385	2.97377,2.2046,2.13584,0.15931,0.59993,-2.8661
 Minim_LinearFullRank0cols0rows	244	2.66667	2.66667	2.14801,1.95638,0.261166,0.8645,-1.56419,2.61241
 Minim_Chebyquad	641	0	8.64238e-06	0.04472,0.205762,0.230925,0.424449,0.491337,0.591077,0.761322,0.804917,0.956254
-Minim_McCormick	4098	-1.91	-nan	-nan,-nan
-Minim_BoxBetts	99	0	1.02735e-14	1,10,1
-Minim_Paviani	-102402	-45.7	-2.75503	5.78989,7.49795,5.06157,7.23616,4.91172,5.56942,7.55769,6.10409,6.90818,7.98112
-Minim_GoldsteinPrice	86	3	3	-2.85576e-11,-1
+Minim_McCormick	1287	-1.91	-nan	-nan,-nan
+Minim_BoxBetts	84	0	1.02735e-14	1,10,1
+Minim_Paviani	-76813	-45.7	-2.75503	5.78989,7.49795,5.06157,7.23616,4.91172,5.56942,7.55769,6.10409,6.90818,7.98112
+Minim_GoldsteinPrice	83	3	3	-2.85576e-11,-1
 Minim_Shekel5	-171	-10.1532	-5.10077	7.99958,7.99964,7.99958,7.99964
 Minim_Shekel7	-179	-10.4029	-5.12882	7.99951,7.99962,7.9995,7.99961
 Minim_Shekel10	-189	-10.5364	-5.17565	7.99948,7.99945,7.99946,7.99944
 Minim_Levy4	-803	-21.502	9.85125	2.64769,1.99586,0.670413,6.99797
-Minim_Levy5	-317	-11.504	38.8617	3.96386,3.99615,3.99623,3.99624,3.99945
-Minim_Levy6	-306	-11.504	47.8504	3.96386,3.99615,3.99623,3.99623,3.99624,3.99945
-Minim_Levy7	-383	-11.504	56.8392	3.96386,3.99615,3.99623,3.99623,3.99623,3.99624,3.99945
+Minim_Levy5	-312	-11.504	38.8617	3.96386,3.99615,3.99623,3.99624,3.99945
+Minim_Levy6	-300	-11.504	47.8504	3.96386,3.99615,3.99623,3.99623,3.99624,3.99945
+Minim_Levy7	-376	-11.504	56.8392	3.96386,3.99615,3.99623,3.99623,3.99623,3.99624,3.99945
 Minim_Griewank	-79	0	4.91141	100.481,-97.6456
-Minim_SixHumpCamel	89	-1.03	-1.03163	0.089842,-0.712656
-Minim_Branin	81	0.397889	0.397887	9.42478,2.475
+Minim_SixHumpCamel	86	-1.03	-1.03163	0.089842,-0.712656
+Minim_Branin	77	0.397889	0.397887	9.42478,2.475
 Minim_Shubert	-96	-24.06	-14.6909	8.82716,5.79179
 Minim_Hansen	113	-176.54	-176.542	4.97648,4.85806
 Minim_Cola	-866	12.8154	256.203	1.94861,-0.57903,0.373911,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108,0.673911,-0.0382,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108
@@ -215,19 +215,18 @@ Minim_Ackley	-85	0	19.3325	16.9988,16.9988
 Minim_Bohachevsky1	122	0	0	-1.20688e-13,-4.84744e-14
 Minim_Bohachevsky2	122	0	0	4.72187e-13,-1.38867e-13
 Minim_Bohachevsky3	119	0	0	-7.20017e-14,5.35598e-14
-Minim_Easom	-4096	-1	-0	25.55,25.55
+Minim_Easom	-19	-1	-0	25.55,25.55
 Minim_Rastrigin	-97	0	7.95966	1.98991,1.98991
 Minim_Michalewicz2	77	-1.8013	-1.8013	2.20291,1.5708
-Minim_Michalewicz5	-323	-4.68766	-4.3749	2.20291,1.5708,2.21933,1.92306,0.996677
+Minim_Michalewicz5	-322	-4.68766	-4.3749	2.20291,1.5708,2.21933,1.92306,0.996677
 Minim_Michalewicz10	-938	-9.66015	-7.54148	2.20303,1.57081,1.28501,1.39237,1.72048,1.57081,2.22106,1.5867,1.65572,1.5708
-
-==9066==
-==9066== HEAP SUMMARY:
-==9066==     in use at exit: 0 bytes in 0 blocks
-==9066==   total heap usage: 24,021 allocs, 24,021 frees, 3,682,352 bytes allocated
-==9066==
-==9066== All heap blocks were freed -- no leaks are possible
-==9066==
-==9066== For counts of detected and suppressed errors, rerun with: -v
-==9066== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 6 from 6
- */
+==2581==
+==2581== HEAP SUMMARY:
+==2581==     in use at exit: 0 bytes in 0 blocks
+==2581==   total heap usage: 24,021 allocs, 24,021 frees, 3,682,352 bytes allocated
+==2581==
+==2581== All heap blocks were freed -- no leaks are possible
+==2581==
+==2581== For counts of detected and suppressed errors, rerun with: -v
+==2581== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+*/

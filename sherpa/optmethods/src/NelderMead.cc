@@ -124,7 +124,7 @@ int main( int argc, char* argv[] ) {
     int npop=0, maxfev=1024;
     double c1=0.0, c2=0.0;
     if ( uncopt )
-      tst_unc_opt( npar, tol, tstnm, npop, maxfev, c1, c2 );
+      tst_unc_opt<tstFct, double>( npar, tol, tstnm, npop, maxfev, c1, c2 );
 
     if ( globalopt )
       tst_global( npar, tol, tstnm, npop, maxfev, c1, c2 );

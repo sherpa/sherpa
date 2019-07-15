@@ -38,7 +38,7 @@ void tstlm( Init init, FctVec fct, int npar, std::vector<double>& par,
     sherpa::Bounds<double> bounds(lo, hi);
     minpack::LevMarDif< FctVec, mybounds, double > lm( fct, bounds, mfcts );
 
-    int maxnfev=128*npar, nfev;
+    int maxnfev=128*npar, nfev = 0;
     double fmin=0.0;
 
     int nprint = 0;
@@ -48,7 +48,13 @@ void tstlm( Init init, FctVec fct, int npar, std::vector<double>& par,
     std::vector<double> fjac( mfcts * npar );
 
     lm( npar, tol, tol, tol, maxnfev, epsfcn, factor, nprint, par, nfev, fmin,
-        bounds, fjac, covarerr );
+        bounds, fjac );
+
+    for ( int ii = 0; ii < npar; ++ii )
+      if ( fjac[ ii + mfcts * ii ] > 0.0 )
+        covarerr[ ii ] = sqrt( fjac[ ii + mfcts * ii ] );
+      else
+        covarerr[ ii ] = 0.0;
 
     // lm.minimize( &par[0], tol, maxnfev, nfev, fmin );
 
