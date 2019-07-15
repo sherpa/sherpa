@@ -846,17 +846,35 @@ def rebin_2d(y, from_space, to_space):
     return rebin_int(reshaped_scaled_y, int(round(scale_x)), int(round(scale_y)))
 
 
-def rebin_int(array, factorx, factory):
-    xedge = np.shape(array)[0] % factorx
-    yedge = np.shape(array)[1] % factory
-    array_binned1 = array[xedge:, yedge:]
+def rebin_int(array, scale_x, scale_y):
+    """
+    Rebin array by an integer scale on both x and y
 
-    binim = np.reshape(array_binned1,
-                       (np.shape(array_binned1)[0]//factorx,factorx,np.shape(array_binned1)[1]//factory, factory))
-    binim = np.sum(binim, axis=3)
-    binim = np.sum(binim, axis=1)
+    Parameters
+    ----------
+    array : array_like
+        The array to be rebinned
+    scale_x : int
+        The pixel ratio on the x axis
+    scale_y : int
+        The pixel ratio on the y axis
 
-    return binim
+    Returns
+    -------
+    array_like
+
+    """
+    xedge = np.shape(array)[0] % scale_x
+    yedge = np.shape(array)[1] % scale_y
+    sub_array = array[xedge:, yedge:]
+    binned_x_shape = np.shape(sub_array)[0] // scale_x
+    binned_y_shape = np.shape(sub_array)[1] // scale_y
+
+    image = np.reshape(sub_array, (binned_x_shape, scale_x, binned_y_shape, scale_y))
+    image = np.sum(image, axis=3)
+    image = np.sum(image, axis=1)
+
+    return image
 
 
 def rebin_no_int(array, dimensions=None, scale=None):
