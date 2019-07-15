@@ -741,6 +741,12 @@ class PSFModel(Model):
 
 
 class PSFSpace2D(EvaluationSpace2D):
+    """
+    This class defines a special evaluation space that has the same boundaries as the data space but a number of pixels
+    consistent with the pixel size of the PSF. This space is used when the data image and the PSF have a different
+    pixel size so the model is evaluated on the "PSF space" and then rebinned back to the data space for the calculation
+    of the statistic during a fit.
+    """
     def __init__(self, data_space, psf_model, data_pixel_size=None):
         if data_pixel_size is None:
             data_pixel_size = [1, 1]
