@@ -3586,7 +3586,7 @@ class XSkyrline(XSAdditiveModel):
         The overall Doppler shift.
     limb
         0 means isotropic emission, 1 means Laor's limb darkening
-        (1 + 0.26 \mu), 2 means Haardt's limb brightening (ln(1 + 1/\mu))
+        (1 + 0.26 \\mu), 2 means Haardt's limb brightening (ln(1 + 1/\\mu))
     norm
         The normalization.
 

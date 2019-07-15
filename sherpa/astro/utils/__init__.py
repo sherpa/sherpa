@@ -163,21 +163,14 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
 
 def _counts(data, lo, hi, func, *args):
     lo, hi = bounds_check(lo, hi)
-    old_filter = data.filter
     old_mask = data.mask
     old_quality_filter = getattr(data, 'quality_filter', None)
     try:
-        data.notice()  # save and clear filter
-        data.filter = None
-        # filter_rsp = getattr(data, 'notice_response', None)
-        # if filter_rsp is not None:
-        #     filter_rsp(False)
-
+        data.notice()  # clear filter
         data.notice(lo, hi)
         counts = func(*args).sum()
         data.notice()
     finally:
-        data.filter = old_filter
         data.mask = old_mask
         if old_quality_filter is not None:
             data.quality_filter = old_quality_filter

@@ -84,7 +84,8 @@ known_warnings = {
     UserWarning:
         [
             r"File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",
-            r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode."
+            r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode.",
+            r"Converting array .* to numpy array",
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
