@@ -179,7 +179,6 @@ def _counts(data, lo, hi, func, *args):
 
 
 def _counts2d(data, reg, func, *args):
-    old_filter = data.filter
     old_mask = data.mask
     coord = getattr(data, 'coord', None)
     old_region = getattr(data, '_region', None)
@@ -190,7 +189,6 @@ def _counts2d(data, reg, func, *args):
         counts = func(*args).sum()
         data.notice2d()
     finally:
-        data.filter = old_filter
         data.mask = old_mask
 
         if coord is not None:
