@@ -1111,8 +1111,7 @@ class PSFModel(_PSFModel):
         _PSFModel.fold(self, data)
 
         # Set WCS coordinates of kernel data set to match source data set.
-        if (isinstance(data, DataIMG) and
-                isinstance(self.kernel, DataIMG)):
+        if hasattr(self.kernel, "set_coord"):
             self.kernel.set_coord(data.coord)
 
     def get_kernel(self, data, subkernel=True):

@@ -21,6 +21,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
+from pytest import approx
+
 from sherpa.models import Const2D
 from sherpa.astro.ui.utils import Session
 from sherpa.utils.testing import requires_data, requires_fits
@@ -43,7 +45,7 @@ def test_psf_rebin_warning(setup):
     ui.load_image(image)
     ui.load_psf('psf', psf_bin1)
 
-    with pytest.warns(UserWarning):
+    with pytest.raises(AttributeError):
         ui.set_psf('psf')
 
 
@@ -75,3 +77,19 @@ def test_psf_sky_none(setup):
     # In https://github.com/gammapy/gammapy/issues/1905 this would fail because of a call to kernel.sky.cdelt
     with pytest.warns(UserWarning):
         ui.fit()
+
+
+@requires_fits
+@requires_data
+def test_calc_source_model_sum2d(setup):
+    ui, image, psf_bin05, _ = setup
+
+    ui.load_image(image)
+    ui.get_data().sky.cdelt = (1, 1)
+
+    ui.load_psf('psf', psf_bin05)
+    ui.set_psf('psf')
+
+    ui.set_source(Const2D())
+    ui.fit()
+    assert ui.calc_source_sum2d() == approx(ui.calc_model_sum2d(), rel=0.03)

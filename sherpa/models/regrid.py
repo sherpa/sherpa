@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 #  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
@@ -37,6 +38,9 @@ from sherpa.utils.err import ModelErr
 
 import logging
 warning = logging.getLogger(__name__).warning
+
+
+PIXEL_RATIO_THRESHOLD = 0.1
 
 
 class Axis(object):
@@ -455,6 +459,10 @@ class EvaluationSpace2D(object):
         """
         return self.x_axis.end, self.y_axis.end
 
+    @property
+    def shape(self):
+        return self.x_axis.size, self.y_axis.size
+
     def overlaps(self, other):
         """
         Check if this evaluation space overlaps with another
@@ -492,6 +500,7 @@ class EvaluationSpace2D(object):
             A tuple representing the x and y axes. The tuple will contain four arrays if the dataset is
             integrated, two otherwise.
         """
+
         x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
         if self.x_axis.is_integrated:
             xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
@@ -808,20 +817,67 @@ class ModelDomainRegridder2D(object):
         return rebin_2d(y, self.evaluation_space, requested_space).ravel()
 
 
-def rebin_2d(y, custom_space, requested_space):
-    # we assume that the spaces have an integer ratio, and other regularities, for now.
-    requested_x_dim = requested_space.x_axis.size
-    requested_y_dim = requested_space.y_axis.size
+def rebin_2d(y, from_space, to_space):
+    to_x_dim = to_space.x_axis.size
+    to_y_dim = to_space.y_axis.size
 
-    custom_x_dim = custom_space.x_axis.size
-    custom_y_dim = custom_space.y_axis.size
+    from_x_dim = from_space.x_axis.size
+    from_y_dim = from_space.y_axis.size
 
-    reshaped_y = y.reshape(custom_x_dim, custom_y_dim)
+    if hasattr(from_space, "data_2_psf_pixel_size_ratio"):
+        ratio = from_space.data_2_psf_pixel_size_ratio
+        scale_x, scale_y = 1/ratio[0], 1/ratio[1]
+    else:
+        scale_x = from_x_dim / to_x_dim
+        scale_y = from_y_dim / to_y_dim
 
-    return rebin_flux(reshaped_y, dimensions=(requested_x_dim, requested_y_dim))
+    scale = scale_x * scale_y
+
+    if scale == 1:
+        return y
+
+    reshaped_y = y.reshape(from_x_dim, from_y_dim)
+    reshaped_scaled_y = reshaped_y / scale
+
+    if (abs(scale_x - round(scale_x)) > PIXEL_RATIO_THRESHOLD
+            or abs(scale_y - round(scale_y)) > PIXEL_RATIO_THRESHOLD):
+        return rebin_no_int(reshaped_scaled_y, dimensions=(to_x_dim, to_y_dim))
+
+    return rebin_int(reshaped_scaled_y, int(round(scale_x)), int(round(scale_y)))
 
 
-def rebin_flux(array, dimensions=None, scale=None):
+def rebin_int(array, scale_x, scale_y):
+    """
+    Rebin array by an integer scale on both x and y
+
+    Parameters
+    ----------
+    array : array_like
+        The array to be rebinned
+    scale_x : int
+        The pixel ratio on the x axis
+    scale_y : int
+        The pixel ratio on the y axis
+
+    Returns
+    -------
+    array_like
+
+    """
+    xedge = np.shape(array)[0] % scale_x
+    yedge = np.shape(array)[1] % scale_y
+    sub_array = array[xedge:, yedge:]
+    binned_x_shape = np.shape(sub_array)[0] // scale_x
+    binned_y_shape = np.shape(sub_array)[1] // scale_y
+
+    image = np.reshape(sub_array, (binned_x_shape, scale_x, binned_y_shape, scale_y))
+    image = np.sum(image, axis=3)
+    image = np.sum(image, axis=1)
+
+    return image
+
+
+def rebin_no_int(array, dimensions=None, scale=None):
     """Rebin the array, conserving flux.
 
     Return the array ``array`` to the new ``dimensions`` conserving flux,
@@ -847,7 +903,7 @@ def rebin_flux(array, dimensions=None, scale=None):
     ...    [1,2,3],
     ...    [2,3,4],
     ...    ])
-    >>> rebin_flux(ar, (2,2))
+    >>> rebin_no_int(ar, (2,2))
     array([[1.5, 4.5],
            [4.5, 7.5]])
 
@@ -893,7 +949,7 @@ def rebin_flux(array, dimensions=None, scale=None):
         result[J_, I] += array[j, i] * (1 - dy) * dx
         result[J, I_] += array[j, i] * dy * (1 - dx)
         result[J_, I_] += array[j, i] * (1 - dx) * (1 - dy)
-    allowError = 0.1
+    allowError = 0.001
     assert array.sum() == 0 or \
            (array.sum() < result.sum() * (1 + allowError)) and \
            (array.sum() > result.sum() * (1 - allowError))
