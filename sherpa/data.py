@@ -33,7 +33,9 @@ from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, calc_total_error, bool_cast, \
     filter_bins
 
-__all__ = 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D', 'Data2DInt', 'Data'
+
+__all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
+           'Data1DAsymmetricErrs', 'Data2D', 'Data2DInt')
 
 
 def _check(array):
@@ -1072,6 +1074,21 @@ class Data1D(Data):
         Used for compatibility, in particular for __str__ and __repr__
         """
         return self.get_x()
+
+
+class Data1DAsymmetricErrs(Data1D):
+    """1-D data set with asymmetric errors
+    Note: elo and ehi shall be stored as delta values from y"""
+
+    _fields = ("name", "x", "y", "staterror", "syserror", "elo", "ehi")
+
+    def __init__(self, name, x, y, elo, ehi, staterror=None, syserror=None):
+        self.elo = elo
+        self.ehi = ehi
+        Data1D.__init__(self, name, x, y, staterror=staterror, syserror=syserror)
+
+    def get_yerr(self, filter=False, staterrfunc=None):
+        return self.elo, self.ehi
 
 
 class Data1DInt(Data1D):

@@ -341,7 +341,7 @@ class Session(NoNewAttributesAfterInit):
         self._projection_results = None
 
         self._pyblocxs = sherpa.sim.MCMC()
-
+        
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
         self._dataplot = sherpa.plot.DataPlot()
