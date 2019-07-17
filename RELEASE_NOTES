@@ -1,6 +1,55 @@
 Release Notes
 
+Sherpa 4.11.1
+=============
+
+This release of Sherpa introduces several functional improvements and bug fixes,
+in particular Sherpa now has support for:
+  * asymmetric error bars
+  * PSFs with better pixel resolution than the data
+  * running optimization in parallel
+
+Details
+-------
+
+#630 Fix "get_int_proj does not work when recalc=True" (#543)
+    get_int_proj did not work when recalc=True on Python 3. This has now been fixed.
+
+#615 Asymmetric Errors
+    Sherpa now supports asymmetric error bars. Errors can be read through a new
+`load_ascii_with_errors` high level function, or through the new
+`Data1DAsymmetricErrs` class. Sherpa uses bootstrap for estimating the uncertainties.
+
+#585 plot pvalue
+    Updates to utilize the appropriate response files (ARF and RMF) for X-ray spectra
+    and changes to the p_value output to 1/(number of simulations) when p_value is 0
+    and the number of simulations in not large enough.
+
+#596 Run optimization algorithms over multiple cores
+    This PR enables the user to run the optimization algorithms (DifEvo, LevMar,
+and NelderMead) on multi-cores.
+
+#607 PSF rebinning (fix #43)
+    Sherpa now supports using a PSF with a finer resolution than 2D images. If Sherpa
+detects that the PSF has a smaller pixel size than the data, it will evaluate the
+model on a "PSF Space" that has the same resolution as the PSF and the same footprint as
+the data, then rebin the evaluated model back to the data space for calculating the statistic.
+
+#614 Refactor data classes (fix #563, #627, #628)
+    Sherpa's basic data classes have been refactored and cleaned up to help
+facilitating fixing bugs and implementing new features. New tests were added to reduce
+the chances of introducing regressions in the future.
+
+#612 Fix #609 User Model: unable to change parameter values
+    A regression introduced in Sherpa 4.10.0 presented users from change
+user-model parameter values through direct access. This issue has been
+fixed. Several tests were added to reduce the chance of regressions in
+the future.
+
+
+
 Sherpa 4.11.0
+=============
 
 This release of Sherpa is based on the CIAO 4.11 release and includes
 additional bug fixes and improvements.
