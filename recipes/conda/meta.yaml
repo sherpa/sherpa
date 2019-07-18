@@ -3,7 +3,7 @@ package:
  version: {{ environ.get('SHERPA_VERSION') }}
 
 source:
- url: {{ environ.get('SHERPA_TARBALL') }}
+ path: ../../
 
 build:
  number: {{ environ.get('SHERPA_BUILD_NUMBER') }}
