@@ -121,6 +121,32 @@ conda:
       - sherpa_smoke -f astropy
       - sherpa_test
 
+.template-macos-test: &template-macos-test
+  tags:
+    - sherpa-macos-build
+  stage: test deploy
+  script:
+    - conda create -n test --yes -q -c sherpa/label/dev python=2 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test
+    - pip install /master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test35
+    - pip install /master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test36
+    - pip install /master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test37 --yes -q -c sherpa/label/dev python=3.7 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test37
+    - pip install /master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+
 centos6-test:
   <<: *template-linux-test
 
@@ -153,3 +179,6 @@ fedora27-test:
 fedora28-test:
   <<: *template-linux-test
   image: fedora:28
+
+macos-10.13-test:
+  <<: *template-macos-test
