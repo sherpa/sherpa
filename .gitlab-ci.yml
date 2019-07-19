@@ -1,24 +1,7 @@
 stages:
-  - extract
   - build and package
   - deploy
   - test deploy
-
-extract:
-  stage: extract
-  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
-  variables:
-     GIT_SUBMODULE_STRATEGY: 'none'
-  script:
-     - conda install numpy
-     - python setup.py sdist
-     - python -c "import sherpa; print(sherpa._version.get_versions()['version'])" > dist/version
-     - python -c "import sherpa; print(sherpa._version.get_versions()['full'])" > dist/full
-     - cat dist/version dist/full
-  artifacts:
-     expire_in: "2 weeks"
-     paths:
-         - dist
 
 .template-conda-build: &template_conda_build
   image: registry.gitlab.com/olaurino/sherpa-docker-build:master
@@ -29,11 +12,7 @@ extract:
       - export SHERPA_FULL_VERSION=$(git describe --tags --always)
       - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
       - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
-      - export SHERPA_TARBALL=$(pwd)/$(ls dist/*.tar.gz)
-      - conda build --output-folder /opt/project/packages /opt/project/recipes/sherpa.conda
-      - cp -R /opt/project/packages .
-  dependencies:
-      - extract
+      - conda build --output-folder packages recipes/conda
   artifacts:
     expire_in: "2 weeks"
     paths:
@@ -47,13 +26,7 @@ extract:
       - export SHERPA_FULL_VERSION=$(git describe --tags --always)
       - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
       - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
-      - export SHERPA_TARBALL=$(pwd)/$(ls dist/*.tar.gz)
-      - mkdir ~/packages
-      - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/olaurino/sherpa-docker-build ~/sherpa-docker-build
-      - conda build --output-folder ~/packages ~/sherpa-docker-build/recipes/sherpa.conda
-      - cp -R ~/packages .
-  dependencies:
-      - extract
+      - conda build --output-folder packages recipes/conda
   artifacts:
       expire_in: "2 weeks"
       paths:
