@@ -4,10 +4,7 @@ stages:
   - test deploy
 
 .template-conda-build: &template_conda_build
-  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
   stage: build and package
-  tags:
-      - sherpa
   script:
       - export SHERPA_FULL_VERSION=$(git describe --tags --always)
       - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
@@ -18,19 +15,17 @@ stages:
     paths:
         - packages/
 
+.template-linux-conda-build: &template_linux_conda_build
+  <<: *template_conda_build
+  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
+  tags:
+    - sherpa
+
+
 .template-macos-conda-build: &template_macos_conda_build
+  <<: *template_conda_build
   tags:
       - sherpa-macos-build
-  stage: build and package
-  script:
-      - export SHERPA_FULL_VERSION=$(git describe --tags --always)
-      - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
-      - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
-      - conda build --output-folder packages recipes/conda
-  artifacts:
-      expire_in: "2 weeks"
-      paths:
-          - packages/
 
 macos-python2.7-conda-build:
   <<: *template_macos_conda_build
@@ -53,22 +48,22 @@ macos-python3.7-conda-build:
       SHERPA_PYTHON_VERSION: "3.7.*"
 
 linux-python2.7-conda-build:
-  <<: *template_conda_build
+  <<: *template_linux_conda_build
   variables:
     SHERPA_PYTHON_VERSION: '2.7.*'
 
 linux-python3.5-conda-build:
-  <<: *template_conda_build
+  <<: *template_linux_conda_build
   variables:
     SHERPA_PYTHON_VERSION: '3.5.*'
 
 linux-python3.6-conda-build:
-  <<: *template_conda_build
+  <<: *template_linux_conda_build
   variables:
     SHERPA_PYTHON_VERSION: '3.6.*'
 
 linux-python3.7-conda-build:
-  <<: *template_conda_build
+  <<: *template_linux_conda_build
   variables:
     SHERPA_PYTHON_VERSION: '3.7.*'
 
@@ -108,6 +103,7 @@ conda:
       # By installing numpy 1.15 we work around the issue, which is the only failure recorded with numpy 1.16
       # Python 2.7 won't be supported for long anyway.
       - conda create -n test --yes -q -c sherpa/label/dev python=2 astropy sherpa matplotlib numpy=1.15 # How to make sure it's the correct version?
+      - conda update -qq -y --all
       - source activate test
       - pip install /master.zip
       - sherpa_smoke -f astropy
@@ -127,6 +123,34 @@ conda:
       - pip install /master.zip
       - sherpa_smoke -f astropy
       - sherpa_test
+
+.template-macos-test: &template-macos-test
+  tags:
+    - sherpa-macos-build
+  stage: test deploy
+  script:
+    - cd /tmp
+    - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/master.zip
+    - conda create -n test --yes -q -c sherpa/label/dev python=2 astropy sherpa matplotlib numpy=1.15 # How to make sure it's the correct version?
+    - source activate test
+    - pip install master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test35
+    - pip install master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test36
+    - pip install master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test37 --yes -q -c sherpa/label/dev python=3.7 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - source activate test37
+    - pip install master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
 
 centos6-test:
   <<: *template-linux-test
@@ -153,10 +177,13 @@ ubuntu18-test:
   before_script:
       - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
 
-fedora27-test:
+fedora29-test:
   <<: *template-linux-test
-  image: fedora:27
+  image: fedora:29
 
-fedora28-test:
+fedora30-test:
   <<: *template-linux-test
-  image: fedora:28
+  image: fedora:30
+
+macos-10.13-test:
+  <<: *template-macos-test
