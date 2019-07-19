@@ -21,15 +21,23 @@ import numpy
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box
 from sherpa.utils.testing import requires_data
-from numpy.testing import assert_almost_equal, assert_array_equal
+from numpy.testing import assert_almost_equal, assert_array_equal, \
+    assert_array_almost_equal
 
 
 def test_calc_ftest():
     """
     this test was created using sherpa 4.8.1 (2507414) as an oracle for the python 3 migration
     """
-    assert_almost_equal(0.475500468, _utils.calc_ftest(10, 1.0, 20, 2.0))
+    assert_almost_equal(0.03452352914891555,
+                        _utils.calc_ftest(11, 16.3, 10, 10.2))
 
+
+def test_calc_ftest2():
+    assert_array_almost_equal(2 * [0.03452352914891555],
+                              _utils.calc_ftest(2 * [11], 2 * [16.3],
+                                                2 * [10], 2 * [10.2]))
+    
 
 def test_calc_mlr():
     """

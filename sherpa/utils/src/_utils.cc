@@ -84,13 +84,13 @@ static PyObject* ftest( PyObject* self, PyObject* args )
   if ( EXIT_SUCCESS != result.create( dof_1.get_ndim(), dof_1.get_dims() ) )
     return NULL;
 
-  double f, x;
-
   for ( npy_intp ii = 0; ii < nelem; ii++ ) {
 
-    f = ( chisq_1[ii] / dof_1[ii] ) / ( chisq_2[ii] / dof_2[ii] );
-    x = dof_2[ii] / ( dof_2[ii] + dof_1[ii] * f );    
-    result[ii] = incbet( dof_2[ii] / 2.0, dof_1[ii] / 2.0, x);
+    const double delta_dof = dof_1[ii] - dof_2[ii];
+    const double delta_chi = chisq_1[ii] - chisq_2[ii];
+    const double f = delta_chi / delta_dof / (chisq_2[ii] / dof_2[ii]);
+    result[ii] = incbet( dof_2[ii] * 0.5 , delta_dof * 0.5,
+                         (dof_2[ii] / ( dof_2[ii] + delta_dof * f ) ) );
 
   }
   
