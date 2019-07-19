@@ -181,13 +181,13 @@ def calc_ftest(dof1, stat1, dof2, stat2):
 
     Parameters
     ----------
-    dof1 : int
+    dof1 : int or array/list/tuple of int
        degrees of freedom of the simple model
-    stat1 : number
+    stat1 : number or array/list/tuple of number
        best-fit chi-square statistic value of the simple model
-    dof2 : int
+    dof2 : intor array/list/tuple of int
        degrees of freedom of the complex model
-    stat2 : number
+    stat2 : number or array/list/tuple of number
        best-fit chi-square statistic value of the complex model
 
     Returns
@@ -235,16 +235,11 @@ def calc_ftest(dof1, stat1, dof2, stat2):
 
     Examples
     --------
+    >>> calc_ftest(11, 16.3, 10, 10.2) 
+    0.03452352914891555
 
-    In this example, the simple model has 5 degrees of freedom and
-    a chi-square statistic of 7.73, while the complex model has 8
-    degrees of freedom and a chi-square statistic of 8.94. The
-    F test does not provide any evidence that the complex model
-    is a better fit to the data than the simple model since the
-    result is much larger than 0.
-
-    >>> calc_ftest(5, 7.73, 8, 8.94)
-    0.32480691622314933
+    >>> calc_ftest([11, 11], [16.3, 16.3], [10, 9], [10.2, 10.5]) 
+    array([0.03452353, 0.13819987])
     """
 
     return _utils.calc_ftest(dof1, stat1, dof2, stat2)
