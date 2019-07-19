@@ -91,7 +91,9 @@ known_warnings = {
         [r"invalid value encountered in sqrt",
          # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
          r"numpy.dtype size changed, may indicate binary " +
-         r"incompatibility. Expected 96, got 88"
+         r"incompatibility. Expected 96, got 88",
+         # I am getting the following from astropy with at least python 2.7 during the conda tests
+         r"numpy.ufunc size changed, may indicate binary ",
          ],
      VisibleDeprecationWarning:
         [r"Passing `normed=True`*",
