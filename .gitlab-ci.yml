@@ -172,13 +172,13 @@ ubuntu18-test:
   before_script:
       - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
 
-fedora27-test:
+fedora29-test:
   <<: *template-linux-test
-  image: fedora:27
+  image: fedora:29
 
-fedora28-test:
+fedora30-test:
   <<: *template-linux-test
-  image: fedora:28
+  image: fedora:30
 
 macos-10.13-test:
   <<: *template-macos-test
