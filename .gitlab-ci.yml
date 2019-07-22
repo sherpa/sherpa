@@ -9,7 +9,8 @@ stages:
       - export SHERPA_FULL_VERSION=$(git describe --tags --always)
       - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
       - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
-      - conda build --output-folder packages recipes/conda
+      - conda build --output-folder /tmp/packages recipes/conda
+      - cp -r /tmp/packages .
   artifacts:
     expire_in: "2 weeks"
     paths:

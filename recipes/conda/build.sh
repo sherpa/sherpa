@@ -1,5 +1,6 @@
 
 sed -i.orig "s|#install_dir=build|install_dir=$PREFIX|" setup.cfg
+git update-index --assume-unchanged setup.cfg
 
 $PYTHON setup.py clean --all
 
