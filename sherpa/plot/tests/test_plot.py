@@ -482,5 +482,11 @@ def test_numpy_histogram_density_vs_normed(make_data_path):
     c = ui.get_model_component('c')
     ui.fit()
     res = ui.eqwidth(c, c+c, error=True)
-    ui.get_pdf_plot()
     ui.plot_pdf(res[4])
+    plot = ui.get_pdf_plot()
+    expected_x = numpy.linspace(2.5, 3.5, 13)
+    expected_xlo, expected_xhi = expected_x[:-1], expected_x[1:]
+    expected_y = [0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0]
+    assert plot.y == pytest.approx(expected_y)
+    assert plot.xlo == pytest.approx(expected_xlo)
+    assert plot.xhi == pytest.approx(expected_xhi)
