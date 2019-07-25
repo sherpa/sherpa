@@ -474,7 +474,7 @@ def test_source_component_arbitrary_grid_int():
     numpy.testing.assert_array_equal(ui._compsrcplot.y, [10, 10, 10, 100, 100, 100])
 
 
-def test_numpy_histogram_density_vs_normed(make_data_path):
+def test_numpy_histogram_density_vs_normed():
     from sherpa.astro import ui
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
