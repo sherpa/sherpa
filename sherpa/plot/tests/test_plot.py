@@ -22,6 +22,9 @@ import numpy
 import pytest
 
 import sherpa.all as sherpa
+from sherpa.astro.ui.utils import Session
+from sherpa.models import Const1D
+from sherpa.data import Data1DInt
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_plotting
 
 _datax = numpy.array(
@@ -405,9 +408,6 @@ class test_confidence(SherpaTestCase):
 
 @requires_plotting
 def test_source_component_arbitrary_grid():
-    from sherpa.astro.ui.utils import  Session
-    from sherpa.models import Const1D
-
     ui = Session()
 
     x = [1, 2, 3]
@@ -429,10 +429,6 @@ def test_source_component_arbitrary_grid():
 
 @requires_plotting
 def test_plot_model_arbitrary_grid_integrated():
-    from sherpa.astro.ui.utils import Session
-    from sherpa.models import Const1D
-    from sherpa.data import Data1DInt
-
     ui = Session()
 
     x = [1, 2, 3], [2, 3, 4]
@@ -455,10 +451,6 @@ def test_plot_model_arbitrary_grid_integrated():
 
 @requires_plotting
 def test_source_component_arbitrary_grid_int():
-    from sherpa.astro.ui.utils import Session
-    from sherpa.models import Const1D
-    from sherpa.data import Data1DInt
-
     ui = Session()
 
     x = numpy.array([1, 2, 3]), numpy.array([2, 3, 4])
