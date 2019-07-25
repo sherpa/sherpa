@@ -294,7 +294,7 @@ class PDFPlot(HistogramPlot):
 
     def prepare(self, points, bins=12, normed=True, xlabel="x", name="x"):
         self.points = points
-        self.y, xx = numpy.histogram(points, bins=bins, normed=normed)
+        self.y, xx = numpy.histogram(points, bins=bins, density=normed)
         self.xlo = xx[:-1]
         self.xhi = xx[1:]
         self.ylabel = "probability density"

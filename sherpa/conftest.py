@@ -96,7 +96,7 @@ known_warnings = {
          r"numpy.ufunc size changed, may indicate binary ",
          ],
      VisibleDeprecationWarning:
-        [r"Passing `normed=True`*",
+        [
          r"sctypeNA and typeNA will be removed.*",
         ],
 }
