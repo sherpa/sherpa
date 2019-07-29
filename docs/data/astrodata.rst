@@ -16,9 +16,10 @@ The sherpa.astro.data module
       DataRMF
       DataIMG
       DataIMGInt
+      DataRosatRMF
    
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: DataPHA DataARF DataRMF DataIMG DataIMGInt
+.. inheritance-diagram:: DataPHA DataARF DataRMF DataIMG DataIMGInt DataRosatRMF
    :parts: 1
