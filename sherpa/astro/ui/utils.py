@@ -1336,6 +1336,7 @@ class Session(sherpa.ui.utils.Session):
         load_arrays : Create a data set from array values.
         load_table : Load a FITS binary file as a data set.
         load_image : Load an image as a data set.
+        resample_data : Resample data with asymmetric error bars.
         set_data : Set a data set.
         unpack_ascii : Unpack an ASCII file into a data structure.
 
@@ -12013,7 +12014,9 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def resample_data(self, id=None, niter=1000, seed=None):
-        """The function performs a parametric bootstrap assuming a skewed
+        """Resample data with asymmetric error bars.
+
+        The function performs a parametric bootstrap assuming a skewed
         normal distribution centered on the observed data point with the
         variance given by the low and high measurement errors. The function
         simulates niter realizations of the data and fits each realization
@@ -12030,14 +12033,18 @@ class Session(sherpa.ui.utils.Session):
         seed : int, optional
            The seed for the random number generator. The default is ```None```.
 
+        See Also
+        --------
+        load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
+
         Example
         -------
         Account for of asymmetric errors when calculating parameter
         uncertainties:
 
-        >>> load_ascii_with_errors(1,'test.dat')
+        >>> load_ascii_with_errors(1, 'test.dat')
         >>> set_model('polynom1d.p0')
-        >>>  thaw(p0.c1)
+        >>> thaw(p0.c1)
         >>> fit()
         Dataset               = 1
         Method                = levmar
@@ -12049,7 +12056,7 @@ class Session(sherpa.ui.utils.Session):
         Change in statistic   = 4074.79
         p0.c0          3.2661       +/- 0.193009
         p0.c1          2162.19      +/- 65.8445
-        >>> result = resample_data(1,niter=10)
+        >>> result = resample_data(1, niter=10)
         p0.c0 : avg = 4.159973865314249 , std = 1.0575403309799554
         p0.c1 : avg = 1943.5489865678633 , std = 268.64478808013547
         >>> print(result)
@@ -12074,14 +12081,14 @@ class Session(sherpa.ui.utils.Session):
         2185.418945147045,
         2235.9753113309894]}
 
-        # For a large number of realizations the output can be stored in
-        # the dictionary and accessed, for example, to visualize the
-        # distributions.
+        For a large number of realizations the output can be stored in
+        the dictionary and accessed, for example, to visualize the
+        distributions.
 
-        >>> sample = resample_data(1,5000)
+        >>> sample = resample_data(1, 5000)
         p0.c0 : avg = 3.966543284267264 , std = 0.9104639711036427
         p0.c1 : avg = 1988.8417667057342 , std = 220.21903089622705
-        >>> plot_pdf(sample['p0.c0'],bins=40)
+        >>> plot_pdf(sample['p0.c0'], bins=40)
         """
         data = self.get_data(id)
         model = self.get_model(id)
