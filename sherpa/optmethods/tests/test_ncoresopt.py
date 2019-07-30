@@ -137,13 +137,6 @@ class test_optmethods(SherpaTestCase):
         self.tst_func(self.ncores_nm, tstopt.Hump, x0, xmin, xmax, 0.0)
         self.tst_func(self.ncores_de, tstopt.Hump, x0, xmin, xmax, 0.0)        
         
-    # def test_Levy(self):
-    #     xmin = self.numpar * [-10]
-    #     xmax = self.numpar * [10]
-    #     x0 = self.numpar * [-5.]
-    #     self.tst_func(self.ncores_nm, tstopt.Levy, x0, xmin, xmax, 0.0)
-    #     self.tst_func(self.ncores_de, tstopt.Levy, x0, xmin, xmax, 0.0)
-
     def test_Matyas(self):
         xmin = [-10, -10]
         xmax = [10, 10]
@@ -186,6 +179,16 @@ class test_optmethods(SherpaTestCase):
         self.tst_func(self.ncores_de, tstopt.Shubert, x0, xmin, xmax,
                       -186.7309)
 
+    #
+    # comment out a few time consuming tests, anyone
+    # modifying the ncores opt should uncomment the tests
+    #
+    # def test_Levy(self):
+    #     xmin = self.numpar * [-10]
+    #     xmax = self.numpar * [10]
+    #     x0 = self.numpar * [-5.]
+    #     self.tst_func(self.ncores_nm, tstopt.Levy, x0, xmin, xmax, 0.0)
+    #     self.tst_func(self.ncores_de, tstopt.Levy, x0, xmin, xmax, 0.0)
     # def test_Sphere(self):
     #     xmin = self.numpar * [-5.12]
     #     xmax = self.numpar * [5.12]
