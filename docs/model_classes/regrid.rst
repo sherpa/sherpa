@@ -23,7 +23,8 @@ The sherpa.models.regrid module
       :toctree: api
 
       rebin_2d
-      rebin_flux
+      rebin_int
+      rebin_no_int
 
 Class Inheritance Diagram
 =========================
