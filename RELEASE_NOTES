@@ -46,6 +46,8 @@ user-model parameter values through direct access. This issue has been
 fixed. Several tests were added to reduce the chance of regressions in
 the future.
 
+Fix #514 - the command line tool `sherpa_smoke` in the conda package now correctly honors
+command line arguments.
 
 
 Sherpa 4.11.0
