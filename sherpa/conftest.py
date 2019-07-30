@@ -96,9 +96,7 @@ known_warnings = {
          r"numpy.ufunc size changed, may indicate binary ",
          ],
      VisibleDeprecationWarning:
-        [
-         r"sctypeNA and typeNA will be removed.*",
-        ],
+        [],
 }
 
 if sys.version_info >= (3, 2):
