@@ -235,6 +235,7 @@ burden...
       load_arf
       load_arrays
       load_ascii
+      load_ascii_with_errors
       load_bkg
       load_bkg_arf
       load_bkg_rmf
@@ -306,6 +307,7 @@ burden...
       projection
       reg_proj
       reg_unc
+      resample_data
       reset
       restore
       sample_energy_flux

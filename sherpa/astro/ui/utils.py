@@ -1156,6 +1156,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
         load_table : Load a FITS binary file as a data set.
         load_image : Load an image as a data set.
         set_data : Set a data set.
@@ -1300,7 +1301,7 @@ class Session(sherpa.ui.utils.Session):
 
         return data
 
-    def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ', 
+    def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
                                comment='#', func=numpy.average, delta=False):
         """Load an ASCII file with asymmetric errors as a data set.
 
@@ -1319,16 +1320,25 @@ class Session(sherpa.ui.utils.Session):
         comment : str, optional
            The comment character. The default is ``'#'``.
         func: python function, optional
-           A python function shall be used to populate the errors, it is of
-           the form:
-                 def avg(lo, hi):
-                     return 0.5 * (lo + hi)
-           The default is the numpy average function.
+           The function used to combine the lo and hi values to estimate
+           an error. The function should take two arguments ``(lo, hi)``
+           and return a single NumPy array, giving the per-bin error.
+           The default function used is numpy.average.
         delta: boolean, optional
            The flag is used to indicate if the asymmetric errors for the
            third and fourth columns are delta values from the second (y)
            column or not.
            The default value is False
+
+        See Also
+        --------
+        load_ascii: Load an ASCII file as a data set.
+        load_arrays : Create a data set from array values.
+        load_table : Load a FITS binary file as a data set.
+        load_image : Load an image as a data set.
+        resample_data : Resample data with asymmetric error bars.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
 
         Notes
         -----
@@ -1347,7 +1357,7 @@ class Session(sherpa.ui.utils.Session):
         +----------------------+-----------------+--------------------+
         | Identifier           | Required Fields |   Optional Fields  |
         +======================+=================+====================+
-        | Data1DAsymmetricErrs | x, y, elo, ehi  |                    | 
+        | Data1DAsymmetricErrs | x, y, elo, ehi  |                    |
         +----------------------+-----------------+--------------------+
 
         Examples
@@ -1367,25 +1377,15 @@ class Session(sherpa.ui.utils.Session):
         Read in the first four columns (x, y, elo, ehi) where elo and ehi
         are of the form delta_lo and delta_hi, respectively.
 
+        >>> def rms(lo, hi):
+        ...     return numpy.sqrt(lo * lo + hi * hi)
+        ...
         >>> load_ascii_with_errors('sources.dat', func=rms)
 
         Read in the first four columns (x, y, elo, ehi) where elo and ehi
-        are of the form delta_lo and delta_hi, respectively. The optional
-        function rms is of the form:
-
-        def rms(lo, hi):
-           return numpy.sqrt(lo * lo + hi * hi)
-
-        shall be used to define the elo and ehi.
-
-        See Also
-        --------
-        load_ascii: Load an ASCII file as a data set.
-        load_arrays : Create a data set from array values.
-        load_table : Load a FITS binary file as a data set.
-        load_image : Load an image as a data set.
-        set_data : Set a data set.
-        unpack_ascii : Unpack an ASCII file into a data structure.
+        are of the form delta_lo and delta_hi, respectively. The `func`
+        argument is used to calculate the error based on the elo and ehi
+        column values.
         """
 
         if filename is None:
@@ -1403,7 +1403,7 @@ class Session(sherpa.ui.utils.Session):
                 return func([data.elo, data.ehi], axis=0)
             else:
                 return func(data.elo, data.ehi)
-            
+
         if type(datas) is list:
             for data in datas:
                 if delta is False:
@@ -12012,9 +12012,11 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     # Analysis Functions
     ###########################################################################
-    
+
     def resample_data(self, id=None, niter=1000, seed=None):
-        """The function performs a parametric bootstrap assuming a skewed
+        """Resample data with asymmetric error bars.
+
+        The function performs a parametric bootstrap assuming a skewed
         normal distribution centered on the observed data point with the
         variance given by the low and high measurement errors. The function
         simulates niter realizations of the data and fits each realization
@@ -12031,14 +12033,18 @@ class Session(sherpa.ui.utils.Session):
         seed : int, optional
            The seed for the random number generator. The default is ```None```.
 
+        See Also
+        --------
+        load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
+
         Example
         -------
         Account for of asymmetric errors when calculating parameter
         uncertainties:
 
-        >>> load_ascii_with_errors(1,'test.dat')
+        >>> load_ascii_with_errors(1, 'test.dat')
         >>> set_model('polynom1d.p0')
-        >>>  thaw(p0.c1)
+        >>> thaw(p0.c1)
         >>> fit()
         Dataset               = 1
         Method                = levmar
@@ -12048,9 +12054,9 @@ class Session(sherpa.ui.utils.Session):
         Data points           = 61
         Degrees of freedom    = 59
         Change in statistic   = 4074.79
-        p0.c0          3.2661       +/- 0.193009    
+        p0.c0          3.2661       +/- 0.193009
         p0.c1          2162.19      +/- 65.8445
-        >>> result = resample_data(1,niter=10)
+        >>> result = resample_data(1, niter=10)
         p0.c0 : avg = 4.159973865314249 , std = 1.0575403309799554
         p0.c1 : avg = 1943.5489865678633 , std = 268.64478808013547
         >>> print(result)
@@ -12075,20 +12081,20 @@ class Session(sherpa.ui.utils.Session):
         2185.418945147045,
         2235.9753113309894]}
 
-        # For a large number of realizations the output can be stored in
-        # the dictionary and accessed, for example, to visualize the
-        # distributions.
+        For a large number of realizations the output can be stored in
+        the dictionary and accessed, for example, to visualize the
+        distributions.
 
-        >>> sample = resample_data(1,5000)                                  
+        >>> sample = resample_data(1, 5000)
         p0.c0 : avg = 3.966543284267264 , std = 0.9104639711036427
         p0.c1 : avg = 1988.8417667057342 , std = 220.21903089622705
-        >>> plot_pdf(sample['p0.c0'],bins=40) 
+        >>> plot_pdf(sample['p0.c0'], bins=40)
         """
         data = self.get_data(id)
         model = self.get_model(id)
         resampledata = sherpa.sim.ReSampleData(data, model)
         return resampledata(niter=niter, seed=seed)
-        
+
     # DOC-TODO: should this accept the confidence parameter?
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
                            correlated=False, numcores=None, bkg_id=None):
