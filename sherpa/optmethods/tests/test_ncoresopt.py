@@ -243,33 +243,52 @@ def test_Shubert():
     tst_func(NCORES_DE, tstopt.Shubert, x0, xmin, xmax, fmin)
 
 
+# The following tests are slow, so are only run by the user asking
+# to do so, with the --runslow flag.
 #
-# comment out a few time consuming tests, anyone
-# modifying the ncores opt should uncomment the tests
-#
-# def test_Levy():
-#     xmin = NUMPAR * [-10]
-#     xmax = NUMPAR * [10]
-#     x0 = NUMPAR * [-5.]
-#     tst_func(NCORES_NM, tstopt.Levy, x0, xmin, xmax, 0.0)
-#     tst_func(NCORES_DE, tstopt.Levy, x0, xmin, xmax, 0.0)
-# def test_Sphere():
-#     xmin = NUMPAR * [-5.12]
-#     xmax = NUMPAR * [5.12]
-#     x0 = NUMPAR * [-2.0]
-#     tst_func(NCORES_NM, tstopt.Sphere, x0, xmin, xmax, 0.0)
-#     tst_func(NCORES_DE, tstopt.Sphere, x0, xmin, xmax, 0.0)
+@pytest.mark.slow
+def test_Levy():
+    xmin = NUMPAR * [-10]
+    xmax = NUMPAR * [10]
+    x0 = NUMPAR * [-5.]
 
-# def test_SumSquares():
-#     xmin = NUMPAR * [-10]
-#     xmax = NUMPAR * [10]
-#     x0 = NUMPAR * [-2.0]
-#     tst_func(NCORES_NM, tstopt.SumSquares, x0, xmin, xmax, 0.0)
-#     tst_func(NCORES_DE, tstopt.SumSquares, x0, xmin, xmax, 0.0)
+    fmin = 0.0
 
-# def test_Zakharov():
-#     xmin = NUMPAR * [-5, -5]
-#     xmax = NUMPAR * [10, 10]
-#     x0   = NUMPAR * [0.5, -2]
-#     tst_func(NCORES_NM, tstopt.Zakharov, x0, xmin, xmax, 0.0)
-#     tst_func(NCORES_DE, tstopt.Zakharov, x0, xmin, xmax, 0.0)
+    tst_func(NCORES_NM, tstopt.Levy, x0, xmin, xmax, fmin)
+    tst_func(NCORES_DE, tstopt.Levy, x0, xmin, xmax, fmin)
+
+
+@pytest.mark.slow
+def test_Sphere():
+    xmin = NUMPAR * [-5.12]
+    xmax = NUMPAR * [5.12]
+    x0 = NUMPAR * [-2.0]
+
+    fmin = 0.0
+
+    tst_func(NCORES_NM, tstopt.Sphere, x0, xmin, xmax, fmin)
+    tst_func(NCORES_DE, tstopt.Sphere, x0, xmin, xmax, fmin)
+
+
+@pytest.mark.slow
+def test_SumSquares():
+    xmin = NUMPAR * [-10]
+    xmax = NUMPAR * [10]
+    x0 = NUMPAR * [-2.0]
+
+    fmin = 0.0
+
+    tst_func(NCORES_NM, tstopt.SumSquares, x0, xmin, xmax, fmin)
+    tst_func(NCORES_DE, tstopt.SumSquares, x0, xmin, xmax, fmin)
+
+
+@pytest.mark.slow
+def test_Zakharov():
+    xmin = NUMPAR * [-5, -5]
+    xmax = NUMPAR * [10, 10]
+    x0   = NUMPAR * [0.5, -2]
+
+    fmin = 0.0
+
+    tst_func(NCORES_NM, tstopt.Zakharov, x0, xmin, xmax, fmin)
+    tst_func(NCORES_DE, tstopt.Zakharov, x0, xmin, xmax, fmin)
