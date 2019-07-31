@@ -63,9 +63,27 @@ except ImportError:
 TEST_DATA_OPTION = "--test-data"
 
 
+# Follow https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
+# for adding a command-line option to let slow-running tests be run
+# (not by default), which combines with existing code and options.
+#
 def pytest_addoption(parser):
     parser.addoption("-D", TEST_DATA_OPTION, action="store",
                      help="Alternative location of test data files")
+
+    parser.addoption("--runslow", action="store_true", default=False,
+                     help="run slow tests")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
 
 
 # Whilelist of known warnings. One can associate different warning messages
@@ -214,6 +232,8 @@ def pytest_configure(config):
     This configuration hook overrides the default mechanism for test data self-discovery, if the --test-data command line
     option is provided
 
+    It also adds support for the "slow" test marker
+
     Parameters
     ----------
     config standard service injected by pytest
@@ -224,6 +244,8 @@ def pytest_configure(config):
             SherpaTestCase.datadir = path
     except ValueError:  # option not defined from command line, no-op
         pass
+
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
 
 
 @pytest.fixture(scope="session")
