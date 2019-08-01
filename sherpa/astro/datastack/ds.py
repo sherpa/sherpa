@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 #
-# Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,9 +19,9 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import six
 import numpy
 from sherpa.utils.logging import config_logger
+from sherpa.utils.err import IOErr
 from sherpa.astro import ui
 from .utils import load_error_msg, load_wrapper, model_wrapper, \
     simple_wrapper, fit_wrapper, plot_wrapper
@@ -31,7 +31,7 @@ logger = config_logger(__name__)
 
 try:
     import stk
-except:
+except ImportError:
     logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 # Global list of dataset ids in use
@@ -74,7 +74,7 @@ class DataStack(object):
         for dataid in self.dataset_ids:
             try:
                 del _all_dataset_ids[dataid]
-            except:
+            except KeyError:
                 pass
 
     @property
@@ -211,10 +211,9 @@ class DataStack(object):
         # File Stacks. If the file argument is a stack file, expand the
         # file and call this function for each file in the stack.
         try:
-            files = stk.build(arg)
-            for file in files:
-                self._load_func(ui.load_pha, file, use_errors)
-        except:
+            for infile in stk.build(arg):
+                self._load_func(ui.load_pha, infile, use_errors)
+        except (NameError, OSError, IOErr):
             self._load_func(ui.load_pha, arg, use_errors)
 
     def thaw(self, *pars):
