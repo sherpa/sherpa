@@ -118,22 +118,40 @@ class DataStack(object):
         standard output channel. The information displayed depends on the
         type of each data set.
         """
+
+        # The observation-date (MJD) format keyword was MJD_OBS but
+        # has changed (CIAO 4.12) for Chandra data to MJD-OBS, so
+        # need to look for both. The idea is to use the new key
+        # and then fall back to the old one.
+        #
         for dataset in self.filter_datasets():
             obsid = "N/A"
             time = "N/A"
+            timekey = None
             if hasattr(dataset['data'], 'header'):
                 try:
                     obsid = dataset['data'].header['OBS_ID']
                 except KeyError:
                     pass
-                try:
-                    time = dataset['data'].header['MJD_OBS']
-                except KeyError:
-                    pass
+
+                for key in ['MJD-OBS', 'MJD_OBS']:
+                    try:
+                        time = dataset['data'].header[key]
+                        timekey = key
+                        break
+                    except KeyError:
+                        pass
+
+            # This is informational, so do not necessarily need
+            # to report the actual key, but for now try to do so.
+            #
+            if timekey is None:
+                timekey = 'MJD-OBS'
+
             print('{0}: {1} {2}: {3} {4}: {5}'.format(dataset['id'],
                                                       dataset['data'].name,
                                                       'OBS_ID', obsid,
-                                                      "MJD_OBS", time))
+                                                      timekey, time))
 
     # QUS: should this return a copy of the list?
     def get_stack_ids(self):
