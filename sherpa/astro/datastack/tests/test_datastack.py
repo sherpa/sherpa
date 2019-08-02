@@ -61,6 +61,37 @@ def ds_setup():
 
 
 @pytest.fixture
+def ds_setup_object():
+    """Setup and teardown code for each test.
+
+    Could try and be clever and re-use ds_setup here,
+    but just repeat it to be simpler.
+    """
+
+    # Setup
+    #
+    ds = datastack.DataStack()
+    datastack.clear_stack()
+    ui.clean()
+    loggingLevel = logger.getEffectiveLevel()
+    logger.setLevel(logging.ERROR)
+    datastack.set_stack_verbosity(logging.ERROR)
+    datastack.set_template_id("__ID")
+
+    # Run test, returning the stack object
+    #
+    yield ds
+
+    # Cleanup
+    #
+    ds.clear_stack()
+    datastack.clear_stack()
+    ui.clean()
+    datastack.set_template_id("__ID")
+    logger.setLevel(loggingLevel)
+
+
+@pytest.fixture
 def ds_datadir():
     """Location of the data directory for the DataStack tests."""
 
@@ -328,9 +359,9 @@ def test_load_case_3(ds_setup, ds_datadir):
         raise
 
 
-def test_partial_oo_case_4(ds_setup):
+def test_partial_oo_case_4(ds_setup_object):
 
-    ds = datastack.DataStack()
+    ds = ds_setup_object
 
     x1 = np.arange(50) + 100
     y1 = 2 * (3 * x1**2 + x1)
@@ -442,9 +473,9 @@ def test_partial_oo_case_4(ds_setup):
     assert const3.c0._link is not const2.c0
 
 
-def test_oo_case_5(ds_setup):
+def test_oo_case_5(ds_setup_object):
 
-    ds = datastack.DataStack()
+    ds = ds_setup_object
 
     x1 = np.arange(50) + 100
     y1 = 2 * (3 * x1**2 + x1)
