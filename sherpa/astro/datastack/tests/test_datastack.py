@@ -678,3 +678,36 @@ def test_default_instantiation(ds_setup):
     assert ds._default_instance
     ds = datastack.DataStack()
     assert not ds._default_instance
+
+
+@requires_fits
+@requires_stk
+def test_show_stack(ds_setup, ds_datadir, capsys):
+    """Test the show_stack handling.
+    """
+
+    # These files use MJD_OBS in the header
+    datadir = ds_datadir
+    ls = '@' + '/'.join((datadir, 'pha.lis'))
+    datastack.load_pha(ls)
+
+    # clear out the current output
+    captured = capsys.readouterr()
+
+    datastack.show_stack()
+
+    # Did we get the expected output?
+    #
+    # This depends on the serialization of numeric values, which can
+    # vary with Python/system
+    #
+    l0 = '1: {}/acisf04938_000N002_r0043_pha3.fits OBS_ID: 4938 MJD_OBS: 53493.55477826'.format(datadir)
+    l1 = '2: {}/acisf07867_000N001_r0002_pha3.fits OBS_ID: 7867 MJD_OBS: 54374.009361043'.format(datadir)
+
+    captured = capsys.readouterr()
+    lines = captured.out.split('\n')
+    assert len(lines) == 3
+    assert lines[0] == l0
+    assert lines[1] == l1
+    assert lines[2] == ''
+    assert captured.err == ''
