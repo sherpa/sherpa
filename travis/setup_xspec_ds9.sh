@@ -43,7 +43,7 @@ download () {
 
 ### DS9 and XPA
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.8.0.tar.gz
+ds9_tar=ds9.${ds9_os}.8.0.1.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.18.tar.gz
 
 # Fetch them
