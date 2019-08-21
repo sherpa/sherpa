@@ -15,11 +15,6 @@
 # look at sherpa.utils which provides docstrings for the code in
 # sherpa.utils._utils.
 #
-# At present this is Python 3 only, since there is a problem using the
-# mocked imports on Python 2.7 (it is not clear what is causing this
-# problem). There is no attempt to restrict the Python version here,
-# in case this issue can be fixed.
-#
 # The minimum supported version of Sphinx is 1.3.
 #
 # The minimum requirements are:
@@ -30,7 +25,6 @@
 #
 # The documentation can be built
 #   a) from the top level with 'python setup.py build_sphinx'
-#
 #   b) from the docs/ directory with 'sphinx-build -b html . build/html'
 #
 import os
@@ -40,11 +34,7 @@ import sphinx_rtd_theme
 
 # Based on http://read-the-docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
 #
-try:
-    from unittest.mock import MagicMock as BaseMock
-except ImportError:
-    # As Python 2.7 does not appear to work, this could be dropped.
-    from mock import MagicMock as BaseMock
+from unittest.mock import MagicMock as BaseMock
 
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -52,7 +42,8 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 # I found this somewhere (probably the rtd link given above). I was
 # hoping it would support building with Python 2.7 but it doesn't seem
-# to.
+# to. I have left it in for now, even though Python 2.7 is no longer
+# supported, in case it is being used somewhere.
 #
 class Mock(BaseMock):
     @classmethod
