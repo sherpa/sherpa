@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-# Copyright (C) 2014, 2017, 2018 Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017, 2018, 2019 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,12 +18,19 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import sys
+
+# python_requires will stop pip, but also let users who are using
+# 'python setup.py develop'.
+#
+if sys.version_info < (3, 5):
+    sys.stderr.write("Sherpa 4.12 (and later) requires Python 3.5 or later.\n\n")
+    sys.stderr.write("Please use Sherpa 4.11.1 if you need to use Python 2.7\n")
+    sys.exit(1)
 
 try:
     import setuptools
 except:
-    import sys
-
     print((
         "WARNING\n"
         "Could not import setuptools.\n"
@@ -57,6 +64,10 @@ versioneer.versionfile_build = 'sherpa/_version.py'
 versioneer.tag_prefix = ''
 versioneer.parentdir_prefix = 'sherpa-'
 
+# Restrict to python 3.5 or later for pip, but see
+# https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
+# for limitations
+#
 meta = dict(name='sherpa',
             version=versioneer.get_version(),
             author='Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
@@ -67,8 +78,9 @@ meta = dict(name='sherpa',
             long_description=open('README.md', 'rt').read(),
             long_description_content_type='text/markdown',
             platforms='Linux, Mac OS X',
+            python_requires='~=3.5',
             install_requires=['numpy', 'six'],
-            tests_require=['mock', 'pytest-xvfb', 'pytest>=3.3'],
+            tests_require=['pytest-xvfb', 'pytest>=3.3'],
             packages=['sherpa',
                       'sherpa.estmethods',
                       'sherpa.image',
@@ -124,7 +136,6 @@ meta = dict(name='sherpa',
                 'Intended Audience :: Science/Research',
                 'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
                 'Programming Language :: C',
-                'Programming Language :: Python :: 2.7',
                 'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: 3.6',
                 'Programming Language :: Python :: 3.7',
