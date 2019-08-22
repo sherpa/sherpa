@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,6 @@ from __future__ import absolute_import
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-from six.moves import map
-from six.moves import range
-from six.moves import zip as izip
 
 import numpy
 _ = numpy.seterr(invalid='ignore')
@@ -1183,7 +1179,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
 
     def worker(out_q, err_q, parids, parnums, parvals, lock):
         results = []
-        for parid, singleparnum in izip(parids, parnums):
+        for parid, singleparnum in zip(parids, parnums):
             try:
                 result = estfunc(parid, singleparnum, lock)
                 results.append((parid, result))
@@ -1224,7 +1220,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
 
     tasks = [multiprocessing.Process(target=worker,
                                      args=(out_q, err_q, parid, parnum, pars, lock))
-             for parid, parnum in izip(parids, limit_parnums)]
+             for parid, parnum in zip(parids, limit_parnums)]
 
     return run_tasks(tasks, out_q, err_q, size)
 

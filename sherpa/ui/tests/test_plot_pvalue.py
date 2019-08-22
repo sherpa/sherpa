@@ -18,7 +18,6 @@
 #
 
 from numpy import testing
-from six.moves import zip as izip
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_xspec, requires_fits
@@ -39,7 +38,7 @@ class test_plot_pvalue(SherpaTestCase):
             logger.setLevel(self._old_logger_level)
 
     def compare_results(self, arg1, arg2, atol=1.0e-4, rtol=1.0e-4):
-        for a, b in izip(arg1, arg2):
+        for a, b in zip(arg1, arg2):
             testing.assert_allclose(a, b, rtol=rtol, atol=atol)
 
     def test_rsp(self):

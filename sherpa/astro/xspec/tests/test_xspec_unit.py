@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016-2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,6 @@ import os
 from tempfile import NamedTemporaryFile, gettempdir
 
 import pytest
-import six
 
 import numpy as np
 from numpy.testing import assert_almost_equal
@@ -111,7 +110,7 @@ def test_version():
     from sherpa.astro import xspec
 
     v = xspec.get_xsversion()
-    assert isinstance(v, six.string_types)
+    assert isinstance(v, (str, ))
     assert len(v) > 0
 
     # Could check it's of the form a.b.c[optional] but leave that for

@@ -1,6 +1,6 @@
 from __future__ import division
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,6 @@ from __future__ import division
 Classes for plotting, analysis of astronomical data sets
 """
 
-from six.moves import zip as izip
 from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
@@ -429,7 +428,7 @@ class OrderPlot(ModelHistogram):
         default_color = self.histo_prefs['linecolor']
         count = 0
         for xlo, xhi, y, color in \
-                izip(self.xlo, self.xhi, self.y, self.colors):
+                zip(self.xlo, self.xhi, self.y, self.colors):
             if count != 0:
                 overplot = True
                 self.histo_prefs['linecolor'] = color

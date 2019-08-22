@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019
+#    Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -44,8 +45,6 @@ from astropy.io.fits.column import _VLF
 from numpy.compat import basestring
 
 import os
-
-from six.moves import xrange, zip as izip
 
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
@@ -758,9 +757,9 @@ def get_rmf_data(arg, make_copy=False):
     if data['f_chan'].ndim > 1 and data['n_chan'].ndim > 1:
         f_chan = []
         n_chan = []
-        for grp, fch, nch, in izip(data['n_grp'], data['f_chan'],
-                                   data['n_chan']):
-            for i in xrange(grp):
+        for grp, fch, nch, in zip(data['n_grp'], data['f_chan'],
+                                  data['n_chan']):
+            for i in range(grp):
                 f_chan.append(fch[i])
                 n_chan.append(nch[i])
 
@@ -913,10 +912,10 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             for (bscal, bscup, bscdn, arsc, chan, cnt, staterr, syserr,
                  backup, backdown, binlo, binhi, group, qual, ordr, prt,
                  specnum, srcid
-                 ) in izip(backscal, backscup, backscdn, areascal, channel,
-                           counts, staterror, syserror, background_up,
-                           background_down, bin_lo, bin_hi, grouping, quality,
-                           orders, parts, specnums, srcids):
+                 ) in zip(backscal, backscup, backscdn, areascal, channel,
+                          counts, staterror, syserror, background_up,
+                          background_down, bin_lo, bin_hi, grouping, quality,
+                          orders, parts, specnums, srcids):
                 data = {}
 
                 data['exposure'] = exposure
@@ -1144,7 +1143,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         raise IOErr("toomanycols", str(len(fields)), str(len(args)))
 
     cols = []
-    for val, name in izip(args, fields):
+    for val, name in zip(args, fields):
         col = fits.Column(name=name.upper(),
                           format=val.dtype.name.upper(),
                           array=val)

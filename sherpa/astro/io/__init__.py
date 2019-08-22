@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,8 +18,6 @@ from __future__ import absolute_import
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-from sherpa.astro.utils import reshape_2d_arrays
-
 """
 Provide Astronomy-specific I/O routines for Sherpa.
 
@@ -37,9 +36,9 @@ References
 
 """
 
-from six.moves import zip as izip
-from six.moves.configparser import ConfigParser
+from sherpa.astro.utils import reshape_2d_arrays
 
+from configparser import ConfigParser
 import logging
 import os
 import os.path
@@ -559,8 +558,8 @@ def read_pha(arg, use_errors=False, use_background=False):
                 if output_once:
                     warning(str(sys.exc_info()[1]))
 
-        for bkg_type, bscal_type in izip(('background_up', 'background_down'),
-                                         ('backscup', 'backscdn')):
+        for bkg_type, bscal_type in zip(('background_up', 'background_down'),
+                                        ('backscup', 'backscdn')):
             if data[bkg_type] is not None:
                 b = DataPHA(filename,
                             channel=data['channel'],

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,8 +16,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import six
-
 import sherpa.utils.integration as integration
 from sherpa.utils.testing import SherpaTestCase
 
@@ -26,7 +24,4 @@ class test_integration(SherpaTestCase):
     "py3-todo: is integration.so even ever used?"
     def test_c_api(self):
         self.assertTrue(hasattr(integration, '_C_API'))
-        if six.PY2:  # python 2
-            self.assertEqual(type(integration._C_API).__name__, 'PyCObject')
-        else:  # python 3
-            self.assertEqual(type(integration._C_API).__name__, 'PyCapsule')
+        self.assertEqual(type(integration._C_API).__name__, 'PyCapsule')

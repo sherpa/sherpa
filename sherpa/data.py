@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,8 +24,6 @@ Tools for creating, storing, inspecting, and manipulating data sets
 import warnings
 from abc import ABCMeta
 
-import six
-from six.moves import zip as izip
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
@@ -447,8 +446,7 @@ class Filter(object):
                 self.mask &= mask
 
 
-@six.add_metaclass(ABCMeta)
-class BaseData(object):
+class BaseData(object, metaclass=ABCMeta):
     """
     Base class for all data classes. Left for compatibility with older versions.
     """
@@ -822,7 +820,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
 
         fields = self._fields + getattr(self, '_extra_fields', ())
-        fdict = dict(izip(fields, [getattr(self, f) for f in fields]))
+        fdict = dict(zip(fields, [getattr(self, f) for f in fields]))
         return print_fields(fields, fdict)
 
     def __repr__(self):
@@ -880,7 +878,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
     def eval_model_to_fit(self, modelfuncs):
         total_model = []
 
-        for func, data in izip(modelfuncs, self.datasets):
+        for func, data in zip(modelfuncs, self.datasets):
             total_model.append(data.eval_model_to_fit(func))
 
         return numpy.concatenate(total_model)

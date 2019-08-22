@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,8 +16,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-from six.moves import xrange
 
 import logging
 import numpy as np
@@ -206,7 +204,7 @@ class WalkWithSubIters(Walk):
         # tstart = time.time()
 
         try:
-            for ii in xrange(niter):
+            for ii in range(niter):
                 jump = ii + 1
 
                 current_params = proposals[ii]
@@ -223,7 +221,7 @@ class WalkWithSubIters(Walk):
                 proposals[jump] = current_params
                 stats[jump]  = current_stat
 
-                for jj in xrange(nsubiter):
+                for jj in range(nsubiter):
 
                     # progress_bar(ii*nsubiter+jj, niter*nsubiter,
                     #              tstart,

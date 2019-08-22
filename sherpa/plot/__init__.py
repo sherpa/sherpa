@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -35,7 +36,7 @@ from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
 from sherpa import get_config
-from six.moves.configparser import ConfigParser
+from configparser import ConfigParser
 
 warning = logging.getLogger(__name__).warning
 

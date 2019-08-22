@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 #
-# Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,6 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import six
 import numpy
 from sherpa.utils.logging import config_logger
 from sherpa.astro import ui

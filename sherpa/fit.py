@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2009, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +19,6 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves import zip as izip
-from six.moves import xrange
 import logging
 import os
 import signal
@@ -328,12 +327,12 @@ class FitResults(NoNewAttributesAfterInit):
         s += '\nChange in statistic   = %g' % self.dstatval
 
         if self.covar is None:
-            for name, val in izip(self.parnames, self.parvals):
+            for name, val in zip(self.parnames, self.parvals):
                 s += '\n   %-12s   %-12g' % (name, val)
         else:
             covar_err = sqrt(self.covar.diagonal())
-            for name, val, covarerr in izip(self.parnames, self.parvals,
-                                            covar_err):
+            for name, val, covarerr in zip(self.parnames, self.parvals,
+                                           covar_err):
                 s += '\n   %-12s   %-12g +/- %-12g' % (name, val, covarerr)
 
         if self.param_warnings != "":
@@ -473,8 +472,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
             str += hfmt % ('Param', 'Best-Fit', 'Lower Bound', 'Upper Bound')
             str += hfmt % ('-' * 5, '-' * 8, '-' * 11, '-' * 11)
 
-            for name, val, lower, upper in izip(self.parnames, self.parvals,
-                                                self.parmins, self.parmaxes):
+            for name, val, lower, upper in zip(self.parnames, self.parvals,
+                                               self.parmins, self.parmaxes):
 
                 str += '\n   %-12s %12g ' % (name, val)
                 if is_iterable(lower):
@@ -899,7 +898,7 @@ class IterFit(NoNewAttributesAfterInit):
 
                     j = 0
                     kmin = 0
-                    for i in xrange(0, ressize):
+                    for i in range(0, ressize):
                         while not(newmask[j]) and j < filsize:
                             j = j + 1
                         if j >= filsize:
@@ -912,7 +911,7 @@ class IterFit(NoNewAttributesAfterInit):
                             kmax = j + grow
                             if kmax >= filsize:
                                 kmax = filsize - 1
-                            for k in xrange(kmin, kmax + 1):
+                            for k in range(kmin, kmax + 1):
                                 newmask[k] = False
                         j = j + 1
 

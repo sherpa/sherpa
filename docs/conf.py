@@ -19,7 +19,6 @@
 #
 # The minimum requirements are:
 #    numpy  - since setup.py enforces this
-#    six    - this could probably be mocked
 #    sphinx_rtd_theme
 #    sphinx_astropy
 #
