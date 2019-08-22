@@ -36,7 +36,7 @@ __all__ = ['PragBayes', 'PCA1DAdd', 'SIM1DAdd', 'ARFSIMFactory',
            'WalkWithSubIters']
 
 
-class ARFSIMFactory(object):
+class ARFSIMFactory():
 
     def __call__(self, filename):
         return self.read(filename)
@@ -66,7 +66,7 @@ class ARFSIMFactory(object):
         raise TypeError("Unknown simulation ARF '%s'" % filename)
 
 
-class PCA1DAdd(object):
+class PCA1DAdd():
 
     def __init__(self, bias, component, fvariance, eigenval, eigenvec):
         self.bias      = bias
@@ -92,7 +92,7 @@ class PCA1DAdd(object):
         return np.add(new_arf, tmp.sum(axis=0), new_arf)
 
 
-class SIM1DAdd(object):
+class SIM1DAdd():
 
     def __init__(self, bias, component, simcomp):
         self.bias      = bias

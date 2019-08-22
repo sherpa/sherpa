@@ -61,7 +61,7 @@ class test_utils(SherpaTestCase):
         self.assertEqual(c.x, 4)
 
     def test_export_method(self):
-        class C(object):
+        class C():
             def m(self, x, y=2):
                 'Instance method m()'
                 return x * y

@@ -29,7 +29,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
 
-class CalcFluxWorker(object):
+class CalcFluxWorker():
     def __init__(self, fit, method, data, src, lo, hi):
         self.fit = fit
         self.method = method

@@ -1727,7 +1727,7 @@ class Confidence2D(DataContour, Point):
             self.contour_prefs['ylog'] = False
 
 
-class IntervalProjectionWorker(object):
+class IntervalProjectionWorker():
     def __init__(self, log, par, thawed, fit):
         self.log = log
         self.par = par
@@ -1822,7 +1822,7 @@ class IntervalProjection(Confidence1D):
             fit.method = oldfitmethod
 
 
-class IntervalUncertaintyWorker(object):
+class IntervalUncertaintyWorker():
     def __init__(self, log, par, fit):
         self.log = log
         self.par = par
@@ -1871,7 +1871,7 @@ class IntervalUncertainty(Confidence1D):
             fit.model.thawedpars = oldpars
 
 
-class RegionProjectionWorker(object):
+class RegionProjectionWorker():
     def __init__(self, log, par0, par1, thawed, fit):
         self.log = log
         self.par0 = par0
@@ -1984,7 +1984,7 @@ class RegionProjection(Confidence2D):
             fit.method = oldfitmethod
 
 
-class RegionUncertaintyWorker(object):
+class RegionUncertaintyWorker():
     def __init__(self, log, par0, par1, fit):
         self.log = log
         self.par0 = par0

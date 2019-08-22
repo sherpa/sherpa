@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -43,7 +43,7 @@ warning = logging.getLogger(__name__).warning
 PIXEL_RATIO_THRESHOLD = 0.1
 
 
-class Axis(object):
+class Axis():
     """
     Class for representing N-D axes objects, for both "integrated" and "non-integrated" datasets
     """
@@ -170,7 +170,7 @@ class Axis(object):
         return bool(num != 0)
 
 
-class EvaluationSpace1D(object):
+class EvaluationSpace1D():
     """
     Class for 1D Evaluation Spaces. An Evaluation Space is a set of data axes representing
     the data space over which a model can be evaluated.
@@ -355,7 +355,7 @@ class EvaluationSpace1D(object):
         return self.start <= other.start and self.end >= other.end
 
 
-class EvaluationSpace2D(object):
+class EvaluationSpace2D():
     """
     Class for 2D Evaluation Spaces. An Evaluation Space is a set of data axes representing
     the data space over which a model can be evaluated.
@@ -520,7 +520,7 @@ class EvaluationSpace2D(object):
         return np.zeros(size)
 
 
-class ModelDomainRegridder1D(object):
+class ModelDomainRegridder1D():
     """Allow 1D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -692,7 +692,7 @@ class ModelDomainRegridder1D(object):
                                function=self.method)
 
 
-class ModelDomainRegridder2D(object):
+class ModelDomainRegridder2D():
     """Allow 2D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;

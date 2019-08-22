@@ -192,7 +192,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         return self if evaluation_space is None else evaluation_space
 
 
-class DataSpace2D(object):
+class DataSpace2D():
     """
     Class for representing 2-D Data Spaces. Data Spaces are spaces that describe the data domain.
     """
@@ -250,7 +250,7 @@ class DataSpace2D(object):
         return self.x0, self.x1
 
 
-class IntegratedDataSpace2D(object):
+class IntegratedDataSpace2D():
     """
     Same as DataSpace2D, but for supporting integrated data sets.
     """
@@ -314,7 +314,7 @@ class IntegratedDataSpace2D(object):
         return self.x0lo, self.x1lo, self.x0hi, self.x1hi
 
 
-class DataSpaceND(object):
+class DataSpaceND():
     """
     Class for representing arbitray N-Dimensional data domains
     """
@@ -366,7 +366,7 @@ class DataSpaceND(object):
         return self.indep
 
 
-class Filter(object):
+class Filter():
     """
     A class for representing filters of N-Dimentional datasets.
     """
@@ -446,7 +446,7 @@ class Filter(object):
                 self.mask &= mask
 
 
-class BaseData(object, metaclass=ABCMeta):
+class BaseData(metaclass=ABCMeta):
     """
     Base class for all data classes. Left for compatibility with older versions.
     """

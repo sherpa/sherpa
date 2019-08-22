@@ -488,7 +488,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 #################################confidence###################################
 
 
-class ConfArgs(object):
+class ConfArgs():
 
     """The class ConfArgs is responsible for the arguments to the fit
     call back function."""
@@ -536,7 +536,7 @@ class ConfArgs(object):
         return self.slimit[dir][self.ith_par]
 
 
-class ConfBlog(object):
+class ConfBlog():
 
     def __init__(self, blogger, prefix, verbose, lock, debug=False):
         self.blogger = blogger
@@ -552,14 +552,14 @@ class ConfBlog(object):
         return 'ConfBlog::__rep__( )'
 
 
-class ConfBracket(object):
+class ConfBracket():
 
     """The class ConfBracket is reponsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
 
     neg_pos = (-1, 1)
 
-    class Limit(object):
+    class Limit():
 
         def __init__(self, limit):
             self.limit = limit
@@ -706,7 +706,7 @@ class ConfBracket(object):
             return ConfRootNone()
 
 
-class ConfRootNone(object):
+class ConfRootNone():
 
     """The base class for the root of the confidence interval"""
 
@@ -808,7 +808,7 @@ class ConfRootZero(ConfRootNone):
         return str
 
 
-class ConfStep(object):
+class ConfStep():
 
     def __init__(self, xtrial, ftrial):
         self.xtrial = xtrial

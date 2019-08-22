@@ -190,7 +190,7 @@ def dmvnorm(x, mu, sigma, log=True):
 
 
 
-class Walk(object):
+class Walk():
 
     def __init__(self, sampler=None, niter=1000):
         self._sampler = sampler
@@ -281,7 +281,7 @@ class Walk(object):
         return (stats, acceptflag, params)
 
 
-class Sampler(object):
+class Sampler():
 
     def __init__(self):
 

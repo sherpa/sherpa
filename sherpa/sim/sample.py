@@ -276,7 +276,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         return multivariate_t(vals, cov, dof, int(num))
 
 
-class Evaluate(object):
+class Evaluate():
     """
     Callable class for _sample_stat multiprocessing call
     This class used to be a nested function, which can't be pickled and results in

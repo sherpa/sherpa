@@ -121,7 +121,7 @@ SherpaFloat = numpy.float_
 ###############################################################################
 
 
-class NoNewAttributesAfterInit(object):
+class NoNewAttributesAfterInit():
     """
 
     Prevents attribute deletion and setting of new attributes after

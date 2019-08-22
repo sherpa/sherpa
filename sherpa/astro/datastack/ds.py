@@ -37,7 +37,7 @@ except:
 _all_dataset_ids = {}
 
 
-class DataStack(object):
+class DataStack():
 
     """Manipulate a stack of data in Sherpa.
     """

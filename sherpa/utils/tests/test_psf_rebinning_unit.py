@@ -65,7 +65,7 @@ DATA_PIXEL_SIZE = 2
 
 
 @attr.s
-class FixtureConfiguration(object):
+class FixtureConfiguration():
     image_size = attr.ib()
     psf_size = attr.ib()
     source_amplitude = attr.ib()
@@ -81,7 +81,7 @@ class FixtureConfiguration(object):
 
 
 @attr.s
-class FixtureData(object):
+class FixtureData():
     image = attr.ib()
     psf = attr.ib()
     psf_model = attr.ib()
@@ -324,5 +324,5 @@ def psf_fixture(request):
 
 
 @attr.s
-class WcsStub(object):
+class WcsStub():
     cdelt = attr.ib()
