@@ -153,9 +153,16 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           markersize=None):
 
     xmid = 0.5 * (xlo + xhi)
-    plot(xmid, y, yerr, None, title, xlabel, ylabel, overplot, clearwindow,
-         False, yerrorbars, ecolor, capsize, barsabove, xlog, ylog, linestyle,
-         linecolor, color, marker, markerfacecolor, markersize, False, False)
+    plot(xmid, y, yerr=yerr, xerr=None,
+         title=title, xlabel=xlabel, ylabel=ylabel,
+         overplot=overplot, clearwindow=clearwindow,
+         xerrorbars=False, yerrorbars=yerrorbars,
+         ecolor=ecolor, capsize=capsize, barsabove=barsabove,
+         xlog=xlog, ylog=ylog,
+         linestyle=linestyle, linecolor=linecolor,
+         color=color, marker=marker,
+         markerfacecolor=markerfacecolor, markersize=markersize,
+         xaxis=False, ratioline=False)
 
 
 _attr_map = {
