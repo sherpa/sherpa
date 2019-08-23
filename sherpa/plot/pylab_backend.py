@@ -60,12 +60,6 @@ def exceptions():
     pass
 
 
-def _choose(test, iftrue, iffalse=None):
-    if test:
-        return iftrue
-    return iffalse
-
-
 # In matplotlib 1.5RC1 the kwargs to pylab.Axes.errorbar are not
 # explictit, but they appear to be set for pybal.errorbar, so
 # switch to that.
@@ -82,16 +76,58 @@ def set_window_redraw(redraw):
         pylab.draw()
 
 
+def setup_axes(overplot, clearwindow):
+    """Return the axes object, creating it if necessary.
+
+    Parameters
+    ----------
+    overplot : bool
+    clearwindow : bool
+
+    Returns
+    -------
+    axis
+        The matplotlib axes object.
+    """
+
+    # Do we need to clear the window?
+    if not overplot and clearwindow:
+        clear_window()
+
+    return pylab.gca()
+
+
+def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
+    """Basic plot setup.
+
+    Parameters
+    ----------
+    axes
+        The plot axes (output of setup_axes).
+    title, xlabel, ylabel : str or None
+        The plot, x-axis, and y-axis titles. They are skipped if
+        the empty string or None.
+    xlog , ylog : bool
+        Should the scale be logarithmic (True) or linear (False)?
+
+    """
+
+    axes.set_xscale('log' if xlog else 'linear')
+    axes.set_yscale('log' if ylog else 'linear')
+
+    if title:
+        axes.set_title(title)
+    if xlabel:
+        axes.set_xlabel(xlabel)
+    if ylabel:
+        axes.set_ylabel(ylabel)
+
+
 def point(x, y, overplot=True, clearwindow=False,
           symbol=None,
           color=None):
 
-    if overplot:
-        axes = pylab.gca()
-    else:
-        if clearwindow:
-            clear_window()
-        axes = pylab.gca()
+    axes = setup_axes(overplot, clearwindow)
 
     if color is None:
         str = '%s' % (symbol)
@@ -149,12 +185,7 @@ def vline(x, ymin=0, ymax=1,
           linewidth=None,
           overplot=False, clearwindow=True):
 
-    if overplot:
-        axes = pylab.gca()
-    else:
-        if clearwindow:
-            clear_window()
-        axes = pylab.gca()
+    axes = setup_axes(overplot, clearwindow)
 
     line = axes.axvline(x, ymin, ymax)
 
@@ -174,12 +205,7 @@ def hline(y, xmin=0, xmax=1,
           linewidth=None,
           overplot=False, clearwindow=True):
 
-    if overplot:
-        axes = pylab.gca()
-    else:
-        if clearwindow:
-            clear_window()
-        axes = pylab.gca()
+    axes = setup_axes(overplot, clearwindow)
 
     line = axes.axhline(y, xmin, xmax)
 
@@ -211,24 +237,11 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          xaxis=False,
          ratioline=False):
 
-    if overplot:
-        axes = pylab.gca()
-    else:
-        if clearwindow:
-            clear_window()
-        axes = pylab.gca()
+    axes = setup_axes(overplot, clearwindow)
 
-        xscale = _choose(xlog, 'log', 'linear')
-        yscale = _choose(ylog, 'log', 'linear')
-        axes.set_xscale(xscale)
-        axes.set_yscale(yscale)
-
-        if title:
-            axes.set_title(title)
-        if xlabel:
-            axes.set_xlabel(xlabel)
-        if ylabel:
-            axes.set_ylabel(ylabel)
+    # Set up the axes
+    if not overplot:
+        setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
     # Even if we're doing an error bar plot, we do a normal plot first so
     # that we can take advantage of the default color cycling
@@ -242,8 +255,8 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
             markerfacecolor = color
         if xerr is not None:
             xerr = xerr / 2.
-        xerr = _choose(xerrorbars, xerr)
-        yerr = _choose(yerrorbars, yerr)
+        xerr = xerr if xerrorbars else None
+        yerr = yerr if yerrorbars else None
         line = axes.errorbar(x, y, yerr, xerr, ecolor=ecolor, capsize=capsize,
                              barsabove=barsabove, color=color,
                              markerfacecolor=markerfacecolor)[0]
@@ -283,25 +296,6 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
             linewidths=None,
             colors=None):
 
-    if overcontour:
-        axes = pylab.gca()
-    else:
-        if clearwindow:
-            clear_window()
-        axes = pylab.gca()
-
-        if title:
-            axes.set_title(title)
-        if xlabel:
-            axes.set_xlabel(xlabel)
-        if ylabel:
-            axes.set_ylabel(ylabel)
-
-        xscale = _choose(xlog, 'log', 'linear')
-        yscale = _choose(ylog, 'log', 'linear')
-        axes.set_xscale(xscale)
-        axes.set_yscale(yscale)
-
     x0 = numpy.unique(x0)
     x1 = numpy.unique(x1)
     y  = numpy.asarray(y)
@@ -310,6 +304,12 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
         raise NotImplementedErr('contourgrids')
 
     y = y.reshape(x1.size, x0.size)
+
+    axes = setup_axes(overcontour, clearwindow)
+
+    # Set up the axes
+    if not overcontour:
+        setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
     if levels is None:
         axes.contour(x0, x1, y, colors=colors, linewidths=linewidths)
