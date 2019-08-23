@@ -12,7 +12,7 @@ matrix:
     # We need to use TEST=none to remove the test-data submodule.
     # This used to be the Python 2.7 build (so used an old NumPy) but it has now
     # been bumped to "nearly latest" versions
-    - env: INSTALL_TYPE=develop TEST=none NUMPYVER="1.17" TRAVIS_PYTHON_VERSION="3.7"
+    - env: INSTALL_TYPE=develop TEST=none NUMPYVER="1.16" TRAVIS_PYTHON_VERSION="3.7"
     # Full build (including ds9 and xspec), Python 3.5, setup.py develop, astropy, matplotlib 2
     - env: XSPECVER="12.10.1b" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.5"
       sudo: required
