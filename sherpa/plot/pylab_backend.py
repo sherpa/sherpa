@@ -45,16 +45,20 @@ name = 'pylab'
 def init():
     pass
 
+
 def begin():
     pass
+
 
 def end():
     set_window_redraw(True)
     if pylab.isinteractive():
         pylab.draw()
 
+
 def exceptions():
     pass
+
 
 def _choose(test, iftrue, iffalse=None):
     if test:
@@ -71,6 +75,7 @@ _errorbar_defaults = get_keyword_defaults(pylab.errorbar)
 
 def clear_window():
     pylab.clf()
+
 
 def set_window_redraw(redraw):
     if redraw:
@@ -89,13 +94,11 @@ def point(x, y, overplot=True, clearwindow=False,
         axes = pylab.gca()
 
     if color is None:
-        str = '%s'%(symbol)
+        str = '%s' % (symbol)
     else:
-        str = '%s%s'%(color,symbol)
+        str = '%s%s' % (color, symbol)
 
-    point = axes.plot(numpy.array([x]),numpy.array([y]),str)[0]
-
-    #pylab.draw()
+    axes.plot(numpy.array([x]), numpy.array([y]), str)
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
@@ -113,31 +116,32 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           markerfacecolor=None,
           markersize=None):
 
-    plot(0.5*(xlo+xhi), y, yerr, None, title, xlabel, ylabel, overplot, clearwindow,
+    xmid = 0.5 * (xlo + xhi)
+    plot(xmid, y, yerr, None, title, xlabel, ylabel, overplot, clearwindow,
          False, yerrorbars, ecolor, capsize, barsabove, xlog, ylog, linestyle,
          linecolor, color, marker, markerfacecolor, markersize, False, False)
 
 
 _attr_map = {
-    'linecolor' : 'color',
-    'linestyle' : 'linestyle',
-    'linewidth' : 'linewidth',
-    }
+    'linecolor': 'color',
+    'linestyle': 'linestyle',
+    'linewidth': 'linewidth',
+}
 
 _linestyle_map = {
-
-    'noline'  : ' ',
-    'solid'   : '-',
-    'dot'     : ':',
-    'dash'    : '--',
-    'dotdash' : '-.',
-    }
+    'noline': ' ',
+    'solid': '-',
+    'dot': ':',
+    'dash': '--',
+    'dotdash': '-.',
+}
 
 
 def _check_hex_color(val):
     if type(val) in (str, numpy.string_) and val.startswith('0x'):
-        val = '#'+str(val).replace('0x','').rjust(6,'0')
+        val = '#' + str(val).replace('0x', '').rjust(6, '0')
     return val
+
 
 def vline(x, ymin=0, ymax=1,
           linecolor=None,
@@ -248,6 +252,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
                 'markersize'):
         val = locals()[var]
         if val is not None:
+            print(' -- set_{}({})'.format(var, val))
             getattr(line, 'set_' + var)(val)
 
     # Should the color for these lines be taken from the current axes?
@@ -270,7 +275,6 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     if ratioline:
         axes.axhline(y=1, xmin=0, xmax=1, color='k', linewidth=lw)
 
-    #pylab.draw()
 
 def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
             overcontour=False, clearwindow=True,
@@ -298,7 +302,6 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
         axes.set_xscale(xscale)
         axes.set_yscale(yscale)
 
-
     x0 = numpy.unique(x0)
     x1 = numpy.unique(x1)
     y  = numpy.asarray(y)
@@ -309,12 +312,10 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
     y = y.reshape(x1.size, x0.size)
 
     if levels is None:
-        line = axes.contour(x0, x1, y, colors=colors, linewidths=linewidths)
+        axes.contour(x0, x1, y, colors=colors, linewidths=linewidths)
     else:
-        line = axes.contour(x0, x1, y, levels, colors=colors,
-                            linewidths=linewidths)
-
-    #pylab.draw()
+        axes.contour(x0, x1, y, levels, colors=colors,
+                     linewidths=linewidths)
 
 
 def set_subplot(row, col, nrows, ncols, clearaxes=True,
@@ -328,7 +329,7 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
     pylab.subplots_adjust(left=left, right=right, bottom=bottom, top=top,
                           wspace=wspace, hspace=hspace)
 
-    num = row*ncols + col + 1
+    num = row * ncols + col + 1
 
     # As of numpy 0.9.8, these need to be cast to int to prevent errors
     # in matplotlib
@@ -367,12 +368,10 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
         pylab.sca(axarr[0])
 
     else:
-
         # need to set axes[1] as current axes.
         axes = pylab.gca()
         ax2 = axes.figure.axes[-1]
         pylab.sca(ax2)
-        #ax2.get_yticklabels()[-1].set_visible(False)
 
 
 def get_split_plot_defaults():
@@ -386,12 +385,14 @@ def get_plot_defaults():
 def get_point_defaults():
     return get_keyword_defaults(point, 2)
 
+
 def get_histo_defaults():
     return get_keyword_defaults(histo, 6)
 
+
 def get_confid_point_defaults():
     d = get_point_defaults()
-    d['symbol']='+'
+    d['symbol'] = '+'
     return d
 
 
@@ -403,9 +404,11 @@ def get_data_plot_defaults():
     d['marker'] = '.'
     return d
 
+
 def get_model_histo_defaults():
     d = get_histo_defaults()
     return d
+
 
 def get_model_plot_defaults():
     d = get_plot_defaults()
@@ -424,7 +427,7 @@ def get_resid_plot_defaults():
     d = get_data_plot_defaults()
     d['xerrorbars'] = True
     d['capsize'] = 0
-    #d['marker'] = '_'
+    # d['marker'] = '_'
     d['xaxis'] = True
     return d
 
@@ -433,7 +436,7 @@ def get_ratio_plot_defaults():
     d = get_data_plot_defaults()
     d['xerrorbars'] = True
     d['capsize'] = 0
-    #d['marker'] = '_'
+    # d['marker'] = '_'
     d['ratioline'] = True
     return d
 
@@ -464,14 +467,17 @@ get_ratio_contour_defaults = get_data_contour_defaults
 get_component_plot_defaults = get_model_plot_defaults
 get_component_histo_defaults = get_model_histo_defaults
 
+
 def get_cdf_plot_defaults():
     d = get_model_plot_defaults()
     d['linecolor'] = 'red'
     return d
 
+
 def get_scatter_plot_defaults():
     d = get_data_plot_defaults()
     return d
+
 
 def get_latex_for_string(txt):
     """Convert to LaTeX form for the matplotlib back end.
