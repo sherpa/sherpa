@@ -352,10 +352,13 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
                   top=1,
                   ratio=2):
 
-    # TODO: work out why chips and pylab backends seem to have
-    #       clearaxes logic inverted (comment about it in chips backend)
-    #
-    if not clearaxes:
+    if clearaxes:
+        # need to set axes[1] as current axes.
+        axes = pylab.gca()
+        ax2 = axes.figure.axes[-1]
+        pylab.sca(ax2)
+
+    else:
         # follow the chips backend and set plot number "top" (numbering
         # from 1) as the plot with a height of ratio, and the rest
         # with a value of 1. Note that the chips backend created
@@ -367,16 +370,11 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
         f, axarr = pylab.subplots(nrows, sharex=True, num=1,
                                   gridspec_kw=gs)
         f.subplots_adjust(hspace=0.05)
-        pylab.setp([a.get_xticklabels() for a in f.axes[:-1]], visible=False)
+        pylab.setp([a.get_xticklabels() for a in f.axes[:-1]],
+                   visible=False)
 
         # need to set axes[0] as current axes.
         pylab.sca(axarr[0])
-
-    else:
-        # need to set axes[1] as current axes.
-        axes = pylab.gca()
-        ax2 = axes.figure.axes[-1]
-        pylab.sca(ax2)
 
 
 def get_split_plot_defaults():
