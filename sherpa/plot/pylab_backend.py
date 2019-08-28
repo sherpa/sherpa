@@ -284,9 +284,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     #
     try:
         lw = axes.spines['left'].get_linewidth()
-    except:
-        # should restrict to a particular error, but I do not know
-        # the axis structure enough to know what can go wrong
+    except (AttributeError, KeyError):
         lw = 1.0
 
     if xaxis:
