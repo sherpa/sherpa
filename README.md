@@ -112,6 +112,8 @@ extend (whether to other areas of Astronomy or in other domains).
 Release History
 ---------------
 
+4.11.1: 1 August 2019 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358134.svg)](https://doi.org/10.5281/zenodo.3358134)
+
 4.11.0: 20 February 2019 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2573885.svg)](https://doi.org/10.5281/zenodo.2573885)
 
 4.10.2: 14 December 2018 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2275738.svg)](https://doi.org/10.5281/zenodo.2275738)
