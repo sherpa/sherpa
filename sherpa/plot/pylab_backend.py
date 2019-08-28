@@ -248,30 +248,95 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     if not overplot:
         setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
-    # Even if we're doing an error bar plot, we do a normal plot first so
-    # that we can take advantage of the default color cycling
-    line = axes.plot(x, y)[0]
+    # The following is from https://github.com/sherpa/sherpa/issues/662
+    # which is circa matplotlib 3. The issue is how to ensure that
+    # a plot with multiple data values (e.g. a fit plot with
+    # data+error bars and model, and one with multiple fits),
+    # are drawn "sensibly" so that the user can make out the model.
+    # For this we really want the zorder of plot items to be determined
+    # by the order they are added. However, this appears to be complicated
+    # by the fact that the errorbar command creates multiple objects
+    # (for the point, error bars, and I believe caps), and not just
+    # a Line2D object. Once all the plot items are concatenated and
+    # sorted to ensure a consistent ordering - as discussed in
+    # https://github.com/matplotlib/matplotlib/issues/1622#issuecomment-142469866 -
+    # we lose a "nice" order in Sherpa (for our cases it does not
+    # seem to help that the error bar adds in a zorder Line2D of 2.1
+    # as compared to 2, which means that the point for the error bar
+    # is drawn on top of the error bar, but also above other lines
+    # added to the plot.
+    #
 
+    # One option would be to evaluate the current plot to find out
+    # what the minimum zorder is, and explicitly set larger
+    # values. Note that the default zindex values appear to be 2 and
+    # 2.1 from plot/errorbar. This should work for the case of
+    #   plot something
+    #   overplot something
+    # but may fall appart as soon as users add their own features
+    # to the visualization, but that may be acceptable.
+    #
+    zorder = None
+    if overplot:
+        # Is this a sufficient set of objects?
+        #
+        objects = axes.lines + axes.collections
+
+        # could do a list comprehension, but want to catch
+        # AtributeErrors
+        zs = []
+        for o in objects:
+            try:
+                zo = o.get_zorder()
+            except AttributeError:
+                continue
+
+            zs.append(zo)
+
+        if len(zs) > 0:
+            # Add a small offset for this set of data
+            zorder = max(zs) + 0.1
+
+    # Rely on color-cycling to work for both the "no errorbar" and
+    # "errorbar" case.
+    #
     if xerrorbars or yerrorbars:
-        line.set_visible(False)
-        if color is None:
-            color = line.get_color()
         if markerfacecolor is None:
             markerfacecolor = color
         if xerr is not None:
             xerr = xerr / 2.
         xerr = xerr if xerrorbars else None
         yerr = yerr if yerrorbars else None
-        line = axes.errorbar(x, y, yerr, xerr, ecolor=ecolor, capsize=capsize,
-                             barsabove=barsabove, color=color,
-                             markerfacecolor=markerfacecolor)[0]
+        axes.errorbar(x, y, yerr, xerr,
+                      color=color,
+                      linestyle=linestyle,
+                      marker=marker,
+                      markersize=markersize,
+                      markerfacecolor=markerfacecolor,
+                      ecolor=ecolor,
+                      capsize=capsize,
+                      barsabove=barsabove,
+                      zorder=zorder)
 
+    else:
+        axes.plot(x, y,
+                  color=color,
+                  # NEED to separate out drawstyle and linestyle as of
+                  # matplotlib 3.1
+                  linestyle=linestyle,
+                  marker=marker,
+                  markersize=markersize,
+                  markerfacecolor=markerfacecolor,
+                  zorder=zorder)
+
+    """
     for var in ('linestyle', 'color', 'marker', 'markerfacecolor',
                 'markersize'):
         val = locals()[var]
         if val is not None:
             print(' -- set_{}({})'.format(var, val))
             getattr(line, 'set_' + var)(val)
+    """
 
     # Should the color for these lines be taken from the current axes?
     #
