@@ -59,5 +59,6 @@ script:
 
 notifications:
   email:
-    - olaurino@cfa.harvard.edu
+    - wmclaugh@cfa.harvard.edu
+    - mterrell@cfa.harvard.edu
 
