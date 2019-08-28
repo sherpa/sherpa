@@ -152,8 +152,15 @@ class Model(NoNewAttributesAfterInit):
 
             if tp == 'linked':
                 linkstr = 'expr: %s' % p.link.fullname
-                s += ('\n   %-12s %-6s %12g %24s %10s' %
-                      (p.fullname, tp, p.val, linkstr, p.units))
+                s += ('\n   %-12s %-6s %12g %24s' %
+                      (p.fullname, tp, p.val, linkstr))
+                if p.link_min is not None:
+                    linkminstr = 'expr: %s' % p.link_min.fullname
+                    s += linkminstr
+                if p.link_max is not None:
+                    linkmaxstr = 'expr: %s' % p.link_max.fullname
+                    s += linkmaxstr
+                s += p.units
             else:
                 s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
                       (p.fullname, tp, p.val, p.min, p.max, p.units))

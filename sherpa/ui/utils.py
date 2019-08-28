@@ -7417,12 +7417,12 @@ class Session(NoNewAttributesAfterInit):
         for p in par:
             self._freeze_thaw_par_or_model(p, 'thaw')
 
-    def link(self, par, val):
+    def link(self, par, val, min=None, max=None):
         """Link a parameter to a value.
 
-        A parameter can be linked to another parameter value, or
-        function of that value, rather than be an independent value.
-        As the linked-to values change, the parameter value will
+        A parameter and its limits can be linked to another parameter
+        value, or function of that value, rather than be an independent
+        value. As the linked-to values change, the parameter value will
         change.
 
         Parameters
@@ -7432,6 +7432,13 @@ class Session(NoNewAttributesAfterInit):
         val
            The value - wihch can be a numeric value or a function
            of other model parameters, to set `par` to.
+        min : None
+           The minimum - wihch can be a numeric value or a function
+           of other model minimum parameters, to set `min` to.
+        max : None
+           The maximum - wihch can be a numeric value or a function
+           of other model parameters, to set `max` to.
+
 
         See Also
         --------
@@ -7483,11 +7490,32 @@ class Session(NoNewAttributesAfterInit):
         >>> g2.pos.val
         14.399999999999999
 
+
+        The min and max limits of the ``pos`` parameter of the ``src1`` is
+        set to be line the min -5  and max  + 8 of the ``pos`` parameter of
+        ``src2`` model, respectively.
+
+        >>> gauss1d.src1
+        >>> gauss1d.src2
+        >>> src2.pos.val = -1
+        >>> link(src1.pos, src2.pos + 2, min=src2.pos - 5, max=src2.pos + 8)
+        >>> src1.pos.min
+        -6.0
+        >>> src2.pos.min
+        -3.4028234663852886e+38
+        >>> src1.pos.max
+        7.0
+        >>> src2.pos.max
+        3.4028234663852886e+38
         """
         par = self._check_par(par)
         if isinstance(val, string_types):
             val = self._eval_model_expression(val, 'parameter link')
         par.link = val
+        if min is not None:
+            par.link_min = min
+        if max is not None:
+            par.link_max = max
 
     def unlink(self, par):
         """Unlink a parameter value.

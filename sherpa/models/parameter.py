@@ -29,7 +29,7 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Parameter', 'CompositeParameter', 'ConstantParameter',
-           'UnaryOpParameter', 'BinaryOpParameter')
+           'UnaryOpParameter', 'BinaryOpParameter', 'hugeval')
 
 
 # Default minimum and maximum magnitude for parameters
@@ -42,42 +42,106 @@ __all__ = ('Parameter', 'CompositeParameter', 'ConstantParameter',
 tinyval = numpy.float(numpy.finfo(numpy.float32).tiny)
 hugeval = numpy.float(numpy.finfo(numpy.float32).max)
 
+def _make_set_link(name):
+    def _set_link(self, link):
+        if link is not None:
+            if self._alwaysfrozen:
+                msg = 'frozennolink'
+                if name != 'val':
+                    msg += name
+                raise ParameterErr(msg, self.fullname)
+            if not isinstance(link, Parameter):
+                msg = 'notlink'
+                if name != 'val':
+                    msg += name
+                raise ParameterErr(msg)
+
+            # Short cycles produce error
+            # e.g. par = 2*par+3
+            if self in link:
+                msg = 'link'
+                if name != 'val':
+                    msg += name
+                msg += 'cycle'
+                raise ParameterErr(msg)
+
+            # Correctly test for link cycles in long trees.
+            cycle = False
+            ll = link
+            while isinstance(ll, Parameter):
+                if ll == self or self in ll:
+                    cycle = True
+                if name == 'val':
+                    ll = ll.link
+                elif name == '_min':
+                    ll = ll.link_min
+                elif name == '_max':
+                    ll = ll.link_max
+
+            # Long cycles are overwritten BUG #12287
+            if cycle and isinstance(link, Parameter):
+                if name == 'val':
+                    link.link = None
+                elif name == '_min':
+                    link_min.link_min = None
+                elif name == '_max':
+                    link_max.link_max = None                    
+                
+        if name == 'val':
+            self._link = link
+        elif name == '_min':
+            self._link_min = link
+        elif name == '_max':
+            self._link_max = link
+            
+    return _set_link
 
 def _make_set_limit(name):
     def _set_limit(self, val):
-        val = SherpaFloat(val)
-        # Ensure that we don't try to set any value that is outside
-        # the hard parameter limits.
-        if val < self._hard_min:
-            raise ParameterErr('edge', self.fullname,
-                               'hard minimum', self._hard_min)
-        if val > self._hard_max:
-            raise ParameterErr('edge', self.fullname,
-                               'hard maximum', self._hard_max)
+        if isinstance(val, Parameter):
+            if name == "_min":
+                self.link_min = val
+            if name == "_max":
+                self.link_max = val
+        else:
+            if name == "_min":
+                self.link_min = None
+            if name == "_max":
+                self.link_max = None                
+            
+            val = SherpaFloat(val)
+            # Ensure that we don't try to set any value that is outside
+            # the hard parameter limits.
+            if val < self._hard_min:
+                raise ParameterErr('edge', self.fullname,
+                                   'hard minimum', self._hard_min)
+            if val > self._hard_max:
+                raise ParameterErr('edge', self.fullname,
+                                   'hard maximum', self._hard_max)
 
-        # Ensure that we don't try to set a parameter range, such that
-        # the minimum will be greater than the current parameter value,
-        # or that the maximum will be less than the current parameter value.
+            # Ensure that we don't try to set a parameter range, such that
+            # the minimum will be greater than the current parameter value,
+            # or that the maximum will be less than the current parameter value.
 
-        # But we only want to do this check *after* parameter has been
-        # created and fully initialized; we are doing this check some time
-        # *later*, when the user is trying to reset a parameter range
-        # such that the new range will leave the current value
-        # *outside* the new range.  We want to warn against and disallow that.
+            # But we only want to do this check *after* parameter has been
+            # created and fully initialized; we are doing this check some time
+            # *later*, when the user is trying to reset a parameter range
+            # such that the new range will leave the current value
+            # *outside* the new range.  We want to warn against and disallow that.
 
-        # Due to complaints about having to rewrite existing user scripts,
-        # downgrade the ParameterErr issued here to mere warnings.  Also,
-        # set the value to the appropriate soft limit.
-        if hasattr(self, "_NoNewAttributesAfterInit__initialized") and \
-           self._NoNewAttributesAfterInit__initialized:
-            if name == "_min" and (val > self.val):
-                self.val = val
-                warning(('parameter %s less than new minimum; %s reset to %g') % (self.fullname, self.fullname, self.val))
-            if name == "_max" and (val < self.val):
-                self.val = val
-                warning(('parameter %s greater than new maximum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+            # Due to complaints about having to rewrite existing user scripts,
+            # downgrade the ParameterErr issued here to mere warnings.  Also,
+            # set the value to the appropriate soft limit.
+            if hasattr(self, "_NoNewAttributesAfterInit__initialized") and \
+               self._NoNewAttributesAfterInit__initialized:
+                if name == "_min" and (val > self.val):
+                    self.val = val
+                    warning(('parameter %s less than new minimum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+                if name == "_max" and (val < self.val):
+                    self.val = val
+                    warning(('parameter %s greater than new maximum; %s reset to %g') % (self.fullname, self.fullname, self.val))
 
-        setattr(self, name, val)
+            setattr(self, name, val)
 
     return _set_limit
 
@@ -207,10 +271,14 @@ class Parameter(NoNewAttributesAfterInit):
     #
 
     def _get_min(self):
+        if self.link_min is not None:
+            return self.link_min.val
         return self._min
     min = property(_get_min, _make_set_limit('_min'))
 
     def _get_max(self):
+        if self.link_max is not None:
+            return self.link_max.val
         return self._max
     max = property(_get_max, _make_set_limit('_max'))
 
@@ -219,10 +287,14 @@ class Parameter(NoNewAttributesAfterInit):
     #
 
     def _get_default_min(self):
+        if self.link_min is not None:
+            return self.link_min.default_val
         return self._default_min
     default_min = property(_get_default_min, _make_set_limit('_default_min'))
 
     def _get_default_max(self):
+        if self.link_max is not None:
+            return self.link_max.default_val
         return self._default_max
     default_max = property(_get_default_max, _make_set_limit('_default_max'))
 
@@ -250,33 +322,26 @@ class Parameter(NoNewAttributesAfterInit):
     def _get_link(self):
         return self._link
 
-    def _set_link(self, link):
-        if link is not None:
-            if self._alwaysfrozen:
-                raise ParameterErr('frozennolink', self.fullname)
-            if not isinstance(link, Parameter):
-                raise ParameterErr('notlink')
+    link = property(_get_link, _make_set_link('val'))
 
-            # Short cycles produce error
-            # e.g. par = 2*par+3
-            if self in link:
-                raise ParameterErr('linkcycle')
+    #
+    # 'link_min' property'
+    #
 
-            # Correctly test for link cycles in long trees.
-            cycle = False
-            ll = link
-            while isinstance(ll, Parameter):
-                if ll == self or self in ll:
-                    cycle = True
-                ll = ll.link
+    def _get_link_min(self):
+        return self._link_min
 
-            # Long cycles are overwritten BUG #12287
-            if cycle and isinstance(link, Parameter):
-                link.link = None
+    link_min = property(_get_link_min, _make_set_link('_min'))
 
-        self._link = link
-    link = property(_get_link, _set_link)
+    #
+    # 'link_max' property'
+    #
 
+    def _get_link_max(self):
+        return self._link_max
+
+    link_max = property(_get_link_max, _make_set_link('_max'))
+    
     #
     # Methods
     #
@@ -309,6 +374,8 @@ class Parameter(NoNewAttributesAfterInit):
         self.default_max = max
         self.default_val = val
         self.link = None
+        self.link_min = None
+        self.link_max = None
         self._guessed = False
 
         self.aliases = [a.lower() for a in aliases] if aliases is not None else []
@@ -330,19 +397,29 @@ class Parameter(NoNewAttributesAfterInit):
             linkstr = self.link.fullname
         else:
             linkstr = str(None)
-
+        if self.link_min is not None:
+            linkminstr = self.link_min.fullname
+        else:
+            linkminstr = str(None)
+        if self.link_max is not None:
+            linkmaxstr = self.link_max.fullname
+        else:
+            linkmaxstr = str(None)
         return (('val         = %s\n' +
                  'min         = %s\n' +
                  'max         = %s\n' +
                  'units       = %s\n' +
                  'frozen      = %s\n' +
                  'link        = %s\n'
+                 'link_min    = %s\n'
+                 'link_max    = %s\n'
                  'default_val = %s\n' +
                  'default_min = %s\n' +
                  'default_max = %s') %
                 (str(self.val), str(self.min), str(self.max), self.units,
-                 self.frozen, linkstr, str(self.default_val),
-                 str(self.default_min), str(self.default_max)))
+                 self.frozen, linkstr, linkminstr, linkmaxstr,
+                 str(self.default_val), str(self.default_min),
+                 str(self.default_max)))
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')

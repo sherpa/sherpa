@@ -22,11 +22,154 @@ from numpy import arange
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
-    BinaryOpParameter, ConstantParameter
+    BinaryOpParameter, ConstantParameter, hugeval
 from sherpa.utils.err import ParameterErr
 
+from sherpa.models.basic import Gauss1D
+from sherpa import ui
 
 class test_parameter(SherpaTestCase):
+
+    class TestParBase:
+
+        def __init__(self, pos1, pos2):
+            self.src1 = Gauss1D()
+            self.src1.pos = pos1
+            self.src1_pos = pos1
+            self.src2 = Gauss1D()
+            self.src2.pos = pos2
+            self.src2_pos = pos2
+            self.tst_pos(self.src1.pos, self.src1_pos)
+            self.tst_pos(self.src2.pos, self.src2_pos)
+            return
+
+        def __del__(self):
+            self.src1.pos.unlink()
+            self.tst_pos(self.src1.pos, self.src1.pos.default_val,
+                         min=self.src1.pos.min, max=self.src1.pos.max,
+                         link_min=self.src1.pos.link_min,
+                         link_max=self.src1.pos.link_max)
+            self.src2.pos.unlink()
+            self.tst_pos(self.src2.pos, self.src2_pos, min=self.src2.pos.min,
+                         max=self.src2.pos.max,
+                         link_min=self.src2.pos.link_min,
+                         link_max=self.src2.pos.link_max)
+            return
+
+        def tst_pos(self, gauss, pos, min=-hugeval, max=hugeval, frozen=False,
+                    link=None, link_min=None, link_max=None):
+            assert gauss.val == pos
+            assert gauss.min == min
+            assert gauss.max == max
+            assert gauss.frozen == frozen
+            if gauss.link is None or link is None:
+                assert gauss.link == link
+            else:
+                self.tst_pos(gauss.link, pos)
+            if gauss.link_min is None:
+                assert gauss.link_min == link_min
+            else:
+                assert gauss.link_min.eval() == link_min.eval()
+            if gauss.link_max is None:
+                assert gauss.link_max == link_max
+            else:
+                assert gauss.link_max.eval() == link_max.eval()
+            assert gauss.default_val == pos
+            assert gauss.default_min == min
+            assert gauss.default_max == max
+
+
+    class TestParVal(TestParBase):
+
+        def __init__(self, pos1, pos2):
+            test_parameter.TestParBase.__init__(self, pos1, pos2)
+            return
+
+        def tst(self):
+            self.tst_pos(self.src1.pos, self.src2_pos, frozen=True,
+                         link=self.src1.pos)
+            self.tst_pos(self.src2.pos, self.src2_pos)
+
+        def tst_low_level_val_link(self):
+            self.src1.pos.val = self.src2.pos.val
+            self.src1.pos.link = self.src2.pos
+            self.tst()
+
+        def tst_ui_val_link(self):
+            ui.link(self.src1.pos, self.src2.pos)
+            self.tst()
+
+
+    class TestParMin(TestParBase):
+
+        def __init__(self, pos1, pos2):
+            test_parameter.TestParBase.__init__(self, pos1, pos2)
+            return
+
+        def tst(self):
+            self.tst_pos(self.src1.pos, self.src2_pos + 2, frozen=True,
+                         min=self.src2.pos.val - 5, link=self.src1.pos,
+                         link_min=self.src2.pos - 5)
+            self.tst_pos(self.src2.pos, self.src2_pos)
+
+        def tst_low_level_min_link(self):
+            self.src1.pos.link = self.src2.pos + 2
+            self.src1.pos.link_min = self.src2.pos - 5
+            self.tst()
+
+        def tst_ui_min_link(self):
+            ui.link(self.src1.pos, self.src2.pos + 2, min=self.src2.pos - 5)
+            self.tst()
+
+
+    class TestParMax(TestParBase):
+
+        def __init__(self, pos1, pos2):
+            test_parameter.TestParBase.__init__(self, pos1, pos2)
+            return
+
+        def tst(self):
+            self.tst_pos(self.src1.pos, self.src2_pos + 2, frozen=True,
+                         max=self.src2.pos.val +8, link=self.src1.pos,
+                         link_max=self.src2.pos + 8)
+            self.tst_pos(self.src2.pos, self.src2_pos)
+
+        def tst_low_level_max_link(self):
+            self.src1.pos.link = self.src2.pos + 2
+            self.src1.pos.link_max = self.src2.pos + 8
+            self.tst()
+
+        def tst_ui_max_link(self):
+            ui.link(self.src1.pos, self.src2.pos + 2, max=self.src2.pos + 8)
+            self.tst()
+
+
+    class TestParMinMax(TestParBase):
+
+        def __init__(self, pos1, pos2):
+            test_parameter.TestParBase.__init__(self, pos1, pos2)
+            return
+
+        def tst(self):
+            self.tst_pos(self.src1.pos, self.src2_pos + 2, frozen=True,
+                         min=self.src2.pos.val - 5,
+                         max=self.src2.pos.val + 8,
+                         link=self.src1.pos,
+                         link_min=self.src2.pos - 5,
+                         link_max=self.src2.pos + 8)
+            self.tst_pos(self.src2.pos, self.src2_pos)
+
+        def tst_low_level_min_max_link(self):
+            self.src1.pos.link = self.src2.pos + 2
+            self.src1.pos.link_min = self.src2.pos - 5
+            self.src1.pos.link_max = self.src2.pos + 8
+            self.tst()
+
+        def tst_ui_min_max_link(self):
+            ui.link(self.src1.pos, self.src2.pos + 2, min=self.src2.pos - 5,
+            max=self.src2.pos + 8)
+            self.tst()
+
 
     def setUp(self):
         self.p = Parameter('model', 'name', 0, -10, 10, -100, 100, 'units')
@@ -144,3 +287,39 @@ class test_composite_parameter(SherpaTestCase):
         p = self.p.val
         p2 = self.p2.val
         self.assertEqual(cmplx.val, (3 * p + p2) / (p ** 3.2))
+
+    def test_link_unlink_val(self):
+        test_parameter.TestParVal(4, 5)
+        return
+
+    def test_link_unlink_val_low_level(self):
+        tst = test_parameter.TestParVal(4, 5)
+        tst.tst_low_level_val_link()
+
+    def test_link_unlink_val_ui(self):
+        tst = test_parameter.TestParVal(4, 5)
+        tst.tst_ui_val_link()
+
+    def test_link_unlink_min_ui(self):
+        tst = test_parameter.TestParMin(-1, 0)
+        tst.tst_ui_min_link()
+
+    def test_link_unlink_min_low_level(self):
+        tst = test_parameter.TestParMin(-1, 0)
+        tst.tst_low_level_min_link()
+
+    def test_link_unlink_max_ui(self):
+        tst = test_parameter.TestParMax(-1, 0)
+        tst.tst_ui_max_link()
+
+    def test_link_unlink_max_low_level(self):
+        tst = test_parameter.TestParMax(-1, 0)
+        tst.tst_low_level_max_link()
+
+    def test_link_unlink_min_max_ui(self):
+        tst = test_parameter.TestParMinMax(-1, 0)
+        tst.tst_ui_min_max_link()
+
+    def test_link_unlink_min_max_low_level(self):
+        tst = test_parameter.TestParMinMax(-1, 0)
+        tst.tst_low_level_min_max_link()
