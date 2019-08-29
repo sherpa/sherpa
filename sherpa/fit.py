@@ -1046,14 +1046,9 @@ class Fit(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__init__(self)
 
     def calc_thaw_indices(self):
-        iter = 0
-        self.thaw_indices = ()
-        for current_par in self.model.pars:
-            if current_par.frozen:
-                pass
-            else:
-                self.thaw_indices = self.thaw_indices + (iter,)
-            iter = iter + 1
+        self.thaw_indices = \
+            tuple([i for i, par in enumerate(self.model.pars) if not \
+                   par.frozen])
         
     def __setstate__(self, state):
         self.__dict__.update(state)
