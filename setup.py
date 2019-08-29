@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-# Copyright (C) 2014, 2017, 2018 Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017, 2018, 2019 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -68,7 +68,7 @@ meta = dict(name='sherpa',
             long_description_content_type='text/markdown',
             platforms='Linux, Mac OS X',
             install_requires=['numpy', 'six'],
-            tests_require=['mock', 'pytest-xvfb', 'pytest>=3.3'],
+            tests_require=['pytest-xvfb', 'pytest>=3.3'],
             packages=['sherpa',
                       'sherpa.estmethods',
                       'sherpa.image',
