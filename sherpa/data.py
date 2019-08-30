@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,8 +24,6 @@ Tools for creating, storing, inspecting, and manipulating data sets
 import warnings
 from abc import ABCMeta
 
-import six
-from six.moves import zip as izip
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
@@ -193,7 +192,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         return self if evaluation_space is None else evaluation_space
 
 
-class DataSpace2D(object):
+class DataSpace2D():
     """
     Class for representing 2-D Data Spaces. Data Spaces are spaces that describe the data domain.
     """
@@ -251,7 +250,7 @@ class DataSpace2D(object):
         return self.x0, self.x1
 
 
-class IntegratedDataSpace2D(object):
+class IntegratedDataSpace2D():
     """
     Same as DataSpace2D, but for supporting integrated data sets.
     """
@@ -315,7 +314,7 @@ class IntegratedDataSpace2D(object):
         return self.x0lo, self.x1lo, self.x0hi, self.x1hi
 
 
-class DataSpaceND(object):
+class DataSpaceND():
     """
     Class for representing arbitray N-Dimensional data domains
     """
@@ -367,7 +366,7 @@ class DataSpaceND(object):
         return self.indep
 
 
-class Filter(object):
+class Filter():
     """
     A class for representing filters of N-Dimentional datasets.
     """
@@ -447,8 +446,7 @@ class Filter(object):
                 self.mask &= mask
 
 
-@six.add_metaclass(ABCMeta)
-class BaseData(object):
+class BaseData(metaclass=ABCMeta):
     """
     Base class for all data classes. Left for compatibility with older versions.
     """
@@ -822,7 +820,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
 
         fields = self._fields + getattr(self, '_extra_fields', ())
-        fdict = dict(izip(fields, [getattr(self, f) for f in fields]))
+        fdict = dict(zip(fields, [getattr(self, f) for f in fields]))
         return print_fields(fields, fdict)
 
     def __repr__(self):
@@ -880,7 +878,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
     def eval_model_to_fit(self, modelfuncs):
         total_model = []
 
-        for func, data in izip(modelfuncs, self.datasets):
+        for func, data in zip(modelfuncs, self.datasets):
             total_model.append(data.eval_model_to_fit(func))
 
         return numpy.concatenate(total_model)

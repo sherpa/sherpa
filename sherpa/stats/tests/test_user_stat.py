@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -112,7 +112,7 @@ def test_341():
     (PR #287) a regression was introduced by short-circuiting the evaluation of the model.
 
     """
-    class ExampleModel(object):
+    class ExampleModel():
         """ Class to define model
         """
         def __init__(self, x, y):
@@ -127,7 +127,7 @@ def test_341():
         def model(self):
             return self.parvals[0] * self.x + self.parvals[1]
 
-    class CalcModel(object):
+    class CalcModel():
         """ Class to update model parameters
         """
         def __init__(self, model):
@@ -137,7 +137,7 @@ def test_341():
             self.model.parvals = pars
             return np.ones_like(x)
 
-    class CalcStat(object):
+    class CalcStat():
         """ Class to determine fit statistic
         """
         def __init__(self, model):

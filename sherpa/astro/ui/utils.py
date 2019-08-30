@@ -17,8 +17,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-from six.moves import zip as izip
-from six import string_types
 import logging
 import os
 import sys
@@ -41,6 +39,9 @@ from sherpa.stats import Cash, CStat, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
+
+
+string_types = (str, )
 
 
 __all__ = ('Session',)
@@ -10018,7 +10019,7 @@ class Session(sherpa.ui.utils.Session):
             bkg_datasets = datasets[nids:]
             bkg_models = models[nids:]
             jj = 0
-            for id, d, m in izip(ids, datasets[:nids], models[:nids]):
+            for id, d, m in zip(ids, datasets[:nids], models[:nids]):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
@@ -10031,9 +10032,9 @@ class Session(sherpa.ui.utils.Session):
                 nbkg_ids = len(bkg_ids)
                 idx_lo = jj * nbkg_ids
                 idx_hi = idx_lo + nbkg_ids
-                for bkg_id, bkg, bkg_mdl in izip(bkg_ids,
-                                                 bkg_datasets[idx_lo:idx_hi],
-                                                 bkg_models[idx_lo:idx_hi]):
+                for bkg_id, bkg, bkg_mdl in zip(bkg_ids,
+                                                bkg_datasets[idx_lo:idx_hi],
+                                                bkg_models[idx_lo:idx_hi]):
 
                     bkg_f = sherpa.fit.Fit(bkg, bkg_mdl, self._current_stat)
 
@@ -13621,7 +13622,7 @@ class Session(sherpa.ui.utils.Session):
 
         Write the contents to a StringIO object:
 
-        >>> from six import StringIO
+        >>> from io import StringIO
         >>> store = StringIO()
         >>> save_all(store)
 

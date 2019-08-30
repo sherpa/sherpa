@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -132,7 +132,7 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         return s
 
 
-class LikelihoodRatioTestWorker(object):
+class LikelihoodRatioTestWorker():
     """
     Worker class for LikelihoodRatioTest
     """

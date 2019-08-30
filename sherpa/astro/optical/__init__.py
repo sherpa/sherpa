@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -36,7 +37,6 @@ References
 
 """
 
-from six.moves import xrange
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D
@@ -74,7 +74,7 @@ def _extinct_interp(xtable, etable, x):
     out = numpy.zeros_like(x)
     last = len(xtable) - 1
 
-    for i in xrange(len(x)):
+    for i in range(len(x)):
         xval = x[i]
         if (xval <= xtable[0]):
             out[i] = etable[0]
@@ -82,7 +82,7 @@ def _extinct_interp(xtable, etable, x):
             out[i] = etable[last]
         else:
             index = 0
-            for j in xrange(last + 1):
+            for j in range(last + 1):
                 if xval < xtable[j]:
                     index = j
                     break
@@ -1254,7 +1254,7 @@ class Polynomial(RegriddableModel1D):
     def __init__(self, name='polynomial'):
         pars = []
 
-        for i in xrange(6):
+        for i in range(6):
             pars.append(Parameter(name, 'c%d' % i, 0, frozen=True))
         pars[0].val = 1
         pars[0].frozen = False

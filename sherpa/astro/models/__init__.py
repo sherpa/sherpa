@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,8 +31,6 @@ from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
     guess_radius, guess_reference, lgam, param_apply_limits
 
 from . import _modelfcts
-
-import six
 
 __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
            'LineBroad', 'Lorentz1D', 'NormBeta1D', 'Schechter',
@@ -1160,7 +1158,7 @@ class JDPileup(RegriddableModel1D):
 
             s += '\n\n'
 
-            for i in six.moves.xrange(1, num_terms + 1):
+            for i in range(1, num_terms + 1):
                 pn *= integral_ae / float(i)
                 s += '   %d: %g  %g\n' % (i, pn,
                                           pileup_fractions[i] / sum)

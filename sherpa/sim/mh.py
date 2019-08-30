@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -55,9 +55,6 @@ http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 """
 
 # The pyBLoCXS code base is cleanly separable from Sherpa!
-
-from six.moves import zip as izip
-from six.moves import xrange
 
 import numpy as np
 import logging
@@ -193,7 +190,7 @@ def dmvnorm(x, mu, sigma, log=True):
 
 
 
-class Walk(object):
+class Walk():
 
     def __init__(self, sampler=None, niter=1000):
         self._sampler = sampler
@@ -235,7 +232,7 @@ class Walk(object):
         #tstart = time.time()
 
         try:
-            for ii in xrange(niter):
+            for ii in range(niter):
 
                 #progress_bar(ii, niter, tstart, self._sampler.__class__.__name__)
 
@@ -284,7 +281,7 @@ class Walk(object):
         return (stats, acceptflag, params)
 
 
-class Sampler(object):
+class Sampler():
 
     def __init__(self):
 
@@ -302,7 +299,7 @@ class Sampler(object):
         except AttributeError:
             argspec = inspect.getargspec(self.init)
             first = len(argspec[0]) - len(argspec[3])
-            opts = izip(argspec[0][first:], argspec[3][0:])
+            opts = zip(argspec[0][first:], argspec[3][0:])
 
         self._opts = dict(opts)
         self.walk = None
@@ -452,7 +449,7 @@ class MH(Sampler):
         if not self.defaultprior:
             x = mu.copy()
             if np.sum(self.originalscale) < mu.size:
-                for j in xrange(mu.size):
+                for j in range(mu.size):
                     if self.log[j]*(1-self.originalscale[j])>0:
                         x[j] = np.log(x[j])
                     if self.inv[j]*(1-self.originalscale[j])>0:

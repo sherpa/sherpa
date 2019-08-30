@@ -20,7 +20,6 @@
 import numpy as np
 import logging
 import pytest
-from six.moves import zip as izip
 
 from sherpa.utils.testing import SherpaTestCase
 from sherpa import ui
@@ -75,7 +74,7 @@ class test_get_int_proj(SherpaTestCase):
             pass
 
     def cmp_values(self, arg1, arg2):
-        for a, b in izip(arg1, arg2):
+        for a, b in zip(arg1, arg2):
             assert a == pytest.approx(b, abs=1.0e-3)
 
     def cmp_args(self, result):

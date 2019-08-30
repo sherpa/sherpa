@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,11 +32,7 @@ from sherpa.models import parameter, Const1D
 
 import pytest
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    # Python 2.7 fall through
-    from mock import patch
+from unittest.mock import patch
 
 from io import StringIO
 

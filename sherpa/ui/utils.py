@@ -18,11 +18,9 @@ from __future__ import print_function
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-from six.moves import copyreg as copy_reg
-from six.moves import cPickle as pickle
-from six.moves import zip as izip
-from six.moves.configparser import ConfigParser
-from six import string_types
+import copyreg as copy_reg
+import pickle
+from configparser import ConfigParser
 import copy
 import logging
 import sys
@@ -47,6 +45,8 @@ config = ConfigParser()
 config.read(get_config())
 
 numpy.set_printoptions(threshold=int(config.get('verbosity', 'arraylength')))
+
+string_types = (str, )
 
 __all__ = ('ModelWrapper', 'Session')
 
@@ -311,7 +311,7 @@ class Session(NoNewAttributesAfterInit):
                      sherpa.estmethods.EstMethod)
         objdicts = (self._methods, self._stats, self._estmethods)
 
-        for mod, base, odict in izip(modules, basetypes, objdicts):
+        for mod, base, odict in zip(modules, basetypes, objdicts):
             for name in mod.__all__:
                 cls = getattr(mod, name)
                 if _is_subclass(cls, base):
@@ -533,7 +533,7 @@ class Session(NoNewAttributesAfterInit):
         # obj.__dict__ should not clobber new classes!
         dicts = [self._methods, self._stats, self._estmethods]
         names = ['_methods', '_stats', '_estmethods']
-        for name, dic in izip(names, dicts):
+        for name, dic in zip(names, dicts):
             # update current session with user definitions
             dic.update(obj.__dict__[name])
             # remove old items from pickle
@@ -6349,7 +6349,7 @@ class Session(NoNewAttributesAfterInit):
         modelflags = None
         parnames = names[:]
         parvals = []
-        for name, col in izip(names, cols):
+        for name, col in zip(names, cols):
             # Find the column with the filenames, remove it from the set of
             # parameter names
             if name.startswith('file'):
@@ -7627,7 +7627,7 @@ class Session(NoNewAttributesAfterInit):
 
         output = []
         if len(datasets) > 1:
-            for id, d, m in izip(ids, datasets, models):
+            for id, d, m in zip(ids, datasets, models):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()

@@ -1,6 +1,6 @@
 from __future__ import division
 #
-#  Copyright (C) 2008, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,6 @@ import warnings
 import numpy
 import logging
 
-from six import string_types
-
 from sherpa.astro.data import DataIMG
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
@@ -38,6 +36,8 @@ from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
 
 import sherpa
 info = logging.getLogger(__name__).info
+
+string_types = (str, )
 
 
 __all__ = ('Kernel', 'PSFKernel', 'RadialProfileKernel', 'PSFModel',
