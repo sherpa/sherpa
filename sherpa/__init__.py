@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2007,2014-2016,2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007,2014,2015,2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -170,7 +170,7 @@ def _install_test_deps():
             """)
             raise
 
-    deps = ['pytest>=3.3']  # List of packages to be installed
+    deps = ['pytest>=3.3', 'mock']  # List of packages to be installed
     pytest_plugins = []  # List of pytest plugins to be installed
 
     # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
