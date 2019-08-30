@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,6 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves import range as xrange
 import numpy
 import numpy.random
 import logging
@@ -30,7 +29,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
 
-class CalcFluxWorker(object):
+class CalcFluxWorker():
     def __init__(self, fit, method, data, src, lo, hi):
         self.fit = fit
         self.method = method
@@ -71,7 +70,7 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
     def within_limits(mysamples, mymins, mymaxs):
         num_par = mysamples.shape[1]
         for row in mysamples:
-            for index in xrange(num_par):
+            for index in range(num_par):
                 if row[index] < mymins[index]:
                     row[index] = mymins[index]
                 if row[index] > mymaxs[index]:
@@ -102,7 +101,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
         num = len(mysoftmins)
-        for ii in xrange(num):
+        for ii in range(num):
             ii1 = ii + 1
             tmp = (mysamples[:, ii1] > mysoftmins[ii])
             selpmasym = mysamples[tmp]
@@ -138,12 +137,12 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         orig_log_level = logger.level
 
         mystat = []
-        for nn in xrange(size):
+        for nn in range(size):
             logger.setLevel(logging.ERROR)
             session.set_source(id, orig_source)
             logger.setLevel(orig_log_level)
             oflx[nn] = mysim[nn, 0]
-            for ii in xrange(len(thawedpars)):
+            for ii in range(len(thawedpars)):
                 val = mysim[nn, ii + 1]
                 session.set_par(thawedpars[ii].fullname, val)
             session.set_source(id, modelcomponent)
@@ -172,7 +171,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
         samples = numpy.concatenate((samples, sampletmp), axis=1)
 
-        for index in xrange(size):
+        for index in range(size):
             samples[index][-1] = mystat[index]
 
         #samples = numpy.delete( samples, (size), axis=0 )

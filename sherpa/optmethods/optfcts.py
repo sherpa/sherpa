@@ -23,8 +23,6 @@ from __future__ import absolute_import
 import numpy
 import random
 import sys
-from six.moves import zip as izip
-from six.moves import xrange
 
 from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
@@ -91,7 +89,7 @@ def _my_is_nan( x ):
 def _narrow_limits( myrange, xxx, debug ):
 
     def double_check_limits( myx, myxmin, myxmax ):
-        for my_l,my_x,my_h in izip( myxmin, myx, myxmax ):
+        for my_l,my_x,my_h in zip( myxmin, myx, myxmax ):
             if my_x < my_l:
                 print('x = ', my_x, ' is < lower limit = ', my_l)
             if my_x > my_h:
@@ -149,7 +147,7 @@ def _narrow_limits( myrange, xxx, debug ):
     return myxmin, myxmax
 
 def _par_at_boundary( low, val, high, tol ):
-    for par_min, par_val, par_max in izip( low, val, high ):
+    for par_min, par_val, par_max in zip( low, val, high ):
         if sao_fcmp( par_val, par_min, tol ) == 0:
             return True
         if sao_fcmp( par_val, par_max, tol ) == 0:
@@ -308,9 +306,9 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         mynfev = pow( N, npar )
         grid = list(map( numpy.ravel, grid ))
         sequence = []
-        for index in xrange( mynfev ):
+        for index in range( mynfev ):
             tmp = []
-            for xx in xrange( npar ):
+            for xx in range( npar ):
                 tmp.append( grid[ xx ][ index ] )
             sequence.append( tmp )
         return sequence
@@ -320,7 +318,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
     if sequence is None:
         ranges = []
-        for index in xrange( npar ):
+        for index in range( npar ):
             ranges.append( [ xmin[ index ], xmax[ index ] ] )
         sequence = make_sequence( ranges, num )
     else:

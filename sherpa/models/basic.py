@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,6 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves import xrange
 import numpy
 
 from sherpa.models import Parameter, ArithmeticModel
@@ -821,7 +820,7 @@ class Polynom1D(RegriddableModel1D):
     def __init__(self, name='polynom1d'):
         pars = []
 
-        for i in xrange(9):
+        for i in range(9):
             pars.append(Parameter(name, 'c%d' % i, 0, frozen=True))
         pars[0].val = 1
         pars[0].frozen = False

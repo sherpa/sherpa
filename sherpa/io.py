@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,8 +16,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-from six.moves import xrange
 
 import numpy
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
@@ -96,7 +94,7 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
     names = [name.strip(bad_chars) for name in raw_names if name != '']
 
     if len(names) == 0:
-        names = ['col%i' % (i + 1) for i in xrange(len(args))]
+        names = ['col%i' % (i + 1) for i in range(len(args))]
 
     return names, args
 

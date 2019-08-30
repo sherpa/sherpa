@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves import zip as izip
 import numpy
 import pychips as chips
 from sherpa.utils import get_keyword_defaults
 from sherpa import get_config
-from six.moves.configparser import ConfigParser, NoSectionError
+from configparser import ConfigParser, NoSectionError
 
 config = ConfigParser()
 config.read(get_config())
@@ -194,8 +193,8 @@ def _plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
             getattr(chips.advanced, 'set_curve_' + var)(val)
 
     if not overplot:
-        for log_axis, axis_id in izip((xlog, ylog),
-                                      (chips.X_AXIS, chips.Y_AXIS)):
+        for log_axis, axis_id in zip((xlog, ylog),
+                                     (chips.X_AXIS, chips.Y_AXIS)):
             if log_axis:
                 chips.log_scale(axis_id)
             else:
@@ -260,8 +259,8 @@ def _histogram(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
             getattr(chips.advanced, 'set_histogram_' + var)(val)
 
     if not overplot:
-        for log_axis, axis_id in izip((xlog, ylog),
-                                      (chips.X_AXIS, chips.Y_AXIS)):
+        for log_axis, axis_id in zip((xlog, ylog),
+                                     (chips.X_AXIS, chips.Y_AXIS)):
             if log_axis:
                 chips.log_scale(axis_id)
             else:
@@ -319,8 +318,8 @@ def _contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
     chips.limits(chips.Y_AXIS, x1.min(), x1.max())
 
     if not overcontour:
-        for log_axis, axis_id in izip((xlog, ylog),
-                                      (chips.X_AXIS, chips.Y_AXIS)):
+        for log_axis, axis_id in zip((xlog, ylog),
+                                     (chips.X_AXIS, chips.Y_AXIS)):
             if log_axis:
                 chips.log_scale(axis_id)
             else:

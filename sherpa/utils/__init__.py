@@ -1,7 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,11 +26,11 @@ Objects and utilities used by multiple Sherpa subpackages
 
 import operator
 import inspect
-from six.moves import zip as izip
 from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
+from configparser import ConfigParser, NoSectionError
 import numpy
 import numpy.random
 import numpy.fft
@@ -42,8 +43,6 @@ from sherpa.utils import _utils
 from sherpa.utils import _psf
 
 from sherpa import get_config
-from six.moves.configparser import ConfigParser, NoSectionError
-from six.moves import xrange, map
 
 import logging
 warning = logging.getLogger("sherpa").warning
@@ -122,7 +121,7 @@ SherpaFloat = numpy.float_
 ###############################################################################
 
 
-class NoNewAttributesAfterInit(object):
+class NoNewAttributesAfterInit():
     """
 
     Prevents attribute deletion and setting of new attributes after
@@ -1029,7 +1028,7 @@ def filter_bins(mins, maxes, axislist):
 
     mask = None
 
-    for lo, hi, axis in izip(mins, maxes, axislist):
+    for lo, hi, axis in zip(mins, maxes, axislist):
 
         if (lo is None) and (hi is None):
             continue
@@ -1256,7 +1255,7 @@ def get_keyword_defaults(func, skip=0):
         if argspec[3] is None:
             return {}
         first = len(argspec[0]) - len(argspec[3])
-        return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
+        return dict(zip(argspec[0][first + skip:], argspec[3][skip:]))
 
     kwargs = [(p.name, p.default)
               for p in sig.parameters.values()
@@ -2394,7 +2393,7 @@ def guess_amplitude_at_ref(r, y, x, xhi=None):
     elif x[1] < x[0] and r < x[-1]:
         t = numpy.abs(y[-1] + y[-2]) / 2.0
     else:
-        for i in xrange(len(x) - 1):
+        for i in range(len(x) - 1):
             if ((r >= x[i] and r < x[i + 1]) or (r >= x[i + 1] and r < x[i])):
                 t = numpy.abs(y[i] + y[i + 1]) / 2.0
                 break
@@ -2403,7 +2402,7 @@ def guess_amplitude_at_ref(r, y, x, xhi=None):
         totband = 0.0
         dv = 0.0
         i = 1
-        for j in xrange(len(x) - 1):
+        for j in range(len(x) - 1):
             dv = x[i] - x[i - 1]
             t += y[i] * dv
             totband += dv
@@ -2796,7 +2795,7 @@ def neville2d(xinterp, yinterp, x, y, fval):
     nrow = fval.shape[0]
     # ncol = fval.shape[1]
     tmp = numpy.zeros(nrow)
-    for row in xrange(nrow):
+    for row in range(nrow):
         tmp[row] = neville(yinterp, y, fval[row])
     return neville(xinterp, x, tmp)
 
@@ -3004,11 +3003,11 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
         richardson[0, 0] = self.sequence(x, h, *args)
 
         t_sqr = t * t
-        for ii in xrange(1, maxiter):
+        for ii in range(1, maxiter):
             h /= t
             richardson[ii, 0] = self.sequence(x, h, *args)
             ii_1 = ii - 1
-            for jj in xrange(1, ii + 1):
+            for jj in range(1, ii + 1):
                 # jjp1 = jj + 1  -- this variable is not used
                 jj_1 = jj - 1
                 factor = pow(t_sqr, jj)
@@ -3036,8 +3035,8 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
     deriv = extrapolation(num_dif)
     npar = len(par)
     Hessian = numpy.zeros((npar, npar), dtype=numpy.float_)
-    for ii in xrange(npar):
-        for jj in xrange(ii + 1):
+    for ii in range(npar):
+        for jj in range(ii + 1):
             answer = deriv(par, t, tol, maxiter, h, ii, jj)
             Hessian[ii, jj] = answer / 2.0
             Hessian[jj, ii] = Hessian[ii, jj]
@@ -3046,17 +3045,17 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
 
 def print_low_triangle(matrix, num):
     # print matrix
-    for ii in xrange(num):
+    for ii in range(num):
         print(matrix[ii, 0], end=' ')
-        for jj in xrange(1, ii + 1):
+        for jj in range(1, ii + 1):
             print(matrix[ii, jj], end=' ')
         print()
 
 
 def symmetric_to_low_triangle(matrix, num):
     low_triangle = []
-    for ii in xrange(num):
-        for jj in xrange(ii + 1):
+    for ii in range(num):
+        for jj in range(ii + 1):
             low_triangle.append(matrix[ii, jj])
     # print_low_triangle( matrix, num )
     # print low_triangle
@@ -3541,7 +3540,7 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     except ZeroDivisionError:
 
         # print 'demuller(): fixme ZeroDivisionError'
-        # for x, y in izip( history[0], history[1] ):
+        # for x, y in zip( history[0], history[1] ):
         #     print 'f(%e)=%e' % ( x, y )
         return [[xd, fd], [[None, None], [None, None]], nfev[0]]
 
@@ -3634,7 +3633,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
     except (ZeroDivisionError, OutOfBoundErr):
 
         # print 'new_muller(): fixme ZeroDivisionError'
-        # for x, y in izip( history[0], history[1] ):
+        # for x, y in zip( history[0], history[1] ):
         #     print 'f(%e)=%e' % ( x, y )
         return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
 

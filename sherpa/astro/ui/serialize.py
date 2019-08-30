@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,6 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
-from six import string_types
-
 import inspect
 import logging
 import sys
@@ -40,6 +38,8 @@ from sherpa.astro.data import DataIMG, DataPHA
 
 logger = logging.getLogger(__name__)
 warning = logger.warning
+
+string_types = (str, )
 
 # Note: a lot of the serialization logic should probably be moved into
 #       the objects (or modules) being serialized.
@@ -1200,7 +1200,7 @@ def save_all(state, fh=None):
 
     Save the session to a StringIO handle:
 
-    >>> from six import StringIO
+    >>> from io import StringIO
     >>> store = StringIO()
     >>> save_all(store)
 

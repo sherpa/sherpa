@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015-2018, 2019 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,9 +37,6 @@ References
 
 """
 
-from six.moves import zip as izip
-from six import string_types
-
 import numpy
 import os
 import sherpa
@@ -61,6 +58,9 @@ except:
     WCS = None
 
 _tol = numpy.finfo(numpy.float32).eps
+
+string_types = (str, )
+
 
 __all__ = ('RMFModel', 'ARFModel', 'RSPModel',
            'RMFModelPHA', 'RMFModelNoPHA',
@@ -923,7 +923,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                 # again, fit() never comes in here b/c it calls startup()
                 src = self.source
                 vals = []
-                for model, args in izip(self.models, self.grid):
+                for model, args in zip(self.models, self.grid):
                     elo, ehi = lo, hi = args
                     if pha.units == 'wavelength':
                         lo = DataPHA._hc / ehi
@@ -941,7 +941,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                 # Fold summed intervals through the associated response.
                 self.orders = \
                     [model(sum_intervals(src, interval[0], interval[1]))
-                     for model, interval in izip(self.models, self.table)]
+                     for model, interval in zip(self.models, self.table)]
 
             vals = sum(self.orders)
             if self.mask is not None:

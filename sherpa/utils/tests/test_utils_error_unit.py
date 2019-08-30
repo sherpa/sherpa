@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import importlib
 import sherpa
 import pytest
-
-from six.moves import reload_module
 
 SKIP_MESSAGE = "This test should have been skipped"
 
@@ -32,7 +31,7 @@ def test_decorator_exception_when_pytest_is_absent(monkeypatch):
     """
     import sys
     monkeypatch.setitem(sys.modules, 'pytest', None)
-    reload_module(sherpa.utils.testing)
+    importlib.reload(sherpa.utils.testing)
 
     from sherpa.utils import testing
 

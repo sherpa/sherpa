@@ -65,7 +65,7 @@ DATA_PIXEL_SIZE = 2
 
 
 @attr.s
-class FixtureConfiguration(object):
+class FixtureConfiguration():
     image_size = attr.ib()
     psf_size = attr.ib()
     source_amplitude = attr.ib()
@@ -81,7 +81,7 @@ class FixtureConfiguration(object):
 
 
 @attr.s
-class FixtureData(object):
+class FixtureData():
     image = attr.ib()
     psf = attr.ib()
     psf_model = attr.ib()
@@ -188,11 +188,7 @@ def test_rebin_int_no_int():
     an integer with a tolerance that can be changed by the user.
     """
     from sherpa.models.regrid import rebin_2d
-    import six
-    if six.PY2:
-        import mock
-    else:
-        from unittest import mock
+    from unittest import mock
 
     rebin_int = mock.MagicMock()
     rebin_no_int = mock.MagicMock()
@@ -328,5 +324,5 @@ def psf_fixture(request):
 
 
 @attr.s
-class WcsStub(object):
+class WcsStub():
     cdelt = attr.ib()

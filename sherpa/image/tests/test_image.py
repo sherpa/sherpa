@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,7 +38,7 @@ _ny = 10
 _nx = 13
 
 
-class Data(object):
+class Data():
     def __init__(self):
         self.name = None
         self.y = np.arange(0, _ny * _nx).reshape(_ny, _nx) / 2.0

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 #
 import pytest
 from sherpa.utils.testing import requires_data, requires_fits
-from six.moves import reload_module
+import importlib
 
 
 def assert_chips_called(chips):
@@ -46,7 +46,7 @@ def ui(mock_chips):
     """
     from sherpa.astro import ui
 
-    reload_module(ui)
+    importlib.reload(ui)
     return ui
 
 

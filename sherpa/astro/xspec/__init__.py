@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015-2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -57,9 +57,6 @@ References
 
 from __future__ import absolute_import
 
-import six
-from six.moves import xrange
-
 import string
 from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
@@ -69,12 +66,6 @@ from sherpa.astro.utils import get_xspec_position
 
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec
-
-
-try:
-    maketrans = string.maketrans  # Python 2
-except AttributeError:
-    maketrans = str.maketrans  # Python 3
 
 
 # Python wrappers around the exported functions from _xspec. This
@@ -802,8 +793,7 @@ def _f77_or_c_12100(name):
     return "C_" + name if equal_or_greater_than("12.10.0") else name
 
 
-@six.add_metaclass(ModelMeta)
-class XSModel(RegriddableModel1D):
+class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     """The base class for XSPEC models.
 
     It is expected that sub-classes are used to represent the
@@ -913,10 +903,10 @@ class XSTableModel(XSModel):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation + string.whitespace
-        tbl = maketrans(bad, '_' * len(bad))
+        tbl = str.maketrans(bad, '_' * len(bad))
 
         pars = []
-        for ii in xrange(len(parnames)):
+        for ii in range(len(parnames)):
             isfrozen = True
             if nint > 0:
                 isfrozen = False

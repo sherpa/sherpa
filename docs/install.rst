@@ -27,7 +27,7 @@ Requirements
 
 Sherpa has the following requirements:
 
-* Python 2.7, 3.5, 3.6, or 3.7
+* Python 3.5, 3.6, or 3.7
 * NumPy (the exact lower limit has not been determined,
   but it is likely to be 1.7.0 or later)
 * Linux or OS-X (patches to add Windows support are welcome)
@@ -133,7 +133,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 2.7, 3.5, 3.6, 3.7
+* Python versions: 3.5, 3.6, 3.7
 * Python packages: ``setuptools``, ``numpy``
 * System: ``gcc``, ``g++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these
@@ -144,9 +144,9 @@ It is *highly* recommended that `matplotlib` and `astropy` be installed
 before building Sherpa, to avoid skipping a number of tests in the
 test suite.
 
-The full Sherpa test suite requires the `mock` package (Python 2.7 only),
-`pytest`, and `pytest-xvfb`. These packages should be installed
-automatically for you by the test suite if they do not already exist.
+The full Sherpa test suite requires `pytest` and `pytest-xvfb`. These
+packages should be installed automatically for you by the test suite
+if they do not already exist.
 
 .. note::
 
@@ -410,7 +410,7 @@ additional packages:
 * Python 3.5 or greater
 * `Sphinx <http://sphinx.pocoo.org/>`_, version 1.3 or later
 * The ``sphinx_rtd_theme``
-* NumPy, six, and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
+* NumPy and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
 With these installed, the documentation can be built with the

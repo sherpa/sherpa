@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -195,8 +196,6 @@ parameter::
 
 """
 
-from six import string_types
-
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
 # it looks like the following modules are being re-exported by this
@@ -219,6 +218,9 @@ info = logging.getLogger("sherpa").info
 _log = logging.getLogger("sherpa")
 
 _tol = numpy.finfo(numpy.float).eps
+
+
+string_types = (str, )
 
 
 def flat(x):
