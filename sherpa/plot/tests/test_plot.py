@@ -22,6 +22,9 @@ import numpy
 import pytest
 
 import sherpa.all as sherpa
+from sherpa.astro.ui.utils import Session
+from sherpa.models import Const1D
+from sherpa.data import Data1DInt
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_plotting
 
 _datax = numpy.array(
@@ -405,9 +408,6 @@ class test_confidence(SherpaTestCase):
 
 @requires_plotting
 def test_source_component_arbitrary_grid():
-    from sherpa.astro.ui.utils import  Session
-    from sherpa.models import Const1D
-
     ui = Session()
 
     x = [1, 2, 3]
@@ -429,10 +429,6 @@ def test_source_component_arbitrary_grid():
 
 @requires_plotting
 def test_plot_model_arbitrary_grid_integrated():
-    from sherpa.astro.ui.utils import Session
-    from sherpa.models import Const1D
-    from sherpa.data import Data1DInt
-
     ui = Session()
 
     x = [1, 2, 3], [2, 3, 4]
@@ -455,10 +451,6 @@ def test_plot_model_arbitrary_grid_integrated():
 
 @requires_plotting
 def test_source_component_arbitrary_grid_int():
-    from sherpa.astro.ui.utils import Session
-    from sherpa.models import Const1D
-    from sherpa.data import Data1DInt
-
     ui = Session()
 
     x = numpy.array([1, 2, 3]), numpy.array([2, 3, 4])
@@ -480,3 +472,21 @@ def test_source_component_arbitrary_grid_int():
 
     numpy.testing.assert_array_equal(ui._compsrcplot.x, points)
     numpy.testing.assert_array_equal(ui._compsrcplot.y, [10, 10, 10, 100, 100, 100])
+
+
+def test_numpy_histogram_density_vs_normed():
+    from sherpa.astro import ui
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    ui.set_source('const1d.c')
+    c = ui.get_model_component('c')
+    ui.fit()
+    res = ui.eqwidth(c, c+c, error=True)
+    ui.plot_pdf(res[4])
+    plot = ui.get_pdf_plot()
+    expected_x = numpy.linspace(2.5, 3.5, 13)
+    expected_xlo, expected_xhi = expected_x[:-1], expected_x[1:]
+    expected_y = [0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0]
+    assert plot.y == pytest.approx(expected_y)
+    assert plot.xlo == pytest.approx(expected_xlo)
+    assert plot.xhi == pytest.approx(expected_xhi)

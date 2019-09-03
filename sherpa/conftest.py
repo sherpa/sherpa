@@ -92,9 +92,7 @@ known_warnings = {
          r"numpy.ufunc size changed, may indicate binary ",
          ],
      VisibleDeprecationWarning:
-        [r"Passing `normed=True`*",
-         r"sctypeNA and typeNA will be removed.*",
-        ],
+        [],
 }
 
 # Since Sherpa now requires Python 3.5 at a minumum, the following
