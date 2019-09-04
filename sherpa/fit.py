@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
