@@ -360,10 +360,23 @@ The ``test`` command is a wrapper that calls ``pytest`` under the hood,
 and includes the ``develop`` command.
 
 You can pass additional arguments to ``pytest`` with the ``-a`` or
-``--pytest-args`` arguments.  As an example, a single test can be run
-using the syntax:
+``--pytest-args`` arguments.  As examples, the following two commands
+run all the tests in ``test_data.py`` and then a single named
+test in this file::
 
-    python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+    python setup.py test -a sherpa/tests/test_data.py
+    python setup.py test -a sherpa/tests/test_data.py::test_data_eval_model
+
+The full set of options, including those added by the Sherpa test
+suite - which are listed at the end of the ``custom options``
+section - can be found with::
+
+    python setup.py test -a "--pyargs sherpa --help"
+
+and to pass an argument to the Sherpa test suite (there are currently
+two options, namely ``--test-data`` and ``--runslow``)::
+
+    python setup.py test -a "--pyargs sherpa --runslow"
 
 .. note::
 
