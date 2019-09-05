@@ -332,16 +332,12 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
     plt.subplots_adjust(left=left, right=right, bottom=bottom, top=top,
                         wspace=wspace, hspace=hspace)
 
-    num = row * ncols + col + 1
-
-    # As of numpy 0.9.8, these need to be cast to int to prevent errors
-    # in matplotlib
+    # historically there have been issues with numpy integers here
     nrows = int(nrows)
     ncols = int(ncols)
-    num   = int(num)
+    num = int(row) * ncols + int(col) + 1
 
     plt.subplot(nrows, ncols, num)
-
     if clearaxes:
         plt.cla()
 
