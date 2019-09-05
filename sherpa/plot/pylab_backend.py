@@ -128,11 +128,11 @@ def point(x, y, overplot=True, clearwindow=False,
     axes = setup_axes(overplot, clearwindow)
 
     if color is None:
-        str = '%s' % (symbol)
+        style = '{}'.format(symbol)
     else:
-        str = '%s%s' % (color, symbol)
+        style = '{}{}'.format(color, symbol)
 
-    axes.plot(numpy.array([x]), numpy.array([y]), str)
+    axes.plot(numpy.array([x]), numpy.array([y]), style)
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
