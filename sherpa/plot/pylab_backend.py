@@ -17,9 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+# Although this is labelled pylab mode, use the pyplot interface
+# (for the functionlity used here, they are the same).
+#
 import numpy
-import pylab
+from matplotlib import pyplot as plt
 
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import NotImplementedErr
@@ -52,28 +54,24 @@ def begin():
 
 def end():
     set_window_redraw(True)
-    if pylab.isinteractive():
-        pylab.draw()
+    if plt.isinteractive():
+        plt.draw()
 
 
 def exceptions():
     pass
 
 
-# In matplotlib 1.5RC1 the kwargs to pylab.Axes.errorbar are not
-# explictit, but they appear to be set for pybal.errorbar, so
-# switch to that.
-# _errorbar_defaults = get_keyword_defaults(pylab.Axes.errorbar)
-_errorbar_defaults = get_keyword_defaults(pylab.errorbar)
+_errorbar_defaults = get_keyword_defaults(plt.errorbar)
 
 
 def clear_window():
-    pylab.clf()
+    plt.clf()
 
 
 def set_window_redraw(redraw):
     if redraw:
-        pylab.draw()
+        plt.draw()
 
 
 def setup_axes(overplot, clearwindow):
@@ -94,7 +92,7 @@ def setup_axes(overplot, clearwindow):
     if not overplot and clearwindow:
         clear_window()
 
-    return pylab.gca()
+    return plt.gca()
 
 
 def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
@@ -331,8 +329,8 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
                 wspace=0.3,
                 hspace=0.4):
 
-    pylab.subplots_adjust(left=left, right=right, bottom=bottom, top=top,
-                          wspace=wspace, hspace=hspace)
+    plt.subplots_adjust(left=left, right=right, bottom=bottom, top=top,
+                        wspace=wspace, hspace=hspace)
 
     num = row * ncols + col + 1
 
@@ -342,10 +340,10 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
     ncols = int(ncols)
     num   = int(num)
 
-    pylab.subplot(nrows, ncols, num)
+    plt.subplot(nrows, ncols, num)
 
     if clearaxes:
-        pylab.cla()
+        plt.cla()
 
 
 def set_jointplot(row, col, nrows, ncols, clearaxes=True,
@@ -354,9 +352,9 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
 
     if clearaxes:
         # need to set axes[1] as current axes.
-        axes = pylab.gca()
+        axes = plt.gca()
         ax2 = axes.figure.axes[-1]
-        pylab.sca(ax2)
+        plt.sca(ax2)
 
     else:
         # follow the chips backend and set plot number "top" (numbering
@@ -367,14 +365,14 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
         ratios = [1] * nrows
         ratios[top - 1] = ratio
         gs = {'height_ratios': ratios}
-        f, axarr = pylab.subplots(nrows, sharex=True, num=1,
-                                  gridspec_kw=gs)
+        f, axarr = plt.subplots(nrows, sharex=True, num=1,
+                                gridspec_kw=gs)
         f.subplots_adjust(hspace=0.05)
-        pylab.setp([a.get_xticklabels() for a in f.axes[:-1]],
-                   visible=False)
+        plt.setp([a.get_xticklabels() for a in f.axes[:-1]],
+                 visible=False)
 
         # need to set axes[0] as current axes.
-        pylab.sca(axarr[0])
+        plt.sca(axarr[0])
 
 
 def get_split_plot_defaults():
