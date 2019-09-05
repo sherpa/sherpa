@@ -52,11 +52,11 @@ fi
 
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
 
-# Hack to force AstroPy < 3.2 (see https://github.com/sherpa/sherpa/issues/632)
-# This is a short-term hack just to get travis tests to pass
-# Should there be better a way of specifying versions for these dependencies?
+# Tests fail with AstroPy 3.2 but not 3.2.1. Since 3.2.1 is now available
+# on conda, we no longer force AstroPy < 3.2 - see
+# https://github.com/sherpa/sherpa/issues/632
 #
-if [ "${FITS}" == astropy ]; then FITSBUILD="'astropy<3.2'"; else FITSBUILD="${FITS}"; fi
+FITSBUILD="${FITS}"
 
 # Create and activate conda build environment
 # We create a new environment so we don't care about the python version in the root environment.
