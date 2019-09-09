@@ -37,7 +37,8 @@ if installed:
 
 * :term:`astropy`: for reading and writing files in
   :term:`FITS` format. The minimum required version of astropy
-  is version 1.3, although only versions 2 and higher are used in testing.
+  is version 1.3, although only versions 2 and higher are used in testing
+  (version 3.2 is known to cause problems, but version 3.2.1 is okay).
 * :term:`matplotlib`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
