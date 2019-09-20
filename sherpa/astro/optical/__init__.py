@@ -1164,12 +1164,10 @@ class LogEmission(RegriddableModel1D):
                              units='angstroms')
         self.flux = Parameter(name, 'flux', 1.)
         self.skew = Parameter(name, 'skew', 1., tinyval, frozen=True)
-        self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
 
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.pos, self.flux,
-                                  self.skew, self.limit))
+                                  self.skew))
 
     # @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
