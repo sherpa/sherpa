@@ -23,7 +23,10 @@ these - or most of them - can be run even when there is no plot backend.
 """
 
 from sherpa import ui
-from sherpa.plot import DataPlot, FitPlot, ModelPlot
+
+# the chips plot tests mean that we can't test the plot instances
+# from sherpa.plot import DataPlot, FitPlot, ModelPlot
+
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.testing import requires_plotting
 
@@ -33,7 +36,8 @@ import pytest
 _data_x = [10, 20, 40, 90]
 _data_y = [10, 40, 30, 50]
 _data_y2 = [12, 45, 33, 49]
-      
+
+
 def example_data():
     """Create an example data set."""
 
@@ -105,7 +109,7 @@ def test_get_fit_plot(idval):
     # assert isinstance(f, FitPlot)
     # assert isinstance(f.dataplot, DataPlot)
     # assert isinstance(f.modelplot, ModelPlot)
-    
+
     dp = f.dataplot
     mp = f.modelplot
 
@@ -188,7 +192,7 @@ def check_example(xlabel='x'):
     # Should use approximate equality here
     assert dplot.yerr == pytest.approx(calc_errors(_data_y))
 
-    
+
 def check_example_changed(xlabel='x'):
     """Check that the data plot has changed
 
@@ -244,7 +248,7 @@ def check_source():
     check_model_plot(ui._session._sourceplot,
                      title='Source')
 
-    
+
 def check_source_changed():
     """Check that the source plot has changed
 
@@ -267,7 +271,7 @@ def check_resid(title='Residuals for example'):
     assert rplot.xerr is None
     assert rplot.yerr == pytest.approx(calc_errors(_data_y))
 
-    
+
 def check_resid_changed(title='Residuals for example'):
     """Check that the resid plot has changed
 
@@ -359,7 +363,7 @@ def check_delchi(title='Sigma Residuals for example'):
 
     dy = calc_errors(_data_y)
     assert rplot.y == pytest.approx([(y - 35) / dy
-                                     for y,dy in zip(_data_y, dy)])
+                                     for y, dy in zip(_data_y, dy)])
     assert rplot.xerr is None
     assert rplot.yerr == pytest.approx([1.0 for y in _data_y])
 
@@ -378,7 +382,7 @@ def check_delchi_changed(title='Sigma Residuals for example'):
 
     dy = calc_errors(_data_y2)
     assert rplot.y == pytest.approx([(y - 35) / dy
-                                     for y,dy in zip(_data_y2, dy)])
+                                     for y, dy in zip(_data_y2, dy)])
     assert rplot.xerr is None
     assert rplot.yerr == pytest.approx([1.0 for y in _data_x])
 
@@ -397,7 +401,7 @@ def check_delchi_changed2(title='Sigma Residuals for example'):
 
     dy = calc_errors(_data_y2)
     assert rplot.y == pytest.approx([(y - 41) / dy
-                                     for y,dy in zip(_data_y2, dy)])
+                                     for y, dy in zip(_data_y2, dy)])
     assert rplot.xerr is None
     assert rplot.yerr == pytest.approx([1.0 for y in _data_x])
 
@@ -413,7 +417,7 @@ def check_chisqr():
 
     dy = calc_errors(_data_y)
     assert rplot.y == pytest.approx([((y - 35) / dy)**2
-                                     for y,dy in zip(_data_y, dy)])
+                                     for y, dy in zip(_data_y, dy)])
     assert rplot.xerr is None
     assert rplot.yerr is None
 
@@ -432,7 +436,7 @@ def check_chisqr_changed():
 
     dy = calc_errors(_data_y2)
     assert rplot.y == pytest.approx([((y - 35) / dy)**2
-                                     for y,dy in zip(_data_y2, dy)])
+                                     for y, dy in zip(_data_y2, dy)])
     assert rplot.xerr is None
     assert rplot.yerr is None
 
@@ -671,11 +675,14 @@ def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc):
     checkfunc()
 
 
+_dplot = (ui.get_data_plot_prefs, "_dataplot", ui.plot_data)
+_mplot = (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)
+
+
 @requires_plotting
 @pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("getprefs,attr, plotfunc",
-                         [(ui.get_data_plot_prefs, "_dataplot", ui.plot_data),
-                          (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)])
+@pytest.mark.parametrize("getprefs,attr,plotfunc",
+                         [_dplot, _mplot])
 def test_prefs_change_session_objects(getprefs, attr, plotfunc):
     """Is a plot-preference change also reflected in the session object?
 
@@ -691,7 +698,7 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc):
     # the clean_ui fixture.
     #
     session = getattr(ui._session, attr)
-    
+
     # All but the last assert are just to check things are behaving
     # as expected (and stuck into one routine rather than have a
     # bunch of tests that repeat a subset of this test)
@@ -706,7 +713,7 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc):
 
     setup_example(None)
     plotfunc()
-    
+
     assert session.plot_prefs['xlog']
     assert session.x is not None
 
@@ -732,7 +739,7 @@ def test_prefs_change_session_objects_fit():
     plotobj = ui._session._fitplot
     assert plotobj.dataplot is None
     assert plotobj.modelplot is None
-    
+
     dprefs = ui.get_data_plot_prefs()
     mprefs = ui.get_model_plot_prefs()
 
