@@ -8338,8 +8338,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -10466,6 +10466,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: discussion of preferences needs better handling
     # of how it interacts with the chosen plot backend.
+    #
+    # DOC-TODO-CHIPS: replace backend-specific options
     def get_data_plot_prefs(self):
         """Return the preferences for plot_data.
 
@@ -12763,8 +12765,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -12847,8 +12849,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -12942,8 +12944,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------
@@ -13014,8 +13016,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------
@@ -13065,7 +13067,6 @@ class Session(NoNewAttributesAfterInit):
         return self._cdfplot
 
     # DOC-TODO: what does xlabel do?
-    # DOC-TODO: is clearwindow a ChIPS-only setting?
     def plot_trace(self, points, name="x", xlabel="x",
                    replot=False, overplot=False, clearwindow=True):
         """Create a trace plot of row number versus value.
@@ -13090,8 +13091,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------
@@ -13169,8 +13170,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------

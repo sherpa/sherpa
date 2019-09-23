@@ -11866,8 +11866,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -11949,8 +11949,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
