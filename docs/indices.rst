@@ -23,11 +23,6 @@ Glossary
        A community Python library for Astronomy:
        https://www.astropy.org/.
        
-   ChIPS
-       The Chandra Imaging and Plotting System, ChIPS, is one of
-       the plotting backends supported by Sherpa. It is the default
-       choice when using Sherpa as part of :term:`CIAO`.
-       
    CIAO
        The data reduction and analysis provided by the :term:`CXC`
        for users of the Chandra X-ray telescope. Sherpa is provided

@@ -105,13 +105,10 @@ The steps taken are normally:
 
 3. and then call the :py:meth:`~sherpa.plot.DataPlot.plot` method.
 
-Sherpa has two plotting backends:
-:term:`matplotlib`, which is used by
-default for the standalone version, and
-:term:`ChIPS`, which is used by :term:`CIAO`.
-Limited support for customizing these plots - such as
-always drawing the Y axis with a logarithmic scale - is provided,
-but extensive changes will require calling the plotting back-end
+Sherpa has one plotting backend, :term:`matplotlib`, which is used
+to display plots. There is limited support for customizing these
+plots - such as always drawing the Y axis with a logarithmic
+scale - but extensive changes will require calling the plotting back-end
 directly.
 
 As an example of the :py:class:`~sherpa.plot.DataPlot` output::
