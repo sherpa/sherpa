@@ -11882,6 +11882,61 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
+    def _plot_bkg_jointplot(self, plot2, id=None, bkg_id=None,
+                            replot=False, overplot=False,
+                            clearwindow=True):
+        """Create a joint plot for bkg, vertically aligned, fit data on the top.
+
+        Parameters
+        ----------
+        plot2 : sherpa.plot.Plot instance
+           The plot to appear in the bottom panel.
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to ``True`` to use the previous values. The default is
+           ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        """
+
+        # See the comments in sherpa/ui/utils.py::_plot_jointplot()
+        #
+        plot1 = self._bkgfitplot
+        self._jointplot.reset()
+        if not sherpa.utils.bool_cast(replot):
+            plot1 = self._prepare_plotobj(id, plot1, bkg_id=bkg_id)
+            plot2 = self._prepare_plotobj(id, plot2, bkg_id=bkg_id)
+        try:
+            sherpa.plot.begin()
+            self._jointplot.plottop(plot1, overplot=overplot,
+                                    clearwindow=clearwindow)
+
+            oldval = plot2.plot_prefs['xlog']
+            if (('xlog' in self._bkgdataplot.plot_prefs and
+                 self._bkgdataplot.plot_prefs['xlog']) or
+                ('xlog' in self._bkgmodelplot.plot_prefs and
+                 self._bkgmodelplot.plot_prefs['xlog'])):
+                plot2.plot_prefs['xlog'] = True
+
+            self._jointplot.plotbot(plot2, overplot=overplot)
+
+            plot2.plot_prefs['xlog'] = oldval
+        except:
+            sherpa.plot.exceptions()
+            raise
+        else:
+            sherpa.plot.end()
+
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
         """Plot the fit results, and the residuals, for the background of
@@ -11939,32 +11994,11 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_resid()
 
         """
-        self._jointplot.reset()
-        fp = self._bkgfitplot
-        rp = self._bkgresidplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp, bkg_id=bkg_id)
-            rp = self._prepare_plotobj(id, rp, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = rp.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
-                rp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(rp, overplot=overplot)
-
-            rp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_bkg_jointplot(self._bkgresidplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
 
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True):
@@ -12024,32 +12058,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_delchi()
 
         """
-        self._jointplot.reset()
-        fp = self._bkgfitplot
-        dp = self._bkgdelchiplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp, bkg_id=bkg_id)
-            dp = self._prepare_plotobj(id, dp, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
-
-            oldval = dp.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
-                dp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(dp, overplot=overplot)
-
-            dp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_bkg_jointplot(self._bkgdelchiplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
 
     ###########################################################################
     # Analysis Functions
