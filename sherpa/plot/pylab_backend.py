@@ -352,9 +352,10 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
     if not clearaxes:
         # follow the chips backend and set plot number "top" (numbering
         # from 1) as the plot with a height of ratio, and the rest
-        # with a value of 1.
+        # with a value of 1. Note that the chips backend created
+        # nrows * ncols plots, but here we only create nrows plots.
         #
-        ratios = [1] * (nrows * ncols)
+        ratios = [1] * nrows
         ratios[top - 1] = ratio
         gs = {'height_ratios': ratios}
         f, axarr = pylab.subplots(nrows, sharex=True, num=1,
