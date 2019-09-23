@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2017, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -346,8 +346,13 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
                   top=1,
                   ratio=2):
 
+    # TODO: work out why chips and pylab backends seem to have
+    #       clearaxes logic inverted (comment about it in chips backend)
+    #
     if not clearaxes:
-        f, axarr = pylab.subplots(nrows, sharex=True, num=1)
+        gs = {'height_ratios': [ratio, 1]}
+        f, axarr = pylab.subplots(nrows, sharex=True, num=1,
+                                  gridspec_kw=gs)
         f.subplots_adjust(hspace=0.05)
         pylab.setp([a.get_xticklabels() for a in f.axes[:-1]], visible=False)
 
