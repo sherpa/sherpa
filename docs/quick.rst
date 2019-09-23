@@ -114,7 +114,7 @@ always drawing the Y axis with a logarithmic scale - is provided,
 but extensive changes will require calling the plotting back-end
 directly.
 
-As an example of the :py:class:`~shrepa.plot.DataPlot` output::
+As an example of the :py:class:`~sherpa.plot.DataPlot` output::
    
    >>> from sherpa.plot import DataPlot
    >>> dplot = DataPlot()
