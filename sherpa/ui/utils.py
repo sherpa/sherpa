@@ -50,10 +50,7 @@ string_types = (str, )
 
 __all__ = ('ModelWrapper', 'Session')
 
-try:  # Python2
-    BUILTINS = sys.modules["__builtin__"]
-except KeyError:  # Python3
-    BUILTINS = sys.modules["builtins"]
+BUILTINS = sys.modules["builtins"]
 _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
@@ -341,7 +338,7 @@ class Session(NoNewAttributesAfterInit):
         self._projection_results = None
 
         self._pyblocxs = sherpa.sim.MCMC()
-        
+
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
         self._dataplot = sherpa.plot.DataPlot()
