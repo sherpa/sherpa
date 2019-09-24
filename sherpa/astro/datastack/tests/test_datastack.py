@@ -681,16 +681,23 @@ def test_default_instantiation(ds_setup):
     assert not ds._default_instance
 
 
-@requires_fits
-@requires_stk
-def test_show_stack(ds_setup, ds_datadir, capsys):
-    """Test the show_stack handling.
-    """
+def validate_show_stack(capsys, datadir, key1, key2):
+    """Does show_stack generate the expected output?
 
-    # These files use MJD_OBS in the header
-    datadir = ds_datadir
-    ls = '@' + '/'.join((datadir, 'pha.lis'))
-    datastack.load_pha(ls)
+    This is for test_show_stack and test_show_stack2.
+
+    Parameters
+    ----------
+    capsys
+       The capsys pytest object.
+    datadir: str
+       The directory containing the data files.
+    key1 : str
+       The keyword being used for the "MJD OBS" value: file 1.
+    key2 : str
+       The keyword being used for the "MJD OBS" value: file 2.
+
+    """
 
     # clear out the current output
     captured = capsys.readouterr()
@@ -702,8 +709,8 @@ def test_show_stack(ds_setup, ds_datadir, capsys):
     # This depends on the serialization of numeric values, which can
     # vary with Python/system
     #
-    l0 = '1: {}/acisf04938_000N002_r0043_pha3.fits OBS_ID: 4938 MJD_OBS: 53493.55477826'.format(datadir)
-    l1 = '2: {}/acisf07867_000N001_r0002_pha3.fits OBS_ID: 7867 MJD_OBS: 54374.009361043'.format(datadir)
+    l0 = '1: {}/acisf04938_000N002_r0043_pha3.fits OBS_ID: 4938 {}: 53493.55477826'.format(datadir, key1)
+    l1 = '2: {}/acisf07867_000N001_r0002_pha3.fits OBS_ID: 7867 {}: 54374.009361043'.format(datadir, key2)
 
     captured = capsys.readouterr()
     lines = captured.out.split('\n')
@@ -712,3 +719,61 @@ def test_show_stack(ds_setup, ds_datadir, capsys):
     assert lines[1] == l1
     assert lines[2] == ''
     assert captured.err == ''
+
+
+@requires_fits
+@requires_stk
+def test_show_stack(ds_setup, ds_datadir, capsys):
+    """Test the show_stack handling: MJD_OBS
+    """
+
+    # These files use MJD_OBS in the header
+    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
+    datastack.load_pha(ls)
+
+    validate_show_stack(capsys, ds_datadir, 'MJD_OBS', 'MJD_OBS')
+
+
+@requires_fits
+@requires_stk
+def test_show_stack2(ds_setup, ds_datadir, capsys):
+    """Test the show_stack handling: MJD-OBS
+
+    This is test_show_stack but with the data files adjusted
+    to have MJD-OBS rather than MJD_OBS keywords
+    """
+
+    # These files use MJD_OBS in the header
+    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
+    datastack.load_pha(ls)
+
+    # Change to MJD-OBS
+    #
+    for idval in [1, 2]:
+        d = datastack.get_data(idval)
+        mjdobs = d.header['MJD_OBS']
+        d.header['MJD-OBS'] = mjdobs
+        del d.header['MJD_OBS']
+
+    validate_show_stack(capsys, ds_datadir, 'MJD-OBS', 'MJD-OBS')
+
+
+@requires_fits
+@requires_stk
+def test_show_stack3(ds_setup, ds_datadir, capsys):
+    """Test the show_stack handling: mixed MJD_OBS and MJD-OBS
+    """
+
+    # These files use MJD_OBS in the header
+    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
+    datastack.load_pha(ls)
+
+    # Change to MJD-OBS (second file only)
+    #
+    for idval in [2]:
+        d = datastack.get_data(idval)
+        mjdobs = d.header['MJD_OBS']
+        d.header['MJD-OBS'] = mjdobs
+        del d.header['MJD_OBS']
+
+    validate_show_stack(capsys, ds_datadir, 'MJD_OBS', 'MJD-OBS')
