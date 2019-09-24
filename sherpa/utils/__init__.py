@@ -51,11 +51,8 @@ debug = logging.getLogger("sherpa").debug
 config = ConfigParser()
 config.read(get_config())
 
-_ncpu_val = "NONE"
-try:
-    _ncpu_val = config.get('parallel', 'numcores').strip().upper()
-except NoSectionError:
-    pass
+_ncpu_val = config.get('parallel', 'numcores',
+                       fallback='None').strip().upper()
 
 _ncpus = None
 if not _ncpu_val.startswith('NONE'):

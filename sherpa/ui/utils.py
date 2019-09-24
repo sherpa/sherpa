@@ -44,7 +44,9 @@ warning = logging.getLogger(__name__).warning
 config = ConfigParser()
 config.read(get_config())
 
-numpy.set_printoptions(threshold=int(config.get('verbosity', 'arraylength')))
+numpy.set_printoptions(threshold=int(config.get('verbosity',
+                                                'arraylength',
+                                                fallback=1000000)))
 
 string_types = (str, )
 
