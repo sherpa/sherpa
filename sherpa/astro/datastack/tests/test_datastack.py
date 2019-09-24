@@ -692,10 +692,12 @@ def validate_show_stack(capsys, datadir, key1, key2):
        The capsys pytest object.
     datadir: str
        The directory containing the data files.
-    key1 : str
+    key1 : str or None
        The keyword being used for the "MJD OBS" value: file 1.
-    key2 : str
+       If None the value is missing.
+    key2 : str or None
        The keyword being used for the "MJD OBS" value: file 2.
+       If None the value is missing.
 
     """
 
@@ -709,8 +711,20 @@ def validate_show_stack(capsys, datadir, key1, key2):
     # This depends on the serialization of numeric values, which can
     # vary with Python/system
     #
-    l0 = '1: {}/acisf04938_000N002_r0043_pha3.fits OBS_ID: 4938 {}: 53493.55477826'.format(datadir, key1)
-    l1 = '2: {}/acisf07867_000N001_r0002_pha3.fits OBS_ID: 7867 {}: 54374.009361043'.format(datadir, key2)
+    if key1 is None:
+        val1 = 'N/A'
+        key1 = 'MJD-OBS'
+    else:
+        val1 = '53493.55477826'
+
+    if key2 is None:
+        val2 = 'N/A'
+        key2 = 'MJD-OBS'
+    else:
+        val2 = '54374.009361043'
+
+    l0 = '1: {}/acisf04938_000N002_r0043_pha3.fits OBS_ID: 4938 {}: {}'.format(datadir, key1, val1)
+    l1 = '2: {}/acisf07867_000N001_r0002_pha3.fits OBS_ID: 7867 {}: {}'.format(datadir, key2, val2)
 
     captured = capsys.readouterr()
     lines = captured.out.split('\n')
@@ -777,3 +791,21 @@ def test_show_stack3(ds_setup, ds_datadir, capsys):
         del d.header['MJD_OBS']
 
     validate_show_stack(capsys, ds_datadir, 'MJD_OBS', 'MJD-OBS')
+
+
+@requires_fits
+@requires_stk
+def test_show_stack4(ds_setup, ds_datadir, capsys):
+    """Test the show_stack handling: No MJD_OBS or MJD-OBS keyword
+    """
+
+    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
+    datastack.load_pha(ls)
+
+    # Remove the MJD-OBS keyword.
+    #
+    for idval in [1, 2]:
+        d = datastack.get_data(idval)
+        del d.header['MJD_OBS']
+
+    validate_show_stack(capsys, ds_datadir, None, None)
