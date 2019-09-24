@@ -350,7 +350,7 @@ The previous plot objects can be used, but the model plot has to be
 updated to reflect the new model values. Three new plot styles are used:
 :py:class:`~sherpa.plot.FitPlot` shows both the data and model values,
 :py:class:`~sherpa.plot.DelchiPlot` to show the residuals, and
-:py:class:`~sherpa.plot.SplotPlot` to control the layout of the plots:
+:py:class:`~sherpa.plot.SplitPlot` to control the layout of the plots:
 
    >>> from sherpa.plot import DelchiPlot, FitPlot, SplitPlot
    >>> fplot = FitPlot()
@@ -367,6 +367,30 @@ updated to reflect the new model values. Three new plot styles are used:
 The residuals plot shows, on the ordinate, :math:`\sigma = (d - m) / e` where
 :math:`d`, :math:`m`, and :math:`e` are the data, model, and error value
 for each bin respectively.
+
+The use of this style of plot - where there's the data and fit
+in the top and a related plot (normally some form of residual about
+the fit) in the bottom - is common enough that Sherpa provides
+a specialization of
+:py:class:`~sherpa.plot.SplitPlot` called
+:py:class:`~sherpa.plot.JointPlot` for this case. In the following
+example the plots from above are re-used, as no settings have
+changed, so there is no need to pcall the
+``prepare`` method of the component plots:
+
+   >>> from sherpa.plot import JointPlot
+   >>> jplot = JointPlot()
+   >>> jplot.plottop(fplot)
+   >>> jplot.plotbot(rplot)
+
+.. image:: ../_static/fit/fit_delchi_c0_c1_c2_jointplot.png
+
+The two major changes to the ``SplitPlot`` output are that the
+top plot is now taller, and the gap between the plots has
+been reduced by removing the axis labelling from the first
+plot and the title of the second plot (the X axes of the two
+plots are also tied together, but that's not obvious from this
+example).
 
 .. _change_fit_starting_point:
 
