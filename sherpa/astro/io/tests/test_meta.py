@@ -89,6 +89,31 @@ def test_overwrite_keyword():
     assert not store['val1']
 
 
+def test_del_keyword():
+    """We can delete a keyword"""
+
+    store = Meta()
+    store['x1'] = 1
+    store['u1'] = 2
+    del store['x1']
+
+    assert store.keys() == ['u1']
+    assert store.values() == [2]
+
+
+def test_del_missing_keyword():
+    """We can not delete a keyword that doesn't exist"""
+
+    store = Meta()
+    store['x1'] = 1
+    store['u1'] = 2
+    with pytest.raises(KeyError):
+        del store['y1']
+
+    assert store.keys() == ['u1', 'x1']
+    assert store.values() == [2, 1]
+
+
 def test_keyword_order():
     """keys are sorted, not based on input order"""
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,9 @@ class Meta(NoNewAttributesAfterInit):
 
     def __getitem__(self, name):
         return self.__header[name]
+
+    def __delitem__(self, name):
+        del self.__header[name]
 
     def __setitem__(self, name, val):
         self.__header[name] = val
