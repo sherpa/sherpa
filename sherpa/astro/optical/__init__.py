@@ -1122,8 +1122,6 @@ class LogEmission(RegriddableModel1D):
         The normalisation of the gaussian.
     skew
         The skew of the gaussian.
-    limit
-        This is a hidden parameter and is unused by the model.
 
     See Also
     --------
