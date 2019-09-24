@@ -276,6 +276,7 @@ burden...
       plot_bkg_delchi
       plot_bkg_fit
       plot_bkg_fit_delchi
+      plot_bkg_fit_ratio
       plot_bkg_fit_resid
       plot_bkg_model
       plot_bkg_ratio

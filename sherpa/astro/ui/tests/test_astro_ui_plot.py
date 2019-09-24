@@ -35,7 +35,7 @@ from sherpa.astro import ui
 # from sherpa.plot import DataPlot, FitPlot, ModelPlot
 
 from sherpa.utils.err import IdentifierErr
-# from sherpa.utils.testing import requires_plotting
+from sherpa.utils.testing import requires_plotting
 
 import pytest
 
@@ -222,6 +222,7 @@ plot_bkg_delchi
 plot_bkg_chisqr
 plot_bkg_fit
 plot_bkg_source
+plot_bkg_fit_ratio
 plot_bkg_fit_resid
 plot_bkg_fit_delchi
 
@@ -648,3 +649,106 @@ def test_get_bkg_fit_plot_energy(idval):
 
     yexp = _arf / 100.0 / _bexpscale
     assert mp.y == pytest.approx(yexp)
+
+
+def check_bkg_fit(plotfunc):
+    """Is the background fit displayed?
+
+    This only checks the plot object, not the plot "hardcopy" output
+    (e.g. the pixel display/PNG output).
+    """
+
+    dplot = ui._session._bkgdataplot
+    mplot = ui._session._bkgmodelplot
+
+    # check the "source" plots are not set
+    for plot in [ui._session._dataplot, ui._session._modelplot]:
+        assert plot.x is None
+        assert plot.y is None
+
+    xlabel = 'Channel' if plotfunc == ui.plot_bkg_fit else ''
+
+    # check plot basics
+    for plot in [dplot, mplot]:
+        assert plot.xlabel == xlabel
+        assert plot.ylabel == 'Counts/sec/channel'
+
+        assert plot.x == pytest.approx(_data_chan)
+
+    assert dplot.title == 'example-bkg'
+    assert mplot.title == 'Background Model Contribution'
+
+    yexp = _data_bkg / 1201.0 / _bexpscale
+    assert dplot.y == pytest.approx(yexp)
+
+    yexp = _arf / (_bexpscale * 100)
+    assert mplot.y == pytest.approx(yexp)
+
+
+def check_bkg_resid(plotfunc):
+    """Is the background residual displayed?
+
+    This only checks the plot object, not the plot "hardcopy" output
+    (e.g. the pixel display/PNG output).
+
+    There is limited checks of the actual values, since the
+    assumption is that this test is just to check the plots were
+    constructed from its components, and that other tests above
+    will have checked that the components work.
+
+    """
+
+    # check the "other" background plots are not set
+    plot = None
+    for pf, pd in [(ui.plot_bkg_fit_delchi, ui._session._bkgdelchiplot),
+                   (ui.plot_bkg_fit_ratio, ui._session._bkgratioplot),
+                   (ui.plot_bkg_fit_resid, ui._session._bkgresidplot)]:
+        if pf == plotfunc:
+            assert plot is None  # a precaution
+            plot = pd
+            continue
+        else:
+            assert pd.x is None
+            assert pd.y is None
+
+    # very limited checks
+    #
+    assert plot.xlabel == 'Channel'
+    assert plot.ylabel != ''  # depends on the plot type
+    assert plot.title == ''
+
+    assert plot.x == pytest.approx(_data_chan)
+    assert plot.y is not None
+
+    # the way the data and model are constructed, all residual values
+    # should be negative, and the ratio values positive (or zero).
+    #
+    if plotfunc == ui.plot_bkg_fit_ratio:
+        assert np.all(plot.y >= 0)
+    else:
+        assert np.all(plot.y < 0)
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_astro_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+@pytest.mark.parametrize("plotfunc,checkfuncs",
+                         [(ui.plot_bkg_fit, [check_bkg_fit]),
+                          (ui.plot_bkg_fit_delchi, [check_bkg_fit, check_bkg_resid]),
+                          (ui.plot_bkg_fit_ratio, [check_bkg_fit, check_bkg_resid]),
+                          (ui.plot_bkg_fit_resid, [check_bkg_fit, check_bkg_resid])])
+def test_bkg_plot_xxx(idval, plotfunc, checkfuncs):
+    """Test background plotting - channel space"""
+
+    setup_example_bkg_model(idval)
+    if idval is None:
+        plotfunc()
+    else:
+        plotfunc(idval)
+
+    # The X label of the plots may depend on whether there are 1
+    # or two plots. The following isn't ideal but let's see how
+    # it goes.
+    #
+    for checkfunc in checkfuncs:
+        checkfunc(plotfunc)

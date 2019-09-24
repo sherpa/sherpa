@@ -11604,6 +11604,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
@@ -11937,6 +11938,71 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
+    def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
+                           overplot=False, clearwindow=True):
+        """Plot the fit results, and the data/model ratio, for the background of
+        a PHA data set.
+
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_ratio` - for a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_fit_ratio`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the ``bkg_id`` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
+
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+
+        Examples
+        --------
+
+        Plot the background fit and the ratio of the background to
+        this fit for the default data set:
+
+        >>> plot_bkg_fit_ratio()
+
+        """
+
+        self._plot_bkg_jointplot(self._bkgratioplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
+
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
         """Plot the fit results, and the residuals, for the background of
@@ -11981,6 +12047,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
@@ -12044,6 +12111,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
