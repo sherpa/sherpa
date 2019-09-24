@@ -17,29 +17,41 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# Although the Meta module does not need a FITS backend, you can not
+# import it unless there's a FITS backend present, thanks to the
+# design of sherpa.astro.io. So all the tests are behind a
+# requires_fits decorator. The import could be done at the top of the
+# file (within a check for ImportError) but leave as is.
+#
+
 import pytest
 
-from sherpa.astro.io.meta import Meta
+from sherpa.utils.testing import requires_fits
 
-
+@requires_fits
 def test_empty():
     """An empty store is empty."""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     assert len(store.keys()) == 0
 
 
+@requires_fits
 def test_key_does_not_exist():
     """We know when a key does not exist"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     assert not store.has_key("key")
 
 
+@requires_fits
 @pytest.mark.parametrize("value", ["", " a string ", 23, 23.0, True, None])
 def test_add_keyword(value):
     """Can add a keyword"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key'] = value
     assert store.keys() == ['key']
@@ -50,9 +62,11 @@ def test_add_keyword(value):
     assert svalue == value
 
 
+@requires_fits
 def test_error_if_missing_key():
     """Raise the correct error on missing key"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key'] = 1
 
@@ -60,9 +74,11 @@ def test_error_if_missing_key():
         store['keykey']
 
 
+@requires_fits
 def test_get_with_known_key():
     """get works on a known key"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key1'] = 2
     store['key2'] = 23
@@ -70,9 +86,11 @@ def test_get_with_known_key():
     assert store.get('key1') == 2
 
 
+@requires_fits
 def test_get_with_unknown_key():
     """the default value is used if no key exists"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key1'] = 2
     store['key2'] = 23
@@ -80,18 +98,22 @@ def test_get_with_unknown_key():
     assert store.get('key3', "unknown") == "unknown"
 
 
+@requires_fits
 def test_overwrite_keyword():
     """We can change a keyword"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['val1'] = True
     store['val1'] = False
     assert not store['val1']
 
 
+@requires_fits
 def test_del_keyword():
     """We can delete a keyword"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['x1'] = 1
     store['u1'] = 2
@@ -101,9 +123,11 @@ def test_del_keyword():
     assert store.values() == [2]
 
 
+@requires_fits
 def test_del_missing_keyword():
     """We can not delete a keyword that doesn't exist"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['x1'] = 1
     store['u1'] = 2
@@ -114,9 +138,11 @@ def test_del_missing_keyword():
     assert store.values() == [2, 1]
 
 
+@requires_fits
 def test_keyword_order():
     """keys are sorted, not based on input order"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key2'] = 1
     store['key1'] = 2
@@ -130,9 +156,11 @@ def test_keyword_order():
     assert vals == [False, True, 2, 1]
 
 
+@requires_fits
 def test_key_pop():
     """Can pop a known value"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key1'] = True
     store['key2'] = False
@@ -141,9 +169,11 @@ def test_key_pop():
     assert store.keys() == ['key2']
 
 
+@requires_fits
 def test_key_pop():
     """Can pop an unknown"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['key1'] = True
     store['key2'] = False
@@ -152,16 +182,20 @@ def test_key_pop():
     assert store.keys() == ['key1', 'key2']
 
 
+@requires_fits
 def test_str_empty():
     """stringification: empty"""
 
+    from sherpa.astro.io.meta import Meta
     s = str(Meta())
     assert s == ''
 
 
+@requires_fits
 def test_str_singleton():
     """stringification: single value"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
 
     # Could loop over this, but a bit easier to check the string
@@ -191,9 +225,11 @@ def test_str_singleton():
         assert str(store) == ''
 
 
+@requires_fits
 def test_str_multi():
     """Multiple keys are displayed as expected"""
 
+    from sherpa.astro.io.meta import Meta
     store = Meta()
     store['Xkey'] = 'X X'
     store['xkey'] = ' y  y'
