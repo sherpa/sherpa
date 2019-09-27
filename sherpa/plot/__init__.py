@@ -40,7 +40,7 @@ from six.moves.configparser import ConfigParser
 
 warning = logging.getLogger(__name__).warning
 
-# TODO: why is this module globally chaning the invalid mode of NumPy?
+# TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
 
 config = ConfigParser()
@@ -585,24 +585,9 @@ class JointPlot(SplitPlot):
         clearaxes = kwargs.get('clearwindow', True)
         self._clear_window(0, 0, clearaxes)
 
-        """
-        # FIXME: should not know about FitPlot, terrible hack to remove label
-        if isinstance(plot, FitPlot):
-            plot.dataplot.xlabel = ''
-            plot.modelplot.xlabel = ''
-        else:
-            plot.xlabel = ''
-
-        """
-
-        # Slightly-more Pythonic way to clear the labels than checking
-        # the class of the object.
-        #
-        # The order here could matter if things get changed (such as
-        # FitPlot being re-worked to use a common labelling system)
-        #
-        # Unlike the previous version, this will not fail (here at least)
-        # if xlabel doesn't exist.
+        # The code used to check if the plot was an instance of
+        # FitPlot, which has been updated to check for the presence
+        # of attributes instead.
         #
         if hasattr(plot, 'xlabel'):
             plot.xlabel = ''
