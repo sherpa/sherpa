@@ -172,12 +172,6 @@ _linestyle_map = {
 }
 
 
-def _check_hex_color(val):
-    if type(val) in (str, numpy.string_) and val.startswith('0x'):
-        val = '#' + str(val).replace('0x', '').rjust(6, '0')
-    return val
-
-
 def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
     """Apply the line attributes, if set.
 
@@ -195,7 +189,7 @@ def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
         func(newval)
 
     if linecolor is not None:
-        set('color', _check_hex_color(linecolor))
+        set('color', linecolor)
 
     if linestyle is not None:
         set('linestyle', _linestyle_map[linestyle])
