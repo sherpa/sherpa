@@ -163,12 +163,6 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
          xaxis=False, ratioline=False)
 
 
-_attr_map = {
-    'linecolor': 'color',
-    'linestyle': 'linestyle',
-    'linewidth': 'linewidth',
-}
-
 _linestyle_map = {
     'noline': ' ',
     'solid': '-',
@@ -184,6 +178,32 @@ def _check_hex_color(val):
     return val
 
 
+def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
+    """Apply the line attributes, if set.
+
+    Parameters
+    ----------
+    line : matplotlib.lines.Line2D
+        The line to change
+    linecolor, linestyle, linewidth : optional
+        The attribute value or None.
+
+    """
+
+    def set(label, newval):
+        func = getattr(line, 'set_' + label)
+        func(newval)
+
+    if linecolor is not None:
+        set('color', _check_hex_color(linecolor))
+
+    if linestyle is not None:
+        set('linestyle', _linestyle_map[linestyle])
+
+    if linewidth is not None:
+        set('linewidth', linewidth)
+
+
 def vline(x, ymin=0, ymax=1,
           linecolor=None,
           linestyle=None,
@@ -193,15 +213,8 @@ def vline(x, ymin=0, ymax=1,
     axes = setup_axes(overplot, clearwindow)
 
     line = axes.axvline(x, ymin, ymax)
-
-    for var in ('linecolor', 'linestyle', 'linewidth'):
-        val = locals()[var]
-        if val is not None:
-            if 'style' in var:
-                val = _linestyle_map[val]
-            elif 'color' in var:
-                val = _check_hex_color(val)
-            getattr(line, 'set_' + _attr_map[var])(val)
+    _set_line(line, linecolor=linecolor, linestyle=linestyle,
+              linewidth=linewidth)
 
 
 def hline(y, xmin=0, xmax=1,
@@ -213,15 +226,8 @@ def hline(y, xmin=0, xmax=1,
     axes = setup_axes(overplot, clearwindow)
 
     line = axes.axhline(y, xmin, xmax)
-
-    for var in ('linecolor', 'linestyle', 'linewidth'):
-        val = locals()[var]
-        if val is not None:
-            if 'style' in var:
-                val = _linestyle_map[val]
-            elif 'color' in var:
-                val = _check_hex_color(val)
-            getattr(line, 'set_' + _attr_map[var])(val)
+    _set_line(line, linecolor=linecolor, linestyle=linestyle,
+              linewidth=linewidth)
 
 
 def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
