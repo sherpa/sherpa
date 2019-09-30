@@ -40,6 +40,7 @@ from configparser import ConfigParser
 
 warning = logging.getLogger(__name__).warning
 
+# TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
 
 config = ConfigParser()
@@ -56,10 +57,10 @@ if plot_opt == 'none_backend':
 try:
     importlib.import_module('.' + plot_opt, package='sherpa.plot')
     backend = sys.modules['sherpa.plot.' + plot_opt]
-except:
+except (ImportError, KeyError):
     # if the user inputs a malformed backend or it is not found,
     # give a useful warning and fall back on dummy_backend of noops
-    warning('failed to import sherpa.plot.%s;' % plot_opt +
+    warning('failed to import sherpa.plot.{};'.format(plot_opt) +
             ' plotting routines will not be available')
     from . import dummy_backend as backend
     plot_opt = 'dummy_backend'
@@ -74,7 +75,7 @@ __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'ResidPlot', 'ResidContour', 'RatioPlot', 'RatioContour',
            'IntervalProjection', 'IntervalUncertainty', 'ChisqrPlot',
            'RegionProjection', 'RegionUncertainty', 'ComponentSourcePlot',
-           'PSFPlot','PSFContour','begin', 'end', 'exceptions', 'backend',
+           'PSFPlot', 'PSFContour', 'begin', 'end', 'exceptions', 'backend',
            'SourcePlot', 'SourceContour', 'Histogram', 'plotter')
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
@@ -107,6 +108,25 @@ def _make_title(title, name=''):
         return title
     else:
         return "{} for {}".format(title, name)
+
+
+def _errorbar_warning(stat):
+    """The warning message to display when error bars are being "faked".
+
+    Parameters
+    ----------
+    stat : sherpa.stats.Stat instance
+        The name attribute is used in the error message.
+
+    Returns
+    -------
+    msg : str
+        The warning message
+    """
+
+    return "The displayed errorbars have been supplied with the " + \
+        "data or calculated using chi2xspecvar; the errors are not " + \
+        "used in fits with {}".format(stat.name)
 
 
 class Plot(NoNewAttributesAfterInit):
@@ -235,7 +255,7 @@ class HistogramPlot(Histogram):
     def __init__(self):
         self.xlo = None
         self.xhi = None
-        self.y  = None
+        self.y = None
         self.xlabel = None
         self.ylabel = None
         self.title = None
@@ -300,7 +320,7 @@ class PDFPlot(HistogramPlot):
         self.xhi = xx[1:]
         self.ylabel = "probability density"
         self.xlabel = xlabel
-        self.title  = "PDF: %s" % name
+        self.title = "PDF: {}".format(name)
 
 
 class CDFPlot(Plot):
@@ -315,12 +335,12 @@ class CDFPlot(Plot):
     plot_prefs = backend.get_cdf_plot_defaults()
 
     def __init__(self):
-        self.x  = None
-        self.y  = None
+        self.x = None
+        self.y = None
         self.points = None
         self.median = None
-        self.lower  = None
-        self.upper  = None
+        self.lower = None
+        self.upper = None
         self.xlabel = None
         self.ylabel = None
         self.title = None
@@ -370,8 +390,8 @@ class CDFPlot(Plot):
         xsize = len(self.x)
         self.y = (numpy.arange(xsize) + 1.0) / xsize
         self.xlabel = xlabel
-        self.ylabel = "p(<=%s)" % (xlabel)
-        self.title  = "CDF: %s" % (name)
+        self.ylabel = "p(<={})".format(xlabel)
+        self.title = "CDF: {}".format(name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title,
@@ -476,7 +496,7 @@ class SplitPlot(Plot, Contour):
         self._used = numpy.zeros((self.rows, self.cols), numpy.bool_)
 
     def _next_subplot(self):
-        row, col = numpy.where(self._used == False)
+        row, col = numpy.where(~self._used)
         if row.size != 0:
             row, col = row[0], col[0]
         else:
@@ -565,12 +585,19 @@ class JointPlot(SplitPlot):
         clearaxes = kwargs.get('clearwindow', True)
         self._clear_window(0, 0, clearaxes)
 
-        # FIXME: should not know about FitPlot, terrible hack to remove label
-        if isinstance(plot, FitPlot):
-            plot.dataplot.xlabel = ''
-            plot.modelplot.xlabel = ''
-        else:
+        # The code used to check if the plot was an instance of
+        # FitPlot, which has been updated to check for the presence
+        # of attributes instead.
+        #
+        if hasattr(plot, 'xlabel'):
             plot.xlabel = ''
+        elif hasattr(plot, 'dataplot') and hasattr(plot, 'modelplot'):
+            dplot = plot.dataplot
+            mplot = plot.modelplot
+            if hasattr(dplot, 'xlabel'):
+                dplot.xlabel = ''
+            if hasattr(mplot, 'xlabel'):
+                mplot.xlabel = ''
 
         kwargs['clearwindow'] = False
         plot.plot(*args, **kwargs)
@@ -607,8 +634,8 @@ class DataPlot(Plot):
     plot_prefs = backend.get_data_plot_defaults()
 
     def __init__(self):
-        self.x  = None
-        self.y  = None
+        self.x = None
+        self.y = None
         self.yerr = None
         self.xerr = None
         self.xlabel = None
@@ -658,17 +685,62 @@ class DataPlot(Plot):
         (self.x, self.y, self.yerr, self.xerr, self.xlabel,
          self.ylabel) = data.to_plot()
 
-        # if self.yerr is None and stat is not None:
+        # Do we warn about adding in error values? The logic here isn't
+        # quite the same as the other times _errorbar_warning is used.
+        # This suggests that the code really should be re-worked to
+        # go through a common code path.
+        #
+        # Do we require that self.yerr is always set, even if the
+        # value is not used in a plot? I am going to assume not
+        # (since the existing code will not change self.yerr if
+        # the stat.name is not in _stats_noerr but an exception is
+        # raised by get_yerr).
+        #
+        # This assumes that the error bars calculated by data.to_plot are
+        # over-ridden once a statistic is given. However, how does this
+        # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
+        # but the user has given explicit errors (i.e. they are not to
+        # be calcualted by the "DataVar" part but used as is). Does
+        # data.get_yerr handle this for us, or are invalid errors
+        # used here? It appears that the correct answers are being
+        # returned, but should we only call data.get_yerr if yerr
+        # is None/empty/whatever is returned by to_plot? This also
+        # holds for the Resid/RatioPlot classes.
+        #
+        # Note that we should probably return a value for yerr if
+        # we can, even if 'yerrorbars' is set to False, so that
+        # downstream users can make use of the value even if the
+        # plot doesn't. This is similar to how labels or xerr
+        # attributes are created even if they don't get used by the
+        # plot.
+        #
+        try:
+            yerrorbars = self.plot_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
         if stat is not None:
-            msg = ("The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with %s" % stat.name)
+            msg = _errorbar_warning(stat)
             if stat.name in _stats_noerr:
                 self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-                warning(msg)
+                if yerrorbars:
+                    warning(msg)
             else:
                 try:
                     self.yerr = data.get_yerr(True, stat.calc_staterror)
-                except:
-                    warning(msg + "\nzeros or negative values found")
+                except Exception:
+                    # TODO: can we report a useful error here?
+                    #
+                    # It is possible that this is actually an unrelated
+                    # error: it's unclear what error class is expected to
+                    # be thrown, but likely ValueError as this is raised
+                    # by Chi2DataVar when sent values < 0
+                    # (note that over time the behavior has changed from
+                    #  <= 0 to < 0, but this error message has not been
+                    # changed).
+                    #
+                    if yerrorbars:
+                        warning(msg + "\nzeros or negative values found")
 
         self.title = data.name
 
@@ -686,7 +758,7 @@ class TracePlot(DataPlot):
         self.y = points
         self.xlabel = "iteration"
         self.ylabel = name
-        self.title  = "Trace: %s" % (name)
+        self.title = "Trace: {}".format(name)
 
 
 class ScatterPlot(DataPlot):
@@ -698,7 +770,7 @@ class ScatterPlot(DataPlot):
         self.y = numpy.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.title  = "Scatter: %s" % (name)
+        self.title = "Scatter: {}".format(name)
 
 
 class PSFKernelPlot(DataPlot):
@@ -709,7 +781,7 @@ class PSFKernelPlot(DataPlot):
         DataPlot.prepare(self, psfdata, stat)
         # self.ylabel = 'PSF value'
         # self.xlabel = 'PSF Kernel size'
-        self.title  = 'PSF Kernel'
+        self.title = 'PSF Kernel'
 
 
 class DataContour(Contour):
@@ -737,7 +809,7 @@ class DataContour(Contour):
     def __init__(self):
         self.x0 = None
         self.x1 = None
-        self.y  = None
+        self.y = None
         self.xlabel = None
         self.ylabel = None
         self.title = None
@@ -796,7 +868,7 @@ class PSFKernelContour(DataContour):
         DataContour.prepare(self, psfdata)
         # self.xlabel = 'PSF Kernel size x0'
         # self.ylabel = 'PSF Kernel size x1'
-        self.title  = 'PSF Kernel'
+        self.title = 'PSF Kernel'
 
 
 class ModelPlot(Plot):
@@ -822,8 +894,8 @@ class ModelPlot(Plot):
     plot_prefs = backend.get_model_plot_defaults()
 
     def __init__(self):
-        self.x  = None
-        self.y  = None
+        self.x = None
+        self.y = None
         self.yerr = None
         self.xerr = None
         self.xlabel = None
@@ -896,7 +968,7 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
         self.y = model.get_y()
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Model component: %s' % model.name
+        self.title = 'Model component: {}'.format(model.name)
 
 
 class SourcePlot(ModelPlot):
@@ -932,7 +1004,7 @@ class ComponentSourcePlot(SourcePlot):
         (self.x, self.y, self.yerr, self.xerr,
          self.xlabel, self.ylabel) = data.to_component_plot(yfunc=model)
         self.y = self.y[1]
-        self.title = 'Source model component: %s' % model.name
+        self.title = 'Source model component: {}'.format(model.name)
 
 
 class ComponentTemplateSourcePlot(ComponentSourcePlot):
@@ -949,7 +1021,7 @@ class ComponentTemplateSourcePlot(ComponentSourcePlot):
 
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Source model component: %s' % model.name
+        self.title = 'Source model component: {}'.format(model.name)
 
 
 class PSFPlot(DataPlot):
@@ -968,7 +1040,7 @@ class ModelContour(Contour):
     def __init__(self):
         self.x0 = None
         self.x1 = None
-        self.y  = None
+        self.y = None
         self.xlabel = None
         self.ylabel = None
         self.title = 'Model'
@@ -1026,7 +1098,7 @@ class PSFContour(DataContour):
     def prepare(self, psf, data=None, stat=None):
         psfdata = psf.get_kernel(data, False)
         DataContour.prepare(self, psfdata)
-        self.title  = psf.kernel.name
+        self.title = psf.kernel.name
 
 
 class SourceContour(ModelContour):
@@ -1207,7 +1279,7 @@ class ResidPlot(ModelPlot):
     x : array_like
        The X value for each point.
     y : array_like
-       The Y value for each point: data-model.
+       The Y value for each point: data - model.
     xerr : array_like
        The half-width of each X "bin", if set.
     yerr : array_like
@@ -1227,10 +1299,17 @@ class ResidPlot(ModelPlot):
          self.xlabel, self.ylabel) = data.to_plot(model)
 
         self.y = self._calc_resid(y)
-        # if self.yerr is None:
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.plot_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
         if stat.name in _stats_noerr:
             self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-            warning("The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with %s" % stat.name)
+            if yerrorbars:
+                warning(_errorbar_warning(stat))
         else:
             self.yerr = data.get_yerr(True, stat.calc_staterror)
 
@@ -1282,7 +1361,7 @@ class RatioPlot(ModelPlot):
     x : array_like
        The X value for each point.
     y : array_like
-       The Y value for each point: data-model.
+       The Y value for each point: data / model.
     xerr : array_like
        The half-width of each X "bin", if set.
     yerr : array_like
@@ -1307,11 +1386,18 @@ class RatioPlot(ModelPlot):
          self.xlabel, self.ylabel) = data.to_plot(model)
 
         self.y = self._calc_ratio(y)
-        # if self.yerr is None:
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.plot_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
         if stat.name in _stats_noerr:
             self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
             self.yerr = self.yerr / y[1]
-            warning("The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with %s" % stat.name)
+            if yerrorbars:
+                warning(_errorbar_warning(stat))
         else:
             staterr = data.get_yerr(True, stat.calc_staterror)
             self.yerr = staterr / y[1]
@@ -1880,7 +1966,7 @@ class RegionProjectionWorker():
         self.fit = fit
 
     def __call__(self, pars):
-        for ii in [0,1]:
+        for ii in [0, 1]:
             if self.log[ii]:
                 pars[ii] = numpy.power(10, pars[ii])
         (self.par0.val, self.par1.val) = pars
