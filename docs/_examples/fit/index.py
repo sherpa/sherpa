@@ -150,12 +150,6 @@ report("coverrs.extra_output")
 print([p.split('.')[1] for p in coverrs.parnames])
 
 
-# HACK due to https://github.com/sherpa/sherpa/issues/342
-
-f.thaw_indices = tuple(i for i, p in enumerate(f.model.pars)
-                       if not p.frozen)
-
-
 from sherpa.estmethods import Confidence
 f.estmethod = Confidence()
 print("*** about to start confidence run")
