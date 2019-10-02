@@ -127,26 +127,25 @@ class DataStack(object):
         for dataset in self.filter_datasets():
             obsid = "N/A"
             time = "N/A"
-            timekey = None
-            if hasattr(dataset['data'], 'header'):
+            timekey = 'MJD-OBS'
+            try:
+                hdr = dataset['data'].header
+
                 try:
-                    obsid = dataset['data'].header['OBS_ID']
+                    obsid = hdr['OBS_ID']
                 except KeyError:
                     pass
 
                 for key in ['MJD-OBS', 'MJD_OBS']:
                     try:
-                        time = dataset['data'].header[key]
+                        time = hdr[key]
                         timekey = key
                         break
                     except KeyError:
                         pass
 
-            # This is informational, so do not necessarily need
-            # to report the actual key, but for now try to do so.
-            #
-            if timekey is None:
-                timekey = 'MJD-OBS'
+            except AttributeError:
+                pass
 
             print('{0}: {1} {2}: {3} {4}: {5}'.format(dataset['id'],
                                                       dataset['data'].name,
