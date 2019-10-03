@@ -10912,54 +10912,53 @@ class Session(sherpa.ui.utils.Session):
         elif isinstance(plotobj, sherpa.plot.FitContour):
             plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
                             self._prepare_plotobj(id, self._modelcontour))
+        elif isinstance(plotobj, sherpa.astro.plot.ARFPlot):
+            plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
+                            self._get_pha_data(id))
+        elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
+             isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
+            plotobj.prepare(self.get_data(id), model, self.get_stat())
+        elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_stat())
+        elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
+                                  sherpa.astro.plot.BkgRatioPlot,
+                                  sherpa.astro.plot.BkgResidPlot,
+                                  sherpa.astro.plot.BkgDelchiPlot,
+                                  sherpa.astro.plot.BkgChisqrPlot,
+                                  sherpa.astro.plot.BkgModelHistogram)):
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        elif isinstance(plotobj, sherpa.astro.plot.BkgSourcePlot):
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_source(id, bkg_id), lo, hi)
+        elif isinstance(plotobj, sherpa.astro.plot.SourcePlot):
+            data = self.get_data(id)
+            src = self.get_source(id)
+            plotobj.prepare(data, src, lo, hi)
+        elif isinstance(plotobj, sherpa.plot.SourcePlot):
+            data = self.get_data(id)
+            src = self.get_source(id)
+            plotobj.prepare(data, src)
+        elif (isinstance(plotobj, sherpa.plot.PSFPlot) or
+              isinstance(plotobj, sherpa.plot.PSFContour) or
+              isinstance(plotobj, sherpa.plot.PSFKernelPlot) or
+              isinstance(plotobj, sherpa.plot.PSFKernelContour)):
+            plotobj.prepare(self.get_psf(id), self.get_data(id))
+        elif(isinstance(plotobj, sherpa.plot.DataPlot) or
+             isinstance(plotobj, sherpa.plot.DataContour)):
+            plotobj.prepare(self.get_data(id), self.get_stat())
+        elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
+            plotobj.prepare(self._get_pha_data(id),
+                            self.get_model(id), orders)
         else:
-            if isinstance(plotobj, sherpa.astro.plot.ARFPlot):
-                plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
-                                self._get_pha_data(id))
-            elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
-                 isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
-                plotobj.prepare(self.get_data(id), model, self.get_stat())
-            elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
-                plotobj.prepare(self.get_bkg(id, bkg_id),
-                                self.get_stat())
-            elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
-                                      sherpa.astro.plot.BkgRatioPlot,
-                                      sherpa.astro.plot.BkgResidPlot,
-                                      sherpa.astro.plot.BkgDelchiPlot,
-                                      sherpa.astro.plot.BkgChisqrPlot,
-                                      sherpa.astro.plot.BkgModelHistogram)):
-                plotobj.prepare(self.get_bkg(id, bkg_id),
-                                self.get_bkg_model(id, bkg_id),
-                                self.get_stat())
-            elif isinstance(plotobj, sherpa.astro.plot.BkgSourcePlot):
-                plotobj.prepare(self.get_bkg(id, bkg_id),
-                                self.get_bkg_source(id, bkg_id), lo, hi)
-            elif isinstance(plotobj, sherpa.astro.plot.SourcePlot):
-                data = self.get_data(id)
-                src = self.get_source(id)
-                plotobj.prepare(data, src, lo, hi)
-            elif isinstance(plotobj, sherpa.plot.SourcePlot):
-                data = self.get_data(id)
-                src = self.get_source(id)
-                plotobj.prepare(data, src)
-            elif (isinstance(plotobj, sherpa.plot.PSFPlot) or
-                  isinstance(plotobj, sherpa.plot.PSFContour) or
-                  isinstance(plotobj, sherpa.plot.PSFKernelPlot) or
-                  isinstance(plotobj, sherpa.plot.PSFKernelContour)):
-                plotobj.prepare(self.get_psf(id), self.get_data(id))
-            elif(isinstance(plotobj, sherpa.plot.DataPlot) or
-                 isinstance(plotobj, sherpa.plot.DataContour)):
-                plotobj.prepare(self.get_data(id), self.get_stat())
-            elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
-                plotobj.prepare(self._get_pha_data(id),
-                                self.get_model(id), orders)
-            else:
-                # Using _get_fit becomes very complicated using simulfit
-                # models and datasets
-                #
-                # ids, f = self._get_fit(id)
-                plotobj.prepare(self.get_data(id), self.get_model(id),
-                                self.get_stat())
+            # Using _get_fit becomes very complicated using simulfit
+            # models and datasets
+            #
+            # ids, f = self._get_fit(id)
+            plotobj.prepare(self.get_data(id), self.get_model(id),
+                            self.get_stat())
 
         return plotobj
 
