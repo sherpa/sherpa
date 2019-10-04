@@ -704,9 +704,20 @@ class IterFit(NoNewAttributesAfterInit):
         staterror_original = []
 
         for d in self.data.datasets:
+            # This loop is only concerned about user-specified
+            # statistical error, not tnat calculated by the
+            # statistic, so the staterrfunc argument is left as None
+            # in the get_staterror call.
+            #
             st = d.get_staterror(filter=False)
             staterror_original.append(st)
-            d.staterror = ones_like(st)
+
+            # could probably use the 'st is None' logic in all
+            # cases
+            if st is None:
+                d.staterror = ones_like(d.get_dep(filter=False))
+            else:
+                d.staterror = ones_like(st)
 
         # Keep record of current and previous statistics;
         # when these are within some tolerace, Primini's method

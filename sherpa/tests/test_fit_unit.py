@@ -2811,7 +2811,6 @@ def test_fit_dof_neg1(stat, method, success):
 @requires_data
 @requires_fits
 @pytest.mark.usefixtures("clean_astro_ui")
-@pytest.mark.xfail(raises=TypeError)
 def test_bug_431(make_data_path):
     """does primini iterated-fit work with PHA data
 
