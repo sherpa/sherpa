@@ -10094,7 +10094,10 @@ class Session(sherpa.ui.utils.Session):
         instance
            An object representing the data used to create the plot by
            `plot_source`. The return value depends on the data
-           set (e.g. PHA, 1D binned, 1D un-binned).
+           set (e.g. PHA, 1D binned, 1D un-binned). If ``lo`` or ``hi``
+           were set then the ``mask`` attribute of the object can be
+           used to apply the filter to the ``xlo``, ``xhi``, and ``y``
+           attributes.
 
         See Also
         --------
@@ -10125,10 +10128,18 @@ class Session(sherpa.ui.utils.Session):
         >>> splot1.plot()
         >>> splot2.overplot()
 
+        Access the plot data (for a PHA data set) and select only the
+        bins corresponding to the 2-7 keV range defined in the call:
+
+        >>> splot = get_source_plot(lo=2, hi=7)
+        >>> xlo = splot.xlo[splot.mask]
+        >>> xhi = splot.xhi[splot.mask]
+        >>> y = splot.y[splot.mask]
+
         For a PHA data set, the units on both the X and Y axes of the
         plot are controlled by the `set_analysis` command. In this
-        case the Y axis will be in units of photons/s/cm^2 and the X
-        axis in keV:
+        case the Y axis will be in units of photon/s/cm^2/keV x Energy
+        and the X axis in keV:
 
         >>> set_analysis('energy', factor=1)
         >>> splot = get_source_plot()
