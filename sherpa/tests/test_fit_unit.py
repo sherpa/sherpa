@@ -2818,6 +2818,8 @@ def test_bug_431(make_data_path):
     Not clear from the original error report whether this failure is
     due to the session layer or the underlying fit code, but test
     out the example as given.
+
+    Note: this is really a regression test rather than a unit test.
     """
 
     from sherpa.astro import ui
@@ -2830,9 +2832,52 @@ def test_bug_431(make_data_path):
     pl.ampl = 1.74e-4
     pl.gamma = 1.93
 
+    # pre-condition (just to check if the input data file, or
+    # data structure) is ever changed
+    #
+    assert ui.get_data().get_staterror() is None
+
+    s0 = ui.get_stat_info()
+
+    # these are regression tests (since if they change they
+    # invalidate other values checked below, but are themselves
+    # not relevant to the code being tested)
+    assert len(s0) == 1
+    assert s0[0].statname == 'chi2gehrels'
+    assert s0[0].numpoints == 42
+    assert s0[0].dof == 40
+
+    # The relative tolerance used in the numeric checks below has
+    # been guessed at 1 per cent.
+
+    # value calculated with CIAO 4.12 development branch
+    assert s0[0].statval == pytest.approx(22.392398974457006, rel=0.01)
+
     ui.set_iter_method('primini')
     ui.fit()
 
     # not sure what good values to test here are
     # so at the moment just check the code runs to completion
     # (once #431 is fixed that is)
+    #
+
+    # Ensure the staterror is still None (the primini fit changes
+    # this during the evaluation, so check it has been restored).
+    # This is not part of #431 but is added anyway.
+    #
+    assert ui.get_data().get_staterror() is None
+
+    s1 = ui.get_stat_info()
+
+    assert len(s1) == 1
+    assert s1[0].statname == 'chi2gehrels'
+    assert s1[0].numpoints == 42
+    assert s1[0].dof == 40
+
+    # values calculated with CIAO 4.12 development branch (after
+    # fixing #413) and are just to check that the fit changed
+    # something; there has been no attempt to validate these new values.
+    #
+    assert s1[0].statval == pytest.approx(24.469394979244473, rel=0.01)
+    assert pl.gamma.val == pytest.approx(1.9047630946173293, rel=0.01)
+    assert pl.ampl.val == pytest.approx(1.838231409413269e-4, rel=0.01)
