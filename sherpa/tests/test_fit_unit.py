@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -106,6 +106,8 @@ from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
 
 from sherpa.optmethods import LevMar, NelderMead, MonCar
 from sherpa.estmethods import Covariance, Confidence
+
+from sherpa.utils.testing import requires_data, requires_fits
 
 
 def setup_stat_single(stat, usestat, usesys):
@@ -2804,3 +2806,33 @@ def test_fit_dof_neg1(stat, method, success):
     fit = Fit(d, mdl, stat=stat(), method=method())
     fres = fit.fit()
     assert fres.succeeded == success
+
+
+@requires_data
+@requires_fits
+@pytest.mark.usefixtures("clean_astro_ui")
+@pytest.mark.xfail(raises=TypeError)
+def test_bug_431(make_data_path):
+    """does primini iterated-fit work with PHA data
+
+    Not clear from the original error report whether this failure is
+    due to the session layer or the underlying fit code, but test
+    out the example as given.
+    """
+
+    from sherpa.astro import ui
+
+    ui.load_data(make_data_path('3c273.pi'))
+    ui.subtract()
+    ui.notice(0.5, 7.0)
+    ui.set_source(ui.powlaw1d.pl)
+    pl = ui.get_model_component('pl')
+    pl.ampl = 1.74e-4
+    pl.gamma = 1.93
+
+    ui.set_iter_method('primini')
+    ui.fit()
+
+    # not sure what good values to test here are
+    # so at the moment just check the code runs to completion
+    # (once #431 is fixed that is)
