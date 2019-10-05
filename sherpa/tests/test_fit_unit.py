@@ -2819,6 +2819,10 @@ def test_bug_431(make_data_path):
     out the example as given.
 
     Note: this is really a regression test rather than a unit test.
+
+    The values (e.g. statistic and parameter values) were evaluated
+    with a commit from before the breakage:
+    2235e1c738f85a6f675cb295510b9a5d98d30714
     """
 
     from sherpa.astro import ui
@@ -2847,18 +2851,13 @@ def test_bug_431(make_data_path):
     assert s0[0].dof == 40
 
     # The relative tolerance used in the numeric checks below has
-    # been guessed at 1 per cent.
+    # been guessed at 1 per cent. May need to change this now
+    # I have added in values from before the fix.
 
-    # value calculated with CIAO 4.12 development branch
     assert s0[0].statval == pytest.approx(22.392398974457006, rel=0.01)
 
     ui.set_iter_method('primini')
     ui.fit()
-
-    # not sure what good values to test here are
-    # so at the moment just check the code runs to completion
-    # (once #431 is fixed that is)
-    #
 
     # Ensure the staterror is still None (the primini fit changes
     # this during the evaluation, so check it has been restored).
@@ -2873,10 +2872,6 @@ def test_bug_431(make_data_path):
     assert s1[0].numpoints == 42
     assert s1[0].dof == 40
 
-    # values calculated with CIAO 4.12 development branch (after
-    # fixing #413) and are just to check that the fit changed
-    # something; there has been no attempt to validate these new values.
-    #
-    assert s1[0].statval == pytest.approx(24.469394979244473, rel=0.01)
-    assert pl.gamma.val == pytest.approx(1.9047630946173293, rel=0.01)
-    assert pl.ampl.val == pytest.approx(1.838231409413269e-4, rel=0.01)
+    assert s1[0].statval == pytest.approx(22.392132075293787, rel=0.01)
+    assert pl.gamma.val == pytest.approx(1.931138404465634, rel=0.01)
+    assert pl.ampl.val == pytest.approx(1.7413534602287168e-4, rel=0.01)
