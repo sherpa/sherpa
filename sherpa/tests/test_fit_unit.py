@@ -2832,8 +2832,13 @@ def test_bug_431(make_data_path):
     ui.notice(0.5, 7.0)
     ui.set_source(ui.powlaw1d.pl)
     pl = ui.get_model_component('pl')
-    pl.ampl = 1.74e-4
-    pl.gamma = 1.93
+
+    # pick values that are far enough away from the empirically-determined
+    # "best fit" that using a simple relative, like 0.01, should be good
+    # enough.
+    #
+    pl.ampl = 2.5e-4
+    pl.gamma = 1.7
 
     # pre-condition (just to check if the input data file, or
     # data structure) is ever changed
@@ -2851,10 +2856,9 @@ def test_bug_431(make_data_path):
     assert s0[0].dof == 40
 
     # The relative tolerance used in the numeric checks below has
-    # been guessed at 1 per cent. May need to change this now
-    # I have added in values from before the fix.
+    # been guessed at 1 per cent.
 
-    assert s0[0].statval == pytest.approx(22.392398974457006, rel=0.01)
+    assert s0[0].statval == pytest.approx(214.17266245704036, rel=0.01)
 
     ui.set_iter_method('primini')
     ui.fit()
