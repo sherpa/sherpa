@@ -2879,3 +2879,24 @@ def test_bug_431(make_data_path):
     assert s1[0].statval == pytest.approx(22.392132075293787, rel=0.01)
     assert pl.gamma.val == pytest.approx(1.931138404465634, rel=0.01)
     assert pl.ampl.val == pytest.approx(1.7413534602287168e-4, rel=0.01)
+
+    s1 = None
+
+    # Ensure we can "remove" the primini fit and get a fit
+    #
+    # The best-fit values should be the same as with the primini
+    # fit (as reported by 2235e1c738f85a6f675cb295510b9a5d98d30714)
+    #
+    ui.set_iter_method('none')
+    ui.fit()
+
+    fr = ui.get_fit_results()
+
+    assert fr.itermethodname == 'none'
+    assert fr.methodname == 'levmar'
+    assert fr.statname == 'chi2gehrels'
+    assert fr.numpoints == 42
+    assert fr.dof == 40
+    assert fr.succeeded
+    assert fr.nfev == 4
+    assert fr.dstatval == pytest.approx(0)
