@@ -21,6 +21,7 @@ from __future__ import print_function
 
 import numpy
 from sherpa.utils.logging import config_logger
+from sherpa.utils.err import IOErr
 from sherpa.astro import ui
 from .utils import load_error_msg, load_wrapper, model_wrapper, \
     simple_wrapper, fit_wrapper, plot_wrapper
@@ -30,7 +31,7 @@ logger = config_logger(__name__)
 
 try:
     import stk
-except:
+except ImportError:
     logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 # Global list of dataset ids in use
@@ -73,7 +74,7 @@ class DataStack():
         for dataid in self.dataset_ids:
             try:
                 del _all_dataset_ids[dataid]
-            except:
+            except KeyError:
                 pass
 
     @property
@@ -117,22 +118,39 @@ class DataStack():
         standard output channel. The information displayed depends on the
         type of each data set.
         """
+
+        # The observation-date (MJD) format keyword was MJD_OBS but
+        # has changed (CIAO 4.12) for Chandra data to MJD-OBS, so
+        # need to look for both. The idea is to use the new key
+        # and then fall back to the old one.
+        #
         for dataset in self.filter_datasets():
             obsid = "N/A"
             time = "N/A"
-            if hasattr(dataset['data'], 'header'):
+            timekey = 'MJD-OBS'
+            try:
+                hdr = dataset['data'].header
+
                 try:
-                    obsid = dataset['data'].header['OBS_ID']
+                    obsid = hdr['OBS_ID']
                 except KeyError:
                     pass
-                try:
-                    time = dataset['data'].header['MJD_OBS']
-                except KeyError:
-                    pass
+
+                for key in ['MJD-OBS', 'MJD_OBS']:
+                    try:
+                        time = hdr[key]
+                        timekey = key
+                        break
+                    except KeyError:
+                        pass
+
+            except AttributeError:
+                pass
+
             print('{0}: {1} {2}: {3} {4}: {5}'.format(dataset['id'],
                                                       dataset['data'].name,
                                                       'OBS_ID', obsid,
-                                                      "MJD_OBS", time))
+                                                      timekey, time))
 
     # QUS: should this return a copy of the list?
     def get_stack_ids(self):
@@ -210,10 +228,9 @@ class DataStack():
         # File Stacks. If the file argument is a stack file, expand the
         # file and call this function for each file in the stack.
         try:
-            files = stk.build(arg)
-            for file in files:
-                self._load_func(ui.load_pha, file, use_errors)
-        except:
+            for infile in stk.build(arg):
+                self._load_func(ui.load_pha, infile, use_errors)
+        except (NameError, OSError, IOErr):
             self._load_func(ui.load_pha, arg, use_errors)
 
     def thaw(self, *pars):
