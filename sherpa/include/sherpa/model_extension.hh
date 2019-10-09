@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2019 Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 #include <iostream>
 #include <limits>
 
-#define TOL (std::numeric_limits< double >::epsilon());
+#define TOL (std::numeric_limits< float >::epsilon());
 
 template <typename ArrayType>
 class FunctionWithParams {
