@@ -160,7 +160,7 @@ fit the model to the data
    statval   = 840.2511999999999
    numpoints = 6
    dof       = 4
-   qval      = 1.46616165292e-180
+   qval      = 1.4661616529226985e-180
    rstat     = 210.06279999999998
 
 The fields in the :py:class:`~sherpa.fit.StatInfoResults` depend on
@@ -229,8 +229,8 @@ provides a summary of the fit:
    Probability [Q-value] = 4.67533e-20
    Reduced statistic     = 24.2048
    Change in statistic   = 743.432
-      polynom1d.c0   -11.0742    
-      polynom1d.c2   0.503612    
+      polynom1d.c0   -11.0742     +/- 2.91223     
+      polynom1d.c2   0.503612     +/- 0.0311568   
 
 The information is also available directly as fields of the
 :py:class:`~sherpa.fit.FitResults` object:
@@ -242,13 +242,13 @@ The information is also available directly as fields of the
    statname       = chi2
    succeeded      = True
    parnames       = ('polynom1d.c0', 'polynom1d.c2')
-   parvals        = (-11.074165156709268, 0.50361247735062253)
+   parvals        = (-11.074165156709268, 0.5036124773506225)
    statval        = 96.8190901009578
    istatval       = 840.2511999999999
-   dstatval       = 743.432109899
+   dstatval       = 743.4321098990422
    numpoints      = 6
    dof            = 4
-   qval           = 4.67533320771e-20
+   qval           = 4.675333207707564e-20
    rstat          = 24.20477252523945
    message        = successful termination
    nfev           = 6
@@ -342,9 +342,9 @@ solution, with a reduced chi square value of :math:`\simeq 1.3`:
    Probability [Q-value] = 0.259653
    Reduced statistic     = 1.33894
    Change in statistic   = 92.8023
-      polynom1d.c0   -9.38489    
-      polynom1d.c1   -2.41692    
-      polynom1d.c2   0.478273       
+      polynom1d.c0   -9.38489     +/- 2.91751     
+      polynom1d.c1   -2.41692     +/- 0.250889    
+      polynom1d.c2   0.478273     +/- 0.0312677   
 
 The previous plot objects can be used, but the model plot has to be
 updated to reflect the new model values. Three new plot styles are used:
@@ -410,14 +410,14 @@ be able to find the best-fit location.
    
    >>> print(mdl.pars[1])
    val         = 10.0
-   min         = -3.40282346639e+38
-   max         = 3.40282346639e+38
+   min         = -3.4028234663852886e+38
+   max         = 3.4028234663852886e+38
    units       = 
    frozen      = False
    link        = None
    default_val = 10.0
-   default_min = -3.40282346639e+38
-   default_max = 3.40282346639e+38
+   default_min = -3.4028234663852886e+38
+   default_max = 3.4028234663852886e+38
 
 How did the optimiser vary the parameters?
 ------------------------------------------
@@ -440,9 +440,9 @@ to make sure that any existing file is overwritten):
    Probability [Q-value] = 0.259653
    Reduced statistic     = 1.33894
    Change in statistic   = 196013
-      polynom1d.c0   -9.38489    
-      polynom1d.c1   -2.41692    
-      polynom1d.c2   0.478273    
+      polynom1d.c0   -9.38489     +/- 2.91751     
+      polynom1d.c1   -2.41692     +/- 0.250889    
+      polynom1d.c2   0.478273     +/- 0.0312677   
 
 The output file is a simple ASCII file where the columns give the
 function evaluation number, the statistic, and the parameter values::
@@ -498,7 +498,7 @@ see if freeing up :math:`c_1` is statistically meaningful.
 
    >>> from sherpa.utils import calc_mlr
    >>> calc_mlr(res.dof - res2.dof, res.statval - res2.statval)
-   5.7788876325820937e-22
+   5.778887632582094e-22
 
 This provides evidence that the three-term model (with :math:`c_1`
 free) is a statistically better fit, but
@@ -566,9 +566,9 @@ by ``fit``):
    sigma       = 1
    percent     = 68.2689492137
    parnames    = ('polynom1d.c0', 'polynom1d.c1', 'polynom1d.c2')
-   parvals     = (-9.3848895072689729, -2.4169154937357664, 0.47827334260997567)
-   parmins     = (-2.9175079401565722, -0.25088931712955043,-0.031267664298717336)
-   parmaxes    = (2.9175079401565722, 0.25088931712955043, 0.031267664298717336)
+   parvals     = (-9.384889507268973, -2.4169154937357664, 0.47827334260997567)
+   parmins     = (-2.917507940156572, -0.2508893171295504, -0.031267664298717336)
+   parmaxes    = (2.917507940156572, 0.2508893171295504, 0.031267664298717336)
    nfits       = 0
 
 The default is to calculate the one-sigma (68.3%) limits for
@@ -652,26 +652,6 @@ The order of these rows and columns matches that of the
 
 Changing the estimator
 ----------------------
-
-.. note::
-
-   There appears to be a
-   `bug in Sherpa <https://github.com/sherpa/sherpa/issues/342>`_
-   whereby calling ``est_errors`` with the ``Confidence``
-   method here will fail with the message::
-
-       IndexError: tuple index out of range
-
-   If you see this message then it appears that the ``thaw_indices``
-   attribute of the fit object has got out of synchronization and
-   needs to be reset with:
-   
-   >>> f.thaw_indices = tuple(i for i, p in enumerate(f.model.pars)
-   ...                        if not p.frozen)
-
-   It should not be needed in most cases (it is only needed here
-   because of the
-   :ref:`earlier change to thaw c1 <fit_thaw_c1>`).
 
 .. _fit_confidence_call:
 
@@ -771,7 +751,7 @@ errors on just :math:`c_1` can be evaluated with the following:
    fitname     = levmar
    statname    = chi2gehrels
    sigma       = 1
-   percent     = 68.2689492137
+   percent     = 68.26894921370858
    parnames    = ('polynom1d.c1',)
    parvals     = (-2.4169154937357664,)
    parmins     = (-0.25088931712955054,)
