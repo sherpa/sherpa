@@ -8338,8 +8338,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -10423,7 +10423,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     # DOC-TODO: how is this used? simple testing didn't seem to make any
-    # difference with chips
+    # difference (using the chips backend)
     def get_split_plot(self):
         """Return the plot attributes for displays with multiple plots.
 
@@ -10466,6 +10466,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: discussion of preferences needs better handling
     # of how it interacts with the chosen plot backend.
+    #
     def get_data_plot_prefs(self):
         """Return the preferences for plot_data.
 
@@ -10493,15 +10494,21 @@ class Session(NoNewAttributesAfterInit):
         `plot_ratio`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
-        ``errcolor``
+        The following preferences are recognized by the matplotlib
+        backend:
+
+        ``barsabove``
+           The barsabove argument for the matplotlib errorbar function.
+
+        ``capsize``
+           The capsize argument for the matplotlib errorbar function.
+
+        ``color``
+           The color to use (will be over-ridden by more-specific
+           options below). The default is ``None``.
+
+        ``ecolor``
            The color to draw error bars. The default is ``None``.
-
-        ``errstyle``
-           How to draw errors. The default is ``line``.
-
-        ``errthickness``
-           What thickness of line to draw error bars. The default is
-           ``None``.
 
         ``linecolor``
            What color to use for the line connecting the data points.
@@ -10509,29 +10516,22 @@ class Session(NoNewAttributesAfterInit):
 
         ``linestyle``
            How should the line connecting the data points be drawn.
-           The default is ``0``, which means no line is drawn.
+           The default is 'None', which means no line is drawn.
 
-        ``linethickness``
-           What thickness should be used to draw the line connecting
-           the data points. The default is ``None``.
+        ``marker``
+           What style is used for the symbols. The default is ``'.'``
+           which indicates a point.
+
+        ``markerfacecolor``
+           What color to draw the symbol representing the data points.
+           The default is ``None``.
+
+        ``markersize``
+           What size is the symbol drawn. The default is ``None``.
 
         ``ratioline``
            Should a horizontal line be drawn at y=1?  The default is
            ``False``.
-
-        ``symbolcolor``
-           What color to draw the symbol representing the data points.
-           The default is ``None``.
-
-        ``symbolfill``
-           Should the symbol be drawn filled? The default is ``False``.
-
-        ``symbolsize``
-           What size is the symbol drawn. The default is ``3``.
-
-        ``symbolstyle``
-           What style is used for the symbols. The default is ``4``
-           which means circle for the ChIPS back end.
 
         ``xaxis``
            The default is ``False``
@@ -10561,7 +10561,7 @@ class Session(NoNewAttributesAfterInit):
         and not display Y error bars.
 
         >>> prefs = get_data_plot_prefs()
-        >>> prefs['symbolcolor'] = 'green'
+        >>> prefs['color'] = 'green'
         >>> prefs['yerrorbars'] = False
 
         """
@@ -10806,66 +10806,8 @@ class Session(NoNewAttributesAfterInit):
         `plot_bkg_model`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
-        ``errcolor``
-           The color to draw error bars. The default is ``None``.
-
-        ``errstyle``
-           How to draw errors. The default is ``None``.
-
-        ``errthickness``
-           What thickness of line to draw error bars. The default is
-           ``None``.
-
-        ``linecolor``
-           What color to use for the line connecting the data points.
-           The default is ``red``.
-
-        ``linestyle``
-           How should the line connecting the data points be drawn.
-           The default is ``1``, which means a solid line is drawn.
-
-        ``linethickness``
-           What thickness should be used to draw the line connecting
-           the data points. The default is ``3``.
-
-        ``ratioline``
-           Should a horizontal line be drawn at y=1?  The default is
-           ``False``.
-
-        ``symbolcolor``
-           What color to draw the symbol representing the data points.
-           The default is ``None``.
-
-        ``symbolfill``
-           Should the symbol be drawn filled? The default is ``True``.
-
-        ``symbolsize``
-           What size is the symbol drawn. The default is ``None``.
-
-        ``symbolstyle``
-           What style is used for the symbols. The default is ``0``,
-           which means no symbol is used.
-
-        ``xaxis``
-           The default is ``False``
-
-        ``xerrorbars``
-           Should error bars be drawn for the X axis. The default is
-           ``False``.
-
-        ``xlog``
-           Should the X axis be drawn with a logarithmic scale? The
-           default is ``False``. This field can also be changed with the
-           `set_xlog` and `set_xlinear` functions.
-
-        ``yerrorbars``
-           Should error bars be drawn for the Y axis. The default is
-           ``False``.
-
-        ``ylog``
-           Should the Y axis be drawn with a logarithmic scale? The
-           default is ``False``. This field can also be changed with the
-           `set_ylog` and `set_ylinear` functions.
+        The preferences recognized by the matplotlib backend are the
+        same as for `get_data_plot_prefs`.
 
         Examples
         --------
@@ -10874,7 +10816,7 @@ class Session(NoNewAttributesAfterInit):
         to display the model:
 
         >>> prefs = get_model_plot_prefs()
-        >>> prefs['linecolor'] = 'green'
+        >>> prefs['color'] = 'green'
 
         """
         return self._modelplot.plot_prefs
@@ -12763,8 +12705,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -12847,8 +12789,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         Raises
         ------
@@ -12942,8 +12884,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------
@@ -13014,8 +12956,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------
@@ -13065,7 +13007,6 @@ class Session(NoNewAttributesAfterInit):
         return self._cdfplot
 
     # DOC-TODO: what does xlabel do?
-    # DOC-TODO: is clearwindow a ChIPS-only setting?
     def plot_trace(self, points, name="x", xlabel="x",
                    replot=False, overplot=False, clearwindow=True):
         """Create a trace plot of row number versus value.
@@ -13090,8 +13031,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------
@@ -13169,8 +13110,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating the
+           plot?
 
         See Also
         --------

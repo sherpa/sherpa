@@ -70,9 +70,9 @@ class XSPECMock(Mock):
         return "999.999.999"
 
 
-# It's not clear if pylab is needed here. Should ChIPS and Crates be
-# mocked too? That is, do we care if the *_backend.py modules are
-# documented?
+# It's not clear if pylab is needed here. At present non of the
+# CIAO-related modules (e.g. the crates I/O backend) are mocked;
+# should they be?
 #
 sys.modules['astropy.io.fits'] = Mock()
 sys.modules['pylab'] = PylabMock()
