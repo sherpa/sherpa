@@ -276,6 +276,7 @@ burden...
       plot_bkg_delchi
       plot_bkg_fit
       plot_bkg_fit_delchi
+      plot_bkg_fit_ratio
       plot_bkg_fit_resid
       plot_bkg_model
       plot_bkg_ratio
@@ -288,6 +289,7 @@ burden...
       plot_energy_flux
       plot_fit
       plot_fit_delchi
+      plot_fit_ratio
       plot_fit_resid
       plot_kernel
       plot_model

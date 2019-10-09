@@ -11024,6 +11024,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11123,6 +11126,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11191,6 +11197,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11238,6 +11247,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11301,6 +11313,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11351,6 +11366,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11404,6 +11422,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11456,6 +11477,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11508,6 +11532,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11556,6 +11583,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11574,6 +11604,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
@@ -11614,6 +11645,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11697,6 +11731,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11798,6 +11835,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11843,6 +11883,126 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
+    def _plot_bkg_jointplot(self, plot2, id=None, bkg_id=None,
+                            replot=False, overplot=False,
+                            clearwindow=True):
+        """Create a joint plot for bkg, vertically aligned, fit data on the top.
+
+        Parameters
+        ----------
+        plot2 : sherpa.plot.Plot instance
+           The plot to appear in the bottom panel.
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to ``True`` to use the previous values. The default is
+           ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        """
+
+        # See the comments in sherpa/ui/utils.py::_plot_jointplot()
+        #
+        plot1 = self._bkgfitplot
+        self._jointplot.reset()
+        if not sherpa.utils.bool_cast(replot):
+            plot1 = self._prepare_plotobj(id, plot1, bkg_id=bkg_id)
+            plot2 = self._prepare_plotobj(id, plot2, bkg_id=bkg_id)
+        try:
+            sherpa.plot.begin()
+            self._jointplot.plottop(plot1, overplot=overplot,
+                                    clearwindow=clearwindow)
+
+            oldval = plot2.plot_prefs['xlog']
+            if (('xlog' in self._bkgdataplot.plot_prefs and
+                 self._bkgdataplot.plot_prefs['xlog']) or
+                ('xlog' in self._bkgmodelplot.plot_prefs and
+                 self._bkgmodelplot.plot_prefs['xlog'])):
+                plot2.plot_prefs['xlog'] = True
+
+            self._jointplot.plotbot(plot2, overplot=overplot)
+
+            plot2.plot_prefs['xlog'] = oldval
+        except:
+            sherpa.plot.exceptions()
+            raise
+        else:
+            sherpa.plot.end()
+
+    def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
+                           overplot=False, clearwindow=True):
+        """Plot the fit results, and the data/model ratio, for the background of
+        a PHA data set.
+
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_ratio` - for a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_fit_ratio`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the ``bkg_id`` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
+
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+
+        Examples
+        --------
+
+        Plot the background fit and the ratio of the background to
+        this fit for the default data set:
+
+        >>> plot_bkg_fit_ratio()
+
+        """
+
+        self._plot_bkg_jointplot(self._bkgratioplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
+
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
         """Plot the fit results, and the residuals, for the background of
@@ -11866,8 +12026,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11887,8 +12047,10 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
         Examples
@@ -11899,32 +12061,11 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_resid()
 
         """
-        self._jointplot.reset()
-        fp = self._bkgfitplot
-        rp = self._bkgresidplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp, bkg_id=bkg_id)
-            rp = self._prepare_plotobj(id, rp, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = rp.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
-                rp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(rp, overplot=overplot)
-
-            rp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_bkg_jointplot(self._bkgresidplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
 
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True):
@@ -11949,8 +12090,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           Should the existing plot area be cleared before creating the
-           plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11970,8 +12111,10 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
         Examples
@@ -11983,32 +12126,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_delchi()
 
         """
-        self._jointplot.reset()
-        fp = self._bkgfitplot
-        dp = self._bkgdelchiplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp, bkg_id=bkg_id)
-            dp = self._prepare_plotobj(id, dp, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
-
-            oldval = dp.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
-                dp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(dp, overplot=overplot)
-
-            dp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_bkg_jointplot(self._bkgdelchiplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
 
     ###########################################################################
     # Analysis Functions

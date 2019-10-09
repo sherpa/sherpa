@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,40 +16,73 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import numpy
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+import numpy as np
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro.data import DataPHA
 from sherpa.astro.plot import DataPlot, SourcePlot
-from sherpa.models.basic import PowLaw1D
-from sherpa.astro.optical import AbsorptionGaussian
+from sherpa.models.basic import Const1D, Gauss1D
 from sherpa import stats
 
 import pytest
 
 
-import logging
-logger = logging.getLogger('sherpa')
+def test_sourceplot():
 
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "energy"
 
-class test_plot(SherpaTestCase):
+    # use a model that is "okay" to use with keV bins
+    #
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
 
-    def setUp(self):
-        self.old_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
 
-        self.data = DataPHA('', numpy.arange(10), numpy.ones(10),
-                            bin_lo = numpy.arange(0.1, 10, 0.1),
-                            bin_hi = numpy.arange(0.2, 10.1, 0.1) )
-        self.data.units="energy"
-        self.src = PowLaw1D('p1')*AbsorptionGaussian('abs1')
+    sp = SourcePlot()
+    sp.prepare(data, src)
 
-    def tearDown(self):
-        logger.setLevel(self.old_level)
+    # add in several asserts to check that something has been
+    # added to the object
+    #
+    assert sp.xlabel == 'Energy (keV)'
 
-    def test_sourceplot(self):
-        sp = SourcePlot()
-        sp.prepare(self.data, self.src)
-        #sp.plot()
+    # the following depends on the backend
+    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
+
+    assert sp.title == 'Source Model of '
+
+    assert sp.xlo == pytest.approx(bins[:-1])
+    assert sp.xhi == pytest.approx(bins[1:])
+
+    # The check of the values is just to check that things are going
+    # as expected, so the model values have been adjusted so that
+    # an "integer" check can be used with enough precision to make
+    # sure that the model is being evaluated correctly, but without
+    # a very-high-precision check
+    #
+    yexp = np.asarray([9998, 9997, 9997, 9997, 9996, 9996, 9995, 9994,
+                       9994, 9993, 9992, 9991, 9990, 9988, 9987, 9985,
+                       9983, 9982, 9980, 9977, 9975, 9973, 9970, 9967,
+                       9964, 9961, 9958, 9955, 9951, 9948, 9944, 9941,
+                       9937, 9934, 9930, 9927, 9923, 9920, 9917, 9914,
+                       9911, 9909, 9907, 9905, 9903, 9902, 9901, 9900,
+                       9900, 9900, 9900, 9901, 9902, 9903, 9905, 9907,
+                       9909, 9911, 9914, 9917, 9920, 9923, 9927, 9930,
+                       9934, 9937, 9941, 9944, 9948, 9951, 9955, 9958,
+                       9961, 9964, 9967, 9970, 9973, 9975, 9977, 9980,
+                       9982, 9983, 9985, 9987, 9988, 9990, 9991, 9992,
+                       9993, 9994, 9994, 9995, 9996, 9996, 9997, 9997,
+                       9997, 9998, 9998])
+
+    assert (sp.y.astype(np.int) == yexp).all()
+    # sp.plot()
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
