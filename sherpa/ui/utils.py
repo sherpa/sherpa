@@ -8299,7 +8299,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id=1, otherids=(), num=500, bins=25, numcores=None,
-                    replot=False, overplot=False, clearwindow=True):
+                    replot=False, overplot=False, clearwindow=True,
+                    **kwargs):
         """Compute and plot a histogram of likelihood ratios by simulating data.
 
         Compare the likelihood of the null model to an alternative model
@@ -8403,7 +8404,7 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            lrplot.plot(overplot=overplot, clearwindow=clearwindow)
+            lrplot.plot(overplot=overplot, clearwindow=clearwindow, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
