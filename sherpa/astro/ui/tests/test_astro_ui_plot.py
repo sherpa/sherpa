@@ -971,10 +971,11 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
 
     # Note that for PHA data sets, the mode is drawn as a histogram,
     # so get_model_plot_prefs doesn't actually work. We need to change
-    # the histogram prefs instead.
+    # the histogram prefs instead. See issue
+    # https://github.com/sherpa/sherpa/issues/672
     #
     # prefs = ui.get_model_plot_prefs()
-    prefs = ui._session._modelhisto.histo_prefs
+    prefs = ui.get_model_plot().histo_prefs
 
     # check the preference are as expected for the boolean cases
     assert not prefs['xlog']
