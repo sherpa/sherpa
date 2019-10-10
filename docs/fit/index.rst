@@ -375,7 +375,7 @@ a specialization of
 :py:class:`~sherpa.plot.SplitPlot` called
 :py:class:`~sherpa.plot.JointPlot` for this case. In the following
 example the plots from above are re-used, as no settings have
-changed, so there is no need to pcall the
+changed, so there is no need to call the
 ``prepare`` method of the component plots:
 
    >>> from sherpa.plot import JointPlot
