@@ -1870,6 +1870,7 @@ class Confidence2D(DataContour, Point):
         if type(fit.stat) in (LeastSq,):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
+    # TODO: should this be overcontour rather than overplot?
     def contour(self, overplot=False, clearwindow=True, **kwargs):
 
         if self.log[0]:
@@ -1877,9 +1878,17 @@ class Confidence2D(DataContour, Point):
         if self.log[1]:
             self.contour_prefs['ylog'] = True
 
+        # Work around possible naming issue with overplot/overcontour.
+        # Set overcontour if either overcontour or overplot are set.
+        # The overcontour argument must be removed from kwargs if
+        # sent, hence it us used first here (if second lazy evaluation
+        # could mean the pop is never executed).
+        #
+        overcontour = kwargs.pop('overcontour', False) or overplot
+
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel, overcontour=overplot,
+                        ylabel=self.ylabel, overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)
 
         # Note: the user arguments are not applied to the point
