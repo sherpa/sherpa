@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +19,6 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves import zip as izip
-from six.moves import xrange
 import logging
 import os
 import signal
@@ -332,12 +331,12 @@ class FitResults(NoNewAttributesAfterInit):
         s += '\nChange in statistic   = %g' % self.dstatval
 
         if self.covar is None:
-            for name, val in izip(self.parnames, self.parvals):
+            for name, val in zip(self.parnames, self.parvals):
                 s += '\n   %-12s   %-12g' % (name, val)
         else:
             covar_err = sqrt(self.covar.diagonal())
-            for name, val, covarerr in izip(self.parnames, self.parvals,
-                                            covar_err):
+            for name, val, covarerr in zip(self.parnames, self.parvals,
+                                           covar_err):
                 s += '\n   %-12s   %-12g +/- %-12g' % (name, val, covarerr)
 
         if self.param_warnings != "":
@@ -477,8 +476,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
             str += hfmt % ('Param', 'Best-Fit', 'Lower Bound', 'Upper Bound')
             str += hfmt % ('-' * 5, '-' * 8, '-' * 11, '-' * 11)
 
-            for name, val, lower, upper in izip(self.parnames, self.parvals,
-                                                self.parmins, self.parmaxes):
+            for name, val, lower, upper in zip(self.parnames, self.parvals,
+                                               self.parmins, self.parmaxes):
 
                 str += '\n   %-12s %12g ' % (name, val)
                 if is_iterable(lower):
@@ -903,7 +902,7 @@ class IterFit(NoNewAttributesAfterInit):
 
                     j = 0
                     kmin = 0
-                    for i in xrange(0, ressize):
+                    for i in range(0, ressize):
                         while not(newmask[j]) and j < filsize:
                             j = j + 1
                         if j >= filsize:
@@ -916,7 +915,7 @@ class IterFit(NoNewAttributesAfterInit):
                             kmax = j + grow
                             if kmax >= filsize:
                                 kmax = filsize - 1
-                            for k in xrange(kmin, kmax + 1):
+                            for k in range(kmin, kmax + 1):
                                 newmask[k] = False
                         j = j + 1
 
@@ -1034,14 +1033,7 @@ class Fit(NoNewAttributesAfterInit):
         # that is, in case an exception is raised and
         # this parameter needs to be thawed in the
         # exception handler.
-        self.thaw_indices = ()
-        iter = 0
-        for current_par in self.model.pars:
-            if current_par.frozen:
-                pass
-            else:
-                self.thaw_indices = self.thaw_indices + (iter,)
-            iter = iter + 1
+        self.calc_thaw_indices()
         self.current_frozen = -1
 
         # The number of times that reminimization has occurred
@@ -1056,6 +1048,11 @@ class Fit(NoNewAttributesAfterInit):
                                 itermethod_opts)
         NoNewAttributesAfterInit.__init__(self)
 
+    def calc_thaw_indices(self):
+        self.thaw_indices = \
+            tuple([i for i, par in enumerate(self.model.pars) if not \
+                   par.frozen])
+        
     def __setstate__(self, state):
         self.__dict__.update(state)
 
@@ -1264,6 +1261,11 @@ class Fit(NoNewAttributesAfterInit):
             print(' '.join(vals), file=self._iterfit._file)
             self._iterfit._file.close()
             self._iterfit._file = None
+
+        # if a re-fit was performed with more/less thawed pars then
+        # self.thaw_indices must be re-calculated otherwise Confidence
+        # will get IndexError, see issue #342 for details
+        self.calc_thaw_indices()
 
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2006-2010, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2006-2010, 2016, 2017, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -135,8 +136,6 @@ History:
 2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
 from __future__ import print_function
-
-import six
 
 import numpy as np
 import os
@@ -309,10 +308,7 @@ def xpaget(cmd, template=_DefTemplate, doRaise=True):
                 else:
                     warnings.warn(fullErrMsg)
             return_value = p.stdout.read()
-            if six.PY2:
-                return return_value
-            else:
-                return return_value.decode()
+            return return_value.decode()
         finally:
             p.stdout.close()
             p.stderr.close()
@@ -427,7 +423,7 @@ def _formatOptions(kargs):
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
     """
-    arglist = ["%s=%s" % keyVal for keyVal in six.iteritems(kargs)]
+    arglist = ["%s=%s" % keyVal for keyVal in kargs.items()]
     return '%s' % (','.join(arglist))
 
 
@@ -594,7 +590,7 @@ class DS9Win:
             data=arr.tobytes(),
         )
 
-        for keyValue in six.iteritems(kargs):
+        for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
 
 # showBinFile is commented out because it is broken with ds9 3.0.3
@@ -645,7 +641,7 @@ class DS9Win:
         if arrKeys:
             raise RuntimeErr('badarr', arrKeys.keys())
 
-        for keyValue in six.iteritems(kargs):
+        for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
 
     def xpaget(self, cmd):

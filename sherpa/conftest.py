@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,12 +26,8 @@ from numpy import VisibleDeprecationWarning
 
 from sherpa.utils.testing import SherpaTestCase
 
-from six.moves import reload_module
-
-try:  # Python 3
-    from unittest import mock
-except ImportError:  # Python 2
-    import mock
+import importlib
+from unittest import mock
 
 try:
     from astropy.io.fits.verify import VerifyWarning
@@ -63,9 +59,27 @@ except ImportError:
 TEST_DATA_OPTION = "--test-data"
 
 
+# Follow https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
+# for adding a command-line option to let slow-running tests be run
+# (not by default), which combines with existing code and options.
+#
 def pytest_addoption(parser):
     parser.addoption("-D", TEST_DATA_OPTION, action="store",
                      help="Alternative location of test data files")
+
+    parser.addoption("--runslow", action="store_true", default=False,
+                     help="run slow tests")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
 
 
 # Whilelist of known warnings. One can associate different warning messages
@@ -84,46 +98,50 @@ known_warnings = {
     UserWarning:
         [
             r"File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",
-            r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode."
+            r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode.",
+            r"Converting array .* to numpy array",
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
          # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
          r"numpy.dtype size changed, may indicate binary " +
-         r"incompatibility. Expected 96, got 88"
+         r"incompatibility. Expected 96, got 88",
+         # I am getting the following from astropy with at least python 2.7 during the conda tests
+         r"numpy.ufunc size changed, may indicate binary ",
          ],
      VisibleDeprecationWarning:
-        [r"Passing `normed=True`*",
-         r"sctypeNA and typeNA will be removed.*",
-        ],
+        [],
 }
 
-if sys.version_info >= (3, 2):
-    python3_warnings = {
-        ResourceWarning:
-            [
-                r"unclosed file .*king_kernel.txt.* closefd=True>",
-                r"unclosed file .*phas.dat.* closefd=True>",
-                r"unclosed file .*data.txt.* closefd=True>",
-                r"unclosed file .*cstat.dat.* closefd=True>",
-                r"unclosed file .*data1.dat.* closefd=True>",
-                r"unclosed file .*aref_Cedge.fits.* closefd=True>",
-                r"unclosed file .*aref_sample.fits.* closefd=True>",
-                r"unclosed file .*/tmp.* closefd=True>",
-                # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
-                r"unclosed file .*/dev/null.* closefd=True>",
-                r"unclosed file .*table.txt.* closefd=True>",
-            ],
-        RuntimeWarning:
-            [r"invalid value encountered in sqrt",
-             # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
-             r"numpy.dtype size changed, may indicate binary " +
-             r"incompatibility. Expected 96, got 88",
-             # See https://github.com/numpy/numpy/pull/432
-             r"numpy.ufunc size changed"
-             ],
-    }
-    known_warnings.update(python3_warnings)
+# Since Sherpa now requires Python 3.5 at a minumum, the following
+# are always added, but kept as a separate dict and then merged
+# to make it clearer where they came from.
+#
+python3_warnings = {
+    ResourceWarning:
+        [
+            r"unclosed file .*king_kernel.txt.* closefd=True>",
+            r"unclosed file .*phas.dat.* closefd=True>",
+            r"unclosed file .*data.txt.* closefd=True>",
+            r"unclosed file .*cstat.dat.* closefd=True>",
+            r"unclosed file .*data1.dat.* closefd=True>",
+            r"unclosed file .*aref_Cedge.fits.* closefd=True>",
+            r"unclosed file .*aref_sample.fits.* closefd=True>",
+            r"unclosed file .*/tmp.* closefd=True>",
+            # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
+            r"unclosed file .*/dev/null.* closefd=True>",
+            r"unclosed file .*table.txt.* closefd=True>",
+        ],
+    RuntimeWarning:
+        [r"invalid value encountered in sqrt",
+         # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
+         r"numpy.dtype size changed, may indicate binary " +
+         r"incompatibility. Expected 96, got 88",
+         # See https://github.com/numpy/numpy/pull/432
+         r"numpy.ufunc size changed"
+         ],
+}
+known_warnings.update(python3_warnings)
 
 
 if have_astropy:
@@ -139,6 +157,18 @@ if have_astropy:
         ],
     }
     known_warnings.update(astropy_warnings)
+
+try:
+    from matplotlib import MatplotlibDeprecationWarning
+
+    matplotlib_warnings = {
+        MatplotlibDeprecationWarning:
+            [r'Passing the drawstyle with the linestyle as a single string is deprecated.*'
+             ]
+    }
+    known_warnings.update(matplotlib_warnings)
+except ImportError:
+    pass
 
 
 # Can this be replaced by the warning support added in pytest 3.1?
@@ -199,6 +229,8 @@ def pytest_configure(config):
     This configuration hook overrides the default mechanism for test data self-discovery, if the --test-data command line
     option is provided
 
+    It also adds support for the "slow" test marker
+
     Parameters
     ----------
     config standard service injected by pytest
@@ -209,6 +241,8 @@ def pytest_configure(config):
             SherpaTestCase.datadir = path
     except ValueError:  # option not defined from command line, no-op
         pass
+
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
 
 
 @pytest.fixture(scope="session")
@@ -290,20 +324,20 @@ io_pkg : {}
     from sherpa import plot
     from sherpa.astro import plot as astro_plot
 
-    reload_module(plot)
-    reload_module(astro_plot)
+    importlib.reload(plot)
+    importlib.reload(astro_plot)
 
     # Force a reload, to make sure we always return a fresh instance, so we track the correct mock object
     from sherpa.plot import chips_backend
-    reload_module(chips_backend)
+    importlib.reload(chips_backend)
 
     def fin():
         monkeypatch.undo()
-        reload_module(sherpa)
-        reload_module(plot)
-        reload_module(astro_plot)
-        reload_module(sherpa.all)
-        reload_module(sherpa.astro.all)  # These are required because otherwise Python will not match imported classes.
+        importlib.reload(sherpa)
+        importlib.reload(plot)
+        importlib.reload(astro_plot)
+        importlib.reload(sherpa.all)
+        importlib.reload(sherpa.astro.all)  # These are required because otherwise Python will not match imported classes.
 
     request.addfinalizer(fin)
 

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,6 @@ from __future__ import absolute_import
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-from six import iteritems
 
 from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
@@ -108,7 +106,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         self._distances = {}
         for i, t_point in enumerate(self.template_model.parvals):
             self._distances[i] = numpy.linalg.norm(point - t_point, self.order)
-        self._distances = sorted(iteritems(self._distances), key=operator.itemgetter(1))
+        self._distances = sorted(self._distances.items(), key=operator.itemgetter(1))
 
     def interpolate(self, point, x_out):
         self._calc_distances(point)

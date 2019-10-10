@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -78,7 +78,7 @@ def equal_or_greater_than(version_string):
     return XSPEC_VERSION >= LooseVersion(version_string)
 
 
-class include_if(object):
+class include_if():
     """
     Generic decorator for including xspec models conditionally. It takes a boolean condition as an argument.
     If the boolean condition is not met, then the model is not included, and its function is replaced with a

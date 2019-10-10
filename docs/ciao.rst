@@ -13,13 +13,12 @@ from the
 `Sherpa GitHub page <https://github.com/sherpa/sherpa>`_,
 with the following modifications:
 
-* the plotting and I/O backends use the CIAO versions, namely
-  :term:`ChIPS` and :term:`Crates`, rather than
-  :term:`matplotlib` and :term:`astropy`;
+* the I/O backend uses the CIAO library :term:`Crates` rather than
+  :term:`astropy`;
 
 * a set of customized IPython routines are provided as part of
-  CIAO that automatically load Sherpa and related packages, as well
-  as tweak the IPython look and feel;
+  CIAO that automatically loads Sherpa and adjusts the appearance
+  of IPython (mainly changes to the prompt);
 
 * and the CIAO version of Sherpa includes the optional XSPEC model
   library (:py:mod:`sherpa.astro.xspec`).

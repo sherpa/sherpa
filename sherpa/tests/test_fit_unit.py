@@ -2625,6 +2625,7 @@ def assert_fit_results(fitres, rstat):
 # sherpa.utils.err.StatErr error with the message
 #   "No background data has been supplied. Use cstat"
 #
+@pytest.mark.xfail
 def test_563_still_exists():
     d = Data1D('test', [1, 2, 3], [4, 5, 6])
     mdl = Polynom1D()

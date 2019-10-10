@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -195,8 +196,6 @@ parameter::
 
 """
 
-from six import string_types
-
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
 # it looks like the following modules are being re-exported by this
@@ -205,10 +204,13 @@ from six import string_types
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
-
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
-from sherpa.stats import Cash, CStat, WStat
+from sherpa.stats import Cash, CStat, WStat, LeastSq
+
+from sherpa.fit import Fit
+from sherpa.data import Data1D, Data1DAsymmetricErrs
+from sherpa.optmethods import LevMar
 
 import numpy
 import logging
@@ -216,6 +218,9 @@ info = logging.getLogger("sherpa").info
 _log = logging.getLogger("sherpa")
 
 _tol = numpy.finfo(numpy.float).eps
+
+
+string_types = (str, )
 
 
 def flat(x):
@@ -758,3 +763,122 @@ class MCMC(NoNewAttributesAfterInit):
         stats = -2.0 * stats
 
         return (stats, accept, params)
+
+
+class ReSampleData(NoNewAttributesAfterInit):
+    """
+    The underlying low-level for the resample_data
+
+    Parameters
+    ----------
+    data
+       The data class Data1DAsymmetricErrs
+    model
+       The model to fit the data
+
+    Returns
+    -------
+    The class returns the best fit parameters for each realization.
+    
+    See Also
+    --------
+    resample_data
+
+    Example
+    -------
+
+    >>> load_ascii_with_errors(1, 'gro.txt', delta=False)
+    >>> data = get_data(1)
+    >>> method = LevMar()
+    >>> model = PowLaw1D('p1')
+    >>> set_model(1, model)
+    >>> fit = Fit(data, model, Chi2Gehrels(), method, Covariance())
+    >>> results = fit.fit()
+    >>> rd = ReSampleData(data, model)
+    >>> rd_results = rd(niter=10)
+    >>> print(rd_results)
+    rd_results = {'p1.gamma': [-0.2944764463053398, -0.48025660808404, -0.45290026618472473, -0.5238444562856396, -0.3549169211965681, -0.29119982744489403, -0.5136099861402832, -0.49899714779391674, -0.5308025556771122, -0.5645228923615183], 'p1.ampl': [60.757254200932465, 172.7375230511183, 149.6714174684889, 222.60620753447844, 87.33459341889869, 59.257672491708, 212.86125707286197, 194.83475286439503, 233.33238676025326, 275.75315162410527]}
+
+    """
+    def __init__(self, data, model):
+        self.data = data
+        self.model = model
+        NoNewAttributesAfterInit.__init__(self)
+        return
+    
+    def __call__(self, niter=1000, seed=None):
+        orig_pars = self.model.thawedpars
+        _level = _log.getEffectiveLevel()
+        result = None
+        try:
+            result = self.call(niter, seed)
+        except:
+            raise
+        finally:
+            # set the model back to original state
+            self.model.thawedpars = orig_pars
+            
+            # set the logger back to previous level
+            _log.setLevel(_level)
+        return result
+            
+    def call(self, niter, seed):
+
+        pars = {}
+        pars_index = {}
+        index = 0
+        for par in self.model.pars:
+            if par.frozen is False:
+                name = '%s.%s' % (par.modelname, par.name)
+                pars_index[index] = name
+                pars[name] = []
+                index += 1
+
+        data = self.data
+        y = data.y
+        x = data.x
+        if type(data) == Data1DAsymmetricErrs:
+            y_l = y - data.elo
+            y_h = y + data.ehi
+        elif isinstance(data, (Data1D,)):
+            y_l = data.staterror
+            y_h = data.staterror
+        else:
+            msg ="{0} {1}".format(ReSampleData.__name__, type(data))
+            raise NotImplementedError(msg)
+
+        numpy.random.seed(seed)
+        for j in range(niter):
+            ry = []
+            for i in range(len(y_l)): 
+                a = y_l[i]
+                b = y_h[i]
+                r = -1
+                while r < a or r > b:
+                    sigma = b - y[i]
+                    u = numpy.random.random_sample()
+                    if u < 0.5:
+                        sigma=y[i]-a
+                    r = numpy.random.normal(loc=y[i],scale=sigma,size=None)
+                    if u < 0.5 and r > y[i]:
+                        r = -1
+                    if u > 0.5 and r < y[i]:
+                        r = -1
+                ry.append(r)
+
+            # fit is performed for each simulated data point
+            fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq( ), LevMar())
+            fit_result = fit.fit()
+
+            for index, val in enumerate(fit_result.parvals):
+                name = pars_index[index]
+                pars[name].append(val)
+
+        result = {}
+        for index, name in pars_index.items():
+            avg = numpy.average(pars[name])
+            std = numpy.std(pars[name])
+            print(name, ': avg =', avg, ', std =', std)
+            result[name] = pars[name]
+
+        return result

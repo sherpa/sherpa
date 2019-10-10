@@ -28,7 +28,7 @@ import warnings
 import numpy
 import hashlib
 
-from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
+from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, IntegratedDataSpace2D
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
@@ -60,7 +60,7 @@ except:
             'installed.\nDynamic grouping functions will not be available.')
 
 
-__all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt')
+__all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatRMF')
 
 
 class myCacheARF:
@@ -86,6 +86,7 @@ class myCacheARF:
 @myCacheARF
 def my_arf_fold(a, b):
     return arf_fold(a, b)
+
 
 def _notice_resp(chans, arf, rmf):
     bin_mask = None
@@ -131,7 +132,7 @@ class DataOgipResponse(Data1DInt):
 
     # FIXME For a future time when we'll review this code in a deeper way: we
     # could have better separation of concerns if the initializers of `DataARF`
-    # and `DataRMF` did not rely on the `BaseData` initializer, and if the
+    # and `DataRMF` did not rely on the `Data` initializer, and if the
     # class hierarchy was better organized (e.g. it looks like children must
     # not call their super's initializer.  Also, I'd expect validation to
     # happen in individual methods rather than in a large one, and nested ifs
@@ -299,9 +300,7 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-
-    mask = property(BaseData._get_mask, BaseData._set_mask,
-                    doc=BaseData.mask.__doc__)
+    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi", "exposure", "ethresh")
 
     def _get_specresp(self):
         return self._specresp
@@ -314,22 +313,24 @@ class DataARF(DataOgipResponse):
 
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
-
+        self.specresp = specresp
+        self.bin_lo = bin_lo
+        self.bin_hi = bin_hi
+        self.exposure = exposure
+        self.header = header
+        self.ethresh = ethresh
         energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
         self._lo, self._hi = energ_lo, energ_hi
-
-        BaseData.__init__(self)
+        self.energ_lo = energ_lo
+        self.energ_hi = energ_hi
+        Data1DInt.__init__(self, name, energ_lo, energ_hi, specresp)
 
     def __str__(self):
         # Print the metadata first
-        old = self._fields
-        ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = BaseData.__str__(self)
-        finally:
-            self._fields = old
+            ss = Data.__str__(self)
+        except:
+            ss = self._fields
         return ss
 
     def __setstate__(self, state):
@@ -420,19 +421,28 @@ class DataRMF(DataOgipResponse):
 
     """
     _ui_name = "RMF"
-
-    mask = property(BaseData._get_mask, BaseData._set_mask,
-                    doc=BaseData.mask.__doc__)
+    _fields = ("name", "detchans", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "offset", "e_min",
+               "e_max", "ethresh")
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
                  header=None, ethresh=None):
-
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         if offset < 0:
             raise ValueError("offset must be >=0, not {}".format(offset))
-
+        self.energ_lo = energ_lo
+        self.energ_hi = energ_hi
+        self.offset = offset
+        self.detchans = detchans
+        self.e_min = e_min
+        self.e_max = e_max
+        self.header = header
+        self.n_grp = n_grp
+        self.f_chan = f_chan
+        self.n_chan = n_chan
+        self.matrix = matrix
+        self.ethresh = ethresh
         self._fch = f_chan
         self._nch = n_chan
         self._grp = n_grp
@@ -442,7 +452,7 @@ class DataRMF(DataOgipResponse):
         self._lo_unfiltered = self._lo[:]
         self._hi_unfiltered = self._hi[:]
         self.bin_mask = None
-        BaseData.__init__(self)
+        Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
 
     def __str__(self):
         # Print the metadata first
@@ -451,7 +461,7 @@ class DataRMF(DataOgipResponse):
         try:
             self._fields = tuple(filter((lambda x: x != 'header'),
                                         self._fields))
-            ss = BaseData.__str__(self)
+            ss = Data.__str__(self)
         finally:
             self._fields = old
         return ss
@@ -543,7 +553,7 @@ class DataRosatRMF(DataRMF):
         return energy_lo, energy_hi
 
 
-class DataPHA(Data1DInt):
+class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
     The PHA format is described in an OGIP document [1]_.
@@ -612,9 +622,8 @@ class DataPHA(Data1DInt):
     .. [2] Private communication with Keith Arnaud
 
     """
-
-    mask = property(BaseData._get_mask, BaseData._set_mask,
-                    doc=BaseData.mask.__doc__)
+    _fields = ("name", "channel", "counts", "bin_lo", "bin_hi", "grouping", "quality",
+               "exposure", "backscal", "areascal")
 
     def _get_grouped(self):
         return self._grouped
@@ -749,12 +758,23 @@ class DataPHA(Data1DInt):
     background_ids = property(_get_background_ids, _set_background_ids,
                               doc='IDs of defined background data sets')
 
-    _extra_fields = ('grouped', 'subtracted', 'units', 'rate', 'plot_fac',
-                     'response_ids', 'background_ids')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
+               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
+               'background_ids')
 
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
+        self.channel = channel
+        self.counts = counts
+        self.bin_lo = bin_lo
+        self.bin_hi = bin_hi
+        self.quality = quality
+        self.grouping = grouping
+        self.exposure = exposure
+        self.backscal = backscal
+        self.areascal = areascal
+        self.header = header
         self._grouped = (grouping is not None)
         self._original_groups = True
         self._subtracted = False
@@ -766,7 +786,7 @@ class DataPHA(Data1DInt):
         self._plot_fac = 0
         self.units = 'channel'
         self.quality_filter = None
-        BaseData.__init__(self)
+        Data1D.__init__(self, name, channel, counts, staterror, syserror)
 
     def __str__(self):
         # Print the metadata first
@@ -775,7 +795,7 @@ class DataPHA(Data1DInt):
         try:
             self._fields = tuple(filter((lambda x: x != 'header'),
                                         self._fields))
-            ss = BaseData.__str__(self)
+            ss = Data.__str__(self)
         finally:
             self._fields = old
         return ss
@@ -1236,7 +1256,7 @@ class DataPHA(Data1DInt):
                 data = counts
             # else:
             #     raise DataErr('mismatch', "filter", "data array")
-        return Data1DInt.apply_filter(self,
+        return Data1D.apply_filter(self,
                                       self.apply_grouping(data, groupfunc))
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
@@ -1758,7 +1778,6 @@ class DataPHA(Data1DInt):
         # We already have this split in the API when background data
         # is available and is subtracted.
         #
-        dep = None
         if numpy.iterable(val):
             dep = numpy.asarray(val, SherpaFloat)
         else:
@@ -2326,7 +2345,8 @@ class DataPHA(Data1DInt):
         # Don't use the middle of the channel anymore as the
         # grouping function.  That was just plain dumb.
         # So just get back an array of groups 1-N, if grouped
-        BaseData.notice(self, (lo,), (hi,),
+        # DATA-NOTE: need to clean this up.
+        self._data_space.filter.notice((lo,), (hi,),
                         (self.apply_grouping(self.channel,
                                              self._make_groups),),
                         ignore)
@@ -2384,6 +2404,7 @@ class DataPHA(Data1DInt):
 
 class DataIMG(Data2D):
     "Image data set, including functions for coordinate transformations"
+    _fields = Data2D._fields + ("sky", "eqpos", "coord", "header")
 
     def _get_coord(self):
         return self._coord
@@ -2413,10 +2434,12 @@ class DataIMG(Data2D):
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
                  header=None):
-        self._x0 = x0
-        self._x1 = x1
+        self.sky = sky
+        self.eqpos = eqpos
+        self.coord = coord
+        self.header = header
         self._region = None
-        BaseData.__init__(self)
+        Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
 
     def __str__(self):
         # Print the metadata first
@@ -2425,7 +2448,7 @@ class DataIMG(Data2D):
         try:
             self._fields = tuple(filter((lambda x: x != 'header'),
                                         self._fields))
-            ss = BaseData.__str__(self)
+            ss = Data.__str__(self)
         finally:
             self._fields = old
         return ss
@@ -2602,10 +2625,8 @@ class DataIMG(Data2D):
         elif coord.startswith('image'):
             coord = 'logical'
 
-        self.x0, self.x1 = getattr(self, 'get_' + coord)()
-        self._x0 = self.apply_filter(self.x0)
-        self._x1 = self.apply_filter(self.x1)
-
+        func = getattr(self, 'get_' + coord)
+        self.indep = func()
         self._set_coord(coord)
 
     def get_filter_expr(self):
@@ -2638,7 +2659,7 @@ class DataIMG(Data2D):
 
         elif not ignore:
             if self.mask is True:
-                self._set_mask(mask)
+                self.mask = mask
             else:
                 self.mask |= mask
         else:
@@ -2647,9 +2668,6 @@ class DataIMG(Data2D):
                 self.mask = mask
             else:
                 self.mask &= mask
-
-        # self._x0 = self.apply_filter(self.x0)
-        # self._x1 = self.apply_filter(self.x1)
 
     def get_bounding_mask(self):
         mask = self.mask
@@ -2759,52 +2777,21 @@ class DataIMG(Data2D):
 
 
 class DataIMGInt(DataIMG):
-
-    def _set_mask(self, val):
-        DataND._set_mask(self, val)
-        try:
-            self._x0lo = self.apply_filter(self.x0lo)
-            self._x0hi = self.apply_filter(self.x0hi)
-            self._x1lo = self.apply_filter(self.x1lo)
-            self._x1hi = self.apply_filter(self.x1hi)
-        except DataErr:
-            self._x0lo = self.x0lo
-            self._x1lo = self.x1lo
-            self._x0hi = self.x0hi
-            self._x1hi = self.x1hi
-
-    mask = property(DataND._get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
+    _fields = Data2DInt._fields + ("sky", "eqpos", "coord")
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
                  coord='logical', header=None):
-        self._x0lo = x0lo
-        self._x1lo = x1lo
-        self._x0hi = x0hi
-        self._x1hi = x1hi
         self._region = None
-        BaseData.__init__(self)
+        self.sky = sky
+        self.eqpos = eqpos
+        self.coord = coord
+        self.header = header
+        self.shape = shape
+        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
-    def set_coord(self, coord):
-        coord = str(coord).strip().lower()
-        # Destroys original data to conserve memory for big imgs
-        good = ('logical', 'image', 'physical', 'world', 'wcs')
-        if coord not in good:
-            raise DataErr('bad', 'coordinates', coord)
-
-        if coord.startswith('wcs'):
-            coord = 'world'
-        elif coord.startswith('image'):
-            coord = 'logical'
-
-        func = getattr(self, 'get_' + coord)
-        self.x0lo, self.x1lo, self.x0hi, self.x1hi = func()
-        self._x0lo = self.apply_filter(self.x0lo)
-        self._x0hi = self.apply_filter(self.x0hi)
-        self._x1lo = self.apply_filter(self.x1lo)
-        self._x1hi = self.apply_filter(self.x1hi)
-        self._set_coord(coord)
+    def _init_data_space(self, filter, *data):
+        return IntegratedDataSpace2D(filter, *data)
 
     def get_logical(self):
         coord = self.coord
@@ -2850,32 +2837,6 @@ class DataIMGInt(DataIMG):
             x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
-
-    # def get_indep(self, filter=False):
-    #     x0, x1 = DataIMG.get_indep(self, filter=filter)
-
-    #     halfwidth = numpy.array([.5,.5])
-    #     if self.coord == 'physical' and self.sky is not None:
-    #         halfwidth = numpy.array(self.sky.cdelt)/2.
-    #     elif self.coord == 'world' and self.eqpos is not None:
-    #         halfwidth = numpy.array(self.eqpos.cdelt)/2.
-
-    #     return (x0-halfwidth[0],x1-halfwidth[1],
-    #             x0+halfwidth[0],x1+halfwidth[1])
-
-    def get_indep(self, filter=False, model=None):
-        filter = bool_cast(filter)
-        if filter:
-            return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)
-        return (self.x0lo, self.x1lo, self.x0hi, self.x1hi)
-
-    def get_x0(self, filter=False):
-        indep = self.get_indep(filter)
-        return (indep[0] + indep[2]) / 2.0
-
-    def get_x1(self, filter=False):
-        indep = self.get_indep(filter)
-        return (indep[1] + indep[3]) / 2.0
 
     def get_axes(self):
         # FIXME: how to filter an axis when self.mask is size of self.y?

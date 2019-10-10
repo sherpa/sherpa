@@ -1,0 +1,45 @@
+package:
+ name: sherpa
+ version: {{ environ.get('SHERPA_VERSION') }}
+
+source:
+ path: ../../
+
+build:
+ number: {{ environ.get('SHERPA_BUILD_NUMBER') }}
+
+requirements:
+ build:
+  - {{ compiler('cxx') }}
+  - {{ compiler('c') }}
+  - make
+  - bison
+  - flex
+
+ host:
+  - python {{ environ.get('SHERPA_PYTHON_VERSION', '2.7.*') }}
+  - numpy 1.11.*
+  - setuptools
+  - six
+
+ run:
+  - python {{ environ.get('SHERPA_PYTHON_VERSION', '2.7.*') }}
+  - numpy >1.11
+  - setuptools
+  - pytest
+  - six
+
+test:
+  imports:
+    - stk
+    - group
+    - sherpa.astro.ui
+ 
+  commands:
+    - sherpa_smoke
+
+about:
+ home: http://cxc.cfa.harvard.edu/sherpa/
+ summary: Sherpa is the CIAO modeling and fitting application. It enables the user to construct complex models from simple definitions and fit those models to data, using a variety of statistics and optimization methods
+ license: GPLv3
+

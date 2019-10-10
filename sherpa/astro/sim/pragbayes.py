@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,8 +16,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-from six.moves import xrange
 
 import logging
 import numpy as np
@@ -38,7 +36,7 @@ __all__ = ['PragBayes', 'PCA1DAdd', 'SIM1DAdd', 'ARFSIMFactory',
            'WalkWithSubIters']
 
 
-class ARFSIMFactory(object):
+class ARFSIMFactory():
 
     def __call__(self, filename):
         return self.read(filename)
@@ -68,7 +66,7 @@ class ARFSIMFactory(object):
         raise TypeError("Unknown simulation ARF '%s'" % filename)
 
 
-class PCA1DAdd(object):
+class PCA1DAdd():
 
     def __init__(self, bias, component, fvariance, eigenval, eigenvec):
         self.bias      = bias
@@ -94,7 +92,7 @@ class PCA1DAdd(object):
         return np.add(new_arf, tmp.sum(axis=0), new_arf)
 
 
-class SIM1DAdd(object):
+class SIM1DAdd():
 
     def __init__(self, bias, component, simcomp):
         self.bias      = bias
@@ -206,7 +204,7 @@ class WalkWithSubIters(Walk):
         # tstart = time.time()
 
         try:
-            for ii in xrange(niter):
+            for ii in range(niter):
                 jump = ii + 1
 
                 current_params = proposals[ii]
@@ -223,7 +221,7 @@ class WalkWithSubIters(Walk):
                 proposals[jump] = current_params
                 stats[jump]  = current_stat
 
-                for jj in xrange(nsubiter):
+                for jj in range(nsubiter):
 
                     # progress_bar(ii*nsubiter+jj, niter*nsubiter,
                     #              tstart,

@@ -17,16 +17,11 @@ Glossary
        and detector tabulated as a function of energy. The
        :term:`FITS` format used to represent ARFs is defined in
        the :term:`OGIP` Calibration Memo
-       `CAL/GEN/02-002 <http://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
+       `CAL/GEN/02-002 <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
    Astropy
        A community Python library for Astronomy:
-       http://www.astropy.org/.
-       
-   ChIPS
-       The Chandra Imaging and Plotting System, ChIPS, is one of
-       the plotting backends supported by Sherpa. It is the default
-       choice when using Sherpa as part of :term:`CIAO`.
+       https://www.astropy.org/.
        
    CIAO
        The data reduction and analysis provided by the :term:`CXC`
@@ -67,16 +62,16 @@ Glossary
        https://heasarc.gsfc.nasa.gov/.
 
    matplotlib
-       The matplotlib plotting package is is one of the plotting backends
-       supported by Sherpa. More information can be found at
-       http://matplotlib.org/.
+       The matplotlib plotting package, which is documented at
+       https://matplotlib.org/, is used to provide the plotting support
+       in Sherpa.
 
    OGIP
        The Office for Guest Investigator Programs (OGIP) was a division of
        the Laboratory for High Energy Astrophysics at Goddard Space Flight
        Center. The activities of that group have now become the responsibility
        of the `HEASARC FITS Working Group (HFWG)
-       <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/ofwg_intro.html>`_,
+       <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/ofwg_intro.html>`_,
        and supports the use of high-energy astrophysics data through
        multimission standards and archive access. Of particular note for
        users of Sherpa are the standard documents produced by this group
@@ -111,7 +106,7 @@ Glossary
        given detector channel.  The :term:`FITS` format used to
        represent RMFs is defined in the
        :term:`OGIP` Calibration Memo
-       `CAL/GEN/02-002 <http://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
+       `CAL/GEN/02-002 <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
    WCS
        The phrase World Coordinate System for an Astronomical data set

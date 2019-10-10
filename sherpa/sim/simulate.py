@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -125,11 +125,14 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         s += 'null statistic   =  %s\n' % str(self.null)
         s += 'alt statistic    =  %s\n' % str(self.alt)
         s += 'likelihood ratio =  %s\n' % str(self.lr)
-        s += 'p-value          =  %s' % str(self.ppp)
+        if self.ppp == 0.0:
+            s += 'p-value          <  %s' % str(1./len(self.samples))
+        else:
+            s += 'p-value          =  %s' % str(self.ppp)
         return s
 
 
-class LikelihoodRatioTestWorker(object):
+class LikelihoodRatioTestWorker():
     """
     Worker class for LikelihoodRatioTest
     """
@@ -220,7 +223,6 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
     def run(fit, null_comp, alt_comp, conv_mdl=None,
             stat=None, method=None,
             niter=500, numcores=None):
-
         if stat is None:   stat = CStat()
         if method is None: method = NelderMead()
 

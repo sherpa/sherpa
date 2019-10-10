@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018
+#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019
 #             Smithsonian Astrophysical Observatory
 #
 #
@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import warnings
+from configparser import ConfigParser
 
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, igamc
@@ -31,7 +32,6 @@ from sherpa.models import SimulFitModel
 from . import _statfcts
 
 from sherpa import get_config
-from six.moves.configparser import ConfigParser
 
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',

@@ -27,7 +27,7 @@ Requirements
 
 Sherpa has the following requirements:
 
-* Python 2.7, 3.5, 3.6, or 3.7
+* Python 3.5, 3.6, or 3.7
 * NumPy (the exact lower limit has not been determined,
   but it is likely to be 1.7.0 or later)
 * Linux or OS-X (patches to add Windows support are welcome)
@@ -37,7 +37,8 @@ if installed:
 
 * :term:`astropy`: for reading and writing files in
   :term:`FITS` format. The minimum required version of astropy
-  is version 1.3, although only versions 2 and higher are used in testing.
+  is version 1.3, although only versions 2 and higher are used in testing
+  (version 3.2 is known to cause problems, but version 3.2.1 is okay).
 * :term:`matplotlib`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
@@ -133,7 +134,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 2.7, 3.5, 3.6, 3.7
+* Python versions: 3.5, 3.6, 3.7
 * Python packages: ``setuptools``, ``numpy``
 * System: ``gcc``, ``g++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these
@@ -144,9 +145,9 @@ It is *highly* recommended that `matplotlib` and `astropy` be installed
 before building Sherpa, to avoid skipping a number of tests in the
 test suite.
 
-The full Sherpa test suite requires the `mock` package (Python 2.7 only),
-`pytest`, and `pytest-xvfb`. These packages should be installed
-automatically for you by the test suite if they do not already exist.
+The full Sherpa test suite requires `pytest` and `pytest-xvfb`. These
+packages should be installed automatically for you by the test suite
+if they do not already exist.
 
 .. note::
 
@@ -360,10 +361,23 @@ The ``test`` command is a wrapper that calls ``pytest`` under the hood,
 and includes the ``develop`` command.
 
 You can pass additional arguments to ``pytest`` with the ``-a`` or
-``--pytest-args`` arguments.  As an example, a single test can be run
-using the syntax:
+``--pytest-args`` arguments.  As examples, the following two commands
+run all the tests in ``test_data.py`` and then a single named
+test in this file::
 
-    python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+    python setup.py test -a sherpa/tests/test_data.py
+    python setup.py test -a sherpa/tests/test_data.py::test_data_eval_model
+
+The full set of options, including those added by the Sherpa test
+suite - which are listed at the end of the ``custom options``
+section - can be found with::
+
+    python setup.py test -a "--pyargs sherpa --help"
+
+and to pass an argument to the Sherpa test suite (there are currently
+two options, namely ``--test-data`` and ``--runslow``)::
+
+    python setup.py test -a "--pyargs sherpa --runslow"
 
 .. note::
 
@@ -410,7 +424,7 @@ additional packages:
 * Python 3.5 or greater
 * `Sphinx <http://sphinx.pocoo.org/>`_, version 1.3 or later
 * The ``sphinx_rtd_theme``
-* NumPy, six, and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
+* NumPy and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
 With these installed, the documentation can be built with the

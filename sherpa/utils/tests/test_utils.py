@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,6 @@ from numpy.testing import assert_allclose, assert_equal
 from sherpa import utils
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.testing import SherpaTestCase
-
-from six.moves import xrange
 
 
 class test_utils(SherpaTestCase):
@@ -63,7 +61,7 @@ class test_utils(SherpaTestCase):
         self.assertEqual(c.x, 4)
 
     def test_export_method(self):
-        class C(object):
+        class C():
             def m(self, x, y=2):
                 'Instance method m()'
                 return x * y
@@ -225,12 +223,12 @@ class test_utils(SherpaTestCase):
         # TODO: can we not just use vectorized code here?
         x = []
         y = []
-        for ii in xrange(num):
+        for ii in range(num):
             x.append(ii / float(num))
             y.append(func(x[ii]))
         xx = numpy.array(x)
         yy = numpy.array(y)
-        for ii in xrange(num):
+        for ii in range(num):
             tmp = 1.01 * (ii / float(num))
             answer = func(tmp)
             val = utils.neville(tmp, xx, yy)
@@ -249,15 +247,15 @@ class test_utils(SherpaTestCase):
         fval = numpy.empty((nrow, ncol))
         row_tmp = numpy.pi / nrow
         # col_tmp = 1.0 / float(ncol)
-        for row in xrange(nrow):
+        for row in range(nrow):
             x[row] = (row + 1.0) * row_tmp
-            for col in xrange(ncol):
+            for col in range(ncol):
                 y[col] = (col + 1.0) / float(ncol)
                 fval[row][col] = funcx(x[row]) * funcy(y[col])
 
-        for row in xrange(ncol):
+        for row in range(ncol):
             xx = (-0.1 + (row + 1.0) / float(nrow)) * numpy.pi
-            for col in xrange(4):
+            for col in range(4):
                 yy = -0.1 + (col + 1.0) / float(ncol)
                 answer = funcx(xx) * funcy(yy)
                 val = utils.neville2d(xx, yy, x, y, fval)

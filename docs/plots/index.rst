@@ -11,11 +11,10 @@ Visualisation
 Overview
 ========
 
-Sherpa has support for different plot backends, at present limited
-to
-:term:`matplotlib` and
-:term:`ChIPS`. Interactive visualizations of images is
-provided by
+Sherpa has support for different plot backends, although
+at present there is only one, which uses the
+:term:`matplotlib` package.
+Interactive visualizations of images is provided by
 :term:`DS9` - an Astronomical image viewer - if installed, whilst
 there is limited support for visualizing two-dimensional data sets
 with matplotlib. The classes described in this document do not

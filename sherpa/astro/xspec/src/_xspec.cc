@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015-2018  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015-2018, 2019  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -311,12 +311,6 @@ void ismabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void slimbbmodel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 #endif
 
-#ifdef XSPEC_12_10_1
-void tdrelline_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void tdrellinelp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void tdrellinelpext_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-#endif
-
 // XSPEC table models; in XSPEC 12.10.1 these have been consolidated
 // into the tabint routine.
 //
@@ -334,9 +328,6 @@ void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float*
 
 #ifdef XSPEC_12_10_1
 void kyconv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void tdrelconv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void tdrelconvlp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void tdrelconvlpext_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 #endif
 
 }
@@ -1098,12 +1089,6 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( xredge, 3 ),
   XSPECMODELFCT_NORM( xsrefsch, 14 ),
 
-#ifdef XSPEC_12_10_1
-  XSPECMODELFCT_NORM( tdrelline, 11 ),
-  XSPECMODELFCT_NORM( tdrellinelp, 10 ),
-  XSPECMODELFCT_NORM( tdrellinelpext, 13 ),
-#endif
-
   XSPECMODELFCT_C_NORM( C_sedov, 6 ),
   XSPECMODELFCT_NORM( srcut, 3 ),
   XSPECMODELFCT_NORM( sresc, 3 ),
@@ -1322,12 +1307,6 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_PartialCovering, 1),
   XSPECMODELFCT_CON(C_rdblur, 4),
   XSPECMODELFCT_CON(C_reflct, 5),
-
-#ifdef XSPEC_12_10_1
-  XSPECMODELFCT_CON_F77(tdrelconv, 8),
-  XSPECMODELFCT_CON_F77(tdrelconvlp, 7),
-  XSPECMODELFCT_CON_F77(tdrelconvlpext, 10),
-#endif
 
   XSPECMODELFCT_CON_F77(rgsxsrc, 1),
   XSPECMODELFCT_CON(C_simpl, 3),

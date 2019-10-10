@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015-2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -57,9 +57,6 @@ References
 
 from __future__ import absolute_import
 
-import six
-from six.moves import xrange
-
 import string
 from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
@@ -69,12 +66,6 @@ from sherpa.astro.utils import get_xspec_position
 
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec
-
-
-try:
-    maketrans = string.maketrans  # Python 2
-except AttributeError:
-    maketrans = str.maketrans  # Python 3
 
 
 # Python wrappers around the exported functions from _xspec. This
@@ -802,8 +793,7 @@ def _f77_or_c_12100(name):
     return "C_" + name if equal_or_greater_than("12.10.0") else name
 
 
-@six.add_metaclass(ModelMeta)
-class XSModel(RegriddableModel1D):
+class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     """The base class for XSPEC models.
 
     It is expected that sub-classes are used to represent the
@@ -913,10 +903,10 @@ class XSTableModel(XSModel):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation + string.whitespace
-        tbl = maketrans(bad, '_' * len(bad))
+        tbl = str.maketrans(bad, '_' * len(bad))
 
         pars = []
-        for ii in xrange(len(parnames)):
+        for ii in range(len(parnames)):
             isfrozen = True
             if nint > 0:
                 isfrozen = False
@@ -3586,7 +3576,7 @@ class XSkyrline(XSAdditiveModel):
         The overall Doppler shift.
     limb
         0 means isotropic emission, 1 means Laor's limb darkening
-        (1 + 0.26 \mu), 2 means Haardt's limb brightening (ln(1 + 1/\mu))
+        (1 + 0.26 \\mu), 2 means Haardt's limb brightening (ln(1 + 1/\\mu))
     norm
         The normalization.
 
@@ -5117,241 +5107,6 @@ class XSrefsch(XSAdditiveModel):
         self.accuracy = Parameter(name, 'accuracy', 30., 30., 100000., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.foldE, self.rel_refl, self.redshift, self.abund, self.Fe_abund, self.Incl, self.T_disk, self.xi, self.Betor10, self.Rin, self.Rout, self.accuracy, self.norm))
-
-
-@version_at_least("12.10.1")
-class XSrelline(XSAdditiveModel):
-    """The XSPEC relline model: relativistic accretion disk line emission with different geometries
-
-    The model is described at [1]_.
-
-    Attributes
-    ----------
-    lineE
-        The rest-frame line energy in keV.
-    Index1
-        Emissivity index for the inner disk.
-    Index2
-        Emissivity index for the outer disk.
-    Rbr
-        The break radius separating the inner and outer portions of the
-        disk (gravitational radii)
-    a
-        The dimensionless black-hole spin.
-    Incl
-        The disk inclination angle to the line of sight, in degrees.
-    Rin
-        The inner radius of the disk in units of the radius of marginal
-        stability.
-    Rout
-        The outer radius of the disk in units of the radius of marginal
-        stability.
-    z
-        Redshift
-    limb
-        limb-darkening/-brightening law with 0=isotropic, 1=darkening
-        (flux 1 + 2.06 mu), 2=brightening (flux ln(1 + 1/mu)) where
-        mu=cos(emission angle)
-    norm
-        The flux in the line (photon/cm^2/s).
-
-    See Also
-    --------
-    XSrelline_lp, XSrelline_lp_ext
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
-
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRelline.html
-
-    """
-
-    __function__ = "tdrelline"
-
-    def __init__(self, name='relline'):
-        self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 10, 0.01, 100, 'keV')
-        self.Index1 = Parameter(name, 'Index1', 3, -10, 10, -10, 10,
-                                frozen=True)
-        self.Index2 = Parameter(name, 'Index2', 3, -10, 10, -10, 10,
-                                frozen=True)
-        self.Rbr = Parameter(name, 'Rbr', 14, 1, 400, 1, 1000, frozen=True)
-        self.a = Parameter(name, 'a', 0.998, -0.998, 0.998, -0.998, 0.998)
-        self.Incl = Parameter(name, 'Incl', 30, 5, 80, 1, 89, 'deg',
-                              frozen=True)
-        self.Rin = Parameter(name, 'Rin', -1, -100, -1, -100, -1,
-                             frozen=True)
-        self.Rout = Parameter(name, 'Rout', 400, 1, 400, 1, 1000,
-                              frozen=True)
-        self.z = Parameter(name, 'z', 0, 0, 10, 0, 10, frozen=True)
-        self.limb = Parameter(name, 'limb', 0, 0, 2, 0, 2, frozen=True)
-        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-
-        pars = (self.lineE, self.Index1, self.Index2, self.Rbr, self.a,
-                self.Incl, self.Rin, self.Rout, self.z, self.limb,
-                self.norm)
-
-        XSAdditiveModel.__init__(self, name, pars)
-
-
-@version_at_least("12.10.1")
-class XSrelline_lp(XSAdditiveModel):
-    """The XSPEC relline_lp model: relativistic accretion disk line emission with different geometries
-
-    The model is described at [1]_.
-
-    Attributes
-    ----------
-    lineE
-        The rest-frame line energy in keV.
-    h
-        The height of the primary source, in units of GM/c^2.
-    a
-        The dimensionless black-hole spin.
-    Incl
-        The disk inclination angle to the line of sight, in degrees.
-    Rin
-        The inner radius of the disk in units of the radius of marginal
-        stability.
-    Rout
-        The outer radius of the disk in units of the radius of marginal
-        stability.
-    z
-        Redshift
-    limb
-        limb-darkening/-brightening law with 0=isotropic, 1=darkening
-        (flux 1 + 2.06 mu), 2=brightening (flux ln(1 + 1/mu)) where
-        mu=cos(emission angle)
-    gamma
-        The power-law index of the primary source (E-gamma).
-    norm
-        The flux in the line (photon/cm^2/s).
-
-    See Also
-    --------
-    XSrelline, XSrelline_lp_ext
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
-
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRelline.html
-
-    """
-
-    __function__ = "tdrellinelp"
-
-    def __init__(self, name='relline_lp'):
-        self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 10, 0.01, 100, 'keV')
-        self.h = Parameter(name, 'h', 6, 3, 100, -100, 1000, 'GM/c^2')
-        self.a = Parameter(name, 'a', 0.998, -0.998, 0.998, -0.998, 0.998)
-        self.Incl = Parameter(name, 'Incl', 30, 5, 80, 1, 89, 'deg',
-                              frozen=True)
-        self.Rin = Parameter(name, 'Rin', -1, -100, -1, -100, -1,
-                             frozen=True)
-        self.Rout = Parameter(name, 'Rout', 400, 1, 400, 1, 1000,
-                              frozen=True)
-        self.z = Parameter(name, 'z', 0, 0, 10, 0, 10, frozen=True)
-        self.limb = Parameter(name, 'limb', 0, 0, 2, 0, 2, frozen=True)
-        self.gamma = Parameter(name, 'gamma', 2, 1, 4, -10, 10, frozen=True)
-        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-
-        pars = (self.lineE, self.h, self.a, self.Incl, self.Rin, self.Rout,
-                self.z, self.limb, self.gamma, self.norm)
-
-        XSAdditiveModel.__init__(self, name, pars)
-
-
-@version_at_least("12.10.1")
-class XSrelline_lp_ext(XSAdditiveModel):
-    """The XSPEC relline_lp model: relativistic accretion disk line emission with different geometries
-
-    The model is described at [1]_.
-
-    Attributes
-    ----------
-    lineE
-        The rest-frame line energy in keV.
-    a
-        The dimensionless black-hole spin.
-    Incl
-        The disk inclination angle to the line of sight, in degrees.
-    Rin
-        The inner radius of the disk in units of the radius of marginal
-        stability.
-    Rout
-        The outer radius of the disk in units of the radius of marginal
-        stability.
-    z
-        Redshift
-    limb
-        limb-darkening/-brightening law with 0=isotropic, 1=darkening
-        (flux 1 + 2.06 mu), 2=brightening (flux ln(1 + 1/mu)) where
-        mu=cos(emission angle)
-    gamma
-        The power-law index of the primary source (E-gamma).
-    hbase
-        The lower height of radially extended primary source.
-    htop
-        The upper height of radially extended primary source.
-    vbase
-        The velocity of the source at hbase.
-    v100
-        The velocity of the source at 100 rg above hbase.
-    norm
-        The flux in the line (photon/cm^2/s).
-
-    See Also
-    --------
-    XSrelline, XSrelline_lp
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
-
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRelline.html
-
-    """
-
-    __function__ = "tdrellinelpext"
-
-    def __init__(self, name='relline_lp_ext'):
-        self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 10, 0.01, 100, 'keV')
-        self.a = Parameter(name, 'a', 0.998, -0.998, 0.998, -0.998, 0.998)
-        self.Incl = Parameter(name, 'Incl', 30, 5, 80, 1, 89, 'deg',
-                              frozen=True)
-        self.Rin = Parameter(name, 'Rin', -1, -100, -1, -100, -1,
-                             frozen=True)
-        self.Rout = Parameter(name, 'Rout', 400, 1, 400, 1, 1000,
-                              frozen=True)
-        self.z = Parameter(name, 'z', 0, 0, 10, 0, 10, frozen=True)
-        self.limb = Parameter(name, 'limb', 0, 0, 2, 0, 2, frozen=True)
-        self.gamma = Parameter(name, 'gamma', 2, 1, 4, -10, 10, frozen=True)
-        self.hbase = Parameter(name, 'hbase', 3, 3, 100, -100, 1000,
-                               'GM/c^2', frozen=True)
-        self.htop = Parameter(name, 'htop', 50, 3, 100, -100, 1000,
-                              'GM/c^2', frozen=True)
-        self.vbase = Parameter(name, 'vbase', 0, 0, 0.99, 0, 0.999,
-                               'c', frozen=True)
-        self.v100 = Parameter(name, 'v100', 0, 0, 0.999, 0, 0.9999,
-                              'c', frozen=True)
-        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-
-        pars = (self.lineE, self.a, self.Incl, self.Rin, self.Rout,
-                self.z, self.limb, self.gamma,
-                self.hbase, self.htop, self.vbase, self.v100,
-                self.norm)
-
-        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSsedov(XSAdditiveModel):

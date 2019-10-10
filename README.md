@@ -2,7 +2,7 @@
 [![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
-![Python version](https://img.shields.io/badge/Python-2.7,3.5,3.6,3.7-green.svg?style=flat)
+![Python version](https://img.shields.io/badge/Python-3.5,3.6,3.7-green.svg?style=flat)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
@@ -70,11 +70,14 @@ documentation, and should be read if the following is not sufficient.
 It is strongly recommended that some form of *virtual environment* is
 used with Sherpa.
 
+The last version of Sherpa which supported Python 2.7 is
+[Sherpa 4.11.1](https://doi.org/10.5281/zenodo.3358134).
+
 Using Anaconda
 --------------
 
 Sherpa is provided for both Linux and macOS operating systems running
-Python 2.7, 3.5, 3.6, and 3.7. It can be installed with the `conda`
+Python 3.5, 3.6, and 3.7. It can be installed with the `conda`
 package manager by saying
 
     $ conda install -c sherpa sherpa
@@ -111,6 +114,8 @@ extend (whether to other areas of Astronomy or in other domains).
 
 Release History
 ---------------
+
+4.11.1: 1 August 2019 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358134.svg)](https://doi.org/10.5281/zenodo.3358134)
 
 4.11.0: 20 February 2019 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2573885.svg)](https://doi.org/10.5281/zenodo.2573885)
 

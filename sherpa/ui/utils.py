@@ -18,11 +18,9 @@ from __future__ import print_function
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-from six.moves import copyreg as copy_reg
-from six.moves import cPickle as pickle
-from six.moves import zip as izip
-from six.moves.configparser import ConfigParser
-from six import string_types
+import copyreg as copy_reg
+import pickle
+from configparser import ConfigParser
 import copy
 import logging
 import sys
@@ -47,6 +45,8 @@ config = ConfigParser()
 config.read(get_config())
 
 numpy.set_printoptions(threshold=int(config.get('verbosity', 'arraylength')))
+
+string_types = (str, )
 
 __all__ = ('ModelWrapper', 'Session')
 
@@ -311,7 +311,7 @@ class Session(NoNewAttributesAfterInit):
                      sherpa.estmethods.EstMethod)
         objdicts = (self._methods, self._stats, self._estmethods)
 
-        for mod, base, odict in izip(modules, basetypes, objdicts):
+        for mod, base, odict in zip(modules, basetypes, objdicts):
             for name in mod.__all__:
                 cls = getattr(mod, name)
                 if _is_subclass(cls, base):
@@ -341,7 +341,7 @@ class Session(NoNewAttributesAfterInit):
         self._projection_results = None
 
         self._pyblocxs = sherpa.sim.MCMC()
-
+        
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
         self._dataplot = sherpa.plot.DataPlot()
@@ -533,7 +533,7 @@ class Session(NoNewAttributesAfterInit):
         # obj.__dict__ should not clobber new classes!
         dicts = [self._methods, self._stats, self._estmethods]
         names = ['_methods', '_stats', '_estmethods']
-        for name, dic in izip(names, dicts):
+        for name, dic in zip(names, dicts):
             # update current session with user definitions
             dic.update(obj.__dict__[name])
             # remove old items from pickle
@@ -6349,7 +6349,7 @@ class Session(NoNewAttributesAfterInit):
         modelflags = None
         parnames = names[:]
         parvals = []
-        for name, col in izip(names, cols):
+        for name, col in zip(names, cols):
             # Find the column with the filenames, remove it from the set of
             # parameter names
             if name.startswith('file'):
@@ -7627,7 +7627,7 @@ class Session(NoNewAttributesAfterInit):
 
         output = []
         if len(datasets) > 1:
-            for id, d, m in izip(ids, datasets, models):
+            for id, d, m in zip(ids, datasets, models):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
@@ -8338,8 +8338,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -8389,6 +8389,9 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_pvalue(mdl1, mdl2, conv_model=rsp)
 
         """
+        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA) and \
+           conv_model is None:
+            conv_model = self.get_response(id)
         if not sherpa.utils.bool_cast(replot) or self._pvalue_results is None:
             self._run_pvalue(null_model, alt_model, conv_model,
                              id, otherids, num, bins, numcores)
@@ -10420,7 +10423,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     # DOC-TODO: how is this used? simple testing didn't seem to make any
-    # difference with chips
+    # difference (using the chips backend)
     def get_split_plot(self):
         """Return the plot attributes for displays with multiple plots.
 
@@ -10463,6 +10466,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: discussion of preferences needs better handling
     # of how it interacts with the chosen plot backend.
+    #
     def get_data_plot_prefs(self):
         """Return the preferences for plot_data.
 
@@ -10490,15 +10494,21 @@ class Session(NoNewAttributesAfterInit):
         `plot_ratio`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
-        ``errcolor``
+        The following preferences are recognized by the matplotlib
+        backend:
+
+        ``barsabove``
+           The barsabove argument for the matplotlib errorbar function.
+
+        ``capsize``
+           The capsize argument for the matplotlib errorbar function.
+
+        ``color``
+           The color to use (will be over-ridden by more-specific
+           options below). The default is ``None``.
+
+        ``ecolor``
            The color to draw error bars. The default is ``None``.
-
-        ``errstyle``
-           How to draw errors. The default is ``line``.
-
-        ``errthickness``
-           What thickness of line to draw error bars. The default is
-           ``None``.
 
         ``linecolor``
            What color to use for the line connecting the data points.
@@ -10506,29 +10516,22 @@ class Session(NoNewAttributesAfterInit):
 
         ``linestyle``
            How should the line connecting the data points be drawn.
-           The default is ``0``, which means no line is drawn.
+           The default is 'None', which means no line is drawn.
 
-        ``linethickness``
-           What thickness should be used to draw the line connecting
-           the data points. The default is ``None``.
+        ``marker``
+           What style is used for the symbols. The default is ``'.'``
+           which indicates a point.
+
+        ``markerfacecolor``
+           What color to draw the symbol representing the data points.
+           The default is ``None``.
+
+        ``markersize``
+           What size is the symbol drawn. The default is ``None``.
 
         ``ratioline``
            Should a horizontal line be drawn at y=1?  The default is
            ``False``.
-
-        ``symbolcolor``
-           What color to draw the symbol representing the data points.
-           The default is ``None``.
-
-        ``symbolfill``
-           Should the symbol be drawn filled? The default is ``False``.
-
-        ``symbolsize``
-           What size is the symbol drawn. The default is ``3``.
-
-        ``symbolstyle``
-           What style is used for the symbols. The default is ``4``
-           which means circle for the ChIPS back end.
 
         ``xaxis``
            The default is ``False``
@@ -10558,7 +10561,7 @@ class Session(NoNewAttributesAfterInit):
         and not display Y error bars.
 
         >>> prefs = get_data_plot_prefs()
-        >>> prefs['symbolcolor'] = 'green'
+        >>> prefs['color'] = 'green'
         >>> prefs['yerrorbars'] = False
 
         """
@@ -10803,66 +10806,8 @@ class Session(NoNewAttributesAfterInit):
         `plot_bkg_model`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
-        ``errcolor``
-           The color to draw error bars. The default is ``None``.
-
-        ``errstyle``
-           How to draw errors. The default is ``None``.
-
-        ``errthickness``
-           What thickness of line to draw error bars. The default is
-           ``None``.
-
-        ``linecolor``
-           What color to use for the line connecting the data points.
-           The default is ``red``.
-
-        ``linestyle``
-           How should the line connecting the data points be drawn.
-           The default is ``1``, which means a solid line is drawn.
-
-        ``linethickness``
-           What thickness should be used to draw the line connecting
-           the data points. The default is ``3``.
-
-        ``ratioline``
-           Should a horizontal line be drawn at y=1?  The default is
-           ``False``.
-
-        ``symbolcolor``
-           What color to draw the symbol representing the data points.
-           The default is ``None``.
-
-        ``symbolfill``
-           Should the symbol be drawn filled? The default is ``True``.
-
-        ``symbolsize``
-           What size is the symbol drawn. The default is ``None``.
-
-        ``symbolstyle``
-           What style is used for the symbols. The default is ``0``,
-           which means no symbol is used.
-
-        ``xaxis``
-           The default is ``False``
-
-        ``xerrorbars``
-           Should error bars be drawn for the X axis. The default is
-           ``False``.
-
-        ``xlog``
-           Should the X axis be drawn with a logarithmic scale? The
-           default is ``False``. This field can also be changed with the
-           `set_xlog` and `set_xlinear` functions.
-
-        ``yerrorbars``
-           Should error bars be drawn for the Y axis. The default is
-           ``False``.
-
-        ``ylog``
-           Should the Y axis be drawn with a logarithmic scale? The
-           default is ``False``. This field can also be changed with the
-           `set_ylog` and `set_ylinear` functions.
+        The preferences recognized by the matplotlib backend are the
+        same as for `get_data_plot_prefs`.
 
         Examples
         --------
@@ -10871,7 +10816,7 @@ class Session(NoNewAttributesAfterInit):
         to display the model:
 
         >>> prefs = get_model_plot_prefs()
-        >>> prefs['linecolor'] = 'green'
+        >>> prefs['color'] = 'green'
 
         """
         return self._modelplot.plot_prefs
@@ -11956,8 +11901,8 @@ class Session(NoNewAttributesAfterInit):
         include the following list. There are also individual
         functions, with ``plot_`` prepended to the plot type, such as
         `plot_data` (the ``bkg`` variants use a prefix of
-        ``plot_bkg_``). There are also several multiple-plot commands
-        (e.g. `plot_fit_resid`).
+        ``plot_bkg_``). There are also several multiple-plot commands,
+        such as `plot_fit_ratio`, `plot_fit_resid`, and `plot_fit_delchi`.
 
         ``arf``
            The ARF for the data set (only for `DataPHA` data sets).
@@ -12080,6 +12025,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12112,6 +12060,18 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_data("jet")
         >>> plot_data("core", overplot=True)
 
+        The following example requires that the Matplotlib backend
+        is selected, and uses a Matplotlib function to create a
+        subplot (in this case one filling the bottom half of the
+        plot area) and then calls `plot_data` with the `clearwindow`
+        argument set to `False` to use this subplot. If the
+        `clearwindow` argument had not been used then the plot area
+        would have been cleared and the plot would have filled the
+        area.
+
+        >>> plt.subplot(2, 1, 2)
+        >>> plot_data(clearwindow=False)
+
         """
         self._plot(id, self._dataplot, **kwargs)
 
@@ -12134,6 +12094,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12190,6 +12153,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12257,6 +12223,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12328,6 +12297,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -12378,6 +12350,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12391,6 +12366,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_fit_ratio : Plot the fit results, and the ratio of data to model, for a data set.
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         plot_data : Plot the data values.
         plot_model : Plot the model for a data set.
@@ -12433,6 +12409,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12492,6 +12471,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12546,6 +12528,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12599,6 +12584,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12652,6 +12640,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12704,6 +12695,9 @@ class Session(NoNewAttributesAfterInit):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12741,6 +12735,75 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._kernelplot, **kwargs)
 
+    def _plot_jointplot(self, plot2, id=None, replot=False,
+                        overplot=False, clearwindow=True):
+        """Create a joint plot, vertically aligned, fit data on the top.
+
+        Parameters
+        ----------
+        plot2 : sherpa.plot.Plot instance
+           The plot to appear in the bottom panel.
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit_resid`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        """
+
+        plot1 = self._fitplot
+        self._jointplot.reset()
+        if not sherpa.utils.bool_cast(replot):
+            # The assumption is that _prepare_plotobj doesn't actually
+            # create a new object but modifies the input object (so
+            # the re-assignment could be dropped here). If a new instance is
+            # created then plot2 should be returned by this routine
+            #
+            plot1 = self._prepare_plotobj(id, plot1)
+            plot2 = self._prepare_plotobj(id, plot2)
+
+        try:
+            sherpa.plot.begin()
+            self._jointplot.plottop(plot1, overplot=overplot,
+                                    clearwindow=clearwindow)
+
+            # The two plots are intended to have the same scaling
+            # on the X axis (log or linear), and the approach is
+            # to use log if either of the components of the top
+            # plot (i.e. it is assumed that this is a fit plot)
+            # use a log scale.
+            #
+            # DJB believes that the following preference check is
+            # more-complicated than it needs to be: it should be
+            # sufficient to just use the preferences in the
+            # plot1 and plot2 objects, rather than dig around
+            # in the self.{_data/_model}plot structures (as they
+            # should be the same object), but we do not have enough
+            # tests to check this.
+            #
+            oldval = plot2.plot_prefs['xlog']
+            if (('xlog' in self._dataplot.plot_prefs and
+                 self._dataplot.plot_prefs['xlog']) or
+                ('xlog' in self._modelplot.plot_prefs and
+                 self._modelplot.plot_prefs['xlog'])):
+                plot2.plot_prefs['xlog'] = True
+
+            self._jointplot.plotbot(plot2, overplot=overplot)
+
+            plot2.plot_prefs['xlog'] = oldval
+        except:
+            sherpa.plot.exceptions()
+            raise
+        else:
+            sherpa.plot.end()
+
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True):
         """Plot the fit results, and the residuals, for a data set.
@@ -12754,14 +12817,14 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to ``True`` to use the values calculated by the last
-           call to `plot_fit_resid`. The default is ``False``.
+           Set to ``True`` to use the previous values. The default is
+           ``False``.
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12776,8 +12839,10 @@ class Session(NoNewAttributesAfterInit):
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_fit_ratio : Plot the fit results, and the ratio of data to model, for a data set.
         plot_data : Plot the data values.
         plot_model : Plot the model for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
@@ -12798,32 +12863,74 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_resid('core', overplot=True)
 
         """
-        self._jointplot.reset()
-        fp = self._fitplot
-        rp = self._residplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp)
-            rp = self._prepare_plotobj(id, rp)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = rp.plot_prefs['xlog']
-            if (('xlog' in self._dataplot.plot_prefs and
-                 self._dataplot.plot_prefs['xlog']) or
-                ('xlog' in self._modelplot.plot_prefs and
-                 self._modelplot.plot_prefs['xlog'])):
-                rp.plot_prefs['xlog'] = True
+        self._plot_jointplot(self._residplot,
+                             id=id, replot=replot, overplot=overplot,
+                             clearwindow=clearwindow)
 
-            self._jointplot.plotbot(rp, overplot=overplot)
+    def plot_fit_ratio(self, id=None, replot=False, overplot=False,
+                       clearwindow=True):
+        """Plot the fit results, and the ratio of data to model, for a data set.
 
-            rp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        This creates two plots - the first from `plot_fit` and the
+        second from `plot_ratio` - for a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit_ratio`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
+
+        See Also
+        --------
+        get_fit_plot : Return the data used to create the fit plot.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit : Plot the fit results for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Examples
+        --------
+
+        Plot the results for the default data set:
+
+        >>> plot_fit_ratio()
+
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit_ratio('jet')
+        >>> plot_fit_ratio('core', overplot=True)
+
+        """
+
+        self._plot_jointplot(self._ratioplot,
+                             id=id, replot=replot, overplot=overplot,
+                             clearwindow=clearwindow)
 
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
                         clearwindow=True):
@@ -12844,8 +12951,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -12859,8 +12966,10 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
+        plot_fit_ratio : Plot the fit results, and the ratio of data to model, for a data set.
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         plot_data : Plot the data values.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
         plot_model : Plot the model for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
@@ -12882,32 +12991,10 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_delchi('core', overplot=True)
 
         """
-        self._jointplot.reset()
-        fp = self._fitplot
-        dp = self._delchiplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp)
-            dp = self._prepare_plotobj(id, dp)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = dp.plot_prefs['xlog']
-            if (('xlog' in self._dataplot.plot_prefs and
-                 self._dataplot.plot_prefs['xlog']) or
-                ('xlog' in self._modelplot.plot_prefs and
-                 self._modelplot.plot_prefs['xlog'])):
-                dp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(dp, overplot=overplot)
-
-            dp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_jointplot(self._delchiplot,
+                             id=id, replot=replot, overplot=overplot,
+                             clearwindow=clearwindow)
 
     #
     # Statistical plotting routines
@@ -12939,8 +13026,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -13011,8 +13098,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -13062,7 +13149,6 @@ class Session(NoNewAttributesAfterInit):
         return self._cdfplot
 
     # DOC-TODO: what does xlabel do?
-    # DOC-TODO: is clearwindow a ChIPS-only setting?
     def plot_trace(self, points, name="x", xlabel="x",
                    replot=False, overplot=False, clearwindow=True):
         """Create a trace plot of row number versus value.
@@ -13087,8 +13173,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -13166,8 +13252,8 @@ class Session(NoNewAttributesAfterInit):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -13812,8 +13898,9 @@ class Session(NoNewAttributesAfterInit):
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._intproj.prepare(min, max, nloop, delv, fac,
-                                  sherpa.utils.bool_cast(log), numcores)
+            self._intproj.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                                  fac=fac, log=sherpa.utils.bool_cast(log),
+                                  numcores=numcores)
             self._intproj.calc(fit, par, self._methods)
         return self._intproj
 
@@ -13917,8 +14004,9 @@ class Session(NoNewAttributesAfterInit):
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._intunc.prepare(min, max, nloop, delv, fac,
-                                 sherpa.utils.bool_cast(log), numcores)
+            self._intunc.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                                 fac=fac, log=sherpa.utils.bool_cast(log),
+                                 numcores=numcores)
             self._intunc.calc(fit, par)
         return self._intunc
 

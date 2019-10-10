@@ -17,7 +17,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from six.moves import zip as izip
 import numpy
 import numpy.random
 
@@ -127,7 +126,7 @@ class ParameterScaleVector(ParameterScale):
             finally:
                 fit.estmethod = oldestmethod
 
-            for par, val, lo, hi in izip(thawedpars, r.parvals, r.parmins, r.parmaxes):
+            for par, val, lo, hi in zip(thawedpars, r.parvals, r.parmins, r.parmaxes):
                 scale = None
                 if lo is not None and hi is not None:
                     scale = numpy.abs(lo)
@@ -247,7 +246,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
         scales = self.scale.get_scales(fit)
         samples = [numpy.random.uniform(val - factor * abs(scale),
                                         val + factor * abs(scale),
-                                        int(num)) for val, scale in izip(vals, scales)]
+                                        int(num)) for val, scale in zip(vals, scales)]
         return numpy.asarray(samples).T
 
 
@@ -257,7 +256,7 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
         vals = numpy.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit, myscales)
         samples = [numpy.random.normal(
-            val, scale, int(num)) for val, scale in izip(vals, scales)]
+            val, scale, int(num)) for val, scale in zip(vals, scales)]
         return numpy.asarray(samples).T
 
 
@@ -277,7 +276,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         return multivariate_t(vals, cov, dof, int(num))
 
 
-class Evaluate(object):
+class Evaluate():
     """
     Callable class for _sample_stat multiprocessing call
     This class used to be a nested function, which can't be pickled and results in

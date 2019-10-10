@@ -17,8 +17,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-from six.moves import zip as izip
-from six import string_types
 import logging
 import os
 import sys
@@ -32,7 +30,7 @@ from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
-from sherpa.data import Data1D
+from sherpa.data import Data1D, Data1DAsymmetricErrs
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
@@ -41,6 +39,9 @@ from sherpa.stats import Cash, CStat, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
+
+
+string_types = (str, )
 
 
 __all__ = ('Session',)
@@ -1156,6 +1157,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
         load_table : Load a FITS binary file as a data set.
         load_image : Load an image as a data set.
         set_data : Set a data set.
@@ -1300,6 +1302,119 @@ class Session(sherpa.ui.utils.Session):
 
         return data
 
+    def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
+                               comment='#', func=numpy.average, delta=False):
+        """Load an ASCII file with asymmetric errors as a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Selection of the relevant
+           column depends on the I/O library in use (Crates or
+           AstroPy).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        func: python function, optional
+           The function used to combine the lo and hi values to estimate
+           an error. The function should take two arguments ``(lo, hi)``
+           and return a single NumPy array, giving the per-bin error.
+           The default function used is numpy.average.
+        delta: boolean, optional
+           The flag is used to indicate if the asymmetric errors for the
+           third and fourth columns are delta values from the second (y)
+           column or not.
+           The default value is False
+
+        See Also
+        --------
+        load_ascii: Load an ASCII file as a data set.
+        load_arrays : Create a data set from array values.
+        load_table : Load a FITS binary file as a data set.
+        load_image : Load an image as a data set.
+        resample_data : Resample data with asymmetric error bars.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
+        The column order for the different data types are as follows,
+        where ``x`` indicates an independent axis, ``y`` the dependent
+        axis, the asymmetric errors ``elo`` and ``ehi``.
+
+        +----------------------+-----------------+--------------------+
+        | Identifier           | Required Fields |   Optional Fields  |
+        +======================+=================+====================+
+        | Data1DAsymmetricErrs | x, y, elo, ehi  |                    |
+        +----------------------+-----------------+--------------------+
+
+        Examples
+        --------
+
+        Read in the first four columns of the file, as the independent
+        (X), dependent (Y), error low (ELO) and error high (EHI) columns
+        of the default data set:
+
+        >>> load_ascii_with_errors('sources.dat')
+
+        Read in the first four columns (x, y, elo, ehi) where elo and ehi
+        are of the form y - delta_lo and y + delta_hi, respectively.
+
+        >>> load_ascii_with_errors('sources.dat', delta=True)
+
+        Read in the first four columns (x, y, elo, ehi) where elo and ehi
+        are of the form delta_lo and delta_hi, respectively.
+
+        >>> def rms(lo, hi):
+        ...     return numpy.sqrt(lo * lo + hi * hi)
+        ...
+        >>> load_ascii_with_errors('sources.dat', func=rms)
+
+        Read in the first four columns (x, y, elo, ehi) where elo and ehi
+        are of the form delta_lo and delta_hi, respectively. The `func`
+        argument is used to calculate the error based on the elo and ehi
+        column values.
+        """
+
+        if filename is None:
+            id, filename = filename, id
+        self.set_data(id, self.unpack_ascii(filename, ncols=4,
+                                            colkeys=colkeys,
+                                            dstype=Data1DAsymmetricErrs,
+                                            sep=sep, comment=comment))
+        datas = self.get_data(id)
+        def calc_err(data):
+            return data.y - data.elo, data.ehi - data.y
+
+        def calc_staterror(data):
+            if func is numpy.average:
+                return func([data.elo, data.ehi], axis=0)
+            else:
+                return func(data.elo, data.ehi)
+
+        if type(datas) is list:
+            for data in datas:
+                if delta is False:
+                    data.elo, data.ehi = calc_err(data)
+                data.staterror = calc_staterror(data)
+        else:
+            if delta is False:
+                datas.elo, datas.ehi = calc_err(datas)
+            datas.staterror = calc_staterror(datas)
+
     # DOC-NOTE: also in sherpa.utils
     def load_data(self, id, filename=None, *args, **kwargs):
         """Load a data set from a file.
@@ -1324,6 +1439,12 @@ class Session(sherpa.ui.utils.Session):
         kwargs
            The keyword arguments supported by `load_pha`, `load_image`,
            `load_table`, and `load_ascii`.
+
+        Returns
+        -------
+        instance
+           The type of the returned object is controlled by the
+           `dstype` parameter.
 
         See Also
         --------
@@ -9898,7 +10019,7 @@ class Session(sherpa.ui.utils.Session):
             bkg_datasets = datasets[nids:]
             bkg_models = models[nids:]
             jj = 0
-            for id, d, m in izip(ids, datasets[:nids], models[:nids]):
+            for id, d, m in zip(ids, datasets[:nids], models[:nids]):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
@@ -9911,9 +10032,9 @@ class Session(sherpa.ui.utils.Session):
                 nbkg_ids = len(bkg_ids)
                 idx_lo = jj * nbkg_ids
                 idx_hi = idx_lo + nbkg_ids
-                for bkg_id, bkg, bkg_mdl in izip(bkg_ids,
-                                                 bkg_datasets[idx_lo:idx_hi],
-                                                 bkg_models[idx_lo:idx_hi]):
+                for bkg_id, bkg, bkg_mdl in zip(bkg_ids,
+                                                bkg_datasets[idx_lo:idx_hi],
+                                                bkg_models[idx_lo:idx_hi]):
 
                     bkg_f = sherpa.fit.Fit(bkg, bkg_mdl, self._current_stat)
 
@@ -9973,7 +10094,10 @@ class Session(sherpa.ui.utils.Session):
         instance
            An object representing the data used to create the plot by
            `plot_source`. The return value depends on the data
-           set (e.g. PHA, 1D binned, 1D un-binned).
+           set (e.g. PHA, 1D binned, 1D un-binned). If ``lo`` or ``hi``
+           were set then the ``mask`` attribute of the object can be
+           used to apply the filter to the ``xlo``, ``xhi``, and ``y``
+           attributes.
 
         See Also
         --------
@@ -10004,10 +10128,18 @@ class Session(sherpa.ui.utils.Session):
         >>> splot1.plot()
         >>> splot2.overplot()
 
+        Access the plot data (for a PHA data set) and select only the
+        bins corresponding to the 2-7 keV range defined in the call:
+
+        >>> splot = get_source_plot(lo=2, hi=7)
+        >>> xlo = splot.xlo[splot.mask]
+        >>> xhi = splot.xhi[splot.mask]
+        >>> y = splot.y[splot.mask]
+
         For a PHA data set, the units on both the X and Y axes of the
         plot are controlled by the `set_analysis` command. In this
-        case the Y axis will be in units of photons/s/cm^2 and the X
-        axis in keV:
+        case the Y axis will be in units of photon/s/cm^2/keV x Energy
+        and the X axis in keV:
 
         >>> set_analysis('energy', factor=1)
         >>> splot = get_source_plot()
@@ -10791,54 +10923,53 @@ class Session(sherpa.ui.utils.Session):
         elif isinstance(plotobj, sherpa.plot.FitContour):
             plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
                             self._prepare_plotobj(id, self._modelcontour))
+        elif isinstance(plotobj, sherpa.astro.plot.ARFPlot):
+            plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
+                            self._get_pha_data(id))
+        elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
+             isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
+            plotobj.prepare(self.get_data(id), model, self.get_stat())
+        elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_stat())
+        elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
+                                  sherpa.astro.plot.BkgRatioPlot,
+                                  sherpa.astro.plot.BkgResidPlot,
+                                  sherpa.astro.plot.BkgDelchiPlot,
+                                  sherpa.astro.plot.BkgChisqrPlot,
+                                  sherpa.astro.plot.BkgModelHistogram)):
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        elif isinstance(plotobj, sherpa.astro.plot.BkgSourcePlot):
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_source(id, bkg_id), lo, hi)
+        elif isinstance(plotobj, sherpa.astro.plot.SourcePlot):
+            data = self.get_data(id)
+            src = self.get_source(id)
+            plotobj.prepare(data, src, lo, hi)
+        elif isinstance(plotobj, sherpa.plot.SourcePlot):
+            data = self.get_data(id)
+            src = self.get_source(id)
+            plotobj.prepare(data, src)
+        elif (isinstance(plotobj, sherpa.plot.PSFPlot) or
+              isinstance(plotobj, sherpa.plot.PSFContour) or
+              isinstance(plotobj, sherpa.plot.PSFKernelPlot) or
+              isinstance(plotobj, sherpa.plot.PSFKernelContour)):
+            plotobj.prepare(self.get_psf(id), self.get_data(id))
+        elif(isinstance(plotobj, sherpa.plot.DataPlot) or
+             isinstance(plotobj, sherpa.plot.DataContour)):
+            plotobj.prepare(self.get_data(id), self.get_stat())
+        elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
+            plotobj.prepare(self._get_pha_data(id),
+                            self.get_model(id), orders)
         else:
-            if isinstance(plotobj, sherpa.astro.plot.ARFPlot):
-                plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
-                                self._get_pha_data(id))
-            elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
-                 isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
-                plotobj.prepare(self.get_data(id), model, self.get_stat())
-            elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
-                plotobj.prepare(self.get_bkg(id, bkg_id),
-                                self.get_stat())
-            elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
-                                      sherpa.astro.plot.BkgRatioPlot,
-                                      sherpa.astro.plot.BkgResidPlot,
-                                      sherpa.astro.plot.BkgDelchiPlot,
-                                      sherpa.astro.plot.BkgChisqrPlot,
-                                      sherpa.astro.plot.BkgModelHistogram)):
-                plotobj.prepare(self.get_bkg(id, bkg_id),
-                                self.get_bkg_model(id, bkg_id),
-                                self.get_stat())
-            elif isinstance(plotobj, sherpa.astro.plot.BkgSourcePlot):
-                plotobj.prepare(self.get_bkg(id, bkg_id),
-                                self.get_bkg_source(id, bkg_id), lo, hi)
-            elif isinstance(plotobj, sherpa.astro.plot.SourcePlot):
-                data = self.get_data(id)
-                src = self.get_source(id)
-                plotobj.prepare(data, src, lo, hi)
-            elif isinstance(plotobj, sherpa.plot.SourcePlot):
-                data = self.get_data(id)
-                src = self.get_source(id)
-                plotobj.prepare(data, src)
-            elif (isinstance(plotobj, sherpa.plot.PSFPlot) or
-                  isinstance(plotobj, sherpa.plot.PSFContour) or
-                  isinstance(plotobj, sherpa.plot.PSFKernelPlot) or
-                  isinstance(plotobj, sherpa.plot.PSFKernelContour)):
-                plotobj.prepare(self.get_psf(id), self.get_data(id))
-            elif(isinstance(plotobj, sherpa.plot.DataPlot) or
-                 isinstance(plotobj, sherpa.plot.DataContour)):
-                plotobj.prepare(self.get_data(id), self.get_stat())
-            elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
-                plotobj.prepare(self._get_pha_data(id),
-                                self.get_model(id), orders)
-            else:
-                # Using _get_fit becomes very complicated using simulfit
-                # models and datasets
-                #
-                # ids, f = self._get_fit(id)
-                plotobj.prepare(self.get_data(id), self.get_model(id),
-                                self.get_stat())
+            # Using _get_fit becomes very complicated using simulfit
+            # models and datasets
+            #
+            # ids, f = self._get_fit(id)
+            plotobj.prepare(self.get_data(id), self.get_model(id),
+                            self.get_stat())
 
         return plotobj
 
@@ -10903,6 +11034,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11002,6 +11136,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11070,6 +11207,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11117,6 +11257,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11180,6 +11323,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11230,6 +11376,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11283,6 +11432,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11335,6 +11487,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11387,6 +11542,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11435,6 +11593,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11453,6 +11614,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
@@ -11493,6 +11655,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11576,6 +11741,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11677,6 +11845,9 @@ class Session(sherpa.ui.utils.Session):
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         See Also
         --------
@@ -11722,6 +11893,126 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
+    def _plot_bkg_jointplot(self, plot2, id=None, bkg_id=None,
+                            replot=False, overplot=False,
+                            clearwindow=True):
+        """Create a joint plot for bkg, vertically aligned, fit data on the top.
+
+        Parameters
+        ----------
+        plot2 : sherpa.plot.Plot instance
+           The plot to appear in the bottom panel.
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to ``True`` to use the previous values. The default is
+           ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        """
+
+        # See the comments in sherpa/ui/utils.py::_plot_jointplot()
+        #
+        plot1 = self._bkgfitplot
+        self._jointplot.reset()
+        if not sherpa.utils.bool_cast(replot):
+            plot1 = self._prepare_plotobj(id, plot1, bkg_id=bkg_id)
+            plot2 = self._prepare_plotobj(id, plot2, bkg_id=bkg_id)
+        try:
+            sherpa.plot.begin()
+            self._jointplot.plottop(plot1, overplot=overplot,
+                                    clearwindow=clearwindow)
+
+            oldval = plot2.plot_prefs['xlog']
+            if (('xlog' in self._bkgdataplot.plot_prefs and
+                 self._bkgdataplot.plot_prefs['xlog']) or
+                ('xlog' in self._bkgmodelplot.plot_prefs and
+                 self._bkgmodelplot.plot_prefs['xlog'])):
+                plot2.plot_prefs['xlog'] = True
+
+            self._jointplot.plotbot(plot2, overplot=overplot)
+
+            plot2.plot_prefs['xlog'] = oldval
+        except:
+            sherpa.plot.exceptions()
+            raise
+        else:
+            sherpa.plot.end()
+
+    def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
+                           overplot=False, clearwindow=True):
+        """Plot the fit results, and the data/model ratio, for the background of
+        a PHA data set.
+
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_ratio` - for a data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_fit_ratio`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the ``bkg_id`` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
+
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+
+        Examples
+        --------
+
+        Plot the background fit and the ratio of the background to
+        this fit for the default data set:
+
+        >>> plot_bkg_fit_ratio()
+
+        """
+
+        self._plot_bkg_jointplot(self._bkgratioplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
+
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
         """Plot the fit results, and the residuals, for the background of
@@ -11745,8 +12036,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11766,8 +12057,10 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
         Examples
@@ -11778,32 +12071,11 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_resid()
 
         """
-        self._jointplot.reset()
-        fp = self._bkgfitplot
-        rp = self._bkgresidplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp, bkg_id=bkg_id)
-            rp = self._prepare_plotobj(id, rp, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
 
-            oldval = rp.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
-                rp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(rp, overplot=overplot)
-
-            rp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_bkg_jointplot(self._bkgresidplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
 
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True):
@@ -11828,8 +12100,8 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
-           When using ChIPS for plotting, should the existing frame
-           be cleared before creating the plot?
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
 
         Raises
         ------
@@ -11849,8 +12121,10 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_ratio : Plot the fit results, and the data/model ratio, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
         Examples
@@ -11862,36 +12136,96 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_delchi()
 
         """
-        self._jointplot.reset()
-        fp = self._bkgfitplot
-        dp = self._bkgdelchiplot
-        if not sherpa.utils.bool_cast(replot):
-            fp = self._prepare_plotobj(id, fp, bkg_id=bkg_id)
-            dp = self._prepare_plotobj(id, dp, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            self._jointplot.plottop(fp, overplot=overplot,
-                                    clearwindow=clearwindow)
-
-            oldval = dp.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
-                dp.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(dp, overplot=overplot)
-
-            dp.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        self._plot_bkg_jointplot(self._bkgdelchiplot,
+                                 id=id, bkg_id=bkg_id,
+                                 replot=replot, overplot=overplot,
+                                 clearwindow=clearwindow)
 
     ###########################################################################
     # Analysis Functions
     ###########################################################################
+
+    def resample_data(self, id=None, niter=1000, seed=None):
+        """Resample data with asymmetric error bars.
+
+        The function performs a parametric bootstrap assuming a skewed
+        normal distribution centered on the observed data point with the
+        variance given by the low and high measurement errors. The function
+        simulates niter realizations of the data and fits each realization
+        with the assumed model to obtain the best fit parameters. The function
+        returns the best fit parameters for each realization, and average and
+        standard deviation for the total number of realizations.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the data set to use.
+        niter : int, optional
+           The number of iterations to use. The default is ``1000``.
+        seed : int, optional
+           The seed for the random number generator. The default is ```None```.
+
+        See Also
+        --------
+        load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
+
+        Example
+        -------
+        Account for of asymmetric errors when calculating parameter
+        uncertainties:
+
+        >>> load_ascii_with_errors(1, 'test.dat')
+        >>> set_model('polynom1d.p0')
+        >>> thaw(p0.c1)
+        >>> fit()
+        Dataset               = 1
+        Method                = levmar
+        Statistic             = leastsq
+        Initial fit statistic = 4322.56
+        Final fit statistic   = 247.768 at function evaluation 6
+        Data points           = 61
+        Degrees of freedom    = 59
+        Change in statistic   = 4074.79
+        p0.c0          3.2661       +/- 0.193009
+        p0.c1          2162.19      +/- 65.8445
+        >>> result = resample_data(1, niter=10)
+        p0.c0 : avg = 4.159973865314249 , std = 1.0575403309799554
+        p0.c1 : avg = 1943.5489865678633 , std = 268.64478808013547
+        >>> print(result)
+        {'p0.c0': [5.856479033432613,
+        3.8252624107243465,
+        4.2049348991011755,
+        3.3561534201274403,
+        5.322970544450817,
+        5.86486160415201,
+        3.4260665826046868,
+        3.5730735695326947,
+        3.2995095277181736,
+        2.8704270612985345],
+        'p0.c1': [1510.049972062868,
+        1995.4742750432902,
+        1929.9678368288805,
+        2145.6409294683394,
+        1685.1157640896092,
+        1487.6241980402608,
+        2159.9157439562578,
+        2100.3068897110925,
+        2185.418945147045,
+        2235.9753113309894]}
+
+        For a large number of realizations the output can be stored in
+        the dictionary and accessed, for example, to visualize the
+        distributions.
+
+        >>> sample = resample_data(1, 5000)
+        p0.c0 : avg = 3.966543284267264 , std = 0.9104639711036427
+        p0.c1 : avg = 1988.8417667057342 , std = 220.21903089622705
+        >>> plot_pdf(sample['p0.c0'], bins=40)
+        """
+        data = self.get_data(id)
+        model = self.get_model(id)
+        resampledata = sherpa.sim.ReSampleData(data, model)
+        return resampledata(niter=niter, seed=seed)
 
     # DOC-TODO: should this accept the confidence parameter?
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
@@ -13419,7 +13753,7 @@ class Session(sherpa.ui.utils.Session):
 
         Write the contents to a StringIO object:
 
-        >>> from six import StringIO
+        >>> from io import StringIO
         >>> store = StringIO()
         >>> save_all(store)
 

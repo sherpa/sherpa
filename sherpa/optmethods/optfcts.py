@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,12 +23,12 @@ from __future__ import absolute_import
 import numpy
 import random
 import sys
-from six.moves import zip as izip
-from six.moves import xrange
 
 from . import _saoopt
+from sherpa.optmethods.ncoresde import ncoresDifEvo
+from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
-from sherpa.utils import parallel_map
+from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
 
 import numpy as np
@@ -89,7 +89,7 @@ def _my_is_nan( x ):
 def _narrow_limits( myrange, xxx, debug ):
 
     def double_check_limits( myx, myxmin, myxmax ):
-        for my_l,my_x,my_h in izip( myxmin, myx, myxmax ):
+        for my_l,my_x,my_h in zip( myxmin, myx, myxmax ):
             if my_x < my_l:
                 print('x = ', my_x, ' is < lower limit = ', my_l)
             if my_x > my_h:
@@ -147,7 +147,7 @@ def _narrow_limits( myrange, xxx, debug ):
     return myxmin, myxmax
 
 def _par_at_boundary( low, val, high, tol ):
-    for par_min, par_val, par_max in izip( low, val, high ):
+    for par_min, par_val, par_max in zip( low, val, high ):
         if sao_fcmp( par_val, par_min, tol ) == 0:
             return True
         if sao_fcmp( par_val, par_max, tol ) == 0:
@@ -246,9 +246,8 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     return rv
 
-def difevo_nm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-               seed=741985, population_size=None, xprob=0.9,
-               weighting_factor=0.8):
+def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed, population_size, xprob,
+              weighting_factor):
 
     def stat_cb0( pars ):
         return fcn( pars )[ 0 ]
@@ -307,9 +306,9 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         mynfev = pow( N, npar )
         grid = list(map( numpy.ravel, grid ))
         sequence = []
-        for index in xrange( mynfev ):
+        for index in range( mynfev ):
             tmp = []
-            for xx in xrange( npar ):
+            for xx in range( npar ):
                 tmp.append( grid[ xx ][ index ] )
             sequence.append( tmp )
         return sequence
@@ -319,7 +318,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
     if sequence is None:
         ranges = []
-        for index in xrange( npar ):
+        for index in range( npar ):
             ranges.append( [ xmin[ index ], xmax[ index ] ] )
         sequence = make_sequence( ranges, num )
     else:
@@ -418,22 +417,22 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 #
 def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                seed=74815, population_size=None, xprob=0.9,
-               weighting_factor=0.8):
+               weighting_factor=0.8, numcores=1):
 
-    def stat_cb0( pars ):
-        return fcn( pars )[ 0 ]
+    def stat_cb0(pars):
+        return fcn(pars)[0]
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     # make sure that the cross over prob is within [0.1,1.0]
-    xprob = max( 0.1, xprob )
-    xprob = min( xprob, 1.0 )
+    xprob = max(0.1, xprob)
+    xprob = min(xprob, 1.0)
 
     # make sure that weighting_factor is within [0.1,1.0]
-    weighting_factor = max( 0.1, weighting_factor )
-    weighting_factor = min( weighting_factor, 1.0 )
+    weighting_factor = max(0.1, weighting_factor)
+    weighting_factor = min(weighting_factor, 1.0)
 
-    random.seed( seed  )
+    random.seed(seed )
     if seed is None:
         seed = random.randint(0, 2147483648) # pow(2,31) == 2147483648L
     if population_size is None:
@@ -442,111 +441,137 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     if maxfev is None:
         maxfev = 8192 * population_size
 
-    def myopt( myfcn, xxx, ftol, maxfev, seed, pop, xprob,
-               weight, factor=4.0, debug=False ):
+    def myopt(myfcn, xxx, ftol, maxfev, seed, pop, xprob,
+               weight, factor=4.0, debug=False):
 
-        x = xxx[ 0 ]
-        xmin = xxx[ 1 ]
-        xmax = xxx[ 2 ]
+        x = xxx[0]
+        xmin = xxx[1]
+        xmax = xxx[2]
         maxfev_per_iter = 512 * x.size
 
-        def random_start( xmin, xmax ):
+        def random_start(xmin, xmax):
             xx = []
-            for ii in range( len(xmin ) ):
-                xx.append( random.uniform( xmin[ ii ], xmax[ ii ] ) )
-            return numpy.asarray( xx )
+            for ii in range(len(xmin)):
+                xx.append(random.uniform(xmin[ii], xmax[ii]))
+            return numpy.asarray(xx)
 
         ############################# NelderMead #############################
-        mymaxfev = min( maxfev_per_iter, maxfev )
-        if all( x == 0.0 ):
+        mymaxfev = min(maxfev_per_iter, maxfev)
+        if all(x == 0.0):
             mystep = list(map(lambda fubar: 1.2 + fubar, x))
         else:
             mystep = list(map(lambda fubar: 1.2 * fubar, x))
-        result = neldermead( myfcn, x, xmin, xmax, maxfev=mymaxfev, ftol=ftol,
-                             finalsimplex=9, step=mystep )
-        x = numpy.asarray( result[ 1 ], numpy.float_ )
-        nfval = result[2]
-        nfev = result[4].get( 'nfev' )
+        if 1 == numcores:
+            result = neldermead(myfcn, x, xmin, xmax, maxfev=mymaxfev,
+                                ftol=ftol,finalsimplex=9, step=mystep)
+            x = numpy.asarray(result[1], numpy.float_)
+            nfval = result[2]
+            nfev = result[4].get('nfev')
+        else:
+            ncores_nm = ncoresNelderMead()
+            nfev, nfval, x = \
+                ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
         if verbose or False != debug:
-            print('f_nm%s=%.14e in %d nfev' % ( x, nfval, nfev ))
+            print('f_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
         ############################# NelderMead #############################
 
-        ############################## nmDifEvo ##############################
-        xmin, xmax = _narrow_limits( 4 * factor, [x,xmin,xmax], debug=False )
-        mymaxfev = min( maxfev_per_iter, maxfev - nfev )
-        result = difevo_nm( myfcn, x, xmin, xmax, ftol=ftol, maxfev=mymaxfev,
-                            seed=seed, population_size=pop, xprob=xprob,
-                            weighting_factor=weight )
-        nfev += result[4].get( 'nfev' )
-        x = numpy.asarray( result[1], numpy.float_ )
-        nfval = result[2]
+        ############################## nmDifEvo #############################
+        xmin, xmax = _narrow_limits(4 * factor, [x,xmin,xmax], debug=False)
+        mymaxfev = min(maxfev_per_iter, maxfev - nfev)
+        if 1 == numcores:
+            result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
+                                seed, pop, xprob, weight)
+            nfev += result[4].get('nfev')
+            x = numpy.asarray(result[1], numpy.float_)
+            nfval = result[2]
+        else:
+            ncores_de = ncoresDifEvo()
+            mystep = None
+            tmp_nfev, tmp_fmin, tmp_par = \
+                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
+                          numcores, pop, seed, weight, xprob, verbose)
+            nfev += tmp_nfev
+            if tmp_fmin < nfval:
+                nfval = tmp_fmin
+                x     = tmp_par
         if verbose or False != debug:
-            print('f_de_nm%s=%.14e in %d nfev' % ( x, result[2],
-                                                   result[4].get('nfev')))
-        ############################## nmDifEvo ##############################
+            print('f_de_nm%s=%.14e in %d nfev' % (x, fval, nfev))
+        ############################## nmDifEvo #############################
 
         ofval = FUNC_MAX
         while nfev < maxfev:
 
-            xmin, xmax = _narrow_limits( factor, [x,xmin,xmax], debug=False )
+            xmin, xmax = _narrow_limits(factor, [x,xmin,xmax], debug=False)
 
             ############################ nmDifEvo #############################
-            y = random_start( xmin, xmax )
-            mymaxfev = min( maxfev_per_iter, maxfev - nfev )
-            result = difevo_nm( myfcn, y, xmin, xmax, ftol=ftol,
-                                maxfev=mymaxfev, seed=seed,
-                                population_size=pop, xprob=xprob,
-                                weighting_factor=weight )
-            nfev += result[4].get( 'nfev' )
-            if result[2] < nfval:
-                nfval = result[2]
-                x = numpy.asarray( result[1], numpy.float_ )
+            y = random_start(xmin, xmax)
+            mymaxfev = min(maxfev_per_iter, maxfev - nfev)
+            if 1 == numcores:
+                result = difevo_nm(myfcn, y, xmin, xmax, ftol, mymaxfev,
+                                   verbose, seed, pop, xprob, weight)
+                nfev += result[4].get('nfev')
+                if result[2] < nfval:
+                    nfval = result[2]
+                    x = numpy.asarray(result[1], numpy.float_)
+            # else:
+            #     ncores_de = ncoresDifEvo()
+            #     mystep = None
+            #     tmp_nfev, tmp_fmin, tmp_par = \
+            #         ncores_de(stat_cb0, y, xmin, xmax, ftol, mymaxfev, mystep,
+            #                   numcores, pop, seed, weight, xprob, verbose)
+            #     nfev += tmp_nfev
+            #     if tmp_fmin < nfval:
+            #         nfval = tmp_fmin
+            #         x       = tmp_par
             if verbose or False != debug:
-                print('f_de_nm%s=%.14e in %d nfev' % \
-                      ( x, result[2], result[4].get('nfev')))
+                print('f_de_nm%s=%.14e in %d nfev' % (x, result[2],
+                                                      result[4].get('nfev')))
+                    
             ############################ nmDifEvo #############################
 
 
             if False != debug:
                 print('ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval))
 
-            if sao_fcmp( ofval, nfval, ftol ) <= 0:
+            if sao_fcmp(ofval, nfval, ftol) <= 0:
                 return x, nfval, nfev
             ofval = nfval
             factor *= 2
 
         return x, nfval, nfev
 
-    x, fval, nfev = myopt( fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
+    x, fval, nfev = myopt(fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
                            seed, population_size, xprob, weighting_factor,
-                           factor=2.0, debug=False )
-
-    covarerr = None
+                           factor=2.0, debug=False)
+    
     if nfev < maxfev:
-        if all( x == 0.0 ):
+        if all(x == 0.0):
             mystep = list(map(lambda fubar: 1.2 + fubar, x))
         else:
             mystep = list(map(lambda fubar: 1.2 * fubar, x))
-        result = neldermead(fcn, x, xmin, xmax,
-                            maxfev=min(512*len(x), maxfev - nfev),
-                            ftol=ftol, finalsimplex=9, step=mystep)
-        covarerr = result[4].get( 'covarerr' )
+        if 1 == numcores:
+            result = neldermead(fcn, x, xmin, xmax,
+                                maxfev=min(512*len(x), maxfev - nfev),
+                                ftol=ftol, finalsimplex=9, step=mystep)
 
-        x = numpy.asarray( result[ 1 ], numpy.float_ )
-        fval = result[2]
-        nfev += result[4].get( 'nfev' )
-
+            x = numpy.asarray(result[1], numpy.float_)
+            fval = result[2]
+            nfev += result[4].get('nfev')
+        else:
+            ncores_nm = ncoresNelderMead()
+            tmp_nfev, tmp_fmin, tmp_par = \
+                ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev, numcores)
+            nfev += tmp_nfev
+            # There is a bug here somewhere using broyden_tridiagonal
+            if tmp_fmin < fval:
+                fval = tmp_fmin
+                x = tmp_par
     ierr = 0
     if nfev >= maxfev:
         ierr = 3
-    status, msg = _get_saofit_msg( maxfev, ierr )
+    status, msg = _get_saofit_msg(maxfev, ierr)
 
-    rv = (status, x, fval)
-    print_covar_err = False
-    if print_covar_err and None != covarerr:
-        rv += (msg, {'covarerr': covarerr, 'info': status, 'nfev': nfev})
-    else:
-        rv += (msg, {'info': status, 'nfev': nfev})
+    rv = (status, x, fval,msg, {'info': status, 'nfev': nfev})
     return rv
 
 
@@ -647,11 +672,10 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         else:
             return xx,ff,nf,er
 
-
     x, fval, nfev, ier = simplex( verbose, maxfev, initsimplex, finalsimplex,
                                   ftol, step, xmin, xmax, x, stat_cb0, debug )
     if debug:
-        print('f%s=%f in %d nfev' % ( x, fval, nfev ))
+        print('f%s=%e in %d nfev' % ( x, fval, nfev ))
 
     info=1
     covarerr=None
@@ -668,7 +692,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             fval = minim_fval
         if debug:
             print('minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info))
-
+    
     if nfev >= maxfev:
         ier = 3
     key = {
@@ -691,28 +715,73 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, verbose=0):
+          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
 
+    class fdJac:
+        
+        def __init__(self, func, fvec, pars):
+            self.func = func
+            self.fvec = fvec
+            epsmch = numpy.float_(numpy.finfo(numpy.float).eps)
+            self.eps = numpy.sqrt(max(epsmch, epsfcn))
+            self.h = self.calc_h(pars)
+            self.pars = numpy.copy(pars)
+            return
 
+        def __call__(self, param):
+            wa = self.func(param[1:])
+            return (wa - self.fvec) / self.h[int(param[0])]
+
+        def calc_h(self, pars):
+            nn = len(pars)
+            h = numpy.empty((nn,))
+            for ii in range(nn):
+                h[ii] = self.eps * pars[ii]
+                if h[ii] == 0.0:
+                    h[ii] = self.eps
+                if pars[ii] + h[ii] > xmax[ii]:
+                    h[ii] = - h[ii]
+            return h
+
+        def calc_params(self):
+            h = self.calc_h(self.pars)
+            params = []
+            for ii in range(len(h)):
+                tmp_pars = numpy.copy(self.pars)
+                tmp_pars[ii] += h[ii]
+                tmp_pars = numpy.append(ii, tmp_pars)
+                params.append(tmp_pars)
+            return tuple(params)
+
+        
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if maxfev is None:
         maxfev = 256 * len(x)
 
-    def stat_cb0( pars ):
-        return fcn( pars )[ 0 ]
-    def stat_cb1( pars ):
-        return fcn( pars )[ 1 ]
-
+    def stat_cb0(pars):
+        return fcn(pars)[0]
+    def stat_cb1(pars):
+        return fcn(pars)[1]
+    def fcn_parallel(pars, fvec):
+        fd_jac = fdJac(stat_cb1, fvec, pars)
+        params = fd_jac.calc_params()
+        fjac = parallel_map(fd_jac, params, numcores)
+        return numpy.concatenate(fjac)
+    num_parallel_map, fcn_parallel_counter = func_counter(fcn_parallel)
+    
+    # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
 
-    orig_fcn = stat_cb1
     error = []
 
     n = len(x)
     fjac = numpy.empty((m*n,))
 
-    x, fval, nfev, info, fjac = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax, fjac )
+    x, fval, nfev, info, fjac = \
+        _saoopt.cpp_lmdif(stat_cb1, fcn_parallel_counter, numcores, m, x, ftol,
+                          xtol, gtol, maxfev, epsfcn, factor, verbose, xmin,
+                          xmax, fjac)
 
     if info > 0:
         fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
@@ -722,53 +791,16 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         else:
             covar = fjac
 
-        if _par_at_boundary( xmin, x, xmax, xtol ):
-            nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
-            nfev += nm_result[ 4 ][ 'nfev' ]
-            x = nm_result[ 1 ]
-            fval = nm_result[ 2 ]
-##        if nm_result[ 2 ] < fval:
-##            x = nm_result[ 1 ]
-##            fval = nm_result[ 2 ]
-##            info, mynfev, fval, covarerr = _minpack.mylmdif(stat_cb1, m, x, ftol, xtol, gtol, maxfev-nfev, epsfcn, factor, verbose, xmin, xmax)
- ##           nfev += mynfev
+        if _par_at_boundary(xmin, x, xmax, xtol):
+            nm_result = neldermead(fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol),
+                                    maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
+                                    verbose=0)
+            nfev += nm_result[4]['nfev']
+            x = nm_result[1]
+            fval = nm_result[2]
 
     if error:
         raise error.pop()
-
-    # This dictionary and the calls below it are unused and should be removed.
-    key = {
-        0: (False, 'improper input parameters'),
-        1: (True,
-            ('both actual and predicted relative reductions in the sum ' +
-             'of squares are at most ftol=%g') % ftol),
-        2: (True,
-            ('relative error between two consecutive iterates is at ' +
-             'most xtol=%g') % xtol),
-        4: (True,
-            ('the cosine of the angle between fvec and any column of ' +
-             'the jacobian is at most gtol=%g in absolute value') % gtol),
-        5: (False,
-            ('number of calls to function has reached or exceeded '+
-             'maxfev=%d') % maxfev),
-        6: (False,
-            ('ftol=%g is too small; no further reduction in the sum of ' +
-             'squares is possible') % ftol),
-        7: (False,
-            ('xtol=%g is too small; no further improvement in the ' +
-             'approximate solution is possible') % xtol),
-        8: (False,
-            ('gtol=%g is too small; fvec is orthogonal to the columns ' +
-             'of the jacobian to machine precision') % gtol),
-        }
-    key[3] = (True, key[1][1] + ' and ' + key[2][1])
-    status, msg = key.get(info, (False, 'unknown status flag (%d)' % info))
-
-    # lmdif used to return info as an integer in the range: [0, 8].  The
-    # explanations for the info values were taken verbatim from lmdif code and
-    # are reproduced in the lines above. However, SDS at
-    # one point complained that they do not understand the wording of the
-    # explanations and wanted a uniform error wording, hence the _get_sao_fit_msg.
 
     if 0 == info:
         info = 1
@@ -780,8 +812,9 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     if info == 0:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar})
+                                     'covar': covar,
+                                     'num_parallel_map': num_parallel_map[0]})
     else:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev})
-
+        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
+                                     'num_parallel_map': num_parallel_map[0]})
     return rv

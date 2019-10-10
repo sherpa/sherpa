@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,10 +16,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
-import six
-from six.moves import zip as izip
 
 import os.path
 import numpy
@@ -45,6 +41,9 @@ except:
 __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
            'get_pha_data', 'set_table_data', 'set_image_data', 'set_pha_data',
            'get_column_data', 'get_ascii_data')
+
+
+string_types = (str, )
 
 
 def open_crate_dataset(filename, crateType=pycrates.CrateDataset, mode='r'):
@@ -140,7 +139,7 @@ def _try_key(crate, name, dtype=str):
 
     # Python3 (and having the type as a parameter) seems to require some complexity here.
     # If there is a better way I am not aware of it.
-    if dtype == str and (isinstance(key, six.string_types) or isinstance(key, bytes)):
+    if dtype == str and (isinstance(key, string_types) or isinstance(key, bytes)):
         try:  # Python 3
             return dtype(key, "utf-8")
         except TypeError:  # Python 2
@@ -412,7 +411,7 @@ def read_table_blocks(arg, make_copy=False):
     elif isinstance(arg, pycrates.CrateDataset):
         filename = arg.get_filename()
         dataset = arg
-    elif isinstance(arg, six.string_types):
+    elif isinstance(arg, string_types):
         filename = arg
         dataset = pycrates.CrateDataset(arg)
         close_dataset = True
@@ -1105,10 +1104,10 @@ def get_pha_data(arg, make_copy=True, use_background=False):
         for (bscal, bscup, bscdn, arsc, chan, cnt, staterr, syserr,
              backup, backdown, binlo, binhi, grp, qual, ordr, prt,
              specnum, srcid
-             ) in izip(backscal, backscup, backscdn, areascal, channel,
-                       counts, staterror, syserror, background_up,
-                       background_down, bin_lo, bin_hi, grouping, quality,
-                       orders, parts, specnums, srcids):
+             ) in zip(backscal, backscup, backscdn, areascal, channel,
+                      counts, staterror, syserror, background_up,
+                      background_down, bin_lo, bin_hi, grouping, quality,
+                      orders, parts, specnums, srcids):
 
             data = {}
 
@@ -1329,7 +1328,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     if len(args) != len(fields):
         raise IOErr('toomanycols', str(len(fields)), str(len(args)))
 
-    for val, name in izip(args, fields):
+    for val, name in zip(args, fields):
         _set_column(tbl, name, val)
 
     pycrates.write_file(tbl, filename, clobber=True)

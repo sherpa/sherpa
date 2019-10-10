@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +20,6 @@ from __future__ import absolute_import
 #
 
 
-from six.moves import zip as izip
 import logging
 import numpy
 import hashlib
@@ -274,7 +274,7 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
-        for p, v in izip(tpars, vals):
+        for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.val = p.min
@@ -300,7 +300,7 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
-        for p, v in izip(tpars, vals):
+        for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.min = p.hard_min
@@ -328,7 +328,7 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
-        for p, v in izip(tpars, vals):
+        for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.max = p.hard_min
@@ -724,7 +724,7 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p, arglist):
         vals = []
-        for model, args in izip(self.models, arglist):
+        for model, args in zip(self.models, arglist):
             # FIXME: we're not using p here (and therefore assuming that the
             # parameter values have already been updated to match the contents
             # of p)

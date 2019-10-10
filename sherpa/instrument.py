@@ -1,5 +1,6 @@
+from __future__ import division
 #
-#  Copyright (C) 2008, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,17 +17,18 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import math
 import warnings
 
 import numpy
 import logging
 
-from six import string_types
-
+from sherpa.astro.data import DataIMG
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, CompositeModel, Model
 from sherpa.models.parameter import Parameter
+from sherpa.models.regrid import EvaluationSpace2D, rebin_2d
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
@@ -35,9 +37,11 @@ from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
 import sherpa
 info = logging.getLogger(__name__).info
 
+string_types = (str, )
+
 
 __all__ = ('Kernel', 'PSFKernel', 'RadialProfileKernel', 'PSFModel',
-           'ConvolutionModel')
+           'ConvolutionModel', 'PSFSpace2D')
 
 
 class ConvolutionModel(CompositeModel, ArithmeticModel):
@@ -401,37 +405,22 @@ def _create_tail_grid(axis_list):
     return None
 
 
-def _get_axis_info(axis_list, dims):
-    if len(dims) == 1 and len(axis_list) == 1:
-        xlo = axis_list[0]
-        lo = xlo.min()
-        hi = xlo.max()
-        width = xlo[1] - xlo[0]
-        return ((lo,), (hi,), (width,))
-
-    elif len(dims) == 1 and len(axis_list) == 2:
-        # 1D integrated grid
-        # bin_width = data.get_xerr()[0]
-        bin_width = axis_list[1] - axis_list[0]
-        return ((axis_list[0].min(),), (axis_list[1].max(),), (bin_width[0],))
-
-    elif len(dims) == 2 and len(axis_list) == 2:
-        # use the unfiltered data grid to obtain lo, hi, width
-        x0, x1 = axis_list
-        lo = (x0.min(), x1.min())
-        hi = (x0.max(), x1.max())
-
-        # If 2D, and we are on the 2nd axis, then the next pertinent
-        # value of x is not 1 bin away, but (original size of axis
-        # 1) away
-        # we are using get_dims() for shape
-        width = ((x0[1] - x0[0]), (x1[dims[0]] - x1[0]))
-        return (lo, hi, width)
-
-    return None, None, None
-
-
 class PSFModel(Model):
+    def __init__(self, name='psfmodel', kernel=None):
+        self._name = name
+        self._size = None
+        self._origin = None
+        self._center = None
+        self._must_rebin = False
+        self.radial = Parameter(name, 'radial', 0, 0, 1, hard_min=0,
+                                hard_max=1, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1, 0, 1, hard_min=0, hard_max=1,
+                              alwaysfrozen=True)
+        self.kernel = kernel
+        self.model = None
+        self.data_space = None
+        self.psf_space = None
+        Model.__init__(self, name)
 
     def _get_center(self):
         if self._center is not None:
@@ -487,19 +476,6 @@ class PSFModel(Model):
 
     origin = property(_get_origin, _set_origin, doc='FFT origin')
 
-    def __init__(self, name='psfmodel', kernel=None):
-        self._name = name
-        self._size = None
-        self._origin = None
-        self._center = None
-        self.radial = Parameter(name, 'radial', 0, 0, 1, hard_min=0,
-                                hard_max=1, alwaysfrozen=True)
-        self.norm = Parameter(name, 'norm', 1, 0, 1, hard_min=0, hard_max=1,
-                              alwaysfrozen=True)
-        self.kernel = kernel
-        self.model = None
-        Model.__init__(self, name)
-
     def _get_str(self):
         s = ''
         if self.kernel is not None:
@@ -549,13 +525,16 @@ class PSFModel(Model):
     def calc(self, *args, **kwargs):
         if self.model is None:
             raise PSFErr('nofold')
-        return self.model.calc(*args, **kwargs)
+        psf_space_evaluation = self.model.calc(*args, **kwargs)
+
+        if self._must_rebin:
+            return rebin_2d(psf_space_evaluation, self.psf_space, self.data_space).ravel()
+        else:
+            return psf_space_evaluation
 
     def fold(self, data):
         # FIXME how will we know the native dimensionality of the
         # raveled model without the values?
-        self._check_pixel_size(data)
-
         kargs = {}
 
         kshape = None
@@ -573,6 +552,21 @@ class PSFModel(Model):
         kargs['do_pad'] = False
 
         kargs['args'] = data.get_indep()
+
+        pixel_size_comparison = self._check_pixel_size(data)
+
+        if pixel_size_comparison == self.SAME_RESOLUTION:  # Don't do anything special
+            self.data_space = EvaluationSpace2D(*data.get_indep())
+            self._must_rebin = False
+        elif pixel_size_comparison == self.BETTER_RESOLUTION:  # Evaluate model in PSF space
+            self.data_space = EvaluationSpace2D(*data.get_indep())
+            self.psf_space = PSFSpace2D(self.data_space, self, data.sky.cdelt)
+            kargs['args'] = self.psf_space.grid
+            dshape = self.psf_space.shape
+            self._must_rebin = True
+        else:  # PSF has worse resolution, error out
+            raise AttributeError("The PSF has a worse resolution than the data.")
+
         if isinstance(self.kernel, Data):
 
             kshape = self.kernel.get_dims()
@@ -622,13 +616,6 @@ class PSFModel(Model):
 
             if hasattr(self.kernel, 'thawedpars'):
                 kargs['frozen'] = (len(self.kernel.thawedpars) == 0)
-
-        # check size of self.size to ensure <= dshape for 2D
-        #        if len(dshape) > 1:
-        #            dsize = numpy.asarray(dshape)
-        #            ksize = numpy.asarray(self.size)
-        #            if True in (ksize>dsize):
-        #                raise PSFErr('badsize', ksize, dsize)
 
         is_kernel = (kargs['is_model'] and not kargs['norm'] and
                      len(kshape) == 1)
@@ -715,21 +702,65 @@ class PSFModel(Model):
         return dataset
 
     def _check_pixel_size(self, data):
+        """
+        If the data and PSF dot not have WCS information, assume the PSF has the same resolution
+        as the image.
+        Otherwise check the WCS information to determine the relative resolutions.
+
+        We only check the resolution in one dimention and assume they are the same
+        """
         if hasattr(self.kernel, "sky"):
             # This corresponds to the case when the kernel is actually a psf image, not just a model.
+
             try:
                 psf_pixel_size = self.kernel.sky.cdelt
-            except AttributeError:
-                warnings.warn("No PSF pixel size info available. Skipping check against data pixel size.")
-                return
+            except AttributeError: # If the kernel does not have a pixel size, issue a warning and keep going
+                warnings.warn("PSF Image does not have a pixel size. Sherpa will assume the pixel size is the same"
+                              "as the data")
+                return self.SAME_RESOLUTION
 
             try:
                 data_pixel_size = data.sky.cdelt
             except AttributeError:
-                warnings.warn("No data pixel size info available. Skipping check against PSF pixel size.")
-                return
+                warnings.warn("Data Image does not have a pixel size. Sherpa will assume the pixel size is the same"
+                              "as the PSF")
+                return self.SAME_RESOLUTION
 
-            if not numpy.allclose(psf_pixel_size, data_pixel_size):
-                warnings.warn("NOTE: The PSF pixel size ({}) does not correspond to the Image Pixel Size ({})".format(
-                    psf_pixel_size, data_pixel_size
-                ))
+            if numpy.allclose(psf_pixel_size, data_pixel_size):
+                return self.SAME_RESOLUTION
+            if psf_pixel_size[0] < data_pixel_size[0]:
+                return self.BETTER_RESOLUTION
+            if psf_pixel_size[0] > data_pixel_size[0]:
+                return self.WORSE_RESOLUTION
+
+        return self.SAME_RESOLUTION
+
+    SAME_RESOLUTION = 0
+    BETTER_RESOLUTION = 1
+    WORSE_RESOLUTION = -1
+
+
+class PSFSpace2D(EvaluationSpace2D):
+    """
+    This class defines a special evaluation space that has the same boundaries as the data space but a number of pixels
+    consistent with the pixel size of the PSF. This space is used when the data image and the PSF have a different
+    pixel size so the model is evaluated on the "PSF space" and then rebinned back to the data space for the calculation
+    of the statistic during a fit.
+    """
+    def __init__(self, data_space, psf_model, data_pixel_size=None):
+        if data_pixel_size is None:
+            data_pixel_size = [1, 1]
+
+        x_start, y_start = data_space.start
+        x_end, y_end = data_space.end
+        psf_pixel_size_axis0 = psf_model.kernel.sky.cdelt[0]
+        psf_pixel_size_axis1 = psf_model.kernel.sky.cdelt[1]
+        data_pixel_size_axis0 = data_pixel_size[0]
+        data_pixel_size_axis1 = data_pixel_size[1]
+        step_x = psf_pixel_size_axis0 / data_pixel_size_axis0
+        step_y = psf_pixel_size_axis1 / data_pixel_size_axis1
+        x_range_end, y_range_end = x_end + 1, y_end + 1
+        x = numpy.arange(x_start, x_range_end, step_x)
+        y = numpy.arange(y_start, y_range_end, step_y)
+        self.data_2_psf_pixel_size_ratio = (step_x, step_y)
+        super(PSFSpace2D, self).__init__(x, y)
