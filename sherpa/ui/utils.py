@@ -12735,7 +12735,7 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._kernelplot, **kwargs)
 
     def _plot_jointplot(self, plot2, id=None, replot=False,
-                        overplot=False, clearwindow=True):
+                        overplot=False, clearwindow=True, **kwargs):
         """Create a joint plot, vertically aligned, fit data on the top.
 
         Parameters
@@ -12770,8 +12770,11 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
+
+            # Note: the user preferences are set to both plots
+            #
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow)
+                                    clearwindow=clearwindow, **kwargs)
 
             # The two plots are intended to have the same scaling
             # on the X axis (log or linear), and the approach is
@@ -12794,7 +12797,7 @@ class Session(NoNewAttributesAfterInit):
                  self._modelplot.plot_prefs['xlog'])):
                 plot2.plot_prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot)
+            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
             plot2.plot_prefs['xlog'] = oldval
         except:
@@ -12804,7 +12807,7 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.end()
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
-                       clearwindow=True):
+                       clearwindow=True, **kwargs):
         """Plot the fit results, and the residuals, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -12865,10 +12868,10 @@ class Session(NoNewAttributesAfterInit):
 
         self._plot_jointplot(self._residplot,
                              id=id, replot=replot, overplot=overplot,
-                             clearwindow=clearwindow)
+                             clearwindow=clearwindow, **kwargs)
 
     def plot_fit_ratio(self, id=None, replot=False, overplot=False,
-                       clearwindow=True):
+                       clearwindow=True, **kwargs):
         """Plot the fit results, and the ratio of data to model, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -12929,10 +12932,10 @@ class Session(NoNewAttributesAfterInit):
 
         self._plot_jointplot(self._ratioplot,
                              id=id, replot=replot, overplot=overplot,
-                             clearwindow=clearwindow)
+                             clearwindow=clearwindow, **kwargs)
 
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
-                        clearwindow=True):
+                        clearwindow=True, **kwargs):
         """Plot the fit results, and the residuals, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -12993,14 +12996,14 @@ class Session(NoNewAttributesAfterInit):
 
         self._plot_jointplot(self._delchiplot,
                              id=id, replot=replot, overplot=overplot,
-                             clearwindow=clearwindow)
+                             clearwindow=clearwindow, **kwargs)
 
     #
     # Statistical plotting routines
     #
 
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True,
-                 replot=False, overplot=False, clearwindow=True):
+                 replot=False, overplot=False, clearwindow=True, **kwargs):
         """Plot the probability density function of an array of values.
 
         Create and plot the probability density function (PDF) of
@@ -13050,7 +13053,8 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._pdfplot.plot(overplot, clearwindow)
+            self._pdfplot.plot(overplot=overplot, clearwindow=clearwindow,
+                               **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13075,7 +13079,7 @@ class Session(NoNewAttributesAfterInit):
         return self._pdfplot
 
     def plot_cdf(self, points, name="x", xlabel="x",
-                 replot=False, overplot=False, clearwindow=True):
+                 replot=False, overplot=False, clearwindow=True, **kwargs):
         """Plot the cumulative density function of an array of values.
 
         Create and plot the cumulative density function (CDF) of
@@ -13123,7 +13127,8 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._cdfplot.plot(overplot, clearwindow)
+            self._cdfplot.plot(overplot=overplot,
+                               clearwindpw=clearwindow, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13149,7 +13154,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: what does xlabel do?
     def plot_trace(self, points, name="x", xlabel="x",
-                   replot=False, overplot=False, clearwindow=True):
+                   replot=False, overplot=False, clearwindow=True, **kwargs):
         """Create a trace plot of row number versus value.
 
         Dispay a plot of the ``points`` array values (Y axis) versus row
@@ -13203,7 +13208,8 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._traceplot.plot(overplot, clearwindow)
+            self._traceplot.plot(overplot=overplot, clearwindow=clearwindow,
+                                 **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13228,7 +13234,7 @@ class Session(NoNewAttributesAfterInit):
         return self._traceplot
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
-                     replot=False, overplot=False, clearwindow=True):
+                     replot=False, overplot=False, clearwindow=True, **kwargs):
         """Create a scatter plot.
 
         Parameters
@@ -13279,7 +13285,9 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._scatterplot.plot(overplot, clearwindow)
+            self._scatterplot.plot(overplot=overplot,
+                                   clearwindow=clearwindow,
+                                   **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13740,7 +13748,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._kernelcontour, **kwargs)
 
-    def contour_fit_resid(self, id=None, replot=False, overcontour=False):
+    def contour_fit_resid(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the fit and the residuals to a data set.
 
         Overplot the model - including any PSF - on the data. In a
@@ -13785,8 +13793,10 @@ class Session(NoNewAttributesAfterInit):
             rc = self._prepare_plotobj(id, rc)
         try:
             sherpa.plot.begin()
-            self._splitplot.addcontour(fc, overcontour=overcontour)
-            self._splitplot.addcontour(rc, overcontour=overcontour)
+
+            # Note: the user settings are applied to both contours
+            self._splitplot.addcontour(fc, overcontour=overcontour, **kwargs)
+            self._splitplot.addcontour(rc, overcontour=overcontour, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -14254,6 +14264,8 @@ class Session(NoNewAttributesAfterInit):
             self._regunc.calc(fit, par0, par1)
         return self._regunc
 
+    # TODO: allow user-specified arguments
+    #
     def _int_plot(self, plotobj, par, **kwargs):
         prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
         plot_dict = sherpa.utils.get_keyword_defaults(plotobj.plot)
