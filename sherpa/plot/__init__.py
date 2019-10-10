@@ -55,8 +55,7 @@ if plot_opt == 'none_backend':
     plot_opt = 'dummy_backend'
 
 try:
-    importlib.import_module('.' + plot_opt, package='sherpa.plot')
-    backend = sys.modules['sherpa.plot.' + plot_opt]
+    backend = importlib.import_module('.' + plot_opt, package='sherpa.plot')
 except ImportError:
     # if the user inputs a malformed backend or it is not found,
     # give a useful warning and fall back on dummy_backend of noops
@@ -66,8 +65,7 @@ except ImportError:
         plot_opt = 'pylab_backend'
 
         try:
-            importlib.import_module('.' + plot_opt, package='sherpa.plot')
-            backend = sys.modules['sherpa.plot.' + plot_opt]
+            backend = importlib.import_module('.' + plot_opt, package='sherpa.plot')
         except ImportError:
             warning('failed to import sherpa.plot.%s;' % plot_opt +
                     ' plotting routines will not be available')
