@@ -786,7 +786,6 @@ def basic_img(make_data_path):
     ui.set_default_id(2)
     ui.load_image(make_data_path('img.fits'))
     ui.set_source(ui.gauss2d.gmdl)
-    gmdl = ui.get_model_component('gmdl')
     ui.guess()
 
 
@@ -803,6 +802,7 @@ _basic_plotfuncs = [ui.plot_data,
                     ui.plot_arf,
                     ui.plot_chisqr]
 
+
 @requires_plotting
 @requires_fits
 @requires_data
@@ -817,6 +817,15 @@ def test_pha1_plot_function(clean_astro_ui, basic_pha1):
 @pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
 def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", [ui.plot_model_component,
+                                      ui.plot_source_component])
+def test_pha1_plot_component(clean_astro_ui, basic_pha1, plotfunc):
+    plotfunc("pl")
 
 
 @requires_plotting
