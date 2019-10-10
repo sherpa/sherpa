@@ -297,8 +297,9 @@ class Histogram(NoNewAttributesAfterInit):
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True, **kwargs):
         opts = self._merge_settings(kwargs)
-        backend.histo(xlo, xhi, y, yerr, title, xlabel, ylabel, overplot,
-                      clearwindow, **opts)
+        backend.histo(xlo, xhi, y, yerr=yerr, title=title,
+                      xlabel=xlabel, ylabel=ylabel, overplot=overplot,
+                      clearwindow=clearwindow, **opts)
 
     def overplot(self, *args, **kwargs):
         kwargs['overplot'] = True
