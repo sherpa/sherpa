@@ -40,7 +40,7 @@ from sherpa.astro import ui
 
 from sherpa.utils.err import IdentifierErr
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_plotting, requires_pylab
+    requires_plotting, requires_pylab, requires_xspec
 
 import pytest
 
@@ -777,7 +777,7 @@ def basic_pha1(make_data_path):
     pl = ui.get_model_component('pl')
     pl.gamma = 1.93
     pl.ampl = 1.74e-4
-    
+
 
 @pytest.fixture
 def basic_img(make_data_path):
@@ -818,14 +818,14 @@ def test_pha1_plot_function(clean_astro_ui, basic_pha1):
 def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc()
 
-    
+
 @requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.int_unc, ui.int_proj])
 def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc('pl.gamma')
-    
+
 
 @requires_plotting
 @requires_fits
@@ -833,7 +833,7 @@ def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc):
 @pytest.mark.parametrize("plotfunc", [ui.reg_unc, ui.reg_proj])
 def test_pha1_reg_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc('pl.gamma', 'pl.ampl')
-    
+
 
 _img_plotfuncs = [ui.contour_data,
                   ui.contour_fit,
@@ -1028,3 +1028,58 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
     assert line.get_markersize() == pytest.approx(8.0)
 
     assert len(ax.collections) == 0
+
+
+@requires_pylab
+@requires_fits
+@requires_data
+@requires_xspec
+def test_pha1_reg_proj(clean_astro_ui, basic_pha1):
+    """This is potentially a time-consuming test to run, so simplify
+    as much as possible.
+    """
+
+    from matplotlib import pyplot as plt
+
+    pl = ui.get_model_component("pl")
+    ui.set_source(ui.xsphabs.gal * pl)
+    gal = ui.get_model_component("gal")
+
+    ui.fit()
+
+    ui.reg_proj("pl.gamma", "gal.nh", min=(1.6, 0), max=(2.5, 0.2),
+                nloop=(3, 3))
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'linear'
+    assert ax.get_yscale() == 'linear'
+
+    assert ax.get_xlabel() == 'pl.gamma'
+    assert ax.get_ylabel() == 'gal.nH'
+    assert ax.get_title() == 'Region-Projection'
+
+    xmin, xmax = ax.get_xlim()
+    assert xmin == pytest.approx(1.6)
+    assert xmax == pytest.approx(2.5)
+
+    ymin, ymax = ax.get_ylim()
+    assert ymin == pytest.approx(0.0)
+    assert ymax == pytest.approx(0.2)
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+    assert line.get_xdata().size == 1
+
+    x0 = line.get_xdata()[0]
+    y0 = line.get_ydata()[0]
+
+    assert x0 == pytest.approx(pl.gamma.val)
+    assert y0 == pytest.approx(gal.nh.val)
+
+    # pylab get_confid_point_defaults() returns
+    # {'symbol': '+', 'color': None}
+    #
+    assert line.get_marker() == '+'
+
+    # I assume these are the 1, 2, 3 sigma contours
+    assert len(ax.collections) == 3
