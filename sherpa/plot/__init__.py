@@ -1893,7 +1893,9 @@ class Confidence2D(DataContour, Point):
 
         # Note: the user arguments are not applied to the point
         #
-        Point.point(self, self.parval0, self.parval1,
+        point = Point()
+        point.point_prefs = self.point_prefs
+        point.point(self.parval0, self.parval1,
                     overplot=True, clearwindow=False)
 
         if self.log[0]:
