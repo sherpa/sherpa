@@ -130,6 +130,34 @@ def _errorbar_warning(stat):
         "used in fits with {}".format(stat.name)
 
 
+def _merge_settings(prefs, user):
+    """Merge preference and user settings.
+
+    Parameters
+    ----------
+    prefs : dict
+        The plot preferences.
+    user : dict
+        The user settings.
+
+    Returns
+    -------
+    settings : dict
+        The merged settings, where the user settings override the
+        preferences. The input arguments are not changed.
+    """
+
+    # be explicit here
+    opts = {}
+    for k, v in prefs.items():
+        opts[k] = v
+
+    for k, v in user.items():
+        opts[k] = v
+
+    return opts
+
+
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
     plot_prefs = backend.get_plot_defaults()
@@ -165,12 +193,18 @@ class Plot(NoNewAttributesAfterInit):
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
 
+    def _merge_settings(self, kwargs):
+        """Return the plot preferences merged with user settings."""
+        return _merge_settings(self.plot_prefs, kwargs)
+
     def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
-             ylabel=None, overplot=False, clearwindow=True):
+             ylabel=None, overplot=False, clearwindow=True,
+             **kwargs):
+        opts = self._merge_settings(kwargs)
         backend.plot(x, y, yerr=yerr, xerr=xerr,
                      title=title, xlabel=xlabel, ylabel=ylabel,
                      overplot=overplot, clearwindow=clearwindow,
-                     **self.plot_prefs)
+                     **opts)
 
     def overplot(self, *args, **kwargs):
         "Add the data to an existing plot."
@@ -195,10 +229,16 @@ class Contour(NoNewAttributesAfterInit):
         self.contour_prefs = self.contour_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
 
+    def _merge_settings(self, kwargs):
+        """Return the plot preferences merged with user settings."""
+        return _merge_settings(self.contour_prefs, kwargs)
+
     def contour(self, x0, x1, y, levels=None, title=None, xlabel=None,
-                ylabel=None, overcontour=False, clearwindow=True):
+                ylabel=None, overcontour=False, clearwindow=True,
+                **kwargs):
+        opts = self._merge_settings(kwargs)
         backend.contour(x0, x1, y, levels, title, xlabel, ylabel, overcontour,
-                        clearwindow, **self.contour_prefs)
+                        clearwindow, **opts)
 
     def overcontour(self, *args, **kwargs):
         kwargs['overcontour'] = True
@@ -222,8 +262,13 @@ class Point(NoNewAttributesAfterInit):
         self.point_prefs = self.point_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
 
-    def point(self, x, y, overplot=True, clearwindow=False):
-        backend.point(x, y, overplot, clearwindow, **self.point_prefs)
+    def _merge_settings(self, kwargs):
+        """Return the plot preferences merged with user settings."""
+        return _merge_settings(self.point_prefs, kwargs)
+
+    def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
+        opts = self._merge_settings(kwargs)
+        backend.point(x, y, overplot, clearwindow, **opts)
 
 
 class Histogram(NoNewAttributesAfterInit):
@@ -243,10 +288,15 @@ class Histogram(NoNewAttributesAfterInit):
         self.histo_prefs = self.histo_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
 
+    def _merge_settings(self, kwargs):
+        """Return the plot preferences merged with user settings."""
+        return _merge_settings(self.histo_prefs, kwargs)
+
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
-             ylabel=None, overplot=False, clearwindow=True):
+             ylabel=None, overplot=False, clearwindow=True, **kwargs):
+        opts = self._merge_settings(kwargs)
         backend.histo(xlo, xhi, y, yerr, title, xlabel, ylabel, overplot,
-                      clearwindow, **self.histo_prefs)
+                      clearwindow, **opts)
 
     def overplot(self, *args, **kwargs):
         kwargs['overplot'] = True
@@ -295,10 +345,10 @@ class HistogramPlot(Histogram):
                  self.title,
                  self.histo_prefs))
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow)
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class PDFPlot(HistogramPlot):
@@ -396,10 +446,14 @@ class CDFPlot(Plot):
         self.ylabel = "p(<={})".format(xlabel)
         self.title = "CDF: {}".format(name)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+
         Plot.plot(self, self.x, self.y, title=self.title,
                   xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow)
+                  overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        # Note: the user arguments are not applied to the vertical lines
+        #
         Plot.vline(self.median, overplot=True, clearwindow=False,
                    **self.median_defaults)
         Plot.vline(self.lower, overplot=True, clearwindow=False,
@@ -440,14 +494,16 @@ class LRHistogram(HistogramPlot):
         self.xlabel = "Likelihood Ratio"
         self.ylabel = "Frequency"
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow)
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
 
         if self.lr is None:
             return
 
+        # Note: the user arguments are not applied to the vertical line
+        #
         if self.lr <= self.xhi.max() and self.lr >= self.xlo.min():
             Plot.vline(self.lr, linecolor="orange", linestyle="solid",
                        linewidth=1.5, overplot=True, clearwindow=False)
@@ -747,10 +803,10 @@ class DataPlot(Plot):
 
         self.title = data.name
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow)
+                  overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class TracePlot(DataPlot):
@@ -858,10 +914,10 @@ class DataContour(Contour):
          self.ylabel) = data.to_contour()
         self.title = data.name
 
-    def contour(self, overcontour=False, clearwindow=True):
+    def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y,
                         self.levels, self.title, self.xlabel,
-                        self.ylabel, overcontour, clearwindow)
+                        self.ylabel, overcontour, clearwindow, **kwargs)
 
 
 class PSFKernelContour(DataContour):
@@ -950,10 +1006,10 @@ class ModelPlot(Plot):
          self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
         self.y = self.y[1]
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
                   ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow)
+                  clearwindow=clearwindow, **kwargs)
 
 
 class ComponentModelPlot(ModelPlot):
@@ -1089,11 +1145,12 @@ class ModelContour(Contour):
          self.ylabel) = data.to_contour(yfunc=model)
         self.y = self.y[1]
 
-    def contour(self, overcontour=False, clearwindow=True):
+    def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow)
+                        overcontour=overcontour, clearwindow=clearwindow,
+                        **kwargs)
 
 
 class PSFContour(DataContour):
@@ -1140,11 +1197,16 @@ class FitPlot(Plot):
         self.dataplot = dataplot
         self.modelplot = modelplot
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         if self.dataplot is None or self.modelplot is None:
             raise PlotErr("nodataormodel")
-        self.dataplot.plot(overplot, clearwindow)
-        self.modelplot.overplot()
+
+        # Note: the user preferences are sent to *both* the data and
+        #       model plot. Is this a good idea?
+        #
+        self.dataplot.plot(overplot=overplot, clearwindow=clearwindow,
+                           **kwargs)
+        self.modelplot.overplot(**kwargs)
 
 
 class FitContour(Contour):
@@ -1174,9 +1236,11 @@ class FitContour(Contour):
         self.datacontour = datacontour
         self.modelcontour = modelcontour
 
-    def contour(self, overcontour=False, clearwindow=True):
-        self.datacontour.contour(overcontour, clearwindow)
-        self.modelcontour.overcontour()
+    def contour(self, overcontour=False, clearwindow=True, **kwargs):
+        # Note: the user arguments are applied to both plots
+        self.datacontour.contour(overcontour=overcontour,
+                                 clearwindow=clearwindow, **kwargs)
+        self.modelcontour.overcontour(**kwargs)
 
 
 class DelchiPlot(ModelPlot):
@@ -1220,10 +1284,10 @@ class DelchiPlot(ModelPlot):
         self.ylabel = 'Sigma'
         self.title = _make_title('Sigma Residuals', data.name)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow)
+                  overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class ChisqrPlot(ModelPlot):
@@ -1266,10 +1330,10 @@ class ChisqrPlot(ModelPlot):
         self.ylabel = get_latex_for_string(r'\chi^2')
         self.title = _make_title(get_latex_for_string(r'\chi^2'), data.name)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, title=self.title,
                   xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow)
+                  overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class ResidPlot(ModelPlot):
@@ -1328,10 +1392,10 @@ class ResidPlot(ModelPlot):
 
         self.title = _make_title('Residuals', data.name)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow)
+                  overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class ResidContour(ModelContour):
@@ -1348,11 +1412,12 @@ class ResidContour(ModelContour):
         self.y = self._calc_resid(self.y)
         self.title = _make_title('Residuals', data.name)
 
-    def contour(self, overcontour=False, clearwindow=True):
+    def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title,
                         xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow)
+                        overcontour=overcontour, clearwindow=clearwindow,
+                        **kwargs)
 
 
 class RatioPlot(ModelPlot):
@@ -1411,10 +1476,10 @@ class RatioPlot(ModelPlot):
         self.ylabel = 'Data / Model'
         self.title = _make_title('Ratio of Data to Model', data.name)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow)
+                  overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class RatioContour(ModelContour):
@@ -1436,11 +1501,12 @@ class RatioContour(ModelContour):
         self.y = self._calc_ratio(self.y)
         self.title = _make_title('Ratio of Data to Model', data.name)
 
-    def contour(self, overcontour=False, clearwindow=True):
+    def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow)
+                        overcontour=overcontour, clearwindow=clearwindow,
+                        **kwargs)
 
 
 class Confidence1D(DataPlot):
@@ -1578,14 +1644,16 @@ class Confidence1D(DataPlot):
         if type(fit.stat) in (LeastSq,):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         if self.log:
             self.plot_prefs['xlog'] = True
 
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
                   ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow)
+                  clearwindow=clearwindow, **kwargs)
 
+        # Note: the user arguments are not applied to the lines
+        #
         if self.stat is not None:
             Plot.hline(self.stat, linecolor="green", linestyle="dash",
                        linewidth=1.5, overplot=True, clearwindow=False)
@@ -1800,7 +1868,7 @@ class Confidence2D(DataContour, Point):
         if type(fit.stat) in (LeastSq,):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
-    def contour(self, overplot=False, clearwindow=True):
+    def contour(self, overplot=False, clearwindow=True, **kwargs):
 
         if self.log[0]:
             self.contour_prefs['xlog'] = True
@@ -1810,7 +1878,10 @@ class Confidence2D(DataContour, Point):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel, overcontour=overplot,
-                        clearwindow=clearwindow)
+                        clearwindow=clearwindow, **kwargs)
+
+        # Note: the user arguments are not applied to the point
+        #
         Point.point(self, self.parval0, self.parval1,
                     overplot=True, clearwindow=False)
 
