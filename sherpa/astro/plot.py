@@ -26,6 +26,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
 from sherpa.plot import ComponentSourcePlot as _ComponentSourcePlot
+import sherpa.plot
 from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins
@@ -209,6 +210,9 @@ class ComponentModelPlot(_ComponentSourcePlot, ModelHistogram):
         ModelHistogram.prepare(self, data, model, stat)
         self.title = 'Model component: %s' % model.name
 
+    def _merge_settings(self, kwargs):
+        return sherpa.plot._merge_settings(self.histo_prefs, kwargs)
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         ModelHistogram.plot(self, overplot=overplot,
                             clearwindow=clearwindow, **kwargs)
@@ -227,6 +231,9 @@ class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
     def prepare(self, data, model, stat=None):
         SourcePlot.prepare(self, data, model)
         self.title = 'Source model component: %s' % model.name
+
+    def _merge_settings(self, kwargs):
+        return sherpa.plot._merge_settings(self.histo_prefs, kwargs)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         SourcePlot.plot(self, overplot=overplot,
