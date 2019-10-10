@@ -1090,5 +1090,11 @@ def test_pha1_reg_proj(clean_astro_ui, basic_pha1):
     #
     assert line.get_marker() == '+'
 
-    # I assume these are the 1, 2, 3 sigma contours
-    assert len(ax.collections) == 3
+    # the number depends on the matplotlib version: 2 for 2.2.3 and
+    # 3 for 3.1.1; it's not clear what the "extra" one is in matplotlib 3
+    # (it isn't obviously visible). DJB guesses that this would be
+    # clearer if we ran with more bins along each axis, but this would
+    # take more time.
+    #
+    ncontours = len(ax.collections)
+    assert ncontours in [2, 3]
