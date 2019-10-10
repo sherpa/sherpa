@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2012, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,8 @@ import os
 import re
 import unittest
 import tempfile
+
+import pytest
 
 import numpy
 from numpy.testing import assert_allclose
@@ -562,3 +564,48 @@ def test_bug_276(make_data_path):
     ui.covar()
     scal = ui.get_covar_results().parmaxes
     ui.sample_flux(ui.get_model_component('p1'), 0.5, 1, num=5, correlated=False, scales=scal)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.usefixtures("clean_astro_ui")
+def test_bug_316(make_data_path):
+    """get_source_plot does not apply lo/hi directly
+
+    This does not need a plot backend, as no plot is created,
+    just the data needed to create the plot.
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha('xs', infile)
+    ui.set_source('xs', ui.powlaw1d.pl)
+
+    splot = ui.get_source_plot('xs')
+    xmin = splot.xlo[0]
+    xmax = splot.xhi[-1]
+    nbins = len(splot.xlo)
+
+    assert xmin == pytest.approx(0.1)
+    assert xmax == pytest.approx(11.0)
+    assert nbins == 1090
+
+    assert splot.mask is None
+
+    # applying arguments doesn't filter the structure
+    splot = ui.get_source_plot('xs', lo=2, hi=7)
+    xmin = splot.xlo[0]
+    xmax = splot.xhi[-1]
+    nbins = len(splot.xlo)
+
+    assert xmin == pytest.approx(0.1)
+    assert xmax == pytest.approx(11.0)
+    assert nbins == 1090
+
+    assert splot.mask is not None
+    assert splot.mask.sum() == 501
+
+    xmin = splot.xlo[splot.mask][0]
+    xmax = splot.xhi[splot.mask][-1]
+
+    assert xmin == pytest.approx(2.0)
+    assert xmax == pytest.approx(7.01)
