@@ -268,7 +268,9 @@ class Point(NoNewAttributesAfterInit):
 
     def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
         opts = self._merge_settings(kwargs)
-        backend.point(x, y, overplot, clearwindow, **opts)
+        backend.point(x, y,
+                      overplot=overplot, clearwindow=clearwindow,
+                      **opts)
 
 
 class Histogram(NoNewAttributesAfterInit):
@@ -917,7 +919,8 @@ class DataContour(Contour):
     def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y,
                         self.levels, self.title, self.xlabel,
-                        self.ylabel, overcontour, clearwindow, **kwargs)
+                        self.ylabel, overcontour=overcontour,
+                        clearwindow=clearwindow, **kwargs)
 
 
 class PSFKernelContour(DataContour):
@@ -1148,9 +1151,8 @@ class ModelContour(Contour):
     def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow,
-                        **kwargs)
+                        ylabel=self.ylabel, overcontour=overcontour,
+                        clearwindow=clearwindow, **kwargs)
 
 
 class PSFContour(DataContour):
