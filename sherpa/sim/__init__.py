@@ -645,7 +645,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         self._set_sampler_opt(opt, value)
 
-    def get_draws(self, fit, sigma, niter=1000):
+    def get_draws(self, fit, sigma, niter=1000, cache=True):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
@@ -746,7 +746,7 @@ class MCMC(NoNewAttributesAfterInit):
             return proposed_stat
 
         try:
-            fit.model.startup()
+            fit.model.startup(cache)
             self.sample = sampler(calc_stat, sigma, mu, dof, fit)
             self.walk = walker(self.sample, niter)
             stats, accept, params = self.walk(**sampler_kwargs)

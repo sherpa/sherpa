@@ -405,7 +405,7 @@ class CompositeModel(Model):
 
         return parts
 
-    def startup(self):
+    def startup(self, cache):
         pass
 
     def teardown(self):
@@ -449,10 +449,10 @@ class SimulFitModel(CompositeModel):
     def __iter__(self):
         return iter(self.parts)
 
-    def startup(self):
+    def startup(self, cache):
         for part in self:
-            part.startup()
-        CompositeModel.startup(self)
+            part.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         for part in self:
@@ -469,7 +469,7 @@ class ArithmeticConstantModel(Model):
         self.val = SherpaFloat(val)
         Model.__init__(self, self.name)
 
-    def startup(self):
+    def startup(self, cache):
         pass
 
     def calc(self, p, *args, **kwargs):
@@ -540,14 +540,14 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
-    def startup(self):
+    def startup(self, cache):
         self._queue = ['']
         self._cache = {}
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)
             frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
             if len(frozen) > 0 and frozen.all():
-                self._use_caching = True
+                self._use_caching = cache
 
     def teardown(self):
         self._use_caching = False
@@ -599,10 +599,10 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
                                  (self.lhs.name, opstr, self.rhs.name)),
                                 (self.lhs, self.rhs))
 
-    def startup(self):
-        self.lhs.startup()
-        self.rhs.startup()
-        CompositeModel.startup(self)
+    def startup(self, cache):
+        self.lhs.startup(cache)
+        self.rhs.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         self.lhs.teardown()
@@ -697,10 +697,10 @@ class NestedModel(CompositeModel, ArithmeticModel):
                                  (self.outer.name, self.inner.name)),
                                 (self.outer, self.inner))
 
-    def startup(self):
-        self.inner.startup()
-        self.outer.startup()
-        CompositeModel.startup(self)
+    def startup(self, cache):
+        self.inner.startup(cache)
+        self.outer.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         self.inner.teardown()

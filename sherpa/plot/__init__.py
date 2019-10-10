@@ -1841,7 +1841,7 @@ class IntervalProjection(Confidence1D):
         self.fast = fast
         Confidence1D.prepare(self, min, max, nloop, delv, fac, log, numcores)
 
-    def calc(self, fit, par, methoddict=None):
+    def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Projection'
 
         Confidence1D.calc(self, fit, par)
@@ -1882,7 +1882,7 @@ class IntervalProjection(Confidence1D):
         par.freeze()
 
         try:
-            fit.model.startup()
+            fit.model.startup(cache)
 
             # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
@@ -1923,7 +1923,7 @@ class IntervalUncertaintyWorker():
 
 class IntervalUncertainty(Confidence1D):
 
-    def calc(self, fit, par, methoddict=None):
+    def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Uncertainty'
 
         Confidence1D.calc(self, fit, par)
@@ -1943,7 +1943,7 @@ class IntervalUncertainty(Confidence1D):
             i.freeze()
 
         try:
-            fit.model.startup()
+            fit.model.startup(cache)
             self.y = numpy.asarray(parallel_map(IntervalUncertaintyWorker(self.log, par, fit),
                                                 xvals,
                                                 self.numcores)
@@ -1976,7 +1976,7 @@ class RegionProjectionWorker():
         return self.fit.calc_stat()
 
 
-def return_none():
+def return_none(cache=None):
     """
     dummy implementation of callback for multiprocessing
     """
@@ -1996,7 +1996,7 @@ class RegionProjection(Confidence2D):
         Confidence2D.prepare(self, min, max, nloop, delv, fac, log,
                              sigma, levels, numcores)
 
-    def calc(self, fit, par0, par1, methoddict=None):
+    def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Projection'
 
         Confidence2D.calc(self, fit, par0, par1)
@@ -2038,7 +2038,7 @@ class RegionProjection(Confidence2D):
         oldpars = fit.model.thawedpars
 
         try:
-            fit.model.startup()
+            fit.model.startup(cache)
 
             # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
@@ -2087,7 +2087,7 @@ class RegionUncertaintyWorker():
 
 class RegionUncertainty(Confidence2D):
 
-    def calc(self, fit, par0, par1, methoddict=None):
+    def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Uncertainty'
 
         Confidence2D.calc(self, fit, par0, par1)
@@ -2106,7 +2106,7 @@ class RegionUncertainty(Confidence2D):
         oldpars = fit.model.thawedpars
 
         try:
-            fit.model.startup()
+            fit.model.startup(cache)
 
             grid = self._region_init(fit, par0, par1)
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019
 #            Smithsonian Astrophysical Observatory
 #
 #
@@ -73,13 +73,13 @@ class myCacheARF:
         tmp = b''.join([src.tostring(), rsp.tostring()])
         digest = hashlib.sha256(tmp).digest()
         if digest in self.cache:
-            return self.cache[digest]
+            return self.cache[digest].copy()
         else:
             val = self.func(src, rsp)
             key = self.queue.pop(0)
             self.cache.pop(key, None)
             self.queue.append(digest)
-            self.cache[digest] = val
+            self.cache[digest] = val.copy()
             return val
 
 
