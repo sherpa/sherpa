@@ -11005,15 +11005,20 @@ class Session(sherpa.ui.utils.Session):
                                                   sherpa.plot.Plot):
                     plot.plot_prefs[item] = value
 
-    def plot_model(self, id=None, **kwargs):
+    def plot_model(self, id=None, replot=False, overplot=False,
+                   clearwindow=True, **kwargs):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._plot(id, self._modelhisto, **kwargs)
+            plotobj = self._modelhisto
         else:
-            self._plot(id, self._modelplot, **kwargs)
+            plotobj = self._modelplot
+
+        self._plot(id, plotobj, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     plot_model.__doc__ = sherpa.ui.utils.Session.plot_model.__doc__
 
-    def plot_arf(self, id=None, resp_id=None, **kwargs):
+    def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
+                 clearwindow=True, **kwargs):
         """Plot the ARF associated with a data set.
 
         Display the effective area curve from the ARF
@@ -11067,14 +11072,25 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_arf("src", "arf1")
         >>> plot_arf("src", "arf2", overplot=True)
 
+        The following example requires that the Matplotlib backend
+        is selected, since this determines what extra keywords
+        `plot_arf` accepts. The ARFs from the default and data set
+        2 are drawn together, but the second curve is drawn with
+        a dashed line.
+
+        >>> plot_arf(ylog=True)
+        >>> plot_arf(2, overplot=True, linestyle='dashed')
+
         """
         arf = self._get_pha_data(id).get_arf(resp_id)
         if arf is None:
             raise DataErr('noarf', self._fix_id(id))
-        self._plot(id, self._arfplot, resp_id, **kwargs)
+        self._plot(id, self._arfplot, resp_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-TODO: does this support bkg_id for PHA data sets?
-    def plot_source_component(self, id, model=None, **kwargs):
+    def plot_source_component(self, id, model=None, replot=False,
+                              overplot=False, clearwindow=True, **kwargs):
 
         if model is None:
             id, model = model, id
@@ -11088,11 +11104,14 @@ class Session(sherpa.ui.utils.Session):
         elif isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
 
-        self._plot(id, plotobj, None, None, None, None, None, model, **kwargs)
+        self._plot(id, plotobj, None, None, None, None, None, model,
+                   replot=replot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     plot_source_component.__doc__ = sherpa.ui.utils.Session.plot_source_component.__doc__
 
-    def plot_model_component(self, id, model=None, **kwargs):
+    def plot_model_component(self, id, model=None, replot=False,
+                             overplot=False, clearwindow=True, **kwargs):
 
         if model is None:
             id, model = model, id
@@ -11108,12 +11127,15 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             plotobj = self._astrocompmdlplot
 
-        self._plot(id, plotobj, None, None, None, None, None, model, **kwargs)
+        self._plot(id, plotobj, None, None, None, None, None, model,
+                   replot=replot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     plot_model_component.__doc__ = sherpa.ui.utils.Session.plot_model_component.__doc__
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
-    def plot_source(self, id=None, lo=None, hi=None, **kwargs):
+    def plot_source(self, id=None, lo=None, hi=None, replot=False,
+                    overplot=False, clearwindow=True, **kwargs):
         """Plot the source expression for a data set.
 
         This function plots the source model for a data set. This does
@@ -11179,12 +11201,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._plot(id, self._astrosourceplot, None, None, lo, hi, **kwargs)
+            self._plot(id, self._astrosourceplot, None, None, lo, hi,
+                       replot=replot, overplot=overplot,
+                       clearwindow=clearwindow, **kwargs)
         else:
-            self._plot(id, self._sourceplot, **kwargs)
+            self._plot(id, self._sourceplot, replot=replot,
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-TODO: is orders the same as resp_id?
-    def plot_order(self, id=None, orders=None, **kwargs):
+    def plot_order(self, id=None, orders=None, replot=False, overplot=False,
+                   clearwindow=True, **kwargs):
         """Plot the model for a data set convolved by the given response.
 
         Some data sets - such as grating PHA data - can have multiple
@@ -11237,10 +11263,12 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_order(orders=[2, 3], overplot=True)
 
         """
-        self._plot(
-            id, self._orderplot, None, None, None, None, orders, **kwargs)
+        self._plot(id, self._orderplot, None, None, None, None,
+                   orders, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg(self, id=None, bkg_id=None, replot=False, overplot=False,
+                 clearwindow=True, **kwargs):
         """Plot the background values for a PHA data set.
 
         Parameters
@@ -11300,9 +11328,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgdataplot, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgdataplot, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_model(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg_model(self, id=None, bkg_id=None, replot=False,
+                       overplot=False, clearwindow=True, **kwargs):
         """Plot the model for the background of a PHA data set.
 
         This function plots the model for the background of a PHA data
@@ -11354,9 +11384,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgmodelhisto, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgmodelhisto, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_resid(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg_resid(self, id=None, bkg_id=None, replot=False,
+                       overplot=False, clearwindow=True, **kwargs):
         """Plot the residual (data-model) values for the background of a PHA data set.
 
         Display the residuals for the background of a PHA data set
@@ -11409,9 +11441,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgresidplot, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgresidplot, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_ratio(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg_ratio(self, id=None, bkg_id=None, replot=False,
+                       overplot=False, clearwindow=True, **kwargs):
         """Plot the ratio of data to model values for the background of a PHA data set.
 
         Display the ratio of data to model values for the background
@@ -11464,9 +11498,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgratioplot, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgratioplot, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_delchi(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg_delchi(self, id=None, bkg_id=None, replot=False,
+                        overplot=False, clearwindow=True, **kwargs):
         """Plot the ratio of residuals to error for the background of a PHA data set.
 
         Display the ratio of the residuals (data-model) to the error
@@ -11519,9 +11555,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgdelchiplot, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgdelchiplot, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_chisqr(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg_chisqr(self, id=None, bkg_id=None, replot=False,
+                        overplot=False, clearwindow=True, **kwargs):
         """Plot the chi-squared value for each point of the background of a PHA data set.
 
         Display the square of the residuals (data-model) divided by
@@ -11574,9 +11612,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgchisqrplot, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgchisqrplot, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_fit(self, id=None, bkg_id=None, **kwargs):
+    def plot_bkg_fit(self, id=None, bkg_id=None, replot=False,
+                     overplot=False, clearwindow=True, **kwargs):
         """Plot the fit results (data, model) for the background of a PHA data set.
 
         Parameters
@@ -11628,9 +11668,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgfitplot, None, bkg_id, **kwargs)
+        self._plot(id, self._bkgfitplot, None, bkg_id, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None, **kwargs):
+    def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None,
+                        replot=False, overplot=False, clearwindow=True,
+                        **kwargs):
         """Plot the model expression for the background of a PHA data set.
 
         This function plots the model for the background of a PHA data
@@ -11685,11 +11728,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi, **kwargs)
+        self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi,
+                   replot=replot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-TODO: I am assuming it accepts a scales parameter
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                         correlated=False, numcores=None, bkg_id=None, **kwargs):
+                         correlated=False, numcores=None, bkg_id=None,
+                         recalc=True, overplot=False, clearwindow=True,
+                         **kwargs):
         """Display the energy flux distribution.
 
         For each iteration, draw the parameter values of the model
@@ -11776,13 +11823,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
         efplot = self._energyfluxplot
-        if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
+        if sherpa.utils.bool_cast(recalc):
             efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id, num,
                                                     bins, correlated,
                                                     numcores, bkg_id)
         try:
             sherpa.plot.begin()
-            efplot.plot(**kwargs)
+            efplot.plot(overplot=overplot, clearwindow=clearwindow,
+                        **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -11793,7 +11841,9 @@ class Session(sherpa.ui.utils.Session):
     # changing it doesn't seem to do anything (see next)
     # DOC-NOTE: I got a TypeError about the scales option
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                         correlated=False, numcores=None, bkg_id=None, **kwargs):
+                         correlated=False, numcores=None, bkg_id=None,
+                         recalc=True, overplot=False, clearwindow=True,
+                         **kwargs):
         """Display the photon flux distribution.
 
         For each iteration, draw the parameter values of the model
@@ -11880,13 +11930,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
         pfplot = self._photonfluxplot
-        if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
+        if sherpa.utils.bool_cast(recalc):
             pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id, num,
                                                     bins, correlated,
                                                     numcores, bkg_id)
         try:
             sherpa.plot.begin()
-            pfplot.plot(**kwargs)
+            pfplot.plot(overplot=overplot, clearwindow=clearwindow,
+                        **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -11895,7 +11946,7 @@ class Session(sherpa.ui.utils.Session):
 
     def _plot_bkg_jointplot(self, plot2, id=None, bkg_id=None,
                             replot=False, overplot=False,
-                            clearwindow=True):
+                            clearwindow=True, **kwargs):
         """Create a joint plot for bkg, vertically aligned, fit data on the top.
 
         Parameters
@@ -11930,7 +11981,7 @@ class Session(sherpa.ui.utils.Session):
         try:
             sherpa.plot.begin()
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow)
+                                    clearwindow=clearwindow, **kwargs)
 
             oldval = plot2.plot_prefs['xlog']
             if (('xlog' in self._bkgdataplot.plot_prefs and
@@ -11939,7 +11990,7 @@ class Session(sherpa.ui.utils.Session):
                  self._bkgmodelplot.plot_prefs['xlog'])):
                 plot2.plot_prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot)
+            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
             plot2.plot_prefs['xlog'] = oldval
         except:
@@ -11949,7 +12000,7 @@ class Session(sherpa.ui.utils.Session):
             sherpa.plot.end()
 
     def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
-                           overplot=False, clearwindow=True):
+                           overplot=False, clearwindow=True, **kwargs):
         """Plot the fit results, and the data/model ratio, for the background of
         a PHA data set.
 
@@ -12011,10 +12062,10 @@ class Session(sherpa.ui.utils.Session):
         self._plot_bkg_jointplot(self._bkgratioplot,
                                  id=id, bkg_id=bkg_id,
                                  replot=replot, overplot=overplot,
-                                 clearwindow=clearwindow)
+                                 clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
-                           overplot=False, clearwindow=True):
+                           overplot=False, clearwindow=True, **kwargs):
         """Plot the fit results, and the residuals, for the background of
         a PHA data set.
 
@@ -12075,10 +12126,10 @@ class Session(sherpa.ui.utils.Session):
         self._plot_bkg_jointplot(self._bkgresidplot,
                                  id=id, bkg_id=bkg_id,
                                  replot=replot, overplot=overplot,
-                                 clearwindow=clearwindow)
+                                 clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
-                            overplot=False, clearwindow=True):
+                            overplot=False, clearwindow=True, **kwargs):
         """Plot the fit results, and the residuals, for the background of
         a PHA data set.
 
@@ -12139,7 +12190,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_bkg_jointplot(self._bkgdelchiplot,
                                  id=id, bkg_id=bkg_id,
                                  replot=replot, overplot=overplot,
-                                 clearwindow=clearwindow)
+                                 clearwindow=clearwindow, **kwargs)
 
     ###########################################################################
     # Analysis Functions
