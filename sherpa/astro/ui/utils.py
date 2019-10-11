@@ -12007,6 +12007,8 @@ class Session(sherpa.ui.utils.Session):
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_ratio` - for a data set.
 
+        .. versionadded:: 4.12.0
+
         Parameters
         ----------
         id : int or str, optional

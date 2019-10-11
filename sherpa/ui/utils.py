@@ -13038,6 +13038,8 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_ratio` - for a data set.
 
+        .. versionadded:: 4.12.0
+
         Parameters
         ----------
         id : int or str, optional
