@@ -207,6 +207,36 @@ class Plot(NoNewAttributesAfterInit):
     def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True,
              **kwargs):
+        """Plot the data.
+
+        Parameters
+        ----------
+        x, y
+           The data values to plot. They should have the same length.
+        yerr, xerr : optional
+           The symmetric errors to apply to the y or x values, or ``None``
+           for no errors along the axis. If given, they should match the
+           length of the data.
+        title, xlabel, ylabel : optional, string
+           The optional plot title and axis labels. These are ignored
+           if overplot is set to ``True``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        overplot
+
+        """
+
         opts = self._merge_settings(kwargs)
         backend.plot(x, y, yerr=yerr, xerr=xerr,
                      title=title, xlabel=xlabel, ylabel=ylabel,
@@ -214,7 +244,16 @@ class Plot(NoNewAttributesAfterInit):
                      **opts)
 
     def overplot(self, *args, **kwargs):
-        "Add the data to an existing plot."
+        """Add the data to an existing plot.
+
+        This is the same as calling the plot method with
+        overplot set to True.
+
+        See Also
+        --------
+        plot
+
+        """
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
 
@@ -274,6 +313,24 @@ class Point(NoNewAttributesAfterInit):
         return merge_settings(self.point_prefs, kwargs)
 
     def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
+        """Draw a point at the given location.
+
+        Parameters
+        ----------
+        x, y
+           The coordinates of the plot.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           point_prefs dictionary.
+
+        """
         opts = self._merge_settings(kwargs)
         backend.point(x, y,
                       overplot=overplot, clearwindow=clearwindow,
@@ -303,6 +360,37 @@ class Histogram(NoNewAttributesAfterInit):
 
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        Parameters
+        ----------
+        xlo, xhi, y
+           The data values to plot (the bin edges along the X axis and
+           the bin values for the Y axis). They should have the same length.
+        yerr : optional
+           The symmetric errors to apply to the y values, or ``None``
+           for no errors along the axis. If given, they should match the
+           length of the data.
+        title, xlabel, ylabel : optional, string
+           The optional plot title and axis labels. These are ignored
+           if overplot is set to ``True``.
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        overplot
+
+        """
+
         opts = self._merge_settings(kwargs)
         backend.histo(xlo, xhi, y, yerr=yerr, title=title,
                       xlabel=xlabel, ylabel=ylabel, overplot=overplot,
@@ -356,6 +444,29 @@ class HistogramPlot(Histogram):
                  self.histo_prefs))
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also        
+        --------
+        prepare, overplot
+
+        """
+
         Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
                        overplot=overplot, clearwindow=clearwindow, **kwargs)
@@ -377,6 +488,27 @@ class PDFPlot(HistogramPlot):
         return ('points = %s\n' % (points) + HistogramPlot.__str__(self))
 
     def prepare(self, points, bins=12, normed=True, xlabel="x", name="x"):
+        """Create the data to plot.
+
+        Parameters
+        ----------
+        points
+            The values to display.
+        bins : int, optional
+            The number of bins to use.
+        normed : bool, optional
+            See the description of the density parameter in the
+            numpy.histogram routine.
+        xlabel : optional, string
+            The label for the X axis.
+        name : optional, string
+            Used to create the plot title.
+
+        See Also
+        --------
+        plot
+        """
+
         self.points = points
         self.y, xx = numpy.histogram(points, bins=bins, density=normed)
         self.xlo = xx[:-1]
@@ -446,6 +578,22 @@ class CDFPlot(Plot):
                  self.plot_prefs))
 
     def prepare(self, points, xlabel="x", name="x"):
+        """Create the data to plot.
+
+        Parameters
+        ----------
+        points
+            The values to display (they do not have to be sorted).
+        xlabel : optional, string
+            The label for the X axis.
+        name : optional, string
+            Used to create the Y-axis label and plot title.
+
+        See Also
+        --------
+        plot
+        """
+
         self.points = points
         self.x = numpy.sort(points)
         (self.median, self.lower,
@@ -457,6 +605,28 @@ class CDFPlot(Plot):
         self.title = "CDF: {}".format(name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
 
         Plot.plot(self, self.x, self.y, title=self.title,
                   xlabel=self.xlabel, ylabel=self.ylabel,
@@ -492,6 +662,8 @@ class LRHistogram(HistogramPlot):
                           HistogramPlot.__str__(self)])
 
     def prepare(self, ratios, bins, niter, lr, ppp):
+        "Create the data to plot"
+
         self.ppp = float(ppp)
         self.lr = float(lr)
         y = numpy.asarray(ratios)
@@ -505,6 +677,29 @@ class LRHistogram(HistogramPlot):
         self.ylabel = "Frequency"
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
+
         Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
                        overplot=overplot, clearwindow=clearwindow, **kwargs)
@@ -636,6 +831,8 @@ class SplitPlot(Plot, Contour):
 
 
 class JointPlot(SplitPlot):
+    "Multiple plots that share a common axis"
+
     def __init__(self):
         SplitPlot.__init__(self)
 
@@ -698,6 +895,30 @@ class DataPlot(Plot):
     xlabel, ylabel, title : str
        Plot labels.
 
+    Examples
+    --------
+
+    Plot up an example dataset. The default appearance is to draw
+    a symbol at each point, but no line connecting the points (the
+    actual choice depends on the plot backend):
+
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.plot import DataPlot
+    >>> data = Data1D('a dataset', [10, 20, 25], [2, -7, 4])
+    >>> dplot = DataPlot()
+    >>> dplot.prepare(data)
+    >>> dplot.plot()
+
+    The plot attributes can be changed to adjust the appearance of
+    the plot, and the data re-drawn. The following also shows how
+    the plot preferences can be over-ridden to turn off the points
+    and draw a dotted line connecting the points (this assumes that
+    the Matplotlib backend is in use):
+
+    >>> dplot.xlabel = 'length'
+    >>> dplot.ylabel = 'data values'
+    >>> dplot.plot(marker=' ', linestyle='dashed')
+
     """
 
     plot_prefs = backend.get_data_plot_defaults()
@@ -751,6 +972,22 @@ class DataPlot(Plot):
                  self.plot_prefs))
 
     def prepare(self, data, stat=None):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        data
+            The Sherpa data object to display (it is assumed to be
+            one dimensional).
+        stat : optional
+            The Sherpa statistics object to use to add Y error bars
+            if the data has none.
+
+        See Also
+        --------
+        plot
+        """
+
         (self.x, self.y, self.yerr, self.xerr, self.xlabel,
          self.ylabel) = data.to_plot()
 
@@ -814,6 +1051,28 @@ class DataPlot(Plot):
         self.title = data.name
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
@@ -824,6 +1083,22 @@ class TracePlot(DataPlot):
     plot_prefs = backend.get_model_plot_defaults()
 
     def prepare(self, points, xlabel="x", name="x"):
+        """The data to plot.
+
+        Parameters
+        ----------
+        points
+            The trace to plot (one dimensional). The X axis is
+            set to consecutive integers, starting at 0.
+        xlabel : optional
+            This value is ignored.
+        name : optional, string
+            Used to create the Y-axis label and plot title.
+
+        See Also
+        --------
+        plot
+        """
         self.x = numpy.arange(len(points), dtype=SherpaFloat)
         self.y = points
         self.xlabel = "iteration"
@@ -836,6 +1111,20 @@ class ScatterPlot(DataPlot):
     plot_prefs = backend.get_scatter_plot_defaults()
 
     def prepare(self, x, y, xlabel="x", ylabel="y", name="(x,y)"):
+        """The data to plot.
+
+        Parameters
+        ----------
+        x, y
+            The points to plot. The number of points in the two
+            sequences should be the same.
+        xlabel, ylabel, name : optional, str
+            The axis labels and name for the plot title.
+
+        See Also
+        --------
+        plot
+        """
         self.x = numpy.asarray(x, dtype=SherpaFloat)
         self.y = numpy.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
@@ -847,6 +1136,22 @@ class PSFKernelPlot(DataPlot):
     "Derived class for creating 1D PSF kernel data plots"
 
     def prepare(self, psf, data=None, stat=None):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        psf
+            The Sherpa PSF to display
+        data : optional
+            The Sherpa data object to pass to the PSF.
+        stat : optional
+            The Sherpa statistics object to use to add Y error bars
+            if the data has none.
+
+        See Also
+        --------
+        plot
+        """
         psfdata = psf.get_kernel(data)
         DataPlot.prepare(self, psfdata, stat)
         # self.ylabel = 'PSF value'
@@ -960,6 +1265,32 @@ class ModelPlot(Plot):
     xlabel, ylabel, title : str
        Plot labels.
 
+    Examples
+    --------
+
+    Plot up an example dataset. The default appearance is to draw
+    a line between each point:
+
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.models.basic import StepLot1D
+    >>> from sherpa.plot import ModelPlot
+    >>> data = Data1D('a dataset', [10, 20, 25], [2, -7, 4])
+    >>> model = StepLo1D()
+    >>> model.xcut = 19
+    >>> mplot = ModelPlot()
+    >>> mplot.prepare(data, model)
+    >>> mplot.plot()
+
+    The plot attributes can be changed to adjust the appearance of
+    the plot, and the data re-drawn. The following also shows how
+    the plot preferences can be over-ridden to draw the model as
+    squares with no line connecting them (this assumes that
+    the Matplotlib backend is in use):
+
+    >>> mplot.xlabel = 'length'
+    >>> mplot.ylabel = 'model values'
+    >>> mplot.plot(marker='s', linestyle='none')
+
     """
 
     plot_prefs = backend.get_model_plot_defaults()
@@ -1013,11 +1344,50 @@ class ModelPlot(Plot):
                  self.plot_prefs))
 
     def prepare(self, data, model, stat=None):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        data
+            The Sherpa data object to display (it is assumed to be
+            one dimensional). This defines the grid over which the
+            model is displayed.
+        model
+            The Sherpa model expression to evaluate and display.
+        stat : optional
+            This parameter is unused.
+
+        See Also
+        --------
+        plot
+        """
         (self.x, self.y, self.yerr, self.xerr,
          self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
         self.y = self.y[1]
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
                   ylabel=self.ylabel, overplot=overplot,
                   clearwindow=clearwindow, **kwargs)
@@ -1099,6 +1469,22 @@ class PSFPlot(DataPlot):
     "Derived class for creating 1D PSF kernel data plots"
 
     def prepare(self, psf, data=None, stat=None):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        psf
+            The Sherpa PSF to display
+        data : optional
+            The Sherpa data object to pass to the PSF.
+        stat : optional
+            The Sherpa statistics object to use to add Y error bars
+            if the data has none.
+
+        See Also
+        --------
+        plot
+        """
         psfdata = psf.get_kernel(data, False)
         DataPlot.prepare(self, psfdata, stat)
         self.title = psf.kernel.name
@@ -1180,7 +1566,40 @@ class SourceContour(ModelContour):
 
 
 class FitPlot(Plot):
-    "Derived class for creating 1D combination data and model plots"
+    """Combine data and model plots for 1D data.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot. Note that the display for the
+       data and model plots are controlled by the preferences for
+       the dataplot and modelplot objects, so this is currently
+       unused.
+    dataplot
+       The Sherpa plot object used to display the data.
+    modelplot
+       The Sherpa plot object used to display the model.
+
+    Examples
+    --------
+
+    If dplot and mplot are data and model plots respectively,
+    such as those created in the examples for `DataPlot` and `ModelPlot`,
+    then a combined plot can be created with:
+
+    >>> from sherpa.plot import FitPlot
+    >>> fplot = FitPlot()
+    >>> fplot.prepare(dplot, mplot)
+    >>> fplot.plot()
+
+    Keyword arguments can be given in the ``plot`` call, and these
+    are passed through to both the data and model plots (in the
+    following example the Matplotlib backend is assumed to be in use):
+
+    >>> fplot.plot(color='k')
+
+    """
+
     plot_prefs = backend.get_fit_plot_defaults()
 
     def __init__(self):
@@ -1204,10 +1623,48 @@ class FitPlot(Plot):
                  self.modelplot))
 
     def prepare(self, dataplot, modelplot):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        dataplot
+            The Sherpa plot object representing the data (normally a
+            DataPlot instance).
+        modelplot
+            The Sherpa plot object representing the model (normally a
+            ModelPlot instance).
+
+        See Also
+        --------
+        plot
+        """
         self.dataplot = dataplot
         self.modelplot = modelplot
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary. They are sent to both the dataplot
+           and modelplot instances.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
         if self.dataplot is None or self.modelplot is None:
             raise PlotErr("nodataormodel")
 
@@ -1493,7 +1950,7 @@ class RatioPlot(ModelPlot):
 
 
 class RatioContour(ModelContour):
-    "Derived class for creating 2D ratio contours (data:model)"
+    "Derived class for creating 2D ratio contours (data divided by model)"
     contour_prefs = backend.get_ratio_contour_defaults()
 
     def _calc_ratio(self, ylist):
@@ -1577,6 +2034,16 @@ class Confidence1D(DataPlot):
 
     def prepare(self, min=None, max=None, nloop=20,
                 delv=None, fac=1, log=False, numcores=None):
+        """Set the data to plot.
+
+        This defines the range over which the statistic will
+        be calculated, but does not perform the evaluation.
+
+        See Also
+        --------
+        calc
+        """
+
         self.min = min
         self.max = max
         self.nloop = nloop
@@ -1651,6 +2118,24 @@ class Confidence1D(DataPlot):
         return x
 
     def calc(self, fit, par):
+        """Evaluate the statistic for the parameter range.
+
+        This requires prepare to have been called, and must be
+        called before plot is called.
+
+        Parameters
+        ----------
+        fit
+            The Sherpa fit instance to use (defines the statistic
+            and optimiser to use).
+        par
+            The parameter to iterate over.
+
+        See Also
+        --------
+        plot, prepare
+        """
+
         if type(fit.stat) in (LeastSq,):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
