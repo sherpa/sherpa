@@ -12176,7 +12176,8 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_model(2, overplot=True, linestyle='dashed')
 
         """
-        self._plot(id, self._modelplot, **kwargs)
+        self._plot(id, self._modelplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
