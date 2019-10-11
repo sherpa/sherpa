@@ -211,7 +211,7 @@ class ComponentModelPlot(_ComponentSourcePlot, ModelHistogram):
         self.title = 'Model component: %s' % model.name
 
     def _merge_settings(self, kwargs):
-        return sherpa.plot._merge_settings(self.histo_prefs, kwargs)
+        return sherpa.plot.merge_settings(self.histo_prefs, kwargs)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         ModelHistogram.plot(self, overplot=overplot,
@@ -233,7 +233,7 @@ class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
         self.title = 'Source model component: %s' % model.name
 
     def _merge_settings(self, kwargs):
-        return sherpa.plot._merge_settings(self.histo_prefs, kwargs)
+        return sherpa.plot.merge_settings(self.histo_prefs, kwargs)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         SourcePlot.plot(self, overplot=overplot,

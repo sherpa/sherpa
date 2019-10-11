@@ -130,7 +130,7 @@ def _errorbar_warning(stat):
         "used in fits with {}".format(stat.name)
 
 
-def _merge_settings(prefs, user):
+def merge_settings(prefs, user):
     """Merge preference and user settings.
 
     Parameters
@@ -145,6 +145,13 @@ def _merge_settings(prefs, user):
     settings : dict
         The merged settings, where the user settings override the
         preferences. The input arguments are not changed.
+
+    Notes
+    -----
+    This does not restrict the user settings to the preferences,
+    but it could - either by dropping unknown user keywords or
+    reporting an error.
+
     """
 
     # be explicit here
@@ -195,7 +202,7 @@ class Plot(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return _merge_settings(self.plot_prefs, kwargs)
+        return merge_settings(self.plot_prefs, kwargs)
 
     def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True,
@@ -231,7 +238,7 @@ class Contour(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return _merge_settings(self.contour_prefs, kwargs)
+        return merge_settings(self.contour_prefs, kwargs)
 
     def contour(self, x0, x1, y, levels=None, title=None, xlabel=None,
                 ylabel=None, overcontour=False, clearwindow=True,
@@ -264,7 +271,7 @@ class Point(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return _merge_settings(self.point_prefs, kwargs)
+        return merge_settings(self.point_prefs, kwargs)
 
     def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
         opts = self._merge_settings(kwargs)
@@ -292,7 +299,7 @@ class Histogram(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return _merge_settings(self.histo_prefs, kwargs)
+        return merge_settings(self.histo_prefs, kwargs)
 
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True, **kwargs):
