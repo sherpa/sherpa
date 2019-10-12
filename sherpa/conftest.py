@@ -156,17 +156,22 @@ if have_astropy:
     }
     known_warnings.update(astropy_warnings)
 
+
+"""    
+# Currently no matplotlib warnings to ignore, but leave code so it is
+# easy to add one back in
+
 try:
     from matplotlib import MatplotlibDeprecationWarning
 
     matplotlib_warnings = {
         MatplotlibDeprecationWarning:
-            [r'Passing the drawstyle with the linestyle as a single string is deprecated.*'
-             ]
+            []
     }
     known_warnings.update(matplotlib_warnings)
 except ImportError:
     pass
+"""
 
 
 # Can this be replaced by the warning support added in pytest 3.1?
