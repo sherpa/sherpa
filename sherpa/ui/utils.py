@@ -11730,6 +11730,8 @@ class Session(NoNewAttributesAfterInit):
     def _overplot(self, id, plotobj, replot=False, prepare_args=None,
                   **kwargs):
 
+        # TODO: Is this ever used? It does not appear so (the test suite does
+        # not call this).
         obj = plotobj
 
         if not sherpa.utils.bool_cast(replot):
