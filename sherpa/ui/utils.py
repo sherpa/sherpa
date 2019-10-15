@@ -11686,13 +11686,38 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
-    def _plot(self, id, plotobj, *args, **kwargs):
-        # if len(args) > 0:
-        #    raise SherpaError("cannot create plot for multiple data sets")
+    def _plot(self, id, plotobj, replot=False, prepare_args=None, **kwargs):
+        """Plot the data
+
+        Parameters
+        ----------
+        id : int or str
+            The id for the data being plotted.
+        plotobj : sherpa.plot.Plot instance
+            The object that performs the plot.
+        replot : bool, optional
+            If True then the prepare step is not called (so previous
+            data will be plotted).
+        prepare_args : dict or None, optional
+            The arguments to send to the prepare method of plotobj.
+        **kwargs
+            Any arguments to send to the plot method of plotobj
+
+        See Also
+        --------
+        _overplot
+
+        Notes
+        -----
+        Should kwargs be replaced by an explicit plot_args argument?
+        """
+
         obj = plotobj
 
-        if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
-            obj = self._prepare_plotobj(id, plotobj, *args)
+        if not sherpa.utils.bool_cast(replot):
+            args = prepare_args if prepare_args is not None else {}
+            obj = self._prepare_plotobj(id, plotobj, **args)
+
         try:
             sherpa.plot.begin()
             obj.plot(**kwargs)
@@ -11702,13 +11727,15 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
-    def _overplot(self, id, plotobj, *args, **kwargs):
-        # if len(args) > 0:
-        #    raise SherpaError("cannot overplot for multiple data sets")
+    def _overplot(self, id, plotobj, replot=False, prepare_args=None,
+                  **kwargs):
+
         obj = plotobj
 
-        if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
-            obj = self._prepare_plotobj(id, plotobj, *args)
+        if not sherpa.utils.bool_cast(replot):
+            args = prepare_args if prepare_args is not None else {}
+            obj = self._prepare_plotobj(id, plotobj, **args)
+
         try:
             sherpa.plot.begin()
             obj.overplot(**kwargs)
@@ -12258,7 +12285,8 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
 
-        self._plot(id, plotobj, model, replot=replot, overplot=overplot,
+        self._plot(id, plotobj, prepare_args={'model': model},
+                   replot=replot, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
@@ -12340,7 +12368,8 @@ class Session(NoNewAttributesAfterInit):
         model = self._add_convolution_models(id, self.get_data(id),
                                              model, is_source)
 
-        self._plot(id, self._compmdlplot, model, replot=replot,
+        self._plot(id, self._compmdlplot, prepare_args={'model': model},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments

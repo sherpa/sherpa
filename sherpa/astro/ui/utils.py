@@ -11085,7 +11085,8 @@ class Session(sherpa.ui.utils.Session):
         arf = self._get_pha_data(id).get_arf(resp_id)
         if arf is None:
             raise DataErr('noarf', self._fix_id(id))
-        self._plot(id, self._arfplot, resp_id, replot=replot,
+        self._plot(id, self._arfplot, prepare_args={'resp_id': resp_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-TODO: does this support bkg_id for PHA data sets?
@@ -11104,7 +11105,7 @@ class Session(sherpa.ui.utils.Session):
         elif isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
 
-        self._plot(id, plotobj, None, None, None, None, None, model,
+        self._plot(id, plotobj, prepare_args={'model': model},
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -11127,7 +11128,7 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             plotobj = self._astrocompmdlplot
 
-        self._plot(id, plotobj, None, None, None, None, None, model,
+        self._plot(id, plotobj, prepare_args={'model': model},
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -11201,7 +11202,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._plot(id, self._astrosourceplot, None, None, lo, hi,
+            self._plot(id, self._astrosourceplot,
+                       prepare_args={'lo': lo, 'hi': hi},
                        replot=replot, overplot=overplot,
                        clearwindow=clearwindow, **kwargs)
         else:
@@ -11263,11 +11265,12 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_order(orders=[2, 3], overplot=True)
 
         """
-        self._plot(id, self._orderplot, None, None, None, None,
-                   orders, replot=replot, overplot=overplot,
+        self._plot(id, self._orderplot, prepare_args={'orders': orders},
+                   replot=replot, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def plot_bkg(self, id=None, bkg_id=None, replot=False, overplot=False,
+    def plot_bkg(self, id=None, bkg_id=None, rescale=False,
+                 replot=False, overplot=False,
                  clearwindow=True, **kwargs):
         """Plot the background values for a PHA data set.
 
@@ -11328,7 +11331,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgdataplot, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgdataplot,
+                   prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_model(self, id=None, bkg_id=None, replot=False,
@@ -11384,7 +11389,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgmodelhisto, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgmodelhisto, prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_resid(self, id=None, bkg_id=None, replot=False,
@@ -11441,7 +11447,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgresidplot, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgresidplot, prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_ratio(self, id=None, bkg_id=None, replot=False,
@@ -11498,7 +11505,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgratioplot, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgratioplot, prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_delchi(self, id=None, bkg_id=None, replot=False,
@@ -11555,7 +11563,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgdelchiplot, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgdelchiplot, prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_chisqr(self, id=None, bkg_id=None, replot=False,
@@ -11612,7 +11621,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgchisqrplot, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgchisqrplot, prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit(self, id=None, bkg_id=None, replot=False,
@@ -11668,7 +11678,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgfitplot, None, bkg_id, replot=replot,
+        self._plot(id, self._bkgfitplot, prepare_args={'bkg_id': bkg_id},
+                   replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None,
@@ -11728,7 +11739,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi,
+        self._plot(id, self._bkgsourceplot,
+                   prepare_args={'bkg_id': bkg_id, 'lo': lo, 'hi': hi},
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
