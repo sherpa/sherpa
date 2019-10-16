@@ -10395,7 +10395,7 @@ class Session(sherpa.ui.utils.Session):
         self._prepare_plotobj(id, self._bkgmodelhisto, bkg_id=bkg_id)
         return self._bkgmodelhisto
 
-    def get_bkg_plot(self, id=None, bkg_id=None):
+    def get_bkg_plot(self, id=None, bkg_id=None, rescale=False):
         """Return the data used by plot_bkg.
 
         Parameters
@@ -10406,6 +10406,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        rescale : bool, optional
+           If True, display the background data corrected to
+           the source aperture (both aperture size and observation
+           length).
 
         Returns
         -------
@@ -10448,7 +10452,8 @@ class Session(sherpa.ui.utils.Session):
         >>> bplot = get_bkg_plot('jet', bkg_id=2)
 
         """
-        self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id)
+        self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id,
+                              rescale=rescale)
         return self._bkgdataplot
 
     def get_bkg_source_plot(self, id=None, lo=None, hi=None, bkg_id=None):
@@ -10911,7 +10916,8 @@ class Session(sherpa.ui.utils.Session):
         return self._photonfluxplot
 
     def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
-                         hi=None, orders=None, model=None):
+                         hi=None, orders=None, model=None, rescale=False):
+
         if isinstance(plotobj, sherpa.astro.plot.BkgFitPlot):
             plotobj.prepare(self._prepare_plotobj(id, self._bkgdataplot,
                                                   bkg_id=bkg_id),
@@ -10930,8 +10936,9 @@ class Session(sherpa.ui.utils.Session):
              isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
             plotobj.prepare(self.get_data(id), model, self.get_stat())
         elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_stat())
+            bkg = self.get_bkg(id, bkg_id)
+            src = self.get_data(id) if rescale else None
+            plotobj.prepare(bkg, self.get_stat(), source=src)
         elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
                                   sherpa.astro.plot.BkgRatioPlot,
                                   sherpa.astro.plot.BkgResidPlot,
@@ -11282,6 +11289,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        rescale : bool, optional
+           If True, display the background data corrected to
+           the source aperture (both aperture size and observation
+           length).
         replot : bool, optional
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg`. The default is ``False``.
@@ -11310,6 +11321,13 @@ class Session(sherpa.ui.utils.Session):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        PHA data sets are always corrected for the area-scaling
+        factor - that is true for both source and background data sets -
+        so any rescaling between the background and source data sets
+        only uses the extraction area (backscal) and exposue times.
+
         Examples
         --------
 
@@ -11329,10 +11347,26 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg(1, 1)
         >>> plot_bkg(1, 2, overplot=True)
 
+        Display the background for the default dataset after
+        correcting it to apply to the source aperture (that is,
+        multiply by the ratio of the background-scaling factors
+        and, if the units are counts, the exposure times). This
+        is intended to show the expected background contribution
+        to the source spectrum:
+
+        >>> plot_bkg(rescale=True)
+
+        Compare the data, actual background, and re-scaled background
+        counts:
+
+        >>> plot_data()
+        >>> plot_bkg(overplot=True)
+        >>> plot_bkg(overplot=True, recscale=True)
+
         """
         _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgdataplot,
-                   prepare_args={'bkg_id': bkg_id},
+                   prepare_args={'bkg_id': bkg_id, 'rescale': rescale},
                    replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 

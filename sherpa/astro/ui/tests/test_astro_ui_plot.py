@@ -309,6 +309,54 @@ def test_get_bkg_plot(idval):
 
 @pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_bkg_plot_rescale(idval):
+    """Basic testing of get_bkg_plot with rescale option
+    """
+
+    setup_example_bkg(idval)
+    if idval is None:
+        bp = ui.get_bkg_plot(rescale=True)
+    else:
+        bp = ui.get_bkg_plot(idval, rescale=True)
+
+    assert bp.x == pytest.approx(_data_chan)
+
+    # Correct for the backscal differences: 0.1 compared to 0.4
+    yexp = _data_bkg / 1201.0 / _bexpscale / 4.0
+    assert bp.y == pytest.approx(yexp)
+
+    assert bp.title == 'example-bkg'
+    assert bp.xlabel == 'Channel'
+    assert bp.ylabel == 'Counts/sec/channel (scaled)'
+
+
+@pytest.mark.usefixtures("clean_astro_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_bkg_plot_counts_rescale(idval):
+    """Basic testing of get_bkg_plot with rescale option
+    """
+
+    setup_example_bkg(idval)
+    if idval is None:
+        ui.set_analysis('channel', type='counts')
+        bp = ui.get_bkg_plot(rescale=True)
+    else:
+        ui.set_analysis(idval, 'channel', type='counts')
+        bp = ui.get_bkg_plot(idval, rescale=True)
+
+    assert bp.x == pytest.approx(_data_chan)
+
+    # Correct for the backscal differences: 0.1 compared to 0.4
+    yexp = _data_bkg / _bexpscale / 4.0
+    assert bp.y == pytest.approx(yexp)
+
+    assert bp.title == 'example-bkg'
+    assert bp.xlabel == 'Channel'
+    assert bp.ylabel == 'Counts (scaled)'
+
+
+@pytest.mark.usefixtures("clean_astro_ui")
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_bkg_plot_energy(idval):
     """Basic testing of get_bkg_plot: energy
     """
