@@ -17,7 +17,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import numpy as np
+
+from matplotlib import pyplot as plt
+
 from sherpa.utils.testing import requires_pylab
+from sherpa.data import Data1D
+from sherpa.models.basic import Const1D
+from sherpa.stats import Chi2DataVar
+from sherpa.plot import DelchiPlot, RatioPlot, ResidPlot
+
+import pytest
 
 
 @requires_pylab
@@ -33,3 +43,26 @@ def test_axes_default():
     fields = ('ecolor', 'capsize', 'barsabove')
     defs = [e in _errorbar_defaults for e in fields]
     assert all(defs)
+
+
+@requires_pylab
+@pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
+def test_ignore_ylog_prefs(plottype):
+    """Do the "residual" style plots ignore the ylog preference setting?"""
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    mdl = Const1D('tst-model')
+    mdl.c0 = 11.1
+
+    plot = plottype()
+    plot.plot_prefs['xlog'] = True
+    plot.plot_prefs['ylog'] = True
+    plot.prepare(data, mdl, stat=Chi2DataVar())
+    plot.plot()
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'log'
+    assert ax.get_yscale() == 'linear'
