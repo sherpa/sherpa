@@ -289,9 +289,159 @@ class ARFPlot(HistogramPlot):
 
 
 class BkgDataPlot(DataPlot):
-    "Derived class for creating plots of background counts"
+    """Create plots of the background counts in a PHA data set.
+
+    This supports the ability to rescale the background data to
+    match the source aperture, that is to multiply by the ratio
+    of the appropriate scaling factors, such as BACKSCAL and
+    AREASCAL.
+
+    Notes
+    -----
+    An open question is if it scales by exposure time.
+
+    It may well not work for grating data sets, where the scaling
+    correction can be "complex".
+
+    """
+
     def __init__(self):
         DataPlot.__init__(self)
+
+    def prepare(self, data, stat=None, source=None):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        data
+            The Sherpa data object to display (it is assumed to be
+            one dimensional).
+        stat : optional
+            The Sherpa statistics object to use to add Y error bars
+            if the data has none.
+        source : optional
+            If given, the backgroud is rescaled to match the source
+            data set (e.g. BACKSCAL and possibly the exposure time).
+            This object must support the sherpa.data.DataPHA interface.
+
+        See Also
+        --------
+        plot
+
+        Notes
+        -----
+        It is required that data and source have the same grouping
+        and filtering settings (when source is not None). This
+        could be relaxed, since there are times they need not be
+        the same.
+
+        Area scaling is assumed to be handled by the data objects.
+
+        Idealy the logic here would be in the data object instead,
+        so this could be more generic.
+        """
+
+        DataPlot.prepare(self, data, stat=stat)
+        if source is None:
+            return
+
+        # The following would be easier if we just use
+        # source.sum_background_data(), but this works on all
+        # background components and applies the source grouping
+        # and filtering (although this is currently a requirement
+        # of the following code).
+        #
+
+        # Ensure source matches the background data for settings
+        # (this can probably be relaxed).
+        #
+        # TODO: come up with sherpa errors
+        if source.units != data.units:
+            raise RuntimeError("Units of background and source PHA data do not match")
+        if source.rate != data.rate:
+            raise RuntimeError("Rate setting of background and source PHA data do not match")
+
+        # TODO: check plot_fac?
+
+        if source.get_filter() != data.get_filter():
+            raise RuntimeError("Background and source PHA data do not have the same filter")
+
+        # Although unlikely in "real data", the DataPHA API means that
+        # it is possible get_backscal or get_areascal returns None. If
+        # this happens then
+        #   a) ignore that particular factor
+        #   b) warn if one is set and the other is not
+        #
+        # Note that it turns out we already include the area scaling in
+        # the to_plot method call above, so that correction is not
+        # applied here.
+        #
+        def getf(label, attr):
+            # assume the attribute exists and is a function
+            s = getattr(source, attr)()
+            b = getattr(data, attr)()
+            sIsSet = s is not None
+            bIsSet = b is not None
+            if sIsSet and bIsSet:
+                return s, b
+
+            if not sIsSet and not bIsSet:
+                return 1.0, 1.0
+
+            wmsg = "The {} value is missing from the ".format(label)
+            if sIsSet:
+                wmsg += "background"
+            else:
+                wmsg += "source"
+
+            wmsg += " dataset, so the correction is ignored."
+            warning(wmsg)
+            return 1.0, 1.0
+
+        src_backscal, data_backscal = getf("backscale", "get_backscal")
+
+        # src_areascal, data_areascal = getf("areascale", "get_areascal")
+        # src_factor = src_backscal * src_areascal
+        # data_factor = data_backscal * data_areascal
+
+        rescale = src_backscal / data_backscal
+
+        # The correction for exposure time depends on whether the
+        # data is being plotted as a rate (in which case the exposure
+        # time has already been factored out), or not.
+        #
+        # We use the data object (i.e. background) not the source object
+        # to determine the "rate" flag. The idea being that it is the
+        # data object that "controls" the data to be plotted (e.g. x and
+        # y axis units) in the parent prepare call.
+        #
+        if not data.rate:
+            has_src = source.exposure is not None
+            has_data = data.exposure is not None
+            if has_src and has_data:
+                rescale *= source.exposure / data.exposure
+            elif has_src != has_data:
+                wmsg = "The exposure value is missing from the "
+                if has_src:
+                    wmsg += "background"
+                else:
+                    wmsg += "source"
+                wmsg += " dataset, so the correction is ignored."
+                warning(wmsg)
+
+        # TODO: should we replace any non-finite values in rescale when
+        # it an array? What happens during a fit - i.e. maybe this is
+        # not an issue since pre-conditions ensure it doesn't happen,
+        # but DJB would be surprised if that is the case.
+        #
+        self.y *= rescale
+        if self.yerr is not None:
+            # Just scale the error bars linearly
+            self.yerr *= rescale
+
+        if self.ylabel is not None:
+            # What is the best label
+            self.ylabel += ' (scaled)'
 
 
 class BkgModelPlot(ModelPlot):
