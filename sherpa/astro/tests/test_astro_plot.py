@@ -19,8 +19,9 @@
 import numpy as np
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import DataPlot, SourcePlot
+from sherpa.astro.plot import BkgDataPlot, DataPlot, SourcePlot
 from sherpa.models.basic import Const1D, Gauss1D
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa import stats
 
 import pytest
@@ -135,3 +136,71 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
     dplot = DataPlot()
     dplot.prepare(pha, stat=stat)
+
+
+@pytest.fixture
+def setup_pha():
+    """Create a PHA dataset with the given label."""
+
+    etime = 100.0
+    nchans = 10
+    arf0 = 0.6
+
+    e0 = 0.1
+    de = 0.125
+
+    def _return_data(label):
+
+        egrid = e0 + np.arange(nchans + 1) * de
+        elo = egrid[:-1]
+        ehi = egrid[1:]
+
+        x = np.arange(1, 11)
+        y = np.ones(nchans)
+
+        arf = create_arf(elo, ehi, arf0 * np.ones(nchans))
+        rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+        data = DataPHA(label, x, y, exposure=etime)
+        data.units = "energy"
+        data.rate = True
+
+        data.set_arf(arf)
+        data.set_rmf(rmf)
+
+        return data
+
+    return _return_data
+
+
+# as this is ungrouped data, the "rate=False" option is not per bin
+@pytest.mark.parametrize("unit,xstart,xwidth,rate,xlabel,ylabel,ynorm",
+                         [('energy', 0.1, 0.125, True, 'Energy (keV)',
+                           'Counts/sec/keV', 100.0 * 0.125),
+                          ('energy', 0.1, 0.125, False, 'Energy (keV)',
+                           'Counts', 1.0),
+                          ('channel', 0.5, 1.0, True, 'Channel',
+                           'Counts/sec/channel', 100.0),
+                          ('channel', 0.5, 1.0, False, 'Channel',
+                           'Counts', 1.0)])
+def test_pha_bkg_dataplot(setup_pha, unit, xstart, xwidth, rate, xlabel, ylabel, ynorm):
+    """Test out BkgDataPlot"""
+
+    bkg = setup_pha('example-bkg')
+    bkg.units = unit
+    bkg.rate = rate
+
+    bplot = BkgDataPlot()
+    bplot.prepare(bkg)
+
+    assert bplot.xlabel == xlabel
+    assert bplot.ylabel == ylabel
+    assert bplot.title == 'example-bkg'
+
+    nchans = 10
+    xmid = xstart + xwidth / 2 + np.arange(nchans) * xwidth
+
+    assert bplot.x == pytest.approx(xmid)
+    assert bplot.y == pytest.approx(np.ones(nchans) / ynorm)
+    assert bplot.xerr == pytest.approx(np.ones(nchans) * xwidth)
+    assert bplot.yerr is None
