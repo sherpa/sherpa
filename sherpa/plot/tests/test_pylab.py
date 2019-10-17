@@ -66,3 +66,24 @@ def test_ignore_ylog_prefs(plottype):
     ax = plt.gca()
     assert ax.get_xscale() == 'log'
     assert ax.get_yscale() == 'linear'
+
+
+@requires_pylab
+@pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
+def test_ignore_ylog_kwarg(plottype):
+    """Do the "residual" style plots ignore the ylog keyword argument?"""
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    mdl = Const1D('tst-model')
+    mdl.c0 = 11.1
+
+    plot = plottype()
+    plot.prepare(data, mdl, stat=Chi2DataVar())
+    plot.plot(xlog=True, ylog=True)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'log'
+    assert ax.get_yscale() == 'linear'
