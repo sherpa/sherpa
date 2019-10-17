@@ -55,19 +55,12 @@ import importlib
 
 config = ConfigParser()
 config.read(get_config())
-io_opt = config.get('options', 'io_pkg')
+
+# What should we use for the default package?
+io_opt = config.get('options', 'io_pkg', fallback='pyfits')
 io_opt = str(io_opt).strip().lower()
 
-# Python 3 allows the following (although should move to the dictionary
-# style provided by the mapping protocal access.
-#
-# ogip_emin = config.get('ogip', 'minimum_energy', fallback='1.0e-10')
-if config.has_option('ogip', 'minimum_energy'):
-    ogip_emin = config.get('ogip', 'minimum_energy')
-else:
-    # The original version of minimum_energy is 1e-10 keV, so use it as
-    # the default value.
-    ogip_emin = '1.0e-10'
+ogip_emin = config.get('ogip', 'minimum_energy', fallback='1.0e-10')
 
 if ogip_emin.upper() == 'NONE':
     ogip_emin = None

@@ -46,8 +46,10 @@ config.read(get_config())
 # truncation_flag indicates whether or not model truncation
 # should be performed.  If true, use the truncation_value from
 # the config file.
-truncation_flag = config.get('statistics', 'truncate').upper()
-truncation_value = float(config.get('statistics', 'trunc_value'))
+truncation_flag = config.get('statistics', 'truncate',
+                             fallback='True').upper()
+truncation_value = float(config.get('statistics', 'trunc_value',
+                                    fallback=1.0e-25))
 if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
         truncation_flag == "NONE" or truncation_flag == "0"):
     truncation_value = 1.0e-25
