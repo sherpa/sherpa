@@ -46,7 +46,8 @@ _ = numpy.seterr(invalid='ignore')
 config = ConfigParser()
 config.read(get_config())
 
-plot_opt = config.get('options', 'plot_pkg')
+# Choose the dummy backend as the default backend
+plot_opt = config.get('options', 'plot_pkg', fallback='none')
 plot_opt = str(plot_opt).strip().lower() + '_backend'
 if plot_opt == 'matplotlib_backend':
     plot_opt = 'pylab_backend'
