@@ -43,7 +43,7 @@ class test_parameter(SherpaTestCase):
             self.tst_pos(self.src2.pos, self.src2_pos)
             return
 
-        def __del__(self):
+        def tst_unlink(self):
             self.src1.pos.unlink()
             self.tst_pos(self.src1.pos, self.src1.pos.default_val,
                          min=self.src1.pos.min, max=self.src1.pos.max)
@@ -82,10 +82,12 @@ class test_parameter(SherpaTestCase):
             self.src1.pos.val = self.src2.pos.val
             self.src1.pos.link = self.src2.pos
             self.tst()
+            self.tst_unlink()
 
         def tst_ui_val_link(self):
             ui.link(self.src1.pos, self.src2.pos)
             self.tst()
+            self.tst_unlink()
 
     def setUp(self):
         self.p = Parameter('model', 'name', 0, -10, 10, -100, 100, 'units')
@@ -205,7 +207,8 @@ class test_composite_parameter(SherpaTestCase):
         self.assertEqual(cmplx.val, (3 * p + p2) / (p ** 3.2))
 
     def test_link_unlink_val(self):
-        test_parameter.TestParVal(4, 5)
+        tst = test_parameter.TestParVal(4, 5)
+        tst.tst_unlink()
         return
 
     def test_link_unlink_val_low_level(self):
