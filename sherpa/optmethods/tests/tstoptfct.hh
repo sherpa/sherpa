@@ -2,7 +2,7 @@
 #define tstoptfct_hh
 
 // 
-//  Copyright (C) 2007, 017, 2019  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2017, 2019  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
