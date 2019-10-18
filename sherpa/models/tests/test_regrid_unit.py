@@ -437,7 +437,7 @@ def test_regrid1d_error_grid_mismatch_1(setup_1d):
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
 
-def test_regrid1d_non_overlapping_not_allowed():
+def test_ui_regrid1d_non_overlapping_not_allowed():
     """Integrated data space must not overlap"""
     
     ui.dataspace1d(1,100,2,dstype=Data1DInt)
@@ -448,13 +448,24 @@ def test_regrid1d_non_overlapping_not_allowed():
     b1.ampl.max=100
     grid_hi = np.linspace(2,101,600)
     grid_lo = np.linspace(1,100,600)
-    rb1 = b1.regrid(grid_lo,grid_hi)
-    ui.set_model(rb1)
     with pytest.raises(ModelErr) as excinfo:    
-        ui.fit()
+        rb1 = b1.regrid(grid_lo,grid_hi)
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
 
+def test_low_level_regrid1d_non_overlapping_not_allowed():
+    """Integrated data space must not overlap"""
+
+    tmp = np.linspace(1, 100, 10)
+    y = np.ones((9,))
+    d = Data1DInt('tst', tmp[:-1], tmp[1:], np.ones((9,)))
+    c = Box1D()
+    lo = np.linspace(1,100,600)
+    hi = np.linspace(2,101,600)
+    with pytest.raises(ModelErr) as excinfo:    
+        c.regrid(lo, hi)
+
+    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 def test_regrid1d_error_grid_mismatch_2(setup_1d):
     """Internal grid is points but given integrated"""
