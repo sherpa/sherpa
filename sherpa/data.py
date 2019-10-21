@@ -471,6 +471,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def __init__(self, name, indep, y, staterror=None, syserror=None):
         """
+        Warning: Currently, Data objects ignore any masks on input data. If you have masked data,
+        set ``data.mask`` after initialization - and note that the Sherpa convention for masking
+        is OPPOSITE to numpy, i.e. in Sherpa True marks a valid value and False an invalid,
+        to-be-ignored value.
+
         Parameters
         ----------
         name : basestring
