@@ -100,6 +100,13 @@ splot.addplot(rplot)
 
 savefig("fit_delchi_c0_c1_c2.png")
 
+# what does JointPlot do?
+from sherpa.plot import JointPlot
+jplot = JointPlot()
+jplot.plottop(fplot)
+jplot.plotbot(rplot)
+savefig("fit_delchi_c0_c1_c2_jointplot.png")
+
 mdl.reset()
 
 report("[(p.name, p.val, p.frozen) for p in mdl.pars[:3]]")
