@@ -87,10 +87,35 @@ static PyObject* ftest( PyObject* self, PyObject* args )
   for ( npy_intp ii = 0; ii < nelem; ii++ ) {
 
     const double delta_dof = dof_1[ii] - dof_2[ii];
+    if ( 0.0 == chisq_2[ii] ) {
+      std::ostringstream err;
+      err << "chisq_2[" << ii << "] cannot be equal to 0: ";
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
+    if ( 0.0 == dof_2[ii] ) {
+      std::ostringstream err;
+      err << "dof_2[" << ii << "] cannot be equal to 0: ";
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
+    if ( 0.0 == delta_dof ) {
+      std::ostringstream err;
+      err << "dof_1[" << ii << "] cannot be equal to dof_2[" << ii << "]: ";
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
     const double delta_chi = chisq_1[ii] - chisq_2[ii];
     const double f = delta_chi / delta_dof / (chisq_2[ii] / dof_2[ii]);
+    const double tmp = dof_2[ii] + delta_dof * f;
+    if ( 0.0 == tmp ) {
+      std::ostringstream err;
+      err << "dof_2[" << ii << "] + delta_dof * f cannot be equal to 0,\nwhere f = delta_chi / delta_dof / (chisq_2[" << ii << "] / dof_2[" << ii << " ]: ";
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
     result[ii] = incbet( dof_2[ii] * 0.5 , delta_dof * 0.5,
-                         (dof_2[ii] / ( dof_2[ii] + delta_dof * f ) ) );
+                         (dof_2[ii] / ( tmp ) ) );
 
   }
   
