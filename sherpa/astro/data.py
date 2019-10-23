@@ -2182,6 +2182,18 @@ class DataPHA(Data1D):
         chans = self.channel
         mask = self.get_mask()
         if mask is not None:
+
+            # This is added to address issue #361
+            #
+            # If there is a quality filter then the mask may be
+            # smaller than the chans array. It is not clear if this
+            # is the best location for this. If it is, then are there
+            # other locations where this logic is needed?
+            #
+            if self.quality_filter is not None and \
+               self.quality_filter.size != mask.size:
+                chans = chans[self.quality_filter]
+
             chans = chans[mask]
         return chans
 
