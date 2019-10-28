@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 #
-#  Copyright (C) 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,8 @@ from __future__ import print_function
 
 import numpy
 
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits,\
+    requires_xspec
 
 from sherpa.models import Polynom1D, SimulFitModel
 from sherpa.models.basic import Gauss1D
@@ -32,6 +33,45 @@ from sherpa.fit import Fit
 
 import logging
 logger = logging.getLogger("sherpa")
+
+@requires_data
+@requires_fits
+@requires_xspec
+class test_ARFModelPHA(SherpaTestCase):
+    _fit_using_ARFModelPHA = {
+        'numpoints': 1212,
+        'dof': 1208
+    }
+    
+    def setup(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+        
+    def tearDown(self):
+        if hasattr(self, "_old_logger_level"):
+            logger.setLevel(self._old_logger_level)
+
+    def test_ARFModelPHA(self):
+        from sherpa.astro import ui
+        ui.load_pha(self.make_path("3c120_meg_1.pha"))
+        ui.group_counts(20)
+        ui.notice(0.5, 6)
+        ui.subtract()
+        ui.set_model(ui.xsphabs.abs1 * (ui.xsapec.bubble + ui.powlaw1d.p1))
+        ui.set_xsabund('angr')
+        ui.set_xsxsect('vern')
+        abs1.nh = 0.163
+        abs1.nh.freeze()
+        p1.ampl = 0.017
+        p1.gamma = 1.9
+        bubble.kt = 0.5
+        bubble.norm = 4.2e-5
+        tol = 1.0e-2
+        ui.set_method_opt('ftol', tol)
+        ui.fit()
+        result = ui.get_fit_results()
+        assert result.numpoints == self._fit_using_ARFModelPHA['numpoints']
+        assert result.dof == self._fit_using_ARFModelPHA['dof']
 
 class test_cache(SherpaTestCase):
 
