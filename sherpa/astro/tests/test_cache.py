@@ -21,7 +21,8 @@ from __future__ import print_function
 
 import numpy
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits,\
+    requires_xspec
 
 from sherpa.models import Polynom1D, SimulFitModel
 from sherpa.models.basic import Gauss1D
@@ -35,6 +36,7 @@ logger = logging.getLogger("sherpa")
 
 @requires_data
 @requires_fits
+@requires_xspec
 class test_ARFModelPHA(SherpaTestCase):
     _fit_using_ARFModelPHA = {
         'numpoints': 26786,
