@@ -19,11 +19,26 @@ It is developed from the work presented in
 `Analysis of Energy Spectra with Low Photon Counts
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
-by van Dyk et al.
+by van Dyk et al. (2001).
 
-Unlike many MCMC implementations, idea is that have some
-idea of the search surface at the optimum - i.e. the
-covariance matrix - and then use that to explore this region.
+Markov chain Monte Carlo (MCMC) selects random samples from the posterior probability 
+distribution of the model parameters starting from the best fit (maximum likelihood)
+given by the standard optimization methods in Sherpa (i.e. result of the fit()). get_draws() runs MCMC 
+chains for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
+It returns an array of statistic values, an array of acceptance Booleans, 
+and an array of sampled parameter values (i.e. draws) from the posterior distribution.
+
+The multivariate t-distribution is the default sampling distribution in get_draws(). 
+This distribution is defined by the multivariate normal (for the model parameter values and the covariance matrix), 
+and chi2 distribution for a given degrees of freedom. The algorithm provides a choice of MCMC samplers with different
+jumping rules for a selection of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
+
+Note that the multivariate normal distribution which requires the parameter values and 
+the corresponding covariance matrix. covar() should be run beforehand.
+
+Additional scale parameter allows to adjust the scale size of the multivariate normal
+in the definition of the t-distribution. This could improve the efficiency of the sampler and can be used to obtain
+the required acceptance rates.
 
 Example
 =======
