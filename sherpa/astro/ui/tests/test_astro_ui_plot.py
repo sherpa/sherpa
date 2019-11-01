@@ -24,6 +24,9 @@ It is based on sherpa/ui/tests/test_ui_plot.py, but focusses on the
 new routines, and "astro-specific" (currently PHA only) capabilities
 that are in the astro layer.
 
+There is very-limited checking that the plots are displaying the
+correct data; it is more a check that the routines can be called.
+
 """
 
 import logging
@@ -32,12 +35,15 @@ import numpy as np
 from sherpa.astro import ui
 
 # the chips plot tests mean that we can't test the plot instances
+# (because of the mocking that the chips tests do)
 # from sherpa.plot import DataPlot, FitPlot, ModelPlot
 
 from sherpa.utils.err import IdentifierErr
-from sherpa.utils.testing import requires_plotting
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_plotting, requires_pylab
 
 import pytest
+
 
 _data_chan = np.linspace(1, 10, 10, dtype=np.int8)
 _data_counts = np.asarray([0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
@@ -752,3 +758,273 @@ def test_bkg_plot_xxx(idval, plotfunc, checkfuncs):
     #
     for checkfunc in checkfuncs:
         checkfunc(plotfunc)
+
+
+# The following tests were added in a separate PR to those above, and
+# rather than try to work out whether they do the same thing, they
+# have been left separate.
+#
+
+@pytest.fixture
+def basic_pha1(make_data_path):
+    """Create a basic PHA-1 data set/setup"""
+
+    ui.set_default_id('tst')
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.subtract()
+    ui.notice(0.5, 7)
+    ui.set_source(ui.powlaw1d.pl)
+    pl = ui.get_model_component('pl')
+    pl.gamma = 1.93
+    pl.ampl = 1.74e-4
+    
+
+@pytest.fixture
+def basic_img(make_data_path):
+    """Create a basic image data set/setup"""
+
+    ui.set_default_id(2)
+    ui.load_image(make_data_path('img.fits'))
+    ui.set_source(ui.gauss2d.gmdl)
+    gmdl = ui.get_model_component('gmdl')
+    ui.guess()
+
+
+_basic_plotfuncs = [ui.plot_data,
+                    ui.plot_bkg,
+                    ui.plot_model,
+                    ui.plot_source,
+                    ui.plot_resid,
+                    ui.plot_delchi,
+                    ui.plot_ratio,
+                    ui.plot_fit,
+                    ui.plot_fit_delchi,
+                    ui.plot_fit_resid,
+                    ui.plot_arf,
+                    ui.plot_chisqr]
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_function(clean_astro_ui, basic_pha1):
+    # can we call plot; do not try to be exhaustive
+    ui.plot("data", "bkg", "fit", "arf")
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
+def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
+    plotfunc()
+
+    
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", [ui.int_unc, ui.int_proj])
+def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc):
+    plotfunc('pl.gamma')
+    
+
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", [ui.reg_unc, ui.reg_proj])
+def test_pha1_reg_plot(clean_astro_ui, basic_pha1, plotfunc):
+    plotfunc('pl.gamma', 'pl.ampl')
+    
+
+_img_plotfuncs = [ui.contour_data,
+                  ui.contour_fit,
+                  ui.contour_fit_resid,
+                  ui.contour_model,
+                  ui.contour_ratio,
+                  ui.contour_resid,
+                  ui.contour_source ]
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_img_contour_function(clean_astro_ui, basic_img):
+    # can we call contour; do not try to be exhaustive
+    ui.contour("data", "model", "source", "fit")
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", _img_plotfuncs)
+def test_img_contour(clean_astro_ui, basic_img, plotfunc):
+    plotfunc()
+
+
+# Add in some pylab-specific tests to change default values
+#
+
+@requires_pylab
+@requires_fits
+@requires_data
+def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
+    """Test that the options have changed things, where easy to do so"""
+
+    from matplotlib import pyplot as plt
+
+    prefs = ui.get_data_plot_prefs()
+
+    # check the preference are as expected for the boolean cases
+    assert not prefs['xerrorbars']
+    assert prefs['yerrorbars']
+    assert not prefs['xlog']
+    assert not prefs['ylog']
+
+    prefs['xerrorbars'] = True
+    prefs['yerrorbars'] = False
+    prefs['xlog'] = True
+    prefs['ylog'] = True
+
+    prefs['color'] = 'orange'
+
+    prefs['linecolor'] = 'brown'
+    prefs['linestyle'] = '-.'
+
+    prefs['marker'] = 's'
+    prefs['markerfacecolor'] = 'cyan'
+    prefs['markersize'] = 10
+
+    ui.plot_data()
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'log'
+    assert ax.get_yscale() == 'log'
+
+    assert ax.get_xlabel() == 'Energy (keV)'
+    assert ax.get_ylabel() == 'Counts/sec/keV'
+
+    # It is not clear whether an 'exact' check on the value, as
+    # provided by pytest.approx, makes sense, or whether a "softer"
+    # check - e.g.  just check whether it is less- or greater- than a
+    # value - should be used. It depends on how often matplotlib
+    # tweaks the axis settings and how sensitive it is to
+    # platform/backend differences. Let's see how pytest.approx works
+    #
+    xmin, xmax = ax.get_xlim()
+    assert xmin == pytest.approx(0.40110954270367555)
+    assert xmax == pytest.approx(11.495805054836712)
+
+    ymin, ymax = ax.get_ylim()
+    assert ymin == pytest.approx(7.644069935298475e-05)
+    assert ymax == pytest.approx(0.017031102671151491)
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+
+    # Apparently color wins out over linecolor
+    assert line.get_color() == 'orange'
+    assert line.get_linestyle() == '-.'
+    assert line.get_marker() == 's'
+    assert line.get_markerfacecolor() == 'cyan'
+    assert line.get_markersize() == pytest.approx(10.0)
+
+    # assume error bars handled by a collection; test a subset
+    # of values
+    #
+    assert len(ax.collections) == 1
+    coll = ax.collections[0]
+
+    assert len(coll.get_segments()) == 42
+
+    assert coll.get_linestyles() == [(None, None)]
+
+    # looks like the color has been converted to individual channels
+    # - e.g. floating-point values for R, G, B, and alpha.
+    #
+    colors = coll.get_color()
+    assert len(colors) == 1
+    assert len(colors[0]) == 4
+    r, g, b, a = colors[0]
+    assert r == pytest.approx(1)
+    assert g == pytest.approx(0.64705882)
+    assert b == pytest.approx(0)
+    assert a == pytest.approx(1)
+
+
+@requires_pylab
+@requires_fits
+@requires_data
+def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
+    """Test that the options have changed things, where easy to do so
+
+    In matplotlib 3.1 the plot_model call causes a MatplotlibDeprecationWarning
+    to be created:
+
+    Passing the drawstyle with the linestyle as a single string is deprecated since Matplotlib 3.1 and support will be removed in 3.3; please pass the drawstyle separately using the drawstyle keyword argument to Line2D or set_drawstyle() method (or ds/set_ds()).
+
+    This warning is hidden by the test suite (sherpa/conftest.py) so that
+    it doesn't cause the tests to fail. Note that a number of other tests
+    in this module also cause this warning to be displayed.
+
+    """
+
+    from matplotlib import pyplot as plt
+
+    # Note that for PHA data sets, the mode is drawn as a histogram,
+    # so get_model_plot_prefs doesn't actually work. We need to change
+    # the histogram prefs instead. See issue
+    # https://github.com/sherpa/sherpa/issues/672
+    #
+    # prefs = ui.get_model_plot_prefs()
+    prefs = ui.get_model_plot().histo_prefs
+
+    # check the preference are as expected for the boolean cases
+    assert not prefs['xlog']
+    assert not prefs['ylog']
+
+    # Only change the X axis here
+    prefs['xlog'] = True
+
+    prefs['color'] = 'green'
+
+    prefs['linecolor'] = 'red'
+    prefs['linestyle'] = 'dashed'
+
+    prefs['marker'] = '*'
+    prefs['markerfacecolor'] = 'yellow'
+    prefs['markersize'] = 8
+
+    ui.plot_model()
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'log'
+    assert ax.get_yscale() == 'linear'
+
+    assert ax.get_xlabel() == 'Energy (keV)'
+    assert ax.get_ylabel() == 'Counts/sec/keV'
+
+    # It is not clear whether an 'exact' check on the value, as
+    # provided by pytest.approx, makes sense, or whether a "softer"
+    # check - e.g.  just check whether it is less- or greater- than a
+    # value - should be used. It depends on how often matplotlib
+    # tweaks the axis settings and how sensitive it is to
+    # platform/backend differences. Let's see how pytest.approx works
+    #
+    xmin, xmax = ax.get_xlim()
+    assert xmin == pytest.approx(0.40770789163447285)
+    assert xmax == pytest.approx(11.477975806572461)
+
+    ymin, ymax = ax.get_ylim()
+    assert ymin == pytest.approx(-0.00045772936258082011, rel=0.01)
+    assert ymax == pytest.approx(0.009940286575890335, rel=0.01)
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+
+    # Apparently color wins out over linecolor
+    assert line.get_color() == 'green'
+    assert line.get_linestyle() == '--'  # note: input was dashed
+    assert line.get_marker() == '*'
+    assert line.get_markerfacecolor() == 'yellow'
+    assert line.get_markersize() == pytest.approx(8.0)
+
+    assert len(ax.collections) == 0

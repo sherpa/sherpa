@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,13 +17,19 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils.testing import SherpaTestCase, requires_pylab
+from sherpa.utils.testing import requires_pylab
 
 
 @requires_pylab
-class pylab_test(SherpaTestCase):
+def test_axes_default():
+    """Have we default values for all the axis settings?"""
 
-    def test_axes_default(self):
-        from sherpa.plot.pylab_backend import _errorbar_defaults
-        # assert all needed defaults have been found
-        assert all(e in _errorbar_defaults for e in ('ecolor', 'capsize', 'barsabove'))
+    from sherpa.plot.pylab_backend import _errorbar_defaults
+
+    # assert all needed defaults have been found, but do not
+    # check the actual values. Split into multiple lines so that
+    # if there's a failure we can see which is False.
+    #
+    fields = ('ecolor', 'capsize', 'barsabove')
+    defs = [e in _errorbar_defaults for e in fields]
+    assert all(defs)

@@ -167,8 +167,10 @@ class Plot(NoNewAttributesAfterInit):
 
     def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True):
-        backend.plot(x, y, yerr, xerr, title, xlabel, ylabel, overplot,
-                     clearwindow, **self.plot_prefs)
+        backend.plot(x, y, yerr=yerr, xerr=xerr,
+                     title=title, xlabel=xlabel, ylabel=ylabel,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **self.plot_prefs)
 
     def overplot(self, *args, **kwargs):
         "Add the data to an existing plot."
@@ -746,8 +748,9 @@ class DataPlot(Plot):
         self.title = data.name
 
     def plot(self, overplot=False, clearwindow=True):
-        Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
-                  self.xlabel, self.ylabel, overplot, clearwindow)
+        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
+                  overplot=overplot, clearwindow=clearwindow)
 
 
 class TracePlot(DataPlot):
@@ -1218,8 +1221,9 @@ class DelchiPlot(ModelPlot):
         self.title = _make_title('Sigma Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
-        Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
-                  self.xlabel, self.ylabel, overplot, clearwindow)
+        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
+                  overplot=overplot, clearwindow=clearwindow)
 
 
 class ChisqrPlot(ModelPlot):
@@ -1325,8 +1329,9 @@ class ResidPlot(ModelPlot):
         self.title = _make_title('Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
-        Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
-                  self.xlabel, self.ylabel, overplot, clearwindow)
+        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
+                  overplot=overplot, clearwindow=clearwindow)
 
 
 class ResidContour(ModelContour):
@@ -1407,8 +1412,9 @@ class RatioPlot(ModelPlot):
         self.title = _make_title('Ratio of Data to Model', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
-        Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
-                  self.xlabel, self.ylabel, overplot, clearwindow)
+        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
+                  overplot=overplot, clearwindow=clearwindow)
 
 
 class RatioContour(ModelContour):
