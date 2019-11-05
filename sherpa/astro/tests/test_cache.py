@@ -39,8 +39,8 @@ logger = logging.getLogger("sherpa")
 @requires_xspec
 class test_ARFModelPHA(SherpaTestCase):
     _fit_using_ARFModelPHA = {
-        'numpoints': 26786,
-        'dof': 26783
+        'numpoints': 1212,
+        'dof': 1208
     }
     
     def setup(self):
@@ -53,23 +53,19 @@ class test_ARFModelPHA(SherpaTestCase):
 
     def test_ARFModelPHA(self):
         from sherpa.astro import ui
-        ui.load_pha(self.make_path("acis_1597_v2_pha2.fits"))
-        ui.load_arf(4, self.make_path("acis_1597_v2_HEG_1_garf.fits"))
-        ui.load_arf(3, self.make_path("acis_1597_v2_HEG_-1_garf.fits"))
-        ui.load_arf(9, self.make_path("acis_1597_v2_MEG_-1_garf.fits"))
-        ui.load_arf(10, self.make_path("acis_1597_v2_MEG_1_garf.fits"))
-        ui.get_data(4).units="wavelength"
-        ui.get_data(3).units="wavelength"
-        ui.get_data(9).units="wavelength"
-        ui.get_data(10).units="wavelength"
-        ui.set_model(4,"xsphabs.abs1*powlaw1d.p1")
-        ui.set_model(3,"abs1*p1")
-        ui.set_model(9,"abs1*p1")
-        ui.set_model(10,"abs1*p1")
-        ui.notice(2, 30)
+        ui.load_pha(self.make_path("3c120_meg_1.pha"))
+        ui.group_counts(20)
+        ui.notice(0.5, 6)
+        ui.subtract()
+        ui.set_model(ui.xsphabs.abs1 * (ui.xsapec.bubble + ui.powlaw1d.p1))
+        abs1.nh = 0.163
+        abs1.nh.freeze()
+        p1.ampl = 0.017
+        p1.gamma = 1.9
+        bubble.kt = 0.5
+        bubble.norm = 4.2e-5
         tol = 1.0e-2
         ui.set_method_opt('ftol', tol)
-        ui.set_method_opt('gtol', tol)
         ui.fit()
         result = ui.get_fit_results()
         assert result.numpoints == self._fit_using_ARFModelPHA['numpoints']
