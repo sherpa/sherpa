@@ -58,6 +58,8 @@ class test_ARFModelPHA(SherpaTestCase):
         ui.notice(0.5, 6)
         ui.subtract()
         ui.set_model(ui.xsphabs.abs1 * (ui.xsapec.bubble + ui.powlaw1d.p1))
+        ui.set_xsabund('angr')
+        ui.set_xsxsect('vern')
         abs1.nh = 0.163
         abs1.nh.freeze()
         p1.ampl = 0.017
