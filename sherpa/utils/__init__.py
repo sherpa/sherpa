@@ -185,7 +185,7 @@ def calc_ftest(dof1, stat1, dof2, stat2):
        degrees of freedom of the simple model
     stat1 : number or array/list/tuple of number
        best-fit chi-square statistic value of the simple model
-    dof2 : intor array/list/tuple of int
+    dof2 : int or array/list/tuple of int
        degrees of freedom of the complex model
     stat2 : number or array/list/tuple of number
        best-fit chi-square statistic value of the complex model
