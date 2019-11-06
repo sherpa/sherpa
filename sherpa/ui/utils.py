@@ -3741,6 +3741,13 @@ class Session(NoNewAttributesAfterInit):
            Two or more arrays, followed by the type of data set to
            create.
 
+        Warnings
+        --------
+        Sherpa currently does not support numpy masked arrays. Use the
+        set_filter function and note that it follows a different convention by
+        default (a positive value or True for a "bad" channel, 0 or False for
+        a good channel).
+
         See Also
         --------
         copy_data : Copy a data set to a new identifier.
