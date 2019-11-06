@@ -42,11 +42,11 @@ class test_ARFModelPHA(SherpaTestCase):
         'numpoints': 1212,
         'dof': 1208
     }
-    
+
     def setup(self):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
-        
+
     def tearDown(self):
         if hasattr(self, "_old_logger_level"):
             logger.setLevel(self._old_logger_level)
@@ -54,6 +54,11 @@ class test_ARFModelPHA(SherpaTestCase):
     def test_ARFModelPHA(self):
         from sherpa.astro import ui
         ui.load_pha(self.make_path("3c120_meg_1.pha"))
+
+        # remove the RMF to ensure this is an ARF-only analysis
+        # (which is what is needed to trigger the bug that lead to #699)
+        ui.get_data().set_rmf(None)
+
         ui.group_counts(20)
         ui.notice(0.5, 6)
         ui.subtract()
