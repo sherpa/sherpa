@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,15 +21,37 @@ import numpy
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box
 from sherpa.utils.testing import requires_data
-from numpy.testing import assert_almost_equal, assert_array_equal
+from numpy.testing import assert_almost_equal, assert_array_equal, \
+    assert_array_almost_equal
 
 
 def test_calc_ftest():
     """
     this test was created using sherpa 4.8.1 (2507414) as an oracle for the python 3 migration
     """
-    assert_almost_equal(0.475500468, _utils.calc_ftest(10, 1.0, 20, 2.0))
+    assert_almost_equal(0.03452352914891555,
+                        _utils.calc_ftest(11, 16.3, 10, 10.2))
 
+
+def test_calc_ftest2():
+    assert_array_almost_equal(2 * [0.03452352914891555],
+                              _utils.calc_ftest(2 * [11], 2 * [16.3],
+                                                2 * [10], 2 * [10.2]))
+    
+def test_calc_ftest_chi2_equal_0():
+    with pytest.raises(TypeError) as excinfo:
+        _utils.calc_ftest(11, 16.3, 10, 0.0)
+    assert 'chisq_2[0] cannot be equal to 0:' in str(excinfo.value)
+
+def test_calc_ftest_dof2_equal_0():
+    with pytest.raises(TypeError) as excinfo:
+        _utils.calc_ftest(11, 16.3, 0, 10.0)
+    assert 'dof_2[0] cannot be equal to 0:' in str(excinfo.value)
+    
+def test_calc_ftest_dof1_equal_dof2():
+    with pytest.raises(TypeError) as excinfo:
+        _utils.calc_ftest(11, 16.3, 11, 10.0)
+    assert 'dof_1[0] cannot be equal to dof_2[0]:' in str(excinfo.value)
 
 def test_calc_mlr():
     """
