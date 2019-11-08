@@ -196,9 +196,9 @@ class ARFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.arfargs = ()
 
-    def startup(self):
-        self.model.startup()
-        CompositeModel.startup(self)
+    def startup(self, cache):
+        self.model.startup(cache)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         self.model.teardown()
@@ -408,7 +408,7 @@ class ARFModelPHA(ARFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self):
+    def startup(self, cache):
         arf = self._arf  # original
         pha = self.pha
 
@@ -429,7 +429,7 @@ class ARFModelPHA(ARFModel):
         if pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-        ARFModel.startup(self)
+        ARFModel.startup(self, cache)
 
     def teardown(self):
         self.arf = self._arf  # restore original
