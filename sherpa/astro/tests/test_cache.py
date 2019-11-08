@@ -30,6 +30,7 @@ from sherpa.data import Data1D, DataSimulFit
 from sherpa.optmethods import NelderMead, LevMar
 from sherpa.stats import Cash, LeastSq
 from sherpa.fit import Fit
+from sherpa.astro import ui
 
 import logging
 logger = logging.getLogger("sherpa")
@@ -202,3 +203,47 @@ class test_cache(SherpaTestCase):
         sfit = Fit(sdata, smodel, method=LevMar(), stat=LeastSq())
         result = sfit.fit()
         self.compare_results(self._fit_g2g2_bench, result)
+
+    def test_cache_copy(self):
+        # fake up a PHA data set
+        chans = numpy.arange(1, 11, dtype=numpy.int8)
+        counts = numpy.ones(chans.size)
+
+        # bin width is not 0.1 but something slightly different
+        ebins = numpy.linspace(0.1, 1.2, num=chans.size + 1)
+        elo = ebins[:-1]
+        ehi = ebins[1:]
+
+        dset = ui.DataPHA('test', chans, counts)
+
+        # make sure ARF isn't 1 to make sure it's being applied
+        arf = ui.create_arf(elo, ehi, specresp=0.7 * numpy.ones(chans.size))
+
+        rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+        ui.set_data(1, dset)
+        ui.set_arf(1, arf)
+        ui.set_rmf(1, rmf)
+
+        ui.set_source(ui.const1d.mdl)
+
+        # again not 1
+        mdl.c0 = 8
+
+
+        # Copy the values from the plot structures, since get_xxx_plot
+        # returns the same object so m1.y == m2.y will not note a difference.
+        #
+
+        d1y = ui.get_data_plot().y.copy()
+        m1y = ui.get_model_plot().y.copy()
+        s1y = ui.get_source_plot().y.copy()
+
+        d2y = ui.get_data_plot().y.copy()
+        m2y = ui.get_model_plot().y.copy()
+        s2y = ui.get_source_plot().y.copy()
+        rtol = 1.0e-4
+        atol = 1.0e-4
+        numpy.testing.assert_allclose(d1y, d2y, rtol, atol)
+        numpy.testing.assert_allclose(m1y, m2y, rtol, atol)
+        numpy.testing.assert_allclose(s1y, s2y, rtol, atol)

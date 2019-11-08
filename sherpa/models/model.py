@@ -63,7 +63,7 @@ def modelCacher1d(func):
             token = b''.join(data)
             digest = hashlib.sha256(token).digest()
             if digest in cache:
-                return cache[digest]
+                return cache[digest].copy()
 
         vals = func(cls, pars, xlo, *args, **kwargs)
 
@@ -74,7 +74,7 @@ def modelCacher1d(func):
 
             # append newest model values to queue
             queue.append(digest)
-            cache[digest] = vals
+            cache[digest] = vals.copy()
 
         return vals
 
@@ -526,7 +526,7 @@ class ArithmeticModel(Model):
         self.__dict__.update(state)
 
         if '_use_caching' not in state:
-            self.__dict__['_use_caching'] = False
+            self.__dict__['_use_caching'] = True
 
         if '_queue' not in state:
             self.__dict__['_queue'] = ['']
