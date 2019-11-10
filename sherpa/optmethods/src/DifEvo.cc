@@ -140,11 +140,11 @@ int main( int argc, char* argv[] ) {
 
 g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestDifEvo DifEvo.cc Simplex.cc -o difevo
 
-==1609== Memcheck, a memory error detector
-==1609== Copyright (C) 2002-2009, and GNU GPL'd, by Julian Seward et al.
-==1609== Using Valgrind-3.5.0 and LibVEX; rerun with -h for copyright info
-==1609== Command: tstde
-==1609==
+==2929== Memcheck, a memory error detector
+==2929== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==2929== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==2929== Command: sherpa/optmethods/src/difevo
+==2929== 
 #
 #:npar = 2
 #:tol=1e-06
@@ -304,15 +304,17 @@ DifEvo_nm_Michalewicz5	1083	-4.68766	-4.64589	2.20292,1.57053,1.2851,1.11375,1.7
 DifEvo_Michalewicz5	13344	-4.68766	-4.68754	2.205,1.57137,1.28544,1.92321,1.72067
 DifEvo_nm_Michalewicz10	12511	-9.66015	-9.61838	2.20326,1.57071,1.28499,1.11359,1.72045,1.57073,1.45438,1.75605,1.65573,1.57082
 DifEvo_Michalewicz10	52873	-9.66015	-9.55588	2.20803,1.57377,1.28519,1.92256,1.72089,1.57051,1.4554,1.75435,1.28298,1.21835
-==1609==
-==1609== HEAP SUMMARY:
-==1609==     in use at exit: 0 bytes in 0 blocks
-==1609==   total heap usage: 919,570 allocs, 919,570 frees, 157,350,820 bytes allocated
-==1609==
-==1609== All heap blocks were freed -- no leaks are possible
-==1609==
-==1609== For counts of detected and suppressed errors, rerun with: -v
-==1609== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
+DifEvo_nm_McKinnon	-628	-0.25	-2.376e+11	-100,-100
+DifEvo_McKinnon	-546	-0.25	-2.36123e+11	-99.9549,-99.518
+==2929== 
+==2929== HEAP SUMMARY:
+==2929==     in use at exit: 0 bytes in 0 blocks
+==2929==   total heap usage: 918,471 allocs, 918,471 frees, 156,994,792 bytes allocated
+==2929== 
+==2929== All heap blocks were freed -- no leaks are possible
+==2929== 
+==2929== For counts of detected and suppressed errors, rerun with: -v
+==2929== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */
 
 #endif
