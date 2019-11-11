@@ -20,9 +20,11 @@ from __future__ import print_function
 
 from sherpa.utils import _ncpus
 from sherpa.utils.testing import SherpaTestCase
+from sherpa.optmethods import _saoopt
 from sherpa.optmethods import optfcts
 from sherpa.optmethods import _tstoptfct
 
+import numpy as np
 
 class test_optmethods(SherpaTestCase):
 
@@ -115,6 +117,20 @@ class test_optmethods(SherpaTestCase):
         self.tst( optfcts.lmdif, name + self.lm, _tstoptfct.gaussian,
                   fmin, x0, xmin, xmax )
 
+    def test_mccormick(self):
+        from sherpa.optmethods.opt import McCormick
+        init = 0
+        iquad = 1
+        ftol = 1.0e-7
+        simp = 1.0e-2 * ftol
+        xmin = [-1.5, -3.0]
+        xmax = [4.0, 4.0]
+        x = np.asarray([0, 0])
+        step = 0.4 * np.ones(x.shape, np.float_)
+        x, fval, neval, ifalut = _saoopt.minim(0, 1000, init, iquad, simp, ftol, step, xmin, xmax, x, McCormick)
+        fmin = -1.9132229549810362
+        self.assertEqualWithinTol( fval, fmin, self.tolerance )
+        
 ##     # This test actually passed, there is a bug with assertEqualWithinTol
 ##     def test_meyer(self):
 ##         name = 'meyer'
