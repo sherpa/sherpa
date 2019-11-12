@@ -243,7 +243,7 @@ and
    parvals        = (11.0,)
    statval        = -123.01478400625663
    istatval       = 8.0
-   dstatval       = 131.014784006
+   dstatval       = 131.01478400625663
    numpoints      = 4
    dof            = 3
    qval           = None
@@ -259,14 +259,12 @@ fit, and residuals (amongst others):
 :py:meth:`~sherpa.ui.utils.Session.plot_resid`.
 The following
 hides the automatically-created error bars on the data points
-(but unfortunately not the warning message)
 by changing a setting in dictionary returned by
 :py:meth:`~sherpa.ui.utils.Session.get_data_plot_prefs`,
 and then displays the data along with the model::
    
    >>> s.get_data_plot_prefs()['yerrorbars'] = False      
    >>> s.plot_fit()
-   WARNING: The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with leastsq
 
 .. image:: ../_static/ui/session_basic_example_fit.png
    
@@ -349,7 +347,6 @@ preceeding example::
 
    >>> get_data_plot_prefs()['yerrorbars'] = False      
    >>> plot_fit()
-   WARNING: The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with leastsq
 
 The plot created by this function is the same as shown in
 the previous example. 

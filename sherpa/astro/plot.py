@@ -26,6 +26,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
 from sherpa.plot import ComponentSourcePlot as _ComponentSourcePlot
+import sherpa.plot
 from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins
@@ -179,7 +180,7 @@ class SourcePlot(HistogramPlot):
         else:
             raise PlotErr('plotfac', 'Source', data.plot_fac)
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         xlo = self.xlo
         xhi = self.xhi
         y = self.y
@@ -191,7 +192,8 @@ class SourcePlot(HistogramPlot):
 
         Histogram.plot(self, xlo, xhi, y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow)
+                       overplot=overplot, clearwindow=clearwindow,
+                       **kwargs)
 
 
 class ComponentModelPlot(_ComponentSourcePlot, ModelHistogram):
@@ -208,8 +210,12 @@ class ComponentModelPlot(_ComponentSourcePlot, ModelHistogram):
         ModelHistogram.prepare(self, data, model, stat)
         self.title = 'Model component: %s' % model.name
 
-    def plot(self, overplot=False, clearwindow=True):
-        ModelHistogram.plot(self, overplot, clearwindow)
+    def _merge_settings(self, kwargs):
+        return sherpa.plot.merge_settings(self.histo_prefs, kwargs)
+
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+        ModelHistogram.plot(self, overplot=overplot,
+                            clearwindow=clearwindow, **kwargs)
 
 
 class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
@@ -226,8 +232,12 @@ class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
         SourcePlot.prepare(self, data, model)
         self.title = 'Source model component: %s' % model.name
 
-    def plot(self, overplot=False, clearwindow=True):
-        SourcePlot.plot(self, overplot, clearwindow)
+    def _merge_settings(self, kwargs):
+        return sherpa.plot.merge_settings(self.histo_prefs, kwargs)
+
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+        SourcePlot.plot(self, overplot=overplot,
+                        clearwindow=clearwindow, **kwargs)
 
 
 class ARFPlot(HistogramPlot):
@@ -424,7 +434,7 @@ class OrderPlot(ModelHistogram):
         if len(self.xlo) != len(self.y):
             raise PlotErr("orderarrfail")
 
-    def plot(self, overplot=False, clearwindow=True):
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
         default_color = self.histo_prefs['linecolor']
         count = 0
         for xlo, xhi, y, color in \
@@ -432,9 +442,12 @@ class OrderPlot(ModelHistogram):
             if count != 0:
                 overplot = True
                 self.histo_prefs['linecolor'] = color
+
+            # Note: the user settings are sent to each plot
             Histogram.plot(self, xlo, xhi, y, title=self.title,
                            xlabel=self.xlabel, ylabel=self.ylabel,
-                           overplot=overplot, clearwindow=clearwindow)
+                           overplot=overplot, clearwindow=clearwindow,
+                           **kwargs)
             count += 1
 
         self.histo_prefs['linecolor'] = default_color

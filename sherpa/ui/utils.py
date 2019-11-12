@@ -8306,7 +8306,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id=1, otherids=(), num=500, bins=25, numcores=None,
-                    replot=False, overplot=False, clearwindow=True):
+                    replot=False, overplot=False, clearwindow=True,
+                    **kwargs):
         """Compute and plot a histogram of likelihood ratios by simulating data.
 
         Compare the likelihood of the null model to an alternative model
@@ -8410,7 +8411,7 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            lrplot.plot(overplot=overplot, clearwindow=clearwindow)
+            lrplot.plot(overplot=overplot, clearwindow=clearwindow, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -12017,7 +12018,8 @@ class Session(NoNewAttributesAfterInit):
         """
         self._multi_plot(args)
 
-    def plot_data(self, id=None, **kwargs):
+    def plot_data(self, id=None, replot=False, overplot=False,
+                  clearwindow=True, **kwargs):
         """Plot the data values.
 
         Parameters
@@ -12046,6 +12048,11 @@ class Session(NoNewAttributesAfterInit):
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Notes
+        -----
+        The additional arguments supported by `plot_data` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`.
 
         Examples
         --------
@@ -12078,11 +12085,37 @@ class Session(NoNewAttributesAfterInit):
         >>> plt.subplot(2, 1, 2)
         >>> plot_data(clearwindow=False)
 
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. Examples
+        include (for the Matplotlib backend): adding a "cap" to
+        the error bars:
+
+        >>> plot_data(capsize=4)
+
+        changing the symbol to a square:
+
+        >>> plot_data(marker='s')
+
+        using a dotted line to connect the points:
+
+        >>> plot_data(linestyle='dotted')
+
+        and plotting multiple data sets on the same plot, using
+        a log scale for the Y axis, and explicitly setting the
+        colors of the last two datasets:
+
+        >>> plot_data(ylog=True)
+        >>> plot_data(2, overplot=True, color='brown')
+        >>> plot_data(3, overplot=True, color='purple')
+
         """
-        self._plot(id, self._dataplot, **kwargs)
+        self._plot(id, self._dataplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def plot_model(self, id=None, **kwargs):
+    def plot_model(self, id=None, replot=False, overplot=False,
+                   clearwindow=True, **kwargs):
         """Plot the model for a data set.
 
         This function plots the model for a data set, which includes
@@ -12117,6 +12150,11 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_model` are the same
+        as the keywords of the dictionary returned by `get_model_plot_prefs`.
+
         Examples
         --------
 
@@ -12134,12 +12172,24 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_data('jet')
         >>> plot_model('jet', overplot=True)
 
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_model_plot_prefs`. The
+        following plots the model using a log scale for both axes,
+        and then overplots the model from data set 2 using a dashed
+        line:
+
+        >>> plot_model(xlog=True, ylog=True)
+        >>> plot_model(2, overplot=True, linestyle='dashed')
+
         """
-        self._plot(id, self._modelplot, **kwargs)
+        self._plot(id, self._modelplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
-    def plot_source_component(self, id, model=None, **kwargs):
+    def plot_source_component(self, id, model=None, replot=False,
+                              overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the source expression for a data set.
 
         This function evaluates and plots a component of the model
@@ -12184,6 +12234,9 @@ class Session(NoNewAttributesAfterInit):
         they are interpreted as the `id` and `model` parameters,
         respectively.
 
+        The additional keyword arguments match the keywords of the
+        dictionary returned by get_model_plot_prefs.
+
         Examples
         --------
 
@@ -12205,11 +12258,13 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
 
-        self._plot(id, plotobj, model, **kwargs)
+        self._plot(id, plotobj, model, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
-    def plot_model_component(self, id, model=None, **kwargs):
+    def plot_model_component(self, id, model=None, replot=False,
+                             overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the model for a data set.
 
         This function evaluates and plots a component of the model
@@ -12254,6 +12309,9 @@ class Session(NoNewAttributesAfterInit):
         they are interpreted as the `id` and `model` parameters,
         respectively.
 
+        The additional keyword arguments match the keywords of the
+        dictionary returned by get_model_plot_prefs.
+
         Examples
         --------
 
@@ -12282,10 +12340,12 @@ class Session(NoNewAttributesAfterInit):
         model = self._add_convolution_models(id, self.get_data(id),
                                              model, is_source)
 
-        self._plot(id, self._compmdlplot, model, **kwargs)
+        self._plot(id, self._compmdlplot, model, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
-    def plot_source(self, id=None, **kwargs):
+    def plot_source(self, id=None, replot=False,
+                    overplot=False, clearwindow=True, **kwargs):
         """Plot the source expression for a data set.
 
         This function plots the source model for a data set. This does
@@ -12319,6 +12379,11 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_source` are the same
+        as the keywords of the dictionary returned by `get_model_plot_prefs`.
+
         Examples
         --------
 
@@ -12331,15 +12396,27 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_source(1)
         >>> plot_source(2, overplot=True)
 
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_model_plot_prefs`. The
+        following plots the source using a log scale for both axes,
+        and then overplots the source from data set "jet" using a dashed
+        line:
+
+        >>> plot_source(xlog=True, ylog=True)
+        >>> plot_source('jet', overplot=True, linestyle='dashed')
+
         """
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
             raise IdentifierErr("Convolved model\n'%s'\n is set for dataset %s. You should use plot_model instead." %
                                 (mdl.name, str(id)))
-        self._plot(id, self._sourceplot, **kwargs)
+        self._plot(id, self._sourceplot, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    def plot_fit(self, id=None, **kwargs):
+    def plot_fit(self, id=None, replot=False, overplot=False,
+                 clearwindow=True, **kwargs):
         """Plot the fit results (data, model) for a data set.
 
         This function creates a plot containing the data and the model
@@ -12381,6 +12458,11 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_fit` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`.
+
         Examples
         --------
 
@@ -12395,10 +12477,25 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit('jet')
         >>> plot_fit('core', overplot=True)
 
-        """
-        self._plot(id, self._fitplot, **kwargs)
+        Keyword arguments can be given to override the plot preferences;
+        for example the following sets the y axis to a log scale, but
+        only for this plot:
 
-    def plot_resid(self, id=None, **kwargs):
+        >>> plot_fit(ylog=True)
+
+        The color can be changed for both the data and model using
+        (note that the keyword name and supported values depends on
+        the plot backend; this example assumes that Matplotlib is being
+        used):
+
+        >>> plot_fit(color='orange')
+
+        """
+        self._plot(id, self._fitplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
+    def plot_resid(self, id=None, replot=False, overplot=False,
+                   clearwindow=True, **kwargs):
         """Plot the residuals (data - model) for a data set.
 
         This function displays the residuals (data - model) for a data
@@ -12438,6 +12535,11 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_resid` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`.
+
         Examples
         --------
 
@@ -12457,10 +12559,19 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_data()
         >>> plot_resid(overplot=True)
 
-        """
-        self._plot(id, self._residplot, **kwargs)
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. The
+        following sets the cap length for the ends of the error bars:
 
-    def plot_chisqr(self, id=None, **kwargs):
+        >>> plot_resid(capsize=5)
+
+        """
+        self._plot(id, self._residplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
+    def plot_chisqr(self, id=None, replot=False, overplot=False,
+                    clearwindow=True, **kwargs):
         """Plot the chi-squared value for each point in a data set.
 
         This function displays the square of the residuals (data -
@@ -12515,9 +12626,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_chisqr('core', overplot=True)
 
         """
-        self._plot(id, self._chisqrplot, **kwargs)
+        self._plot(id, self._chisqrplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
-    def plot_delchi(self, id=None, **kwargs):
+    def plot_delchi(self, id=None, replot=False, overplot=False,
+                    clearwindow=True, **kwargs):
         """Plot the ratio of residuals to error for a data set.
 
         This function displays the residuals (data - model) divided by
@@ -12543,6 +12656,11 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If the data set does not exist or a source expression has
            not been set.
+
+        Notes
+        -----
+        The additional arguments supported by `plot_delchi` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`.
 
         See Also
         --------
@@ -12571,10 +12689,20 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_delchi('jet')
         >>> plot_delchi('core', overplot=True)
 
-        """
-        self._plot(id, self._delchiplot, **kwargs)
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. The
+        following sets error bars to be orange and the marker to
+        be a circle (larger than the default one):
 
-    def plot_ratio(self, id=None, **kwargs):
+        >>> plot_delchi(ecolor='orange', marker='o')
+
+        """
+        self._plot(id, self._delchiplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
+    def plot_ratio(self, id=None, replot=False, overplot=False,
+                   clearwindow=True, **kwargs):
         """Plot the ratio of data to model for a data set.
 
         This function displays the ratio data / model for a data set.
@@ -12613,6 +12741,11 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_ratio` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`.
+
         Examples
         --------
 
@@ -12626,10 +12759,20 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_ratio('jet')
         >>> plot_ratio('core', overplot=True)
 
-        """
-        self._plot(id, self._ratioplot, **kwargs)
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. The
+        following sets the X axis to a log scale and draws a solid
+        line between the points:
 
-    def plot_psf(self, id=None, **kwargs):
+        >>> plot_ratio(xlog=True, linestyle='solid')
+
+        """
+        self._plot(id, self._ratioplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
+    def plot_psf(self, id=None, replot=False, overplot=False,
+                 clearwindow=True, **kwargs):
         """Plot the 1D PSF model applied to a data set.
 
         The `plot_kernel` function shows the data used to convolve
@@ -12682,9 +12825,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_psf()
 
         """
-        self._plot(id, self._psfplot, **kwargs)
+        self._plot(id, self._psfplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
-    def plot_kernel(self, id=None, **kwargs):
+    def plot_kernel(self, id=None, replot=False, overplot=False,
+                    clearwindow=True, **kwargs):
         """Plot the 1D kernel applied to a data set.
 
         The `plot_psf` function shows the full PSF, from which the
@@ -12739,10 +12884,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_kernel(overplot=True)
 
         """
-        self._plot(id, self._kernelplot, **kwargs)
+        self._plot(id, self._kernelplot, replot=replot, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def _plot_jointplot(self, plot2, id=None, replot=False,
-                        overplot=False, clearwindow=True):
+                        overplot=False, clearwindow=True, **kwargs):
         """Create a joint plot, vertically aligned, fit data on the top.
 
         Parameters
@@ -12777,8 +12923,11 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
+
+            # Note: the user preferences are set to both plots
+            #
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow)
+                                    clearwindow=clearwindow, **kwargs)
 
             # The two plots are intended to have the same scaling
             # on the X axis (log or linear), and the approach is
@@ -12801,7 +12950,7 @@ class Session(NoNewAttributesAfterInit):
                  self._modelplot.plot_prefs['xlog'])):
                 plot2.plot_prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot)
+            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
             plot2.plot_prefs['xlog'] = oldval
         except:
@@ -12811,7 +12960,7 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.end()
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
-                       clearwindow=True):
+                       clearwindow=True, **kwargs):
         """Plot the fit results, and the residuals, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -12854,6 +13003,12 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_fit_resid` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`,
+        and are applied to both plots.
+
         Examples
         --------
 
@@ -12868,18 +13023,29 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_resid('jet')
         >>> plot_fit_resid('core', overplot=True)
 
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. The
+        following sets the data in both plots to be drawn in a
+        blue color, have caps on the error bars, but to only
+        draw the y error bars:
+
+        >>> plot_fit_resid(capsize=4, color='skyblue', xerrorbars=False)
+
         """
 
         self._plot_jointplot(self._residplot,
                              id=id, replot=replot, overplot=overplot,
-                             clearwindow=clearwindow)
+                             clearwindow=clearwindow, **kwargs)
 
     def plot_fit_ratio(self, id=None, replot=False, overplot=False,
-                       clearwindow=True):
+                       clearwindow=True, **kwargs):
         """Plot the fit results, and the ratio of data to model, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_ratio` - for a data set.
+
+        .. versionadded:: 4.12.0
 
         Parameters
         ----------
@@ -12918,6 +13084,12 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_fit_ratio` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`,
+        and are applied to both plots.
+
         Examples
         --------
 
@@ -12932,14 +13104,23 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_ratio('jet')
         >>> plot_fit_ratio('core', overplot=True)
 
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. The
+        following sets the plots to use square symbols (this includes
+        the model as well as data in the top plot) and turns off
+        any line between plots, when using the Matplotlib backend:
+
+        >>> plot_fit_ratio(marker='s', linestyle='none')
+
         """
 
         self._plot_jointplot(self._ratioplot,
                              id=id, replot=replot, overplot=overplot,
-                             clearwindow=clearwindow)
+                             clearwindow=clearwindow, **kwargs)
 
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
-                        clearwindow=True):
+                        clearwindow=True, **kwargs):
         """Plot the fit results, and the residuals, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -12982,6 +13163,12 @@ class Session(NoNewAttributesAfterInit):
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
+        Notes
+        -----
+        The additional arguments supported by `plot_fit_delchi` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`,
+        and are applied to both plots.
+
         Examples
         --------
 
@@ -12996,18 +13183,26 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_delchi('jet')
         >>> plot_fit_delchi('core', overplot=True)
 
+        Additional arguments can be given that are passed to the
+        plot backend: the supported arguments match the keywords
+        of the dictionary returned by `get_data_plot_prefs`. The
+        following sets the error bars to be drawn in gray when
+        using the Matplotlib backend:
+
+        >>> plot_fit_delchi(ecolor='gray')
+
         """
 
         self._plot_jointplot(self._delchiplot,
                              id=id, replot=replot, overplot=overplot,
-                             clearwindow=clearwindow)
+                             clearwindow=clearwindow, **kwargs)
 
     #
     # Statistical plotting routines
     #
 
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True,
-                 replot=False, overplot=False, clearwindow=True):
+                 replot=False, overplot=False, clearwindow=True, **kwargs):
         """Plot the probability density function of an array of values.
 
         Create and plot the probability density function (PDF) of
@@ -13057,7 +13252,8 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._pdfplot.plot(overplot, clearwindow)
+            self._pdfplot.plot(overplot=overplot, clearwindow=clearwindow,
+                               **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13082,7 +13278,7 @@ class Session(NoNewAttributesAfterInit):
         return self._pdfplot
 
     def plot_cdf(self, points, name="x", xlabel="x",
-                 replot=False, overplot=False, clearwindow=True):
+                 replot=False, overplot=False, clearwindow=True, **kwargs):
         """Plot the cumulative density function of an array of values.
 
         Create and plot the cumulative density function (CDF) of
@@ -13130,7 +13326,8 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._cdfplot.plot(overplot, clearwindow)
+            self._cdfplot.plot(overplot=overplot,
+                               clearwindpw=clearwindow, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13156,7 +13353,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: what does xlabel do?
     def plot_trace(self, points, name="x", xlabel="x",
-                   replot=False, overplot=False, clearwindow=True):
+                   replot=False, overplot=False, clearwindow=True, **kwargs):
         """Create a trace plot of row number versus value.
 
         Dispay a plot of the ``points`` array values (Y axis) versus row
@@ -13210,7 +13407,8 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._traceplot.plot(overplot, clearwindow)
+            self._traceplot.plot(overplot=overplot, clearwindow=clearwindow,
+                                 **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13235,7 +13433,7 @@ class Session(NoNewAttributesAfterInit):
         return self._traceplot
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
-                     replot=False, overplot=False, clearwindow=True):
+                     replot=False, overplot=False, clearwindow=True, **kwargs):
         """Create a scatter plot.
 
         Parameters
@@ -13286,7 +13484,9 @@ class Session(NoNewAttributesAfterInit):
 
         try:
             sherpa.plot.begin()
-            self._scatterplot.plot(overplot, clearwindow)
+            self._scatterplot.plot(overplot=overplot,
+                                   clearwindow=clearwindow,
+                                   **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13747,7 +13947,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._kernelcontour, **kwargs)
 
-    def contour_fit_resid(self, id=None, replot=False, overcontour=False):
+    def contour_fit_resid(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the fit and the residuals to a data set.
 
         Overplot the model - including any PSF - on the data. In a
@@ -13792,8 +13992,10 @@ class Session(NoNewAttributesAfterInit):
             rc = self._prepare_plotobj(id, rc)
         try:
             sherpa.plot.begin()
-            self._splitplot.addcontour(fc, overcontour=overcontour)
-            self._splitplot.addcontour(rc, overcontour=overcontour)
+
+            # Note: the user settings are applied to both contours
+            self._splitplot.addcontour(fc, overcontour=overcontour, **kwargs)
+            self._splitplot.addcontour(rc, overcontour=overcontour, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -14261,6 +14463,8 @@ class Session(NoNewAttributesAfterInit):
             self._regunc.calc(fit, par0, par1)
         return self._regunc
 
+    # TODO: allow user-specified arguments
+    #
     def _int_plot(self, plotobj, par, **kwargs):
         prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
         plot_dict = sherpa.utils.get_keyword_defaults(plotobj.plot)
