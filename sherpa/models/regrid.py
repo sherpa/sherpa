@@ -649,6 +649,11 @@ class ModelDomainRegridder1D():
             raise ModelErr('needsint')
         if requested_eval_space.is_integrated and not self.evaluation_space.is_integrated:
             raise ModelErr('needspoint')
+        if self.evaluation_space.is_integrated and requested_eval_space.is_integrated:
+            lo = self.evaluation_space.grid[0]
+            hi = self.evaluation_space.grid[1]
+            if np.any(lo[1:] < hi[:-1]):
+                raise ModelErr('needsint')
 
         return requested_eval_space
 

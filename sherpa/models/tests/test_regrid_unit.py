@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,11 +24,12 @@ import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
     ArithmeticFunctionModel, RegridWrappedModel
-from sherpa.models.basic import Const1D, Gauss1D, Const2D, Gauss2D, \
+from sherpa.models.basic import Box1D, Const1D, Gauss1D, Const2D, Gauss2D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
 from sherpa.instrument import PSFModel
-from sherpa.data import Data1D
+from sherpa.data import Data1D, Data1DInt
+import sherpa.astro.ui as ui
 
 import sherpa.utils
 from sherpa.utils.err import ModelErr
@@ -417,8 +418,7 @@ def test_regrid1d_error_calc_no_args(setup_1d):
         pvals = [p.val for p in internal_mdl.pars]
         mdl.calc(p=pvals)
 
-    assert 'There is no grid on which to evaluate the model' \
-        in str(excinfo.value)
+    assert ModelErr.dict['nogrid'] in str(excinfo.value)
 
 
 def test_regrid1d_error_grid_mismatch_1(setup_1d):
@@ -435,9 +435,37 @@ def test_regrid1d_error_grid_mismatch_1(setup_1d):
     with pytest.raises(ModelErr) as excinfo:
         mdl(grid_run)
 
-    assert 'An integrated grid is required for model evaluation' \
-        in str(excinfo.value)
+    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
+def test_ui_regrid1d_non_overlapping_not_allowed():
+    """Integrated data space must not overlap"""
+    
+    ui.dataspace1d(1,100,2,dstype=Data1DInt)
+    b1 = Box1D()
+    ui.set_model(b1)
+    b1.xlow=10
+    b1.xhi=80
+    b1.ampl.max=100
+    grid_hi = np.linspace(2,101,600)
+    grid_lo = np.linspace(1,100,600)
+    with pytest.raises(ModelErr) as excinfo:    
+        rb1 = b1.regrid(grid_lo,grid_hi)
+
+    assert ModelErr.dict['needsint'] in str(excinfo.value)
+
+def test_low_level_regrid1d_non_overlapping_not_allowed():
+    """Integrated data space must not overlap"""
+
+    tmp = np.linspace(1, 100, 10)
+    y = np.ones((9,))
+    d = Data1DInt('tst', tmp[:-1], tmp[1:], np.ones((9,)))
+    c = Box1D()
+    lo = np.linspace(1,100,600)
+    hi = np.linspace(2,101,600)
+    with pytest.raises(ModelErr) as excinfo:    
+        c.regrid(lo, hi)
+
+    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 def test_regrid1d_error_grid_mismatch_2(setup_1d):
     """Internal grid is points but given integrated"""
@@ -452,8 +480,7 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
     with pytest.raises(ModelErr) as excinfo:
         mdl(grid_run[:-1], grid_run[1:])
 
-    assert 'A non-integrated grid is required for model evaluation' \
-        in str(excinfo.value)
+    assert ModelErr.dict['needspoint'] in str(excinfo.value)
 
 
 # Evaluate on a grid x'_i which is close to the desired

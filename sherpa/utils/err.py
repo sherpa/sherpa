@@ -313,7 +313,7 @@ class ModelErr(SherpaErr):
     dict = {'numthawed': "expected %d thawed parameters, got %d",
             'badinstance': '%s instance cannot be created from another model',
             'noncall': 'attempted to create %s from non-callable object of type %s',
-            'needsint': 'An integrated grid is required for model evaluation,\ne.g. [0.1,0.2],[0.2,0.3]',
+            'needsint': 'A non-overlapping integrated grid is required for model evaluation,\ne.g. [0.1,0.2],[0.2,0.3]',
             'alwaysint': '%s model is defined as integrated',
             'filterarray': "filter '%s' is not an array",
             'filtermismatch': "Mismatch between %s and %s",

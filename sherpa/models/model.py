@@ -560,6 +560,7 @@ class RegriddableModel1D(ArithmeticModel):
     def regrid(self, *arrays):
         eval_space = EvaluationSpace1D(*arrays)
         regridder = ModelDomainRegridder1D(eval_space)
+        regridder._make_and_validate_grid(arrays)
         return regridder.apply_to(self)
 
 
