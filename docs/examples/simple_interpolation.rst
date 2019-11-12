@@ -49,12 +49,21 @@ which can be "loaded" into Sherpa using the
    >>> d = Data1D('interpolation', x, y)
    >>> print(d)
    name      = interpolation
-   x         = [1, 1.5, 2, 4, 8, 17]
-   y         = [1, 1.5, 1.75, 3.25, 6, 16]
+   x         = Float64[6]
+   y         = Float64[6]
    staterror = None
    syserror  = None
    None
-   
+
+.. note::
+
+   Creating the :py:class:`~sherpa.data.Data1D` object will - from
+   Sherpa 4.12.0 - warn you that it is converting the dependent axis
+   data to NumPy. That is, the above call will cause the following
+   message to be displayed::
+
+        UserWarning: Converting array [1, 1.5, 1.75, 3.25, 6, 16] to numpy array
+
 This can be displayed using the :py:class:`~sherpa.plot.DataPlot` class:
 
    >>> from sherpa.plot import DataPlot
@@ -182,7 +191,7 @@ variable retutrns more details:
    parvals        = (1.7749826216226083, 0.050099944904353017)
    statval        = 2.4374045728256455
    istatval       = 255.875
-   dstatval       = 253.437595427
+   dstatval       = 253.43759542717436
    numpoints      = 6
    dof            = 4
    qval           = None
@@ -262,15 +271,15 @@ independent-axis values; for instance for :math:`x` equal to
 2, 5, and 10:
 
    >>> print(mdl([2, 5, 10]))
-   [ 1.9753824   3.02748124  6.78497711]
+   [1.9753824  3.02748124 6.78497711]
 
 It can also be used to extrapolate the model outside the range of the
 data (as long as the model is defined for these values):
 
    >>> print(mdl([-100]))
-   [ 502.77443167]
+   [502.77443167]
    >>> print(mdl([234.56]))
-   [ 2758.19347071]
+   [2758.19347071]
 
 Changing the fit
 ================

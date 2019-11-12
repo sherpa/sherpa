@@ -99,8 +99,8 @@ data points)::
 
    >>> print(d)
    name      = NaNO_3
-   x         = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-   y         = [1, 4.125, 7.5, 10.0417, 12.25, 13.75, 14.0833, 14.7917, 15.5, 14.6667, 14.875]
+   x         = Int64[11]
+   y         = Float64[11]
    staterror = [0, 0.9214, 1.1273, 1.9441, 2.3363, 0.9289, 1.6615, 1.1726, 1.8066, 2.149, 1.983]
    syserror  = None
 
@@ -138,7 +138,7 @@ so that the following plots reflect the new filter:
    >>> dplot.prepare(d)
 
 .. _simple_user_model_creating_the_model:
-   
+
 Creating the model
 ==================
 
@@ -490,7 +490,7 @@ an overview of the current fit::
    statval   = 0.2997382864907501
    numpoints = 10
    dof       = 7
-   qval      = 0.999900257643
+   qval      = 0.999900257642653
    rstat     = 0.04281975521296431
 
 It is another way of getting at some of the information in the
@@ -574,12 +574,12 @@ use the :py:class:`~sherpa.estmethods.Confidence` approach:
    >>> from sherpa.estmethods import Confidence
    >>> f.estmethod = Confidence()
    >>> conferrs = f.est_errors()
-   plateau.c0 lower bound:	-0.804259
+   plateau.c0 lower bound: -0.804259
    rise.offset lower bound:	-0.590258
-   rise.coeff lower bound:	-0.148887
+   rise.coeff lower bound: -0.148887
    rise.offset upper bound:	0.714407
-   plateau.c0 upper bound:	0.989664
-   rise.coeff upper bound:	0.103391
+   plateau.c0 upper bound: 0.989664
+   rise.coeff upper bound: 0.103391
 
 .. _simple_user_model_confidence_bounds:
    
@@ -619,11 +619,11 @@ the parameters used, for example to just the ``offset`` term:
    fitname     = neldermead
    statname    = chi2
    sigma       = 1
-   percent     = 68.2689492137
+   percent     = 68.26894921370858
    parnames    = ('rise.offset',)
    parvals     = (4.177287700807689,)
-   parmins     = (-0.59025803525842369,)
-   parmaxes    = (0.71440700826435144,)
+   parmins     = (-0.5902580352584237,)
+   parmaxes    = (0.7144070082643514,)
    nfits       = 8
 
 .. _simple_user_model_compare_errors:
