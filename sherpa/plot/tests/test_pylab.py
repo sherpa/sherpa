@@ -19,15 +19,13 @@
 
 import numpy as np
 
-from matplotlib import pyplot as plt
+import pytest
 
 from sherpa.utils.testing import requires_pylab
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D
 from sherpa.stats import Chi2DataVar
 from sherpa.plot import DelchiPlot, RatioPlot, ResidPlot
-
-import pytest
 
 
 @requires_pylab
@@ -49,6 +47,8 @@ def test_axes_default():
 @pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
 def test_ignore_ylog_prefs(plottype):
     """Do the "residual" style plots ignore the ylog preference setting?"""
+
+    from matplotlib import pyplot as plt
 
     data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
     mdl = Const1D('tst-model')
@@ -72,6 +72,8 @@ def test_ignore_ylog_prefs(plottype):
 @pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
 def test_ignore_ylog_kwarg(plottype):
     """Do the "residual" style plots ignore the ylog keyword argument?"""
+
+    from matplotlib import pyplot as plt
 
     data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
     mdl = Const1D('tst-model')
