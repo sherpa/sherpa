@@ -171,7 +171,7 @@ def _install_test_deps():
             """)
             raise
 
-    deps = ['pytest>=3.3']  # List of packages to be installed
+    deps = ['pytest>=3.3,<=5.2.2']  # List of packages to be installed
     pytest_plugins = []  # List of pytest plugins to be installed
 
     # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
