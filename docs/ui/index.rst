@@ -21,7 +21,7 @@ deal with objects, the API uses labels (numeric or string)
 to identify data sets and model components. The Astronomy-specific
 version adds domain-specific functionality; in this case support
 for Astronomical data analysis, with a strong focus on high-energy (X-ray)
-data. It is is currently documented on the
+data. It is currently documented on the
 http://cxc.harvard.edu/sherpa/ web site.
 
 The :py:class:`~sherpa.ui.utils.Session` object provides methods
