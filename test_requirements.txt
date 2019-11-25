@@ -1,2 +1,2 @@
-pytest>=3.3
+pytest>=3.3,!=5.2.3
 pytest-xvfb
