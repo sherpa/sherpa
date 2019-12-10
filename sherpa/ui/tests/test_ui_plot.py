@@ -770,3 +770,15 @@ def test_prefs_change_session_objects_fit():
     #
     assert plotobj.dataplot is ui._session._dataplot
     assert plotobj.modelplot is ui._session._modelplot
+
+
+
+@pytest.mark.parametrize("plotfunc", [ui.plot_cdf, ui.plot_pdf])
+def test_plot_xdf(plotfunc):
+    """Very basic check we can call plot_cdf/pdf
+
+    This can be run even without a plotting backend available.
+    """
+
+    pvals = [0.1, 0.2, 0.1, 0.4, 0.3, 0.2, 0.1, 0.6]
+    plotfunc(pvals)
