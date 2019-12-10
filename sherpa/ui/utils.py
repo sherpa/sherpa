@@ -13327,7 +13327,7 @@ class Session(NoNewAttributesAfterInit):
         try:
             sherpa.plot.begin()
             self._cdfplot.plot(overplot=overplot,
-                               clearwindpw=clearwindow, **kwargs)
+                               clearwindow=clearwindow, **kwargs)
         except:
             sherpa.plot.exceptions()
             raise
