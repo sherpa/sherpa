@@ -173,7 +173,8 @@ For example::
     cd sherpa
     git checkout 4.10.0
 
-will use the ``4.10.0`` tag.
+will use the ``4.10.0`` tag (although we strongly suggest using a
+newer release now!).
 
 Configuring the build
 ---------------------
@@ -246,11 +247,11 @@ match the contents of the XSPEC installation.
        xspec_version = 12.10.1
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.25
+       xspec_libraries = XSFunctions XSUtil XS hdsp_6.26
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.19.1
 
-   where the version numbers were taken from version 6.25 of HEASOFT and
+   where the version numbers were taken from version 6.26.1 of HEASOFT and
    may need updating with a newer release.
    
 2. If the full XSPEC 12.10.0 system has been built then use::
@@ -303,7 +304,7 @@ module, but a quick check of an installed version can be made with
 the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.10.1b
+    12.10.1n
 
 .. warning::
 
@@ -324,14 +325,22 @@ these options.
 Building and Installing
 -----------------------
 
-.. note::
-   
-   It is highly recommended that some form of virtual environment,
-   such as a
-   `conda environment <http://conda.pydata.org/docs/using/envs.html>`_
-   or that provided by
-   `Virtualenv <https://virtualenv.pypa.io/en/stable/>`_,
-   be used when building and installing Sherpa.
+It is highly recommended that some form of virtual environment,
+such as a
+`conda environment <http://conda.pydata.org/docs/using/envs.html>`_
+or that provided by
+`Virtualenv <https://virtualenv.pypa.io/en/stable/>`_,
+be used when building and installing Sherpa.
+
+.. warning::
+
+   When building Sherpa on macOS within a conda environment, the following
+   environment variable must be set otherwise importing Sherpa will
+   crash Python::
+
+     export PYTHON_LDFLAGS=' '
+
+   That is, the variable is set to a space, not the empty string.
 
 A standard installation
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -421,10 +430,10 @@ Building the documentation
 Building the documentation requires the Sherpa source code and several
 additional packages:
 
-* Python 3.5 or greater
 * `Sphinx <http://sphinx.pocoo.org/>`_, version 1.3 or later
 * The ``sphinx_rtd_theme``
 * NumPy and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
+  (the latter can be installed with ``pip``).
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
 With these installed, the documentation can be built with the
