@@ -480,6 +480,33 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
     assert ModelErr.dict['needspoint'] in str(excinfo.value)
 
 
+@pytest.mark.parametrize("requested, tol",
+                         [ (np.arange(1, 7, 0.1), 1e-7),
+                           (np.arange(1, 7, 0.05), 2e-4),
+                           pytest.param(np.arange(1, 7, 0.2), 0.1,
+                                        marks=pytest.mark.xfail)
+                       ])
+def test_low_level_regrid1d_full_overlap(requested, tol):
+    """Base case of test_low_level_regrid1d_partial_overlap
+    """
+
+    # The range over which we want the model evaluated
+    xgrid = np.arange(2, 6, 0.1)
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4)
+
+    ygot = d.eval_model(mdl.regrid(requested))
+    assert ygot == pytest.approx(yexpected, abs=tol)
+
+
 @pytest.mark.parametrize("requested",
                          [ np.arange(2.5, 7, 0.2),
                            np.arange(1, 5.1, 0.2),
@@ -526,6 +553,35 @@ def test_low_level_regrid1d_partial_overlap(requested):
         ygot = d.eval_model(mdl.regrid(requested))
 
     assert ygot == pytest.approx(yexpected)
+
+
+@pytest.mark.parametrize("requested, tol",
+                         [ (np.arange(1, 7, 0.1), 1e-7),
+                           (np.arange(1, 7, 0.05), 1e-7),
+                           (np.arange(1, 7, 0.2), 0.02)
+                       ])
+def test_low_level_regrid1d_int_full_overlap(requested, tol):
+    """Base case of test_low_level_regrid1d_int_partial_overlap
+    """
+
+    # The range over which we want the model evaluated
+    dx = 0.1
+    xgrid = np.arange(2, 6, dx)
+    xlo = xgrid[:-1]
+    xhi = xgrid[1:]
+    d = Data1DInt('tst', xlo, xhi, np.ones_like(xlo))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4 * dx)
+
+    ygot = d.eval_model(mdl.regrid(requested[:-1], requested[1:]))
+    assert ygot == pytest.approx(yexpected, abs=tol)
 
 
 @pytest.mark.xfail(reason='issue 722')
