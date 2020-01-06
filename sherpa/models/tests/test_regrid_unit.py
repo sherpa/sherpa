@@ -483,7 +483,10 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
 @pytest.mark.parametrize("requested",
                          [ np.arange(2.5, 7, 0.2),
                            np.arange(1, 5.1, 0.2),
-                           np.arange(2.5, 5.1, 0.2)
+                           np.arange(2.5, 5.1, 0.2),
+                           np.arange(2.5, 7, 0.075),
+                           np.arange(1, 5.1, 0.075),
+                           np.arange(2.5, 5.1, 0.075)
                        ])
 def test_low_level_regrid1d_partial_overlap(requested):
     """What happens if there is partial overlap of the grid?
