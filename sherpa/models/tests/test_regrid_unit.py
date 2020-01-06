@@ -535,7 +535,15 @@ def test_low_level_regrid1d_partial_overlap(requested):
                            np.arange(2.5, 5.1, 0.075),
                            np.arange(2.5, 7, 0.12),
                            np.arange(1, 5.1, 0.12),
-                           np.arange(2.5, 5.1, 0.12)
+                           np.arange(2.5, 5.1, 0.12),
+                           # The bin=0.2 case may need a larger tolerance
+                           # than the other cases
+                           np.arange(2.5, 7, 0.2),
+                           np.arange(1, 5.1, 0.2),
+                           # the following errors out with a bin-size
+                           # does not match error rather than
+                           # creating the wrong answer
+                           np.arange(2.5, 5.1, 0.2)
                        ])
 def test_low_level_regrid1d_int_partial_overlap(requested):
     """What happens if there is partial overlap of the grid?
