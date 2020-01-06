@@ -528,6 +528,60 @@ def test_low_level_regrid1d_partial_overlap(requested):
     assert ygot == pytest.approx(yexpected)
 
 
+@pytest.mark.xfail(reason='issue 722')
+@pytest.mark.parametrize("requested",
+                         [ np.arange(2.5, 7, 0.075),
+                           np.arange(1, 5.1, 0.075),
+                           np.arange(2.5, 5.1, 0.075),
+                           np.arange(2.5, 7, 0.12),
+                           np.arange(1, 5.1, 0.12),
+                           np.arange(2.5, 5.1, 0.12)
+                       ])
+def test_low_level_regrid1d_int_partial_overlap(requested):
+    """What happens if there is partial overlap of the grid?
+
+    See test_low_levgel_regrid1d_partial_overlap.
+    """
+
+    # The range over which we want the model evaluated
+    dx = 0.1
+    xgrid = np.arange(2, 6, dx)
+    xlo = xgrid[:-1]
+    xhi = xgrid[1:]
+    d = Data1DInt('tst', xlo, xhi, np.ones_like(xlo))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4 * dx)
+
+    wstr = 'evaluation space does not contain the requested ' + \
+           'space. Sherpa will join the two spaces.'
+    with pytest.warns(UserWarning, match=wstr):
+        rlo = requested[:-1]
+        rhi = requested[1:]
+        ygot = d.eval_model(mdl.regrid(rlo, rhi))
+
+    # Note that due to the different bin widths of the input and
+    # output bins, the start and end bins of the integrated box
+    # model will not line up nicely, and so the first and last
+    # bins are unlikely to agree that closely. This means that
+    # the tolerance for the check between ygot and yexpected
+    # is going to have to be larger than we would normally use.
+    #
+    # The expected bin values for the box are 0.4 * dx = 0.04
+    # I am using 0.005 as a "first guess" (based on the model
+    # evaluation values) but as the code isn't doing the right
+    # thing this value may need tweaking once issue #722 is
+    # fixed.
+    #
+    assert ygot == pytest.approx(yexpected, abs=0.005)
+
+
 # Evaluate on a grid x'_i which is close to the desired
 # grid x_i, and then check that the output is close to
 # the model evaluated on the grid x_i.
