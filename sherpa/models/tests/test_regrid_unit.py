@@ -480,6 +480,51 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
     assert ModelErr.dict['needspoint'] in str(excinfo.value)
 
 
+@pytest.mark.parametrize("requested",
+                         [ np.arange(2.5, 7, 0.2),
+                           np.arange(1, 5.1, 0.2),
+                           np.arange(2.5, 5.1, 0.2)
+                       ])
+def test_low_level_regrid1d_partial_overlap(requested):
+    """What happens if there is partial overlap of the grid?
+
+    The question becomes how do we evaluate the model
+    "outside" the regrid range. There's at least two
+    options:
+
+      a) set to 0
+      b) use the original grid
+
+    This test is chosen so that it holds with both
+    possibilities: the model evaluates to 0 outside
+    of x=3.1 - 4.2, and the partial overlaps are
+    carefully chosen to always include this full
+    range.
+
+    See https://github.com/sherpa/sherpa/issues/722
+    """
+
+    # The range over which we want the model evaluated
+    xgrid = np.arange(2, 6, 0.1)
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4)
+
+    wstr = 'evaluation space does not contain the requested ' + \
+           'space. Sherpa will join the two spaces.'
+    with pytest.warns(UserWarning, match=wstr):
+        ygot = d.eval_model(mdl.regrid(requested))
+
+    assert ygot == pytest.approx(yexpected)
+
+
 # Evaluate on a grid x'_i which is close to the desired
 # grid x_i, and then check that the output is close to
 # the model evaluated on the grid x_i.
