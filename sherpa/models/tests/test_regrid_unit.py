@@ -454,9 +454,6 @@ def test_ui_regrid1d_non_overlapping_not_allowed():
 def test_low_level_regrid1d_non_overlapping_not_allowed():
     """Integrated data space must not overlap"""
 
-    tmp = np.linspace(1, 100, 10)
-    y = np.ones((9,))
-    d = Data1DInt('tst', tmp[:-1], tmp[1:], np.ones((9,)))
     c = Box1D()
     lo = np.linspace(1,100,600)
     hi = np.linspace(2,101,600)
