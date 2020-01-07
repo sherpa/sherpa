@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019
+#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -866,6 +866,7 @@ class ReSampleData(NoNewAttributesAfterInit):
                         r = -1
                 ry.append(r)
 
+            ry = numpy.asarray(ry)
             # fit is performed for each simulated data point
             fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq( ), LevMar())
             fit_result = fit.fit()
