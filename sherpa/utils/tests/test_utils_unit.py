@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@ def test_calc_ftest2():
     assert_array_almost_equal(2 * [0.03452352914891555],
                               _utils.calc_ftest(2 * [11], 2 * [16.3],
                                                 2 * [10], 2 * [10.2]))
-    
+
 def test_calc_ftest_chi2_equal_0():
     with pytest.raises(TypeError) as excinfo:
         _utils.calc_ftest(11, 16.3, 10, 0.0)
@@ -47,7 +47,7 @@ def test_calc_ftest_dof2_equal_0():
     with pytest.raises(TypeError) as excinfo:
         _utils.calc_ftest(11, 16.3, 0, 10.0)
     assert 'dof_2[0] cannot be equal to 0:' in str(excinfo.value)
-    
+
 def test_calc_ftest_dof1_equal_dof2():
     with pytest.raises(TypeError) as excinfo:
         _utils.calc_ftest(11, 16.3, 11, 10.0)
@@ -212,6 +212,39 @@ def test_rebin():
     expected = [0.5,  0.5,  1.5,  1.5,  2.,  2.,  5.,  5.,  0.,  0.]
 
     assert_array_equal(expected, _utils.rebin(y0, x0lo, x0hi, x1lo, x1hi))
+
+
+def test_rebin_partial_overlap():
+    """Does rebin handle the case when the output grid is > input?
+
+    This only tests the easy case (when the model evaluates to 0
+    for the missing range), but is added whilst investigating #722
+    (the handling of regrid for integrated 1D models). It is intended
+    to show the problem in #722 comes from the regrid code, not the
+    rebin routine.
+    """
+
+    # Truth is Box1D evaluated with xlow=3 xhi=5 ampl=4 evaluated
+    # on the integrated bin defined by arange(1, 7, 0.5).
+    #
+    # However, the model is evaluated on the grid arange(2.1, 6, 0.5)
+    # and then rebinned onto the requested grid. So, the edge bins
+    # are partially filled.
+    #
+    xdataspace = numpy.arange(1, 7, 0.5)
+    xdlo, xdhi = xdataspace[:-1], xdataspace[1:]
+
+    xgrid = numpy.arange(2.1, 6, 0.5)
+    xglo, xghi = xgrid[:-1], xgrid[1:]
+
+    # Manually calculated
+    ygrid = numpy.asarray([0, 0.4, 2, 2, 2, 1.6, 0])
+
+    yans = _utils.rebin(ygrid, xglo, xghi, xdlo, xdhi)
+
+    # Manually calculated
+    yexp = numpy.asarray([0, 0, 0, 0.32, 1.68, 2, 2, 1.68, 0.32, 0, 0])
+    assert yans == pytest.approx(yexp)
 
 
 def test_sao_arange():
