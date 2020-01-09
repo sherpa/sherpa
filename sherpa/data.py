@@ -187,7 +187,8 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
             if self not in evaluation_space:
                 warnings.warn(
                     "evaluation space does not contain the requested space. Sherpa will join the two spaces.")
-                evaluation_space = evaluation_space.join(self)
+                if evaluation_space.x_axis.is_integrated is False:
+                    evaluation_space = evaluation_space.join(self)
 
         return self if evaluation_space is None else evaluation_space
 

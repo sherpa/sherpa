@@ -521,9 +521,9 @@ def test_source_component_arbitrary_grid_int():
     re_x_points = (re_x[0] + re_x[1]) / 2.0
     points = numpy.concatenate((x_points, re_x_points))
 
-    numpy.testing.assert_array_equal(ui._compsrcplot.x, points)
+    numpy.testing.assert_array_equal(ui._compsrcplot.x, re_x_points)
     numpy.testing.assert_array_equal(ui._compsrcplot.y,
-                                     [10, 10, 10, 100, 100, 100])
+                                     [100, 100, 100])
 
 
 def test_numpy_histogram_density_vs_normed():
