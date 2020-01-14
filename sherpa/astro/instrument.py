@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019 Smithsonian Astrophysical Observator
+#  Copyright (C) 2010, 2015-2018, 2019, 2020
+#     Smithsonian Astrophysical Observator
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -861,14 +862,14 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi, self.table = compile_energy_grid(grid)
         self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
 
-    def startup(self):
+    def startup(self, cache):
         pha = self.pha
         if numpy.iterable(pha.mask):
             pha.notice_response(True)
         self.channel = pha.get_noticed_channels()
         self.mask = pha.get_mask()
         self._get_noticed_energy_list()
-        CompositeModel.startup(self)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         pha = self.pha
