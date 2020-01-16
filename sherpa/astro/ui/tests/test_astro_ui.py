@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,7 +30,7 @@ import numpy
 from numpy.testing import assert_allclose
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
-    requires_fits, requires_group
+    requires_fits, requires_group, requires_xspec
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA
@@ -609,3 +610,29 @@ def test_bug_316(make_data_path):
 
     assert xmin == pytest.approx(2.0)
     assert xmax == pytest.approx(7.01)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_load_multi_arfsrmfs(make_data_path):
+    pha_pi = make_data_path("3c273.pi")
+    ui.load_pha(1, pha_pi)
+    ui.load_pha(2, pha_pi)
+    bkg_pi = make_data_path("3c273_bg.pi")
+    ui.load_bkg(1, bkg_pi)
+    ui.load_bkg(2, bkg_pi)
+
+    arf = make_data_path("3c273.arf")
+    ui.load_multi_arfs(1, [arf, arf], [1, 2])
+    ui.load_multi_arfs(2, [arf, arf], [1, 2])
+
+    rmf = make_data_path("3c273.rmf")
+    ui.load_multi_rmfs(1, [rmf, rmf], [1, 2])
+    ui.load_multi_rmfs(2, [rmf, rmf], [1, 2])
+    ui.set_model(1, ui.xsapec.src)
+    ui.set_model(2, ui.xsapec.src)
+    ui.fit()
+    parvals = ui.get_fit_results().parvals
+    assert(parvals[0] == pytest.approx(1.03364, rel=1.0e-3))
+    assert(parvals[1] == pytest.approx(4.56712e-05, rel=1.03e-3))
