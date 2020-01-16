@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 #
 
 import numpy as np
+import warnings
 
 from sherpa.fit import Fit
 from sherpa.data import Data1DAsymmetricErrs
@@ -182,3 +183,15 @@ class test_sim(SherpaTestCase):
                                   sample['p1.gamma'])
         self.assertEqualWithinTol(self._resample_bench_10['p1.ampl'],
                                   sample['p1.ampl'])
+
+    def test_warning(self):
+        ui.load_ascii_with_errors(1, self.gro_fname)
+        data = ui.get_data(1)
+        powlaw1d = PowLaw1D('p1')
+        ui.set_model(powlaw1d)
+        fit = Fit(data, powlaw1d)
+        results = fit.fit()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            ui.resample_data(1, 3)
+            assert len(w) == 0
