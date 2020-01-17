@@ -27,7 +27,8 @@ Requirements
 
 Sherpa has the following requirements:
 
-* Python 3.5, 3.6, or 3.7
+* Python 3.5, 3.6, or 3.7 (there has been limited testing with
+  Python 3.8)
 * NumPy (the exact lower limit has not been determined,
   but it is likely to be 1.7.0 or later)
 * Linux or OS-X (patches to add Windows support are welcome)
