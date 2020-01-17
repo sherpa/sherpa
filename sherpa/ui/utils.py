@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -255,8 +255,8 @@ class Session(NoNewAttributesAfterInit):
 
         for name in dir(self):
             if ((not name.startswith('_')) or
-                    (name is '_sherpa_version') or
-                    (name is '_sherpa_version_string')):
+                    (name == '_sherpa_version') or
+                    (name == '_sherpa_version_string')):
                 gdict[name] = export_method(getattr(self, name),
                                             modname=gdict.get('__name__'))
                 allnames.append(name)
