@@ -2020,26 +2020,33 @@ def is_binary_file(filename):
        Returns True if a non-printable character is found in the first
        1024 bytes of the file.
 
+    Notes
+    -----
+    For this function, "binary" means the file contains a non-ASCII character.
     """
-    fd = open(filename, 'r')
-    try:  # Python 2
-        lines = fd.readlines(1024)
-        fd.close()
 
-        if len(lines) == 0:
-            return False
+    # Originally "binary" was defined as a character not being in
+    # string.printable. With Python 3, we can also use UnicodeDecodeError
+    # as an indicator of a "binary" file, but the check against
+    # string.printable is kept in, since this is more restrictive
+    # than UnicodeDecodeError.
+    #
+    with open(filename, 'r') as fd:
+        try:
+            lines = fd.readlines(1024)
+        except UnicodeDecodeError:
+            return True
 
-        # If a non-printable character is found in first 1024 --> binary
-        for line in lines:
-            for char in line:
-                if char not in string.printable:
-                    return True
-
+    if len(lines) == 0:
         return False
-    except UnicodeDecodeError:  # Python 3
-        return True
-    finally:
-        fd.close()
+
+    # Are there any non-printable characters in the buffer?
+    for line in lines:
+        for char in line:
+            if char not in string.printable:
+                return True
+
+    return False
 
 
 def get_midpoint(a):
