@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -235,10 +235,10 @@ def calc_ftest(dof1, stat1, dof2, stat2):
 
     Examples
     --------
-    >>> calc_ftest(11, 16.3, 10, 10.2) 
+    >>> calc_ftest(11, 16.3, 10, 10.2)
     0.03452352914891555
 
-    >>> calc_ftest([11, 11], [16.3, 16.3], [10, 9], [10.2, 10.5]) 
+    >>> calc_ftest([11, 11], [16.3, 16.3], [10, 9], [10.2, 10.5])
     array([0.03452353, 0.13819987])
     """
 
@@ -1132,29 +1132,21 @@ def export_method(meth, name=None, modname=None):
 
     # Make an argument list string, removing 'self'
     #
-    argspec = None
-    try:
-        sig = inspect.signature(meth)
-    except AttributeError:
-        argspec = inspect.getargspec(meth)
+    # This code originaly used inspect.getargspec but was
+    # converted to use inspect.signature.
+    #
+    sig = inspect.signature(meth)
 
-    if argspec is None:
-        # is this the best way to emulate the Python 2.7 version?
-        def tostr(p):
-            if p.kind == p.VAR_KEYWORD:
-                return "**{}".format(p.name)
-            elif p.kind == p.VAR_POSITIONAL:
-                return "*{}".format(p.name)
-            else:
-                return p.name
+    def tostr(p):
+        if p.kind == p.VAR_KEYWORD:
+            return "**{}".format(p.name)
+        elif p.kind == p.VAR_POSITIONAL:
+            return "*{}".format(p.name)
+        else:
+            return p.name
 
-        argspec = ",".join([tostr(p) for p in sig.parameters.values()])
-        argspec = "({})".format(argspec)
-
-    else:
-        argspec = inspect.getargspec(meth)
-        argspec[0].pop(0)
-        argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
+    argspec = ",".join([tostr(p) for p in sig.parameters.values()])
+    argspec = "({})".format(argspec)
 
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
@@ -1196,19 +1188,10 @@ def get_keyword_names(func, skip=0):
 
     """
 
-    try:
-        # Python 3+: (it appears that getargspec is not being
-        # removed in Python 3.6, but this should stop the warnings
-        # from earlier versions)
-        sig = inspect.signature(func)
-    except AttributeError:
-        # Python 2.7
-        argspec = inspect.getargspec(func)
-        if argspec[3] is None:
-            return []
-        first = len(argspec[0]) - len(argspec[3])
-        return argspec[0][first + skip:]
-
+    # This used to use getargspec but was changed to use inspect
+    # since the former was removed briefly (circa Python 3.6).
+    #
+    sig = inspect.signature(func)
     kwargs = [p.name
               for p in sig.parameters.values()
               if p.kind == p.POSITIONAL_OR_KEYWORD and
@@ -1239,19 +1222,10 @@ def get_keyword_defaults(func, skip=0):
 
     """
 
-    try:
-        # Python 3+: (it appears that getargspec is not being
-        # removed in Python 3.6, but this should stop the warnings
-        # from earlier versions)
-        sig = inspect.signature(func)
-    except AttributeError:
-        # Python 2.7
-        argspec = inspect.getargspec(func)
-        if argspec[3] is None:
-            return {}
-        first = len(argspec[0]) - len(argspec[3])
-        return dict(zip(argspec[0][first + skip:], argspec[3][skip:]))
-
+    # This used to use getargspec but was changed to use inspect
+    # since the former was removed briefly (circa Python 3.6).
+    #
+    sig = inspect.signature(func)
     kwargs = [(p.name, p.default)
               for p in sig.parameters.values()
               if p.kind == p.POSITIONAL_OR_KEYWORD and
@@ -1280,25 +1254,10 @@ def get_num_args(func):
 
     """
 
-    try:
-        # Python 3+: (it appears that getargspec is not being
-        # removed in Python 3.6, but this should stop the warnings
-        # from earlier versions)
-        sig = inspect.signature(func)
-    except AttributeError:
-        # Python 2.7
-        argspec = inspect.getargspec(func)
-        num_args = 0
-        num_kargs = 0
-
-        if len(argspec[0]) != 0:
-            num_args = len(argspec[0])
-
-        if argspec[3] is not None:
-            num_kargs = len(argspec[3])
-
-        return (num_args, (num_args - num_kargs), num_kargs)
-
+    # This used to use getargspec but was changed to use inspect
+    # since the former was removed briefly (circa Python 3.6).
+    #
+    sig = inspect.signature(func)
     posargs = [True
                for p in sig.parameters.values()
                if p.kind == p.POSITIONAL_OR_KEYWORD and
