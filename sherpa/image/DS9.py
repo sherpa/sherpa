@@ -237,26 +237,6 @@ def setup(doRaise=True, debug=False):
         if doRaise:
             raise RuntimeErr('badwin', _ex)
 
-    elif sys.version_info < (3, 2):
-        class _Popen(subprocess.Popen):
-            # Add in the necessary methods so it can be used as a
-            # context manager (for Python 3.1 and earlier).
-            #
-            # See https://stackoverflow.com/a/30421047
-            #
-            def __enter__(self):
-                return self
-
-            def __exit__(self, type, value, traceback):
-                if self.stdout:
-                    self.stdout.close()
-                if self.stderr:
-                    self.stderr.close()
-                if self.stdin:
-                    self.stdin.close()
-                # Wait for the process to terminate, to avoid zombies.
-                self.wait()
-
     else:
         _Popen = subprocess.Popen
 
