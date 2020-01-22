@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019
+#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -543,6 +543,7 @@ class ArithmeticModel(Model):
     def startup(self, cache):
         self._queue = ['']
         self._cache = {}
+        self._use_caching = cache
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)
             frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)

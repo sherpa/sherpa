@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2012, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +19,13 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import numpy as np
+
 from sherpa.utils.testing import SherpaTestCase, requires_data
+from sherpa.data import Data1D
+from sherpa.fit import Fit
+from sherpa.models import ArithmeticModel
+from sherpa.stats import LeastSq
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
 from sherpa.models.parameter import hugeval
@@ -519,3 +526,38 @@ def test_user_model1d_fit():
     #
     assert mdl.slope.val == fres.parvals[0]
     assert mdl.intercept.val == fres.parvals[1]
+
+
+class MyCacheTestModel(ArithmeticModel):
+
+    def calc(self, par, x):
+        A = par[0]
+        mylambda = par[1]
+        b = par[2]
+        fvec = A * np.exp( - mylambda * x ) + b
+        if self.counter == 0:
+            assert True == self._use_caching
+        else:
+            assert False == self._use_caching
+        self.counter += 1
+        return fvec
+
+    def __init__(self, name='myexp'):
+        self.A = Parameter(name, 'A', 1)
+        self.mylambda = Parameter(name, 'mylambda', 2)
+        self.b = Parameter(name, 'b', 3)
+        self.counter = 0
+        ArithmeticModel.__init__(self, name, (self.A, self.mylambda, self.b))
+
+@pytest.mark.usefixtures("clean_ui")
+def test_cache():
+    """To make sure that the runtime fit(cache=???) works"""
+
+    x = np.array([1.0, 2.0, 3.0])
+    model = MyCacheTestModel()
+    par = np.array([1.1, 2.0, 3.0])
+    y = model.calc(par, x)
+
+    data = Data1D('tmp', x, y)
+    fit = Fit(data, model, LeastSq())
+    fit.fit(cache=False)
