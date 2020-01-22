@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2006-2010, 2016, 2017, 2018, 2019
+#  Copyright (C) 2006-2010, 2016, 2017, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -351,15 +351,10 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT) as p:
         try:
-            # Python 2 vs 3 requires some complexity here.
-            try:  # Python 2 bytes (which are actually strings)
-                unicode(data, "ascii")  # unicode does not exist in Python 3
+            try:
                 data = bytearray(data, "UTF-8")
             except:
-                try:  # Python 3 with data passed as string.
-                    data = bytearray(data, "UTF-8")
-                except:  # data is provided as bytes (in Python 3) or is null, so it does not need to be converted.
-                    pass
+                pass
 
             if data:
                 p.stdin.write(data)
