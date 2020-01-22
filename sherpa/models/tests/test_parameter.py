@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -182,9 +183,6 @@ class test_composite_parameter(SherpaTestCase):
         ops = [operator.add, operator.sub, operator.mul,
                operator.floordiv, operator.truediv, operator.mod,
                operator.pow]
-
-        if hasattr(operator, 'div'):  # Python 2
-            ops.append(operator.div)
 
         for op in ops:
             for p in (op(self.p, self.p2.val), op(self.p.val, self.p2),
