@@ -685,14 +685,34 @@ def test_query_missing_keyword(ds_setup, ds_datadir):
     datadir = ds_datadir
     stkname = '@' + '/'.join((datadir, 'pha.lis'))
 
+    # Note: since there is a conversion between float to string,
+    # there's a possibility this check may fail on some systems
+    #
+    key1 = 'EXPOSUR2'
+    val1 = '50441.752296469'
+    key2 = 'EXPOSUR7'
+    val2 = '21860.439777374'
+
     datastack.load_pha(stkname)
-    with pytest.raises(KeyError):
-        datastack.query_by_header_keyword('MISSKEY', 'ACIS')
+    f = datastack.query_by_header_keyword('MISSKEY', 'ACIS')
+    assert f == []
+
+    f = datastack.query_by_header_keyword(key1, val1)
+    assert f == [1]
+
+    f = datastack.query_by_header_keyword(key2, val2)
+    assert f == [2]
 
     ds = datastack.DataStack()
     ds.load_pha(stkname)
-    with pytest.raises(KeyError):
-        ds.query_by_header_keyword('MISSKEY', 'ACIS')
+    f = ds.query_by_header_keyword('MISSKEY', 'ACIS')
+    assert f == []
+
+    f = ds.query_by_header_keyword(key1, val1)
+    assert f == [3]
+
+    f = ds.query_by_header_keyword(key2, val2)
+    assert f == [4]
 
 
 def test_default_instantiation(ds_setup):
