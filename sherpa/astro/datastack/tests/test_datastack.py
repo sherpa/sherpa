@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015, 2016, 2018, 2019
+#  Copyright (C) 2014, 2015, 2016, 2018, 2019, 2020
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -649,8 +649,8 @@ def test_pha_case_6(ds_setup, ds_datadir):
 def test_query_case_7(ds_setup, ds_datadir):
 
     datadir = ds_datadir
-    datastack.load_pha('@' +
-                       '/'.join((datadir, 'pha.lis')))
+    stkname = '@' + '/'.join((datadir, 'pha.lis'))
+    datastack.load_pha(stkname)
 
     f = datastack.query_by_header_keyword('INSTRUME', 'ACIS')
 
@@ -662,7 +662,7 @@ def test_query_case_7(ds_setup, ds_datadir):
 
     ds = datastack.DataStack()
 
-    ds.load_pha('@' + '/'.join((datadir, 'pha.lis')))
+    ds.load_pha(stkname)
 
     f = ds.query_by_obsid('4938')
 
@@ -671,6 +671,28 @@ def test_query_case_7(ds_setup, ds_datadir):
     f = datastack.query_by_obsid(ds, '7867')
 
     assert f == [4]
+
+
+@requires_fits
+@requires_stk
+def test_query_missing_keyword(ds_setup, ds_datadir):
+    """What happens when the keyword does not exist?
+
+    This only checks a case where the keyword is missing in
+    both files.
+    """
+
+    datadir = ds_datadir
+    stkname = '@' + '/'.join((datadir, 'pha.lis'))
+
+    datastack.load_pha(stkname)
+    with pytest.raises(KeyError):
+        datastack.query_by_header_keyword('MISSKEY', 'ACIS')
+
+    ds = datastack.DataStack()
+    ds.load_pha(stkname)
+    with pytest.raises(KeyError):
+        ds.query_by_header_keyword('MISSKEY', 'ACIS')
 
 
 def test_default_instantiation(ds_setup):
