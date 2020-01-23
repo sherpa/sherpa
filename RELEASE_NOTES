@@ -1,5 +1,165 @@
 Release Notes
 
+Sherpa 4.12.0
+=============
+
+This release of Sherpa is based on the CIAO 4.12 release and includes additional
+ bug fixes and improvements.
+
+This version of Sherpa has been tested with Python 3.5, 3.6, and 3.7. 
+
+This release also provides support for XSPEC 12.10.1 (patch 'a' or later) in
+ addition to versions 12.10.0 (included in CIAO) and version 12.9.1.
+
+Details
+-------
+
+Documentation and infrastructure fixes are not shown.
+
+#388 - Address indexing DeprecationWarning/IndexError from NumPy for PHA data with filter + ignore_bad (fix #361)
+
+#602 - Reduce integration tol
+    Changed integration routine tolerance from double epsilon to float epsilon
+    since opt routines hove tolerance of ~ 1.0e-7
+
+#606 - stop using numpy.typeNA which is now deprecated
+    A numpy deprecation warning was fixed by removing the usage of typeNA, which
+    was not documented and will be removed in a future release of numpy. The
+    print_fields function has been changed to include a default mapping using
+    the current typeNA implementation.
+
+#608 - update ciao default plotter to matplotlib
+    The default Sherpa plotting package has been changed to matplotlib for 
+    CIAO users as well (it had been the default for standalone users for
+    several years). The update will be applied to new users when the 
+    `sherpa` command is run. Users of previous versions would need to 
+    edit/regenerate the file.
+
+#616 - enable run-time-option to test cache (default=True)
+    Capability to allow the user to turn off caching at runtime for testing 
+    purpose.
+
+#622 - Do not create warnings about error bars in plots if no error bars are to be shown (fix #621)
+    Remove the The displayed errorbars have been supplied with the data or 
+    calculated using chi2xspecvar... warnings that appear for data, 
+    residual/ratio, and fit plots when the user has explicitly turned off 
+    the display of errorbars (by setting the yerrorbars plot-preference 
+    setting to False).
+
+#626 - add plot_fit_ratio and plot_bkg_fit_ratio functions
+    Add the plot_fit_ratio function to the sherpa.ui layer (to match 
+    plot_fit_resid and plot_fit_delchi) and plot_bkg_fit_ratio to the
+    sherpa.astro.ui layer. Added tests for a number of plot types.
+
+#640 - fix 'tuple index out of range' error in the fit.est_errors method
+    Sherpa's Confidence class is confused if a parameter is frozen then 
+    thawed after a fit resulting with an exception of the form: IndexError:
+    tuple index out of range. The error does not show up if conf is called
+    from the ui level
+
+#647 - fix numpy hist warnings
+    When plotting a PDF Sherpa now calls numpy.histogram with density=True |
+    False rather than normed=True|False. There is no change visible to the
+    user other than a warning that will not be issued anymore. normed=True 
+    was broken for non uniform bins, but our code always produces uniform
+    bins, so we should never hit the problematic case.
+
+#658 - Handle files with MJD_OBS or MJD-OBS keywords (datastack module)
+    The sherpa.astro.datastack module has been updated to deal with files 
+    that use the MJD-OBS keyword instead of MJD_OBS. This is only used by 
+    the show_stack routine, which prints out several keywords from each 
+    file in the stack.
+
+#665 - Remove python 2.7 support (fix #498)
+    Remove support for Python 2.7 from Sherpa. The metadata used by pip now
+    requires python 3.5 or higher (but not version 4),
+
+#667 - improve matplotlib plot_fit plots (order of data and model)
+    Changes to Zorder of plot objects drawn by matplotlib to be more readible
+
+#674 - Add link/unlink parameter tests
+    This PR adds three tests for sherpa's un/link commands.
+
+#677 - XSPEC: build against 12.10.1m by removing support for models
+    Remove support for XSrelline, XSrelline_lp, and XSrelline_lp_ext models.
+    These were added in 12.10.1 but removed in 12.10.1m. It does not seem
+    worth supporting just those versions where they were available.
+
+#680 - Remove the unused parameter in sherpa.astro.optical.LogEmission model (fix #219)
+    Remove the unused parameter in the sherpa.astro.optical.LogEmission 
+    model. The LogEmission model only has four parameters (fwhm, pos, flux
+    and skew) consistent within the calc method. The hidden parameter limit
+    and it doc were removed.
+
+#682 - jointplot now respects the ratio argument (top plot is larger) with matplotlib backend
+    The matplotlib back end now makes the main (top) plot taller than the 
+    secondary (bottom) plot when using the sherpa.ui.plot_fit_resid and 
+    sherpa.ui.plot_fit_delchi routines (this also holds for the 
+    sherpa.astro.ui variants).
+
+#683 - Remove chips from the documentation
+    Remove mention of ChIPS from the documentation (both on read the docs 
+    and in the sherpa.astro.ui and sherpa.ui modules), replacing with 
+    matplotlib where appropriate.
+
+#684 - Add default config options
+    Whenever an option is read from the configuration file (~/.sherpa.rc)
+    provide a default option in case the configuration file is missing
+    (or is missing this option).
+
+#685 - raise ModelErr when model using Data1DInt have overlapping bins
+    Adds a check to regrid make sure the integrated bins do not overlap. 
+    The PR is a fix for issue #569
+
+#688 - Improve documentation and testing for get_source_plot when sent lo/hi arguments
+    Improve the documentation for the sherpa.astro.ui.get_source_plot routine,
+    describing how touse the result when the lo or hi arguments are sent.
+
+#691 - add warning when chips is selected but cannot be imported (rebase of #648)
+    Sherpa now warns the user if Chips is selected as a backend but it is
+    not available in the installation
+
+#692 - Allow users to override plot preferences when creating a plot
+    Change to allow kwargs to be specified to change plot preferences at 
+    creation time
+
+#698 - Add warnings in documentation about masked arrays
+    Updates docstring to indicate that sherpa doesn't support numpy masked
+    arrays
+
+#701 - a fix for /data/lenin2/Test/CIAO4.11/SherpaRegressionBeta1/45   
+    Enables the testers to turn on (or off) caching at runtime to test #444
+
+#704 - change calc_ftest from delta dof to dof (similar to XSPEC) - fix for #641
+    Update to make sherpa's calc_ftest provide same results as XSPEC's 
+    ftest (fix to #641)
+
+#705 - modelCacher1d needs to have a couple of deep instead of shallow copy()
+    Update to make deep copy of cached function values (fix to #673)
+
+#710 - Add warning about masked array to sherpa.astro.ui.load_arrays
+    Updates docstring to contain warning consistent with #698
+
+#712 Minor typo in docs
+    Corrects a typo "is is" in the documentation.
+
+#716 Fix for plot_cdf: plot() got an unexpected keyword argument 'clearwindpw'
+    Recent changes broke plot_cdf()due to a typo 'clearwindpw'. This update
+    corrects the typo.
+
+#721 Docs: update installation notes for conda environment
+    Add a warning about the need to set PYTHON_LDFLAGS to ' ' on macOS when
+    building within an anaconda environment. This is a documentation-only 
+    change.
+
+#725 convert a list to np.array to avoid warning messages 
+    Fixes issue #723 (a lot of warnings while running 'resample_data()' in 
+    CIAO4.12 Sherpa)
+
+#728 a fix cause using load_multi_arfs causes caching error
+    Fixes issue #717 (unable to fit if script uses load_multi_arfs/rmfs)
+
+
 Sherpa 4.11.1
 =============
 
