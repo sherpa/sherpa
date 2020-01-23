@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 #
-# Copyright (C) 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2019, 2020
+#               Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,7 +29,6 @@ name = plotter.name
 
 backend_map = {
     'pylab': 'plot_matplotlib',
-    'chips': 'plot_chips',
     'dummy': 'plot_dummy'
 }
 
