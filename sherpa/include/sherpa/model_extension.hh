@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016, 2019 Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2019, 2020 Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -429,8 +429,6 @@ namespace sherpa { namespace models {
 
 }  }  /* namespace models, namespace sherpa */
 
-#if PY_MAJOR_VERSION >= 3
-
 #define SHERPAMODELMOD(name, fctlist) \
 static struct PyModuleDef module##name = {\
 PyModuleDef_HEAD_INIT, \
@@ -446,21 +444,6 @@ PyMODINIT_FUNC PyInit_##name(void) { \
     return NULL; \
   return PyModule_Create(&module##name); \
 }
-
-#else
-
-#define SHERPAMODELMOD(name, fctlist) \
-PyMODINIT_FUNC \
-init##name(void) \
-{ \
-  import_array(); \
-  if ( -1 == import_integration() ) \
-    return; \
-  Py_InitModule( (char*)#name, fctlist );	\
-}
-
-#endif
-
 
 // Allow this to be customized on a per-file basis
 

@@ -87,11 +87,7 @@ static void **Integration_API;
 #define integrate_Nd ((_integrate_Nd)Integration_API[1])
 #define py_integrate_1d ((_py_integrate_1d)Integration_API[2])
 
-#ifdef PY3
 #define PTR( obj ) PyCapsule_GetPointer( obj, NULL )
-#else
-#define PTR( obj ) PyCObject_AsVoidPtr( obj )
-#endif
 
 static int
 import_integration(void)
