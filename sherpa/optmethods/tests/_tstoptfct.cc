@@ -37,8 +37,7 @@ static PyObject *bard( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 15 * npar / 3;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -48,16 +47,14 @@ static PyObject *bard( PyObject *self, PyObject *args ) {
     tstoptfct::Bard<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				   NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for bard function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for bard function" );
       return NULL;
     }
   }
   {
     tstoptfct::Bard<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Bard Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Bard Fct function" );
       return NULL;
     }
   }
@@ -77,8 +74,7 @@ static PyObject *beale( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 3 * npar / 2;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -88,16 +84,14 @@ static PyObject *beale( PyObject *self, PyObject *args ) {
     tstoptfct::Beale<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				    NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for beale function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for beale function" );
       return NULL;
     }
   }
   {
     tstoptfct::Beale<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Beale Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Beale Fct function" );
       return NULL;
     }
   }
@@ -116,8 +110,7 @@ static PyObject *biggs( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 6;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -127,16 +120,14 @@ static PyObject *biggs( PyObject *self, PyObject *args ) {
     tstoptfct::Biggs<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				    NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for biggs function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for biggs function" );
       return NULL;
     }
   }
   {
     tstoptfct::Biggs<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Biggs Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Biggs Fct function" );
       return NULL;
     }
   }
@@ -156,8 +147,7 @@ static PyObject *box3d( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 6;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -167,16 +157,14 @@ static PyObject *box3d( PyObject *self, PyObject *args ) {
     tstoptfct::Box3d<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				    NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for box3d function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for box3d function" );
       return NULL;
     }
   }
   {
     tstoptfct::Box3d<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Box3d Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Box3d Fct function" );
       return NULL;
     }
   }
@@ -195,8 +183,7 @@ static PyObject *broyden_banded( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -206,16 +193,14 @@ static PyObject *broyden_banded( PyObject *self, PyObject *args ) {
     tstoptfct::BroydenBanded<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					    ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for broyden_banded function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for broyden_banded function" );
       return NULL;
     }
   }
   {
     tstoptfct::BroydenBanded<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for BroydenBanded Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for BroydenBanded Fct function" );
       return NULL;
     }
   }
@@ -235,8 +220,7 @@ static PyObject *broyden_tridiagonal( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -246,8 +230,7 @@ static PyObject *broyden_tridiagonal( PyObject *self, PyObject *args ) {
     tstoptfct::BroydenTridiagonal<double,void*>( mfct, npar, &xpar[0],
 						 &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for broyden_tridiagonal function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for broyden_tridiagonal function" );
       return NULL;
     }
   }
@@ -255,8 +238,7 @@ static PyObject *broyden_tridiagonal( PyObject *self, PyObject *args ) {
     tstoptfct::BroydenTridiagonal<double,void*>( npar, &xpar[0], fval, ierr,
 						 NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for BroydenTridiagonal Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for BroydenTridiagonal Fct function" );
       return NULL;
     }
   }
@@ -275,8 +257,7 @@ static PyObject *brown_almost_linear( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -286,8 +267,7 @@ static PyObject *brown_almost_linear( PyObject *self, PyObject *args ) {
     tstoptfct::BrownAlmostLinear<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 						ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for brown_almost_linear function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for brown_almost_linear function" );
       return NULL;
     }
   }
@@ -295,8 +275,7 @@ static PyObject *brown_almost_linear( PyObject *self, PyObject *args ) {
     tstoptfct::BrownAlmostLinear<double,void*>( npar, &xpar[0], fval, ierr,
 						NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for BrownAlmostLinear Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for BrownAlmostLinear Fct function" );
       return NULL;
     }
   }
@@ -316,8 +295,7 @@ static PyObject *brown_badly_scaled( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar + npar / 2;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -327,8 +305,7 @@ static PyObject *brown_badly_scaled( PyObject *self, PyObject *args ) {
     tstoptfct::BrownBadlyScaled<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					       ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for brown_badly_scaled function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for brown_badly_scaled function" );
       return NULL;
     }
   }
@@ -336,8 +313,7 @@ static PyObject *brown_badly_scaled( PyObject *self, PyObject *args ) {
     tstoptfct::BrownBadlyScaled<double,void*>( npar, &xpar[0], fval, ierr,
 					       NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Brownbadlyscaled Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Brownbadlyscaled Fct function" );
       return NULL;
     }
   }
@@ -356,8 +332,7 @@ static PyObject *brown_dennis( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 20;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -367,16 +342,14 @@ static PyObject *brown_dennis( PyObject *self, PyObject *args ) {
     tstoptfct::BrownDennis<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 					  NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for brown_dennis function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for brown_dennis function" );
       return NULL;
     }
   }
   {
     tstoptfct::BrownDennis<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for brown_dennis Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for brown_dennis Fct function" );
       return NULL;
     }
   }
@@ -396,8 +369,7 @@ static PyObject *chebyquad( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -407,16 +379,14 @@ static PyObject *chebyquad( PyObject *self, PyObject *args ) {
     tstoptfct::Chebyquad<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 					NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for chebyquad function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for chebyquad function" );
       return NULL;
     }
   }
   {
     tstoptfct::Chebyquad<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for chebyquad Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for chebyquad Fct function" );
       return NULL;
     }
   }
@@ -436,8 +406,7 @@ static PyObject *discrete_boundary( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -446,8 +415,7 @@ static PyObject *discrete_boundary( PyObject *self, PyObject *args ) {
   {
     tstoptfct::DiscreteBoundary<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for discrete_boundary function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for discrete_boundary function" );
       return NULL;
     }
   }
@@ -455,8 +423,7 @@ static PyObject *discrete_boundary( PyObject *self, PyObject *args ) {
     tstoptfct::DiscreteBoundary<double,void*>( npar, &xpar[0], fval, ierr,
 					       NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for discrete_boundary_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for discrete_boundary_fct function" );
       return NULL;
     }
   }
@@ -476,8 +443,7 @@ static PyObject *discrete_integral( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -487,8 +453,7 @@ static PyObject *discrete_integral( PyObject *self, PyObject *args ) {
     tstoptfct::DiscreteIntegral<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					       ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for discrete_integral function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for discrete_integral function" );
       return NULL;
     }
   }
@@ -496,8 +461,7 @@ static PyObject *discrete_integral( PyObject *self, PyObject *args ) {
     tstoptfct::DiscreteIntegral<double,void*>( npar, &xpar[0], fval, ierr,
 					       NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for discrete_integral_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for discrete_integral_fct function" );
       return NULL;
     }
   }
@@ -517,8 +481,7 @@ static PyObject *freudenstein_roth( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -527,16 +490,14 @@ static PyObject *freudenstein_roth( PyObject *self, PyObject *args ) {
   {
     tstoptfct::FreudensteinRoth<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for freudenstein_roth function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for freudenstein_roth function" );
       return NULL;
     }
   }
   {
     tstoptfct::FreudensteinRoth<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for freudenstein_roth_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for freudenstein_roth_fct function" );
       return NULL;
     }
   }
@@ -556,8 +517,7 @@ static PyObject *gaussian( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 15;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -567,16 +527,14 @@ static PyObject *gaussian( PyObject *self, PyObject *args ) {
     tstoptfct::Gaussian<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				       NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for gaussian function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for gaussian function" );
       return NULL;
     }
   }
   {
     tstoptfct::Gaussian<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Gaussian Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Gaussian Fct function" );
       return NULL;
     }
   }
@@ -596,8 +554,7 @@ static PyObject *gulf_research_development( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -607,8 +564,7 @@ static PyObject *gulf_research_development( PyObject *self, PyObject *args ) {
     tstoptfct::GulfResearchDevelopment<double,void*>( mfct, npar, &xpar[0],
 						      &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for gulf_research_development function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for gulf_research_development function" );
       return NULL;
     }
   }
@@ -616,8 +572,7 @@ static PyObject *gulf_research_development( PyObject *self, PyObject *args ) {
     tstoptfct::GulfResearchDevelopment<double,void*>( npar, &xpar[0], fval,
 						      ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Gulf_Research_Development Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Gulf_Research_Development Fct function" );
       return NULL;
     }
   }
@@ -636,8 +591,7 @@ static PyObject *helical_valley( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -647,16 +601,14 @@ static PyObject *helical_valley( PyObject *self, PyObject *args ) {
     tstoptfct::HelicalValley<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					    ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for helical_valley function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for helical_valley function" );
       return NULL;
     }
   }
   {
     tstoptfct::HelicalValley<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for helical_valley_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for helical_valley_fct function" );
       return NULL;
     }
   }
@@ -676,8 +628,7 @@ static PyObject *jennrich_sampson( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 10 * npar / 2;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -687,8 +638,7 @@ static PyObject *jennrich_sampson( PyObject *self, PyObject *args ) {
     tstoptfct::JennrichSampson<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					      ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for jennrich_sampson function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for jennrich_sampson function" );
       return NULL;
     }
   }
@@ -696,8 +646,7 @@ static PyObject *jennrich_sampson( PyObject *self, PyObject *args ) {
     tstoptfct::JennrichSampson<double,void*>( npar, &xpar[0], fval, ierr,
 					      NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for jennrich_sampson_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for jennrich_sampson_fct function" );
       return NULL;
     }
   }
@@ -717,8 +666,7 @@ static PyObject *kowalik_osborne( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 11;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -728,8 +676,7 @@ static PyObject *kowalik_osborne( PyObject *self, PyObject *args ) {
     tstoptfct::KowalikOsborne<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					     ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for kowalikosborne function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for kowalikosborne function" );
       return NULL;
     }
   }
@@ -737,8 +684,7 @@ static PyObject *kowalik_osborne( PyObject *self, PyObject *args ) {
     tstoptfct::KowalikOsborne<double,void*>( npar, &xpar[0], fval, ierr,
 					     NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for kowalikosborne_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for kowalikosborne_fct function" );
       return NULL;
     }
   }
@@ -758,8 +704,7 @@ static PyObject *linear_fullrank( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -769,8 +714,7 @@ static PyObject *linear_fullrank( PyObject *self, PyObject *args ) {
     tstoptfct::LinearFullRank<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					     ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for linear_fullrank function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank function" );
       return NULL;
     }
   }
@@ -778,8 +722,7 @@ static PyObject *linear_fullrank( PyObject *self, PyObject *args ) {
     tstoptfct::LinearFullRank<double,void*>( npar, &xpar[0], fval, ierr,
 					     NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for linear_fullrank1_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank1_fct function" );
       return NULL;
     }
   }
@@ -799,8 +742,7 @@ static PyObject *linear_fullrank1( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -810,8 +752,7 @@ static PyObject *linear_fullrank1( PyObject *self, PyObject *args ) {
     tstoptfct::LinearFullRank1<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					      ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for linear_fullrank1 function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank1 function" );
       return NULL;
     }
   }
@@ -819,8 +760,7 @@ static PyObject *linear_fullrank1( PyObject *self, PyObject *args ) {
     tstoptfct::LinearFullRank1<double,void*>( npar, &xpar[0], fval, ierr,
 					      NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for linear_fullrank_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank_fct function" );
       return NULL;
     }
   }
@@ -840,8 +780,7 @@ static PyObject *linear_fullrank0col0rows( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -850,8 +789,7 @@ static PyObject *linear_fullrank0col0rows( PyObject *self, PyObject *args ) {
   {
     tstoptfct::LinearFullRank0cols0rows<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for linear_fullrank0col0rows function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank0col0rows function" );
       return NULL;
     }
   }
@@ -859,8 +797,7 @@ static PyObject *linear_fullrank0col0rows( PyObject *self, PyObject *args ) {
     tstoptfct::LinearFullRank0cols0rows<double,void*>( npar, &xpar[0], fval,
 						       ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for linear_fullrank0col0rows_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank0col0rows_fct function" );
       return NULL;
     }
   }
@@ -880,8 +817,7 @@ static PyObject *meyer( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 16 * npar / 3;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -890,16 +826,14 @@ static PyObject *meyer( PyObject *self, PyObject *args ) {
   {
     tstoptfct::Meyer<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for meyer function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for meyer function" );
       return NULL;
     }
   }
   {
     tstoptfct::Meyer<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for meyer_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for meyer_fct function" );
       return NULL;
     }
   }
@@ -918,8 +852,7 @@ static PyObject *osborne1( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 33;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -928,16 +861,14 @@ static PyObject *osborne1( PyObject *self, PyObject *args ) {
   {
     tstoptfct::Osborne1<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for osborne1 function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for osborne1 function" );
       return NULL;
     }
   }
   {
     tstoptfct::Osborne1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for osborne1_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for osborne1_fct function" );
       return NULL;
     }
   }
@@ -957,8 +888,7 @@ static PyObject *osborne2( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 65;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -968,16 +898,14 @@ static PyObject *osborne2( PyObject *self, PyObject *args ) {
     tstoptfct::Osborne2<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				       NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for osborne2 function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for osborne2 function" );
       return NULL;
     }
   }
   {
     tstoptfct::Osborne2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for osborne2_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for osborne2_fct function" );
       return NULL;
     }
   }
@@ -997,8 +925,7 @@ static PyObject *osborne2( PyObject *self, PyObject *args ) {
    npy_intp npar = xpar.get_size( );
    npy_intp mfct = npar + 1;
    if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-     PyErr_Format( PyExc_ValueError,
-		   static_cast<const char*>( "Unable to create 'fvec'" ) );
+     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
      return NULL;
    }
    double fval;
@@ -1008,16 +935,14 @@ static PyObject *osborne2( PyObject *self, PyObject *args ) {
      tstoptfct::PenaltyI<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 					NULL );  
      if ( EXIT_SUCCESS != ierr ) {
-       PyErr_Format( PyExc_ValueError,
-		     static_cast<const char*>( "error returned for penaltyI function" ) );
+       PyErr_SetString( PyExc_ValueError, "error returned for penaltyI function" );
        return NULL;
      }
    }
    {
      tstoptfct::PenaltyI<double,void*>( npar, &xpar[0], fval, ierr, NULL );
      if ( EXIT_SUCCESS != ierr ) {
-       PyErr_Format( PyExc_ValueError,
-		     static_cast<const char*>( "error returned for penaltyI_fct function" ) );
+       PyErr_SetString( PyExc_ValueError, "error returned for penaltyI_fct function" );
        return NULL;
      }
    }
@@ -1037,8 +962,7 @@ static PyObject *penaltyII( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 65;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1048,16 +972,14 @@ static PyObject *penaltyII( PyObject *self, PyObject *args ) {
     tstoptfct::PenaltyII<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 					NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for penaltyII function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for penaltyII function" );
       return NULL;
     }
   }
   {
     tstoptfct::PenaltyII<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for penaltyII_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for penaltyII_fct function" );
       return NULL;
     }
   }
@@ -1077,8 +999,7 @@ static PyObject *powell_badly_scaled( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 2 * npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1088,8 +1009,7 @@ static PyObject *powell_badly_scaled( PyObject *self, PyObject *args ) {
     tstoptfct::PowellBadlyScaled<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 						ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for powell_badly_scaled function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for powell_badly_scaled function" );
       return NULL;
     }
   }
@@ -1097,8 +1017,7 @@ static PyObject *powell_badly_scaled( PyObject *self, PyObject *args ) {
     tstoptfct::PowellBadlyScaled<double,void*>( npar, &xpar[0], fval, ierr,
 						NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for powell_badly_scaled_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for powell_badly_scaled_fct function" );
       return NULL;
     }
   }
@@ -1118,8 +1037,7 @@ static PyObject *powell_singular( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1129,8 +1047,7 @@ static PyObject *powell_singular( PyObject *self, PyObject *args ) {
     tstoptfct::PowellSingular<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					     ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for powell_singular function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for powell_singular function" );
       return NULL;
     }
   }
@@ -1138,8 +1055,7 @@ static PyObject *powell_singular( PyObject *self, PyObject *args ) {
     tstoptfct::PowellSingular<double,void*>( npar, &xpar[0], fval, ierr,
 					     NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for powell_singular_fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for powell_singular_fct function" );
       return NULL;
     }
   }
@@ -1159,8 +1075,7 @@ static PyObject *rosenbrock( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1170,16 +1085,14 @@ static PyObject *rosenbrock( PyObject *self, PyObject *args ) {
     tstoptfct::Rosenbrock<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 					 NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for rosenbrock function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for rosenbrock function" );
       return NULL;
     }
   }
   {
     tstoptfct::Rosenbrock<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Rosenbrock Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Rosenbrock Fct function" );
       return NULL;
     }
   }
@@ -1199,8 +1112,7 @@ static PyObject *trigonometric( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1210,16 +1122,14 @@ static PyObject *trigonometric( PyObject *self, PyObject *args ) {
     tstoptfct::Trigonometric<double,void*>( mfct, npar, &xpar[0], &fvec[0],
 					    ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for trigonmetric function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for trigonmetric function" );
       return NULL;
     }
   }
   {
     tstoptfct::Trigonometric<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Trigonmetric Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Trigonmetric Fct function" );
       return NULL;
     }
   }
@@ -1238,8 +1148,7 @@ static PyObject *variably_dimensioned( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = npar + 2;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1249,16 +1158,14 @@ static PyObject *variably_dimensioned( PyObject *self, PyObject *args ) {
     tstoptfct::VariablyDimensioned<double,void*>( mfct, npar, &xpar[0],
 						  &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for varibly_dimensioned function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for varibly_dimensioned function" );
       return NULL;
     }
   }
   {
     tstoptfct::VariablyDimensioned<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for variably dimensioned Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for variably dimensioned Fct function" );
       return NULL;
     }
   }
@@ -1278,8 +1185,7 @@ static PyObject *watson( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 31;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1288,16 +1194,14 @@ static PyObject *watson( PyObject *self, PyObject *args ) {
   {
     tstoptfct::Watson<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for watson function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for watson function" );
       return NULL;
     }
   }
   {
     tstoptfct::Watson<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for watson Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for watson Fct function" );
       return NULL;
     }
   }
@@ -1317,8 +1221,7 @@ static PyObject *wood( PyObject *self, PyObject *args ) {
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 6;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'fvec'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
@@ -1328,16 +1231,14 @@ static PyObject *wood( PyObject *self, PyObject *args ) {
     tstoptfct::Wood<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
 				   NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for wood function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for wood function" );
       return NULL;
     }
   }
   {
     tstoptfct::Wood<double,void*>( npar, &xpar[0], fval, ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
-      PyErr_Format( PyExc_ValueError,
-		    static_cast<const char*>( "error returned for Wood Fct function" ) );
+      PyErr_SetString( PyExc_ValueError, "error returned for Wood Fct function" );
       return NULL;
     }
   }
@@ -1362,18 +1263,15 @@ static PyObject *init_optfcn( PyObject *self, PyObject *args ) {
   DoubleArray xpar, lo, hi;
   npy_intp my_npar = npar;
   if ( EXIT_SUCCESS != xpar.create( 1, &my_npar ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'xpar'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'xpar'" );
     return NULL;
   }
   if ( EXIT_SUCCESS != lo.create( 1, &my_npar ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'lo'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'lo'" );
     return NULL;
   }
   if ( EXIT_SUCCESS != hi.create( 1, &my_npar ) ) {
-    PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( "Unable to create 'hi'" ) );
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'hi'" );
     return NULL;
   }
 
@@ -1480,7 +1378,7 @@ static PyObject *init_optfcn( PyObject *self, PyObject *args ) {
   if ( xpar.get_size() != lo.get_size() ||
        xpar.get_size() != hi.get_size() ) {
     PyErr_Format( PyExc_ValueError,
-                  "init_optfcn: Incompatible array sizes "
+		  "init_optfcn: Incompatible array sizes "
 	          "xpar=%d, lo=%d, hi=%d\n",
 	          (int) xpar.get_size(), (int) lo.get_size(),
                   (int) hi.get_size() );
