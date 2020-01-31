@@ -779,7 +779,7 @@ class ReSampleData(NoNewAttributesAfterInit):
     Returns
     -------
     The class returns the best fit parameters for each realization.
-    
+
     See Also
     --------
     resample_data
@@ -805,7 +805,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
         return
-    
+
     def __call__(self, niter=1000, seed=None):
         orig_pars = self.model.thawedpars
         _level = _log.getEffectiveLevel()
@@ -817,11 +817,11 @@ class ReSampleData(NoNewAttributesAfterInit):
         finally:
             # set the model back to original state
             self.model.thawedpars = orig_pars
-            
+
             # set the logger back to previous level
             _log.setLevel(_level)
         return result
-            
+
     def call(self, niter, seed):
 
         pars = {}
@@ -850,7 +850,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         numpy.random.seed(seed)
         for j in range(niter):
             ry = []
-            for i in range(len(y_l)): 
+            for i in range(len(y_l)):
                 a = y_l[i]
                 b = y_h[i]
                 r = -1

@@ -200,7 +200,7 @@ class test_sim(SherpaTestCase):
 
 
 def test_zero_case():
-    """Check what happens when values can be near -1."""
+    """Check what happens when values can be near -1. See #740"""
 
     xs = np.arange(1, 6)
     ys = np.asarray([0.5, -0.5, 0.3, 0.2, -0.1])
