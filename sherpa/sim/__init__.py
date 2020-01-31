@@ -853,17 +853,43 @@ class ReSampleData(NoNewAttributesAfterInit):
             for i in range(len(y_l)):
                 a = y_l[i]
                 b = y_h[i]
-                r = -1
-                while r < a or r > b:
-                    sigma = b - y[i]
+                r = None
+
+                while r is None:
+
+                    # Flip between low or hi
+                    #  u = 0  pick low
+                    #  u = 1  pick high
+                    #
+                    # Switching to randint rather than random_sample
+                    # leads to different answers, so the tests fail,
+                    # so leave as is.
+                    #
+                    # u = numpy.random.randint(low=0, high=2)
+                    #
                     u = numpy.random.random_sample()
-                    if u < 0.5:
-                        sigma=y[i]-a
-                    r = numpy.random.normal(loc=y[i],scale=sigma,size=None)
-                    if u < 0.5 and r > y[i]:
-                        r = -1
-                    if u > 0.5 and r < y[i]:
-                        r = -1
+                    u = 0 if u < 0.5 else 1
+
+                    # Rather than dropping this value, we could
+                    # reflect it (ie multiply it by -1 if the sign
+                    # is wrong). Would this affect the statistical
+                    # properties?
+                    #
+                    dr = numpy.random.normal(loc=0, scale=1, size=None)
+                    if u == 0:
+                        if (dr > 0) or (dr < -1):
+                            continue
+
+                        sigma = y[i] - a
+
+                    else:
+                        if (dr < 0) or (dr > 1):
+                            continue
+
+                        sigma = b - y[i]
+
+                    r = y[i] + dr * sigma
+
                 ry.append(r)
 
             ry = numpy.asarray(ry)
