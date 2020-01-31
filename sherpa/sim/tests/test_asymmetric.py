@@ -20,11 +20,13 @@
 import numpy as np
 import warnings
 
+import pytest
+
 from sherpa.fit import Fit
 from sherpa.data import Data1DAsymmetricErrs
 from sherpa.optmethods import LevMar
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
-from sherpa.models import PowLaw1D
+from sherpa.models import Const1D, PowLaw1D
 from sherpa.stats import Chi2Gehrels
 from sherpa.estmethods import Covariance
 from sherpa.sim import ReSampleData
@@ -79,7 +81,7 @@ class test_sim(SherpaTestCase):
         self.stat = Chi2Gehrels()
         self.est = Covariance()
         self.gro_fname = self.make_path('gro.txt')
-        self.gro_delta_fname = self.make_path('gro_delta.txt')        
+        self.gro_delta_fname = self.make_path('gro_delta.txt')
         return
 
     def cmp(self, bench, results, tol=1.0e-3):
@@ -91,14 +93,14 @@ class test_sim(SherpaTestCase):
         self.assertEqualWithinTol(bench['parvals'], results.parvals, tol)
         parerrs = np.sqrt(results.extra_output['covar'].diagonal())
         self.assertEqualWithinTol(bench['parerrs'], parerrs, tol)
-        
+
     def fit_asymmetric_err(self, bench, data):
         model = PowLaw1D('p1')
         fit = Fit(data, model, self.stat, self.method, self.est)
         results = fit.fit()
         self.cmp(bench, results)
         return model
-    
+
     def test_gro_ascii(self):
         ui.load_ascii_with_errors(1, self.gro_fname, delta=False)
         data = ui.get_data(1)
@@ -106,7 +108,7 @@ class test_sim(SherpaTestCase):
 
     def test_gro_delta(self):
         ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        data = ui.get_data(1)        
+        data = ui.get_data(1)
         self.fit_asymmetric_err(self._results_bench_avg, data)
 
     def test_AsymmetricErrs_avg(self):
@@ -114,11 +116,11 @@ class test_sim(SherpaTestCase):
         tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
-        self.fit_asymmetric_err(self._results_bench_avg, data)        
+        self.fit_asymmetric_err(self._results_bench_avg, data)
 
     def rms(self, a, b):
         return np.sqrt(a * a + b * b)
-        
+
     def test_gro_ascii_rms(self):
         ui.load_ascii_with_errors(1, self.gro_fname, func=self.rms,
                                delta=False)
@@ -137,7 +139,7 @@ class test_sim(SherpaTestCase):
         tmp = ui.get_data(1)
         data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
                                     tmp.ehi, tmp.staterror, tmp.syserror)
-        self.fit_asymmetric_err(self._results_bench_rms, data)        
+        self.fit_asymmetric_err(self._results_bench_rms, data)
 
     def cmp_resample_data(self, bench, result, tol=1.0e-3):
         gamma = result['p1.gamma']
@@ -146,7 +148,7 @@ class test_sim(SherpaTestCase):
                                                    np.std(gamma),
                                                    np.average(ampl),
                                                    np.std(ampl)]), tol)
-        
+
     def resample_data(self, data, bench, results_bench, tol=1.0e-3):
         model = self.fit_asymmetric_err(results_bench, data)
         rd = ReSampleData(data, model)
@@ -154,7 +156,7 @@ class test_sim(SherpaTestCase):
         self.cmp_resample_data(bench, result)
         self.assertEqualWithinTol(results_bench['parvals'],
                                   model.thawedpars, tol)
-        
+
     def test_AsymmetricErrors_resample_avg(self):
         ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
         tmp = ui.get_data(1)
@@ -195,3 +197,29 @@ class test_sim(SherpaTestCase):
             warnings.simplefilter("always")
             ui.resample_data(1, 3)
             assert len(w) == 0
+
+
+def test_zero_case():
+    """Check what happens when values can be near -1."""
+
+    xs = np.arange(1, 6)
+    ys = np.asarray([0.5, -0.5, 0.3, 0.2, -0.1])
+    dyl = np.asarray([2, 2, 2, 2, 2])
+    dyh = np.asarray([2, 2, 2, 2, 2])
+
+    data = Data1DAsymmetricErrs('zero', xs, ys, dyl, dyh, dyh)
+    mdl = Const1D('flat')
+
+    f = Fit(data, mdl)
+
+    rd = ReSampleData(data, mdl)
+    res = rd.call(niter=10, seed=47)
+
+    # Technically this depends on random chance, but it is rather
+    # unlikely we'd get 10 -1 values here. Relax the -1 value and
+    # just ensure we have more than 1 unique value here (can probably
+    # assert nvs == 10 but technically we allow repeated values).
+    #
+    vs = np.unique(res['flat.c0'])
+    nvs = len(vs)
+    assert nvs > 1
