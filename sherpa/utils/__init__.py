@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -2192,12 +2192,12 @@ def get_fwhm(y, x, xhi=None):
     If there are multiple peaks of the same height then
     the first peak is used.
     """
-
-    half_max_val = y.max() / 2.0
-    x_max = x[y.argmax()]
-    for ii, val in enumerate(y[:y.argmax()]):
-        if val >= half_max_val:
-            return 2.0 * numpy.abs(x[ii] - x_max)
+    y_argmax = y.argmax()
+    half_max_val = y[y_argmax] / 2.0
+    x_max = x[y_argmax]
+    for ii, val in enumerate(y[y_argmax:]):
+        if val < half_max_val:
+            return 2.0 * ii
     return x_max
 
 
