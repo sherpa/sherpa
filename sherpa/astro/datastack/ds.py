@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 #
-# Copyright (C) 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -380,8 +380,11 @@ class DataStack():
         keyword : str
            The keyword to search for (it is looked for in the ``header``
            attribute of each data set, using a case-sensitive search).
+           Data sets are skipped if they do not have a header or the
+           keyword is missing.
         value
-           The value of the keyword.
+           The value of the keyword. Comparison to the header value is
+           done after converting both to a string.
 
         Returns
         -------
@@ -400,17 +403,21 @@ class DataStack():
         [1, 2]
 
         """
+
+        str_value = str(value)
         def func(dataset):
-            if hasattr(dataset, 'header'):
-                str_value = str(value)
-                try:  # Python 3
-                    header_value = str(dataset.header[keyword], "utf-8")
-                except TypeError:  # Python 2
-                    header_value = dataset.header[keyword]
-                if keyword in dataset.header.keys() and \
-                   header_value == str_value:
-                    return True
-            return False
+            try:
+                hdr = dataset.header
+            except AttributeError:
+                return False
+
+            try:
+                keyval = hdr[keyword]
+            except KeyError:
+                return False
+
+            return str(keyval) == str_value
+
         return self.query(func)
 
     def query_by_obsid(self, value):
