@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015, 2016, 2018, 2019
+#  Copyright (C) 2014, 2015, 2016, 2018, 2019, 2020
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -649,8 +649,8 @@ def test_pha_case_6(ds_setup, ds_datadir):
 def test_query_case_7(ds_setup, ds_datadir):
 
     datadir = ds_datadir
-    datastack.load_pha('@' +
-                       '/'.join((datadir, 'pha.lis')))
+    stkname = '@' + '/'.join((datadir, 'pha.lis'))
+    datastack.load_pha(stkname)
 
     f = datastack.query_by_header_keyword('INSTRUME', 'ACIS')
 
@@ -662,7 +662,7 @@ def test_query_case_7(ds_setup, ds_datadir):
 
     ds = datastack.DataStack()
 
-    ds.load_pha('@' + '/'.join((datadir, 'pha.lis')))
+    ds.load_pha(stkname)
 
     f = ds.query_by_obsid('4938')
 
@@ -670,6 +670,48 @@ def test_query_case_7(ds_setup, ds_datadir):
 
     f = datastack.query_by_obsid(ds, '7867')
 
+    assert f == [4]
+
+
+@requires_fits
+@requires_stk
+def test_query_missing_keyword(ds_setup, ds_datadir):
+    """What happens when the keyword does not exist?
+
+    This only checks a case where the keyword is missing in
+    both files.
+    """
+
+    datadir = ds_datadir
+    stkname = '@' + '/'.join((datadir, 'pha.lis'))
+
+    # Note: since there is a conversion between float to string,
+    # there's a possibility this check may fail on some systems
+    #
+    key1 = 'EXPOSUR2'
+    val1 = '50441.752296469'
+    key2 = 'EXPOSUR7'
+    val2 = '21860.439777374'
+
+    datastack.load_pha(stkname)
+    f = datastack.query_by_header_keyword('MISSKEY', 'ACIS')
+    assert f == []
+
+    f = datastack.query_by_header_keyword(key1, val1)
+    assert f == [1]
+
+    f = datastack.query_by_header_keyword(key2, val2)
+    assert f == [2]
+
+    ds = datastack.DataStack()
+    ds.load_pha(stkname)
+    f = ds.query_by_header_keyword('MISSKEY', 'ACIS')
+    assert f == []
+
+    f = ds.query_by_header_keyword(key1, val1)
+    assert f == [3]
+
+    f = ds.query_by_header_keyword(key2, val2)
     assert f == [4]
 
 
