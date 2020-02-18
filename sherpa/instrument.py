@@ -1,6 +1,7 @@
 from __future__ import division
 #
-#  Copyright (C) 2008, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2018, 2019, 2020
+#        Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -296,14 +297,20 @@ class PSFKernel(Kernel):
         # be centered on brightest pixel.
         brightPixel = list(numpy.where(kernel == kernel.max())).pop()
 
-        origin = None
         # if more than one pixel qualifies as brightest, such as const2D
         # use the middle of subkernel -- assumes the user provided center at
         # time of kernel extraction, so that should be middle of subkernel.
+        origin = None
         if (not numpy.isscalar(brightPixel)) and len(brightPixel) != 1:
             origin = set_origin(kshape)
         else:
-            origin = set_origin(kshape, brightPixel)
+            # brightPixel is a NumPy index (int64) which - as of NumPy 1.18
+            # and Python 3.8 - causes a TypeError with the message
+            # "only integer scalar arrays can be converted to a scalar index"
+            # to be thrown here if sent directly to set_origin. So
+            # we convert to a Python integer type.
+            #
+            origin = set_origin(kshape, int(brightPixel))
 
         if self.origin is None:
             self.origin = origin

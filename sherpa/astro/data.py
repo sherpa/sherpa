@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020
 #            Smithsonian Astrophysical Observatory
 #
 #
@@ -2597,7 +2597,7 @@ class DataIMG(Data2D):
     def get_logical(self):
         coord = self.coord
         x0, x1 = self.get_indep()
-        if coord is not 'logical':
+        if coord != 'logical':
             x0 = x0.copy()
             x1 = x1.copy()
             x0, x1 = getattr(self, '_' + coord + '_to_logical')(x0, x1)
@@ -2606,7 +2606,7 @@ class DataIMG(Data2D):
     def get_physical(self):
         coord = self.coord
         x0, x1 = self.get_indep()
-        if coord is not 'physical':
+        if coord != 'physical':
             x0 = x0.copy()
             x1 = x1.copy()
             x0, x1 = getattr(self, '_' + coord + '_to_physical')(x0, x1)
@@ -2615,7 +2615,7 @@ class DataIMG(Data2D):
     def get_world(self):
         coord = self.coord
         x0, x1 = self.get_indep()
-        if coord is not 'world':
+        if coord != 'world':
             x0 = x0.copy()
             x1 = x1.copy()
             x0, x1 = getattr(self, '_' + coord + '_to_world')(x0, x1)
@@ -2808,7 +2808,7 @@ class DataIMGInt(DataIMG):
     def get_logical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord is not 'logical':
+        if coord != 'logical':
             x0lo = x0lo.copy()
             x1lo = x1lo.copy()
             convert = getattr(self, '_' + coord + '_to_logical')
@@ -2823,7 +2823,7 @@ class DataIMGInt(DataIMG):
     def get_physical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord is not 'physical':
+        if coord != 'physical':
             x0lo = x0lo.copy()
             x1lo = x1lo.copy()
             convert = getattr(self, '_' + coord + '_to_physical')
@@ -2838,7 +2838,7 @@ class DataIMGInt(DataIMG):
     def get_world(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord is not 'world':
+        if coord != 'world':
             x0lo = x0lo.copy()
             x1lo = x1lo.copy()
             convert = getattr(self, '_' + coord + '_to_world')
