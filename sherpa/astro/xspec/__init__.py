@@ -953,7 +953,7 @@ class XSTableModel(XSModel):
         #
         
         assert all((param.min <= value <= param.max 
-            for value, param in zip(self.pars, p))), "model parameters outside bounds"
+            for param, value in zip(self.pars, p))), "model parameters outside bounds"
         
         if hasattr(_xspec, 'tabint'):
             tabtype = 'add' if self.addmodel else 'mul'
