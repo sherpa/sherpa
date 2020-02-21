@@ -951,6 +951,10 @@ class XSTableModel(XSModel):
         # logic could be in __init__, but that can be changed
         # at a later date.
         #
+        
+        assert all((param.min <= value <= param.max 
+            for value, param in zip(self.pars, p))), "model parameters outside bounds"
+        
         if hasattr(_xspec, 'tabint'):
             tabtype = 'add' if self.addmodel else 'mul'
             return _xspec.tabint(p,
