@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,12 +20,15 @@
 
 import operator
 from numpy import arange
+
+import pytest
+
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
     BinaryOpParameter, ConstantParameter, hugeval
 from sherpa.utils.err import ParameterErr
-from sherpa.models.basic import Gauss1D
+from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa import ui
 
 
@@ -218,3 +222,63 @@ class test_composite_parameter(SherpaTestCase):
     def test_link_unlink_val_ui(self):
         tst = test_parameter.TestParVal(4, 5)
         tst.tst_ui_val_link()
+
+
+def test_link_parameter_setting():
+    """See https://github.com/sherpa/sherpa/issues/742
+
+    See also test_link_parameter_evaluation.
+    """
+
+    mdl = PowLaw1D()
+    lmdl = Const1D()
+
+    # check we have the -10/10 range for the gamma
+    # (so that if this changes we know to change this test)
+    #
+    assert mdl.gamma.min == pytest.approx(-10)
+    assert mdl.gamma.max == pytest.approx(10)
+
+    # Just check we can link the parameter
+    lmdl.c0 = 2
+    mdl.gamma = lmdl.c0
+    assert mdl.gamma.val == pytest.approx(2)
+
+    lmdl.c0 = 3
+    assert mdl.gamma.val == pytest.approx(3)
+
+    # What happens when we set lmdl.c0 to a value outside
+    # the valid range for mdl?
+    #
+    # The current behavior is the bug; it is not clear
+    # yet when an error should be raised - probably
+    # when mdl.gamma.val is checked, and not when
+    # lmdl.c0 is set.
+    #
+    lmdl.c0 = 23
+    assert mdl.gamma.val == pytest.approx(23)
+
+    lmdl.c0 = -2
+    assert mdl.gamma.val == pytest.approx(-2)
+
+
+def test_link_parameter_evaluation():
+    """See also test_link_parameter_setting"""
+
+    # What happens when we try to evaluate a model whose
+    # parameter is out-of-range thanks to a link?
+    #
+    mdl = PowLaw1D()
+    lmdl = Const1D()
+
+    grid = arange(1, 5)
+
+    mdl.gamma = lmdl.c0
+    lmdl.c0 = 2
+
+    y2 = mdl(grid)
+    assert (y2 > 0).all()
+
+    lmdl.c0 = 12
+    y12 = mdl(grid)
+    assert (y12 > 0).all()
