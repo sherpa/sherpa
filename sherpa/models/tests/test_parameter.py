@@ -154,10 +154,10 @@ class test_parameter(SherpaTestCase):
     def test_link(self):
         self.p.link = None
         self.assertTrue(self.p.link is None)
-        self.assertNotEqual(self.p.val, 17.3)
-        self.afp.val = 17.3
+        self.assertNotEqual(self.p.val, 7.3)
+        self.afp.val = 7.3
         self.p.link = self.afp
-        self.assertEqual(self.p.val, 17.3)
+        self.assertEqual(self.p.val, 7.3)
         self.p.unlink()
         self.assertTrue(self.p.link is None)
         self.assertRaises(ParameterErr, setattr, self.afp, 'link', self.p)
@@ -250,13 +250,19 @@ def test_link_parameter_setting():
     # What happens when we set lmdl.c0 to a value outside
     # the valid range for mdl?
     #
-    # The current behavior is the bug; it is not clear
-    # yet when an error should be raised - probably
-    # when mdl.gamma.val is checked, and not when
-    # lmdl.c0 is set.
+    # The error is raised when we try to access the value
+    # of the parameter with the link, and *not* when we set
+    # the parameter that is linked to.
     #
     lmdl.c0 = 23
-    assert mdl.gamma.val == pytest.approx(23)
+    emsg = 'parameter powlaw1d.gamma has a maximum of 10'
+    with pytest.raises(ParameterErr, match=emsg):
+        mdl.gamma.val
+
+    lmdl.c0 = -23
+    emsg = 'parameter powlaw1d.gamma has a minimum of -10'
+    with pytest.raises(ParameterErr, match=emsg):
+        mdl.gamma.val
 
     lmdl.c0 = -2
     assert mdl.gamma.val == pytest.approx(-2)
@@ -280,5 +286,6 @@ def test_link_parameter_evaluation():
     assert (y2 > 0).all()
 
     lmdl.c0 = 12
-    y12 = mdl(grid)
-    assert (y12 > 0).all()
+    emsg = 'parameter powlaw1d.gamma has a maximum of 10'
+    with pytest.raises(ParameterErr, match=emsg):
+        mdl(grid)
