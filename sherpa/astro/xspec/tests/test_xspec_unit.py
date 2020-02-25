@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016-2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,7 +30,9 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.utils.err import ParameterErr
 
+from sherpa.models.basic import Const1D
 
 # It is hard to test many of the state routines, since it requires
 # a full understanding of how they are implemented; the simplest
@@ -90,7 +92,9 @@ def test_chatter_default():
 
     For some reason the chatter setting appears to default to 50,
     rather than 0. It is not at all clear why, so has been marked
-    as xfail.
+    as xfail. DJB now thinks that this is due to the Sherpa test
+    setup, which is designed to make the models be verbose in
+    case there's an error.
 
     """
 
@@ -876,3 +880,51 @@ def test_ismabs_parameter_name_clashes():
     for name in ["SiI", "SII", "siii"]:
         with pytest.raises(AttributeError):
             getattr(mdl, name)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_xstbl_link_parameter_evaluation(make_data_path):
+    """See also sherpa/models/test_parameter::test_link_parameter_setting
+
+    This is meant to replicate issue #742, where we want to ensure
+    that parameter limits are respected, otherwise it is likely that
+    the model evaluation will crash (since the table-model code will
+    likely be indexing into unalocated memory).
+
+    DJB has checked that this code causes a segfault on linux without
+    a fix for #742.
+    """
+
+    from sherpa.astro import xspec
+
+    path = make_data_path('xspec-tablemodel-RCS.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    # The tau parameter (first one) has a range of 1 to 10
+    # - safety check that this still holds, so we know
+    # that we are violating this limit when we set lmdl.c0
+    # to 20
+    #
+    assert tbl.tau.min == pytest.approx(1)
+    assert tbl.tau.max == pytest.approx(10)
+
+    lmdl = Const1D()
+
+    grid = np.arange(1, 5)
+
+    tbl.tau = lmdl.c0
+    lmdl.c0 = 2
+
+    # just a safety check that we can change the parameter via
+    # a link and run the model
+    assert tbl.tau.val == pytest.approx(2)
+    y2 = tbl(grid)
+    assert (y2[:-1] > 0).all()
+
+    # Test the fix for #742
+    lmdl.c0 = 20
+    emsg = 'parameter bar.tau has a maximum of 10'
+    with pytest.raises(ParameterErr, match=emsg):
+        tbl(grid)

@@ -269,7 +269,11 @@ def test_link_parameter_setting():
 
 
 def test_link_parameter_evaluation():
-    """See also test_link_parameter_setting"""
+    """See also test_link_parameter_setting
+
+    A version of this test, using an XSPEC table model, is found
+    in sherpa/astro/xspec/tests/test_xspec_unit::test_xstbl_link_parameter_evaluation
+    """
 
     # What happens when we try to evaluate a model whose
     # parameter is out-of-range thanks to a link?
