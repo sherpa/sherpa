@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,7 @@ these - or most of them - can be run even when there is no plot backend.
 
 from sherpa import ui
 
-# the chips plot tests mean that we can't test the plot instances
-# from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.plot import DataPlot, FitPlot, ModelPlot
 
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.testing import requires_plotting
@@ -100,15 +99,9 @@ def test_get_fit_plot(idval):
     else:
         f = ui.get_fit_plot(idval)
 
-    # Should we be checking exact class?
-    #
-    # No - because the mock_chips pytest routine redefines these
-    # classes and so makes the test fail (or at least that's my
-    # assumption).
-    #
-    # assert isinstance(f, FitPlot)
-    # assert isinstance(f.dataplot, DataPlot)
-    # assert isinstance(f.modelplot, ModelPlot)
+    assert isinstance(f, FitPlot)
+    assert isinstance(f.dataplot, DataPlot)
+    assert isinstance(f.modelplot, ModelPlot)
 
     dp = f.dataplot
     mp = f.modelplot

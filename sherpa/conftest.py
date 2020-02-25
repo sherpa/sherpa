@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,9 +26,6 @@ import re
 from numpy import VisibleDeprecationWarning
 
 from sherpa.utils.testing import SherpaTestCase
-
-import importlib
-from unittest import mock
 
 try:
     from astropy.io.fits.verify import VerifyWarning
@@ -283,65 +281,6 @@ def make_data_path(test_data_path):
         return os.path.join(test_data_path, arg)
 
     return wrapped
-
-
-@pytest.fixture
-def mock_chips(monkeypatch, tmpdir, request):
-    """
-    Fixture for tests mocking chips
-
-    Returns
-    -------
-    The tuple (backend, mock_chips)
-    """
-
-    # First, inject a mock chips module in the backend.
-    chips = mock.MagicMock()
-    monkeypatch.setitem(sys.modules, name="pychips", value=chips)
-
-    # figure out what IO module we can use
-    try:
-        import pycrates
-        io = "crates"
-    except ImportError:
-        io = "pyfits"  # Even if this is not available, config code will fall back to dummy
-
-    # Now, write a fake configuration file to a temporary location
-    config = tmpdir.mkdir("config").join("sherpa.rc")
-    config.write("""
-[options]
-plot_pkg : chips
-io_pkg : {}
-    """.format(io))
-
-    # Then, inject a function that returns the fake file
-    def get_config():
-        return str(config)
-    import sherpa
-    monkeypatch.setattr(sherpa, name="get_config", value=get_config)
-
-    # Force reload of sherpa modules that might have already read the configuration
-    from sherpa import plot
-    from sherpa.astro import plot as astro_plot
-
-    importlib.reload(plot)
-    importlib.reload(astro_plot)
-
-    # Force a reload, to make sure we always return a fresh instance, so we track the correct mock object
-    from sherpa.plot import chips_backend
-    importlib.reload(chips_backend)
-
-    def fin():
-        monkeypatch.undo()
-        importlib.reload(sherpa)
-        importlib.reload(plot)
-        importlib.reload(astro_plot)
-        importlib.reload(sherpa.all)
-        importlib.reload(sherpa.astro.all)  # These are required because otherwise Python will not match imported classes.
-
-    request.addfinalizer(fin)
-
-    return chips_backend, chips
 
 
 def run_thread_function(name, scriptname, test_data_path):
