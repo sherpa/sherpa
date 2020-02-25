@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,9 +34,8 @@ import numpy as np
 
 from sherpa.astro import ui
 
-# the chips plot tests mean that we can't test the plot instances
-# (because of the mocking that the chips tests do)
-# from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.astro.plot import ARFPlot, BkgDataPlot, ModelHistogram, \
+    SourcePlot
 
 from sherpa.utils.err import IdentifierErr
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -252,12 +251,6 @@ get_source_plot              X
 """
 
 
-# The following tests do not check whether returned values are
-# of the expected class instance, since the chips plot tests
-# use a mock object and so mess-up simple "isinstance(x, ModelPlot)"
-# checks.
-#
-
 @pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_arf_plot(idval):
@@ -269,6 +262,8 @@ def test_get_arf_plot(idval):
         ap = ui.get_arf_plot()
     else:
         ap = ui.get_arf_plot(idval)
+
+    assert isinstance(ap, ARFPlot)
 
     assert ap.xlo == pytest.approx(_energies[:-1])
     assert ap.xhi == pytest.approx(_energies[1:])
@@ -293,6 +288,8 @@ def test_get_bkg_plot(idval):
         bp = ui.get_bkg_plot()
     else:
         bp = ui.get_bkg_plot(idval)
+
+    assert isinstance(bp, BkgDataPlot)
 
     assert bp.x == pytest.approx(_data_chan)
 
@@ -375,6 +372,8 @@ def test_get_model_plot(idval):
         mp = ui.get_model_plot()
     else:
         mp = ui.get_model_plot(idval)
+
+    assert isinstance(mp, ModelHistogram)
 
     assert mp.xlo == pytest.approx(_data_chan)
     assert mp.xhi == pytest.approx(_data_chan + 1)
@@ -461,6 +460,8 @@ def test_get_source_plot_energy(idval):
     else:
         ui.set_analysis(idval, 'energy')
         sp = ui.get_source_plot(idval)
+
+    assert isinstance(sp, SourcePlot)
 
     assert sp.xlo == pytest.approx(_energies[:-1])
     assert sp.xhi == pytest.approx(_energies[1:])

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -208,7 +208,7 @@ if HAS_PYTEST:
         """
         Decorator for test functions requiring a plotting library.
         """
-        packages = ('pylab', 'pychips')
+        packages = ('pylab', )
         msg = "plotting backend required"
         return requires_package(msg, *packages)(test_function)
 
