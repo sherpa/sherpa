@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019, 2020
+#         Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -308,32 +309,6 @@ class EvaluationSpace1D():
             True if they overlap, False if not
         """
         return self.x_axis.overlaps(other.x_axis)
-
-    def join(self, other):
-        """
-        Join this dataset with another one. The axes are sorted, unique elements are selected and then
-        concatenated. The selection of unique elements is required to make sure Sherpa's interpolators
-        can deal with the resulting dataset's space.
-
-        Parameters
-        ----------
-        other : EvaluationSpace1D
-            The dataset to join with `self`.
-
-        Returns
-        -------
-        EvaluationSpace1D
-
-        """
-        # if we didn't keep only the unique elements the interpolation would fail.
-        # note that this also sorts the elements, which shouldn't be a problem.
-        new_xlo = np.unique(np.concatenate((self.x_axis.lo, other.x_axis.lo)))
-        if self.x_axis.is_integrated:
-            new_xhi = np.unique(np.concatenate((self.x_axis.hi, other.x_axis.hi)))
-        else:
-            new_xhi = None
-
-        return EvaluationSpace1D(new_xlo, new_xhi)
 
     def __contains__(self, other):
         """
@@ -657,44 +632,55 @@ class ModelDomainRegridder1D():
 
         return requested_eval_space
 
+    def eval_non_integrated(self, pars, modelfunc, data_space, eval_space,
+                            **kwargs):
+        y = np.zeros(data_space.size)
+
+        # eval_space is out of data_space range
+        if eval_space[-1] < data_space[0] or eval_space[0] > data_space[-1]:
+            return y
+
+        indices = data_space.searchsorted(eval_space)
+        indices_within_data_space = np.where(indices < len(data_space))
+        my_eval_space = eval_space[indices_within_data_space]
+        yy = modelfunc(pars, eval_space, **kwargs)
+        y_interpolate = interpolate(data_space, eval_space, yy,
+                                    function=self.method)
+        if y_interpolate.size == data_space.size and \
+           eval_space[0] < data_space[0] and eval_space[-1] > data_space[-1]:
+            return y_interpolate
+        indices_within_y = np.where(indices < len(y))
+        y[indices[indices_within_y]] = y_interpolate[indices[indices_within_y]]
+        return y
+
     def _evaluate(self, data_space, pars, modelfunc, **kwargs):
-        # Evaluate the model on the user-defined grid and then interpolate/rebin
-        # onto the desired grid. This is based on sherpa.models.TableModel
-        # but is simplified as we do not provide a fold method.
+        """
+        Evaluate the model on the user-defined grid and then interpolate/rebin
+        onto the desired grid. This is based on sherpa.models.TableModel
+        but is simplified as we do not provide a fold method.
+        """
         kwargs['integrate'] = self.integrate  # Not really sure I need this, but let's be safe
 
-        evaluation_space = self.evaluation_space
-
-        if not data_space in evaluation_space:
-            warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
-            evaluation_space = evaluation_space.join(data_space)
-
-        # I don't like the string of IFs, but it might be more expressive this way in this specific case.
-        # If the data space is integrated and the model's integrate flag is set to True, then evaluate the model
-        # on the evaluation space and then rebin onto the data space.
-        # If the data space is integrated but the model's integrate flas is set to False, then evaluate the model
-        # on the midpoint grid (note: we are passing the midpoint grid to force Sherpa to treat this as not integrated.
-        # If we passed two arrays we'd fall in a edge case and Sherpa would evaluate the model at the edge of the bin.
-        # If the data space is not integrated then simply evaluate the model on the grid and then interpolate
-        # to match the data space.
+        eval_space = self.evaluation_space
         if data_space.is_integrated:
             if self.integrate:
                 # This should be the most common case
-                y = modelfunc(pars, evaluation_space.grid[0], evaluation_space.grid[1],
+                y = modelfunc(pars, eval_space.grid[0], eval_space.grid[1],
                               **kwargs)
-                return rebin(y,
-                             evaluation_space.grid[0], evaluation_space.grid[1],
+                return rebin(y, eval_space.grid[0], eval_space.grid[1],
                              data_space.grid[0], data_space.grid[1])
             else:
                 # The integrate flag is set to false, so just evaluate the model
                 # and then interpolate using the grids midpoints.
-                y = modelfunc(pars, evaluation_space.midpoint_grid, **kwargs)
-                return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
+                y = modelfunc(pars, eval_space.midpoint_grid, **kwargs)
+                return interpolate(data_space.midpoint_grid,
+                                   eval_space.midpoint_grid, y,
                                    function=self.method)
         else:
-            y = modelfunc(pars, evaluation_space.grid[0], **kwargs)
-            return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
-                               function=self.method)
+            return self.eval_non_integrated(pars, modelfunc,
+                                            data_space.midpoint_grid,
+                                            eval_space.midpoint_grid,
+                                            **kwargs)
 
 
 class ModelDomainRegridder2D():

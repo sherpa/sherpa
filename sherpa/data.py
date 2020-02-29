@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2019
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -95,10 +95,9 @@ class DataSpace1D(EvaluationSpace1D):
 
     def for_model(self, model):
         """
-        Models can be defined over arbitrary evaluation spaces. However, at evaluation time during a fit, the model's
-        evaluation space and the data space will be joined together and the model will be evaluated over the joined
-        domain. This makes sure that when the models are rebinned back to the data space the evaluation does not have
-        to be extrapolated from the model's evaluation space alone.
+        Models can be defined over arbitrary evaluation spaces. However, 
+        at evaluation time during a fit, the model's evaluation space shall
+        be done at the user's request space only and set to 0 every where else.
 
         Parameters
         ----------
@@ -113,11 +112,8 @@ class DataSpace1D(EvaluationSpace1D):
         evaluation_space = None
 
         if model is not None and hasattr(model, "evaluation_space"):
-            evaluation_space = model.evaluation_space
-            if self not in evaluation_space:
-                warnings.warn(
-                    "evaluation space does not contain the requested space. Sherpa will join the two spaces.")
-                evaluation_space = self.join(evaluation_space)
+            if self not in model.evaluation_space:
+                evaluation_space = self
 
         return self if evaluation_space is None else evaluation_space
 
@@ -183,11 +179,8 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         evaluation_space = None
 
         if model is not None and hasattr(model, "evaluation_space"):
-            evaluation_space = model.evaluation_space
-            if self not in evaluation_space:
-                warnings.warn(
-                    "evaluation space does not contain the requested space. Sherpa will join the two spaces.")
-                evaluation_space = evaluation_space.join(self)
+            if self not in model.evaluation_space:
+                evaluation_space = self
 
         return self if evaluation_space is None else evaluation_space
 

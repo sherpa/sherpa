@@ -1,4 +1,4 @@
-# Copyright 2018 Smithsonian Astrophysical Observatory
+# Copyright 2018, 2020 Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
@@ -136,8 +136,7 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    with pytest.warns(UserWarning):
-        assert_fit(ui, my_model, 1)
+    assert_fit(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
@@ -222,8 +221,7 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    with pytest.warns(UserWarning):
-        assert_fit(ui, my_model, 1)
+    assert_fit(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
@@ -243,8 +241,7 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
     # the start and end p
     regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
 
-    with pytest.warns(UserWarning):
-        np.testing.assert_array_equal(regrid_model([1, 2], [1, 2]), [0, 0])
+    np.testing.assert_array_equal(regrid_model([1, 2], [1, 2]), [0, 0])
 
 
 def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
