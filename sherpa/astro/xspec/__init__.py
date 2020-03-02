@@ -50,10 +50,25 @@ are now taken from the user's XSPEC configuration file - either
 for these settings. The default value for the photo-ionization table
 in this case is now ``vern`` rather than ``bcmc``.
 
+Supported models
+----------------
+
+The additive [2]_ and multiplicative [3]_ models from the XSPEC model
+library are supported, except for the `smaug` model [4]_, since it
+requires use of information from the XFLT keywords in the data file).
+
 References
 ----------
 
 .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/index.html
+
+.. [2] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/node131.html
+       (link valid for XSPEC 12.10.1)
+
+.. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node229.html
+       (link valid for XSPEC 12.10.1)
+
+.. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
 
 """
 
