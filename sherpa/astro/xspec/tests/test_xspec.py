@@ -27,13 +27,15 @@ from sherpa.utils.testing import SherpaTestCase, requires_data, \
 from sherpa.utils.err import ParameterErr
 
 # How many models should there be?
-# This number includes all additive and multiplicative models, even the ones
-# that would be disabled by a decoration from .utils.
-# The number can be calculated by counting the occurrences of the string
-# '(XSAdditiveModel)' and adding it to the number of occurrences of the
-# string '(XSMultiplicativeModel)' in `xspec/__init__.py`
+# This number includes all additive, multiplicative, and convolition models,
+# even the ones that would be disabled by a decoration from .utils.
+# The number can be calculated by counting the occurrences of the strings
+#    '(XSAdditiveModel)'
+#    '(XSMultiplicativeModel)'
+#    '(XSConvolutionKernel)'
+# in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 203
+XSPEC_MODELS_COUNT = 225
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -69,6 +71,11 @@ def remove_item(xs, x):
 # results for any model). For now stick with testing most of
 # the models.
 #
+# This function will contain the convolution models, so
+# downstream code needs to handle these differently. Note that
+# explicit testing of these models is handled by
+# test_xspec_con.py.
+#
 def get_xspec_models():
     """What are the XSpec model names to test.
 
@@ -86,10 +93,9 @@ def get_xspec_models():
 
     # Could just exclude any names that end in 'Model', but this
     # could remove valid model names, so be explicit.
-    remove_item(model_names, 'XSModel')
-    remove_item(model_names, 'XSMultiplicativeModel')
-    remove_item(model_names, 'XSAdditiveModel')
-    remove_item(model_names, 'XSTableModel')
+    for n in ['XSModel', 'XSMultiplicativeModel', 'XSAdditiveModel',
+              'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel']:
+        remove_item(model_names, n)
 
     # The sirf model - in 12.8.2 and up to 12.9.0d at least - includes
     # a read outside of an array. This has been seen to cause occasional
@@ -216,7 +222,8 @@ class test_xspec(SherpaTestCase):
             cls = getattr(xs, cls)
 
             if is_proper_subclass(cls, (xs.XSAdditiveModel,
-                                        xs.XSMultiplicativeModel)):
+                                        xs.XSMultiplicativeModel,
+                                        xs.XSConvolutionKernel)):
                 # Ensure that we can create an instance, but do
                 # nothing with it.
                 cls()
@@ -654,12 +661,19 @@ def test_evaluate_xspec_model(modelcls):
     (hopefully) makes it a lot easier to debug when only a subset of tests
     fails.  It also makes sure that all models are run, even if some fail,
     which did not happen when they were all stuck in the same test function.
+
+    Convolution models are skipped (easier to filter out here given the
+    current design).
     """
 
-    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+    from sherpa.astro import xspec
 
     # use an identifier in case there is an error
     mdl = modelcls()
+    if isinstance(mdl, xspec.XSConvolutionKernel):
+        return
+
+    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
 
     # The model checks that the values are all finite,
     # so there is no need to check that the output of
@@ -710,10 +724,14 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     edges may not match well.
     """
 
-    elo, ehi, wlo, whi = make_grid_noncontig2()
+    from sherpa.astro import xspec
 
     # use an identifier in case there is an error
     mdl = modelcls()
+    if isinstance(mdl, xspec.XSConvolutionKernel):
+        return
+
+    elo, ehi, wlo, whi = make_grid_noncontig2()
 
     evals2 = mdl(elo, ehi)
     wvals2 = mdl(wlo, whi)
