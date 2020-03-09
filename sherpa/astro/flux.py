@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2009, 2015, 2016, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -534,7 +534,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
         for i, (pmin, pmax) in enumerate(zip(mysoftmins, mysoftmaxs), 1):
             parvals = mysamples[:, i]
-            tmp = (parvals > pmin) & (parvals < pmax)
+            tmp = (parvals >= pmin) & (parvals <= pmax)
             mysamples = mysamples[tmp]
 
         return mysamples

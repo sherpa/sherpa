@@ -32,8 +32,8 @@ from sherpa.astro import ui
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_xspec
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IdentifierErr, IOErr, \
-    ModelErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, \
+    IdentifierErr, IOErr, ModelErr
 import sherpa.astro.utils
 
 
@@ -2080,13 +2080,13 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
                                         correlated=True, scales=scal)
 
     # Values taken from the screen output
-    assert flux1[0] == pytest.approx(7.5243e-13)
-    assert flux1[1] == pytest.approx(7.5243e-13 + 3.53865e-14)
-    assert flux1[2] == pytest.approx(7.5243e-13 - 3.01841e-14)
+    assert flux1[0] == pytest.approx(7.50199e-13)
+    assert flux1[1] == pytest.approx(7.50199e-13 + 3.64329e-14)
+    assert flux1[2] == pytest.approx(7.50199e-13 - 2.87033e-14)
 
-    assert flux2[0] == pytest.approx(8.26722e-13)
-    assert flux2[1] == pytest.approx(8.26722e-13 + 5.88881e-14)
-    assert flux2[2] == pytest.approx(8.26722e-13 - 4.99602e-14)
+    assert flux2[0] == pytest.approx(8.19482e-13)
+    assert flux2[1] == pytest.approx(8.19482e-13 + 5.42782e-14)
+    assert flux2[2] == pytest.approx(8.19482e-13 - 6.87875e-14)
 
     # unabsorbed flux should be >= absorbed.
     assert np.all(flux2 >= flux1)
@@ -2101,10 +2101,12 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
     assert (nhs[clipped] == 0).all()
     assert clipped.sum() == 17
 
-    # 100 + 1 - 17 values have a non-zero stat (as chi-square) because of #751
+    # Although there are 17 clipped values, they all have a non-zero statistic
+    # as the values have been clipped to the soft limits. So in this case
+    # issue #751 isn't an issue.
     #
     stats = vals[:, -1]
-    assert (stats > 0).sum() == (niter + 1 - 17)
+    assert (stats > 0).sum() == (niter + 1)
 
 
 @requires_data
