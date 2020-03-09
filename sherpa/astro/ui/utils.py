@@ -13291,7 +13291,8 @@ class Session(sherpa.ui.utils.Session):
         Xrays : bool, optional
            When ``True`` (the default), assume that the model has
            units of photon/cm^2/s, and use `calc_energy_flux`
-           to convert to erg/cm^2/s.
+           to convert to erg/cm^2/s. This should not be changed from
+           the default value.
         confidence : number, optional
            The confidence level for the upper and lower quartiles,
            as a percentage. The default is 68, so as to return
@@ -13320,6 +13321,10 @@ class Session(sherpa.ui.utils.Session):
         plot_photon_flux : Display the photon flux distribution.
         sample_energy_flux : Return the energy flux distribution of a model.
         sample_photon_flux : Return the photon flux distribution of a model.
+
+        Notes
+        -----
+        Setting the Xrays parameter to False is currently unsupported.
 
         Examples
         --------
@@ -13356,6 +13361,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
+        if not Xrays:
+            raise NotImplementedError("sample_flux(Xrays=False) is currently unsupported")
+
         ids, fit = self._get_fit(id)
         data = self.get_data(id)
         src = None
@@ -13373,12 +13381,20 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(modelcomponent, sherpa.models.model.Model):
             raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
+        # Why is this +1? The original comment was
+        # "num+1 cause sample energy flux is under-reporting its result?"
+        #
+        niter = num + 1
+
         if not Xrays:
+            # NOTE: calc_energy_flux only returns a scalar, which means you can
+            #       not pass the results to calc_sample_flux, so this code
+            #       is currently broken
+            #
             samples = self.calc_energy_flux(lo=lo, hi=hi, id=id,
                                             bkg_id=bkg_id)
         else:
-            # num+1 cause sample energy flux is under-reporting its result?
-            samples = self.sample_energy_flux(lo=lo, hi=hi, id=id, num=num + 1,
+            samples = self.sample_energy_flux(lo=lo, hi=hi, id=id, num=niter,
                                               scales=scales,
                                               correlated=correlated,
                                               numcores=numcores,
