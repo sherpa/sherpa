@@ -13384,9 +13384,10 @@ class Session(sherpa.ui.utils.Session):
                                               numcores=numcores,
                                               bkg_id=bkg_id)
 
-        return sherpa.astro.flux.calc_sample_flux(id, lo, hi, self, fit, data,
-                                                  samples, modelcomponent,
-                                                  confidence)
+        return sherpa.astro.flux.calc_sample_flux(id=id, lo=lo, hi=hi, session=self,
+                                                  fit=fit, data=data, samples=samples,
+                                                  modelcomponent=modelcomponent,
+                                                  confidence=confidence)
 
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None,
                 error=False, params=None, otherids=(), niter=1000,
