@@ -30,8 +30,12 @@ from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits, requires_plotting, \
     requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
-    ModelErr
+    ModelErr, SherpaErr
 import sherpa.astro.utils
+
+
+def fail(*arg):
+    return pytest.param(*arg, marks=pytest.mark.xfail)
 
 
 # TODO: use wavelength and channels analysis
@@ -221,7 +225,6 @@ def test_calc_flux_pha_density_bin_edges(clean_astro_ui):
     assert edens == pytest.approx(expected_edens)
 
 
-
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("id", [None, 1, "foo"])
@@ -317,14 +320,6 @@ def test_calc_flux_pha(id, lo, hi, make_data_path, clean_astro_ui):
     assert eflux == pytest.approx(eflux_exp, rel=1e-4)
 
 
-def fails_619(*x):
-    """See issue 619
-
-    This isn't strictly needed, but useful for documentation
-    """
-    return pytest.param(*x, marks=pytest.mark.xfail)
-
-
 # The lo/hi range which match in the different settings; using _hc
 # to convert from keV to Angstroms is a bit low-level.
 #
@@ -338,7 +333,7 @@ def fails_619(*x):
                           (None, None, 'channel', None, None),
                           (0.5, 7.0, 'wave',
                            ui.DataPHA._hc / 7.0, ui.DataPHA._hc / 0.5),
-                          fails_619(0.5, 7.0, 'channel', 35, 480)  # see also 308
+                          fail(0.5, 7.0, 'channel', 35, 480)  # issue 619 see also 308
                          ])
 def test_calc_flux_pha_analysis(elo, ehi, setting, lo, hi, make_data_path, clean_astro_ui):
     """Do calc_photon/energy_flux return the expected results: fluxes + analysis setting
@@ -738,7 +733,8 @@ def test_sample_foo_flux_invalid_scales2(method, correlated, scales,
 @requires_xspec
 @pytest.mark.parametrize("method", [ui.sample_energy_flux,
                                     ui.sample_photon_flux])
-def test_sample_foo_flux_no_free_params(method, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_no_free_params(method, make_data_path,
+                                        hide_logging, clean_astro_ui):
     """sample_energy/photon_flux when no free parameters.
     """
 
@@ -746,13 +742,17 @@ def test_sample_foo_flux_no_free_params(method, make_data_path, clean_astro_ui):
     for cpt in cpts:
         ui.freeze(cpt)
 
-    with pytest.raises(FitErr):
+    with pytest.raises(FitErr) as exc:
         method(lo=0.5, hi=7, num=1)
+
+    assert str(exc.value) == 'model has no thawed parameters'
 
     # try with explict model setting
     #
-    with pytest.raises(FitErr):
+    with pytest.raises(FitErr) as exc:
         method(lo=0.5, hi=7, num=1, model=cpts[1])
+
+    assert str(exc.value) == 'model has no thawed parameters'
 
 
 @requires_data
@@ -760,14 +760,36 @@ def test_sample_foo_flux_no_free_params(method, make_data_path, clean_astro_ui):
 @requires_xspec
 @pytest.mark.parametrize("method", [ui.sample_energy_flux,
                                     ui.sample_photon_flux])
-def test_sample_foo_flux_invalid_model(method, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_not_a_model(method, make_data_path, clean_astro_ui):
+    """sample_energy/photon_flux when src model is not a model.
+
+    This is currently not well handled (you get an error but
+    it's not a "nice" error).
+    """
+
+    setup_sample(1, make_data_path, fit=False)
+    with pytest.raises(AttributeError) as exc:
+         method(lo=0.5, hi=7, num=1, model='x')
+
+    assert str(exc.value) == "'str' object has no attribute 'thawedpars'"
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
+def test_sample_foo_flux_invalid_model(method, make_data_path,
+                                       hide_logging, clean_astro_ui):
     """sample_energy/photon_flux when src model is not part of the fit.
     """
 
     setup_sample(1, make_data_path, fit=False)
     mdl = ui.create_model_component('powlaw1d', 'p1')
-    with pytest.raises(ArgumentErr):
+    with pytest.raises(ArgumentErr) as exc:
          method(lo=0.5, hi=7, num=1, model=mdl)
+
+    assert str(exc.value) == "Invalid src: 'model contains term not in fit'"
 
 
 @requires_data
@@ -1156,6 +1178,175 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui,
 
 @requires_data
 @requires_fits
+def test_bug_276(make_data_path):
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_model('polynom1d.p1')
+    ui.fit()
+    ui.covar()
+    scal = ui.get_covar_results().parmaxes
+    ui.sample_flux(ui.get_model_component('p1'), 0.5, 1, num=5,
+                   correlated=False, scales=scal)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("niter", [0, -1])
+def test_sample_flux_invalid_niter(niter):
+    """What happens when num is 0 or negative?
+
+    To simplify things, run with a non PHA dataset.
+
+    This unfortunately fails at this time due to (probably two)
+    different bugs, so the test isn't actually effective.
+    """
+
+    xbins = np.arange(5, 10, 1)
+    y = np.asarray([10, 12, 11, 12])
+
+    ui.load_arrays(1, xbins[:-1], xbins[1:], y, ui.Data1DInt)
+    ui.set_source(1, ui.const1d.mdl)
+
+    ui.set_stat('cash')
+    ui.fit()
+    ui.covar()
+
+    with pytest.raises(ArgumentErr) as exc:
+        ui.sample_flux(lo=6, hi=8, Xrays=False, num=niter)
+
+    assert str(exc.value) == "Invalid num: 'must be a positive integer'"
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("niter", [pytest.param(0, marks=pytest.mark.xfail), -1])
+def test_sample_flux_invalid_niter_pha(niter, make_data_path, clean_astro_ui):
+    """What happens when num is 0 or negative? PHA dataset
+
+    Since test_sample_flux_invalid_niter (currently) fails,
+    also try with a PHA dataset.
+
+    Note that niter=0 fails because internally we add 1 to it
+    inside sample_flux before we check its value.
+    """
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_model('polynom1d.p1')
+    ui.notice(1, 7)
+
+    ui.set_stat('cash')
+    ui.fit()
+    ui.covar()
+
+    with pytest.raises(ArgumentErr) as exc:
+        ui.sample_flux(lo=2, hi=8, num=niter)
+
+    assert str(exc.value) == "Invalid num: 'must be a positive integer'"
+
+
+@requires_data
+@requires_fits
+def test_sample_flux_not_a_model(make_data_path, clean_astro_ui):
+    """What happens when the model component is not a model?
+
+    Unfortunately we need a PHA dataset as xrays=False errors
+    out at the moment.
+    """
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_model('polynom1d.p1')
+    ui.notice(1, 7)
+
+    with pytest.raises(ArgumentTypeErr) as exc:
+        ui.sample_flux(lo=6, hi=8, modelcomponent="p1")
+
+    assert str(exc.value) == "'modelcomponent' must be a model"
+
+
+@requires_data
+@requires_fits
+def test_sample_flux_invalid_model(hide_logging, make_data_path, clean_astro_ui):
+    """What happens when the model component is not part of the source?
+
+    Unfortunately we need a PHA dataset as xrays=False errors
+    out at the moment.
+
+    At the moment there is no requirement that modelcomponent is
+    part of the model expression, so all this does is check the
+    call succeeds. It really should fail!
+    """
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_model('polynom1d.p1')
+    ui.notice(1, 7)
+
+    ui.set_stat('cash')
+    ui.fit()
+    ui.covar()
+
+    m2 = ui.create_model_component('const1d', 'm2')
+
+    # This should error out! For now we just check the return values
+    # so we can check when the code changes.
+    res = ui.sample_flux(lo=6, hi=8, modelcomponent=m2)
+    assert len(res) == 3
+    assert res[2].shape == (2, 4)
+
+
+@pytest.mark.xfail  # no error is raised
+@pytest.mark.parametrize("conf", [0, 100.1])
+def test_sample_flux_invalid_confidence(conf):
+    """What happens when confidence is outside the range (0, 100]?
+    """
+
+    xbins = np.arange(5, 10, 1)
+    y = np.asarray([10, 12, 11, 12])
+
+    ui.load_arrays(1, xbins[:-1], xbins[1:], y, ui.Data1DInt)
+    ui.set_source(1, ui.const1d.mdl)
+
+    # confidence is checked before anything else, so this works even
+    # if the data isn't sensible for X-ray data
+    with pytest.raises(ArgumentErr):
+        ui.sample_flux(confidence=conf)
+
+
+@pytest.mark.xfail
+def test_sample_flux_1d_int():
+    """Basic test of sample_flux with Data1DInt not DataPHA
+
+    Tests out behavior of
+      - Xrays=False
+      - a non-chi-square statistic
+      - model expression with a single parameter
+
+    At the moment this fails for the same reason test_sample_flux_invalid_niter
+    fails.
+    """
+
+    xbins = np.arange(5, 10, 1)
+    y = np.asarray([10, 12, 11, 12])
+
+    ui.load_arrays(1, xbins[:-1], xbins[1:], y, ui.Data1DInt)
+    ui.set_source(1, ui.const1d.mdl)
+
+    ui.set_stat('cash')
+    ui.fit()
+    ui.covar()
+
+    f1, f2, vals = ui.sample_flux(lo=6, hi=8, Xrays=False, num=10)
+
+    assert f1.shape == (3, )
+    assert np.all(f1 == f2)
+    assert vals.shape == (11, 3)
+
+    assert f1[0] < f1[1]
+    assert f1[0] > f1[2]
+
+    # TODO: write more tests, once bug has been fixed to allow sample_flux
+    # to get this far
+
+
+@requires_data
+@requires_fits
 @requires_xspec
 @pytest.mark.parametrize("multi,fac", [(ui.sample_energy_flux, 1.1435100396354445),
                                        (ui.sample_photon_flux, 1.1901038918815168)])
@@ -1264,6 +1455,80 @@ def test_sample_foo_flux_component(multi, fac, correlated,
 
     assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
     assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, fail(2)])
+def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
+                              hide_logging, reset_seed):
+    """What happens with 1 iteration?
+
+    This is the same data as test_sample_flux_751_752 but
+    with some extra tests (just to check that the fit is
+    where we expect it to be; if it changes we should
+    review the tests, so make them asserts).
+    """
+
+    # Use a different value to test_sample_flux_751_752
+    np.random.seed(3704)
+
+    gamma0 = 1.95014
+    ampl0 = 1.77506e-4
+    stat0 = 16.270233678440196
+
+    # This data set is not heavily absorbed, so can get away with
+    # just a powerlaw fit for this example (which means we do not
+    # need XSPEC to run the test).
+    #
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+    ui.set_source(idval, ui.powlaw1d.p1)
+    ui.fit(idval)
+    ui.covar(idval)
+
+    # just to check we are in the right place; that is, if these fail
+    # it is not a problem with sample_flux but it (may be) worth
+    # erroring out quickly as it means we want to review this test
+    #
+    sinfo = ui.get_stat_info()
+    assert len(sinfo) == 1
+    assert sinfo[0].ids == [idval]
+    assert sinfo[0].statval == pytest.approx(stat0)
+    assert sinfo[0].dof == 28
+
+    pmdl = ui.get_model_component('p1')
+    assert pmdl.gamma.val == pytest.approx(gamma0)
+    assert pmdl.ampl.val == pytest.approx(ampl0)
+
+    scal = ui.get_covar_results().parmaxes
+    flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=1,
+                                        correlated=False, scales=scal)
+
+    assert np.all(flux1 == flux2)
+    assert len(flux1) == 3
+    assert vals.shape == (2, 5)
+
+    # With a fixed seed we can "guarantee" the values are different.
+    #
+    for row in vals:
+        assert row[1] != pytest.approx(gamma0)
+        assert row[2] != pytest.approx(ampl0)
+        assert row[3] == 0
+        assert row[4] > stat0
+
+    # check that the parameter values have not changed, nor the
+    # statitic value, by calling sample_flux
+    #
+    assert pmdl.gamma.val == pytest.approx(gamma0)
+    assert pmdl.ampl.val == pytest.approx(ampl0)
+    sinfo = ui.get_stat_info()
+    assert len(sinfo) == 1
+    assert sinfo[0].ids == [idval]
+    assert sinfo[0].statval == pytest.approx(stat0)
+    assert sinfo[0].dof == 28
 
 
 @requires_data
@@ -1640,6 +1905,86 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
 
 @requires_data
 @requires_fits
+@pytest.mark.parametrize("idval", [1, fail(2)])
+def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
+                             hide_logging, reset_seed):
+    """Very basic test of sample_flux.
+
+    Based around issue #751 (not all iterations have a statistic
+    value) and #752 (fails when the id is not the default value).
+
+    Based on test_sample_flux_pha_num1.
+
+    """
+
+    # Try to ensure we get some clipping.
+    #
+    np.random.seed(4073)
+
+    # we want niter to be even so that the returned number of
+    # values (niter+1) is odd, as that makes the median check
+    # easier.
+    #
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+    ui.set_source(idval, ui.powlaw1d.p1)
+    ui.fit(idval)
+    ui.covar(idval)
+    scal = ui.get_covar_results().parmaxes
+
+    # Restrict gamma so that (hopefully, as it depends on the RNG, but seems
+    # to do so with niter >~ 10) it triggers clipping in
+    # sample_flux, which is the cause of #751. Using niter=100 I
+    # see clipping fractions of ~20-30% (before fixing #751).
+    #
+    p1 = ui.get_model_component('p1')
+    ui.set_par(p1.gamma, min=1.8, max=2.1)
+
+    flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=niter,
+                                        correlated=False, scales=scal)
+
+    # as modelcomponent is None, first two arguments should be the same
+    assert np.all(flux1 == flux2)
+    assert flux1.shape == (3, )
+    assert vals.shape == (niter + 1, 5)
+
+    # Basic checks on the flux errors:
+    #   - are they in the right order
+    #   - manual check that they are close to the expected value
+    #     (the default is confidence=68).
+    #     as we have an odd number of iterations
+    #     THIS IS NOT DONE YET - see #286, in particular
+    #     https://github.com/sherpa/sherpa/issues/286#issuecomment-596207243
+    #
+    fmed, fusig, flsig = flux1
+    assert fusig > fmed
+    assert flsig < fmed
+
+    # It isn't clear what should be tested here (see #286) so just
+    # test something very basic
+    #
+    fluxes = vals[:, 0]
+    assert flsig > fluxes.min()
+    assert fusig < fluxes.max()
+
+    # The clip values are not set (since these are set to the hard limits)
+    #
+    clips = vals[:, -2]
+    assert (clips == 0).all()
+
+    # All the statistic values should be set (> 0). This is #751.
+    #
+    stats = vals[:, -1]
+    # assert (stats > 0).all()
+    assert (stats > 0).sum() == 81
+
+
+@requires_data
+@requires_fits
 @pytest.mark.parametrize("getfunc,medflux",
                          [(ui.get_photon_flux_hist, 1.276591979716474e-4),
                           (ui.get_energy_flux_hist, 4.550271338687814e-13),
@@ -1707,3 +2052,163 @@ def test_plot_xxx_flux_unabsorbed(plotfunc, make_data_path, clean_astro_ui,
     plotfunc(0.7, 7, num=500, bins=10)
 
     # What do we do to test this?
+
+
+@requires_data
+@requires_fits
+def test_sample_flux_errors(make_data_path, clean_astro_ui,
+                            hide_logging, reset_seed):
+    """Does sample_flux return sensible sigma limits?
+
+    This can be thought of as test_sample_flux_751_752 but just
+    looking at the flux median/upper/lower limits (to have a
+    simple test for addressing #286).
+
+    There is also a test of the statistics "column" information.
+
+    """
+
+    np.random.seed(28737)
+
+    # now we have a seed can we get tighter constraints
+
+    # want to get good stats
+    niter = 1000
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.subtract()
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+    ui.set_source(ui.powlaw1d.p1)
+    ui.fit()
+
+    stat0 = ui.calc_stat()
+
+    res = ui.sample_flux(lo=0.5, hi=7, num=niter, correlated=False)
+
+    # check the source model hasn't been changed (note: do not use
+    # pytest.approx as expect the same value, but can switch if
+    # needed).
+    #
+    assert ui.calc_stat() == stat0
+
+    # Get values close to 1 to make comparison easier
+    res[0] *= 1e14
+    fmed = res[0][0]
+    fusig = res[0][1]
+    flsig = res[0][2]
+
+    # Regression test
+    #
+    elo = fmed - flsig
+    ehi = fusig - fmed
+    assert fmed == pytest.approx(77.27966775437665)
+    assert elo == pytest.approx(9.86485842683382)
+    assert ehi == pytest.approx(11.40548578502279)
+
+    # The last column of res[2] is the statistic value for a row -
+    # although due to filtering we don't know which row without some
+    # significant work. Check that the values make sense (ie if we
+    # have found the best-fit then all values should be >= stat0).
+    #
+    assert res[2].shape == (niter + 1, 5)
+    stats = res[2][:, 4]
+
+    # For this dataset no rows are excluded.
+    #
+    assert (stats > 0).all()
+
+    # Ideally the best-fit location is the best fit!
+    assert stats.min() >= stat0
+
+    # Check the clip column too
+    #
+    clips = res[2][:, 3]
+    assert (clips == 0).all()
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, fail(2)])
+def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
+                                   hide_logging, reset_seed):
+    """Does the component analysis work?
+
+    Apply a model which has a normalization term in it (which is fixed)
+    so that we can easily compare the full and component fluxes.
+
+    The parameter checks are "generic" (ie don't need to be
+    done with a model component given), but are included here because
+    this uses multiple model components in the source expression.
+
+    """
+
+    np.random.seed(97284)
+
+    # Now we have a fixed seed we don't need to run as many iterations.
+    #
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+    ui.set_source(idval, ui.const1d.scal * ui.powlaw1d.p1)
+
+    p1 = ui.get_model_component('p1')
+    scal = ui.get_model_component('scal')
+    scal.c0 = 0.8
+    scal.integrate = False
+    scal.c0.frozen = True
+
+    ui.fit(idval)
+    ui.covar(idval)
+
+    stat0 = ui.calc_stat(idval)
+
+    scal = ui.get_covar_results().parmaxes
+    flux1, flux2, vals = ui.sample_flux(modelcomponent=p1,
+                                        id=idval, lo=1, hi=5, num=niter,
+                                        correlated=False, scales=scal)
+
+    # check the source model hasn't been changed (note: do not use
+    # pytest.approx as expect the same value, but can switch if
+    # needed).
+    #
+    assert ui.calc_stat(idval) == stat0
+
+    assert flux1.shape == (3, )
+    assert flux2.shape == (3, )
+    assert np.any(flux1 != flux2)
+    assert vals.shape == (niter + 1, 5)
+
+    assert flux1[0] < flux1[1]
+    assert flux1[0] > flux1[2]
+
+    # Now, flux2 should be 1/0.8 = 1.25 times larger,
+    # and this should hold for all three terms (since drawn from the
+    # same distributions modulo the different model components there
+    # is no "randomness" in this ratio).
+    #
+    for i in range(3):
+        rlim = flux2[i] / flux1[i]
+        assert rlim == pytest.approx(1 / 0.8)
+
+    # Regression test
+    assert np.log10(flux1[0]) == pytest.approx(-12.320132853894787)
+
+    # Regression test of the output (if these change, compare against
+    # p1.gamma.val, p1.ampl.val).
+    #
+    mgamma = np.median(vals[:, 1])
+    mampl = np.log10(np.median(vals[:, 2]))
+    assert mgamma == pytest.approx(1.9476566223146197)
+    assert mampl == pytest.approx(-3.6498020707240153)
+
+    # No clipping
+    #
+    assert (vals[:, 3] == 0).all()
+
+    # No missing values (statistic is set for all bins)
+    #
+    assert (vals[:, 4] > 0).all()

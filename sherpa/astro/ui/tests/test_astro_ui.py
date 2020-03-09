@@ -43,7 +43,11 @@ logger = logging.getLogger("sherpa")
 
 @pytest.fixture(autouse=True)
 def hide_logging():
-    "hide INFO-level logging in all these tests"
+    """hide INFO-level logging in all these tests
+
+    This replicates the conftest hide_logging but applies it to
+    all tests.
+    """
 
     olevel = logger.getEffectiveLevel()
     logger.setLevel(logging.ERROR)
@@ -759,17 +763,6 @@ def test_load_table_fits(clean_astro_ui):
     data = ui.get_data(1)
     assert data.x == pytest.approx([1, 2, 3])
     assert data.y == pytest.approx([4, 5, 6])
-
-
-@requires_data
-@requires_fits
-def test_bug_276(make_data_path):
-    ui.load_pha(make_data_path('3c273.pi'))
-    ui.set_model('polynom1d.p1')
-    ui.fit()
-    ui.covar()
-    scal = ui.get_covar_results().parmaxes
-    ui.sample_flux(ui.get_model_component('p1'), 0.5, 1, num=5, correlated=False, scales=scal)
 
 
 @requires_data
