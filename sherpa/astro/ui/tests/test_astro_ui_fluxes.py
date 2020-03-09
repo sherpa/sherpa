@@ -1459,7 +1459,7 @@ def test_sample_foo_flux_component(multi, fac, correlated,
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("idval", [1, fail(2)])
+@pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
                               hide_logging, reset_seed):
     """What happens with 1 iteration?
@@ -1905,7 +1905,7 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("idval", [1, fail(2)])
+@pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
                              hide_logging, reset_seed):
     """Very basic test of sample_flux.
@@ -2129,7 +2129,7 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("idval", [1, fail(2)])
+@pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
                                    hide_logging, reset_seed):
     """Does the component analysis work?
