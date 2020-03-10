@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -12838,13 +12838,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           `lo`. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then calculate the flux
+           over the given band. If only one is set then calculate
+           the flux density at that point. The units for `lo` and `hi`
+           are given by the current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -12856,14 +12854,10 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         flux : number
-           The flux from the source model integrated over the given
-           band. This represents the flux from the model without any
-           instrument response (i.e. the intrinsic flux of the
-           source). For X-Spec style models the units will be
-           photon/cm^2/s. If `hi` is ``None`` but `lo` is set the
-           the flux density is returned at that point: photon/cm^2/s/keV
-           or photon/cm^2/s/Angstrom depending on the analysis
-           setting.
+           The flux or flux density.  For X-Spec style models the
+           flux units will be photon/cm^2/s and the flux density units
+           will be either photon/cm^2/s/keV or photon/cm^2/s/Angstrom,
+           depending on the analysis setting.
 
         See Also
         --------
@@ -12952,13 +12946,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           `lo`. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then calculate the flux
+           over the given band. If only one is set then calculate
+           the flux density at that point. The units for `lo` and `hi`
+           are given by the current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -12970,13 +12962,10 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         flux : number
-           The flux from the source model integrated over the given
-           band. This represents the flux from the model without any
-           instrument response (i.e. the intrinsic flux of the
-           source). For X-Spec style models the units will be
-           erg/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the
-           flux density is returned at that point: erg/cm^2/s/keV or
-           erg/cm^2/s/Angstrom depending on the analysis setting.
+           The flux or flux density.  For X-Spec style models the
+           flux units will be erg/cm^2/s and the flux density units
+           will be either erg/cm^2/s/keV or erg/cm^2/s/Angstrom,
+           depending on the analysis setting.
 
         See Also
         --------
@@ -13055,17 +13044,14 @@ class Session(sherpa.ui.utils.Session):
         """Sum up the data values over a pass band.
 
         This function is for one-dimensional data sets: use
-        `calc_model_sum` for two-dimensional data sets.
+        `calc_data_sum2d` for two-dimensional data sets.
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then sum up the data
+           over the given band. If only one is set then return
+           the data count in the given bin.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -13077,9 +13063,6 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         dsum : number
-           The sum of the data values that lie within the given
-           limits.  If ``hi`` is ``None`` but ``lo`` is set then the data
-           value of the bin containing the ``lo`` value are returned.
            If a background estimate has been subtracted from the data
            set then the calculation will use the background-subtracted
            values.
@@ -13166,13 +13149,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then sum up over the given
+           band. If only one is set then use the model value in the
+           selected bin. The units for `lo` and `hi` are given by the
+           current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -13184,7 +13165,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The sum of the model values over the requested axis range.
+           The model value (sum or individual bin).
 
         See Also
         --------
@@ -13507,13 +13488,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then sum up over the given
+           band. If only one is set then use the model value in the
+           selected bin. The units for `lo` and `hi` are given by the
+           current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -13525,10 +13504,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The source model summed up over the given band. This does
-           *not* include the bin width when using histogram-style
-           ('integrated' data spaces), such as used with X-Spec
-           emission - also known as additive - models.
+           The model value (sum or individual bin).
 
         See Also
         --------

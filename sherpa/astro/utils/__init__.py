@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2008, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -214,21 +214,19 @@ def calc_energy_flux(data, src, lo=None, hi=None):
     src
        The source expression: this should not include any instrument
        responses.
-    lo : number, optional
-       The minimum limit of the band. Use `None`, the default,
-       to use the low value of the data set.
-    hi : number, optional
-       The maximum limit of the band, which must be larger than
-       `lo`. Use ``None``, the default, to use the upper value of
-       the data set.
+    lo, hi : number, optional
+       If both are None or both are set then calculate the flux
+       over the given band. If only one is set then calculate
+       the flux density at that point. The units for `lo` and `hi`
+       are given by the current analysis setting of the `data`
+       parameter.
 
     Returns
     -------
     flux
-       The flux from the source model integrated over the given
-       band. For X-Spec style models the units will be erg/cm^2/s. If
-       `hi` is ``None`` but `lo` is set then the flux density is
-       returned at that point: erg/cm^2/s/keV or erg/cm^2/s/Angstrom
+       The flux or flux density of the source model. For X-Spec
+       models the flux units will be erg/cm^2/s and the flux
+       density is either erg/cm^2/s/keV or erg/cm^2/s/Angstrom,
        depending on the analysis setting.
 
     See Also
@@ -288,22 +286,20 @@ def calc_photon_flux(data, src, lo=None, hi=None):
     src
        The source expression: this should not include any instrument
        responses.
-    lo : number, optional
-       The minimum limit of the band. Use `None`, the default,
-       to use the low value of the data set.
-    hi : number, optional
-       The maximum limit of the band, which must be larger than
-       `lo`. Use ``None``, the default, to use the upper value of
-       the data set.
+    lo, hi : number, optional
+       If both are None or both are set then calculate the flux
+       over the given band. If only one is set then calculate
+       the flux density at that point. The units for `lo` and `hi`
+       are given by the current analysis setting of the `data`
+       parameter.
 
     Returns
     -------
     flux
-       The flux from the source model integrated over the given
-       band. For X-Spec style models the units will be
-       photon/cm^2/s. If `hi` is ``None`` but `lo` is set then the flux
-       density is returned at that point: photon/cm^2/s/keV or
-       photon/cm^2/s/Angstrom depending on the analysis setting.
+       The flux or flux density of the source model. For X-Spec
+       models the flux units will be photon/cm^2/s and the flux
+       density is either photon/cm^2/s/keV or
+       photon/cm^2/s/Angstrom, depending on the analysis setting.
 
     See Also
     --------
@@ -365,22 +361,19 @@ def calc_source_sum(data, src, lo=None, hi=None):
     data
        The data object to use.
     src
-       The source expression.
-    lo : number, optional
-       The minimum limit of the band. Use ``None``, the default, to use
-       the low value of the data set.
-    hi : number, optional
-       The maximum limit of the band, which must be larger than
-       `lo`. Use ``None``, the default, to use the upper value of the
-       data set.
+       The source expression. This must not include the instrumental
+       responses.
+    lo, hi : number, optional
+       If both are None or both are set then sum up over the given
+       band. If only one is set then use the model value in the
+       selected bin. The units for `lo` and `hi` are given by the
+       current analysis setting of the `data` object.
 
     Returns
     -------
     signal : number
-       The source model summed up over the given band. This does
-       *not* include the bin width when using histogram-style
-       (integrated) data spaces, such as used with X-Spec
-       emission - also known as additive - models.
+       The source model summed up over the given band or for
+       a single bin.
 
     See Also
     --------
@@ -423,22 +416,18 @@ def calc_data_sum(data, lo=None, hi=None):
     ----------
     data
        The data object to use.
-    lo : number, optional
-       The minimum limit of the band. Use ``None``, the default, to use
-       the low value of the data set.
-    hi : number, optional
-       The maximum limit of the band, which must be larger than
-       `lo`. Use ``None``, the default, to use the upper value of the
-       data set.
+    lo, hi : number, optional
+       If both are None or both are set then use the full dataset.
+       If only one is set then use the data count for that bin.
+       The units for `lo` and `hi` are given by the current analysis
+       setting of the `data` parameter.
 
     Returns
     -------
     dsum : number
        The sum of the data values that lie within the given limits.
-       If `hi` is ``None`` but `lo` is set then the data value of the
-       bin containing the `lo` value are returned.  If a background
-       estimate has been subtracted from the data set then the
-       calculation will use the background-subtracted values.
+       If a background estimate has been subtracted from the data set
+       then the calculation will use the background-subtracted values.
 
     See Also
     --------
@@ -526,21 +515,20 @@ def calc_model_sum(data, model, lo=None, hi=None):
     ----------
     data
        The data object to use.
-    src
-       The source expression, which should not include the
-       instrumental responses.
-    lo : number, optional
-       The minimum limit of the band. Use ``None``, the default, to use
-       the low value of the data set.
-    hi : number, optional
-       The maximum limit of the band, which must be larger than
-       `lo`. Use ``None``, the default, to use the upper value of the
-       data set.
+    model
+       The source expression, which should include the instrumental
+       responses.
+    lo, hi : number, optional
+       If both are None or both are set then sum up over the given
+       band. If only one is set then use the model value in the
+       selected bin. The units for `lo` and `hi` are given by the
+       current analysis setting of the `data` object.
 
     Returns
     -------
     signal : number
-       The sum of the model values used to fit the data.
+       The source model summed up over the given band or for
+       a single bin.
 
     See Also
     --------
