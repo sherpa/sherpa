@@ -1,0 +1,316 @@
+#
+#  Copyright (C) 2020
+#     Smithsonian Astrophysical Observatory
+#
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+"""
+Flux-related tests of the sherpa.astro.ui module.
+"""
+
+import pytest
+
+import numpy as np
+
+from sherpa.astro import ui
+from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.err import IOErr
+
+
+# TODO: use wavelength and channels analysis
+
+@pytest.mark.parametrize("id", [None, 1, "foo"])
+def test_calc_flux_pha_invalid_range(id, clean_astro_ui):
+    """Ensure an error is raised if lo > hi"""
+
+    x = np.arange(3, 6)
+    y = np.ones(x.size - 1)
+
+    ui.load_arrays(id, x[:-1], x[1:], y, ui.Data1DInt)
+    mdl = ui.create_model_component('const1d', 'm')
+
+    if id is None:
+        ui.set_source(mdl)
+    else:
+        ui.set_source(id, mdl)
+
+    emsg = 'the energy range is not consistent, 12 !< 5'
+    with pytest.raises(IOErr, match=emsg):
+        if id is None:
+            ui.calc_energy_flux(12, 5)
+        else:
+            ui.calc_energy_flux(12, 5, id=id)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("id", [None, 1, "foo"])
+@pytest.mark.parametrize("lo, hi", [(None, None),
+                                    (0.1, 11),
+                                    (0.1, 7),
+                                    (0.5, 11),
+                                    (0.5, 7),
+                                    (0.05, 7),
+                                    (0.5, 15),
+                                    (0.05, 15),
+                                    (0.01, 0.05),
+                                    (12, 14)])
+def test_calc_flux_pha(id, lo, hi, make_data_path, clean_astro_ui):
+    """Do calc_photon/energy_flux return the expected results: fluxes?
+
+    This skips those combinations where only one of lo or hi
+    is None, since this is handle by test_calc_flux_density_pha.
+
+    Flues are in units of <value>/cm^2/s  {value=photon, erg}
+
+    The checks are made against ranges that are chosen to cover
+    matching the grid, a subset of the grid (with and without
+    matching the start/end), partial overlaps, and no overlap.
+    """
+
+    infile = make_data_path('3c273.pi')
+
+    # The 3c273 RMF was generated over the range 0.1 to 11 keV
+    # (inclusive). By picking gamma = 1 the photon-flux
+    # integral is just ampl * (log(ehi) - log(elo))
+    # and the energy-flux ampl is ampl * (ehi - elo) * scale
+    # where scale converts 1 keV to erg.
+    #
+    ampl = 1e-4
+
+    if lo is None:
+        loval = 0.1
+    elif lo < 0.1:
+        loval = 0.1
+    else:
+        loval = lo
+
+    if hi is None:
+        hival = 11.0
+    elif hi > 11.0:
+        hival = 11.0
+    else:
+        hival = hi
+
+    # expected fluxes; special case the handling of there being no
+    # overlap between the user grid and the data grid.
+    #
+    if lo is not None and (lo > 11.0 or hi < 0.1):
+        pflux_exp = 0.0
+        eflux_exp = 0.0
+    else:
+        pflux_exp = ampl * (np.log(hival) - np.log(loval))
+        eflux_exp = 1.602e-9 * ampl * (hival - loval)
+
+    pl = ui.create_model_component('powlaw1d', 'pl')
+    pl.ampl = ampl
+    pl.gamma = 1
+
+    if id is None:
+        ui.load_pha(infile)
+        ui.set_source(pl)
+    else:
+        ui.load_pha(id, infile)
+        ui.set_source(id, pl)
+
+    # Use a subset of the data range (to check that the calc routines
+    # ignores them, ie uses the full 0.1 to 11 keV range.
+    #
+    ui.ignore(None, 0.5)
+    ui.ignore(7, None)
+
+    # Do not use named arguments, but assume positional arguments
+    if id is None:
+        pflux = ui.calc_photon_flux(lo, hi)
+        eflux = ui.calc_energy_flux(lo, hi)
+    else:
+        pflux = ui.calc_photon_flux(lo, hi, id)
+        eflux = ui.calc_energy_flux(lo, hi, id)
+
+    # Since the energy fluxes are ~1e-12 we want to rescale the
+    # value before comparison. Here we use a log transform.
+    #
+    eflux_exp = np.log10(eflux_exp)
+    eflux = np.log10(eflux)
+
+    assert pflux == pytest.approx(pflux_exp, rel=1e-3)
+    assert eflux == pytest.approx(eflux_exp, rel=1e-4)
+
+
+def fails_619(*x):
+    """See issue 619
+
+    This isn't strictly needed, but useful for documentation
+    """
+    return pytest.param(*x, marks=pytest.mark.xfail)
+
+
+# The lo/hi range which match in the different settings; using _hc
+# to convert from keV to Angstroms is a bit low-level.
+#
+# The energy-to-channel conversion was done by filtering in energy
+# space and asking Sherpa what channels this selected.
+#
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("elo, ehi, setting, lo, hi",
+                         [(None, None, 'wave', None, None),
+                          (None, None, 'channel', None, None),
+                          (0.5, 7.0, 'wave',
+                           ui.DataPHA._hc / 7.0, ui.DataPHA._hc / 0.5),
+                          fails_619(0.5, 7.0, 'channel', 35, 480)  # see also 308
+                         ])
+def test_calc_flux_pha_analysis(elo, ehi, setting, lo, hi, make_data_path, clean_astro_ui):
+    """Do calc_photon/energy_flux return the expected results: fluxes + analysis setting
+
+    Basic test for different analysis settings: the
+    same range (modulo precision of conversion) gives the
+    same results.
+    """
+
+    infile = make_data_path('3c273.pi')
+    pl = ui.create_model_component('powlaw1d', 'pl')
+
+    ui.load_pha(infile)
+    ui.set_source(pl)
+
+    pflux = ui.calc_photon_flux(elo, ehi)
+    eflux = ui.calc_energy_flux(elo, ehi)
+
+    ui.set_analysis(setting)
+    pflux2 = ui.calc_photon_flux(lo, hi)
+    eflux2 = ui.calc_energy_flux(lo, hi)
+
+    # use approx here since the bin edges are not guaranteed
+    # to line up, and use a large tolerance.
+    #
+    assert pflux2 == pytest.approx(pflux, rel=1e-2)
+
+    eflux = np.log10(eflux)
+    eflux2 = np.log10(eflux2)
+    assert eflux2 == pytest.approx(eflux, rel=1e-3)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("id", [None, 1, "foo"])
+@pytest.mark.parametrize("energy", [0.05,
+                                    0.1,
+                                    fails_619(0.109),
+                                    0.11,
+                                    1,
+                                    fails_619(1.015),
+                                    5,
+                                    10.99,
+                                    fails_619(10.991),
+                                    11,
+                                    15])
+def test_calc_flux_density_pha(id, energy, make_data_path, clean_astro_ui):
+    """Do calc_photon/energy_flux return the expected results: densities
+
+    The answer should be the same when lo is set and hi
+    is None or vice versa. The flux densities are going to
+    be in units of <value>/cm^2/s/keV  {value=photon, erg}
+
+    Note: this tests the "edge" condition when lo=hi; this
+    is not documented, but left in as a check (and perhaps
+    it should be documented).
+
+    """
+
+    infile = make_data_path('3c273.pi')
+
+    # The 3c273 RMF was generated over the range 0.1 to 11 keV
+    # (inclusive). By picking gamma = 1 the photon flux
+    # density is ampl / e and the energy flux is scale * ampl.
+    # However, this is the exact calculation, but the one done by
+    # Sherpa involves calculating the model over a bin and then
+    # dividing by that bin width, which is different enough to
+    # the analytic formula that we use this approach here when
+    # calculating the expected values. The bin width is 0.01 keV,
+    # with bins starting at 0.1.
+    #
+    ampl = 1e-4
+
+    # flux densities: exact
+    # pflux_exp = ampl / energy
+    # eflux_exp = 1.602e-9 * ampl
+
+    # Note that you can calculate an answer at the left edge of the grid, but
+    # not at the right (this is either a < vs <= comparison, or numeric
+    # issues with the maximum grid value).
+    #
+    de = 0.01
+    if energy < 0.1 or energy >= 11:
+        pflux_exp = 0.0
+        eflux_exp = 0.0
+    else:
+        # assuming a bin centered on the energy; the actual grid
+        # is not this, but this should be close
+        hwidth = de / 2
+        pflux_exp = ampl * (np.log(energy + hwidth) - np.log(energy - hwidth)) / de
+        eflux_exp = 1.602e-9 * energy * pflux_exp
+
+    pl = ui.create_model_component('powlaw1d', 'pl')
+    pl.ampl = ampl
+    pl.gamma = 1
+
+    if id is None:
+        ui.load_pha(infile)
+        ui.set_source(pl)
+    else:
+        ui.load_pha(id, infile)
+        ui.set_source(id, pl)
+
+    # Use a subset of the data range (to check that the calc routines
+    # ignores them, ie uses the full 0.1 to 11 keV range.
+    #
+    ui.ignore(None, 0.5)
+    ui.ignore(7, None)
+
+    # Do not use named arguments, but assume positional arguments
+    if id is None:
+        pflux1 = ui.calc_photon_flux(energy)
+        pflux2 = ui.calc_photon_flux(None, energy)
+        pflux3 = ui.calc_photon_flux(energy, energy)
+
+        eflux1 = ui.calc_energy_flux(energy)
+        eflux2 = ui.calc_energy_flux(None, energy)
+        eflux3 = ui.calc_energy_flux(energy, energy)
+    else:
+        pflux1 = ui.calc_photon_flux(energy, None, id)
+        pflux2 = ui.calc_photon_flux(None, energy, id)
+        pflux3 = ui.calc_photon_flux(energy, energy, id)
+
+        eflux1 = ui.calc_energy_flux(energy, None, id)
+        eflux2 = ui.calc_energy_flux(None, energy, id)
+        eflux3 = ui.calc_energy_flux(energy, energy, id)
+
+    eflux1 = np.log10(eflux1)
+    eflux2 = np.log10(eflux2)
+    eflux3 = np.log10(eflux3)
+
+    # Use equality here since the numbers should be the same
+    assert pflux1 == pflux2
+    assert pflux1 == pflux3
+    assert eflux1 == eflux2
+    assert eflux1 == eflux3
+
+    # Note the "large" tolerance here
+    eflux_exp = np.log10(eflux_exp)
+    assert pflux1 == pytest.approx(pflux_exp, rel=5e-2)
+    assert eflux1 == pytest.approx(eflux_exp, rel=1e-3)
