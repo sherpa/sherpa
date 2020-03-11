@@ -235,10 +235,10 @@ def calc_ftest(dof1, stat1, dof2, stat2):
 
     Examples
     --------
-    >>> calc_ftest(11, 16.3, 10, 10.2) 
+    >>> calc_ftest(11, 16.3, 10, 10.2)
     0.03452352914891555
 
-    >>> calc_ftest([11, 11], [16.3, 16.3], [10, 9], [10.2, 10.5]) 
+    >>> calc_ftest([11, 11], [16.3, 16.3], [10, 9], [10.2, 10.5])
     array([0.03452353, 0.13819987])
     """
 
@@ -1003,9 +1003,10 @@ def filter_bins(mins, maxes, axislist):
 
     Returns
     -------
-    mask : ndarray
+    mask : ndarray or None
        A mask indicating whether the values are included (True) or
-       excluded (False).
+       excluded (False). If any of the input sequences are empty then
+       None will be returned.
 
     Examples
     --------
