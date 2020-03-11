@@ -12829,12 +12829,16 @@ class Session(sherpa.ui.utils.Session):
         else:
             return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
-    def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None,
+                         model=None):
         """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of S(E) over a pass band, where S(E) is
         the spectral model evaluated for each bin (that is, the model
         without any instrumental responses applied to it).
+
+        .. versionchanged:: 4.12.1
+           The model parameter was added.
 
         Parameters
         ----------
@@ -12850,6 +12854,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            If set, use the model associated with the given background
            component rather than the source model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
 
         Returns
         -------
@@ -12875,11 +12883,6 @@ class Session(sherpa.ui.utils.Session):
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
-
-        The flux is calculated from the given source model, so if it
-        includes an absorbing component then the result will represent
-        the absorbed flux. The absorbing component can be removed, or
-        set to absorb no photons, to get the un-absorbed flux.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
@@ -12923,26 +12926,41 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis('jet', 'wave')
         >>> calc_photon_flux(20, 22, id='jet', bkg_id=2)
 
+        For the following example, the source model is an absorbed
+        powerlaw - `xsphabs.gal * powerlaw.pl` - so that the `fabs`
+        value represents the absorbed flux, and `funabs` the unabsorbed
+        flux (i.e. just the power-law component):
+
+        >>> fabs = calc_photon_flux(0.5, 7)
+        >>> funabs = calc_photon_flux(0.5, 7, model=pl)
+
         """
 
         data = self.get_data(id)
-        model = None
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
+        if model is None:
+            if bkg_id is not None:
+                data = self.get_bkg(id, bkg_id)
+                model = self.get_bkg_source(id, bkg_id)
+            else:
+                model = self.get_source(id)
         else:
-            model = self.get_source(id)
+            _check_type(model, sherpa.models.Model, 'model',
+                        'a model object')
 
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
-    def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None,
+                         model=None):
         """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of E * S(E) over a pass band, where E
         is the energy of the bin and S(E) the spectral model evaluated
         for that bin (that is, the model without any instrumental
         responses applied to it).
+
+        .. versionchanged:: 4.12.1
+           The model parameter was added.
 
         Parameters
         ----------
@@ -12958,6 +12976,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            If set, use the model associated with the given background
            component rather than the source model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
 
         Returns
         -------
@@ -12983,11 +13005,6 @@ class Session(sherpa.ui.utils.Session):
 
         Any existing filter on the data set - e.g. as created by
         ``ignore`` or ``notice`` - is ignored by this function.
-
-        The flux is calculated from the given source model, so if it
-        includes an absorbing component then the result will represent
-        the absorbed flux. The absorbing component can be removed, or
-        set to absorb no photons, to get the un-absorbed flux.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
@@ -13027,15 +13044,28 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis('jet', 'wave')
         >>> calc_energy_flux(20, 22, id='jet', bkg_id=2)
 
-        """
-        data = self.get_data(id)
-        model = None
+        For the following example, the source model is an absorbed
+        powerlaw - `xsphabs.gal * powerlaw.pl` - so that the `fabs`
+        value represents the absorbed flux, and `funabs` the unabsorbed
+        flux (i.e. just the power-law component):
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
+        >>> fabs = calc_energy_flux(0.5, 7)
+        >>> funabs = calc_energy_flux(0.5, 7, model=pl)
+
+        """
+
+        data = self.get_data(id)
+
+        if model is None:
+            if bkg_id is not None:
+                data = self.get_bkg(id, bkg_id)
+                model = self.get_bkg_source(id, bkg_id)
+            else:
+                model = self.get_source(id)
         else:
-            model = self.get_source(id)
+            _check_type(model, sherpa.models.Model, 'model',
+                        'a model object')
+
         return sherpa.astro.utils.calc_energy_flux(data, model, lo, hi)
 
     # DOC-TODO: how do lo/hi limits interact with bin edges;

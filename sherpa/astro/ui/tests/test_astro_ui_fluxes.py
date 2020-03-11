@@ -28,13 +28,14 @@ import numpy as np
 
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ArgumentTypeErr, IOErr
 
 
 # TODO: use wavelength and channels analysis
 
 @pytest.mark.parametrize("id", [None, 1, "foo"])
-def test_calc_flux_pha_invalid_range(id, clean_astro_ui):
+@pytest.mark.parametrize("func", [ui.calc_photon_flux, ui.calc_energy_flux])
+def test_calc_flux_pha_invalid_range(id, func, clean_astro_ui):
     """Ensure an error is raised if lo > hi"""
 
     x = np.arange(3, 6)
@@ -48,12 +49,32 @@ def test_calc_flux_pha_invalid_range(id, clean_astro_ui):
     else:
         ui.set_source(id, mdl)
 
+    # Note: really the error message should not include energy since in
+    # this case (Data1DInt) there's no energy, and if this were
+    # a DataPHA case the message says energy even if analysis=wave
+    # or channel.
+    #
     emsg = 'the energy range is not consistent, 12 !< 5'
     with pytest.raises(IOErr, match=emsg):
         if id is None:
-            ui.calc_energy_flux(12, 5)
+            func(12, 5)
         else:
-            ui.calc_energy_flux(12, 5, id=id)
+            func(12, 5, id=id)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("func", [ui.calc_photon_flux, ui.calc_energy_flux])
+def test_calc_flux_pha_invalid_model(func, make_data_path, clean_astro_ui):
+    """Don't allow strings for model parameter"""
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+    ui.set_source('powerlaw.pl')
+
+    emsg = "'model' must be a model object"
+    with pytest.raises(ArgumentTypeErr, match=emsg):
+        func(0.5, 7, model='pl')
 
 
 @requires_data
@@ -314,3 +335,40 @@ def test_calc_flux_density_pha(id, energy, make_data_path, clean_astro_ui):
     eflux_exp = np.log10(eflux_exp)
     assert pflux1 == pytest.approx(pflux_exp, rel=5e-2)
     assert eflux1 == pytest.approx(eflux_exp, rel=1e-3)
+
+
+@requires_data
+@requires_fits
+def test_calc_flux_pha_unabsorbed(make_data_path, clean_astro_ui):
+    """Can we calculate an unabsorbed flux?"""
+
+    # The idea is that with a model expression of
+    #    const1d.scale * powlaw1d.pl
+    # when scale is not 1 (and not integrated) then we can
+    # just look to see if the "absorbed" flux is scale * the
+    # "unabsorbed" flux.
+    #
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    scale = ui.create_model_component('const1d', 'scale')
+    pl = ui.create_model_component('powlaw1d', 'pl')
+
+    scale.c0 = 0.8
+    scale.integrate = False
+    pl.gamma = 1.5
+    pl.ampl = 1e-4
+
+    ui.set_source(scale * pl)
+
+    pflux_abs = ui.calc_photon_flux(0.5, 7)
+    pflux_unabs = ui.calc_photon_flux(0.5, 7, model=pl)
+
+    eflux_abs = ui.calc_energy_flux(0.5, 7)
+    eflux_unabs = ui.calc_energy_flux(0.5, 7, model=pl)
+
+    pflux_scale = pflux_abs / pflux_unabs
+    eflux_scale = eflux_abs / eflux_unabs
+
+    assert pflux_scale == pytest.approx(0.8)
+    assert eflux_scale == pytest.approx(0.8)
