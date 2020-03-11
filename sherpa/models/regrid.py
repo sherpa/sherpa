@@ -32,9 +32,9 @@ import warnings
 
 import numpy as np
 from sherpa.utils._utils import rebin
+from sherpa.utils.akima import akima
 
 from sherpa.astro.utils import reshape_2d_arrays
-from sherpa.utils import interpolate, neville
 from sherpa.utils.err import ModelErr
 
 import logging
@@ -506,9 +506,9 @@ class ModelDomainRegridder1D():
     ----------
     method
         The function that interpolates the data from the internal
-        grid onto the requested grid. The default is
-        sherpa.utils.neville. This is *only* used for point
-        grids, as integrated grids use a simple rebinning scheme.
+        grid onto the requested grid. The default is akima. This is
+        *only* used for point grids, as integrated grids use a simple
+        rebinning scheme.
 
     Examples
     --------
@@ -531,19 +531,12 @@ class ModelDomainRegridder1D():
 
     """
 
-    def __init__(self, evaluation_space=None, name='regrid1d'):
+    def __init__(self, evaluation_space=None, name='regrid1d', **kwargs):
         self.name = name
         self.integrate = True
         self.evaluation_space = evaluation_space if evaluation_space is not None else EvaluationSpace1D()
 
-        # The tests show that neville (for simple interpolation-style
-        # analysis) is much-more accurate than linear_interp, so use
-        # that. If the user cares more about speed than accuracy
-        # then they can switch to sherpa.utils.linear_interp.
-        # Note that I have not tested the speed, so I am just assuming
-        # that linear_interp is faster than neville.
-        #
-        self.method = neville
+        self.method = kwargs.get("interp", akima)
 
     @property
     def grid(self):
@@ -627,7 +620,7 @@ class ModelDomainRegridder1D():
         if self.evaluation_space.is_integrated and requested_eval_space.is_integrated:
             lo = self.evaluation_space.grid[0]
             hi = self.evaluation_space.grid[1]
-            if np.any(lo[1:] < hi[:-1]):
+            if np.any(lo[1:] < hi[:-1]) or np.any(lo == hi):
                 raise ModelErr('needsint')
 
         return requested_eval_space
@@ -644,8 +637,7 @@ class ModelDomainRegridder1D():
         indices_within_data_space = np.where(indices < len(data_space))
         my_eval_space = eval_space[indices_within_data_space]
         yy = modelfunc(pars, eval_space, **kwargs)
-        y_interpolate = interpolate(data_space, eval_space, yy,
-                                    function=self.method)
+        y_interpolate = self.method(data_space, eval_space, yy)
         if y_interpolate.size == data_space.size and \
            eval_space[0] < data_space[0] and eval_space[-1] > data_space[-1]:
             return y_interpolate
@@ -667,15 +659,17 @@ class ModelDomainRegridder1D():
                 # This should be the most common case
                 y = modelfunc(pars, eval_space.grid[0], eval_space.grid[1],
                               **kwargs)
+                print(eval_space.grid[0], eval_space.grid[1])
+                print(data_space.grid[0], data_space.grid[1])
                 return rebin(y, eval_space.grid[0], eval_space.grid[1],
                              data_space.grid[0], data_space.grid[1])
             else:
                 # The integrate flag is set to false, so just evaluate the model
                 # and then interpolate using the grids midpoints.
-                y = modelfunc(pars, eval_space.midpoint_grid, **kwargs)
-                return interpolate(data_space.midpoint_grid,
-                                   eval_space.midpoint_grid, y,
-                                   function=self.method)
+                return self.eval_non_integrated(pars, modelfunc,
+                                                data_space.midpoint_grid,
+                                                eval_space.midpoint_grid,
+                                                **kwargs)
         else:
             return self.eval_non_integrated(pars, modelfunc,
                                             data_space.midpoint_grid,

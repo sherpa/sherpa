@@ -557,9 +557,26 @@ class ArithmeticModel(Model):
 
 
 class RegriddableModel1D(ArithmeticModel):
-    def regrid(self, *arrays):
+    def regrid(self, *arrays, **kwargs):
+        """
+        The class RegriddableModel1D allows the user to evaluate in the
+        requested space then interpolate onto the data space. An optional
+        argument 'interp' enables the user to change the interpolation method.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from sherpa.models.basic import Box1D
+        >>> mybox = Box1D()
+        >>> request_space = np.arange(1, 10, 0.1)
+        >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
+        """
+        valid_keys = ('interp')
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise TypeError("unknown keyword argument: '%s'" % key)
         eval_space = EvaluationSpace1D(*arrays)
-        regridder = ModelDomainRegridder1D(eval_space)
+        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
         regridder._make_and_validate_grid(arrays)
         return regridder.apply_to(self)
 

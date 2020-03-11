@@ -26,8 +26,11 @@ from pytest import approx
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt
+from sherpa.models.basic import Box1D
 from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel
-
+from sherpa.utils.err import ModelErr
+from sherpa.utils import neville, linear_interp
+from sherpa.utils import akima
 
 @pytest.fixture
 def setup():
@@ -239,9 +242,9 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
     # Get a model that evaluates on a different grid
     # This is the important part. Note that there is overlap, but
     # the start and end p
-    regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
-
-    np.testing.assert_array_equal(regrid_model([1, 2], [1, 2]), [0, 0])
+    with pytest.raises(ModelErr) as excinfo:
+        regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
+    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
 def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
@@ -260,6 +263,26 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
 
     with pytest.warns(UserWarning):
         np.testing.assert_array_equal(regrid_model(x, y), [0, 0, 0, 0])
+
+
+def test_runtime_interp():
+    def tst_runtime_interp(model, requested, interp):
+        regrid_model = mdl.regrid(requested, interp=interp)
+        yregrid = regrid_model(xgrid)
+        return yregrid
+    
+    xgrid = np.arange(2, 6, 0.1)
+    requested = np.arange(2.5, 5.1, 0.075)
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+    yregrid = tst_runtime_interp(mdl, requested, akima.akima)
+    assert yregrid.sum() < 4.53
+    yregrid = tst_runtime_interp(mdl, requested, linear_interp)
+    assert 4.51 < yregrid.sum() < 4.54
+    yregrid = tst_runtime_interp(mdl, requested, neville)
+    assert 5.0e6 < yregrid.sum() 
 
 
 class MyModel(RegriddableModel1D):
