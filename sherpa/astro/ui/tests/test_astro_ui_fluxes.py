@@ -29,6 +29,7 @@ import numpy as np
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import ArgumentTypeErr, IOErr
+import sherpa.astro.utils
 
 
 # TODO: use wavelength and channels analysis
@@ -75,6 +76,134 @@ def test_calc_flux_pha_invalid_model(func, make_data_path, clean_astro_ui):
     emsg = "'model' must be a model object"
     with pytest.raises(ArgumentTypeErr, match=emsg):
         func(0.5, 7, model='pl')
+
+
+@pytest.mark.xfail(reason='bug #619')
+def test_calc_flux_pha_bin_edges(clean_astro_ui):
+    """What happens when filter edges partially overlap bins?
+
+    Later tests may also cover this condition, but here we use
+    faked data that is made to make the behavior "obvious".
+    """
+
+    chans = np.arange(1, 11, 1, dtype=np.int)
+    counts = np.zeros(chans.size, dtype=np.int)
+
+    # "perfect" response
+    energies = np.arange(1, 12, 1)
+    elo, ehi = energies[:-1], energies[1:]
+    flat = np.ones(chans.size, dtype=np.int)
+
+    d = ui.DataPHA('example', chans, counts)
+    arf = ui.create_arf(elo, ehi, flat)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=elo, startchan=1,
+                        fname=None)
+
+    d.set_arf(arf)
+    d.set_rmf(rmf)
+    ui.set_data(1, d)
+
+    ui.set_source(ui.powlaw1d.pl)
+    pl.ampl = 1e-4
+    pl.gamma = 1.7
+
+    # Evaluate the model on the energy grid
+    ymdl = pl(elo, ehi)
+
+    pflux = ui.calc_photon_flux(2.6, 7.8)
+    eflux = ui.calc_energy_flux(2.6, 7.8)
+
+    enscale = sherpa.astro.utils._charge_e
+
+    # Left in as notes:
+    #
+    # This are the true values. Given that the edge bins (should be)
+    # using linear interpolation, how close do we get to this?
+    #
+    # gterm1 = 1.0 - 1.7
+    # gterm2 = 2.0 - 1.7
+    # true_pflux = 1e-4 * (7.8**gterm1 - 2.6**gterm1) / gterm1
+    # true_eflux = enscale * 1e-4 * (7.8**gterm2 - 2.6**gterm2) / gterm2
+    #
+    # Comparing the linear interpolation scheme to that used by
+    # Sherpa prior to fixing #619, I find
+    #
+    # Photon fluxes:
+    #     linear_interp / true_pflux = 1.042251
+    #     sherpa        / true_pflux = 0.837522
+    #
+    # Energy fluxes:
+    #     linear_interp / true_eflux = 1.017872
+    #     sherpa        / true_eflux = 0.920759
+    #
+    scale = np.asarray([0.0, 0.4, 1.0, 1.0, 1.0, 1.0, 0.8, 0, 0.0, 0.0])
+    expected_pflux = (ymdl * scale).sum()
+
+    emid = enscale * (elo + ehi) / 2
+    expected_eflux = (emid * ymdl * scale).sum()
+
+    assert pflux == pytest.approx(expected_pflux)
+
+    # check against log as values ~ 3e-13
+    eflux = np.log10(eflux)
+    expected_eflux = np.log10(expected_eflux)
+    assert eflux == pytest.approx(expected_eflux)
+
+
+@pytest.mark.xfail(reason='bug #619')
+def test_calc_flux_pha_density_bin_edges(clean_astro_ui):
+    """What happens when filter edges partially overlap bins? flux density
+
+    Later tests may also cover this condition, but here we use
+    faked data that is made to make the behavior "obvious".
+    """
+
+    chans = np.arange(1, 11, 1, dtype=np.int)
+    counts = np.zeros(chans.size, dtype=np.int)
+
+    # "perfect" response
+    energies = np.arange(1, 12, 1)
+    elo, ehi = energies[:-1], energies[1:]
+    flat = np.ones(chans.size, dtype=np.int)
+
+    d = ui.DataPHA('example', chans, counts)
+    arf = ui.create_arf(elo, ehi, flat)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=elo, startchan=1,
+                        fname=None)
+
+    d.set_arf(arf)
+    d.set_rmf(rmf)
+    ui.set_data(1, d)
+
+    ui.set_source(ui.powlaw1d.pl)
+    pl.ampl = 1e-4
+    pl.gamma = 1.7
+
+    # choose an energy that is not equal to the center of the bin
+    # just to check how this is handled
+    #
+    pdens = ui.calc_photon_flux(2.6)
+    edens = ui.calc_energy_flux(2.6)
+
+    enscale = sherpa.astro.utils._charge_e
+
+    # Evaluate the model over the bin 2-3 keV; since the grid
+    # has a width of 1 keV we do not need to divide by the bin
+    # width when calculating the density.
+    #
+    ymdl = pl([2], [3])
+    expected_pdens = ymdl.sum()
+    expected_edens = enscale * 2.5 * expected_pdens
+
+    # Prior to fixing #619, Sherpa returns 0 for both densities
+    #
+    assert pdens == pytest.approx(expected_pdens)
+
+    # check against log as values ~ 5e-13
+    edens = np.log10(edens)
+    expected_edens = np.log10(expected_edens)
+    assert edens == pytest.approx(expected_edens)
+
 
 
 @requires_data
@@ -275,8 +404,15 @@ def test_calc_flux_density_pha(id, energy, make_data_path, clean_astro_ui):
     # not at the right (this is either a < vs <= comparison, or numeric
     # issues with the maximum grid value).
     #
+    # Note that the RMF emin is just above 0.1 keV, ie
+    # 0.10000000149011612, which is why an energy of 0.1 gives
+    # an answer of 0. Now, sao_fcmp(0.1, 0.10000000149011612, sherpa.utils.eps)
+    # returns 0, so we could consider these two values equal, but
+    # that would complicate the flux calculation so is (currently) not
+    # done.
+    #
     de = 0.01
-    if energy < 0.1 or energy >= 11:
+    if energy <= 0.1 or energy >= 11:
         pflux_exp = 0.0
         eflux_exp = 0.0
     else:
