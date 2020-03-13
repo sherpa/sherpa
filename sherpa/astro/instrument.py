@@ -558,19 +558,7 @@ class RSPModelPHA(RSPModel):
     def calc(self, p, x, xhi=None, *args, **kwargs):
         # x could be channels or x, xhi could be energy|wave
 
-        if len(self.rmf._lo_unfiltered) > len(self.xlo):
-             xlo = self.rmf._lo_unfiltered
-        else:
-            xlo = self.xlo
-        if len(self.rmf._hi_unfiltered) > len(self.xhi):
-            xhi = self.rmf._hi_unfiltered
-        else:
-            xhi = self.xhi
-        src = self.model.calc(p, xlo, xhi)
-        bin_mask = self.rmf.bin_mask
-        if bin_mask is not None and \
-           (len(bin_mask) == len(xlo) and len(bin_mask) == len(xhi)):
-            src = src[bin_mask]
+        src = self.model.calc(p, self.xlo, self.xhi)
         src = self.arf.apply_arf(src, *self.arfargs)
         src = self.rmf.apply_rmf(src, *self.rmfargs)
 
