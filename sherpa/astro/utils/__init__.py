@@ -24,7 +24,7 @@ from ._utils import arf_fold, do_group, expand_grouped_mask, \
     filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
 from ._pileup import apply_pileup
 
-from sherpa.utils import SherpaFloat, get_position, filter_bins
+from sherpa.utils import get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
 
 
@@ -51,7 +51,10 @@ except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
             'will not be available')
 
+# Useful constants
+#
 _hc = 12.39841874  # nist.gov in [keV-Angstrom]
+_charge_e = 1.60217653e-09  # elementary charge [ergs] 1 keV, nist.gov
 
 
 def reshape_2d_arrays(x0, x1):
@@ -110,55 +113,237 @@ def bounds_check(lo, hi):
     return (lo, hi)
 
 
-_charge_e = 1.60217653e-09  # elementary charge [ergs] 1 keV, nist.gov
+def range_overlap_1dint(axislist, lo, hi):
+    """Return 'overlap' fraction of a 1D int. grid for a range.
+
+    Parameters
+    ----------
+    axislist : sequence of array, array
+        The low and high edges of the bins (in that order). The
+        two arrays must have the same size, in either
+        ascending or descending order (the same for both), and
+        have no gaps. The bins are inclusive for the low edge
+        and exclusive for the upper edge.
+    lo, hi : None or number
+        The range bounds; either both are None or both are set
+        with hi >= lo.
+
+    Returns
+    -------
+    scale : None or numpy array
+        An array indicating how much overlap there is between
+        the lo-hi grid and each bin (on a scale of 0 to 1).
+        There is one wrinkle: if lo = hi then the scale is
+        set to 1 for that bin. If there is no match then None
+        is returned.
+
+    Notes
+    -----
+    The bins are assumed to be inclusive for the lower edge and
+    exclusive for the higher edge. This means that if a flux
+    density is requested (lo=hi) and it falls on an edge then the
+    bin returned is the one starting at the requested value.
+
+    The consequences are that if the grid starts at gmin and ends
+    at gmax (low edge of first bin and high edge of last bin) then
+    lo=hi=gmin will return [1, 0, ...] and lo=hi=gmax returns None.
+
+    As a special case, when lo < hi (so a range is requested) and
+    hi=gmin, None is returned (rather than an array of 0's).
+
+    Comparison to the bin edges is done using the standard NumPy
+    comparison orders (since it is done by the numpy.digitize
+    routine). Given that RMF response grids (which are what this
+    is going to be used with) have "interesting" values, this
+    can cause surprising issues - for example, the test 3c273.pi
+    dataset has an RMF that starts at 0.10000000149011612 rather
+    than 0.1 keV, so a flux density calculated at 0.1 keV will
+    return 0. An alternative aprproach is to compare to bin edges
+    using sao_fcmp, but that would complicate the code.
+
+    """
+
+    # TODO: is compile_energy_grid relevant to this at all?
+
+    # A number of asserts are used to ensure invariants are actually
+    # true. They could be removed once this has shown to be
+    # working.
+    #
+    axislo = axislist[0]
+    axishi = axislist[1]
+    nbins = axislo.size
+    assert nbins == axishi.size
+    assert axishi[0] > axislo[0]
+
+    if lo is None and hi is None:
+        return numpy.ones(axislo.size)
+
+    assert lo is not None
+    assert hi is not None
+    density = lo == hi
+
+    # To simplify the following, we require that the grid be
+    # in ascending order.
+    #
+    ascending = axislo[1] > axislo[0]
+    if ascending:
+        edges = numpy.append(axislo, axishi[-1])
+    else:
+        edges = numpy.append(axishi[0], axislo)[::-1]
+
+    axmin = edges[0]
+    axmax = edges[-1]
+    assert axmin < axmax, (axmin, axmax)
+
+    # Some of these special cases could be checked before
+    # creating edges, but leave here for now.
+    #
+    if lo >= axmax or hi < axmin:
+        return None
+
+    if lo <= axmin and hi >= axmax:
+        return numpy.ones(nbins)
+
+    # special case handling of hi == axmin but lo != hi
+    #
+    if hi == axmin and lo < hi:
+        return None
+
+    # At this point there should be no cases where lo=hi
+    # and lo < axmin or >= axmax. This means we can replace
+    # lo and hi by axmin and axmax (if they exceed the limits),
+    # as that makes code below easier.
+    #
+    if density:
+        assert lo >= axmin and lo < axmax
+
+    lo = max(lo, axmin)
+    hi = min(hi, axmax)
+
+    # Find the bins corresponding to the start and end
+    # points. See the digitize documentation for the
+    # meaning of the return values.
+    #
+    bins = numpy.digitize([lo, hi], edges, right=False)
+    blo = bins[0]
+    bhi = bins[1]
+
+    # since lo has been set to a minimum of the lower edge,
+    # blo should always be >= 1. The upper limit can be
+    # > nbins when it is equal to the upper limit.
+    #
+    assert blo > 0, blo
+    # assert bhi <= nbins, (bhi, nbins)
+
+    scale = numpy.zeros(nbins)
+
+    ilo = blo - 1
+    if density:
+        assert blo == bhi
+        scale[ilo] = 1
+        return scale if ascending else scale[::-1]
+
+    if blo == bhi:
+        # a single bin
+        scale[ilo] = (hi - lo) / (edges[blo] - edges[ilo])
+        return scale if ascending else scale[::-1]
+
+    # Fully included
+    ihi = bhi - 1
+    scale[blo:ihi] = 1.0
+
+    # Low edge (may be fully included)
+    assert lo >= edges[ilo], (lo, edges[ilo])
+    assert lo <= edges[blo], (lo, edges[blo])
+    scale[ilo] = (edges[blo] - lo) / (edges[blo] - edges[ilo])
+
+    # High edge (may be fully included)
+    if bhi <= nbins:
+        assert hi >= edges[ihi], (hi, edges[ihi])
+        assert hi <= edges[bhi], (hi, edges[bhi])
+        scale[ihi] = (hi - edges[ihi]) / (edges[bhi] - edges[ihi])
+
+    return scale if ascending else scale[::-1]
 
 
 def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     lo, hi = bounds_check(lo, hi)
 
-    axislist = None
-    if hasattr(data, '_get_indep'):
-        axislist = data._get_indep(filter=False)
-    else:
-        axislist = data.get_indep(filter=False)
+    try:
+        method = data._get_indep
+    except AttributeError:
+        method = data.get_indep
 
+    axislist = method(filter=False)
+    dim = numpy.asarray(axislist).squeeze().ndim
+    if dim > 2:
+        raise IOErr('>axes', "2")
+
+    # assume this should not happen, so we do not have to worry
+    # about a nice error message
+    assert dim > 0
+
+    # To make things simpler, evaluate on the full grid
     y = src(*axislist)
 
-    if srcflux and len(axislist) > 1:
+    if srcflux and dim == 2:
         y /= numpy.asarray(axislist[1] - axislist[0])
 
-    dim = numpy.asarray(axislist).squeeze().ndim
     if eflux:
         # for energy flux, the sum of grid below must be in keV.
+        #
         energ = []
+        convert = hasattr(data, 'units') and data.units == 'wavelength'
+
         for axis in axislist:
             grid = axis
-            if hasattr(data, 'units') and data.units == 'wavelength':
+            if convert:
                 grid = data._hc / grid
             energ.append(grid)
 
-        if dim == 1:
-            y = numpy.asarray(0.5 * y * energ[0], SherpaFloat)
-        elif dim == 2:
-            y = numpy.asarray(0.5 * y * (energ[0] + energ[1]),
-                              SherpaFloat)
+        if dim == 2:
+            ecorr = 0.5 * (energ[0] + energ[1])
         else:
-            raise IOErr('>axes', "2")
+            # why multiply by 0.5?
+            ecorr = 0.5 * energ[0]
 
-    mask = filter_bins((lo,), (hi,), (axislist[0],))
+        y *= ecorr
 
-    val = y.sum()
-    if mask is not None:
-        flux = y[mask]
-        # flux density at a single bin -> divide by bin width.
-        if dim == 2 and len(flux) == 1:
-            flux /= numpy.abs(axislist[1][mask] - axislist[0][mask])
-        val = flux.sum()
+    # What bins do we use for the calculation? Linear interpolation
+    # is used for bin edges (for integrated data sets)
+    #
+    if dim == 1:
+        mask = filter_bins((lo,), (hi,), (axislist[0],))
+        assert mask is not None
 
+        # no bin found
+        if numpy.all(~mask):
+            return 0.0
+
+        # convert boolean to numbers
+        scale = 1.0 * mask
+
+    else:
+        scale = range_overlap_1dint(axislist, lo, hi)
+        if scale is None:
+            return 0.0
+
+        assert scale.max() > 0
+
+    # Originally a flux density was calculated if both lo and hi
+    # fell in the same bin, but this has been changed so that
+    # we only calculate a density if the lo and hi values are the
+    # same (which is set by bounds_check when a density is requested).
+    #
+    if lo is not None and dim == 2 and lo == hi:
+        assert scale.sum() == 1, 'programmer error: sum={}'.format(scale.sum())
+        y /= numpy.abs(axislist[1] - axislist[0])
+
+    flux = (scale * y).sum()
     if eflux:
-        val *= _charge_e
+        flux *= _charge_e
 
-    return val
+    return flux
 
 
 def _counts(data, lo, hi, func, *args):
@@ -500,7 +685,7 @@ def calc_data_sum2d(data, reg=None):
     `ignore2d` or `notice2d` - is ignored by this function.
 
     """
-    return _counts2d(data, reg, data.apply_filter, data.get_dep() )
+    return _counts2d(data, reg, data.apply_filter, data.get_dep())
 
 
 # ## DOC-TODO: better comparison of calc_source_sum and calc_model_sum
@@ -614,6 +799,9 @@ def eqwidth(data, model, combo, lo=None, hi=None):
         xlo = data.get_indep(filter=True)[0]
         num = len(xlo)
 
+    # TODO: should this follow _flux and handle the case when
+    #       we have xlo, xhi differently?
+    #
     mask = filter_bins((lo,), (hi,), (xlo,))
     if mask is not None:
         my = my[mask]

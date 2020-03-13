@@ -78,7 +78,6 @@ def test_calc_flux_pha_invalid_model(func, make_data_path, clean_astro_ui):
         func(0.5, 7, model='pl')
 
 
-@pytest.mark.xfail(reason='bug #619')
 def test_calc_flux_pha_bin_edges(clean_astro_ui):
     """What happens when filter edges partially overlap bins?
 
@@ -150,7 +149,6 @@ def test_calc_flux_pha_bin_edges(clean_astro_ui):
     assert eflux == pytest.approx(expected_eflux)
 
 
-@pytest.mark.xfail(reason='bug #619')
 def test_calc_flux_pha_density_bin_edges(clean_astro_ui):
     """What happens when filter edges partially overlap bins? flux density
 
@@ -360,13 +358,13 @@ def test_calc_flux_pha_analysis(elo, ehi, setting, lo, hi, make_data_path, clean
 @pytest.mark.parametrize("id", [None, 1, "foo"])
 @pytest.mark.parametrize("energy", [0.05,
                                     0.1,
-                                    fails_619(0.109),
+                                    0.109,
                                     0.11,
                                     1,
-                                    fails_619(1.015),
+                                    1.015,
                                     5,
                                     10.99,
-                                    fails_619(10.991),
+                                    10.991,
                                     11,
                                     15])
 def test_calc_flux_density_pha(id, energy, make_data_path, clean_astro_ui):
