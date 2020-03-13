@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -439,7 +439,7 @@ def test_regrid1d_error_grid_mismatch_1(setup_1d):
 
 def test_ui_regrid1d_non_overlapping_not_allowed():
     """Integrated data space must not overlap"""
-    
+
     ui.dataspace1d(1,100,2,dstype=Data1DInt)
     b1 = Box1D()
     ui.set_model(b1)
@@ -448,7 +448,7 @@ def test_ui_regrid1d_non_overlapping_not_allowed():
     b1.ampl.max=100
     grid_hi = np.linspace(2,101,600)
     grid_lo = np.linspace(1,100,600)
-    with pytest.raises(ModelErr) as excinfo:    
+    with pytest.raises(ModelErr) as excinfo:
         rb1 = b1.regrid(grid_lo,grid_hi)
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
@@ -462,7 +462,7 @@ def test_low_level_regrid1d_non_overlapping_not_allowed():
     c = Box1D()
     lo = np.linspace(1,100,600)
     hi = np.linspace(2,101,600)
-    with pytest.raises(ModelErr) as excinfo:    
+    with pytest.raises(ModelErr) as excinfo:
         c.regrid(lo, hi)
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
@@ -856,7 +856,7 @@ def test_evaluation_space2d_start_end(xlo, xhi, ylo, yhi):
 @pytest.mark.parametrize('integrated', [
     True, False
 ])
-def test_evaluation_space2d_overlaps(setup_overlapping_spaces):
+def test_evaluation_space2d_overlaps(x_overlaps, y_overlaps, integrated, setup_overlapping_spaces):
     x1, y1, x2, y2, overlaps = setup_overlapping_spaces
 
     space_one = EvaluationSpace2D(x=x1[0], xhi=x1[1], y=y1[0], yhi=y1[1])
