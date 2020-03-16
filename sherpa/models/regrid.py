@@ -659,8 +659,6 @@ class ModelDomainRegridder1D():
                 # This should be the most common case
                 y = modelfunc(pars, eval_space.grid[0], eval_space.grid[1],
                               **kwargs)
-                print(eval_space.grid[0], eval_space.grid[1])
-                print(data_space.grid[0], data_space.grid[1])
                 return rebin(y, eval_space.grid[0], eval_space.grid[1],
                              data_space.grid[0], data_space.grid[1])
             else:
