@@ -63,31 +63,6 @@ except:
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatRMF')
 
 
-class myCacheARF:
-    def __init__(self, func):
-        self.func = func
-        self.cache = {}
-        self.queue = ['']
-
-    def __call__(self, src, rsp):
-        tmp = b''.join([src.tostring(), rsp.tostring()])
-        digest = hashlib.sha256(tmp).digest()
-        if digest in self.cache:
-            return self.cache[digest].copy()
-        else:
-            val = self.func(src, rsp)
-            key = self.queue.pop(0)
-            self.cache.pop(key, None)
-            self.queue.append(digest)
-            self.cache[digest] = val.copy()
-            return val
-
-
-@myCacheARF
-def my_arf_fold(a, b):
-    return arf_fold(a, b)
-
-
 def _notice_resp(chans, arf, rmf):
     bin_mask = None
 
@@ -347,7 +322,7 @@ class DataARF(DataOgipResponse):
 
         # an external function must be called so all ARFs go through
         # a single entry point in order for caching to 'work'
-        model = my_arf_fold(src, self._rsp)
+        model = arf_fold(src, self._rsp)
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
@@ -449,9 +424,6 @@ class DataRMF(DataOgipResponse):
         self._rsp = matrix
         self._lo = energ_lo
         self._hi = energ_hi
-        self._lo_unfiltered = self._lo[:]
-        self._hi_unfiltered = self._hi[:]
-        self.bin_mask = None
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
 
     def __str__(self):
@@ -524,8 +496,6 @@ class DataRMF(DataOgipResponse):
                                      self.n_chan, self.matrix, self.offset)
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
-        if bin_mask is not None:
-            self.bin_mask = bin_mask[:]
         return bin_mask
 
     def get_indep(self, filter=False):
