@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,8 +29,11 @@ It is also a place to test the handling of multiple datasets, in
 particular backgrounds, since even the PHA1 versions of the grating
 data have two background components.
 """
+
 import logging
 import pytest
+
+import numpy as np
 
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import IdentifierErr
@@ -39,6 +42,7 @@ from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 
 
+# TODO: replace by clean_astro_ui
 @pytest.fixture(autouse=True)
 def setup(request):
     ui.clean()
@@ -376,3 +380,105 @@ def test_list_response_ids_pha1(make_data_path):
         ui.list_response_ids('heg1', bkg_id=fakeid)
 
     validate_err('heg1', excinfo)
+
+
+@requires_data
+@requires_fits
+def test_746(make_data_path):
+    """Test https://github.com/sherpa/sherpa/issues/746
+
+    Something in #444 (reverted in #759) caused:
+
+      - the fit to fail (niter=2)
+      - the line amplitude not to change significantly
+      - the statistic reported by the fit to be different to
+        that returned by calc_stat
+
+    Something with how the cache code handles analysis=wave
+    appears to be the problem. This test takes the line data
+    from 746 and adds it into the existing PHA2 file we have
+    (3c120) to replicate the problem. Fortunately this
+    wavelength range contains essentially no counts, so we
+    can just add in the counts to make a fake line and check
+    we can fit it.
+    """
+
+    ui.load_pha(make_data_path('3c120_pha2.gz'))
+    ui.load_arf(10, make_data_path('3c120_meg_1.arf.gz'))
+    ui.load_rmf(10, make_data_path('3c120_meg_1.rmf.gz'))
+
+    # Add in the line
+    d10 = ui.get_data(10)
+    idx = np.arange(4068, 4075, dtype=np.int)
+    d10.counts[idx] = [1, 1, 1, 2, 3, 1, 1]
+
+    # group the data
+    ui.group_width(id=10, num=2)
+
+    ui.set_analysis('wave')
+    ui.notice(21.4, 21.7)
+
+    # internal check that getting the expected data
+    expected = np.zeros(32)
+    expected[[9, 10, 11, 12]] = [2, 3, 4, 1]
+    expected[26] = 1  # this count is from the 3c120 data
+    d = d10.get_dep(filter=True)
+    assert d == pytest.approx(expected)
+
+    line = ui.create_model_component('gauss1d', 'name')
+
+    # treat the line as a delta function
+    line.fwhm.val = 0.00001
+    line.fwhm.frozen = True
+    line.pos = 21.6
+    line.pos.frozen = True
+
+    line.ampl = 2
+
+    ui.set_source(10, line)
+
+    # the original fit used levmar, so use that here
+    # (it looks like it also fails with simplex)
+    ui.set_method('levmar')
+    ui.set_stat('cstat')
+
+    sinit = ui.calc_stat(10)
+    ui.fit(10)
+    fr = ui.get_fit_results()
+    sfinal = ui.calc_stat(10)
+
+    # Did the
+    #   - fit improve
+    #   - take more than two iterations
+    #   - report the same statistic values as calc_stat
+    #   - change the fit parameter
+    #
+    assert sfinal < sinit
+
+    assert fr.succeeded
+    assert fr.nfev > 2
+
+    assert fr.istatval == sinit
+    assert fr.statval == sfinal
+
+    assert line.ampl.val > 100
+    assert len(fr.parvals) == 1
+    assert fr.parvals[0] == line.ampl.val
+
+    # some simple checks to throw in because we can
+    assert fr.parnames == ('name.ampl', )
+    assert fr.datasets == (10,)
+    assert fr.statname == 'cstat'
+    assert fr.methodname == 'levmar'
+    assert fr.itermethodname == 'none'
+    assert fr.numpoints == 32
+    assert fr.dof == 31
+
+    # Now add in some "absolute" checks to act as regression tests.
+    # If these fail then it doesn't necessarily mean something bad
+    # has happened.
+    #
+    assert fr.nfev == 15
+    assert sinit == pytest.approx(82.72457294394245)
+    assert sfinal == pytest.approx(15.39963248224592)
+    assert line.ampl.val == pytest.approx(113.95646989927054)
