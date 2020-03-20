@@ -251,23 +251,3 @@ class Akima:
         c = (3.0 * m - 2.0 * b[0:n - 1] - b[1:n]) / dx
         d = (b[0:n - 1] + b[1:n] - 2.0 * m) / dx ** 2
         return b, c, d, n, x, y
-
-
-if '__main__' == __name__:
-    import sys
-
-    x = numpy.sort(numpy.random.random(10) * 10)
-    y = numpy.random.normal(0.0, 0.1, size=len(x))
-    akima = Akima(x, y)
-
-    num = 3
-    if len(sys.argv) > 1:
-        num = sys.argv[1]
-    for ii in numpy.linspace(0.01, 0.05, num):
-        xx = numpy.arange(x[0], x[-1], 0.05)
-        z = interpolate(x, y, xx)
-        akima_z = akima(xx)
-        if numpy.allclose(akima_z, z) is False:
-            diff = abs(z - akima_z)
-            diff = diff.sum()
-            raise ValueError('diff = %g' % diff)
