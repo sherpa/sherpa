@@ -18,6 +18,7 @@
 #
 
 import numpy
+import pytest
 
 from sherpa.utils import akima
 
@@ -31,8 +32,5 @@ def test_akima():
         xx = numpy.arange(x[0], x[-1], 0.05)
         z = akima.interpolate(x, y, xx)
         akima_z = myakima(xx)
-        if numpy.allclose(akima_z, z) is False:
-            diff = abs(z - akima_z)
-            diff = diff.sum()
-            raise ValueError('diff = %g' % diff)
+        assert akima_z == pytest.approx(z)
 
