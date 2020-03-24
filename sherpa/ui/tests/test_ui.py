@@ -549,7 +549,7 @@ class MyCacheTestModel(ArithmeticModel):
         self.counter = 0
         ArithmeticModel.__init__(self, name, (self.A, self.mylambda, self.b))
 
-@pytest.mark.usefixtures("clean_ui")
+
 def test_cache():
     """To make sure that the runtime fit(cache=???) works"""
 
