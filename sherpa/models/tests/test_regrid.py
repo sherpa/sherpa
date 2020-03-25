@@ -25,7 +25,7 @@ from pytest import approx
 
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
-from sherpa.data import Data1DInt
+from sherpa.data import Data1DInt, Data1D
 from sherpa.models.basic import Box1D
 from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel
 from sherpa.utils.err import ModelErr
@@ -280,11 +280,18 @@ def test_runtime_interp():
     yregrid = tst_runtime_interp(mdl, requested, akima.akima)
     assert yregrid.sum() < 4.53
     yregrid = tst_runtime_interp(mdl, requested, linear_interp)
-    assert 4.51 < yregrid.sum() < 4.54
+    assert 4.4 == approx(yregrid.sum())
     yregrid = tst_runtime_interp(mdl, requested, neville)
-    assert 5.0e6 < yregrid.sum() 
+    assert - 5.0e6 > yregrid.sum() 
 
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+    yexpected = d.eval_model(mdl)
+    requested = np.arange(2.5, 7, 0.2)
+    rmdl = mdl.regrid(requested)
+    ygot = d.eval_model(rmdl)
+    assert ygot == approx(yexpected)
 
+    
 class MyModel(RegriddableModel1D):
     """
     A model that returns [100, ] * len(x) if 2.5 is in the input array x

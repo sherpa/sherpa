@@ -627,23 +627,36 @@ class ModelDomainRegridder1D():
 
     def eval_non_integrated(self, pars, modelfunc, data_space, eval_space,
                             **kwargs):
-        y = np.zeros(data_space.size)
 
         # eval_space is out of data_space range
         if eval_space[-1] < data_space[0] or eval_space[0] > data_space[-1]:
-            return y
+            return np.zeros(data_space.size)
 
-        indices = data_space.searchsorted(eval_space)
-        indices_within_data_space = np.where(indices < len(data_space))
-        my_eval_space = eval_space[indices_within_data_space]
-        yy = modelfunc(pars, eval_space, **kwargs)
-        y_interpolate = self.method(data_space, eval_space, yy)
+        #
+        # join all elements of data_space within
+        # eval_spaee to minimize interpolation
+        #
+        indices = np.where((data_space > eval_space[0]) & \
+                           (data_space < eval_space[-1]))
+        my_eval_space = np.unique(np.append(eval_space, data_space[indices]))
+
+        y_tmp = modelfunc(pars, my_eval_space, **kwargs)
+        y_interpolate = self.method(data_space, my_eval_space, y_tmp)
+
         if y_interpolate.size == data_space.size and \
            eval_space[0] < data_space[0] and eval_space[-1] > data_space[-1]:
+            # data space all within eval_space
             return y_interpolate
-        indices_within_y = np.where(indices < len(y))
-        y[indices[indices_within_y]] = y_interpolate[indices[indices_within_y]]
+
+        # find indices within data_space
+        indices = np.unique(data_space.searchsorted(my_eval_space))
+        indices = indices[np.where(indices < data_space.size)]
+
+        y = np.zeros(data_space.size)
+        y[indices] = y_interpolate[indices]
+
         return y
+
 
     def _evaluate(self, data_space, pars, modelfunc, **kwargs):
         """

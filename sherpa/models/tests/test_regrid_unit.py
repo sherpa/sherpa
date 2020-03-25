@@ -399,7 +399,9 @@ def test_regrid1d_passes_through_the_grid():
 
     store = store[0]
     assert store[0] == [-34.5]
-    assert (store[1] == grid_expected).all()
+    combine = np.unique(np.append(grid_expected, grid_requested))
+    indices = combine.searchsorted(store[1])
+    assert (store[1] == combine[indices]).all()
 
 
 def test_regrid1d_error_calc_no_args(setup_1d):
