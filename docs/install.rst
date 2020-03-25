@@ -127,6 +127,8 @@ command::
 
 The NumPy package must already have been installed for this to work.    
 
+.. _build-from-source:
+
 Building from source
 ====================
 
@@ -322,6 +324,12 @@ built in specific environments, such as when it is built as part
 of the `CIAO analysis system <http://cxc.harvard.edu/ciao/>`_. Please
 see the comments in the ``setup.cfg`` file for more information on
 these options.
+
+Installing all dependencies with conda
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See :ref:`source-install-with-conda` for details on how to set up all
+dependencies for the Sherpa build with conda.
 
 Building and Installing
 -----------------------
