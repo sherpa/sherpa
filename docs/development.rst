@@ -35,7 +35,7 @@ Conda can be used to install all the dependencies for Sherpa.
  
 ::
 
-    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ciao ds9 ciao-contrib caldb_main astropy
+    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ds9 astropy
     conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao sherpa
     conda install -n sherpaciao -c anaconda -c astropy sphinx graphviz sphinx-astropy sphinx_rtd_theme
 
@@ -44,8 +44,9 @@ The first line installes the full `CIAO release
 and running tests locally. The last line adds all requirements for
 building the documentation.  Sherpa can use either astropy or crates
 as backend for reading and writing files. The default configuration in
-Sherpa is to use astropy. However, if crates is selected as backend in
-`sherpa.rc`, then astropy can be omitted from the install.
+Sherpa is to use astropy. However, if crates is installed (e.g. by
+installing the `ciao` package) and selected as backend in `sherpa.rc`,
+then astropy can be omitted from the install.
 
 As described in :ref:`build-from-source`, the file ``setup.cfg`` in
 the root directory of the sherpa source needs to be modified to
@@ -95,7 +96,8 @@ the file can be marked as "assumed unchanged".
 
     git update-index --assume-unchanged setup.cfg
 
-After these steps, the conda enviroment (here called ``sherpaciao``) can be activated and Sherpa can be build from source.
+After these steps, the conda enviroment (here called ``sherpaciao``)
+can be activated and Sherpa can be build from source.
 
 ::
 
