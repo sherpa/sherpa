@@ -454,9 +454,6 @@ def test_ui_regrid1d_non_overlapping_not_allowed():
 def test_low_level_regrid1d_non_overlapping_not_allowed():
     """Integrated data space must not overlap"""
 
-    tmp = np.linspace(1, 100, 10)
-    y = np.ones((9,))
-    d = Data1DInt('tst', tmp[:-1], tmp[1:], np.ones((9,)))
     c = Box1D()
     lo = np.linspace(1,100,600)
     hi = np.linspace(2,101,600)
@@ -479,6 +476,181 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
         mdl(grid_run[:-1], grid_run[1:])
 
     assert ModelErr.dict['needspoint'] in str(excinfo.value)
+
+
+@pytest.mark.parametrize("requested",
+                         [ np.arange(1, 7, 0.1),
+                           np.arange(1, 7, 0.05),
+                           np.arange(1, 7, 0.2),
+                       ])
+def test_low_level_regrid1d_full_overlap(requested):
+    """Base case of test_low_level_regrid1d_partial_overlap
+    """
+
+    # The range over which we want the model evaluated
+    xgrid = np.arange(2, 6, 0.1)
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4)
+
+    ygot = d.eval_model(mdl.regrid(requested))
+    assert ygot == pytest.approx(yexpected)
+
+
+@pytest.mark.parametrize("requested",
+                         [ np.arange(2.5, 7, 0.2),
+                           np.arange(1, 5.1, 0.2),
+                           np.arange(2.5, 5.1, 0.2),
+                           np.arange(2.5, 7, 0.075),
+                           np.arange(1, 5.1, 0.075),
+                           np.arange(2.5, 5.1, 0.075)
+                       ])
+def test_low_level_regrid1d_partial_overlap(requested):
+    """What happens if there is partial overlap of the grid?
+
+    The question becomes how do we evaluate the model
+    "outside" the regrid range. There's at least two
+    options:
+
+      a) set to 0
+      b) use the original grid
+
+    This test is chosen so that it holds with both
+    possibilities: the model evaluates to 0 outside
+    of x=3.1 - 4.2, and the partial overlaps are
+    carefully chosen to always include this full
+    range.
+
+    See https://github.com/sherpa/sherpa/issues/722
+    """
+
+    # The range over which we want the model evaluated
+    xgrid = np.arange(2, 6, 0.1)
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4)
+
+    ygot = d.eval_model(mdl.regrid(requested))
+    assert ygot == pytest.approx(yexpected)
+
+
+@pytest.mark.parametrize("requested, tol",
+                         [ (np.arange(1, 7, 0.1), 1e-7),
+                           (np.arange(1, 7, 0.05), 1e-7),
+                           (np.arange(1, 7, 0.2), 0.02)
+                       ])
+def test_low_level_regrid1d_int_full_overlap(requested, tol):
+    """Base case of test_low_level_regrid1d_int_partial_overlap
+    """
+
+    # The range over which we want the model evaluated
+    dx = 0.1
+    xgrid = np.arange(2, 6, dx)
+    xlo = xgrid[:-1]
+    xhi = xgrid[1:]
+    d = Data1DInt('tst', xlo, xhi, np.ones_like(xlo))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4 * dx)
+
+    ygot = d.eval_model(mdl.regrid(requested[:-1], requested[1:]))
+    assert ygot == pytest.approx(yexpected, abs=tol)
+
+
+@pytest.mark.parametrize("requested, tol",
+                         [ (np.arange(2.5, 7, 0.075), 0.007),
+                           (np.arange(1, 5.1, 0.075), 0.007),
+                           (np.arange(2.5, 5.1, 0.075), 0.007),
+                           (np.arange(2.5, 7, 0.12), 0.007),
+                           (np.arange(1, 5.1, 0.12), 0.012),
+                           (np.arange(2.5, 5.1, 0.12), 0.007),
+                           (np.arange(2.5, 7, 0.2), 0.02),
+                           (np.arange(1, 5.1, 0.2), 0.02),
+                           (np.arange(2.5, 5.1, 0.2), 0.02)
+                       ])
+def test_low_level_regrid1d_int_partial_overlap(requested, tol):
+    """What happens if there is partial overlap of the grid?
+
+    See test_low_level_regrid1d_partial_overlap.
+
+    See the comments for when the tol value is used (only for
+    edges, not "flat" sections of the model).
+    """
+
+    # The range over which we want the model evaluated
+    dx = 0.1
+    xgrid = np.arange(2, 6, dx)
+    xlo = xgrid[:-1]
+    xhi = xgrid[1:]
+    d = Data1DInt('tst', xlo, xhi, np.ones_like(xlo))
+
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+
+    yexpected = d.eval_model(mdl)
+    assert yexpected.min() == pytest.approx(0.0)
+    assert yexpected.max() == pytest.approx(0.4 * dx)
+
+    rlo = requested[:-1]
+    rhi = requested[1:]
+    ygot = d.eval_model(mdl.regrid(rlo, rhi))
+
+    # Note that due to the different bin widths of the input and
+    # output bins, the start and end bins of the integrated box
+    # model will not line up nicely, and so the rising and falling
+    # edges may cause differences for more than a single bin. We
+    # can think of there being five regions (going from left to
+    # right along the grid):
+    #
+    #    before
+    #    rising edge
+    #    middle of box
+    #    falling edge
+    #    after
+    #
+    # The expected bin values for the middle are 0.4 * dx = 0.04
+    # and before and after should be 0. The edges depend on the
+    # bin widths, so the tolerance here had been adjusted until
+    # the tests pass.
+    #
+    before = np.arange(0, 10)
+    rising = np.arange(10, 12)
+    middle = np.arange(12, 21)
+    trailing = np.arange(21, 23)
+    after = np.arange(23, 39)
+
+    # This ensures that if xgrid is changed (in length at least) we
+    # have a reminder to check the above ranges.
+    #
+    assert len(xlo) == 39
+
+    for idxs in [before, middle, after]:
+        assert ygot[idxs] == pytest.approx(yexpected[idxs])
+
+    for idxs in [rising, trailing]:
+        assert ygot[idxs] == pytest.approx(yexpected[idxs], abs=tol)
 
 
 # Evaluate on a grid x'_i which is close to the desired
