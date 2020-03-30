@@ -1,4 +1,4 @@
-# Copyright 2018 Smithsonian Astrophysical Observatory
+# Copyright 2018, 2020 Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
@@ -25,9 +25,12 @@ from pytest import approx
 
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
-from sherpa.data import Data1DInt
+from sherpa.data import Data1DInt, Data1D
+from sherpa.models.basic import Box1D
 from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel
-
+from sherpa.utils.err import ModelErr
+from sherpa.utils import neville, linear_interp
+from sherpa.utils import akima
 
 @pytest.fixture
 def setup():
@@ -136,8 +139,7 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    with pytest.warns(UserWarning):
-        assert_fit(ui, my_model, 1)
+    assert_fit(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
@@ -222,8 +224,7 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    with pytest.warns(UserWarning):
-        assert_fit(ui, my_model, 1)
+    assert_fit(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
@@ -241,10 +242,9 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
     # Get a model that evaluates on a different grid
     # This is the important part. Note that there is overlap, but
     # the start and end p
-    regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
-
-    with pytest.warns(UserWarning):
-        np.testing.assert_array_equal(regrid_model([1, 2], [1, 2]), [0, 0])
+    with pytest.raises(ModelErr) as excinfo:
+        regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
+    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
 def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
@@ -265,6 +265,33 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
         np.testing.assert_array_equal(regrid_model(x, y), [0, 0, 0, 0])
 
 
+def test_runtime_interp():
+    def tst_runtime_interp(model, requested, interp):
+        regrid_model = mdl.regrid(requested, interp=interp)
+        yregrid = regrid_model(xgrid)
+        return yregrid
+    
+    xgrid = np.arange(2, 6, 0.1)
+    requested = np.arange(2.5, 5.1, 0.075)
+    mdl = Box1D()
+    mdl.xlow = 3.1
+    mdl.xhi = 4.2
+    mdl.ampl = 0.4
+    yregrid = tst_runtime_interp(mdl, requested, akima.akima)
+    assert yregrid.sum() < 4.53
+    yregrid = tst_runtime_interp(mdl, requested, linear_interp)
+    assert 4.4 == approx(yregrid.sum())
+    yregrid = tst_runtime_interp(mdl, requested, neville)
+    assert - 5.0e6 > yregrid.sum() 
+
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+    yexpected = d.eval_model(mdl)
+    requested = np.arange(2.5, 7, 0.2)
+    rmdl = mdl.regrid(requested)
+    ygot = d.eval_model(rmdl)
+    assert ygot == approx(yexpected)
+
+    
 class MyModel(RegriddableModel1D):
     """
     A model that returns [100, ] * len(x) if 2.5 is in the input array x

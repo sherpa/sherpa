@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019, 2020
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -288,10 +289,9 @@ def test_regrid1d_no_overlap(setup_1d):
 
     grid = np.arange(-10, 100, 5)
 
-    with pytest.warns(UserWarning):
-        ygot = mdl(grid)
+    ygot = mdl(grid)
 
-    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
+    assert_allclose(ygot, [0., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_rev1(setup_1d):
@@ -306,10 +306,9 @@ def test_regrid1d_no_overlap_rev1(setup_1d):
 
     grid = np.arange(-10, 100, 5)[::-1]
 
-    with pytest.warns(UserWarning):
-        ygot = mdl(grid)
+    ygot = mdl(grid)
 
-    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
+    assert_allclose(ygot, [0., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_rev2(setup_1d):
@@ -324,10 +323,9 @@ def test_regrid1d_no_overlap_rev2(setup_1d):
 
     grid = np.arange(-10, 100, 5)
 
-    with pytest.warns(UserWarning):
-        ygot = mdl(grid)
+    ygot = mdl(grid)
 
-    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
+    assert_allclose(ygot, [0., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_rev3(setup_1d):
@@ -342,10 +340,9 @@ def test_regrid1d_no_overlap_rev3(setup_1d):
 
     grid = np.arange(-10, 100, 5)[::-1]
 
-    with pytest.warns(UserWarning):
-        ygot = mdl(grid)
+    ygot = mdl(grid)
 
-    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
+    assert_allclose(ygot, [0., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_int(setup_1d):
@@ -361,10 +358,9 @@ def test_regrid1d_no_overlap_int(setup_1d):
 
     grid = np.arange(-10, 100, 5)
 
-    with pytest.warns(UserWarning):
-        ygot = mdl(grid[:-1], grid[1:])
+    ygot = mdl(grid[:-1], grid[1:])
 
-    assert_allclose(ygot, [50., ]*(grid.size - 1), atol=0, rtol=1e-7)
+    assert_allclose(ygot, [0., ]*(grid.size - 1), atol=0, rtol=1e-7)
 
 
 class MyConst1D(Const1D):
@@ -403,7 +399,9 @@ def test_regrid1d_passes_through_the_grid():
 
     store = store[0]
     assert store[0] == [-34.5]
-    assert (store[1] == grid_expected).all()
+    combine = np.unique(np.append(grid_expected, grid_requested))
+    indices = combine.searchsorted(store[1])
+    assert (store[1] == combine[indices]).all()
 
 
 def test_regrid1d_error_calc_no_args(setup_1d):
