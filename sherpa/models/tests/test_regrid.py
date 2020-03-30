@@ -270,7 +270,7 @@ def test_runtime_interp():
         regrid_model = mdl.regrid(requested, interp=interp)
         yregrid = regrid_model(xgrid)
         return yregrid
-    
+
     xgrid = np.arange(2, 6, 0.1)
     requested = np.arange(2.5, 5.1, 0.075)
     mdl = Box1D()
@@ -278,11 +278,11 @@ def test_runtime_interp():
     mdl.xhi = 4.2
     mdl.ampl = 0.4
     yregrid = tst_runtime_interp(mdl, requested, akima.akima)
-    assert yregrid.sum() < 4.53
+    assert 4.4 == approx(yregrid.sum())
     yregrid = tst_runtime_interp(mdl, requested, linear_interp)
     assert 4.4 == approx(yregrid.sum())
     yregrid = tst_runtime_interp(mdl, requested, neville)
-    assert - 5.0e6 > yregrid.sum() 
+    assert - 5.0e6 > yregrid.sum()
 
     d = Data1D('tst', xgrid, np.ones_like(xgrid))
     yexpected = d.eval_model(mdl)
@@ -291,7 +291,7 @@ def test_runtime_interp():
     ygot = d.eval_model(rmdl)
     assert ygot == approx(yexpected)
 
-    
+
 class MyModel(RegriddableModel1D):
     """
     A model that returns [100, ] * len(x) if 2.5 is in the input array x
