@@ -1,6 +1,7 @@
 from __future__ import division
 #
-#  Copyright (C) 2007, 2015, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -460,45 +461,70 @@ def test_region_uncertainty(setup_confidence):
 @requires_plotting
 def test_source_component_arbitrary_grid():
     ui = Session()
+    model = Const1D('c')
+    model.c0 = 10
+
+    def tst(x, y, re_x, yy):
+        ui.load_arrays(1, x, y)
+        regrid_model = model.regrid(re_x)
+        ui.plot_source_component(regrid_model)
+        numpy.testing.assert_array_equal(ui._compsrcplot.x, x)
+        numpy.testing.assert_array_almost_equal(ui._compsrcplot.y, yy)
 
     x = [1, 2, 3]
     y = [1, 2, 3]
     re_x = [10, 20, 30]
+    tst(x, y, re_x, [0, 0, 0])
 
-    ui.load_arrays(1, x, y)
-    model = Const1D('c')
-    model.c0 = 10
+    x = numpy.linspace(1, 10, 10)
+    y = x
+    re_x = numpy.linspace(5, 15, 15)
+    tst(x, y, re_x, [0, 0, 0, 0, 10, 10, 10, 10, 10, 10])
 
-    regrid_model = model.regrid(re_x)
+    re_x = numpy.linspace(1, 5, 15)
+    tst(x, y, re_x, [10, 10, 10, 10, 10,  0,  0,  0,  0,  0])
 
-    with pytest.warns(UserWarning):
-        ui.plot_source_component(regrid_model)
-
-    numpy.testing.assert_array_equal(ui._compsrcplot.x, x + re_x)
-    numpy.testing.assert_array_equal(ui._compsrcplot.y, [10, ] * 6)
-
+    re_x = numpy.linspace(3, 5, 15)
+    tst(x, y, re_x, [ 0,  0, 10, 10, 10,  0,  0,  0,  0,  0])
 
 @requires_plotting
 def test_plot_model_arbitrary_grid_integrated():
     ui = Session()
-
-    x = [1, 2, 3], [2, 3, 4]
-    y = [1, 2, 3]
-    re_x = [10, 20, 30], [20, 30, 40]
-
-    ui.load_arrays(1, x[0], x[1], y, Data1DInt)
     model = Const1D('c')
     model.c0 = 10
 
-    regrid_model = model.regrid(*re_x)
-    ui.set_model(regrid_model)
-
-    with pytest.warns(UserWarning):
+    def tst(x, y, re_x, yy):
+        ui.load_arrays(1, x[0], x[1], y, Data1DInt)
+        regrid_model = model.regrid(*re_x)
+        ui.set_model(regrid_model)
         ui.plot_model()
+        avg_x = 0.5 * (x[0] + x[1])
+        numpy.testing.assert_array_equal(ui._modelplot.x, avg_x)
+        numpy.testing.assert_array_almost_equal(ui._modelplot.y, yy)
 
-    numpy.testing.assert_array_equal(ui._modelplot.x, [1.5, 2.5, 3.5])
-    numpy.testing.assert_array_equal(ui._modelplot.y, [10, 10, 10])
 
+    tmp = numpy.arange(1, 5, 1)
+    x = tmp[:-1], tmp[1:]
+    y = x[0]
+    tmp = numpy.arange(10, 50, 10)
+    re_x = tmp[:-1], tmp[1:]
+    tst(x, y, re_x, [0, 0, 0])
+
+    tmp = numpy.arange(1, 20, 1)
+    x = tmp[:-1], tmp[1:]
+    y = x[0]
+    tmp = numpy.arange(1, 20, 0.5)
+    re_x = tmp[:-1], tmp[1:]
+    tst(x, y, re_x, len(y) * [10])
+
+    tmp = numpy.arange(1, 20, 1)
+    x = tmp[:-1], tmp[1:]
+    y = x[0]
+    tmp = numpy.arange(10, 20, 0.5)
+    re_x = tmp[:-1], tmp[1:]
+    n = int(len(y) / 2)
+    yy = numpy.append(n * [0.], n * [10.])
+    tst(x, y, re_x, yy)
 
 @requires_plotting
 def test_source_component_arbitrary_grid_int():
@@ -513,17 +539,11 @@ def test_source_component_arbitrary_grid_int():
     model.c0 = 10
 
     regrid_model = model.regrid(*re_x)
-
-    with pytest.warns(UserWarning):
-        ui.plot_source_component(regrid_model)
+    ui.plot_source_component(regrid_model)
 
     x_points = (x[0] + x[1]) / 2.0
-    re_x_points = (re_x[0] + re_x[1]) / 2.0
-    points = numpy.concatenate((x_points, re_x_points))
-
-    numpy.testing.assert_array_equal(ui._compsrcplot.x, points)
-    numpy.testing.assert_array_equal(ui._compsrcplot.y,
-                                     [10, 10, 10, 100, 100, 100])
+    numpy.testing.assert_array_equal(ui._compsrcplot.x, x_points)
+    numpy.testing.assert_array_equal(ui._compsrcplot.y, [0., 0., 0.])
 
 
 def test_numpy_histogram_density_vs_normed():
