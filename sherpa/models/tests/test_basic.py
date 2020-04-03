@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,9 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from numpy import arange
+import numpy as np
+from pytest import approx
+
 import sherpa.models.basic as basic
-from sherpa.utils import SherpaFloat
+from sherpa.utils import SherpaFloat, _utils
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, RegriddableModel2D
 
@@ -32,7 +35,7 @@ class test_basic(SherpaTestCase):
     excluded_models = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, basic.Const)
 
     def test_create_and_evaluate(self):
-        x = arange(1.0, 5.0)
+        x = np.arange(1.0, 5.0)
         count = 0
 
         for cls in dir(basic):
@@ -73,4 +76,28 @@ class test_basic(SherpaTestCase):
                 self.assertTrue(out.dtype.type is SherpaFloat)
                 self.assertEqual(out.shape, x.shape)
 
-        self.assertEqual(count, 32)
+        self.assertEqual(count, 33)
+
+
+class test_Voigt(SherpaTestCase):
+
+    def test_voigt(self):
+        def myVoigt(x, alpha, gamma):
+            sigma = alpha / np.sqrt(2 * np.log(2))
+            arg = (x + 1j *gamma) / sigma / np.sqrt(2)
+            wofz = _utils.calc_wofz
+            return np.real(wofz(arg)) / sigma / np.sqrt( 2 * np.pi )
+    
+        x = np.linspace(-0.8, 0.8, 10)
+        voigt = basic.Voigt()
+        voigt_result = voigt(x)
+
+        alpha, gamma = 0.1, 0.1
+        myvoigt_result = myVoigt(x, alpha, gamma)
+
+        scipy_result = [0.05065948, 0.08477187, 0.17116719, 0.50527797,
+                        1.79706175, 1.79706175, 0.50527797, 0.17116719,
+                        0.08477187, 0.05065948]
+
+        assert voigt_result == approx(myvoigt_result)
+        assert voigt_result == approx(scipy_result)

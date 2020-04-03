@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2018, 2019
+#  Copyright (C) 2011, 2016, 2017, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -56,10 +56,10 @@ _tol = numpy.finfo(numpy.float32).eps
 
 __all__ = ('AbsorptionEdge', 'AccretionDisk', 'AbsorptionGaussian',
            'AbsorptionLorentz', 'EmissionLorentz', 'OpticalGaussian',
-           'EmissionGaussian', 'AbsorptionVoigt', 'BlackBody',
+           'EmissionGaussian', 'BlackBody',
            'Bremsstrahlung', 'BrokenPowerlaw', 'CCM', 'LogAbsorption',
            'LogEmission', 'Polynomial', 'Powerlaw', 'Recombination',
-           'EmissionVoigt', 'XGal', 'FM', 'LMC', 'SM', 'SMC', 'Seaton')
+           'XGal', 'FM', 'LMC', 'SM', 'SMC', 'Seaton')
 
 # The speed of light in km/s
 c_km = 2.99792458e+5
@@ -118,8 +118,7 @@ class AbsorptionEdge(RegriddableModel1D):
 
     See Also
     --------
-    AbsorptionGaussian, AbsorptionLorentz, AbsorptionVoigt,
-    OpticalGaussian
+    AbsorptionGaussian, AbsorptionLorentz, OpticalGaussian
 
     Notes
     -----
@@ -236,8 +235,8 @@ class AbsorptionGaussian(RegriddableModel1D):
 
     See Also
     --------
-    AbsorptionEdge, AbsorptionLorentz, AbsorptionVoigt,
-    EmissionGaussian, OpticalGaussian
+    AbsorptionEdge, AbsorptionLorentz, EmissionGaussian,
+    OpticalGaussian
 
     Notes
     -----
@@ -314,8 +313,8 @@ class AbsorptionLorentz(RegriddableModel1D):
 
     See Also
     --------
-    AbsorptionEdge, AbsorptionGaussian, AbsorptionVoigt,
-    EmissionLorentz, OpticalGaussian
+    AbsorptionEdge, AbsorptionGaussian, EmissionLorentz,
+    OpticalGaussian
 
     Notes
     -----
@@ -382,7 +381,7 @@ class EmissionLorentz(RegriddableModel1D):
 
     See Also
     --------
-    AbsorptionLorentz, EmissionGaussian, EmissionVoigt
+    AbsorptionLorentz, EmissionGaussian
 
     Notes
     -----
@@ -460,7 +459,7 @@ class OpticalGaussian(RegriddableModel1D):
     See Also
     --------
     AbsorptionEdge, AbsorptionGaussian, AbsorptionLorentz,
-    AbsorptionVoigt, EmissionGaussian
+    EmissionGaussian
 
     Notes
     -----
@@ -539,7 +538,7 @@ class EmissionGaussian(RegriddableModel1D):
 
     See Also
     --------
-    AbsorptionGaussian, EmissionLorentz, EmissionVoigt, LogEmission
+    AbsorptionGaussian, EmissionLorentz, LogEmission
 
     Notes
     -----
@@ -624,84 +623,6 @@ class EmissionGaussian(RegriddableModel1D):
             y[idx] = 2.0 * flux * arg[idx] / s2 / (1.0 + skew)
 
         return y
-
-
-# This model computes absorption as a Voigt function -- i.e., with
-# a Gaussian core and Lorentzian wings.
-class AbsorptionVoigt(RegriddableModel1D):
-    """Voigt function for modeling absorption (equivalent width).
-
-    This model uses an ``AbsorptionGaussian`` component to model the
-    core of the profile and an ``AbsorptionLorentz`` component to
-    model the wings of the absorption feature. This model is intended
-    to be used to modify another model (e.g. by multiplying the two
-    together). It is for use when the independent axis is in
-    Angstroms.
-
-    Attributes
-    ----------
-    center
-        The center of the profile, in Angstroms.
-    ew
-        The equivalent width of the profile. The ewidth parameter
-        of the Gaussian and Lorentz sub-components is set to
-        half this value.
-    fwhm
-        The full-width half-maximum of the model in km/s.
-    lg
-        The fwhm parameters of the Gaussian and Lorentz components
-        are set based on the ``fwhm`` and ``lg`` values: the
-        Gaussian component has its fwhm parameter set equal to
-        ``fwhm``, and the Lorentz component has its fwhm parameter
-        set to ``lg * fwhm``.
-
-    See Also
-    --------
-    AbsorptionEdge, AbsorptionGaussian, AbsorptionVoigt,
-    EmissionLorentz, OpticalGaussian
-
-    Notes
-    -----
-    The Voigt function is approximated by the sum of a Gaussian and
-    a Lorentzian profile ([1]_), which works best when the ratio
-    between the FWHM of the Gaussian and Lorentzian sub-components is
-    near unity. The flux value is always kept evenly divided in
-    between each sub-component. The FWHM of each sub-component is
-    related to that of the other sub-component via the lg parameter.
-
-    References
-    ----------
-
-    .. [1] K. R. Lang, Astrophysical Formulae, 1980, 2nd ed., page 220
-
-    """
-
-    def __init__(self, name='absorptionvoigt'):
-        self.center = Parameter(name, 'center', 5000., tinyval,
-                                hard_min=tinyval, frozen=True,
-                                units="angstroms")
-        self.ew = Parameter(name, 'ew', 1., tinyval, hard_min=tinyval,
-                            units="angstroms")
-        self.fwhm = Parameter(name, 'fwhm', 100., tinyval,
-                              hard_min=tinyval, units="km/s")
-        self.lg = Parameter(name, 'lg', 1., tinyval, hard_min=tinyval)
-
-        # Create core and wings from Gaussian and Lorentz
-        self._core = AbsorptionGaussian()
-        self._wings = AbsorptionLorentz()
-
-        ArithmeticModel.__init__(self, name,
-                                 (self.center, self.ew, self.fwhm, self.lg))
-
-    # @modelCacher1d
-    def calc(self, p, x, xhi=None, **kwargs):
-        # Combining two absorption components means
-        # multiplying them, it appears (at least according
-        # to addAbsorption in NarrowBandFunction.java)
-
-        core_pars = numpy.array([p[2], p[0], p[1] / 2.0, 4.0])
-        wing_pars = numpy.array([p[2] * p[3], p[0], p[1] / 2.0])
-        return self._core.calc(core_pars, x) * self._wings.calc(wing_pars, x)
 
 
 # This model computes continuum emission as a blackbody function.
@@ -1046,7 +967,7 @@ class LogAbsorption(RegriddableModel1D):
     See Also
     --------
     AbsorptionEdge, AbsorptionGaussian, AbsorptionLorentz,
-    AbsorptionVoigt, EmissionGaussian, LogEmission, OpticalGaussian
+    EmissionGaussian, LogEmission, OpticalGaussian
 
     Notes
     -----
@@ -1125,7 +1046,7 @@ class LogEmission(RegriddableModel1D):
 
     See Also
     --------
-    EmissionGaussian, EmissionLorentz, EmissionVoigt, LogAbsorption
+    EmissionGaussian, EmissionLorentz, LogAbsorption
 
     Notes
     -----
@@ -1396,80 +1317,6 @@ class Recombination(RegriddableModel1D):
                            p[1] * numpy.power((p[0] / x), 2.0) *
                            numpy.exp(-delta)
                            )
-
-
-# This model computes emission as a Voigt function -- i.e., with
-# a Gaussian core and Lorentzian wings.
-class EmissionVoigt(RegriddableModel1D):
-    """Voigt function for modeling emission.
-
-    This model uses an ``EmissionGaussian`` component to model the
-    core of the profile and an ``EmissionLorentz`` component to
-    model the wings of the emission feature. It is for use when the
-    independent axis is in Angstroms.
-
-    Attributes
-    ----------
-    center
-        The center of the profile, in Angstroms.
-    flux
-        The flux the profile. This is the value used for
-        each of the Gaussian and Lorentz sub-components.
-    fwhm
-        The full-width half-maximum of the model in km/s.
-    lg
-        The fwhm parameters of the Gaussian and Lorentz components
-        are set based on the ``fwhm`` and ``lg`` values: the
-        Gaussian component has its fwhm parameter set equal to
-        ``fwhm``, and the Lorentz component has its fwhm parameter
-        set to ``lg * fwhm``.
-
-    See Also
-    --------
-    AbsorptionVoigt, EmissionGaussian, EmissionLorentz
-
-    Notes
-    -----
-    The Voigt function is approximated by the sum of a Gaussian and
-    a Lorentzian profile ([1]_), which works best when the ratio
-    between the FWHM of the Gaussian and Lorentzian sub-components is
-    near unity. The flux value is always kept evenly divided in
-    between each sub-component. The FWHM of each sub-component is
-    related to that of the other sub-component via the lg parameter.
-
-    References
-    ----------
-
-    .. [1] K. R. Lang, Astrophysical Formulae, 1980, 2nd ed., page 220
-
-    """
-
-    def __init__(self, name='emissionvoigt'):
-        self.center = Parameter(name, 'center', 5000., tinyval,
-                                hard_min=tinyval, frozen=True,
-                                units="angstroms")
-        self.flux = Parameter(name, 'flux', 1.)
-        self.fwhm = Parameter(name, 'fwhm', 100., tinyval,
-                              hard_min=tinyval, units="km/s")
-        self.lg = Parameter(name, 'lg', 1., tinyval,
-                            hard_min=tinyval, frozen=True)
-
-        # Create core and wings from Gaussian and Lorentz
-        self._core = EmissionGaussian()
-        self._wings = EmissionLorentz()
-
-        ArithmeticModel.__init__(self, name,
-                                 (self.center, self.flux, self.fwhm, self.lg))
-
-    # @modelCacher1d
-    def calc(self, p, x, xhi=None, **kwargs):
-        # Combining two emission components means
-        # adding them, it appears (at least according
-        # to addEmission in NarrowBandFunction.java)
-
-        core_pars = numpy.array([p[2], p[0], p[1], 1.0])
-        wing_pars = numpy.array([p[3] * p[2], p[0], p[1], 2.0])
-        return self._core.calc(core_pars, x) + self._wings.calc(wing_pars, x)
 
 
 # This model computes the extragalactic extinction function of

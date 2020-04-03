@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2014, 2016, 2017, 2018, 2020
-#     Smithsonian Astrophysical Observatory
+#       Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -142,12 +142,15 @@ utils = Extension('sherpa.utils._utils',
                'sherpa/utils/src/cephes/igami.c',
                'sherpa/utils/src/cephes/incbet.c',
                'sherpa/utils/src/cephes/incbi.c',
+               'sherpa/utils/src/sjohnson/Faddeeva.cc',
                'sherpa/utils/src/_utils.cc'],
               sherpa_inc + ['sherpa/utils/src/cephes',
-                            'sherpa/utils/src/gsl'],
+                            'sherpa/utils/src/gsl',
+                            'sherpa/utils/src/sjohnson'],
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h',
-                        'sherpa/utils/src/cephes/cephes.h']))
+                        'sherpa/utils/src/cephes/cephes.h',
+                        'sherpa/utils/src/sjohnson/Faddeeva.hh']))
 
 modelfcts = Extension('sherpa.models._modelfcts',
               ['sherpa/models/src/_modelfcts.cc',

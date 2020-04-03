@@ -49,6 +49,9 @@ DBL_EPSILON = numpy.finfo(numpy.float).eps
 
 
 class Voigt(RegriddableModel1D):
+    """Voigt Profile
+    https://scipython.com/book/chapter-8-scipy/examples/the-voigt-profile/
+    """
 
     def __init__(self, name='voigt'):
         self.alpha = Parameter(name, 'alpha', 0.1)
