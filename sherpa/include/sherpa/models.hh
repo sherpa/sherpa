@@ -24,9 +24,23 @@
 #include <sherpa/utils.hh>
 #include <sherpa/constants.hh>
 
+#include "Faddeeva.hh"
 
 namespace sherpa { namespace models {
 
+  template <typename DataType, typename ConstArrayType>
+  inline int wofz_point( const ConstArrayType& p, DataType x,
+                         DataType& val )
+  {
+    
+    double sigma = p[0] / std::sqrt(2 * log(2));
+    std::complex<double> arg = (x - p[2]) + p[1] * std::complex<double>(0,1);
+    arg /= sigma * std::sqrt(2);
+    val = p[3] * Faddeeva::w(arg).real() / (sigma * std::sqrt(2 * PI));
+    return EXIT_SUCCESS;
+    
+  }
+    
 
   template <typename DataType, typename ConstDataType>
   inline int lfactorial( ConstDataType arg, DataType& answer )

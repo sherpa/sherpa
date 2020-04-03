@@ -150,9 +150,11 @@ utils = Extension('sherpa.utils._utils',
                         'sherpa/utils/src/cephes/cephes.h']))
 
 modelfcts = Extension('sherpa.models._modelfcts',
-              ['sherpa/models/src/_modelfcts.cc'],
-              sherpa_inc,
-              depends=get_deps(['model_extension', 'models']))
+              ['sherpa/models/src/_modelfcts.cc',
+               'sherpa/utils/src/sjohnson/Faddeeva.cc'],
+                      sherpa_inc +['sherpa/utils/src/sjohnson',],
+                      depends=get_deps(['model_extension', 'models'])+
+                      ['sherpa/utils/src/sjohnson/Faddeeva.hh'])
 
 saoopt = Extension('sherpa.optmethods._saoopt',
               ['sherpa/optmethods/src/_saoopt.cc',
@@ -208,12 +210,13 @@ integration = Extension('sherpa.utils.integration',
                'sherpa/utils/src/gsl/strerror.c',
                'sherpa/utils/src/gsl/message.c',
                'sherpa/utils/src/gsl/qng.c',
-               'sherpa/utils/src/adapt_integrate.c',
+               'sherpa/utils/src/sjohnson/adapt_integrate.c',
                'sherpa/utils/src/integration.cc'],
-              sherpa_inc + ['sherpa/utils/src',
+              sherpa_inc +[ 'sherpa/utils/src',
+                            'sherpa/utils/src/sjohnson',
                             'sherpa/utils/src/gsl'],
               depends=(get_deps(['integration'])+
-                       ['sherpa/utils/src/adapt_integrate.h',
+                       ['sherpa/utils/src/sjohnson/adapt_integrate.h',
                         'sherpa/utils/src/gsl/gsl_integration.h']))
 
 astro_modelfcts = Extension('sherpa.astro.models._modelfcts',

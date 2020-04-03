@@ -40,14 +40,31 @@ warning = logging.getLogger(__name__).warning
 __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Gauss1D', 'Log', 'Log10', 'LogParabola', 'NormGauss1D', 'Poisson',
            'Polynom1D', 'PowLaw1D', 'Scale1D', 'Sin', 'Sqrt', 'StepHi1D',
-           'StepLo1D', 'Tan', 'Box2D', 'Const2D', 'Delta2D', 'Gauss2D',
-           'SigmaGauss2D',
+           'StepLo1D', 'Tan', 'Voigt',
+           'Box2D', 'Const2D', 'Delta2D', 'Gauss2D', 'SigmaGauss2D',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
 
 DBL_EPSILON = numpy.finfo(numpy.float).eps
 
 
+class Voigt(RegriddableModel1D):
+
+    def __init__(self, name='voigt'):
+        self.alpha = Parameter(name, 'alpha', 0.1)
+        self.gamma = Parameter(name, 'gamma', 0.1)
+        self.pos = Parameter(name, 'pos', 0.0)
+        self.ampl  = Parameter(name, 'ampl', 1.0)
+        ArithmeticModel.__init__(self, name,
+                                 (self.alpha, self.gamma, self.pos, self.ampl))
+        return
+
+    @modelCacher1d
+    def calc(self, *args, **kwargs):
+        kwargs['integrate'] = bool_cast(self.integrate)
+        return _modelfcts.wofz(*args, **kwargs)
+
+    
 class Box1D(RegriddableModel1D):
     """One-dimensional box function.
 
