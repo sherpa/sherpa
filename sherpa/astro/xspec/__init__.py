@@ -1110,7 +1110,7 @@ class XSagnsed(XSAdditiveModel):
         self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
                                  '(_selfg)', frozen=True)
 
-        self.Htmax = Parameter(name, 'Htmax', 100, 6, 200, 6, 200,
+        self.Htmax = Parameter(name, 'Htmax', 10, 6, 10, 6, 10,
                                'Rg', frozen=True)
 
         self.reprocess = Parameter(name, 'reprocess', 1, 0, 1, 0, 1,
@@ -3223,7 +3223,7 @@ class XSgrad(XSAdditiveModel):
 
     See Also
     --------
-    XSkerbb
+    XSkerrbb
 
     References
     ----------
@@ -3417,8 +3417,8 @@ class XSkerrbb(XSAdditiveModel):
         self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'Mdd0')
         self.Dbh = Parameter(name, 'Dbh', 10., 0., 10000., 0.0, hugeval, 'kpc', True)
         self.hd = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
-        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, frozen=True)
-        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, frozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.Dbh, self.hd, self.rflag, self.lflag, self.norm))
 
@@ -11103,8 +11103,8 @@ class XSxscat(XSMultiplicativeModel):
 
     def __init__(self, name='xscat'):
         self.NH = Parameter(name, 'NH', 1., 0., 1000.0, 0.0, 1000.0, '10^22')
-        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.95, 0, 0.95)
-        self.Rext = Parameter(name, 'Rext', 10.0, 0, 115.0, 0, 119.0, 'arcsec',
+        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.99, 0, 0.999)
+        self.Rext = Parameter(name, 'Rext', 10.0, 0, 235.0, 0, 240.0, 'arcsec',
                               frozen=True)
         # The maxmimum number of models depends on the data file, so pick
         # a value that is unlikely to be exceeded (the max at the time
