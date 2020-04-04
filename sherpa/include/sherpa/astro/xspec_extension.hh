@@ -1,5 +1,5 @@
-// 
-//  Copyright (C) 2009, 2015, 2017  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2009, 2015, 2017, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -30,16 +30,26 @@
 #include <iostream>
 #include "sherpa/fcmp.hh"
 
-// This symbol is exported from C++ not C scope in early versions
-// of XSPEC 12.10.1
+// Prior to XSPEC 12.10.1, the table models were split into different
+// functions. These functions are defined in _xspec.cc.
 //
-// XSPEC 12.10.1 up to 12.10.1b only have this as C++ linkage (ie no
-// C linkage). It is expected that this will be made available to
-// C soon.
+// In 12.10.1 they were consolidated into a single function, tabint,
+// and so the declaration was moved here. The function was only
+// available in C++ scope.
 //
-#ifdef XSPEC_12_10_1
+// In XSPEC 12.11.0 (the next one after 12.10.1), the tabint function
+// was moved into C scope.
+//
+#if defined (XSPEC_12_10_1) && !defined(XSPEC_12_11_0)
 void tabint(float* ear, int ne, float* param, int npar, const char* filenm, int ifl,
              const char* tabtyp, float* photar, float* photer);
+#endif
+
+#ifdef XSPEC_12_11_0
+extern "C" {
+void tabint(float* ear, int ne, float* param, int npar, const char* filenm, int ifl,
+             const char* tabtyp, float* photar, float* photer);
+}
 #endif
 
 
@@ -67,7 +77,7 @@ typedef float FloatArrayType;
 // the models, the excess bins are removed. This has been discussed
 // with Keith Arnaud as a sensible approach. An alternative would be
 // to call the model on each contiguous section, but the issue here
-// is that there may be a non-negligible set-up cost within the models.      
+// is that there may be a non-negligible set-up cost within the models.
 
 // When creating the flux and flux error arrays to be sent to
 // the XSpec routines, the arrays are filled with 0's - that is
@@ -87,7 +97,7 @@ typedef float FloatArrayType;
 // e.g. xlo = 112.7, 103.3, 95.4, ...
 //      xhi = 124.0, 112.7, 103.3, ...
 // where the values are in Angstroms.
-      
+
 // The spectrum number is set to 1. It used to be 0, but some code
 // (a user model, so not included in the XSpec model library being
 // built against) has been seen to behave strangely with a value of 0,
@@ -283,7 +293,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
         for (int i = 0; i < ngrid; i++) {
           fear[i] = (FloatArrayType) ear[i];
         }
-        
+
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
         // input size.
@@ -300,7 +310,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
         FloatArray error;
 	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
           return NULL;
-        
+
 	// Even though the XSPEC model function is Fortran, it could call
 	// C++ functions, so swallow exceptions here
 
@@ -347,7 +357,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
             result[i] *= pars[NumPars - 1];
 
 	return result.return_new_ref();
-          
+
 }
 
 
@@ -404,7 +414,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
         }
 
         int ifl = 1;
-        
+
         bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
         DoubleArray *x1 = &xlo;
         DoubleArray *x2 = &xhi;
@@ -661,7 +671,7 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
         }
 
         int ifl = 1;
-        
+
         bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
         DoubleArray *x1 = &xlo;
         DoubleArray *x2 = &xhi;
@@ -889,7 +899,7 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args )
         }
 
         int ifl = 1;
-        
+
         bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
         DoubleArray *x1 = &xlo;
         DoubleArray *x2 = &xhi;
@@ -1491,7 +1501,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
         for (int i = 0; i < ngrid; i++) {
           fear[i] = (FloatArrayType) ear[i];
         }
-        
+
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
         // input size.
