@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015-2018, 2019, 2020
-#                Smithsonian Astrophysical Observatory
+#         Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.10.1, 12.10.0, 12.9.1, and 12.9.0 of XSPEC [1]_,
-and can be built against the model library or the full application.  There is
-no guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
+of XSPEC [1]_, and can be built against the model library or the full
+application.  There is no guarantee of support for older or newer
+versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -1069,7 +1070,7 @@ class XSagnsed(XSAdditiveModel):
 
     See Also
     --------
-    XSqsosed
+    XSagnslim, XSqsosed
 
     Notes
     -----
@@ -1124,6 +1125,114 @@ class XSagnsed(XSAdditiveModel):
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
                 self.R_hot, self.R_warm, self.logrout, self.Htmax,
                 self.reprocess, self.redshift, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.11.0")
+class XSagnslim(XSAdditiveModel):
+    """The XSPEC agnslim model: AGN super-Eddington accretion model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass, in solar units.
+    dist
+        The comoving (proper) distance, in Mpc.
+    logmdot
+        log of mdot, where mdot = Mdot/Mdot_Edd and
+        eta Mdot_Edd c^2 = L_Edd
+    astar
+        The black hole spin (dimensionless)
+    cosi
+        The cosine of the inclination angle i for the warm
+        Comptonising component and the outer disc.
+    kTe_hot
+        The electron temperature for the hot Comptonisation component
+        in keV. If negative then only the hot Comptonisation component
+        is used.
+    kTe_warm
+        The electron temperature for the warm Comptonisation component
+        in keV. If negative then only the warm Comptonisation component
+        is used.
+    Gamma_hot
+        The spectral index of the hot Comptonisation component.
+    Gamma_warm
+        The spectral index of the warm Comptonisation component. If
+        negative then only the outer disc component is used.
+    R_hot
+        The outer radius of the hot Comptonisation component in Rg.
+    R_warm
+        The outer radius of the warm Comptonisation component in Rg.
+    logrout
+        The log of the outer radius of the disc in units of Rg. If
+        negative, the code will use the self gravity radius as calculated
+        from Laor & Netzer (1989) (see [1]_).
+    rin
+        The inner radius of the disc in Rg. If this parameter is -1
+        (the default), the model will use the radius calculated from KD19.
+        This must be greater than R_hot for mdot greater than 6 and greater
+        than R_isco for mdot less than 6.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model. This must be fixed at 1.
+
+    See Also
+    --------
+    XSagnsed, XSqsosed
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgnslim.html
+
+    """
+
+    __function__ = "agnslim"
+
+    def __init__(self, name='agnslim'):
+        self.mass = Parameter(name, 'mass', 1e7, 1.0, 1e10, 1.0, 1e10,
+                              'solar', frozen=True)
+        self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
+                              'Mpc', frozen=True)
+        self.logmdot = Parameter(name, 'logmdot', -1, -10, 3, -10, 3)
+        self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
+                               frozen=True)
+        self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
+                              frozen=True)
+        # TODO: allow negative values
+        self.kTe_hot = Parameter(name, 'kTe_hot', 100.0, 10, 300, 10, 300,
+                                 'keV(-pl)', frozen=True)
+        self.kTe_warm = Parameter(name, 'kTe_warm', 0.2, 0.1, 0.5, 0.1, 0.5,
+                                  'keV(-sc)')
+        self.Gamma_hot = Parameter(name, 'Gamma_hot', 2.4, 1.3, 3, 1.3, 3)
+        self.Gamma_warm = Parameter(name, 'Gamma_warm', 3.0, 2, 5, 2, 10,
+                                    '(-disk)')
+
+        self.R_hot = Parameter(name, 'R_hot', 10, 2, 500, 2, 500, 'Rg')
+        self.R_warm = Parameter(name, 'R_warm', 20, 2, 500, 2, 500, 'Rg')
+
+        self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
+                                 '(-selfg)', frozen=True)
+
+        self.rin = Parameter(name, 'rin', -1, -1, 100, -1, 100,
+                                   frozen=True)  # TODO: make alwaysfrozen?
+
+        self.redshift = Parameter(name, 'redshift', 0, 0, 5, 0, 5,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
+                self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
+                self.R_hot, self.R_warm, self.logrout, self.rin,
+                self.redshift, self.norm)
 
         XSAdditiveModel.__init__(self, name, pars)
 

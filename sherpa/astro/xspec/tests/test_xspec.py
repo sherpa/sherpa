@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020
 #         Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,7 @@ from sherpa.utils.err import ParameterErr
 # '(XSAdditiveModel)' and adding it to the number of occurrences of the
 # string '(XSMultiplicativeModel)' in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 196
+XSPEC_MODELS_COUNT = 197
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh

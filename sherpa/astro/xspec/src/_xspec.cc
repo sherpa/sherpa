@@ -118,6 +118,10 @@ void agnsed_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void qsosed_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 #endif
 
+#ifdef XSPEC_12_11_0
+void agnslim_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 #ifndef XSPEC_12_9_1
 void xsaped_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -961,6 +965,10 @@ static PyMethodDef XSpecMethods[] = {
 #ifdef XSPEC_12_10_1
   XSPECMODELFCT_NORM( agnsed, 16 ),
   XSPECMODELFCT_NORM( qsosed, 7 ),
+#endif
+
+#ifdef XSPEC_12_11_0
+  XSPECMODELFCT_NORM( agnslim, 15 ),
 #endif
 
 #ifdef XSPEC_12_9_1
