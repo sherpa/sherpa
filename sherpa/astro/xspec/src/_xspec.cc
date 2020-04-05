@@ -316,6 +316,10 @@ void ismabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void slimbbmodel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 #endif
 
+#ifdef XSPEC_12_11_0
+void ismdust_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 // XSPEC table models; in XSPEC 12.10.1 these have been consolidated
 // into the tabint routine, but that is only available to C++, and
 // so is defined in sherpa/include/sherpa/astro/xspec_extension.hh
@@ -1348,6 +1352,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM(jet, 16),
 #endif
   XSPECMODELFCT(ismabs, 31),
+
+#ifdef XSPEC_12_11_0
+  XSPECMODELFCT(ismdust, 3),
+#endif
+
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),
   XSPECMODELFCT_C_NORM(C_snapec, 7),
   XSPECMODELFCT_C(C_tbfeo, 4),

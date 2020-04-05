@@ -10825,6 +10825,40 @@ class XSismabs(XSMultiplicativeModel):
                                         self.Fe, self.redshift))
 
 
+@version_at_least("12.11.0")
+class XSismdust(XSMultiplicativeModel):
+    """The XSPEC ismdust model: Extinction due to a power-law distribution of dust grains.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    msil
+        The dust mass column for silicate (in units of 10^-4).
+    mgra
+        The dust mass column for graphite (in units of 10^-4).
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelIsmdust.html
+
+    """
+
+    __function__ = "ismdust"
+
+    def __init__(self, name='ismdust'):
+        self.msil = Parameter(name, 'msil', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.mgra = Parameter(name, 'mgra', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.msil, self.mgra,
+                                        self.redshift))
+
+
 @version_at_least("12.9.1")
 class XSslimbh(XSAdditiveModel):
     """The XSPEC slimbh model: Stationary slim accretion disk.
