@@ -319,7 +319,13 @@ void slimbbmodel(const double* energy, int nFlux, const double* params, int spec
 #ifdef XSPEC_12_11_0
 void ismdust_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void olivineabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+
+// Note: have dropped the leading 'c_' for this model
+// TODO: should look at whether we want to fix this as now have a
+//       number of c_xxx functions in model.dat
+void beckerwolff(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 #endif
+
 
 // XSPEC table models; in XSPEC 12.10.1 these have been consolidated
 // into the tabint routine, but that is only available to C++, and
@@ -1292,6 +1298,14 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_vvnpshock, 36 ),
   XSPECMODELFCT_C_NORM( C_vvpshock, 35 ),
   XSPECMODELFCT_C_NORM( C_vvsedov, 35 ),
+
+#ifdef XSPEC_12_11_0
+  // We do not have a direct interface to the c_func routines, so
+  // take advantage of the fact XSPEC provides multiple APIs
+  // and use the C one.
+  // XSPECMODELFCT_C_NORM( c_beckerwolff, 13 ),
+  XSPECMODELFCT_C_NORM( beckerwolff, 13 ),
+#endif
 
   //multiplicative
   XSPECMODELFCT( xsphei, 3 ),

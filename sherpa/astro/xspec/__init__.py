@@ -1934,6 +1934,77 @@ class XSbvrnei(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity, self.norm))
 
 
+@version_at_least("12.11.0")
+class XSbwcycl(XSAdditiveModel):
+    """The XSPEC bwcycl model: Becker-Wolff self-consistent cyclotron line model.
+
+    The model is described at [1]_. Please review the restrictions
+    on the model and parameter values at this reference before using
+    the model.
+
+    Attributes
+    ----------
+    Radius
+        The radius of the Neutron star, in km. Keep frozen.
+    Mass
+        The mass of the Neutron star, in solar units. Keep frozen.
+    csi
+        Parameter linked to the photon escape time (order of some
+        unities).
+    delta
+        Ratio between bulk and thermal Comptonization importances.
+    B
+        The magnetic field in units of 10^12 G.
+    Mdot
+        The mass accretion rate, in 10^17 g/s.
+    Te
+        The electron temperature in units of keV.
+    r0
+        The column radius in m.
+    D
+        The source distance in kpc. Keep frozen.
+    BBnorm
+        The normalization of the blackbody seed photon component
+        (fix it to zero at first).
+    CYCnorm
+        The normalization of the cyclotron emission seed photon
+        component (fix it to one).
+    FFnorm
+        The normalization of the Bremsstrahlung emission seed photon
+        component (fix it to one).
+    norm
+        The normalization of the model (fix it to one).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBwcycl.html
+
+    """
+
+    __function__ = "beckerwolff"  # "c_beckerwolff"  do not have a direct interface to c_xxx
+
+    def __init__(self, name='bwcycl'):
+        self.Radius = Parameter(name, 'Radius', 10, 5, 20, 5, 20, units='km', frozen=True)
+        self.Mass = Parameter(name, 'Mass', 1.4, 1, 3, 1, 3, units='Solar', frozen=True)
+        self.csi = Parameter(name, 'csi', 1.5, 0.01, 20, 0.01, 20)
+        self.delta = Parameter(name, 'delta', 1.8, 0.01, 20, 0.01, 20)
+        self.B = Parameter(name, 'B', 4, 0.01, 100, 0.01, 100, units='1e12G')
+        self.Mdot = Parameter(name, 'Mdot', 1, 1e-6, 1e6, 1e-6, 1e6, units='1e17g/s')
+        self.Te = Parameter(name, 'Te', 5, 0.1, 100, 0.1, 100, units='keV')
+        self.r0 = Parameter(name, 'r0', 44, 10, 1000, 10, 1000, units='m')
+        self.D = Parameter(name, 'D', 5, 1, 20, 1, 20, units='km', frozen=True)
+        self.BBnorm = Parameter(name, 'BBnorm', 0.0, 0, 100, 0, 100, frozen=True)
+        self.CYCnorm = Parameter(name, 'CYCnorm', 1.0, -1, 100, -1, 100, frozen=True)
+        self.FFnorm = Parameter(name, 'FFnorm', 1.0, -1, 100, -1, 100, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval, frozen=True)
+
+        XSAdditiveModel.__init__(self, name, (self.Radius, self.Mass, self.csi, self.delta,
+                                              self.B, self.Mdot, self.Te, self.r0, self.D,
+                                              self.BBnorm, self.CYCnorm, self.FFnorm,
+                                              self.norm))
+
+
 class XSc6mekl(XSAdditiveModel):
     """The XSPEC c6mekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
 
