@@ -344,6 +344,10 @@ void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float*
 void kyconv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 #endif
 
+#ifdef XSPEC_12_11_0
+void thcompf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 }
 
 // This routine could be called when the module is being initialized,
@@ -1335,6 +1339,10 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_simpl, 3),
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
+
+#ifdef XSPEC_12_11_0
+  XSPECMODELFCT_CON_F77(thcompf, 4),
+#endif
 
   // Models from 12.9.1
   //
