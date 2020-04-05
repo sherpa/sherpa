@@ -31,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.10.1b'
+   '12.11.0'
 
 Initializing XSPEC
 ------------------
