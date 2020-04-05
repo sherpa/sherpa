@@ -1355,6 +1355,8 @@ static PyMethodDef XSpecMethods[] = {
 
 #ifdef XSPEC_12_11_0
   XSPECMODELFCT(ismdust, 3),
+  XSPECMODELFCT_C(C_logconst, 1),
+  XSPECMODELFCT_C(C_log10con, 1),
 #endif
 
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),

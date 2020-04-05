@@ -10859,6 +10859,56 @@ class XSismdust(XSMultiplicativeModel):
                                         self.redshift))
 
 
+@version_at_least("12.11.0")
+class XSlogconst(XSMultiplicativeModel):
+    """The XSPEC logconst model: Constant in log units.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    logfact
+        The constant factor in natural log.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLogconst.html
+
+    """
+
+    __function__ = "C_logconst"
+
+    def __init__(self, name='logconst'):
+        self.logfact = Parameter(name, 'logfact', 0.0, -20.0, 20, -20, 20)
+        XSMultiplicativeModel.__init__(self, name, (self.logfact, ))
+
+
+@version_at_least("12.11.0")
+class XSlog10con(XSMultiplicativeModel):
+    """The XSPEC log10con model: Constant in base 10 log units.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    log10fac
+        The constant factor in base 10 log.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLog10con.html
+
+    """
+
+    __function__ = "C_log10con"
+
+    def __init__(self, name='log10con'):
+        self.log10fac = Parameter(name, 'log10fac', 0.0, -20.0, 20, -20, 20)
+        XSMultiplicativeModel.__init__(self, name, (self.log10fac, ))
+
+
 @version_at_least("12.9.1")
 class XSslimbh(XSAdditiveModel):
     """The XSPEC slimbh model: Stationary slim accretion disk.
