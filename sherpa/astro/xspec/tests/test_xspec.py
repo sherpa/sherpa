@@ -33,7 +33,7 @@ from sherpa.utils.err import ParameterErr
 # '(XSAdditiveModel)' and adding it to the number of occurrences of the
 # string '(XSMultiplicativeModel)' in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 197
+XSPEC_MODELS_COUNT = 198
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh

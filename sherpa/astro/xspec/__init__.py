@@ -3478,7 +3478,7 @@ class XSkerrbb(XSAdditiveModel):
         [1]_ for more details.
     a
         The specific angular momentum of the black hole in units of the
-        black hole mass M (when G=c=1). It should be in the range [0, 1).
+        black hole mass M (when G=c=1). It should be in the range [-1, 1).
     i
         The disk inclination angle, in degrees. A face-on disk has
         i=0. It must be less than or equal to 85 degrees.
@@ -3507,7 +3507,7 @@ class XSkerrbb(XSAdditiveModel):
 
     See Also
     --------
-    XSgrad
+    XSgrad, XSzkerrbb
 
     References
     ----------
@@ -6793,6 +6793,74 @@ class XSzgauss(XSAdditiveModel):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
         pos = get_xspec_position(dep, *args)
         param_apply_limits(pos, self.LineE, **kwargs)
+
+
+@version_at_least("12.11.0")
+class XSzkerrbb(XSAdditiveModel):
+    """The XSPEC zkerrbb model: multi-temperature blackbody model for thin accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    eta
+        The ratio of the disk power produced by a torque at the disk
+        inner boundary to the disk power arising from accretion. See
+        [1]_ for more details.
+    a
+        The specific angular momentum of the black hole in units of the
+        black hole mass M (when G=c=1). It should be in the range [-1, 1).
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0. It must be less than or equal to 85 degrees.
+    Mbh
+        The mass of the black hole, in solar masses.
+    Mdd
+        The "effective" mass accretion rate in units of M_solar/year.
+        See [1]_ for more details.
+    z
+        The redshift of the black hole
+    fcol
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    rflag
+        A flag to switch on or off the effect of self irradiation:
+        when greater than zero the self irradition is included,
+        otherwise it is not. This parameter can not be thawed.
+    lflag
+        A flag to switch on or off the effect of limb darkening:
+        when greater than zero the disk emission is assumed to be
+        limb darkened, otherwise it is isotropic.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1
+        if the inclination, mass, and distance are frozen.
+
+    See Also
+    --------
+    XSkerrbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrbb.html
+
+    """
+
+    __function__ = "C_zkerrbb"
+
+    def __init__(self, name='zkerrbb'):
+        self.eta = Parameter(name, 'eta', 0., 0., 1.0, 0.0, hugeval, frozen=True)
+        self.a = Parameter(name, 'a', 0., -1., 0.9999, -hugeval, hugeval)
+        self.i = Parameter(name, 'i', 30., 0., 85., 0.0, hugeval, 'deg', True)
+        self.Mbh = Parameter(name, 'Mbh', 1., 0., 100., 0.0, hugeval, 'M_sun')
+        self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'M0yr')
+        self.z = Parameter(name, 'z', 0.01, 0., 10., 0.0, 10, frozen=True)
+        self.fcol = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.z, self.fcol, self.rflag, self.lflag, self.norm))
 
 
 @version_at_least("12.10.1")
