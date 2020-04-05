@@ -10840,6 +10840,10 @@ class XSismdust(XSMultiplicativeModel):
     redshift
         The redshift of the absorber.
 
+    See Also
+    --------
+    XSolivineabs
+
     References
     ----------
 
@@ -10907,6 +10911,40 @@ class XSlog10con(XSMultiplicativeModel):
     def __init__(self, name='log10con'):
         self.log10fac = Parameter(name, 'log10fac', 0.0, -20.0, 20, -20, 20)
         XSMultiplicativeModel.__init__(self, name, (self.log10fac, ))
+
+
+@version_at_least("12.11.0")
+class XSolivineabs(XSMultiplicativeModel):
+    """The XSPEC olivineabs model: Absorption due to olivine.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    moliv
+        The dust mass column for olivine grains (in units of 10^-4).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSismdust
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOlivineabs.html
+
+    """
+
+    __function__ = "olivineabs"
+
+    def __init__(self, name='olivineabs'):
+        self.moliv = Parameter(name, 'moliv', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.moliv, self.redshift))
 
 
 @version_at_least("12.9.1")

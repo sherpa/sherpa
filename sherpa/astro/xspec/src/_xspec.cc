@@ -318,6 +318,7 @@ void slimbbmodel(const double* energy, int nFlux, const double* params, int spec
 
 #ifdef XSPEC_12_11_0
 void ismdust_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void olivineabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 #endif
 
 // XSPEC table models; in XSPEC 12.10.1 these have been consolidated
@@ -1355,6 +1356,7 @@ static PyMethodDef XSpecMethods[] = {
 
 #ifdef XSPEC_12_11_0
   XSPECMODELFCT(ismdust, 3),
+  XSPECMODELFCT(olivineabs, 2),
   XSPECMODELFCT_C(C_logconst, 1),
   XSPECMODELFCT_C(C_log10con, 1),
 #endif
