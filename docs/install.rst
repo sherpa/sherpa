@@ -202,6 +202,8 @@ the ``fftw`` options in the ``sherpa_config`` section of the
 The ``fftw`` option must be set to ``local`` and then the remaining
 options changed to match the location of the local installation.
 
+.. _build-xspec:
+
 XSPEC
 ^^^^^
 
