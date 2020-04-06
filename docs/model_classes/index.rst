@@ -5,7 +5,7 @@ Available Models
 ****************
 
 .. todo::
-   
+
    I am not convinced separating the models out here from the
    API below is a good idea, as we end up with multiple pages
    describing the `sherpa.astro.xspec` module (for instance).
@@ -14,7 +14,7 @@ Available Models
    at the auto-generated index or module-list pages).
 
 .. note::
-   
+
    The models in :py:mod:`sherpa.astro.xspec` are only available if
    Sherpa was built with support for the
    `XSPEC model library
@@ -53,4 +53,4 @@ contains the classes that implement various models.
    template
    astro_instrument
    xspec_model
-   
+   xspec_utils
