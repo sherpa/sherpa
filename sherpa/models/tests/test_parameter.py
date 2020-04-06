@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,12 +20,15 @@
 
 import operator
 from numpy import arange
+
+import pytest
+
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
     BinaryOpParameter, ConstantParameter, hugeval
 from sherpa.utils.err import ParameterErr
-from sherpa.models.basic import Gauss1D
+from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa import ui
 
 
@@ -150,10 +154,10 @@ class test_parameter(SherpaTestCase):
     def test_link(self):
         self.p.link = None
         self.assertTrue(self.p.link is None)
-        self.assertNotEqual(self.p.val, 17.3)
-        self.afp.val = 17.3
+        self.assertNotEqual(self.p.val, 7.3)
+        self.afp.val = 7.3
         self.p.link = self.afp
-        self.assertEqual(self.p.val, 17.3)
+        self.assertEqual(self.p.val, 7.3)
         self.p.unlink()
         self.assertTrue(self.p.link is None)
         self.assertRaises(ParameterErr, setattr, self.afp, 'link', self.p)
@@ -218,3 +222,74 @@ class test_composite_parameter(SherpaTestCase):
     def test_link_unlink_val_ui(self):
         tst = test_parameter.TestParVal(4, 5)
         tst.tst_ui_val_link()
+
+
+def test_link_parameter_setting():
+    """See https://github.com/sherpa/sherpa/issues/742
+
+    See also test_link_parameter_evaluation.
+    """
+
+    mdl = PowLaw1D()
+    lmdl = Const1D()
+
+    # check we have the -10/10 range for the gamma
+    # (so that if this changes we know to change this test)
+    #
+    assert mdl.gamma.min == pytest.approx(-10)
+    assert mdl.gamma.max == pytest.approx(10)
+
+    # Just check we can link the parameter
+    lmdl.c0 = 2
+    mdl.gamma = lmdl.c0
+    assert mdl.gamma.val == pytest.approx(2)
+
+    lmdl.c0 = 3
+    assert mdl.gamma.val == pytest.approx(3)
+
+    # What happens when we set lmdl.c0 to a value outside
+    # the valid range for mdl?
+    #
+    # The error is raised when we try to access the value
+    # of the parameter with the link, and *not* when we set
+    # the parameter that is linked to.
+    #
+    lmdl.c0 = 23
+    emsg = 'parameter powlaw1d.gamma has a maximum of 10'
+    with pytest.raises(ParameterErr, match=emsg):
+        mdl.gamma.val
+
+    lmdl.c0 = -23
+    emsg = 'parameter powlaw1d.gamma has a minimum of -10'
+    with pytest.raises(ParameterErr, match=emsg):
+        mdl.gamma.val
+
+    lmdl.c0 = -2
+    assert mdl.gamma.val == pytest.approx(-2)
+
+
+def test_link_parameter_evaluation():
+    """See also test_link_parameter_setting
+
+    A version of this test, using an XSPEC table model, is found
+    in sherpa/astro/xspec/tests/test_xspec_unit::test_xstbl_link_parameter_evaluation
+    """
+
+    # What happens when we try to evaluate a model whose
+    # parameter is out-of-range thanks to a link?
+    #
+    mdl = PowLaw1D()
+    lmdl = Const1D()
+
+    grid = arange(1, 5)
+
+    mdl.gamma = lmdl.c0
+    lmdl.c0 = 2
+
+    y2 = mdl(grid)
+    assert (y2 > 0).all()
+
+    lmdl.c0 = 12
+    emsg = 'parameter powlaw1d.gamma has a maximum of 10'
+    with pytest.raises(ParameterErr, match=emsg):
+        mdl(grid)
