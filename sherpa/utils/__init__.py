@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
