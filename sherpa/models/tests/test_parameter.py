@@ -187,9 +187,6 @@ class test_composite_parameter(SherpaTestCase):
                operator.floordiv, operator.truediv, operator.mod,
                operator.pow]
 
-        if hasattr(operator, 'div'):  # Python 2
-            ops.append(operator.div)
-
         for op in ops:
             for p in (op(self.p, self.p2.val), op(self.p.val, self.p2),
                       op(self.p, self.p2)):

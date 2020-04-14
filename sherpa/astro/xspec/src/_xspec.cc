@@ -1,4 +1,5 @@
-//  Copyright (C) 2007, 2015-2018, 2019  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015-2018, 2019, 2020
+//                Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -1350,9 +1351,6 @@ static PyMethodDef XSpecMethods[] = {
 
 };
 
-
-#ifdef PY3
-
 static struct PyModuleDef xspec_module = {
         PyModuleDef_HEAD_INIT,
         "_xspec",
@@ -1365,12 +1363,3 @@ PyMODINIT_FUNC PyInit__xspec(void) {
   import_array();
   return PyModule_Create(&xspec_module);
 }
-
-#else
-
-PyMODINIT_FUNC
-init_xspec(void) {
-  import_array();
-  Py_InitModule( (char*)"_xspec", XSpecMethods );
-}
-#endif

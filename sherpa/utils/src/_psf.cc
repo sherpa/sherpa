@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -1050,7 +1050,6 @@ static PyMethodDef PsfFcts[] = {
 
 //// Initialize the module
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef psf = {
     PyModuleDef_HEAD_INIT,
     "_psf",
@@ -1077,25 +1076,3 @@ PyMODINIT_FUNC PyInit__psf(void) {
 
   return m;
 }
-
-#else
-
-PyMODINIT_FUNC init_psf(void) {
-
-  PyObject* m;
-
-  if( PyType_Ready(&tcdPyData_Type) < 0 )
-    return;
-
-  import_array();  // Must be present for NumPy.
-
-  m = Py_InitModule3( (char*)"_psf", PsfFcts, NULL);
-
-  if( m == NULL )
-    return;
-
-  Py_INCREF(&tcdPyData_Type);
-  PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
-}
-
-#endif
