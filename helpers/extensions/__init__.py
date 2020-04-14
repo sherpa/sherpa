@@ -21,7 +21,7 @@
 import shlex
 import os
 
-from numpy.distutils.core import Extension
+from distutils.extension import Extension
 
 # Include directory for Sherpa headers
 sherpa_inc = ['sherpa/include', 'sherpa/utils/src']
