@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015-2018, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -911,10 +912,15 @@ class XSTableModel(XSModel):
             if nint > 0:
                 isfrozen = False
 
-            try:  # Python 3
-                parname = str(parnames[ii], "utf-8")
-            except TypeError:  # Python 2
+            # We don't explicitly demand this is a string, so support
+            # byte strings (given that the values are read from the
+            # FITS file this is a possibility).
+            #
+            try:
+                parname = str(parnames[ii], 'utf-8')
+            except TypeError:
                 parname = parnames[ii]
+
             parname = parname.strip().lower().translate(tbl)
             par = Parameter(name, parname, initvals[ii],
                             mins[ii], maxes[ii],

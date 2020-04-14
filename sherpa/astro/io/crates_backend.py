@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -137,13 +138,10 @@ def _try_key(crate, name, dtype=str):
     if str(key).find('none') != -1:
         return None
 
-    # Python3 (and having the type as a parameter) seems to require some complexity here.
-    # If there is a better way I am not aware of it.
-    if dtype == str and (isinstance(key, string_types) or isinstance(key, bytes)):
-        try:  # Python 3
-            return dtype(key, "utf-8")
-        except TypeError:  # Python 2
-            return dtype(key)
+    # byte strings are to be decoded to strings
+    #
+    if dtype == str and isinstance(key, bytes):
+        return dtype(key, "utf-8")
     else:
         return dtype(key)
 

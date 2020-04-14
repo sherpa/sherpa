@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -61,24 +61,13 @@ import logging
 import math
 import inspect
 
-try:
-    # try lgamma in >= Python 2.7
-    math.lgamma(1)
-
-    lgam = math.lgamma
-except:
-    # default to log(gamma()) in < Python2.7
-    from test.test_random import gamma
-    lgam = lambda x : math.log(gamma(x))
-
 logger = logging.getLogger("sherpa")
 info = logger.info
 debug = logger.debug
 error = logger.error
 
-__all__=['LimitError', 'MetropolisMH', 'MH', 'Sampler',
-         'Walk', 'dmvt', 'dmvnorm']
-         #'Walk', 'dmvt', 'dmvnorm', 'progress_bar']
+__all__ = ('LimitError', 'MetropolisMH', 'MH', 'Sampler',
+           'Walk', 'dmvt', 'dmvnorm')
 
 
 class LimitError(Exception):
@@ -133,6 +122,7 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
 
     # log density normalized
     if norm:
+        lgam = math.lgamma
         val += (lgam((dof+p)/2.) - lgam(dof/2.) - (p/2.) *
                 np.log(np.pi) + (dof/2.) * np.log(dof))
 

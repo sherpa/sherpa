@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2016, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -272,7 +272,6 @@ static PyMethodDef RegionFcts[] = {
 #define PyMODINIT_FUNC void
 #endif
 
-#ifdef PY3
 static struct PyModuleDef module_region = {
 PyModuleDef_HEAD_INIT,
 "_region",
@@ -281,42 +280,24 @@ NULL,
 RegionFcts
 };
 
-#define INITERROR return NULL
-
 PyMODINIT_FUNC
 PyInit__region(void)
-
-#else
-#define INITERROR return
-
-PyMODINIT_FUNC
-init_region(void)
-#endif
-
 {
 
   PyObject *m;
 
   if (PyType_Ready(&pyRegion_Type) < 0)
-    INITERROR;
+    return NULL;
 
   import_array();
 
-#ifdef PY3
   m = PyModule_Create(&module_region);
-#else
-  m = Py_InitModule3((char*)"_region", RegionFcts, NULL);
-#endif
-
-if (m == NULL)
-    INITERROR;
+  if (m == NULL)
+    return NULL;
 
   Py_INCREF(&pyRegion_Type);
 
   PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type);
-
-#ifdef PY3
   return m;
-#endif
 
 }
