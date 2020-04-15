@@ -1564,6 +1564,7 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(fwhm, self.sigma_a, **kwargs)
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
+        param_apply_limits(norm, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
         kwargs['integrate'] = bool_cast(self.integrate)
