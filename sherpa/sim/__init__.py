@@ -877,13 +877,13 @@ class ReSampleData(NoNewAttributesAfterInit):
                     #
                     dr = numpy.random.normal(loc=0, scale=1, size=None)
                     if u == 0:
-                        if (dr > 0) or (dr < -1):
+                        if dr > 0:
                             continue
 
                         sigma = y[i] - a
 
                     else:
-                        if (dr < 0) or (dr > 1):
+                        if dr < 0:
                             continue
 
                         sigma = b - y[i]
@@ -894,7 +894,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
             ry = numpy.asarray(ry)
             # fit is performed for each simulated data point
-            fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq( ), LevMar())
+            fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq(), LevMar())
             fit_result = fit.fit()
 
             for index, val in enumerate(fit_result.parvals):
