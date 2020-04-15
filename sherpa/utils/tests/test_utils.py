@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -281,3 +281,110 @@ def test_parallel_map(num_tasks, num_segments):
         pararesult = utils.parallel_map(f, iterable, num_tasks)
 
         assert_equal(result, numpy.asarray(pararesult))
+
+
+@pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
+                                            ([], [1], [0,1,2,3,4]),
+                                            ([1], [], [0,1,2,3,4]),
+                                            ([], [], [])])
+def test_filter_bins_empty(los, his, axis):
+    """Ensure filter_bins returns None if one input is empty."""
+
+    # just check the input parameters include an empty array
+    assert len(los) == 0 or len(his) == 0 or len(axis) == 0
+
+    assert utils.filter_bins(los, his, [axis]) is None
+
+
+def test_filter_bins_scalar_array_empty():
+    """Edge case: do we care about this result?"""
+
+    f = utils.filter_bins([1], [2], [[]])
+    assert f.dtype == numpy.bool
+    assert len(f) == 0
+
+
+@pytest.mark.parametrize("axval, flag", [(0, False),
+                                         (0.99, False),
+                                         (1 - 1e-7, True),
+                                         (1, True),
+                                         (2.34, True),
+                                         (5, True),
+                                         (5 + 1e-7, True),
+                                         (5.01, False),
+                                         (7, False)])
+def test_filter_bins_scalar_array(axval, flag):
+    """Edge case: do we care about this result?"""
+
+    f = utils.filter_bins([1], [5], [axval])
+    assert f == flag
+
+
+@pytest.mark.parametrize("lo, hi, res",
+                         [(0, 10, [True] * 5),
+                          (1, 5, [True] * 5),
+                          (2, 5, [False, True, True, True, True]),
+                          (2, None, [False, True, True, True, True]),
+                          (1, 4, [True, True, True, True, False]),
+                          (None, 4, [True, True, True, True, False]),
+                          (1.1, 4.9, [False, True, True, True, False]),
+                          (2, 4, [False, True, True, True, False]),
+                          # Have minimum > maximum, so nothing is selected
+                          (4, 3, [False, False, False, False, False]),
+                          # Have minimum = maximum = bin value
+                          (4, 4, [False, False, False, True, False]),
+                          # Have minimum = maximum, not equal to a bin value
+                          (3.1, 3.1, [False, False, False, False, False])
+                         ])
+def test_filter_bins_one(lo, hi, res):
+    """Can we filter the array between lo and hi?"""
+
+    dvals = numpy.asarray([1, 2, 3, 4, 5])
+    flags = utils.filter_bins([lo], [hi], [dvals])
+    assert (flags == res).all()
+
+
+def test_filter_bins_two_none():
+    """Use two different arrays for filtering with no filter.
+    """
+
+    y1 = [1, 2, 3, 4, 5]
+    y2 = [10, 20, 30, 40, 50]
+
+    flags = utils.filter_bins((None, None), (None, None), (y1, y2))
+    assert flags is None
+
+
+@pytest.mark.parametrize("lo1, lo2, hi1, hi2, expected",
+                         [ (1.5, 21, 3.6, 44, [False, False, True, False, False]),
+                           (1.5, None, None, 44, [False, True, True, True, False]),
+                           (None, None, None, 44, [True, True, True, True, False]),
+                           (1.5, None, None, None, [False, True, True, True, True])
+                         ])
+def test_filter_bins_two(lo1, lo2, hi1, hi2, expected):
+    """Use two different arrays for filtering.
+
+    This version uses tuples rather than arrays as the
+    input arguments to filter_bins.
+
+    """
+
+    y1 = [1, 2, 3, 4, 5]
+    y2 = [10, 20, 30, 40, 50]
+
+    flags = utils.filter_bins((lo1, lo2), (hi1, hi2), (y1, y2))
+    assert len(flags) == 5
+    for i in range(5):
+        assert flags[i] == expected[i], i
+
+
+def test_filter_bins_unordered():
+    """What happens if the array is unordered?"""
+
+    flags = utils.filter_bins((3, ), (8, ), [[1,4,3,7,8,10,5]])
+
+    expected = [False, True, True, True, True, False, True]
+
+    assert len(flags) == len(expected)
+    for got, exp in zip(flags, expected):
+        assert got == exp

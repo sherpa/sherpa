@@ -1003,9 +1003,10 @@ def filter_bins(mins, maxes, axislist):
 
     Returns
     -------
-    mask : ndarray
+    mask : ndarray or None
        A mask indicating whether the values are included (True) or
-       excluded (False).
+       excluded (False). If any of the input sequences are empty then
+       None will be returned.
 
     Examples
     --------
