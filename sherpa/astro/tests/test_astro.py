@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -27,7 +27,6 @@ import pytest
 from sherpa.utils import _ncpus
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
-from sherpa import get_config
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 
@@ -113,17 +112,20 @@ class test_threads(SherpaTestCase):
             assert calc == approx(-0.57731725, rel=1e-4)
 
             calc = ui.calc_kcorr([1, 1.2, 1.4, 1.6, 1.8, 2], 0.5, 2)
-            expected = [0.93341286, 0.93752836, 0.94325233,
-                        0.94990140, 0.95678054, 0.96393515]
+            # Prior to fixing #619 the expected values were
+            # expected = [0.93341286, 0.93752836, 0.94325233,
+            #             0.94990140, 0.95678054, 0.96393515]
+            expected = [0.93132747, 0.9352768, 0.94085917,
+                        0.94738472, 0.95415463, 0.96121113]
             assert calc == approx(expected, rel=1e-4)
-            
+
         self.run_thread('pha_intro')
         # astro.ui imported as ui, instead of
         # being in global namespace
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_pha_intro(fit_results, self.locals['p1'], covarerr)
-        
+
         self.run_thread('pha_intro_ncpus')
         # astro.ui imported as ui, instead of
         # being in global namespace
@@ -134,7 +136,7 @@ class test_threads(SherpaTestCase):
             assert fit_results.extra_output['num_parallel_map'] > 0
         else:
             assert fit_results.extra_output['num_parallel_map'] == 0
-            
+
     @requires_fits
     def test_pha_read(self):
         self.run_thread('pha_read')
@@ -160,8 +162,7 @@ class test_threads(SherpaTestCase):
             self.assertEqual(fit_results.nfev, 9)
             self.assertEqual(fit_results.numpoints, 11)
             self.assertEqual(fit_results.dof, 9)
-          
-            
+
         # In data1.dat for this test, there is a comment with one
         # word at the beginning -- deliberately would break when reading
         # with DM ASCII kernel, but passes because we have Sherpa code
@@ -171,7 +172,7 @@ class test_threads(SherpaTestCase):
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_test_basic(fit_results, self.locals, covarerr)
         self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
-        
+
         self.run_thread('basic_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -180,7 +181,7 @@ class test_threads(SherpaTestCase):
             assert fit_results.extra_output['num_parallel_map'] > 0
         else:
             assert fit_results.extra_output['num_parallel_map'] == 0
-        
+
     @requires_fits
     @requires_xspec
     def test_simultaneous(self):
@@ -188,7 +189,7 @@ class test_threads(SherpaTestCase):
         def cmp_simultaneous(fit_results, mylocals, covarerr):
             abs1 = mylocals['abs1']
             pl1 = mylocals['pl1']
-            pl2 = mylocals['pl2']            
+            pl2 = mylocals['pl2']
             assert covarerr[0] == approx(0.397769, rel=1e-3)
             assert covarerr[1] == approx(0.486058, rel=1e-3)
             assert covarerr[2] == approx(1.48213e-05, rel=1e-3)
@@ -202,13 +203,13 @@ class test_threads(SherpaTestCase):
             self.assertEqualWithinTol(pl2.ampl.val, 2.44585e-05, 1e-3)
             self.assertEqual(fit_results.numpoints, 18)
             self.assertEqual(fit_results.dof, 14)
-           
+
         self.run_thread('simultaneous')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_simultaneous(fit_results, self.locals, covarerr)
         self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
-        
+
         self.run_thread('simultaneous_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -217,7 +218,7 @@ class test_threads(SherpaTestCase):
             assert fit_results.extra_output['num_parallel_map'] > 0
         else:
             assert fit_results.extra_output['num_parallel_map'] == 0
-        
+
     @requires_fits
     @requires_xspec
     def test_sourceandbg(self):
@@ -241,13 +242,13 @@ class test_threads(SherpaTestCase):
             self.assertEqualWithinTol(b2.norm.val, 1.16118e-05, 1e-2)
             self.assertEqual(fit_results.numpoints, 1330)
             self.assertEqual(fit_results.dof, 1325)
-            
+
         self.run_thread('sourceandbg')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_sourceanddbg(fit_results, self.locals, covarerr)
         self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
-        
+
         self.run_thread('sourceandbg_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -256,7 +257,7 @@ class test_threads(SherpaTestCase):
             fit_results.extra_output['num_parallel_map'] > 0
         else:
             assert fit_results.extra_output['num_parallel_map'] == 0
-        
+
     @requires_fits
     def test_spatial(self):
         self.run_thread('spatial')
@@ -292,13 +293,13 @@ class test_threads(SherpaTestCase):
             self.assertEqual(fit_results.nfev, 92)
             self.assertEqual(fit_results.numpoints, 38)
             self.assertEqual(fit_results.dof, 35)
-            
+
         self.run_thread('radpro')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_radpro(fit_results, self.locals, covarerr)
         self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
-        
+
         self.run_thread('radpro_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -385,7 +386,7 @@ class test_threads(SherpaTestCase):
 
     @requires_fits
     def test_linepro(self):
-        
+
         def cmp_linepro(fit_results, mylocals, covarerr):
             b1 = mylocals['b1']
             assert covarerr[0] == approx(0.176282, rel=1e-4)
@@ -398,13 +399,13 @@ class test_threads(SherpaTestCase):
             self.assertEqual(fit_results.nfev, 17)
             self.assertEqual(fit_results.numpoints, 75)
             self.assertEqual(fit_results.dof, 72)
-            
+
         self.run_thread('linepro')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_linepro(fit_results, self.locals, covarerr)
         self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
-        
+
         self.run_thread('linepro_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -413,7 +414,7 @@ class test_threads(SherpaTestCase):
             assert fit_results.extra_output['num_parallel_map'] > 0
         else:
             assert fit_results.extra_output['num_parallel_map'] == 0
-            
+
     @requires_fits
     def test_kernel(self):
 
@@ -429,13 +430,13 @@ class test_threads(SherpaTestCase):
             self.assertEqual(fit_results.nfev, 21)
             self.assertEqual(fit_results.numpoints, 75)
             self.assertEqual(fit_results.dof, 72)
-            
+
         self.run_thread('kernel')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_kernel(fit_results, self.locals, covarerr)
         self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
-        
+
         self.run_thread('kernel_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -444,7 +445,7 @@ class test_threads(SherpaTestCase):
             assert fit_results.extra_output['num_parallel_map'] > 0
         else:
             assert fit_results.extra_output['num_parallel_map'] == 0
-            
+
     @requires_fits
     @requires_xspec
     def test_spectrum(self):
@@ -466,13 +467,13 @@ class test_threads(SherpaTestCase):
             assert mek2.norm.val == approx(1.03724, rel=1e-4)
             self.assertEqual(fres.numpoints, 446)
             self.assertEqual(fres.dof, 441)
-            
+
         self.run_thread('spectrum')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_spectrum(fres, self.locals, covarerr)
         self.assertEqual(0, fres.extra_output['num_parallel_map'])
-        
+
         self.run_thread('spectrum_ncpus')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
@@ -481,7 +482,7 @@ class test_threads(SherpaTestCase):
             assert fres.extra_output['num_parallel_map'] > 0
         else:
             assert fres.extra_output['num_parallel_map'] == 0
-            
+
     @requires_fits
     def test_histo(self):
         self.run_thread('histo')
@@ -509,13 +510,13 @@ class test_threads(SherpaTestCase):
             self.assertEqual(fres.nfev, 95)
             self.assertEqual(fres.numpoints, 162)
             self.assertEqual(fres.dof, 159)
-            
+
         self.run_thread('xmm')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_xmm(fres, self.locals, covarerr)
         self.assertEqual(0, fres.extra_output['num_parallel_map'])
-        
+
         self.run_thread('xmm_ncpus')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
@@ -545,7 +546,7 @@ class test_threads(SherpaTestCase):
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_grouped_ciao4_5(fres, self.locals, covarerr)
         self.assertEqual(0, fres.extra_output['num_parallel_map'])
-        
+
         self.run_thread('grouped_ciao4.5_ncpus')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
@@ -554,7 +555,7 @@ class test_threads(SherpaTestCase):
             assert fres.extra_output['num_parallel_map'] > 0
         else:
             assert fres.extra_output['num_parallel_map'] == 0
-        
+
     @requires_fits
     @requires_xspec
     def test_proj(self):
@@ -649,7 +650,7 @@ class test_threads(SherpaTestCase):
             assert conf.parmaxes[0] == approx(62.0585, rel=0.01)
             assert conf.parmins[1] == approx(-9.5568e-07, rel=0.01)
             assert conf.parmaxes[1] == approx(2.39937e-06, rel=0.01)
-            
+
         self.run_thread('proj_bubble')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -661,10 +662,9 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         proj = ui.get_proj_results()
-        conf = ui.get_conf_results()        
+        conf = ui.get_conf_results()
         cmp_proj_bubble(self.locals, covarerr, proj, conf)
-        
-        
+
         # # Fit -- Results from reminimize
 
         # # The fit results change in XSPEC 12.10.0 since the mekal model
@@ -680,7 +680,6 @@ class test_threads(SherpaTestCase):
         # assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
         # assert covar.parmaxes[0] == approx(0.328832, rel=0.01)
         # assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
-
 
     # New tests based on SDS threads -- we should catch these errors
     # (if any occur) so SDS doesn't waste time tripping over them.

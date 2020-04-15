@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -12829,22 +12829,24 @@ class Session(sherpa.ui.utils.Session):
         else:
             return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
-    def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None,
+                         model=None):
         """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of S(E) over a pass band, where S(E) is
         the spectral model evaluated for each bin (that is, the model
         without any instrumental responses applied to it).
 
+        .. versionchanged:: 4.12.1
+           The model parameter was added.
+
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           `lo`. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then calculate the flux
+           over the given band. If only one is set then calculate
+           the flux density at that point. The units for `lo` and `hi`
+           are given by the current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -12852,18 +12854,18 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            If set, use the model associated with the given background
            component rather than the source model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
 
         Returns
         -------
         flux : number
-           The flux from the source model integrated over the given
-           band. This represents the flux from the model without any
-           instrument response (i.e. the intrinsic flux of the
-           source). For X-Spec style models the units will be
-           photon/cm^2/s. If `hi` is ``None`` but `lo` is set the
-           the flux density is returned at that point: photon/cm^2/s/keV
-           or photon/cm^2/s/Angstrom depending on the analysis
-           setting.
+           The flux or flux density.  For X-Spec style models the
+           flux units will be photon/cm^2/s and the flux density units
+           will be either photon/cm^2/s/keV or photon/cm^2/s/Angstrom,
+           depending on the analysis setting.
 
         See Also
         --------
@@ -12881,11 +12883,6 @@ class Session(sherpa.ui.utils.Session):
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
-
-        The flux is calculated from the given source model, so if it
-        includes an absorbing component then the result will represent
-        the absorbed flux. The absorbing component can be removed, or
-        set to absorb no photons, to get the un-absorbed flux.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
@@ -12929,20 +12926,32 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis('jet', 'wave')
         >>> calc_photon_flux(20, 22, id='jet', bkg_id=2)
 
+        For the following example, the source model is an absorbed
+        powerlaw - `xsphabs.gal * powerlaw.pl` - so that the `fabs`
+        value represents the absorbed flux, and `funabs` the unabsorbed
+        flux (i.e. just the power-law component):
+
+        >>> fabs = calc_photon_flux(0.5, 7)
+        >>> funabs = calc_photon_flux(0.5, 7, model=pl)
+
         """
 
         data = self.get_data(id)
-        model = None
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
+        if model is None:
+            if bkg_id is not None:
+                data = self.get_bkg(id, bkg_id)
+                model = self.get_bkg_source(id, bkg_id)
+            else:
+                model = self.get_source(id)
         else:
-            model = self.get_source(id)
+            _check_type(model, sherpa.models.Model, 'model',
+                        'a model object')
 
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
-    def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None,
+                         model=None):
         """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of E * S(E) over a pass band, where E
@@ -12950,15 +12959,16 @@ class Session(sherpa.ui.utils.Session):
         for that bin (that is, the model without any instrumental
         responses applied to it).
 
+        .. versionchanged:: 4.12.1
+           The model parameter was added.
+
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           `lo`. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then calculate the flux
+           over the given band. If only one is set then calculate
+           the flux density at that point. The units for `lo` and `hi`
+           are given by the current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -12966,17 +12976,18 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            If set, use the model associated with the given background
            component rather than the source model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
 
         Returns
         -------
         flux : number
-           The flux from the source model integrated over the given
-           band. This represents the flux from the model without any
-           instrument response (i.e. the intrinsic flux of the
-           source). For X-Spec style models the units will be
-           erg/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the
-           flux density is returned at that point: erg/cm^2/s/keV or
-           erg/cm^2/s/Angstrom depending on the analysis setting.
+           The flux or flux density.  For X-Spec style models the
+           flux units will be erg/cm^2/s and the flux density units
+           will be either erg/cm^2/s/keV or erg/cm^2/s/Angstrom,
+           depending on the analysis setting.
 
         See Also
         --------
@@ -12994,11 +13005,6 @@ class Session(sherpa.ui.utils.Session):
 
         Any existing filter on the data set - e.g. as created by
         ``ignore`` or ``notice`` - is ignored by this function.
-
-        The flux is calculated from the given source model, so if it
-        includes an absorbing component then the result will represent
-        the absorbed flux. The absorbing component can be removed, or
-        set to absorb no photons, to get the un-absorbed flux.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
@@ -13038,15 +13044,28 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis('jet', 'wave')
         >>> calc_energy_flux(20, 22, id='jet', bkg_id=2)
 
-        """
-        data = self.get_data(id)
-        model = None
+        For the following example, the source model is an absorbed
+        powerlaw - `xsphabs.gal * powerlaw.pl` - so that the `fabs`
+        value represents the absorbed flux, and `funabs` the unabsorbed
+        flux (i.e. just the power-law component):
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
+        >>> fabs = calc_energy_flux(0.5, 7)
+        >>> funabs = calc_energy_flux(0.5, 7, model=pl)
+
+        """
+
+        data = self.get_data(id)
+
+        if model is None:
+            if bkg_id is not None:
+                data = self.get_bkg(id, bkg_id)
+                model = self.get_bkg_source(id, bkg_id)
+            else:
+                model = self.get_source(id)
         else:
-            model = self.get_source(id)
+            _check_type(model, sherpa.models.Model, 'model',
+                        'a model object')
+
         return sherpa.astro.utils.calc_energy_flux(data, model, lo, hi)
 
     # DOC-TODO: how do lo/hi limits interact with bin edges;
@@ -13055,17 +13074,14 @@ class Session(sherpa.ui.utils.Session):
         """Sum up the data values over a pass band.
 
         This function is for one-dimensional data sets: use
-        `calc_model_sum` for two-dimensional data sets.
+        `calc_data_sum2d` for two-dimensional data sets.
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then sum up the data
+           over the given band. If only one is set then return
+           the data count in the given bin.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -13077,9 +13093,6 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         dsum : number
-           The sum of the data values that lie within the given
-           limits.  If ``hi`` is ``None`` but ``lo`` is set then the data
-           value of the bin containing the ``lo`` value are returned.
            If a background estimate has been subtracted from the data
            set then the calculation will use the background-subtracted
            values.
@@ -13166,13 +13179,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then sum up over the given
+           band. If only one is set then use the model value in the
+           selected bin. The units for `lo` and `hi` are given by the
+           current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -13184,7 +13195,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The sum of the model values over the requested axis range.
+           The model value (sum or individual bin).
 
         See Also
         --------
@@ -13507,13 +13518,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        lo : number, optional
-           The minimum limit of the band. Use ``None``, the default,
-           to use the low value of the data set.
-        hi : number, optional
-           The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
-           the data set.
+        lo, hi : number, optional
+           If both are None or both are set then sum up over the given
+           band. If only one is set then use the model value in the
+           selected bin. The units for `lo` and `hi` are given by the
+           current analysis setting.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -13525,10 +13534,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The source model summed up over the given band. This does
-           *not* include the bin width when using histogram-style
-           ('integrated' data spaces), such as used with X-Spec
-           emission - also known as additive - models.
+           The model value (sum or individual bin).
 
         See Also
         --------
