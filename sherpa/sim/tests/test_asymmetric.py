@@ -17,186 +17,200 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy as np
 import warnings
+
+import numpy as np
 
 import pytest
 
 from sherpa.fit import Fit
 from sherpa.data import Data1DAsymmetricErrs
 from sherpa.optmethods import LevMar
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.models import Const1D, PowLaw1D
 from sherpa.stats import Chi2Gehrels
-from sherpa.estmethods import Covariance
 from sherpa.sim import ReSampleData
 from sherpa.astro import ui
 
+
+RESULTS_BENCH_AVG = {
+    'rstat': 1.4361549916463103,
+    'qval': 0.015715747140941,
+    'numpoints': 61,
+    'succeeded': 1,
+    'dof': 59,
+    'istatval': 248263792.37785548,
+    'statval': 84.73314450713231,
+    'parnames': ('p1.gamma', 'p1.ampl'),
+    'parvals': np.array([-0.5983957573984262, 332.5326662832957]),
+    'parerrs': np.array([2.07753267e-02, 3.82647498e+01])
+}
+
+RESULTS_BENCH_RMS = {
+    'rstat': 0.6654892642692887,
+    'qval': 0.9776806145696532,
+    'numpoints': 61,
+    'succeeded': 1,
+    'dof': 59,
+    'istatval': 114123785.83302237,
+    'statval': 39.26386659188803,
+    'parnames': ('p1.gamma', 'p1.ampl'),
+    'parvals': np.array([-0.5984085135559107, 333.537172525073]),
+    'parerrs': np.array([3.01965392e-02, 5.57390091e+01])
+}
+
+RESAMPLE_BENCH = np.array([-4.27921009e-01, 1.54966801e-01,
+                           1.67211651e+02, 9.01622079e+01])
+
+RESAMPLE_BENCH_10 = \
+    {'p1.gamma': np.array([-0.5328294503498137, -0.5001748057127161,
+                           -0.3215221918987224, -0.574564441010874,
+                           -0.43821524305367615, -0.426883933868221,
+                           -0.3708382753872252, -0.5092469458936105,
+                           -0.4460289613152441, -0.4350294472721625]),
+     'p1.ampl': np.array([234.30388600765593, 192.1359747458908,
+                          70.35141613845244, 291.1140203785552,
+                          138.67404346944733, 128.917712169535,
+                          93.98512569969482, 207.7714117742187,
+                          142.61963597065656, 136.00140089942673])}
+
+
+def compare(bench, results):
+    for key in ["numpoints", "succeeded", "dof"]:
+        assert getattr(results, key) == bench[key]
+
+    for key in ["rstat", "qval", "istatval", "statval", "parvals"]:
+        assert getattr(results, key) == pytest.approx(bench[key])
+
+    parerrs = np.sqrt(results.extra_output['covar'].diagonal())
+    assert parerrs == pytest.approx(bench['parerrs'])
+
+
+def fit_asymmetric_err(bench, data):
+    model = PowLaw1D('p1')
+    fit = Fit(data, model, Chi2Gehrels(), LevMar())
+    results = fit.fit()
+    compare(bench, results)
+    return model
+
+
+def resample_data(data, bench, results_bench):
+    model = fit_asymmetric_err(results_bench, data)
+    rdata = ReSampleData(data, model)
+    result = rdata(niter=100, seed=123)
+
+    gamma = result['p1.gamma']
+    ampl = result['p1.ampl']
+    got = np.array([np.average(gamma),
+                    np.std(gamma),
+                    np.average(ampl),
+                    np.std(ampl)])
+    assert got == pytest.approx(bench)
+
+    assert model.thawedpars == pytest.approx(results_bench['parvals'])
+
+
+def rms(a, b):
+    """combine errors"""
+    return np.sqrt(a * a + b * b)
+
+
+
 @requires_data
 @requires_fits
-class test_sim(SherpaTestCase):
+@pytest.mark.parametrize("filename, delta", [('gro.txt', False),
+                                             ('gro_delta.txt', True)])
+def test_load_ascii(filename, delta, make_data_path):
+    infile = make_data_path(filename)
+    ui.load_ascii_with_errors(1, infile, delta=delta)
+    data = ui.get_data(1)
+    fit_asymmetric_err(RESULTS_BENCH_AVG, data)
 
-    _results_bench_avg = {
-        'rstat': 1.4361549916463103,
-        'qval': 0.015715747140941,
-        'numpoints': 61,
-        'succeeded': 1,
-        'dof': 59,
-        'istatval': 248263792.37785548,
-        'statval': 84.73314450713231,
-        'parnames': ('p1.gamma', 'p1.ampl'),
-        'parvals': np.array([-0.5983957573984262, 332.5326662832957]),
-        'parerrs': np.array([2.07753267e-02, 3.82647498e+01])
-    }
 
-    _results_bench_rms = {
-        'rstat': 0.6654892642692887,
-        'qval': 0.9776806145696532,
-        'numpoints': 61,
-        'succeeded': 1,
-        'dof': 59,
-        'istatval': 114123785.83302237,
-        'statval': 39.26386659188803,
-        'parnames': ('p1.gamma', 'p1.ampl'),
-        'parvals': np.array([-0.5984085135559107, 333.537172525073]),
-        'parerrs': np.array([3.01965392e-02, 5.57390091e+01])
-    }
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filename, delta", [('gro.txt', False),
+                                             ('gro_delta.txt', True)])
+def test_load_ascii_rms(filename, delta, make_data_path):
+    infile = make_data_path(filename)
+    ui.load_ascii_with_errors(1, infile, delta=delta, func=rms)
+    data = ui.get_data(1)
+    fit_asymmetric_err(RESULTS_BENCH_RMS, data)
 
-    _resample_bench = np.array([-4.27921009e-01, 1.54966801e-01,
-                                1.67211651e+02, 9.01622079e+01])
 
-    _resample_bench_10 = \
-        {'p1.gamma': np.array([-0.5328294503498137, -0.5001748057127161,
-                               -0.3215221918987224, -0.574564441010874,
-                               -0.43821524305367615, -0.426883933868221,
-                               -0.3708382753872252, -0.5092469458936105,
-                               -0.4460289613152441, -0.4350294472721625]),
-         'p1.ampl': np.array([234.30388600765593, 192.1359747458908,
-                              70.35141613845244, 291.1140203785552,
-                              138.67404346944733, 128.917712169535,
-                              93.98512569969482, 207.7714117742187,
-                              142.61963597065656, 136.00140089942673])}
-    def setUp(self):
-        self.method = LevMar()
-        self.stat = Chi2Gehrels()
-        self.est = Covariance()
-        self.gro_fname = self.make_path('gro.txt')
-        self.gro_delta_fname = self.make_path('gro_delta.txt')
-        return
+@requires_data
+@requires_fits
+def test_constructor_avg(make_data_path):
+    infile = make_data_path('gro_delta.txt')
+    ui.load_ascii_with_errors(1, infile, delta=True)
+    base = ui.get_data(1)
+    data = Data1DAsymmetricErrs(2, base.x, base.y, base.elo, base.ehi,
+                                base.staterror, base.syserror)
+    fit_asymmetric_err(RESULTS_BENCH_AVG, data)
 
-    def cmp(self, bench, results, tol=1.0e-3):
-        for key in ["numpoints", "succeeded", "dof"]:
-            assert bench[key] == int(getattr(results, key))
-        for key in ["rstat", "qval", "istatval", "statval"]:
-            assert np.allclose(float(bench[key]),
-                                        float(getattr(results, key)), tol, tol)
-        self.assertEqualWithinTol(bench['parvals'], results.parvals, tol)
-        parerrs = np.sqrt(results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(bench['parerrs'], parerrs, tol)
 
-    def fit_asymmetric_err(self, bench, data):
-        model = PowLaw1D('p1')
-        fit = Fit(data, model, self.stat, self.method, self.est)
-        results = fit.fit()
-        self.cmp(bench, results)
-        return model
+@requires_data
+@requires_fits
+def test_constructor_rms(make_data_path):
+    infile = make_data_path('gro_delta.txt')
+    ui.load_ascii_with_errors(1, infile, delta=True, func=rms)
+    base = ui.get_data(1)
+    data = Data1DAsymmetricErrs(2, base.x, base.y, base.elo, base.ehi,
+                                base.staterror, base.syserror)
+    fit_asymmetric_err(RESULTS_BENCH_RMS, data)
 
-    def test_gro_ascii(self):
-        ui.load_ascii_with_errors(1, self.gro_fname, delta=False)
-        data = ui.get_data(1)
-        self.fit_asymmetric_err(self._results_bench_avg, data)
 
-    def test_gro_delta(self):
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        data = ui.get_data(1)
-        self.fit_asymmetric_err(self._results_bench_avg, data)
+@requires_data
+@requires_fits
+def test_resample_avg(make_data_path):
+    infile = make_data_path('gro_delta.txt')
+    ui.load_ascii_with_errors(1, infile, delta=True)
+    base = ui.get_data(1)
+    data = Data1DAsymmetricErrs(2, base.x, base.y, base.elo, base.ehi,
+                                base.staterror, base.syserror)
+    resample_data(data, RESAMPLE_BENCH, RESULTS_BENCH_AVG)
 
-    def test_AsymmetricErrs_avg(self):
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        tmp = ui.get_data(1)
-        data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
-                                    tmp.ehi, tmp.staterror, tmp.syserror)
-        self.fit_asymmetric_err(self._results_bench_avg, data)
 
-    def rms(self, a, b):
-        return np.sqrt(a * a + b * b)
+@requires_data
+@requires_fits
+def test_resample_rmd(make_data_path):
+    infile = make_data_path('gro_delta.txt')
+    ui.load_ascii_with_errors(1, infile, delta=True, func=rms)
+    base = ui.get_data(1)
+    data = Data1DAsymmetricErrs(2, base.x, base.y, base.elo, base.ehi,
+                                base.staterror, base.syserror)
+    resample_data(data, RESAMPLE_BENCH, RESULTS_BENCH_RMS)
 
-    def test_gro_ascii_rms(self):
-        ui.load_ascii_with_errors(1, self.gro_fname, func=self.rms,
-                               delta=False)
-        data = ui.get_data(1)
-        self.fit_asymmetric_err(self._results_bench_rms, data)
 
-    def test_gro_delta_rms(self):
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, func=self.rms,
-                               delta=True)
-        data = ui.get_data(1)
-        self.fit_asymmetric_err(self._results_bench_rms, data)
+@requires_data
+@requires_fits
+def test_warning(make_data_path):
 
-    def test_AsymmetricErrs_rms(self):
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, func=self.rms,
-                                     delta=True)
-        tmp = ui.get_data(1)
-        data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
-                                    tmp.ehi, tmp.staterror, tmp.syserror)
-        self.fit_asymmetric_err(self._results_bench_rms, data)
+    infile = make_data_path('gro.txt')
+    ui.load_ascii_with_errors(1, infile)
+    data = ui.get_data(1)
+    powlaw1d = PowLaw1D('p1')
+    ui.set_model(powlaw1d)
+    ui.fit()
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        ui.resample_data(1, 3)
+        assert len(w) == 0
 
-    def cmp_resample_data(self, bench, result, tol=1.0e-3):
-        gamma = result['p1.gamma']
-        ampl = result['p1.ampl']
-        self.assertEqualWithinTol(bench, np.array([np.average(gamma),
-                                                   np.std(gamma),
-                                                   np.average(ampl),
-                                                   np.std(ampl)]), tol)
 
-    def resample_data(self, data, bench, results_bench, tol=1.0e-3):
-        model = self.fit_asymmetric_err(results_bench, data)
-        rd = ReSampleData(data, model)
-        result = rd(niter=100, seed=123)
-        self.cmp_resample_data(bench, result)
-        self.assertEqualWithinTol(results_bench['parvals'],
-                                  model.thawedpars, tol)
+@requires_data
+@requires_fits
+def test_ui(make_data_path):
 
-    def test_AsymmetricErrors_resample_avg(self):
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        tmp = ui.get_data(1)
-        data = Data1DAsymmetricErrs(1, tmp.x, tmp.y, tmp.elo,
-                                    tmp.ehi, tmp.staterror, tmp.syserror)
-        self.resample_data(data, self._resample_bench,
-                           self._results_bench_avg)
+    infile = make_data_path('gro_delta.txt')
+    ui.load_ascii_with_errors(1, infile, delta=True)
 
-    def test_AsymmetricErrors_resample_rms(self):
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True,
-                               func=self.rms)
-        tmp = ui.get_data(1)
-        data = Data1DAsymmetricErrs(2, tmp.x, tmp.y, tmp.elo,
-                                    tmp.ehi, tmp.staterror, tmp.syserror)
-        self.resample_data(data, self._resample_bench,
-                           self._results_bench_rms)
-
-    def test_ui(self, tol=1.0e-3):
-        # from shepa.astro.ui import *
-        ui.load_ascii_with_errors(1, self.gro_delta_fname, delta=True)
-        ui.set_stat('leastsq')
-        ui.set_model('powlaw1d.p1')
-        ui.fit()
-        sample = ui.resample_data(1, 10, seed=123)
-        self.assertEqualWithinTol(self._resample_bench_10['p1.gamma'],
-                                  sample['p1.gamma'])
-        self.assertEqualWithinTol(self._resample_bench_10['p1.ampl'],
-                                  sample['p1.ampl'])
-
-    def test_warning(self):
-        ui.load_ascii_with_errors(1, self.gro_fname)
-        data = ui.get_data(1)
-        powlaw1d = PowLaw1D('p1')
-        ui.set_model(powlaw1d)
-        fit = Fit(data, powlaw1d)
-        results = fit.fit()
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            ui.resample_data(1, 3)
-            assert len(w) == 0
+    ui.set_stat('leastsq')
+    ui.set_model('powlaw1d.p1')
+    ui.fit()
+    sample = ui.resample_data(1, 10, seed=123)
+    for p in ['p1.gamma', 'p1.ampl']:
+        assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p])
 
 
 def test_zero_case():
@@ -207,10 +221,10 @@ def test_zero_case():
     dyl = np.asarray([2, 2, 2, 2, 2])
     dyh = np.asarray([2, 2, 2, 2, 2])
 
-    data = Data1DAsymmetricErrs('zero', xs, ys, dyl, dyh, dyh)
+    data = Data1DAsymmetricErrs('zero', xs, ys, dyl, dyh)
     mdl = Const1D('flat')
 
-    f = Fit(data, mdl)
+    Fit(data, mdl).fit()
 
     rd = ReSampleData(data, mdl)
     res = rd.call(niter=10, seed=47)
