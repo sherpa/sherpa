@@ -122,6 +122,7 @@ def modelCacher1d(func):
             digest = hashlib.sha256(token).digest()
             if digest in cache:
                 cache['hits'] += 1
+                cache['record'].append({'pars': pars, 'hit': True})
                 return cache[digest].copy()
 
         vals = func(cls, pars, xlo, *args, **kwargs)
@@ -135,6 +136,8 @@ def modelCacher1d(func):
             queue.append(digest)
             cache['misses'] += 1
             cache[digest] = vals.copy()
+
+            cache['record'].append({'pars': pars, 'hit': False})
 
         return vals
 
@@ -659,15 +662,15 @@ class ArithmeticModel(Model):
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
         self._queue = ['']
-        self._cache = {'hits': 0, 'misses': 0}
+        self._cache = {'hits': 0, 'misses': 0, 'record': []}
         Model.__init__(self, name, pars)
 
     def _cache_status(self):
         c = self._cache
-        print(" {:30s}  size: {:4d}  hits: {:5d}  misses: {:5d}".format(self.name,
-                                                                        len(self._queue),
-                                                                        c['hits'],
-                                                                        c['misses']))
+        print(" {:30s}  size: {:4d}  ".format(self.name, len(self._queue)) +
+              "hits: {:5d}  misses: {:5d}  ".format(c['hits'], c['misses']) +
+              "nrecords: {:5d}".format(len(c['record'])) # should be same as hits+misses
+        )
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
@@ -693,7 +696,7 @@ class ArithmeticModel(Model):
             self.__dict__['_queue'] = ['']
 
         if '_cache' not in state:
-            self.__dict__['_cache'] = {'hits': 0, 'misses': 0}
+            self.__dict__['_cache'] = {'hits': 0, 'misses': 0, 'record': []}
 
         if 'cache' not in state:
             self.__dict__['cache'] = 5
@@ -704,7 +707,7 @@ class ArithmeticModel(Model):
     def startup(self, cache=False):
         # NOTE: this resets the existing cache
         self._queue = ['']
-        self._cache = {'hits': 0, 'misses': 0}
+        self._cache = {'hits': 0, 'misses': 0, 'record': []}
         self._use_caching = cache
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)
