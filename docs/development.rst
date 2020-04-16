@@ -35,7 +35,7 @@ Conda can be used to install all the dependencies for Sherpa.
  
 ::
 
-    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ds9 astropy
+    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ds9 astropy ciao
     conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao sherpa
     conda install -n sherpaciao -c anaconda -c astropy sphinx graphviz sphinx-astropy sphinx_rtd_theme
 
@@ -46,7 +46,8 @@ building the documentation.  Sherpa can use either astropy or crates
 as backend for reading and writing files. The default configuration in
 Sherpa is to use astropy. However, if crates is installed (e.g. by
 installing the `ciao` package) and selected as backend in `sherpa.rc`,
-then astropy can be omitted from the install.
+then astropy can be omitted from the install (but is still needed to
+build the docs).
 
 As described in :ref:`build-from-source`, the file ``setup.cfg`` in
 the root directory of the sherpa source needs to be modified to
