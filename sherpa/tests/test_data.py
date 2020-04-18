@@ -41,6 +41,7 @@ MULTIPLIER = 2
 DATA_1D_CLASSES = (Data1D, Data1DInt)
 DATA_2D_CLASSES = (Data2D, Data2DInt)
 ALL_DATA_CLASSES = DATA_1D_CLASSES + DATA_2D_CLASSES
+REALLY_ALL_DATA_CLASSES = (Data, ) + ALL_DATA_CLASSES
 
 DATA1D_ARGS = NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
 DATA_ARGS = NAME, (X_ARRAY,), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
@@ -57,6 +58,14 @@ INSTANCE_ARGS = {
     Data2D: DATA2D_ARGS,
     Data2DInt: DATA2DINT_ARGS
 }
+
+POS_Y_ARRAY = {
+    Data1D: 2,
+    Data: 2,
+    Data1DInt: 3,
+    Data2D: 3,
+    Data2DInt: 5,
+    }
 
 
 @pytest.fixture
@@ -977,3 +986,65 @@ def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
     model2 = Gauss2D()
     fitter = Fit(data2, model2, Chi2(), LevMar())
     fitter.fit()  # Failed in Sherpa 4.11.0
+
+
+# https://github.com/sherpa/sherpa/issues/695
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_get_indep_masked_numpyarray(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    mask = numpy.random.rand(*(args[1].shape)) > 0.5
+    args[1] = numpy.ma.array(args[1], mask=mask)
+    with pytest.warns(UserWarning, match="dropping mask"):
+        data = Dataclass(*args)
+    assert len(data.get_indep(filter=True)) == len(args[1])
+ 
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_get_dep_masked_numpyarray(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    posy = POS_Y_ARRAY[Dataclass]
+    mask = numpy.random.rand(*(args[posy].shape)) > 0.5
+    args[posy] = numpy.ma.array(args[posy], mask=mask)
+    data = Dataclass(*args)
+    assert data.mask.shape == mask.shape
+    assert np.all(data.mask == ~mask)
+    assert len(data.get_dep(filter=True)) == (~mask).sum()
+
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_get_dep_masked_numpyarray_nomask(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    posy = POS_Y_ARRAY[Dataclass]
+    # By default, numpy creates a masked array with no mask set
+    args[posy] = numpy.ma.array(args[posy]) 
+    data = Dataclass(*args)
+    # Sherpa's way of saying "mask is not set"
+    assert data.mask is True
+    assert len(data.get_dep(filter=True)) == len(args[posy].flatten())
+
+
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_get_indep_anyobj_with_mask(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    class DummyMask(list):
+        mask = 'whatisthis'
+    args[1] = DummyMask(args[1])
+    with pytest.warns(UserWarning, match="dropping mask"):
+        data = Dataclass(*args)
+    assert data.mask is True
+    assert len(data.get_indep(filter=True)) == len(args[1])
+
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_get_dep_any_obj_with_mask(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    posy = POS_Y_ARRAY[Dataclass]
+    class DummyMask(list):
+        mask = 'whatisthis'
+    args[posy] = DummyMask(args[posy])
+    with pytest.warns(UserWarning, match="dropping mask"):
+        data = Dataclass(*args)
+    assert data.mask is True
+    assert len(data.get_dep(filter=True)) == len(args1)
+
+
