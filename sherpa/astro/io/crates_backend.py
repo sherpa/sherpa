@@ -520,8 +520,8 @@ def get_column_data(*args):
             raise IOErr('badarray', arg)
 
         if arg is not None:
-            vals = numpy.asarray(vals)
-            for col in numpy.column_stack(vals):
+            vals = numpy.asanyarray(vals)
+            for col in numpy.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(vals)

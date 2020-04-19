@@ -417,8 +417,8 @@ def get_column_data(*args):
         if arg is not None and not isinstance(arg, (numpy.ndarray, list, tuple)):
             raise IOErr('badarray', arg)
         if arg is not None:
-            vals = numpy.asarray(arg)
-            for col in numpy.column_stack(vals):
+            vals = numpy.asanyarray(arg)
+            for col in numpy.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(arg)
