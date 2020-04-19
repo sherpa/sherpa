@@ -31,10 +31,7 @@ conda update --yes conda
 # Note the order of the channels matter. We built the xspec conda packages for macos using the conda-forge channel
 # with the highest priority, so we add it with a higher priority than the default channels, but with less priority
 # than our own channels, so that we don't accidentally get conda-forge packages for cfitsio/ccfits.
-if [[ ${TRAVIS_OS_NAME} == osx ]];
-then
-    conda config --add channels conda-forge
-fi
+conda config --add channels conda-forge
 
 conda config --add channels ${sherpa_channel}
 conda config --add channels ${xspec_channel}
