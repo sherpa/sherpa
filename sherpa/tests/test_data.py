@@ -1104,7 +1104,7 @@ def test_regression_346(Session):
     session = Session()
     x = numpy.arange(-5, 5.1) 
     old_y = x*x + 23.2
-    y = numpy.ma.masked_array(old_y,mask=y<35) 
+    y = numpy.ma.masked_array(old_y,mask=old_y<35) 
     e = numpy.ones(x.size) 
     session.load_arrays("mydata", x, y, e) 
     filtered_y = session. get_dep("mydata", filter=True)
