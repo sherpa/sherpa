@@ -52,6 +52,24 @@ def _check(array):
     return array
 
 
+def _check_indep(array):
+    if hasattr(array, 'mask'):
+        warnings.warn('Dropping mask attribute for array {}. Masks are supported for dependent variables only.'.format(array))
+    return array
+
+def _check_dep(array):
+    if not hasattr(array, 'mask'):
+        return _check(array), True
+    else:
+        # We know the mask convention is opposite to sherpa
+        if isinstance(array, numpy.ma.MaskedArray):
+            return _check(array), ~array.mask
+        # We don't know what the mask convention is
+        else:
+            warnings.warn('Dropping mask for array {}. Set .mask attribute manually or use "set_filter" function.'.format(array))
+            return _check(array), True
+
+
 class DataSpace1D(EvaluationSpace1D):
     """
     Class for representing 1-D Data Space. Data Spaces are spaces that describe the data domain. As models can be
@@ -68,7 +86,7 @@ class DataSpace1D(EvaluationSpace1D):
             the x axis of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, x)
+        EvaluationSpace1D.__init__(self, _check_indep(x))
 
     def get(self, filter=False):
         """
@@ -134,7 +152,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
             the higher bounds array of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, xlo, xhi)
+        EvaluationSpace1D.__init__(self, _check_indep(xlo), _check_indep(xhi))
 
     def get(self, filter=False):
         """
@@ -201,8 +219,8 @@ class DataSpace2D():
             the second axis of this data space
         """
         self.filter = filter
-        self.x0 = _check(x0)
-        self.x1 = _check(x1)
+        self.x0 = _check(_check_indep(x0))
+        self.x1 = _check(_check_indep(x1))
 
     def get(self, filter=False):
         """
@@ -263,10 +281,10 @@ class IntegratedDataSpace2D():
             the higher bounds array of the xhi axis
         """
         self.filter = filter
-        self.x0lo = _check(x0lo)
-        self.x1lo = _check(x1lo)
-        self.x0hi = _check(x0hi)
-        self.x1hi = _check(x1hi)
+        self.x0lo = _check(_check_indep(x0lo))
+        self.x1lo = _check(_check_indep(x1lo))
+        self.x0hi = _check(_check_indep(x0hi))
+        self.x1hi = _check(_check_indep(x1hi))
 
     def get(self, filter=False):
         """
@@ -321,7 +339,7 @@ class DataSpaceND():
             the tuple of independent axes.
         """
         self.filter = filter
-        self.indep = indep
+        self.indep = _check_indep(indep)
 
     def get(self, filter=False):
         """
@@ -381,6 +399,11 @@ class Filter():
     def mask(self, val):
         if (val is True) or (val is False):
             self._mask = val
+        # if val is of type np.bool_ and True, it was failed the previous test because
+        # "is True" compares with Python "True" singelton.
+        # Yet, we do not want to allow arbitrary values that evaluate as True.
+        elif (val is numpy.ma.nomask) or (numpy.isscalar(val) and val and isinstance(val, numpy.bool_)):
+            self._mask = True
         elif (val is None) or numpy.isscalar(val):
             raise DataErr('ismask')
         else:
@@ -464,17 +487,13 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def __init__(self, name, indep, y, staterror=None, syserror=None):
         """
-        Warning: Currently, Data objects ignore any masks on input data. If you have masked data,
-        set ``data.mask`` after initialization - and note that the Sherpa convention for masking
-        is OPPOSITE to numpy, i.e. in Sherpa True marks a valid value and False an invalid,
-        to-be-ignored value.
-
         Parameters
         ----------
         name : basestring
             name of this dataset
         indep: tuple of array_like
-            the tuple of independent arrays
+            the tuple of independent arrays. If this is an numpy masked array,
+            the mask will used.
         y : array_like
             the values of the dependent observable
         staterror : array_like
@@ -484,7 +503,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
-        self.y = _check(y)
+        self.y, self.mask = _check_dep(y)
         self.staterror = staterror
         self.syserror = syserror
         NoNewAttributesAfterInit.__init__(self)
