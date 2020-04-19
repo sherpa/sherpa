@@ -1045,6 +1045,77 @@ def test_data_get_dep_any_obj_with_mask(Dataclass):
     with pytest.warns(UserWarning, match="dropping mask"):
         data = Dataclass(*args)
     assert data.mask is True
-    assert len(data.get_dep(filter=True)) == len(args1)
+    assert len(data.get_dep(filter=True)) == len(args[1])
 
+
+# https://github.com/sherpa/sherpa/issues/346
+# repeat set of tests except now by using ui
+# Results should be idendical, but tests are fast, so we just test again
+# To make sure that there is no heuristic in load_arrays or similar that
+# interferes with the logic
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_get_indep_masked_numpyarray_ui(data_for_load_arrays):
+    session, args, data = data_for_load_arrays
+    mask = numpy.random.rand(*(args[1].shape)) > 0.5
+    args = list(args)
+    args[1] = numpy.ma.array(args[1], mask=mask)
+    with pytest.warns(UserWarning, match="dropping mask"):
+        session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    assert len(new_data.get_indep(filter=True)) == len(args[1])
+
+
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_get_dep_masked_numpyarray_ui(data_for_load_arrays):
+    session, args, data = data_for_load_arrays
+    posy = POS_Y_ARRAY[type(data)]
+    mask = numpy.random.rand(*(args[posy].shape)) > 0.5
+    args = list(args)
+    args[posy] = numpy.ma.array(args[posy], mask=mask)
+    session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    assert new_data.mask.shape == mask.shape
+    assert np.all(new_data.mask == ~mask)
+    assert len(new_data.get_dep(filter=True)) == (~mask).sum()
+
+
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_get_dep_masked_numpyarray_nomask_ui(data_for_load_arrays):
+    session, args, data = data_for_load_arrays
+    posy = POS_Y_ARRAY[type(data)]
+    args = list(args)
+    args[posy] = numpy.ma.array(args[posy])
+    session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    # Sherpa's way of saying "mask is not set"
+    assert new_data.mask is True
+    assert len(new_data.get_dep(filter=True)) == len(args[posy].flatten())
+
+
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_get_indep_anyobj_with_mask_ui(data_for_load_arrays):
+    session, args, data = data_for_load_arrays
+    class DummyMask(list):
+        mask = 'whatisthis'
+    args = list(args)
+    args[1] = DummyMask(args[1])
+    with pytest.warns(UserWarning, match="dropping mask"):
+        session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    assert len(new_data.get_indep(filter=True)) == len(args[1])
+
+
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_get_dep_any_obj_with_mask_ui(data_for_load_arrays):
+    session, args, data = data_for_load_arrays
+    posy = POS_Y_ARRAY[type(data)]
+    class DummyMask(list):
+        mask = 'whatisthis'
+    args = list(args)
+    args[posy] = DummyMask(args[posy])
+    with pytest.warns(UserWarning, match="dropping mask"):
+        session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    assert new_data.mask is True
+    assert len(new_data.get_dep(filter=True)) == len(args[1])
 
