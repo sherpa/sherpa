@@ -1097,3 +1097,15 @@ def test_data_get_dep_masked_numpyarray_nomask_ui(data_for_load_arrays, Session)
     # Sherpa's way of saying "mask is not set"
     assert new_data.mask is True
     assert len(new_data.get_dep(filter=True)) == len(args[posy].flatten())
+
+# https://github.com/sherpa/sherpa/issues/346
+@pytest.mark.parametrize('Session', [Session, AstroSession])
+def test_regression_346(Session):
+    session = Session()
+    x = numpy.arange(-5, 5.1) 
+    old_y = x*x + 23.2
+    y = numpy.ma.masked_array(old_y,mask=y<35) 
+    e = numpy.ones(x.size) 
+    session.load_arrays("mydata", x, y, e) 
+    filtered_y = session. get_dep("mydata", filter=True)
+    assert numpy.allclose(filtered_y, [48.2, 39.2, 39.2, 48.2])
