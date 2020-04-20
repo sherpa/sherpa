@@ -52,7 +52,7 @@ def _check(array):
     return array
 
 
-def _check_indep(array):
+def _check_nomask(array):
     if hasattr(array, 'mask'):
         warnings.warn('Dropping mask attribute for array {}. Masks are supported for dependent variables only.'.format(array))
     return array
@@ -86,7 +86,7 @@ class DataSpace1D(EvaluationSpace1D):
             the x axis of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, _check_indep(x))
+        EvaluationSpace1D.__init__(self, _check_nomask(x))
 
     def get(self, filter=False):
         """
@@ -152,7 +152,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
             the higher bounds array of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, _check_indep(xlo), _check_indep(xhi))
+        EvaluationSpace1D.__init__(self, _check_nomask(xlo), _check_nomask(xhi))
 
     def get(self, filter=False):
         """
@@ -219,8 +219,8 @@ class DataSpace2D():
             the second axis of this data space
         """
         self.filter = filter
-        self.x0 = _check(_check_indep(x0))
-        self.x1 = _check(_check_indep(x1))
+        self.x0 = _check(_check_nomask(x0))
+        self.x1 = _check(_check_nomask(x1))
 
     def get(self, filter=False):
         """
@@ -281,10 +281,10 @@ class IntegratedDataSpace2D():
             the higher bounds array of the xhi axis
         """
         self.filter = filter
-        self.x0lo = _check(_check_indep(x0lo))
-        self.x1lo = _check(_check_indep(x1lo))
-        self.x0hi = _check(_check_indep(x0hi))
-        self.x1hi = _check(_check_indep(x1hi))
+        self.x0lo = _check(_check_nomask(x0lo))
+        self.x1lo = _check(_check_nomask(x1lo))
+        self.x0hi = _check(_check_nomask(x0hi))
+        self.x1hi = _check(_check_nomask(x1hi))
 
     def get(self, filter=False):
         """
@@ -339,7 +339,7 @@ class DataSpaceND():
             the tuple of independent axes.
         """
         self.filter = filter
-        self.indep = _check_indep(indep)
+        self.indep = _check_nomask(indep)
 
     def get(self, filter=False):
         """
@@ -504,8 +504,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
-        self.staterror = staterror
-        self.syserror = syserror
+        self.staterror = _check_nomask(staterror)
+        self.syserror = _check_nomask(syserror)
         NoNewAttributesAfterInit.__init__(self)
 
     def _init_data_space(self, filter, *data):

@@ -61,12 +61,38 @@ INSTANCE_ARGS = {
     Data2DInt: DATA2DINT_ARGS
 }
 
+
+POS_X_ARRAY = {
+    Data1D: 1,
+    Data: 1,
+    Data1DInt: 1,
+    Data2D: 1,
+    Data2DInt: 1,
+    }
+
 POS_Y_ARRAY = {
     Data1D: 2,
     Data: 2,
     Data1DInt: 3,
     Data2D: 3,
     Data2DInt: 5,
+    }
+
+POS_STATERR_ARRAY = {
+    Data1D: 3,
+    Data: 3,
+    Data1DInt: 4,
+    Data2D: 5,
+    Data2DInt: 7,
+    }
+
+
+POS_SYSERR_ARRAY = {
+    Data1D: 4,
+    Data: 4,
+    Data1DInt: 5,
+    Data2D: 6,
+    Data2DInt: 8,
     }
 
 
@@ -991,18 +1017,20 @@ def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
 
 
 # https://github.com/sherpa/sherpa/issues/695
+@pytest.mark.parametrize('arrpos', [POS_X_ARRAY, POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
 @pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
-def test_data_get_indep_masked_numpyarray(Dataclass):
+def test_data_indeperr_masked_numpyarray(arrpos, Dataclass):
+    i = arrpos[Dataclass]
     args = list(INSTANCE_ARGS[Dataclass])
-    mask = numpy.random.rand(*(args[1].shape)) > 0.5
-    args[1] = numpy.ma.array(args[1], mask=mask)
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args[i] = numpy.ma.array(args[i], mask=mask)
     with pytest.warns(UserWarning, match="for dependent variables only"):
         data = Dataclass(*args)
     assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
  
 
 @pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
-def test_data_get_dep_masked_numpyarray(Dataclass):
+def test_data_dep_masked_numpyarray(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     posy = POS_Y_ARRAY[Dataclass]
     mask = numpy.random.rand(*(args[posy].shape)) > 0.5
@@ -1014,7 +1042,7 @@ def test_data_get_dep_masked_numpyarray(Dataclass):
 
 
 @pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
-def test_data_get_dep_masked_numpyarray_nomask(Dataclass):
+def test_data_dep_masked_numpyarray_nomask(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     posy = POS_Y_ARRAY[Dataclass]
     # By default, numpy creates a masked array with no mask set
@@ -1026,7 +1054,7 @@ def test_data_get_dep_masked_numpyarray_nomask(Dataclass):
 
 
 @pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
-def test_data_get_indep_anyobj_with_mask(Dataclass):
+def test_data_indep_anyobj_with_mask(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     class DummyMask(list):
         mask = 'whatisthis'
@@ -1038,7 +1066,7 @@ def test_data_get_indep_anyobj_with_mask(Dataclass):
 
 
 @pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
-def test_data_get_dep_any_obj_with_mask(Dataclass):
+def test_data_dep_any_obj_with_mask(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     posy = POS_Y_ARRAY[Dataclass]
     class DummyMask(list):
@@ -1054,23 +1082,25 @@ def test_data_get_dep_any_obj_with_mask(Dataclass):
 # Results should be idendical, but tests are fast, so we just test again
 # To make sure that there is no heuristic in load_arrays or similar that
 # interferes with the logic
+@pytest.mark.parametrize('arrpos', [POS_X_ARRAY, POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
 @pytest.mark.parametrize('Session', [Session, AstroSession])
 @pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
-def test_data_get_indep_masked_numpyarray_ui(data_for_load_arrays, Session):
+def test_data_indeperr_masked_numpyarray_ui(arrpos, data_for_load_arrays, Session):
     session, args, data = data_for_load_arrays
     session = Session()
-    mask = numpy.random.rand(*(args[1].shape)) > 0.5
+    i = arrpos[type(data)]
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
     args = list(args)
-    args[1] = numpy.ma.array(args[1], mask=mask)
+    args[1] = numpy.ma.array(args[i], mask=mask)
     with pytest.warns(UserWarning, match="for dependent variables only"):
         session.load_arrays(*args)
     new_data = session.get_data(data.name)
-    assert len(new_data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[type(data)]])
+    assert len(new_data.get_dep(filter=True)) == len(args[i])
 
 
 @pytest.mark.parametrize('Session', [Session, AstroSession])
 @pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
-def test_data_get_dep_masked_numpyarray_ui(data_for_load_arrays, Session):
+def test_data_dep_masked_numpyarray_ui(data_for_load_arrays, Session):
     session, args, data = data_for_load_arrays
     session = Session()
     posy = POS_Y_ARRAY[type(data)]
@@ -1086,7 +1116,7 @@ def test_data_get_dep_masked_numpyarray_ui(data_for_load_arrays, Session):
 
 @pytest.mark.parametrize('Session', [Session, AstroSession])
 @pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
-def test_data_get_dep_masked_numpyarray_nomask_ui(data_for_load_arrays, Session):
+def test_data_dep_masked_numpyarray_nomask_ui(data_for_load_arrays, Session):
     session, args, data = data_for_load_arrays
     session = Session()
     posy = POS_Y_ARRAY[type(data)]
