@@ -22,6 +22,7 @@ import numpy.random
 import logging
 from sherpa.astro.utils import calc_energy_flux
 from sherpa.utils import parallel_map
+from sherpa.utils.err import ArgumentErr
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
 
@@ -62,6 +63,9 @@ def calc_flux(fit, data, src, samples, method=calc_energy_flux,
 
 def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
                 num=1, lo=None, hi=None, numcores=None, samples=None):
+
+    if num <= 0:
+        raise ArgumentErr('bad', 'num', 'must be a positive integer')
 
     #
     # The following function should be modified to take advantage of numpy

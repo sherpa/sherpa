@@ -28,7 +28,7 @@ import numpy as np
 
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits
-from sherpa.utils.err import ArgumentTypeErr, IOErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IOErr
 import sherpa.astro.utils
 
 
@@ -506,3 +506,56 @@ def test_calc_flux_pha_unabsorbed(make_data_path, clean_astro_ui):
 
     assert pflux_scale == pytest.approx(0.8)
     assert eflux_scale == pytest.approx(0.8)
+
+
+def setup_sample(id, make_data_path):
+    """Set up the given dataset for a sample*flux call
+
+    The calling function needs @requires_data and @requires_fits
+    decorators.
+    """
+
+    infile = make_data_path('3c273.pi')
+    if id is None:
+        ui.load_pha(infile)
+        ui.subtract()
+    else:
+        ui.load_pha(id, infile)
+        ui.subtract(id)
+
+    ui.notice(0.5, 7)
+    ui.set_stat('chi2datavar')
+    ui.set_method('levmar')
+
+    # get the starting point close to the best fit
+    gal = ui.create_model_component('xsphabs', 'gal')
+    pl = ui.create_model_component('powlaw1d', 'pl')
+    mdl = gal * pl
+    gal.nh = 0.0393
+    pl.gamma = 2.027
+    pl.ampl = 1.96e-4
+
+    if id is None:
+        ui.set_source(mdl)
+        ui.fit()
+    else:
+        ui.set_source(id, mdl)
+        ui.fit(id)
+
+    return gal, pl
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("niter", [0, -1])
+@pytest.mark.parametrize("id", [None, 1, 2, "foo"])
+def test_sample_foo_flux_invalid_niter(method, niter, id, make_data_path, clean_astro_ui):
+    """What happens for sample_energy/photon_flux when num is <= 0
+
+    See also test_sample_flux_invalid_niter
+    """
+
+    setup_sample(id, make_data_path)
+    with pytest.raises(ArgumentErr):
+        method(lo=0.5, hi=7, id=id, num=niter)
