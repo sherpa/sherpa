@@ -13718,7 +13718,7 @@ class Session(sherpa.ui.utils.Session):
         0.82799195070436793
 
         Calculate the K correction for a range of redshifts (0 to 2)
-        using an observed frame of 0. to 2 keV and a rest frame of 0.1
+        using an observed frame of 0.5 to 2 keV and a rest frame of 0.1
         to 10 keV (the energy grid is set to ensure that it covers the
         full energy range; that is the rest-frame band and the
         observed frame band multiplied by the smallest and largest
