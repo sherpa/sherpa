@@ -615,3 +615,76 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated, make_data_p
 
         flux = single(lo=0.5, hi=7, id=id)
         assert ans[i, 0] == flux
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("correlated", [False, True])
+def test_sample_foo_flux_params(multi, correlated, make_data_path, clean_astro_ui):
+    """Is the parameter sampling in sample_energy/photon_flux sensible?
+
+    Do the parameter values used in the sampling make sense?
+    """
+
+    # Rather than loop over ids, like earlier tests, just pick a non-default
+    # one.
+    #
+    id = 2
+    gal, pl = setup_sample(id, make_data_path)
+    ui.covar(id)
+    errs = ui.get_covar_results()
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    # to try and trigger issues with the parameter ranges,
+    # artificially pick the gamma limits to trigger the
+    # boundary limits. With no limits, gamma is 2.03 +/- 0.11,
+    # so 3-sigma limits are ~ 1.70 to 2.36. In 1000 iterations
+    # we would expect ~ 3 bins to fall outside this range.
+    #
+    pl.gamma.min = 1.7
+    pl.gamma.max = 2.36
+
+    ans = multi(lo=0.5, hi=7, id=id, num=1000, correlated=correlated)
+
+    nh = ans[:, 1]
+    gamma = ans[:, 2]
+    ampl = ans[:, 3]
+
+    # Checks we can run?
+    #
+    #  - mean/median should be close to best-fit
+    #  - sigma should be close to error
+    #    (at least for correlated=False)
+    #  - min/max should be restricted to parameter limits
+    #    (this check is currently not enforced as the sampler
+    #    does not enforce this).
+    #
+    # The checks use relatively-large tolerances, as there is
+    # no reason the values will match closely
+    #
+    assert np.median(nh) == pytest.approx(nh0, rel=0.1)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+
+    assert np.std(nh) == pytest.approx(errs.parmaxes[0], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs.parmaxes[1], rel=0.2)
+    assert np.std(ampl) == pytest.approx(errs.parmaxes[2], rel=0.2)
+
+    # At the moment these checks are not correct, since there is no
+    # restriction in the sampler that the parameter limits remain within
+    # their soft range. This may be by design (i.e. it allows values
+    # outside the soft range but within the hard limits to be used).
+    #
+    # assert nh.min() >= gal.nh.min
+    # assert nh.max() <= gal.nh.max
+
+    # assert gamma.min() >= pl.gamma.min
+    # assert gamma.max() <= pl.gamma.max
+
+    # assert ampl.min() >= pl.ampl.min
+    # assert ampl.max() <= pl.ampl.max
