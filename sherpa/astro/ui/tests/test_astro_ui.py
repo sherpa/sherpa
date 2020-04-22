@@ -613,7 +613,7 @@ def test_bug_316(make_data_path):
 
 @requires_data
 @requires_fits
-def test_load_multi_arfsrmfs(make_data_path):
+def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
     """Added in #728 to ensure cache parameter is sent along by
     MultiResponseSumModel.
 
@@ -650,7 +650,9 @@ def test_load_multi_arfsrmfs(make_data_path):
     ui.set_model(1, src)
     ui.set_model(2, src)
 
+    ui.set_method('levmar')
     ui.set_stat('chi2datavar')
+
     ui.fit()
     fr = ui.get_fit_results()
     assert fr.succeeded
