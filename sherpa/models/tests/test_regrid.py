@@ -292,6 +292,17 @@ def test_runtime_interp():
     assert ygot == approx(yexpected)
 
 
+def test_regrid_binaryop():
+    """issue #762, Cannot regrid a composite model (BinaryOpModel)"""
+    import sherpa.astro.ui as ui
+    ui.dataspace1d(-5, 15, 1, dstype=Data1D)
+    b = Box1D()
+    c = Const1D
+    ui.set_source(ui.const1d.c1 + ui.box1d.b1)
+    mdl = ui.get_source()
+    mdl.regrid(np.linspace(-5, 15))
+
+
 class MyModel(RegriddableModel1D):
     """
     A model that returns [100, ] * len(x) if 2.5 is in the input array x
