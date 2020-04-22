@@ -27,7 +27,7 @@ import pytest
 import numpy as np
 
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IOErr
 import sherpa.astro.utils
 
@@ -511,7 +511,7 @@ def test_calc_flux_pha_unabsorbed(make_data_path, clean_astro_ui):
 def setup_sample(id, make_data_path):
     """Set up the given dataset for a sample*flux call
 
-    The calling function needs @requires_data and @requires_fits
+    The calling function needs @requires_data, @requires_fits, @requires_xspec
     decorators.
     """
 
@@ -547,6 +547,7 @@ def setup_sample(id, make_data_path):
 
 @requires_data
 @requires_fits
+@requires_xspec
 @pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
 @pytest.mark.parametrize("niter", [0, -1])
 @pytest.mark.parametrize("id", [None, 1, 2, "foo"])
@@ -559,3 +560,58 @@ def test_sample_foo_flux_invalid_niter(method, niter, id, make_data_path, clean_
     setup_sample(id, make_data_path)
     with pytest.raises(ArgumentErr):
         method(lo=0.5, hi=7, id=id, num=niter)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi,single", [(ui.sample_energy_flux, ui.calc_energy_flux),
+                                          (ui.sample_photon_flux, ui.calc_photon_flux)])
+@pytest.mark.parametrize("id", [None, 1, 2, "foo"])
+@pytest.mark.parametrize("niter", [1, 2, 10])
+@pytest.mark.parametrize("correlated", [False, True])
+def test_sample_foo_flux_niter(multi, single, id, niter, correlated, make_data_path, clean_astro_ui):
+    """Do the sample_energy/photon_flux do what we expect?
+
+    Iterate n times, check that each iteration is different
+    (at least, doesn't match the previous version), and that
+    the returned flux is as expected.
+    """
+
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    ans = multi(lo=0.5, hi=7, id=id, num=niter, correlated=correlated)
+    assert ans.shape == (niter, 4)
+
+    # the routine hasn't changed the parameter values
+    assert gal.nh.val == nh0
+    assert pl.gamma.val == gamma0
+    assert pl.ampl.val == ampl0
+
+    # we expect that at least one of the parameter variables
+    # is different (technically the random sampler could pick
+    # the exact positions we started with, but this is unlikely)
+    # pytest.approx is used in case there is any loss in
+    # precision in storing the parameter values in the returned
+    # NumPy array.
+    #
+    # Since we loop over iterations the first line checks against
+    # the best fit, and then we check that the next iteration is
+    # different from the previous iteration.
+    #
+    for i in range(niter):
+        diffs = [ans[i, j] != pytest.approx(p.val)
+                 for j, p in enumerate([gal.nh, pl.gamma, pl.ampl], 1)]
+        assert any(diffs)
+
+        # Can we re-create this flux?
+        gal.nh = ans[i, 1]
+        pl.gamma = ans[i, 2]
+        pl.ampl = ans[i, 3]
+
+        flux = single(lo=0.5, hi=7, id=id)
+        assert ans[i, 0] == flux
