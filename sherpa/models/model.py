@@ -692,6 +692,10 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
                               type(self.rhs).__name__, len(rhs)))
         return val
 
+    def regrid(self, *arrays):
+        for part in self:
+            part.regrid(*arrays)
+
 
 class FilterModel(CompositeModel, ArithmeticModel):
 
