@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -113,7 +113,7 @@ class ParameterScaleVector(ParameterScale):
         scales = []
         thawedpars = [par for par in fit.model.pars if not par.frozen]
 
-        if None == myscales:
+        if myscales is None:
 
             oldestmethod = fit.estmethod
 
