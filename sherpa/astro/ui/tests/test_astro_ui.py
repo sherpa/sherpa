@@ -615,7 +615,7 @@ def test_bug_316(make_data_path):
 @requires_fits
 def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
     """Added in #728 to ensure cache parameter is sent along by
-    MultiResponseSumModel.
+    MultiResponseSumModel (fix #717).
 
     This has since been simplified to switch from xsapec to
     powlaw1d as it drops the need for XSPEC and is a simpler
@@ -650,9 +650,17 @@ def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
     ui.set_model(1, src)
     ui.set_model(2, src)
 
+    # ensure the test is repeatable by running with a known
+    # statistic and method
+    #
     ui.set_method('levmar')
     ui.set_stat('chi2datavar')
 
+    # Really what we care about for fixing #717 is that
+    # fit does not error out, but it's useful to know that
+    # the fit has changed the parameter values (which were
+    # both 1 before the fit).
+    #
     ui.fit()
     fr = ui.get_fit_results()
     assert fr.succeeded
