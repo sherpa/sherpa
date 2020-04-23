@@ -697,16 +697,22 @@ def test_sample_foo_flux_params(multi, correlated,
     gamma0 = pl.gamma.val
     ampl0 = pl.ampl.val
 
-    # to try and trigger issues with the parameter ranges,
-    # artificially pick the gamma limits to trigger the
-    # boundary limits. With no limits, gamma is 2.03 +/- 0.11,
+    # The parameter sampling uses the hard-limit boundaries,
+    # not the soft-limit boundaries. This can be seen by
+    # artificially constricting the soft limits of the
+    # gamma parameter. With the default limits, gamma is 2.03 +/- 0.11,
     # so 3-sigma limits are ~ 1.70 to 2.36. In 1000 iterations
     # we would expect ~ 3 bins to fall outside this range.
+    # A 2-sigma limit range is 1.81 - 2.25, and we'd expect
+    # ~ 45 bins in 1000 to fall outside this range.
     #
-    pl.gamma.min = 1.7
-    pl.gamma.max = 2.36
+    pl.gamma.min = 1.81
+    pl.gamma.max = 2.25
 
     ans = multi(lo=0.5, hi=7, id=id, num=1000, correlated=correlated)
+
+    # do not expect any IEEE special values here
+    assert np.isfinite(ans).all()
 
     nh = ans[:, 1]
     gamma = ans[:, 2]
@@ -732,18 +738,27 @@ def test_sample_foo_flux_params(multi, correlated,
     assert np.std(gamma) == pytest.approx(errs.parmaxes[1], rel=0.2)
     assert np.std(ampl) == pytest.approx(errs.parmaxes[2], rel=0.2)
 
-    # At the moment these checks are not correct, since there is no
-    # restriction in the sampler that the parameter limits remain within
-    # their soft range, but only their hard limits.
+    # Check against the hard limits, although this is not particularly
+    # informative since the hard limits for these parameters are
+    # all +/- 3.4e38
     #
-    # assert nh.min() >= gal.nh.min
-    # assert nh.max() <= gal.nh.max
+    assert nh.min() >= gal.nh.hard_min
+    assert nh.max() <= gal.nh.hard_max
 
-    # assert gamma.min() >= pl.gamma.min
-    # assert gamma.max() <= pl.gamma.max
+    assert gamma.min() >= pl.gamma.hard_min
+    assert gamma.max() <= pl.gamma.hard_max
 
-    # assert ampl.min() >= pl.ampl.min
-    # assert ampl.max() <= pl.ampl.max
+    assert ampl.min() >= pl.ampl.hard_min
+    assert ampl.max() <= pl.ampl.hard_max
+
+    # A probabilistic check that the gamma range lies outside
+    # the soft limits. It is possible for this check to fail
+    # because of the RNG, but with ~45 expected values outside
+    # the limits this is unlikely.
+    #
+    gmin = gamma.min() < pl.gamma.min
+    gmax = gamma.max() > pl.gamma.max
+    assert gmin or gmax
 
     # a simple check on the flux, it should be > 0
     #
@@ -787,11 +802,13 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     gamma0 = pl.gamma.val
     ampl0 = pl.ampl.val
 
-    pl.gamma.min = 1.7
-    pl.gamma.max = 2.36
+    pl.gamma.min = 1.81
+    pl.gamma.max = 2.25
 
     ans = multi(lo=0.5, hi=7, id=id, num=1000,
                 correlated=correlated, scales=scales)
+
+    assert np.isfinite(ans).all()
 
     nh = ans[:, 1]
     gamma = ans[:, 2]
@@ -810,13 +827,17 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     assert np.std(gamma) == pytest.approx(errs[1], rel=0.2)
     assert np.std(ampl) == pytest.approx(errs[2], rel=0.2)
 
-    # assert nh.min() >= gal.nh.min
-    # assert nh.max() <= gal.nh.max
+    assert nh.min() >= gal.nh.hard_min
+    assert nh.max() <= gal.nh.hard_max
 
-    # assert gamma.min() >= pl.gamma.min
-    # assert gamma.max() <= pl.gamma.max
+    assert gamma.min() >= pl.gamma.hard_min
+    assert gamma.max() <= pl.gamma.hard_max
 
-    # assert ampl.min() >= pl.ampl.min
-    # assert ampl.max() <= pl.ampl.max
+    assert ampl.min() >= pl.ampl.hard_min
+    assert ampl.max() <= pl.ampl.hard_max
+
+    gmin = gamma.min() < pl.gamma.min
+    gmax = gamma.max() > pl.gamma.max
+    assert gmin or gmax
 
     assert ans[:, 0].min() > 0
