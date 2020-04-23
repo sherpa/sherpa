@@ -94,6 +94,24 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
     scales = samples
     if scales is not None:
         scales = numpy.asarray(scales)
+
+        # A None value will cause scales to have a dtype of object,
+        # which is not supported by isfinite, so check for this
+        # first.
+        #
+        if None in scales:
+            raise ArgumentErr('bad', 'scales',
+                              'must not contain None values')
+
+        # We require that scales only has finite values in it.
+        # The underlying sample routines are assumed to check other
+        # constraints, or deal with negative values (for the 1D case
+        # uncorrelated case the absolute value is used).
+        #
+        if not numpy.isfinite(scales).all():
+            raise ArgumentErr('bad', 'scales',
+                              'must only contain finite values')
+
         if scales.ndim == 2 and (scales.shape[0] != scales.shape[1]):
             raise ArgumentErr('bad', 'scales',
                               'scales must be square when 2D')

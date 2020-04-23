@@ -573,8 +573,6 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("method", [ui.sample_energy_flux,
-                                    ui.sample_photon_flux])
 @pytest.mark.parametrize("correlated,scales", [(False, []),
                                                (False, [[]]),
                                                (False, [1, 2]),
@@ -595,23 +593,29 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
                                                (True, [[1, 2, 3], [1, 2, 3]]),
                                                (True, np.asarray([1, 2, 3])),
                                                (True, np.ones((2, 2))),
-                                               (True, np.ones((3, 3, 3)))
+                                               (True, np.ones((3, 3, 3))),
+                                               (False, [1, np.inf, 2]),
+                                               (False, [1, 2, None]),
+                                               (True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]])
                                               ])
-def test_sample_foo_flux_invalid_scales(method, correlated, scales,
+def test_sample_foo_flux_invalid_scales(correlated, scales,
                                         make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when scales is
-    the wrong shape.
+    the wrong shape, or contains invalid values
 
     The scales parameter should be (for this fit with 3 free parameters):
        correlated=True   3 by 3 covariance matrix
                   False  3 by 3 covariance matrix or 3-element errors vector
 
+    Since these checks are done at a low level, we do not have to
+    loop over every element (e.g. method, id setting) as done in some
+    other checks.
     """
 
     setup_sample('x', make_data_path)
     with pytest.raises(ArgumentErr):
-        method(lo=0.5, hi=7, id='x', num=10, correlated=correlated,
-               scales=scales)
+        ui.sample_energy_flux(lo=0.5, hi=7, id='x', num=10,
+                              correlated=correlated, scales=scales)
 
 
 @requires_data
@@ -814,9 +818,11 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     gamma = ans[:, 2]
     ampl = ans[:, 3]
 
-    assert np.median(nh) == pytest.approx(nh0, rel=0.1)
-    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
-    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+    # occasionally a large relative tolerance has been needed for nh
+    # so bump up all of them
+    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.2)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.2)
 
     if scales.ndim == 2:
         errs = np.sqrt(scales.diagonal())
