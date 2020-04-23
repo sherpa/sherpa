@@ -67,6 +67,9 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
     if num <= 0:
         raise ArgumentErr('bad', 'num', 'must be a positive integer')
 
+    # What is the number of free parameters in the model expression?
+    npar = len(src.thawedpars)
+
     #
     # The following function should be modified to take advantage of numpy
     #
@@ -84,13 +87,36 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
 
-    # If user entered a covariance matrix but wants to run with
-    # correlated as false then extract the diagonal elements.
-    if correlated == False and samples is not None:
-        if numpy.ndarray == type(samples):
-            samples = samples.diagonal(0)
+    # Rename samples to scales as it is confusing here (as it does
+    # not refer to the samples drawn from the distribution but the
+    # widths of the parameters used to create the samples).
+    #
+    scales = samples
+    if scales is not None:
+        scales = numpy.asarray(scales)
+        if scales.ndim == 2 and (scales.shape[0] != scales.shape[1]):
+            raise ArgumentErr('bad', 'scales',
+                              'scales must be square when 2D')
 
-    samples = sampler.get_sample(fit, samples, num=num)
+        if correlated:
+            if scales.ndim != 2:
+                raise ArgumentErr('bad', 'scales',
+                                  'when correlated=True, scales must be 2D')
+        else:
+            if scales.ndim == 2:
+                # convert from covariance matrix
+                scales = numpy.sqrt(scales.diagonal())
+            elif scales.ndim != 1:
+                raise ArgumentErr('bad', 'scales',
+                                  'when correlated=False, scales must be 1D or 2D')
+
+        # at this point either 1D or 2D square array
+        #
+        if scales.shape[0] != npar:
+            raise ArgumentErr('bad', 'scales',
+                              'does not match number of free parameters')
+
+    samples = sampler.get_sample(fit, scales, num=num)
 
     hardmins = fit.model._get_thawed_par_hardmins()
     hardmaxs = fit.model._get_thawed_par_hardmaxes()

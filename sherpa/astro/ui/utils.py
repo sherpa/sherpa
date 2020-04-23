@@ -12405,15 +12405,22 @@ class Session(sherpa.ui.utils.Session):
            The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depende on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the error on the
+           parameters (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
         correlated : bool, optional
-           If ``True`` (the default is ``False``) then ``scales`` is the
-           full covariance matrix, otherwise it is just a 1D array
-           containing the variances of the parameters (the diagonal
-           elements of the covariance matrix).
+           Should the correlation between the parameters be included
+           when sampling the parameters? If not, then each parameter
+           is sampled from a normal distribution.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -12454,14 +12461,32 @@ class Session(sherpa.ui.utils.Session):
         distribution):
 
         >>> vals = sample_photon_flux(0.5, 7, num=1000)
-        >>> plot_cdf(vals[:,0], name='flux')
+        >>> plot_cdf(vals[:, 0], name='flux')
 
         Repeat the above, but allowing the parameters to be
         correlated, and then calculate the 5, 50, and 95 percent
         quantiles of the photon flux distribution:
 
-        >>> cvals = sample_photon_flux(.5, 7, num=1000, correlated=True)
-        >>> np.percentile(cvals[:,0], [5,50,95])
+        >>> cvals = sample_photon_flux(0.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:, 0], [5, 50, 95])
+
+        Use the given parameter errors for sampling the parameter distribution.
+        The fit must have three free parameters, and each parameter is
+        sampled independently:
+
+        >>> parerrs = [0.25, 1.22, 1.04e-4]
+        >>> vals = sample_photon_flux(2, 10, num=5000, scales=parerrs)
+
+        Run covariance to estimate the parameter errors and then extract
+        the covariance matrix from the results (as the `cmat` variable).
+        This matrix is then used to define the parameter widths - including
+        correlated terms - in the flux sampling, after being increased by
+        ten percent:
+
+        >>> covar()
+        >>> cmat = get_covar_results().extra_output
+        >>> vals = sample_photon_flux(2, 10, num=5000, correlated=True,
+        ...                           scales=1.1 * cmat)
 
         """
         ids, fit = self._get_fit(id)
@@ -12507,15 +12532,22 @@ class Session(sherpa.ui.utils.Session):
            The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depende on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the error on the
+           parameters (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
         correlated : bool, optional
-           If ``True`` (the default is ``False``) then ``scales`` is the
-           full covariance matrix, otherwise it is just a 1D array
-           containing the variances of the parameters (the diagonal
-           elements of the covariance matrix).
+           Should the correlation between the parameters be included
+           when sampling the parameters? If not, then each parameter
+           is sampled from a normal distribution.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -12556,14 +12588,32 @@ class Session(sherpa.ui.utils.Session):
         distribution):
 
         >>> vals = sample_energy_flux(0.5, 7, num=1000)
-        >>> plot_cdf(vals[:,0], name='flux')
+        >>> plot_cdf(vals[:, 0], name='flux')
 
         Repeat the above, but allowing the parameters to be
         correlated, and then calculate the 5, 50, and 95 percent
         quantiles of the energy flux distribution:
 
-        >>> cvals = sample_energy_flux(.5, 7, num=1000, correlated=True)
-        >>> np.percentile(cvals[:,0], [5,50,95])
+        >>> cvals = sample_energy_flux(0.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:, 0], [5, 50, 95])
+
+        Use the given parameter errors for sampling the parameter distribution.
+        The fit must have three free parameters, and each parameter is
+        sampled independently:
+
+        >>> parerrs = [0.25, 1.22, 1.04e-4]
+        >>> vals = sample_energy_flux(2, 10, num=5000, scales=parerrs)
+
+        Run covariance to estimate the parameter errors and then extract
+        the covariance matrix from the results (as the `cmat` variable).
+        This matrix is then used to define the parameter widths - including
+        correlated terms - in the flux sampling, after being increased by
+        ten percent:
+
+        >>> covar()
+        >>> cmat = get_covar_results().extra_output
+        >>> vals = sample_energy_flux(2, 10, num=5000, correlated=True,
+        ...                           scales=1.1 * cmat)
 
         """
         ids, fit = self._get_fit(id)

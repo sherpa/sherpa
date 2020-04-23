@@ -528,7 +528,13 @@ def setup_sample(id, make_data_path):
     ui.set_method('levmar')
 
     # get the starting point close to the best fit
-    gal = ui.create_model_component('xsphabs', 'gal')
+    #
+    # Use xswabs rather than xsphabs as it's faster and
+    # we don't care here about scientific validity of the
+    # results.
+    #
+    # gal = ui.create_model_component('xsphabs', 'gal')
+    gal = ui.create_model_component('xswabs', 'gal')
     pl = ui.create_model_component('powlaw1d', 'pl')
     mdl = gal * pl
     gal.nh = 0.0393
@@ -548,10 +554,12 @@ def setup_sample(id, make_data_path):
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
 @pytest.mark.parametrize("niter", [0, -1])
 @pytest.mark.parametrize("id", [None, 1, 2, "foo"])
-def test_sample_foo_flux_invalid_niter(method, niter, id, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_invalid_niter(method, niter, id,
+                                       make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when num is <= 0
 
     See also test_sample_flux_invalid_niter
@@ -565,12 +573,59 @@ def test_sample_foo_flux_invalid_niter(method, niter, id, make_data_path, clean_
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("multi,single", [(ui.sample_energy_flux, ui.calc_energy_flux),
-                                          (ui.sample_photon_flux, ui.calc_photon_flux)])
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
+@pytest.mark.parametrize("correlated,scales", [(False, []),
+                                               (False, [[]]),
+                                               (False, [1, 2]),
+                                               (False, [1, 2, 3, 4]),
+                                               (False, [[1, 2], [3, 4]]),
+                                               (False, [[1, 2, 3], [3, 4, 5]]),
+                                               (False, np.asarray([])),
+                                               (False, np.asarray([[]])),
+                                               (False, np.asarray([1, 2])),
+                                               (False, np.asarray([1, 2, 3, 4])),
+                                               (False, np.asarray([[1, 2], [3, 4]])),
+                                               (False, np.asarray([[1, 2, 3], [3, 4, 5]])),
+                                               (True, []),
+                                               (True, [[]]),
+                                               (True, np.asarray([])),
+                                               (True, np.asarray([[]])),
+                                               (True, [1, 2, 3]),
+                                               (True, [[1, 2, 3], [1, 2, 3]]),
+                                               (True, np.asarray([1, 2, 3])),
+                                               (True, np.ones((2, 2))),
+                                               (True, np.ones((3, 3, 3)))
+                                              ])
+def test_sample_foo_flux_invalid_scales(method, correlated, scales,
+                                        make_data_path, clean_astro_ui):
+    """What happens for sample_energy/photon_flux when scales is
+    the wrong shape.
+
+    The scales parameter should be (for this fit with 3 free parameters):
+       correlated=True   3 by 3 covariance matrix
+                  False  3 by 3 covariance matrix or 3-element errors vector
+
+    """
+
+    setup_sample('x', make_data_path)
+    with pytest.raises(ArgumentErr):
+        method(lo=0.5, hi=7, id='x', num=10, correlated=correlated,
+               scales=scales)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi,single", [(ui.sample_energy_flux,
+                                           ui.calc_energy_flux),
+                                          (ui.sample_photon_flux,
+                                           ui.calc_photon_flux)])
 @pytest.mark.parametrize("id", [None, 1, 2, "foo"])
 @pytest.mark.parametrize("niter", [1, 2, 10])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_sample_foo_flux_niter(multi, single, id, niter, correlated, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
+                               make_data_path, clean_astro_ui):
     """Do the sample_energy/photon_flux do what we expect?
 
     Iterate n times, check that each iteration is different
@@ -620,9 +675,11 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated, make_data_p
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("multi", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux,
+                                   ui.sample_photon_flux])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_sample_foo_flux_params(multi, correlated, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_params(multi, correlated,
+                                make_data_path, clean_astro_ui):
     """Is the parameter sampling in sample_energy/photon_flux sensible?
 
     Do the parameter values used in the sampling make sense?
@@ -677,8 +734,7 @@ def test_sample_foo_flux_params(multi, correlated, make_data_path, clean_astro_u
 
     # At the moment these checks are not correct, since there is no
     # restriction in the sampler that the parameter limits remain within
-    # their soft range. This may be by design (i.e. it allows values
-    # outside the soft range but within the hard limits to be used).
+    # their soft range, but only their hard limits.
     #
     # assert nh.min() >= gal.nh.min
     # assert nh.max() <= gal.nh.max
@@ -688,3 +744,79 @@ def test_sample_foo_flux_params(multi, correlated, make_data_path, clean_astro_u
 
     # assert ampl.min() >= pl.ampl.min
     # assert ampl.max() <= pl.ampl.max
+
+    # a simple check on the flux, it should be > 0
+    #
+    assert ans[:, 0].min() > 0
+
+
+# The covariance matrix should be close to the following
+# (found from running the code):
+#
+#   1.28e-3  3.09e-3  7.41e-7
+#   3.09e-3  1.10e-2  2.19e-6
+#   7.41e-7  2.19e-6  5.38e-10
+#
+COVMAT = np.asarray([[1.28e-3, 3.09e-3, 7.41e-7],
+                     [3.09e-3, 1.10e-2, 2.19e-6],
+                     [7.41e-7, 2.19e-6, 5.38e-10]])
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux,
+                                   ui.sample_photon_flux])
+@pytest.mark.parametrize("correlated,scales", [(False, COVMAT),
+                                               (False, np.sqrt(COVMAT.diagonal())),
+                                               (True, COVMAT)])
+def test_sample_foo_flux_scales(multi, correlated, scales,
+                                make_data_path, clean_astro_ui):
+    """What happens when we specify the scale parameters?
+
+    Test out sending in the errors to the sample_*_flux routines.
+    The form depends on the correlated parameter (1D vs 2D).
+
+    The tests are based on those in test_sample_foo_flux_params
+    """
+
+    id = 2
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    pl.gamma.min = 1.7
+    pl.gamma.max = 2.36
+
+    ans = multi(lo=0.5, hi=7, id=id, num=1000,
+                correlated=correlated, scales=scales)
+
+    nh = ans[:, 1]
+    gamma = ans[:, 2]
+    ampl = ans[:, 3]
+
+    assert np.median(nh) == pytest.approx(nh0, rel=0.1)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+
+    if scales.ndim == 2:
+        errs = np.sqrt(scales.diagonal())
+    else:
+        errs = scales
+
+    assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs[1], rel=0.2)
+    assert np.std(ampl) == pytest.approx(errs[2], rel=0.2)
+
+    # assert nh.min() >= gal.nh.min
+    # assert nh.max() <= gal.nh.max
+
+    # assert gamma.min() >= pl.gamma.min
+    # assert gamma.max() <= pl.gamma.max
+
+    # assert ampl.min() >= pl.ampl.min
+    # assert ampl.max() <= pl.ampl.max
+
+    assert ans[:, 0].min() > 0
