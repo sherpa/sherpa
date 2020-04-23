@@ -1,7 +1,6 @@
 #!/usr/bin/env bash -e
 
 # Environment
-libgfortranver="3.0"
 sherpa_channel=sherpa
 xspec_channel=xspec/channel/dev
 miniconda=$HOME/miniconda
@@ -31,10 +30,15 @@ conda update --yes conda
 # Note the order of the channels matter. We built the xspec conda packages for macos using the conda-forge channel
 # with the highest priority, so we add it with a higher priority than the default channels, but with less priority
 # than our own channels, so that we don't accidentally get conda-forge packages for cfitsio/ccfits.
-conda config --add channels conda-forge
+#
+# To avoid issues with non-XSPEC builds (e.g.
+# https://github.com/sherpa/sherpa/pull/794#issuecomment-616570995 )
+# the XSPEC-related channels are only added if needed
+#
+if [ -n "${XSPECVER}" ]; then conda config --add channels conda-forge; fi
 
 conda config --add channels ${sherpa_channel}
-conda config --add channels ${xspec_channel}
+if [ -n "${XSPECVER}" ]; then conda config --add channels ${xspec_channel}; fi
 conda config --add channels anaconda
 
 # Figure out requested dependencies
@@ -57,8 +61,7 @@ FITSBUILD="${FITS}"
 
 # Create and activate conda build environment
 # We create a new environment so we don't care about the python version in the root environment.
-conda create --yes -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}\
-  libgfortran=${libgfortranver}
+conda create --yes -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}
 
 source activate build
 
