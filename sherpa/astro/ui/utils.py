@@ -12477,6 +12477,13 @@ class Session(sherpa.ui.utils.Session):
         >>> parerrs = [0.25, 1.22, 1.04e-4]
         >>> vals = sample_photon_flux(2, 10, num=5000, scales=parerrs)
 
+        In this case the parameter errors are taken from the covariance
+        analysis, using the `parmaxes` field since these are positive.
+
+        >>> covar()
+        >>> parerrs = get_covar_results().parmaxes
+        >>> vals = sample_photon_flux(0.5, 2, num=1000, scales=parerrs)
+
         Run covariance to estimate the parameter errors and then extract
         the covariance matrix from the results (as the `cmat` variable).
         This matrix is then used to define the parameter widths - including
@@ -12603,6 +12610,13 @@ class Session(sherpa.ui.utils.Session):
 
         >>> parerrs = [0.25, 1.22, 1.04e-4]
         >>> vals = sample_energy_flux(2, 10, num=5000, scales=parerrs)
+
+        In this case the parameter errors are taken from the covariance
+        analysis, using the `parmaxes` field since these are positive.
+
+        >>> covar()
+        >>> parerrs = get_covar_results().parmaxes
+        >>> vals = sample_energy_flux(0.5, 2, num=1000, scales=parerrs)
 
         Run covariance to estimate the parameter errors and then extract
         the covariance matrix from the results (as the `cmat` variable).

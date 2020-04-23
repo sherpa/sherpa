@@ -847,3 +847,48 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     assert gmin or gmax
 
     assert ans[:, 0].min() > 0
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux,
+                                   ui.sample_photon_flux])
+def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
+    """Ensure that one of the examples works as expected.
+
+    It is a simplified version of test_sample_foo_flux_scales
+    but parameter errors sent in from the parmaxes field
+    of the covariance output.
+    """
+
+    id = None
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    ui.covar()
+    scales = ui.get_covar_results().parmaxes
+
+    ans = multi(lo=0.5, hi=7, id=id, num=1000,
+                correlated=False, scales=scales)
+
+    assert np.isfinite(ans).all()
+
+    nh = ans[:, 1]
+    gamma = ans[:, 2]
+    ampl = ans[:, 3]
+
+    assert np.median(nh) == pytest.approx(nh0, rel=0.1)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+
+    errs = scales
+
+    assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs[1], rel=0.2)
+    assert np.std(ampl) == pytest.approx(errs[2], rel=0.2)
+
+    assert ans[:, 0].min() > 0
