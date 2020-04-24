@@ -28,7 +28,8 @@ import numpy as np
 
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IOErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
+    ModelErr
 import sherpa.astro.utils
 
 
@@ -573,32 +574,32 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("correlated,scales", [(False, []),
-                                               (False, [[]]),
-                                               (False, [1, 2]),
-                                               (False, [1, 2, 3, 4]),
-                                               (False, [[1, 2], [3, 4]]),
-                                               (False, [[1, 2, 3], [3, 4, 5]]),
-                                               (False, np.asarray([])),
-                                               (False, np.asarray([[]])),
-                                               (False, np.asarray([1, 2])),
-                                               (False, np.asarray([1, 2, 3, 4])),
-                                               (False, np.asarray([[1, 2], [3, 4]])),
-                                               (False, np.asarray([[1, 2, 3], [3, 4, 5]])),
-                                               (True, []),
-                                               (True, [[]]),
-                                               (True, np.asarray([])),
-                                               (True, np.asarray([[]])),
-                                               (True, [1, 2, 3]),
-                                               (True, [[1, 2, 3], [1, 2, 3]]),
-                                               (True, np.asarray([1, 2, 3])),
-                                               (True, np.ones((2, 2))),
-                                               (True, np.ones((3, 3, 3))),
-                                               (False, [1, np.inf, 2]),
-                                               (False, [1, 2, None]),
-                                               (True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]])
+@pytest.mark.parametrize("etype,correlated,scales", [(ModelErr, False, []),
+                                                     (ArgumentErr, False, [[]]),
+                                                     (ModelErr, False, [1, 2]),
+                                                     (ModelErr, False, [1, 2, 3, 4]),
+                                                     (ModelErr, False, [[1, 2], [3, 4]]),
+                                                     (ArgumentErr, False, [[1, 2, 3], [3, 4, 5]]),
+                                                     (ModelErr, False, np.asarray([])),
+                                                     (ArgumentErr, False, np.asarray([[]])),
+                                                     (ModelErr, False, np.asarray([1, 2])),
+                                                     (ModelErr, False, np.asarray([1, 2, 3, 4])),
+                                                     (ModelErr, False, np.asarray([[1, 2], [3, 4]])),
+                                                     (ArgumentErr, False, np.asarray([[1, 2, 3], [3, 4, 5]])),
+                                                     (ArgumentErr, True, []),
+                                                     (ArgumentErr, True, [[]]),
+                                                     (ArgumentErr, True, np.asarray([])),
+                                                     (ArgumentErr, True, np.asarray([[]])),
+                                                     (ArgumentErr, True, [1, 2, 3]),
+                                                     (ArgumentErr, True, [[1, 2, 3], [1, 2, 3]]),
+                                                     (ArgumentErr, True, np.asarray([1, 2, 3])),
+                                                     (ModelErr, True, np.ones((2, 2))),
+                                                     (ArgumentErr, True, np.ones((3, 3, 3))),
+                                                     (ArgumentErr, False, [1, np.inf, 2]),
+                                                     (ArgumentErr, False, [1, 2, None]),
+                                                     (ArgumentErr, True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]])
                                               ])
-def test_sample_foo_flux_invalid_scales(correlated, scales,
+def test_sample_foo_flux_invalid_scales(etype, correlated, scales,
                                         make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when scales is
     the wrong shape, or contains invalid values
@@ -613,9 +614,26 @@ def test_sample_foo_flux_invalid_scales(correlated, scales,
     """
 
     setup_sample('x', make_data_path)
-    with pytest.raises(ArgumentErr):
+    with pytest.raises(etype):
         ui.sample_energy_flux(lo=0.5, hi=7, id='x', num=10,
                               correlated=correlated, scales=scales)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
+def test_sample_foo_flux_no_free_params(method, make_data_path, clean_astro_ui):
+    """sample_energy/photon_flux when no free parameters.
+    """
+
+    cpts = setup_sample(1, make_data_path)
+    for cpt in cpts:
+        ui.freeze(cpt)
+
+    with pytest.raises(FitErr):
+        method(lo=0.5, hi=7, num=1)
 
 
 @requires_data

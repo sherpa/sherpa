@@ -31,7 +31,7 @@ import numpy.random
 import logging
 from sherpa.astro.utils import calc_energy_flux
 from sherpa.utils import parallel_map
-from sherpa.utils.err import ArgumentErr
+from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
 
@@ -130,11 +130,14 @@ def sample_flux(fit, data, src,
     Parameters
     ----------
     fit : sherpa.fit.Fit instance
-        The fit object
+        The fit object. The fit.model expression defined the number and
+        ordering of the free parameters used in the sampling.
     data : sherpa.data.Data subclass
         The data object to use.
     src : sherpa.models.Arithmetic instance
-        The source model (without instrument response for PHA data)
+        The source model (without instrument response for PHA data) that
+        is used for calculating the flux. This is expected to be part of
+        the model expression used in the fit object.
     method : function, optional
         How to calculate the flux: assumed to be one of calc_energy_flux
         or calc_photon_flux
@@ -166,8 +169,8 @@ def sample_flux(fit, data, src,
     -------
     vals : 2D NumPy array
         The shape of samples is (num, nfree + 1), where nfree is the
-        number of free parameters in the model. Each row represents
-        an iteration, and the columns are the calculated flux,
+        number of free parameters in the fit.model expression. Each
+        row contains one iteration, and the columns are the calculated flux,
         followed by the free parameters.
 
     See Also
@@ -177,17 +180,22 @@ def sample_flux(fit, data, src,
     Notes
     -----
     The ordering of the samples array, and the columns in the output,
-    matches that of the free parameters in the src parameter. That is::
+    matches that of the free parameters in the fit.model expression. That is::
 
-        [p.fullname for p in src.pars if not p.frozen]
+        [p.fullname for p in fit.model..pars if not p.frozen]
 
     """
 
     if num <= 0:
         raise ArgumentErr('bad', 'num', 'must be a positive integer')
 
-    # What is the number of free parameters in the model expression?
-    npar = len(src.thawedpars)
+    # Note that we get the number of free parameters from the
+    # fit and not src arguments, due to the way sample_flux is
+    # implemented.
+    #
+    npar = len(fit.model.thawedpars)
+    if npar == 0:
+        raise FitErr('nothawedpar')
 
     #
     # The following function should be modified to take advantage of numpy
@@ -250,8 +258,7 @@ def sample_flux(fit, data, src,
         # at this point either 1D or 2D square array
         #
         if scales.shape[0] != npar:
-            raise ArgumentErr('bad', 'scales',
-                              'does not match number of free parameters')
+            raise ModelErr('numthawed', npar, scales.shape[0])
 
     samples = sampler.get_sample(fit, scales, num=num)
 
