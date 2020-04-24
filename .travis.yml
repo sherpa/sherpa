@@ -1,8 +1,9 @@
 language: c
 
-sudo: false
+dist: trusty
+os: linux
 
-matrix:
+jobs:
   fast_finish: true
   include:
     # macOS build
@@ -15,22 +16,14 @@ matrix:
     - env: INSTALL_TYPE=develop TEST=none NUMPYVER="1.17" TRAVIS_PYTHON_VERSION="3.8"
     # Full build (including ds9 and xspec), Python 3.5, setup.py develop, astropy, matplotlib 2
     - env: XSPECVER="12.10.1b" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.5"
-      sudo: required
-      dist: trusty
     # As above, Python 3.6, setup.py install, xspec 12.10
     - env: XSPECVER="12.10.1b" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.6"
-      sudo: required
-      dist: trusty
     # As above, python 3.7, numpy 1.15, matplotlib 3
     - env: XSPECVER="12.10.1b" NUMPYVER="1.15" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=3 TRAVIS_PYTHON_VERSION="3.7"
-      sudo: required
-      dist: trusty
     # Experimental support for using Sphinx to build the documentation
     # should we not run tests with this build (to save time); i.e. have
     # a specific build just for the documentation and nothing else?
     - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.7"
-      sudo: required
-      dist: trusty
     # Install sherpatest package rather than relying on relative location of the submodule
     # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.6"
@@ -52,7 +45,7 @@ before_install:
   - if [ "${DOCS}" == "true" ];
      then pip install --requirement docs/rtd-pip-requirements;
     fi
-  
+
 install:
     - python setup.py $INSTALL_TYPE
 
@@ -63,4 +56,3 @@ notifications:
   email:
     - wmclaugh@cfa.harvard.edu
     - mterrell@cfa.harvard.edu
-
