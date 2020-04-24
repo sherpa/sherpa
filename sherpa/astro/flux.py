@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2019, 2020
+#       Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +17,14 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+"""Calculate fluxes for Astronomical data sets.
+
+The functions in this module are designed primarily for analysis
+of X-ray data - that is, for use with DataPHA objects - but can
+be used with other data classes.
+
+"""
 
 import numpy
 import numpy.random
@@ -46,6 +55,57 @@ class CalcFluxWorker():
 
 def calc_flux(fit, data, src, samples, method=calc_energy_flux,
               lo=None, hi=None, numcores=None):
+    """Calculate model fluxes from a sample of parameter values.
+
+    Given a set of parameter values, calculate the model flux for
+    each set.
+
+    Parameters
+    ----------
+    fit : sherpa.fit.Fit instance
+        The fit object
+    data : sherpa.data.Data subclass
+        The data object to use.
+    src : sherpa.models.Arithmetic instance
+        The source model (without instrument response for PHA data)
+    samples : 2D array
+        The rows indicate each set of sample, and the columns the
+        parameter values to use. If there are n free parameters
+        in the model then the array must have a size of num by n,
+        where num is the number of fluxes to calculate.
+    method : function, optional
+        How to calculate the flux: assumed to be one of calc_energy_flux
+        or calc_photon_flux
+    lo : number or None, optional
+        The lower edge of the dataspace range for the flux calculation.
+        If None then the lower edge of the data grid is used.
+    hi : number or None, optional
+        The upper edge of the dataspace range for the flux calculation.
+        If None then the upper edge of the data grid is used.
+    numcores : int or None, optonal
+        Should the analysis be split across multiple CPU cores?
+        When set to None all available cores are used.
+
+    Returns
+    -------
+    vals : 2D NumPy array
+        If the samples array has a shape of (num, nfree) then vals
+        has the shame (num, nfree + 1). The first column is the flux
+        for the row, and the remaining columns are copies of the input
+        samples array.
+
+    See Also
+    --------
+    sample_flux
+
+    Notes
+    -----
+    The ordering of the samples array matches that of the free
+    parameters in the src parameter. That is::
+
+        [p.fullname for p in src.pars if not p.frozen]
+
+    """
 
     def evaluate(sample):
         fit.model.thawedpars = sample
@@ -61,8 +121,71 @@ def calc_flux(fit, data, src, samples, method=calc_energy_flux,
     return numpy.asarray(fluxes)
 
 
-def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
+def sample_flux(fit, data, src,
+                method=calc_energy_flux, correlated=False,
                 num=1, lo=None, hi=None, numcores=None, samples=None):
+    """Calculate model fluxes from a sample of parameter values.
+
+    Draw parameter values from a normal distribution and then calculate
+    the model flux for each set of parameter values. The values are
+    drawn from normal distributions, and the distributions can either
+    be independent or have correlations between the parameters.
+
+    Parameters
+    ----------
+    fit : sherpa.fit.Fit instance
+        The fit object
+    data : sherpa.data.Data subclass
+        The data object to use.
+    src : sherpa.models.Arithmetic instance
+        The source model (without instrument response for PHA data)
+    method : function, optional
+        How to calculate the flux: assumed to be one of calc_energy_flux
+        or calc_photon_flux
+    correlated : bool, optional
+        Are the parameter draws independent of each other?
+    num : int, optional
+        The number of iterations.
+    lo : number or None, optional
+        The lower edge of the dataspace range for the flux calculation.
+        If None then the lower edge of the data grid is used.
+    hi : number or None, optional
+        The upper edge of the dataspace range for the flux calculation.
+        If None then the upper edge of the data grid is used.
+    numcores : int or None, optonal
+        Should the analysis be split across multiple CPU cores?
+        When set to None all available cores are used.
+    samples : 1D or 2D array, optional
+        What are the errors on the parameters? If set to None then
+        the covariance method is used to estimate the parameter errors.
+        If given and correlated is True then samples must be a
+        2D array, and contain the covariance matrix for the free
+        parameters in the fit. If correlated is False then samples
+        can either be sent the covariance matrix or a 1D array
+        of the error values (i.e. the sigma of the normal distribution).
+        If there are n free parameters then the 1D array has to have
+        n elements and the 2D array n by n elements.
+
+    Returns
+    -------
+    vals : 2D NumPy array
+        The shape of samples is (num, nfree + 1), where nfree is the
+        number of free parameters in the model. Each row represents
+        an iteration, and the columns are the calculated flux,
+        followed by the free parameters.
+
+    See Also
+    --------
+    calc_flux
+
+    Notes
+    -----
+    The ordering of the samples array, and the columns in the output,
+    matches that of the free parameters in the src parameter. That is::
+
+        [p.fullname for p in src.pars if not p.frozen]
+
+    """
 
     if num <= 0:
         raise ArgumentErr('bad', 'num', 'must be a positive integer')
