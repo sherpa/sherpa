@@ -752,13 +752,16 @@ def test_sample_foo_flux_params(multi, correlated,
     # The checks use relatively-large tolerances, as there is
     # no reason the values will match closely
     #
-    assert np.median(nh) == pytest.approx(nh0, rel=0.1)
+    # The nH value, as it bumps against the lower bound of 0, has
+    # been seen to require a larger tolerance than the other parameters.
+    #
+    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
     assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
     assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
 
     assert np.std(nh) == pytest.approx(errs.parmaxes[0], rel=0.2)
-    assert np.std(gamma) == pytest.approx(errs.parmaxes[1], rel=0.2)
-    assert np.std(ampl) == pytest.approx(errs.parmaxes[2], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs.parmaxes[1], rel=0.1)
+    assert np.std(ampl) == pytest.approx(errs.parmaxes[2], rel=0.1)
 
     # Check against the hard limits, although this is not particularly
     # informative since the hard limits for these parameters are
@@ -836,11 +839,9 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     gamma = ans[:, 2]
     ampl = ans[:, 3]
 
-    # occasionally a large relative tolerance has been needed for nh
-    # so bump up all of them
     assert np.median(nh) == pytest.approx(nh0, rel=0.2)
-    assert np.median(gamma) == pytest.approx(gamma0, rel=0.2)
-    assert np.median(ampl) == pytest.approx(ampl0, rel=0.2)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
 
     if scales.ndim == 2:
         errs = np.sqrt(scales.diagonal())
@@ -848,8 +849,8 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
         errs = scales
 
     assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
-    assert np.std(gamma) == pytest.approx(errs[1], rel=0.2)
-    assert np.std(ampl) == pytest.approx(errs[2], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
 
     assert nh.min() >= gal.nh.hard_min
     assert nh.max() <= gal.nh.hard_max
@@ -899,14 +900,14 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
     gamma = ans[:, 2]
     ampl = ans[:, 3]
 
-    assert np.median(nh) == pytest.approx(nh0, rel=0.1)
+    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
     assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
     assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
 
     errs = scales
 
     assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
-    assert np.std(gamma) == pytest.approx(errs[1], rel=0.2)
-    assert np.std(ampl) == pytest.approx(errs[2], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
 
     assert ans[:, 0].min() > 0
