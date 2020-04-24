@@ -12378,9 +12378,9 @@ class Session(sherpa.ui.utils.Session):
         resampledata = sherpa.sim.ReSampleData(data, model)
         return resampledata(niter=niter, seed=seed)
 
-    # DOC-TODO: should this accept the confidence parameter?
-    def sample_photon_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
-                           correlated=False, numcores=None, bkg_id=None):
+    def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
+                           model=None, scales=None, correlated=False,
+                           numcores=None, bkg_id=None):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12388,6 +12388,9 @@ class Session(sherpa.ui.utils.Session):
         model over the given range (the flux). The return array
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_photon_flux`.
+
+        .. versionchanged:: 4.12.1
+           The model parameter was added.
 
         Parameters
         ----------
@@ -12403,6 +12406,11 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`, is used.
         num : int, optional
            The number of samples to create. The default is 1.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
         scales : array, optional
            The scales used to define the normal distributions for the
            parameters. The size and shape of the array depende on the
@@ -12470,6 +12478,14 @@ class Session(sherpa.ui.utils.Session):
         >>> cvals = sample_photon_flux(0.5, 7, num=1000, correlated=True)
         >>> np.percentile(cvals[:, 0], [5, 50, 95])
 
+        The photon flux of a component (or sub-set of components) can be
+        calculated using the model argument. For the following case,
+        an absorbed power-law was used to fit the data -
+        `xsphabs.gal * powerlaw.pl` - and then the flux of just the
+        power-law component is calculated:
+
+        >>> vals = sample_photon_flux(0.5, 7, model=pl, num=1000, correlated=True)
+
         Use the given parameter errors for sampling the parameter distribution.
         The fit must have three free parameters, and each parameter is
         sampled independently:
@@ -12497,24 +12513,28 @@ class Session(sherpa.ui.utils.Session):
 
         """
         ids, fit = self._get_fit(id)
-        data = self.get_data(id)
-        src = None
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            src = self.get_bkg_source(id, bkg_id)
+
+        if bkg_id is None:
+            data = self.get_data(id)
+            if model is None:
+                model = self.get_source(id)
         else:
-            src = self.get_source(id)
+            data = self.get_bkg(id, bkg_id)
+            if model is None:
+                model = self.get_bkg_source(id, bkg_id)
 
         correlated = sherpa.utils.bool_cast(correlated)
 
-        return sherpa.astro.flux.sample_flux(fit, data, src,
-                                             sherpa.astro.utils.calc_photon_flux,
-                                             correlated, num, lo, hi, numcores,
-                                             scales)
+        return sherpa.astro.flux.sample_flux(fit, data, model,
+                                             method=sherpa.astro.utils.calc_photon_flux,
+                                             correlated=correlated,
+                                             num=num, lo=lo, hi=hi,
+                                             numcores=numcores,
+                                             samples=scales)
 
-    # DOC-TODO: should this accept the confidence parameter?
-    def sample_energy_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
-                           correlated=False, numcores=None, bkg_id=None):
+    def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
+                           model=None, scales=None, correlated=False,
+                           numcores=None, bkg_id=None):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12522,6 +12542,9 @@ class Session(sherpa.ui.utils.Session):
         model over the given range (the flux). The return array
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_energy_flux`.
+
+        .. versionchanged:: 4.12.1
+           The model parameter was added.
 
         Parameters
         ----------
@@ -12537,6 +12560,11 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`, is used.
         num : int, optional
            The number of samples to create. The default is 1.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
         scales : array, optional
            The scales used to define the normal distributions for the
            parameters. The size and shape of the array depende on the
@@ -12604,6 +12632,14 @@ class Session(sherpa.ui.utils.Session):
         >>> cvals = sample_energy_flux(0.5, 7, num=1000, correlated=True)
         >>> np.percentile(cvals[:, 0], [5, 50, 95])
 
+        The energy flux of a component (or sub-set of components) can be
+        calculated using the model argument. For the following case,
+        an absorbed power-law was used to fit the data -
+        `xsphabs.gal * powerlaw.pl` - and then the flux of just the
+        power-law component is calculated:
+
+        >>> vals = sample_energy_flux(0.5, 7, model=pl, num=1000, correlated=True)
+
         Use the given parameter errors for sampling the parameter distribution.
         The fit must have three free parameters, and each parameter is
         sampled independently:
@@ -12631,20 +12667,22 @@ class Session(sherpa.ui.utils.Session):
 
         """
         ids, fit = self._get_fit(id)
-        data = self.get_data(id)
-        src = None
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            src = self.get_bkg_source(id, bkg_id)
+
+        if bkg_id is None:
+            data = self.get_data(id)
+            if model is None:
+                model = self.get_source(id)
         else:
-            src = self.get_source(id)
+            data = self.get_bkg(id, bkg_id)
+            if model is None:
+                model = self.get_bkg_source(id, bkg_id)
 
         correlated = sherpa.utils.bool_cast(correlated)
 
-        return sherpa.astro.flux.sample_flux(fit, data, src,
-                                             sherpa.astro.utils.calc_energy_flux,
-                                             correlated, num, lo, hi, numcores,
-                                             scales)
+        return sherpa.astro.flux.sample_flux(fit, data, model,
+                                             method=sherpa.astro.utils.calc_energy_flux,
+                                             correlated=correlated, num=num, lo=lo, hi=hi,
+                                             numcores=numcores, samples=scales)
 
     # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,

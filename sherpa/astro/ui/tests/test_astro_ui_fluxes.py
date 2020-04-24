@@ -911,3 +911,97 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
     assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
 
     assert ans[:, 0].min() > 0
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi,fac", [(ui.sample_energy_flux, 1.1307),
+                                       (ui.sample_photon_flux, 1.1751)])
+def test_sample_foo_flux_component(multi, fac, make_data_path, clean_astro_ui):
+    """Can we sample just a component?
+
+    The idea is to check that the flux for the unabsorbed
+    component is larger (on average) than the absorbed
+    component. We use the model argument for both calls,
+    which also tests we can send in a multiple-component
+    model expression.
+
+    The expected ratio between absorbed and unabsorbed flux
+    (the fac argument) was calculated from Sherpa's
+    calc_energy/photon_flux. This could have been included in
+    this test, but an external value acts as a regression test.
+    """
+
+    id = 'xx'
+    gal, pl = setup_sample(id, make_data_path)
+    mdl = gal * pl
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    ui.covar()
+    errs = ui.get_covar_results().parmaxes
+
+    # restrict to 0.5-2 where the absorption makes a bigger
+    # difference, relatively speakingm than the 0.5-7 keV
+    # band used in a number of other tests.
+    #
+    absorbed_def = multi(lo=0.5, hi=2, id=id, num=1000,
+                         correlated=False)
+    absorbed = multi(lo=0.5, hi=2, id=id, num=1000,
+                     model=mdl, correlated=False)
+
+    unabsorbed = multi(lo=0.5, hi=2, id=id, num=1000,
+                       model=pl, correlated=False)
+
+    # For now the unabsorbed results include the "unused" model
+    # parameters (so gal.nh)
+    #
+    assert absorbed.shape == (1000, 4)
+    assert unabsorbed.shape == (1000, 4)
+
+    assert np.isfinite(absorbed).all()
+    assert np.isfinite(unabsorbed).all()
+
+    flux_absorbed = absorbed[:, 0]
+    flux_unabsorbed = unabsorbed[:, 0]
+    assert flux_absorbed.min() > 0
+    assert flux_unabsorbed.min() > 0
+
+    # quick check that absorbed_def and absorbed are "the same"
+    # (modulo the RNG), by comparing the flux distribution. We
+    # do not perform a more-quantitative analysis here as this
+    # is assumed to be subsumed by the tests run below on the
+    # absorbed values, coupled with the previous tests that have
+    # been run.
+    #
+    flux_def = np.median(absorbed_def[:, 0])
+    flux_abs = np.median(flux_absorbed)
+    assert flux_abs == pytest.approx(flux_def, rel=0.1)
+
+    # Is the ratio similar to the expected values (which was
+    # calculated at the best-fit location)
+    #
+    ratio = np.median(flux_unabsorbed) / flux_abs
+    assert ratio == pytest.approx(fac, rel=0.1)
+
+    # The distributions of the two sets of parameters should be
+    # similar, since they are drawn from the same distributions.
+    #
+    # Compare the medians to the best-fit values and the
+    # standard deviations to the covariance estimates.
+    #
+    for ans in [absorbed, unabsorbed]:
+        nh = ans[:, 1]
+        gamma = ans[:, 2]
+        ampl = ans[:, 3]
+
+        assert np.median(nh) == pytest.approx(nh0, rel=0.2)
+        assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+        assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+
+        assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
+        assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
+        assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
