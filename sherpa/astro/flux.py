@@ -107,14 +107,10 @@ def calc_flux(fit, data, src, samples, method=calc_energy_flux,
 
     """
 
-    def evaluate(sample):
-        fit.model.thawedpars = sample
-        flux = method(data, src, lo, hi)
-        return [flux] + list(sample)
-
     old_model_vals = fit.model.thawedpars
+    worker = CalcFluxWorker(fit, method, data, src, lo, hi)
     try:
-        fluxes = parallel_map(CalcFluxWorker(fit, method, data, src, lo, hi), samples, numcores)
+        fluxes = parallel_map(worker, samples, numcores)
     finally:
         fit.model.thawedpars = old_model_vals
 
