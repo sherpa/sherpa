@@ -2,6 +2,18 @@
 
 # variable $miniconda is defined in a previous script (setup_conda.sh)
 
+# To build against XSPEC we need libgfortran (it is not needed if the XSPEC
+# module is not being used), so only install it here.
+#
+# At present (April 2020) this requires the use of the conda-forge
+# channel, to get libfortran (due to the way the XSPEC model library
+# was built).
+#
+libgfortranver="3.0"
+
+echo "** Requesting libgfortran=${libgfortranver}"
+conda install --yes libgfortran=${libgfortranver}
+
 ds9_base_url=http://ds9.si.edu/download/
 
 if [[ ${TRAVIS_OS_NAME} == linux ]];
