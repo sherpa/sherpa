@@ -197,19 +197,6 @@ def sample_flux(fit, data, src,
     if npar == 0:
         raise FitErr('nothawedpar')
 
-    #
-    # The following function should be modified to take advantage of numpy
-    #
-    def within_limits(mysamples, mymins, mymaxs):
-        num_par = mysamples.shape[1]
-        for row in mysamples:
-            for index in range(num_par):
-                if row[index] < mymins[index]:
-                    row[index] = mymins[index]
-                if row[index] > mymaxs[index]:
-                    row[index] = mymaxs[index]
-        return mysamples
-
     sampler = NormalParameterSampleFromScaleVector()
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
@@ -260,11 +247,16 @@ def sample_flux(fit, data, src,
         if scales.shape[0] != npar:
             raise ModelErr('numthawed', npar, scales.shape[0])
 
+    # Create the samples and then ensure the values are limited to
+    # the hard limits of the parameter.
+    #
     samples = sampler.get_sample(fit, scales, num=num)
 
-    hardmins = fit.model._get_thawed_par_hardmins()
-    hardmaxs = fit.model._get_thawed_par_hardmaxes()
-    samples = within_limits(samples, hardmins, hardmaxs)
+    hardmins = fit.model.thawedparhardmins
+    hardmaxs = fit.model.thawedparhardmaxes
+    for pvals, pmin, pmax in zip(samples.T, hardmins, hardmaxs):
+        # do the clipping in place
+        numpy.clip(pvals, pmin, pmax, out=pvals)
 
     return calc_flux(fit, data, src, samples, method, lo, hi, numcores)
 
@@ -297,8 +289,8 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     try:
 
-        softmins = fit.model._get_thawed_par_mins()
-        softmaxs = fit.model._get_thawed_par_maxes()
+        softmins = fit.model.thawedparmins
+        softmaxs = fit.model.thawedparmaxes
         mysim = simulated_pars_within_ranges(samples, softmins, softmaxs)
 
         size = len(mysim[:, 0])
