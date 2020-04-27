@@ -197,9 +197,10 @@ def sample_flux(fit, data, src,
     if npar == 0:
         raise FitErr('nothawedpar')
 
-    sampler = NormalParameterSampleFromScaleVector()
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
+    else:
+        sampler = NormalParameterSampleFromScaleVector()
 
     # Rename samples to scales as it is confusing here (as it does
     # not refer to the samples drawn from the distribution but the
