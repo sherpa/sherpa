@@ -213,7 +213,12 @@ def sample_flux(fit, data, src,
         # which is not supported by isfinite, so check for this
         # first.
         #
-        if None in scales:
+        # Numpy circa 1.11 raises a FutureWarning with 'if None in scales:'
+        # about this changing to element-wise comparison (which is what
+        # we want). To avoid this warning I use the suggestion from
+        # https://github.com/numpy/numpy/issues/1608#issuecomment-9618150
+        #
+        if numpy.equal(None, scales).any():
             raise ArgumentErr('bad', 'scales',
                               'must not contain None values')
 
