@@ -10771,14 +10771,14 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgchisqrplot
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
-        dist = self.sample_energy_flux(
-            lo, hi, id, num, None, correlated, numcores, bkg_id)
+        dist = self.sample_energy_flux(lo, hi, id=id, num=num, scales=None,
+                                       correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
-        dist = self.sample_photon_flux(
-            lo, hi, id, num, None, correlated, numcores, bkg_id)
+        dist = self.sample_photon_flux(lo, hi, id=id, num=num, scales=None,
+                                       correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
@@ -10863,8 +10863,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
-            self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id, num,
-                                           bins, correlated, numcores, bkg_id)
+            self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
+                                           num=num, bins=bins, correlated=correlated,
+                                           numcores=numcores, bkg_id=bkg_id)
         return self._energyfluxplot
 
     # DOC-TODO: See comments about plot_photon_flux.
@@ -10948,8 +10949,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
-            self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id, num,
-                                           bins, correlated, numcores, bkg_id)
+            self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
+                                           num=num, bins=bins, correlated=correlated,
+                                           numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
     def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
@@ -11890,9 +11892,10 @@ class Session(sherpa.ui.utils.Session):
         """
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(recalc):
-            efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id, num,
-                                                    bins, correlated,
-                                                    numcores, bkg_id)
+            efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
+                                                    num=num, bins=bins,
+                                                    correlated=correlated,
+                                                    numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
             efplot.plot(overplot=overplot, clearwindow=clearwindow,
@@ -11997,9 +12000,10 @@ class Session(sherpa.ui.utils.Session):
         """
         pfplot = self._photonfluxplot
         if sherpa.utils.bool_cast(recalc):
-            pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id, num,
-                                                    bins, correlated,
-                                                    numcores, bkg_id)
+            pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id=id,
+                                                    num=num, bins=bins,
+                                                    correlated=correlated,
+                                                    numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
             pfplot.plot(overplot=overplot, clearwindow=clearwindow,
@@ -12379,8 +12383,8 @@ class Session(sherpa.ui.utils.Session):
         return resampledata(niter=niter, seed=seed)
 
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
-                           model=None, scales=None, correlated=False,
-                           numcores=None, bkg_id=None):
+                           scales=None, correlated=False,
+                           numcores=None, bkg_id=None, model=None):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12406,11 +12410,6 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`, is used.
         num : int, optional
            The number of samples to create. The default is 1.
-        model : model, optional
-           The model to integrate. If left as `None` then the source
-           model for the dataset will be used. This can be used to
-           calculate the unabsorbed flux, as shown in the examples.
-           The model must be part of the source expression.
         scales : array, optional
            The scales used to define the normal distributions for the
            parameters. The size and shape of the array depends on the
@@ -12438,6 +12437,11 @@ class Session(sherpa.ui.utils.Session):
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
 
         Returns
         -------
@@ -12552,8 +12556,8 @@ class Session(sherpa.ui.utils.Session):
                                              samples=scales)
 
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
-                           model=None, scales=None, correlated=False,
-                           numcores=None, bkg_id=None):
+                           scales=None, correlated=False,
+                           numcores=None, bkg_id=None, model=None):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12579,11 +12583,6 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`, is used.
         num : int, optional
            The number of samples to create. The default is 1.
-        model : model, optional
-           The model to integrate. If left as `None` then the source
-           model for the dataset will be used. This can be used to
-           calculate the unabsorbed flux, as shown in the examples.
-           The model must be part of the source expression.
         scales : array, optional
            The scales used to define the normal distributions for the
            parameters. The size and shape of the array depends on the
@@ -12611,6 +12610,11 @@ class Session(sherpa.ui.utils.Session):
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
 
         Returns
         -------
