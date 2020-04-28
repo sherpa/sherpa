@@ -38,7 +38,7 @@ from sherpa.astro import ui
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, ModelHistogram, \
     SourcePlot
 
-from sherpa.utils.err import IdentifierErr
+from sherpa.utils.err import ArgumentErr, IdentifierErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_pylab, requires_xspec
 
@@ -1358,3 +1358,33 @@ def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     # This should be equality, but allow small differences
     assert mplot3.xlo == pytest.approx(mplot1.xlo)
     assert mplot3.y == pytest.approx(mplot1.y)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc", [ui.plot_energy_flux, ui.plot_photon_flux])
+@pytest.mark.parametrize("correlated", [False, True])
+def test_pha1_plot_foo_flux(plotfunc, correlated, clean_astro_ui, basic_pha1):
+    """Can we call plot_energy/photon_flux?
+
+    We extend the basic_pha1 test by including an XSPEC
+    absorption model.
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    # At the moment this fails, so catch this failue
+    with pytest.raises(ArgumentErr):
+        plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
