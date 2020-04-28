@@ -12413,22 +12413,24 @@ class Session(sherpa.ui.utils.Session):
            The model must be part of the source expression.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The size and shape of the array depende on the
+           parameters. The size and shape of the array depends on the
            number of free parameters in the fit (n) and the value of
            the `correlated` parameter. When the parameter is `True`,
            scales must be given the covariance matrix for the free
            parameters (a n by n matrix that matches the parameter
            ordering used by Sherpa). For un-correlated parameters
            the covariance matrix can be used, or a one-dimensional
-           array of n elements can be used, giving the error on the
-           parameters (e.g. the square root of the diagonal elements
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
            of the covariance matrix). If the scales parameter is not
            given then the covariance matrix is evaluated for the
            current model and best-fit parameters.
         correlated : bool, optional
            Should the correlation between the parameters be included
            when sampling the parameters? If not, then each parameter
-           is sampled from a normal distribution.
+           is sampled from independent distributions. In both cases
+           a normal distribution is used.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -12446,7 +12448,8 @@ class Session(sherpa.ui.utils.Session):
            calculated by `calc_photon_flux`, followed by the values of
            the thawed parameters used for that iteration. The order of
            the parameters matches the data returned by
-           `get_fit_results`.
+           `get_fit_results` (restricted to the model parameter, when
+           set).
 
         See Also
         --------
@@ -12460,6 +12463,14 @@ class Session(sherpa.ui.utils.Session):
         plot_trace : Create a trace plot of row number versus value.
         sample_energy_flux : Return the energy flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
+
+        Notes
+        -----
+        When both the model and scales parameters are set then the
+        size of the scales parameter should either match the number of
+        free parameters in the full source expression or that of
+        the model component. The return value in this case is always
+        limited to the number of free parameters in the model component.
 
         Examples
         --------
@@ -12488,7 +12499,8 @@ class Session(sherpa.ui.utils.Session):
 
         Use the given parameter errors for sampling the parameter distribution.
         The fit must have three free parameters, and each parameter is
-        sampled independently:
+        sampled independently (in this case parerrs gives the sigma
+        values for each parameter):
 
         >>> parerrs = [0.25, 1.22, 1.04e-4]
         >>> vals = sample_photon_flux(2, 10, num=5000, scales=parerrs)
@@ -12504,12 +12516,19 @@ class Session(sherpa.ui.utils.Session):
         the covariance matrix from the results (as the `cmat` variable).
         This matrix is then used to define the parameter widths - including
         correlated terms - in the flux sampling, after being increased by
-        ten percent:
+        ten percent. This is used to calculate both the absorbed
+        (`vals1`) and unabsorbed (`vals2`) fluxes. The shapes of these
+        two arrays will be different: 5000 by 4 for `vals1` and
+        5000 by 3 for `vals2`.
 
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> fit()
         >>> covar()
         >>> cmat = get_covar_results().extra_output
-        >>> vals = sample_photon_flux(2, 10, num=5000, correlated=True,
-        ...                           scales=1.1 * cmat)
+        >>> vals1 = sample_photon_flux(2, 10, num=5000, correlated=True,
+        ...                            scales=1.1 * cmat)
+        >>> vals2 = sample_photon_flux(2, 10, num=5000, correlated=True,
+        ...                            model=pl, scales=1.1 * cmat)
 
         """
         ids, fit = self._get_fit(id)
@@ -12567,22 +12586,24 @@ class Session(sherpa.ui.utils.Session):
            The model must be part of the source expression.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The size and shape of the array depende on the
+           parameters. The size and shape of the array depends on the
            number of free parameters in the fit (n) and the value of
            the `correlated` parameter. When the parameter is `True`,
            scales must be given the covariance matrix for the free
            parameters (a n by n matrix that matches the parameter
            ordering used by Sherpa). For un-correlated parameters
            the covariance matrix can be used, or a one-dimensional
-           array of n elements can be used, giving the error on the
-           parameters (e.g. the square root of the diagonal elements
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
            of the covariance matrix). If the scales parameter is not
            given then the covariance matrix is evaluated for the
            current model and best-fit parameters.
         correlated : bool, optional
            Should the correlation between the parameters be included
            when sampling the parameters? If not, then each parameter
-           is sampled from a normal distribution.
+           is sampled from independent distributions. In both cases
+           a normal distribution is used.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -12600,7 +12621,8 @@ class Session(sherpa.ui.utils.Session):
            calculated by `calc_energy_flux`, followed by the values of
            the thawed parameters used for that iteration. The order of
            the parameters matches the data returned by
-           `get_fit_results`.
+           `get_fit_results` (restricted to the model parameter, when
+           set).
 
         See Also
         --------
@@ -12614,6 +12636,14 @@ class Session(sherpa.ui.utils.Session):
         plot_trace : Create a trace plot of row number versus value.
         sample_photon_flux : Return the flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
+
+        Notes
+        -----
+        When both the model and scales parameters are set then the
+        size of the scales parameter should either match the number of
+        free parameters in the full source expression or that of
+        the model component. The return value in this case is always
+        limited to the number of free parameters in the model component.
 
         Examples
         --------
@@ -12642,7 +12672,8 @@ class Session(sherpa.ui.utils.Session):
 
         Use the given parameter errors for sampling the parameter distribution.
         The fit must have three free parameters, and each parameter is
-        sampled independently:
+        sampled independently (in this case parerrs gives the sigma
+        values for each parameter):
 
         >>> parerrs = [0.25, 1.22, 1.04e-4]
         >>> vals = sample_energy_flux(2, 10, num=5000, scales=parerrs)
@@ -12658,12 +12689,19 @@ class Session(sherpa.ui.utils.Session):
         the covariance matrix from the results (as the `cmat` variable).
         This matrix is then used to define the parameter widths - including
         correlated terms - in the flux sampling, after being increased by
-        ten percent:
+        ten percent. This is used to calculate both the absorbed
+        (`vals1`) and unabsorbed (`vals2`) fluxes. The shapes of these
+        two arrays will be different: 5000 by 4 for `vals1` and
+        5000 by 3 for `vals2`.
 
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> fit()
         >>> covar()
         >>> cmat = get_covar_results().extra_output
-        >>> vals = sample_energy_flux(2, 10, num=5000, correlated=True,
-        ...                           scales=1.1 * cmat)
+        >>> vals1 = sample_energy_flux(2, 10, num=5000, correlated=True,
+        ...                            scales=1.1 * cmat)
+        >>> vals2 = sample_energy_flux(2, 10, num=5000, correlated=True,
+        ...                            model=pl, scales=1.1 * cmat)
 
         """
         ids, fit = self._get_fit(id)

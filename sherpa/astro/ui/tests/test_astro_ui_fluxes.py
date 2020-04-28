@@ -509,7 +509,7 @@ def test_calc_flux_pha_unabsorbed(make_data_path, clean_astro_ui):
     assert eflux_scale == pytest.approx(0.8)
 
 
-def setup_sample(id, make_data_path):
+def setup_sample(id, make_data_path, fit=True):
     """Set up the given dataset for a sample*flux call
 
     The calling function needs @requires_data, @requires_fits, @requires_xspec
@@ -544,10 +544,12 @@ def setup_sample(id, make_data_path):
 
     if id is None:
         ui.set_source(mdl)
-        ui.fit()
+        if fit:
+            ui.fit()
     else:
         ui.set_source(id, mdl)
-        ui.fit(id)
+        if fit:
+            ui.fit(id)
 
     return gal, pl
 
@@ -566,7 +568,7 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
     See also test_sample_flux_invalid_niter
     """
 
-    setup_sample(id, make_data_path)
+    setup_sample(id, make_data_path, fit=False)
     with pytest.raises(ArgumentErr):
         method(lo=0.5, hi=7, id=id, num=niter)
 
@@ -613,10 +615,58 @@ def test_sample_foo_flux_invalid_scales(etype, correlated, scales,
     other checks.
     """
 
-    setup_sample('x', make_data_path)
+    setup_sample('x', make_data_path, fit=False)
     with pytest.raises(etype):
         ui.sample_energy_flux(lo=0.5, hi=7, id='x', num=10,
                               correlated=correlated, scales=scales)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_sample_foo_flux_invalid_scales2(make_data_path, clean_astro_ui):
+    """A repeat of test_sample_foo_flux_invalid_scales for explicit model components.
+
+    Unlike test_sample_foo_flux_invalid_scales, do not repeat as
+    many times. In this case we are testing that the grid is
+    either 3 by 3 or 2 by 2, and not checking for "invalid"
+    values in the inputs.
+    """
+
+    cpts = setup_sample(1, make_data_path, fit=False)
+    cmat1 = np.ones((1, 1))
+    cmat4 = np.ones((4, 4))
+
+    # Test correlated=False with 1D and 2D
+    #                = True      2D
+    #
+    # The full model has 3 free parameters and cpts[1]
+    # has 2 free parameters, so try 1 and 4 parameters.
+    #
+    with pytest.raises(ModelErr):
+        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
+                              model=cpts[1],
+                              correlated=False, scales=[0.1])
+
+    with pytest.raises(ModelErr):
+        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
+                              model=cpts[1],
+                              correlated=False, scales=cmat4.diagonal())
+
+    with pytest.raises(ModelErr):
+        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
+                              model=cpts[1],
+                              correlated=False, scales=cmat4)
+
+    with pytest.raises(ModelErr):
+        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
+                              model=cpts[1],
+                              correlated=True, scales=cmat1)
+
+    with pytest.raises(ModelErr):
+        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
+                              model=cpts[1],
+                              correlated=True, scales=cmat4)
 
 
 @requires_data
@@ -628,12 +678,32 @@ def test_sample_foo_flux_no_free_params(method, make_data_path, clean_astro_ui):
     """sample_energy/photon_flux when no free parameters.
     """
 
-    cpts = setup_sample(1, make_data_path)
+    cpts = setup_sample(1, make_data_path, fit=False)
     for cpt in cpts:
         ui.freeze(cpt)
 
     with pytest.raises(FitErr):
         method(lo=0.5, hi=7, num=1)
+
+    # try with explict model setting
+    #
+    with pytest.raises(FitErr):
+        method(lo=0.5, hi=7, num=1, model=cpts[1])
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
+def test_sample_foo_flux_invalid_model(method, make_data_path, clean_astro_ui):
+    """sample_energy/photon_flux when src model is not part of the fit.
+    """
+
+    setup_sample(1, make_data_path, fit=False)
+    mdl = ui.create_model_component('powlaw1d', 'p1')
+    with pytest.raises(ArgumentErr):
+         method(lo=0.5, hi=7, num=1, model=mdl)
 
 
 @requires_data
@@ -918,7 +988,9 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
 @requires_xspec
 @pytest.mark.parametrize("multi,fac", [(ui.sample_energy_flux, 1.1307),
                                        (ui.sample_photon_flux, 1.1751)])
-def test_sample_foo_flux_component(multi, fac, make_data_path, clean_astro_ui):
+@pytest.mark.parametrize("correlated", [False, True])
+def test_sample_foo_flux_component(multi, fac, correlated,
+                                   make_data_path, clean_astro_ui):
     """Can we sample just a component?
 
     The idea is to check that the flux for the unabsorbed
@@ -931,6 +1003,11 @@ def test_sample_foo_flux_component(multi, fac, make_data_path, clean_astro_ui):
     (the fac argument) was calculated from Sherpa's
     calc_energy/photon_flux. This could have been included in
     this test, but an external value acts as a regression test.
+
+    The assumption is that *for this dataset* the use of correlated
+    errors does not significantly affect the distributions,
+    so the same scale factor can be used (this is based on the
+    best-fit location, so shouldn't depend on the errors).
     """
 
     id = 'xx'
@@ -945,22 +1022,21 @@ def test_sample_foo_flux_component(multi, fac, make_data_path, clean_astro_ui):
     errs = ui.get_covar_results().parmaxes
 
     # restrict to 0.5-2 where the absorption makes a bigger
-    # difference, relatively speakingm than the 0.5-7 keV
+    # difference, relatively speaking, than the 0.5-7 keV
     # band used in a number of other tests.
     #
     absorbed_def = multi(lo=0.5, hi=2, id=id, num=1000,
-                         correlated=False)
+                         correlated=correlated)
     absorbed = multi(lo=0.5, hi=2, id=id, num=1000,
-                     model=mdl, correlated=False)
+                     model=mdl, correlated=correlated)
 
     unabsorbed = multi(lo=0.5, hi=2, id=id, num=1000,
-                       model=pl, correlated=False)
+                       model=pl, correlated=correlated)
 
-    # For now the unabsorbed results include the "unused" model
-    # parameters (so gal.nh)
+    # The number of parameters depends on the model used.
     #
     assert absorbed.shape == (1000, 4)
-    assert unabsorbed.shape == (1000, 4)
+    assert unabsorbed.shape == (1000, 3)
 
     assert np.isfinite(absorbed).all()
     assert np.isfinite(unabsorbed).all()
@@ -993,15 +1069,185 @@ def test_sample_foo_flux_component(multi, fac, make_data_path, clean_astro_ui):
     # Compare the medians to the best-fit values and the
     # standard deviations to the covariance estimates.
     #
-    for ans in [absorbed, unabsorbed]:
-        nh = ans[:, 1]
-        gamma = ans[:, 2]
-        ampl = ans[:, 3]
+    nh = absorbed[:, 1]
+    gamma = absorbed[:, 2]
+    ampl = absorbed[:, 3]
 
-        assert np.median(nh) == pytest.approx(nh0, rel=0.2)
+    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+
+    assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
+    assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
+
+    gamma = unabsorbed[:, 1]
+    ampl = unabsorbed[:, 2]
+
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+
+    assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("correlated,scales2,scales3",
+                         [(False, [0.12, 2.5e-5], [0.04, 0.12, 2.5e-5]),
+                          (False, COVMAT[1:, 1:], COVMAT),
+                          (True, COVMAT[1:, 1:], COVMAT)])
+def test_sample_foo_flux_component_scales(correlated, scales2, scales3,
+                                          make_data_path, clean_astro_ui):
+    """Can we sample just a component and send in errors?
+
+    Based on test_sample_foo_flux_component, but
+    restricted to sample_energy_flux.
+
+    Since the full model (gal * pl) has 3 free parameters
+    and the power-law 2, do we get the "same" results
+    when using the full errors (nh, gamma, ampl) as
+    just (gamma, ampl)?
+
+    Checks for
+       - correlated=False  scales=1D array
+       - correlated=False  scales=2D covmat
+       - correlated=True   scales=2D covmat
+
+    """
+
+    id = 2
+    cpts = setup_sample(id, make_data_path)
+    pl = cpts[1]
+
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    unabsorbed2 = ui.sample_energy_flux(lo=0.5, hi=2, id=id, num=1000,
+                                        model=pl, correlated=correlated,
+                                        scales=scales2)
+    unabsorbed3 = ui.sample_energy_flux(lo=0.5, hi=2, id=id, num=1000,
+                                        model=pl, correlated=correlated,
+                                        scales=scales3)
+
+    assert unabsorbed2.shape == (1000, 3)
+    assert unabsorbed3.shape == (1000, 3)
+
+    assert np.isfinite(unabsorbed2).all()
+    assert np.isfinite(unabsorbed3).all()
+
+    flux_unabsorbed2 = unabsorbed2[:, 0]
+    flux_unabsorbed3 = unabsorbed3[:, 0]
+    assert flux_unabsorbed2.min() > 0
+    assert flux_unabsorbed3.min() > 0
+
+    flux2 = np.median(flux_unabsorbed2)
+    flux3 = np.median(flux_unabsorbed3)
+    assert flux2 == pytest.approx(flux3, rel=0.1)
+
+    # The distributions of the two sets of parameters should be
+    # similar, since they are drawn from the same distributions.
+    #
+    # Compare the medians to the best-fit values and the
+    # standard deviations to the covariance estimates.
+    #
+    ans = np.asarray(scales3)
+    if ans.ndim == 2:
+        errs3 = np.sqrt(ans.diagonal())
+    else:
+        errs3 = ans
+
+    for ans in [unabsorbed2, unabsorbed3]:
+        gamma = ans[:, 1]
+        ampl = ans[:, 2]
+
         assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
         assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
 
-        assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
-        assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
-        assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
+        assert np.std(gamma) == pytest.approx(errs3[1], rel=0.1)
+        assert np.std(ampl) == pytest.approx(errs3[2], rel=0.1)
+
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("id", [None, 1, 2, "foo"])
+def test_sample_foo_flux_component_scales_fitpars(method, id,
+                                                  make_data_path, clean_astro_ui):
+    """Is the fit unchanged when a component + errors are used?
+
+    sample_energy/photon_flux can change the model parameters,
+    including frozen status, in particular when a component
+    of the fit is used and errors for just that component are
+    given.
+
+    This test checks that running the sample does not change
+    the fit statistic, number of degrees of freedom, and
+    parameter values. This repeats some of the checks in
+    test_sample_foo_flux_niter but for a different set of
+    inputs.
+    """
+
+    # save some time by not fitting
+    gal, pl = setup_sample(id, make_data_path, fit=False)
+    mdl = gal * pl
+
+    pnames0 = [p.fullname for p in mdl.pars]
+    pvals0 = [p.val for p in mdl.pars]
+    pstate0 = [p.frozen for p in mdl.pars]
+
+    stats0 = ui.get_stat_info()
+    assert len(stats0) == 1
+    stats0 = stats0[0]
+    if id is None:
+        assert stats0.ids == [1]
+    else:
+        assert stats0.ids == [id]
+
+    # just to check that the "fit" hasn't changed from the expected value
+    assert stats0.numpoints == 42
+    assert stats0.dof == 39
+
+    def validate():
+        """Check the fit is unchanged"""
+
+        stats = ui.get_stat_info()
+        assert len(stats) == 1
+        stats = stats[0]
+        for field in ["name", "ids", "bkg_ids", "statname",
+                      "statval", "numpoints", "dof", "qval", "rstat"]:
+            v = getattr(stats, field)
+            v0 = getattr(stats0, field)
+            assert v == v0
+
+        for par, name, val, state in zip(mdl.pars,
+                                         pnames0,
+                                         pvals0,
+                                         pstate0):
+            assert par.fullname == name
+            assert par.val == val
+            assert par.frozen == state
+
+    errs = [0.12, 3e-5]
+    cmat = [[0.12, 3e-6], [3e-6, 6e-10]]
+
+    # uncorrelated, give errors
+    ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=False,
+                 scales=errs)
+    assert ans.shape == (2, 3)
+    validate()
+
+    # uncorrelated, give covariance matrix
+    ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=False,
+                 scales=cmat)
+    assert ans.shape == (2, 3)
+    validate()
+
+    # correlated, give covariance matrix
+    ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=True,
+                 scales=cmat)
+    assert ans.shape == (2, 3)
+    validate()
