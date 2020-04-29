@@ -35,10 +35,10 @@ import numpy as np
 
 from sherpa.astro import ui
 
-from sherpa.astro.plot import ARFPlot, BkgDataPlot, ModelHistogram, \
+from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
     SourcePlot
 
-from sherpa.utils.err import ArgumentErr, IdentifierErr
+from sherpa.utils.err import IdentifierErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_pylab, requires_xspec
 
@@ -1360,14 +1360,38 @@ def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     assert mplot3.y == pytest.approx(mplot1.y)
 
 
+def validate_flux_histogram(fhist):
+    """Limited checks for test_pha1_plot_foo_flux/test_pha1_get_foo_flux_hist"""
+
+    assert fhist is not None
+    assert isinstance(fhist, FluxHistogram)
+
+    # Very minimal checks.
+    #
+    assert fhist.flux.shape == (200,)
+    assert fhist.modelvals.shape == (200, 3)
+    assert fhist.xlo.shape == (21,)
+    assert fhist.xhi.shape == (21,)
+    assert fhist.y.shape == (21,)
+
+    # Do the fluxes and the histogram agree?
+    #
+    fmin = fhist.flux.min()
+    fmax = fhist.flux.max()
+    assert fmin == pytest.approx(fhist.xlo[0])
+    assert fmax == pytest.approx(fhist.xhi[-1])
+
+
 @requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("plotfunc", [ui.plot_energy_flux, ui.plot_photon_flux])
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_pha1_plot_foo_flux(plotfunc, correlated, clean_astro_ui, basic_pha1):
-    """Can we call plot_energy/photon_flux?
+def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic_pha1):
+    """Can we call plot_energy/photon_flux and then the get_ func (recalc=False)
 
     We extend the basic_pha1 test by including an XSPEC
     absorption model.
@@ -1385,6 +1409,60 @@ def test_pha1_plot_foo_flux(plotfunc, correlated, clean_astro_ui, basic_pha1):
     # of the results isn't important, so we can use a relatively-low
     # number of iterations.
     #
-    # At the moment this fails, so catch this failue
-    with pytest.raises(ArgumentErr):
-        plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
+
+    # check we can access these results (relying on the fact that the num
+    # and bins arguments have been changed from their default values).
+    #
+    res = getfunc(recalc=False)
+    validate_flux_histogram(res)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+@pytest.mark.parametrize("correlated", [False, True])
+def test_pha1_get_foo_flux_hist(getfunc, correlated, clean_astro_ui, basic_pha1):
+    """Can we call get_energy/photon_flux_hist?
+
+    See test_pha1_plot_foo_flux.
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
+    validate_flux_histogram(res)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
+    """What happens when there's no data?
+
+    This is a regression test to check if this behavior gets
+    changed: for example maybe an error gets raised.
+    """
+
+    empty = getfunc(recalc=False)
+    assert empty is not None
+    assert isinstance(empty, FluxHistogram)
+
+    for field in ["modelvals", "flux", "xlo", "xhi", "y"]:
+        assert getattr(empty, field) is None
