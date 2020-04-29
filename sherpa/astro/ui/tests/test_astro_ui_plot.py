@@ -1572,3 +1572,149 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
 
     assert np.std(pvals[:, 0]) == pytest.approx(errs[0], rel=0.1)
     assert np.std(pvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc,ratio",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist, 1.13),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist, 1.17)])
+def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
+                                  clean_astro_ui, basic_pha1):
+    """Can we call plot_energy/photon_flux with the model argument.
+
+    Based on test_pha1_get_foo_flux_hist_scales. By using some
+    non-standard arguments we can use the get routine (recalc=False)
+    to check that the plot did use the scales.
+    """
+
+    # This time we want the absorbing component to make a difference
+    # between the two plots.
+    #
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = np.sqrt(covmat.diagonal())
+
+    # Due to the way the get* routines work in the sherpa.astro.ui module,
+    # the following will return the same object, so x1 and x2 will be
+    # identical (and hence only contain values from the second plotfunc).
+    #
+    #   plotfunc()
+    #   x1 = getfunc(recalc=False)
+    #   plotfunc()
+    #   x2 = getunc(recalc=False)
+    #
+    # This means that the tests below check the values from getfunc
+    # before calling the new plotfunc.
+    #
+    # It is probably true that x1 would change contents as soon as
+    # the second plotfunc() call is made above (unsure).
+    #
+
+    # Absorbed flux
+    plotfunc(lo=0.5, hi=2, num=1000, bins=19, correlated=False)
+    res = getfunc(recalc=False)
+
+    avals = res.modelvals
+    assert avals.shape == (1000, 3)
+    assert np.std(avals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(avals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+
+    assert res.y.shape == (20,)
+
+    aflux = np.median(res.flux)
+
+    # Unabsorbed flux
+    plotfunc(lo=0.5, hi=2, model=orig_mdl, num=1000, bins=21,
+             correlated=False)
+    res = getfunc(recalc=False)
+
+    uvals = res.modelvals
+    assert uvals.shape == (1000, 2)
+    assert np.std(uvals[:, 0]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(uvals[:, 1]) == pytest.approx(errs[2], rel=0.1)
+
+    assert res.y.shape == (22,)
+
+    uflux = np.median(res.flux)
+
+    # Is the unabsorbed to absorbed median flux close to the value
+    # calculated from the best-fit solutions (specified as a number
+    # rather than calculated here to act as a regression test).
+    #
+    got = uflux / aflux
+    assert got == pytest.approx(ratio, rel=0.1)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc,ratio",
+                         [(ui.get_energy_flux_hist, 1.13),
+                          (ui.get_photon_flux_hist, 1.17)])
+def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
+                                      clean_astro_ui, basic_pha1):
+    """Can we call get_energy/photon_flux_hist with the model argument.
+
+    Very similar to test_pha1_plot_foo_flux_model.
+    """
+
+    # This time we want the absorbing component to make a difference
+    # between the two plots.
+    #
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = np.sqrt(covmat.diagonal())
+
+    # See commentary in test_pha1_plot_foo_flux_model about the
+    # potentially-surprising behavior of the return value of the
+    # get routines
+
+    # Absorbed flux
+    res = getfunc(lo=0.5, hi=2, num=1000, bins=19, correlated=False)
+
+    avals = res.modelvals
+    assert avals.shape == (1000, 3)
+    assert np.std(avals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(avals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+
+    assert res.y.shape == (20,)
+
+    aflux = np.median(res.flux)
+
+    # Unabsorbed flux
+    res = getfunc(lo=0.5, hi=2, model=orig_mdl, num=1000, bins=21,
+                  correlated=False)
+
+    uvals = res.modelvals
+    assert uvals.shape == (1000, 2)
+    assert np.std(uvals[:, 0]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(uvals[:, 1]) == pytest.approx(errs[2], rel=0.1)
+
+    assert res.y.shape == (22,)
+
+    uflux = np.median(res.flux)
+
+    # Is the unabsorbed to absorbed median flux close to the value
+    # calculated from the best-fit solutions (specified as a number
+    # rather than calculated here to act as a regression test).
+    #
+    got = uflux / aflux
+    assert got == pytest.approx(ratio, rel=0.1)

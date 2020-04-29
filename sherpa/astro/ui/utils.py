@@ -10771,22 +10771,24 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgchisqrplot
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
-                                  correlated, numcores, bkg_id, scales=None):
-        dist = self.sample_energy_flux(lo, hi, id=id, num=num, scales=scales,
+                                  correlated, numcores, bkg_id,
+                                  scales=None, model=None):
+        dist = self.sample_energy_flux(lo, hi, id=id, num=num, scales=scales, model=model,
                                        correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
-                                  correlated, numcores, bkg_id, scales=None):
-        dist = self.sample_photon_flux(lo, hi, id=id, num=num, scales=scales,
+                                  correlated, numcores, bkg_id,
+                                  scales=None, model=None):
+        dist = self.sample_photon_flux(lo, hi, id=id, num=num, scales=scales, model=model,
                                        correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, recalc=True):
+                             scales=None, model=None, recalc=True):
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
@@ -10795,7 +10797,8 @@ class Session(sherpa.ui.utils.Session):
         model parameters.
 
         .. versionchanged:: 4.12.2
-           The scales parameter is no longer ignored when set.
+           The scales parameter is no longer ignored when set and the
+           model parameter has been added.
 
         Parameters
         ----------
@@ -10827,10 +10830,24 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -10866,16 +10883,25 @@ class Session(sherpa.ui.utils.Session):
         >>> ehist1 = get_energy_flux_hist(0.5, 2, id='jet', num=1000)
         >>> ehist2 = get_energy_flux_hist(0.5, 2, id='core', num=1000)
 
+        Compare the flux distribution for the full source expression
+        (aflux) to that for just the pl component (uflux); this can be
+        useful to calculate the unabsorbed flux distribution if the
+        full source model contains an absorption component:
+
+        >>> aflux = get_energy_flux_hist(0.5, 2, num=1000, bins=20)
+        >>> uflux = get_energy_flux_hist(0.5, 2, model=pl, num=1000, bins=20)
+
         """
         if sherpa.utils.bool_cast(recalc):
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
-                                           scales=scales, numcores=numcores, bkg_id=bkg_id)
+                                           scales=scales, model=model,
+                                           numcores=numcores, bkg_id=bkg_id)
         return self._energyfluxplot
 
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, recalc=True):
+                             scales=None, model=None, recalc=True):
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
@@ -10884,7 +10910,8 @@ class Session(sherpa.ui.utils.Session):
         model parameters.
 
         .. versionchanged:: 4.12.2
-           The scales parameter is no longer ignored when set.
+           The scales parameter is no longer ignored when set and the
+           model parameter has been added.
 
         Parameters
         ----------
@@ -10916,10 +10943,24 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -10955,11 +10996,20 @@ class Session(sherpa.ui.utils.Session):
         >>> phist1 = get_photon_flux_hist(0.5, 2, id='jet', num=1000)
         >>> phist2 = get_photon_flux_hist(0.5, 2, id='core', num=1000)
 
+        Compare the flux distribution for the full source expression
+        (aflux) to that for just the pl component (uflux); this can be
+        useful to calculate the unabsorbed flux distribution if the
+        full source model contains an absorption component:
+
+        >>> aflux = get_photon_flux_hist(0.5, 2, num=1000, bins=20)
+        >>> uflux = get_photon_flux_hist(0.5, 2, model=pl, num=1000, bins=20)
+
         """
         if sherpa.utils.bool_cast(recalc):
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
-                                           scales=scales, numcores=numcores, bkg_id=bkg_id)
+                                           scales=scales, model=model,
+                                           numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
     def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
@@ -11810,7 +11860,8 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
-                         scales=None, recalc=True, overplot=False, clearwindow=True,
+                         scales=None, model=None,
+                         recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the energy flux distribution.
 
@@ -11823,7 +11874,8 @@ class Session(sherpa.ui.utils.Session):
         create this plot.
 
         .. versionchanged:: 4.12.2
-           The scales parameter is no longer ignored when set.
+           The scales parameter is no longer ignored when set and the
+           model parameter has been added.
 
         Parameters
         ----------
@@ -11855,10 +11907,24 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11899,12 +11965,20 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_energy_flux(0.5, 2, id="jet", num=1000)
         >>> plot_energy_flux(0.5, 2, id="core", num=1000, overplot=True)
 
+        Overplot the flux distribution for just the pl component (which
+        must be part of the source expression) on top of the full model.
+        If the full model was xsphabs.gal * powlaw1d.pl then this will
+        compare the unabsorbed to absorbed flux distributions:
+
+        >>> plot_energy_flux(0.5, 2, num=1000, bins=20)
+        >>> plot_energy_flux(0.5, 2, model=pl, num=1000, bins=20)
+
         """
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(recalc):
             efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
                                                     num=num, bins=bins, scales=scales,
-                                                    correlated=correlated,
+                                                    correlated=correlated, model=model,
                                                     numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
@@ -11918,7 +11992,8 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
-                         scales=None, recalc=True, overplot=False, clearwindow=True,
+                         scales=None, model=None,
+                         recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the photon flux distribution.
 
@@ -11931,7 +12006,8 @@ class Session(sherpa.ui.utils.Session):
         create this plot.
 
         .. versionchanged:: 4.12.2
-           The scales parameter is no longer ignored when set.
+           The scales parameter is no longer ignored when set and the
+           model parameter has been added.
 
         Parameters
         ----------
@@ -11963,10 +12039,24 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -12007,12 +12097,20 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_photon_flux(0.5, 2, id="jet", num=1000)
         >>> plot_photon_flux(0.5, 2, id="core", num=1000, overplot=True)
 
+        Overplot the flux distribution for just the pl component (which
+        must be part of the source expression) on top of the full model.
+        If the full model was xsphabs.gal * powlaw1d.pl then this will
+        compare the unabsorbed to absorbed flux distributions:
+
+        >>> plot_photon_flux(0.5, 2, num=1000, bins=20)
+        >>> plot_photon_flux(0.5, 2, model=pl, num=1000, bins=20)
+
         """
         pfplot = self._photonfluxplot
         if sherpa.utils.bool_cast(recalc):
             pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id=id,
                                                     num=num, bins=bins, scales=scales,
-                                                    correlated=correlated,
+                                                    correlated=correlated, model=model,
                                                     numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
