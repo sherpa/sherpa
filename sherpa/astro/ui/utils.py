@@ -12393,7 +12393,7 @@ class Session(sherpa.ui.utils.Session):
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_photon_flux`.
 
-        .. versionchanged:: 4.12.1
+        .. versionchanged:: 4.12.2
            The model parameter was added.
 
         Parameters
@@ -12566,7 +12566,7 @@ class Session(sherpa.ui.utils.Session):
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_energy_flux`.
 
-        .. versionchanged:: 4.12.1
+        .. versionchanged:: 4.12.2
            The model parameter was added.
 
         Parameters
