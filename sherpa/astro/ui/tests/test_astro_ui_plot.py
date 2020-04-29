@@ -1764,6 +1764,13 @@ def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic
     # Ensure near the minimum
     ui.fit()
 
+    # At this point the return should be None
+    res = getfunc(recalc=False)
+    assert isinstance(res, FluxHistogram)
+    assert res.flux is None
+    assert res.xlo is None
+    assert res.y is None
+
     # Since the results are not being inspected here, the "quality"
     # of the results isn't important, so we can use a relatively-low
     # number of iterations.
