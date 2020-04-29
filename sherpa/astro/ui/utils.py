@@ -10770,27 +10770,32 @@ class Session(sherpa.ui.utils.Session):
         self._prepare_plotobj(id, self._bkgchisqrplot, bkg_id=bkg_id)
         return self._bkgchisqrplot
 
-    def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
-        dist = self.sample_energy_flux(lo, hi, id=id, num=num, scales=None,
+    def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
+                                  correlated, numcores, bkg_id, scales=None):
+        dist = self.sample_energy_flux(lo, hi, id=id, num=num, scales=scales,
                                        correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
-    def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
-        dist = self.sample_photon_flux(lo, hi, id=id, num=num, scales=None,
+    def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
+                                  correlated, numcores, bkg_id, scales=None):
+        dist = self.sample_photon_flux(lo, hi, id=id, num=num, scales=scales,
                                        correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
-    # DOC-TODO: See comments about plot_energy_flux.
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                             correlated=False, numcores=None, bkg_id=None, **kwargs):
+                             correlated=False, numcores=None, bkg_id=None,
+                             scales=None, recalc=True):
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
         simulated energy flux values representing the energy flux probability
         distribution for a model component, accounting for the errors on the
         model parameters.
+
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set.
 
         Parameters
         ----------
@@ -10862,21 +10867,24 @@ class Session(sherpa.ui.utils.Session):
         >>> ehist2 = get_energy_flux_hist(0.5, 2, id='core', num=1000)
 
         """
-        if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
+        if sherpa.utils.bool_cast(recalc):
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
-                                           numcores=numcores, bkg_id=bkg_id)
+                                           scales=scales, numcores=numcores, bkg_id=bkg_id)
         return self._energyfluxplot
 
-    # DOC-TODO: See comments about plot_photon_flux.
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                             correlated=False, numcores=None, bkg_id=None, **kwargs):
+                             correlated=False, numcores=None, bkg_id=None,
+                             scales=None, recalc=True):
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
         simulated photon flux values representing the photon flux probability
         distribution for a model component, accounting for the errors on the
         model parameters.
+
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set.
 
         Parameters
         ----------
@@ -10948,10 +10956,10 @@ class Session(sherpa.ui.utils.Session):
         >>> phist2 = get_photon_flux_hist(0.5, 2, id='core', num=1000)
 
         """
-        if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
+        if sherpa.utils.bool_cast(recalc):
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
-                                           numcores=numcores, bkg_id=bkg_id)
+                                           scales=scales, numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
     def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
@@ -11800,10 +11808,9 @@ class Session(sherpa.ui.utils.Session):
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    # DOC-TODO: I am assuming it accepts a scales parameter
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
-                         recalc=True, overplot=False, clearwindow=True,
+                         scales=None, recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the energy flux distribution.
 
@@ -11814,6 +11821,9 @@ class Session(sherpa.ui.utils.Session):
         returned by `calc_energy_flux`. The `sample_energy_flux` and
         `get_energy_flux_hist` functions return the data used to
         create this plot.
+
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set.
 
         Parameters
         ----------
@@ -11893,7 +11903,7 @@ class Session(sherpa.ui.utils.Session):
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(recalc):
             efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
-                                                    num=num, bins=bins,
+                                                    num=num, bins=bins, scales=scales,
                                                     correlated=correlated,
                                                     numcores=numcores, bkg_id=bkg_id)
         try:
@@ -11906,12 +11916,9 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
-    # DOC-TODO: I am assuming it accepts a scales parameter, but
-    # changing it doesn't seem to do anything (see next)
-    # DOC-NOTE: I got a TypeError about the scales option
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
-                         recalc=True, overplot=False, clearwindow=True,
+                         scales=None, recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the photon flux distribution.
 
@@ -11922,6 +11929,9 @@ class Session(sherpa.ui.utils.Session):
         returned by `calc_photon_flux`. The `sample_photon_flux` and
         `get_photon_flux_hist` functions return the data used to
         create this plot.
+
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set.
 
         Parameters
         ----------
@@ -12001,7 +12011,7 @@ class Session(sherpa.ui.utils.Session):
         pfplot = self._photonfluxplot
         if sherpa.utils.bool_cast(recalc):
             pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id=id,
-                                                    num=num, bins=bins,
+                                                    num=num, bins=bins, scales=scales,
                                                     correlated=correlated,
                                                     numcores=numcores, bkg_id=bkg_id)
         try:
