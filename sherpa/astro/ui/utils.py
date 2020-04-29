@@ -10799,7 +10799,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -10885,7 +10885,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -11822,7 +11822,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -11930,7 +11930,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -12403,7 +12403,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -12576,7 +12576,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -12749,7 +12749,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
