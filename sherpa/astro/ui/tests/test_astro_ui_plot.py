@@ -1466,3 +1466,60 @@ def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
 
     for field in ["modelvals", "flux", "xlo", "xhi", "y"]:
         assert getattr(empty, field) is None
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+@pytest.mark.parametrize("scale", [None, 1.0,
+                                   pytest.param(2.0, marks=pytest.mark.xfail)])
+def test_pha1_get_foo_flux_hist_scales(getfunc, scale, clean_astro_ui, basic_pha1):
+    """Can we call get_energy/photon_flux_hist with the scales argument.
+
+    Run with the covar-calculated errors and then manually-specified
+    errors and check that the parameter distributions change in the
+    expected manner. The test is run for the covariance errors
+    multiplied by scale. If scale is None then scales is not
+    given.
+
+    This is issue #801.
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = np.sqrt(covmat.diagonal())
+
+    if scale is None:
+        scales = None
+    else:
+        errs = scale * errs
+        scales = errs
+
+    # Run enough times that we can get a reasonable distribution
+    res = getfunc(lo=0.5, hi=2, num=1000, bins=20, correlated=False,
+                  scales=scales)
+
+    # compare the widths of the distributions to the input errors;
+    # the nh values are more uncertain than the others (close
+    # to the hard minimum of 0), so use a bigger tolerance for this
+    # than the other parameters: see
+    # test_astro_ui_fluxes.py::test_sample_foo_flux_params
+    #
+    # Since the nh test is known to be "less sensitive", re-order
+    # the tests to do gamma, ampl, and then nH, to make it clearer
+    # that the scales is being used.
+    #
+    pvals = res.modelvals
+    assert np.std(pvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(pvals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+    assert np.std(pvals[:, 0]) == pytest.approx(errs[0], rel=0.2)
