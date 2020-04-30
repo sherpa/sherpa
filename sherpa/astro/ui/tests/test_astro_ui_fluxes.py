@@ -2100,8 +2100,8 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
     elo = fmed - flsig
     ehi = fusig - fmed
     assert fmed == pytest.approx(77.27966775437665)
-    assert elo == pytest.approx(9.86485842683382)
-    assert ehi == pytest.approx(11.40548578502279)
+    assert elo == pytest.approx(9.773389936230018)
+    assert ehi == pytest.approx(11.417501513386611)
 
     # The last column of res[2] is the statistic value for a row -
     # although due to filtering we don't know which row without some

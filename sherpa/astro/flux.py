@@ -578,19 +578,11 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
             session.set_full_model(id, orig_model)
             mystat.append(session.calc_stat(id))
             #####################################
-        oflxiflx = [oflx, iflx]
 
-        myconfidence = (1.0 - confidence / 100.0) / 2.0
+        hwidth = confidence / 2
         result = []
-
-        for x in oflxiflx:
-            sf = numpy.sort(x)
-            median = numpy.median(sf)
-            upconfidence_index = int((1.0 - myconfidence) * size - 1)
-            loconfidence_index = int(myconfidence * size - 1)
-            upconfidence = sf[upconfidence_index]
-            loconfidence = sf[loconfidence_index]
-            result.append(numpy.array([median, upconfidence, loconfidence]))
+        for x in [oflx, iflx]:
+            result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
 
         for lbl, arg in zip(['original model', 'model component'], result):
             med, usig, lsig = arg
