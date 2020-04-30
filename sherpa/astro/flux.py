@@ -641,13 +641,9 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     oflx = numpy.zeros(size)  # observed/absorbed flux
     iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
 
-    #
     # For later restoration
     #
-    orig_model = session.get_model(id)
     orig_model_vals = fit.model.thawedpars
-
-    orig_source = session.get_source(id)
 
     logger = logging.getLogger("sherpa")
     orig_log_level = logger.level
@@ -657,36 +653,29 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     if orig_log_level < logging.ERROR:
         logger.setLevel(logging.ERROR)
 
+    # With the move to calling calc_energy_flux directly there should
+    # be no need to change the logging level, but leave in for now.
+    #
     try:
 
         logger.setLevel(logging.ERROR)
 
         mystat = []
         for nn in range(size):
-            session.set_source(id, orig_source)
             oflx[nn] = mysim[nn, 0]
 
             for par, parval in zip(thawedpars, mysim[nn, 1:]):
                 session.set_par(par.fullname, parval)
 
-            session.set_source(id, modelcomponent)
-            iflx[nn] = session.calc_energy_flux(lo=lo, hi=hi, id=id)
-            #####################################
-            session.set_full_model(id, orig_model)
+            iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
+
             mystat.append(session.calc_stat(id))
-            #####################################
 
         logger.setLevel(orig_log_level)
 
     finally:
 
-        # Why do we set both full_model and source here?
-        #
-        logger.setLevel(logging.ERROR)
-        session.set_full_model(id, orig_model)
         fit.model.thawedpars = orig_model_vals
-        session.set_source(id, orig_source)
-
         logger.setLevel(orig_log_level)
 
     hwidth = confidence / 2
