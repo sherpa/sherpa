@@ -641,22 +641,8 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     #
     orig_model_vals = fit.model.thawedpars
 
-    logger = logging.getLogger("sherpa")
-    orig_log_level = logger.level
-
-    # only change the log level if it is less than error
-    #
-    if orig_log_level < logging.ERROR:
-        logger.setLevel(logging.ERROR)
-
-    # With the move to calling calc_energy_flux directly there should
-    # be no need to change the logging level, but leave in for now.
-    #
+    mystat = []
     try:
-
-        logger.setLevel(logging.ERROR)
-
-        mystat = []
         for nn in range(size):
             oflx[nn] = mysim[nn, 0]
 
@@ -666,17 +652,13 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
             iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
             mystat.append(fit.calc_stat())
 
-        logger.setLevel(orig_log_level)
-
     finally:
-
         fit.model.thawedpars = orig_model_vals
-        logger.setLevel(orig_log_level)
 
     hwidth = confidence / 2
     result = []
-    for x in [oflx, iflx]:
-        result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
+    for flx in [oflx, iflx]:
+        result.append(numpy.percentile(flx, [50, 50 + hwidth, 50 - hwidth]))
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
@@ -689,7 +671,6 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     for index in range(size):
         samples[index][-1] = mystat[index]
 
-    # samples = numpy.delete( samples, (size), axis=0 )
     result.append(samples)
 
     return result
