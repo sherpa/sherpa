@@ -13433,7 +13433,7 @@ class Session(sherpa.ui.utils.Session):
                                               numcores=numcores,
                                               bkg_id=bkg_id)
 
-        return sherpa.astro.flux.calc_sample_flux(id=id, lo=lo, hi=hi, session=self,
+        return sherpa.astro.flux.calc_sample_flux(lo=lo, hi=hi,
                                                   fit=fit, data=data, samples=samples,
                                                   modelcomponent=modelcomponent,
                                                   confidence=confidence)

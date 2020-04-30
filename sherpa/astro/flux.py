@@ -527,7 +527,7 @@ def sample_flux(fit, data, src,
     return numpy.concatenate((vals, numpy.expand_dims(clipped, 1)), axis=1)
 
 
-def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
+def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
                      confidence):
     """Given a set of parameter samples, estimate the flux distribution.
 
@@ -542,21 +542,17 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     .. versionchanged:: 4.13.1
        The clipping now includes parameters at the soft limits;
        previously they were excluded which could cause problems with
-       parameters for which we can only calculate an upper limit.
+       parameters for which we can only calculate an upper limit. The
+       id and session arguments have been removed.
 
     Parameters
     ----------
-    id : int or str
-        The dataset identifier. It must exist and have an associated model in
-        session.
     lo : number or None, optional
         The lower edge of the dataspace range for the flux calculation.
         If None then the lower edge of the data grid is used.
     hi : number or None, optional
         The upper edge of the dataspace range for the flux calculation.
         If None then the upper edge of the data grid is used.
-    session : sherpa.ui.utils.Session instance
-        Defines the data, model, and fit.
     fit : sherpa.fit.Fit instance
         The fit object. The src parameter is assumed to be a subset of
         the fit.model expression (to allow for calculating the flux of
@@ -665,11 +661,10 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
             oflx[nn] = mysim[nn, 0]
 
             for par, parval in zip(thawedpars, mysim[nn, 1:]):
-                session.set_par(par.fullname, parval)
+                par.set(parval)
 
             iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
-
-            mystat.append(session.calc_stat(id))
+            mystat.append(fit.calc_stat())
 
         logger.setLevel(orig_log_level)
 
