@@ -13326,6 +13326,11 @@ class Session(sherpa.ui.utils.Session):
         -----
         Setting the Xrays parameter to False is currently unsupported.
 
+        The summary output displayed by this routine - giving the
+        median and confidence ranges - is controlled by the standard
+        Sherpa logging instance, and can be hidden by changing the
+        logging to a level greater than "INFO".
+
         Examples
         --------
 
@@ -13358,6 +13363,17 @@ class Session(sherpa.ui.utils.Session):
 
         >>> cmatrix = get_covar_results().extra_output
         >>> ans = sample_flux(correlated=True, scales=cmatrix, num=500)
+
+        Run sample_flux after changing the logging level, so that the
+        screen output from sample_flux is not displayed. Afterwards
+        the level is set to the "INFO" level (which is the default
+        level for Sherpa):
+
+        >>> import logging
+        >>> lgr = logging.getLogger('sherpa')
+        >>> lgr.setLevel(logging.WARN)
+        >>> ans = sample_flux(num=1000, lo=0.5, hi=7)
+        >>> lgr.setLevel(logging.INFO)
 
         """
 

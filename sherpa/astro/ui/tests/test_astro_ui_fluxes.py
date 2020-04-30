@@ -1511,7 +1511,15 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
         flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=1,
                                             correlated=False, scales=scal)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    msgs = []
+    for rec in caplog.record_tuples:
+        assert rec[0] == 'sherpa'  # we use sherpa, not sherpa.astro.flux here
+        assert rec[1] == logging.INFO
+        msgs.append(rec[2])
+
+    assert msgs[0] == 'original model flux = 5.06365e-13, + 3.21673e-14, - 3.21673e-14'
+    assert msgs[1] == 'model component flux = 5.06365e-13, + 3.21673e-14, - 3.21673e-14'
 
     assert np.all(flux1 == flux2)
     assert len(flux1) == 3
@@ -1954,7 +1962,15 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
         flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=niter,
                                             correlated=False, scales=scal)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    msgs = []
+    for rec in caplog.record_tuples:
+        assert rec[0] == 'sherpa'  # we use sherpa, not sherpa.astro.flux here
+        assert rec[1] == logging.INFO
+        msgs.append(rec[2])
+
+    assert msgs[0] == 'original model flux = 4.90527e-13, + 6.93747e-14, - 6.25625e-14'
+    assert msgs[1] == 'model component flux = 4.90527e-13, + 6.93747e-14, - 6.25625e-14'
 
     # as modelcomponent is None, first two arguments should be the same
     assert np.all(flux1 == flux2)
@@ -2180,7 +2196,13 @@ def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
                                             id=idval, lo=1, hi=5, num=niter,
                                             correlated=False, scales=scal)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    msgs = []
+    for rec in caplog.record_tuples:
+        msgs.append(rec[2])
+
+    assert msgs[0] == 'original model flux = 4.78484e-13, + 7.8702e-14, - 5.87503e-14'
+    assert msgs[1] == 'model component flux = 5.98105e-13, + 9.83775e-14, - 7.34378e-14'
 
     # check the source model hasn't been changed (note: do not use
     # pytest.approx as expect the same value, but can switch if
