@@ -113,7 +113,7 @@ conda:
     - cd /tmp
     - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/master.zip
     - conda update -qq -y --all
-    - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib pytest-openfiles"<=0.4.0" # How to make sure it's the correct version?
     - conda activate test35
     - pip install master.zip
     - sherpa_smoke -f astropy
