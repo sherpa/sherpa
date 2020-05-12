@@ -1,7 +1,7 @@
 #ifdef testDifEvo
 
 //
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -137,14 +137,14 @@ int main( int argc, char* argv[] ) {
 }
 
 /*
-
 g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestDifEvo DifEvo.cc Simplex.cc -o difevo
 
-==2929== Memcheck, a memory error detector
-==2929== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
-==2929== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
-==2929== Command: sherpa/optmethods/src/difevo
-==2929== 
+(sherpa) [dtn@devel12 src]$ valgrind difevo
+==31799== Memcheck, a memory error detector
+==31799== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==31799== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==31799== Command: difevo
+==31799== 
 #
 #:npar = 2
 #:tol=1e-06
@@ -252,12 +252,12 @@ DifEvo_lm_LinearFullRank	6	0	0	-1,-1
 DifEvo_lm_LinearFullRank1	6	0.2	0.2	1,-0.2
 DifEvo_lm_LinearFullRank0cols0rows	3	2	2	1,1
 DifEvo_lm_Chebyquad	84	0	3.50827e-25	0.0442053,0.199491,0.235619,0.416047,0.5,0.583953,0.764381,0.800509,0.955795
-DifEvo_nm_McCormick	948	-1.91	-1.91322	-0.546776,-1.54733
-DifEvo_McCormick	913	-1.91	-1.91321	-0.547323,-1.54402
+DifEvo_nm_McCormick	948	-1.9132	-1.91322	-0.546776,-1.54733
+DifEvo_McCormick	913	-1.9132	-1.91321	-0.547323,-1.54402
 DifEvo_nm_BoxBetts	1978	0	1.99794e-08	1.00001,10.0021,0.99997
 DifEvo_BoxBetts	1174	0	9.28277e-06	0.998957,10.0246,1.00266
-DifEvo_nm_Paviani	503	-45.7	-45.7784	9.35094,9.35057,9.35122,9.35054,9.35029,9.35182,9.351,9.34902,9.35211,9.35062
-DifEvo_Paviani	53542	-45.7	-45.776	9.35841,9.3382,9.34925,9.34385,9.34023,9.34306,9.3535,9.35683,9.34874,9.36638
+DifEvo_nm_Paviani	503	-45.778	-45.7784	9.35094,9.35057,9.35122,9.35054,9.35029,9.35182,9.351,9.34902,9.35211,9.35062
+DifEvo_Paviani	53542	-45.778	-45.776	9.35841,9.3382,9.34925,9.34385,9.34023,9.34306,9.3535,9.35683,9.34874,9.36638
 DifEvo_nm_GoldsteinPrice	940	3	3	-3.46632e-05,-1.00005
 DifEvo_GoldsteinPrice	991	3	3.01109	-0.00384429,-1.00518
 DifEvo_nm_Shekel5	-786	-10.1532	-5.10077	7.99967,7.99985,7.99985,7.99987
@@ -279,7 +279,7 @@ DifEvo_Griewank	1112	0	0.00954858	-3.1916,4.49578
 DifEvo_nm_SixHumpCamel	1118	-1.03	-1.03163	0.0901221,-0.712666
 DifEvo_SixHumpCamel	1301	-1.03	-1.03162	-0.090866,0.71167
 DifEvo_nm_Branin	490	0.397889	0.397888	9.42459,2.4742
-DifEvo_Branin	758	0.397889	0.397916	3.14261,2.27908
+DifEvo_Branin	756	0.397889	0.397916	3.14261,2.27908
 DifEvo_nm_Shubert	570	-24.06	-24.0625	-0.491212,-0.491489
 DifEvo_Shubert	-319	-24.06	-20.789	-0.520742,-0.633668
 DifEvo_nm_Hansen	685	-176.54	-176.541	4.9764,4.85846
@@ -306,15 +306,15 @@ DifEvo_nm_Michalewicz10	12511	-9.66015	-9.61838	2.20326,1.57071,1.28499,1.11359,
 DifEvo_Michalewicz10	52873	-9.66015	-9.55588	2.20803,1.57377,1.28519,1.92256,1.72089,1.57051,1.4554,1.75435,1.28298,1.21835
 DifEvo_nm_McKinnon	-628	-0.25	-2.376e+11	-100,-100
 DifEvo_McKinnon	-546	-0.25	-2.36123e+11	-99.9549,-99.518
-==2929== 
-==2929== HEAP SUMMARY:
-==2929==     in use at exit: 0 bytes in 0 blocks
-==2929==   total heap usage: 918,471 allocs, 918,471 frees, 156,994,792 bytes allocated
-==2929== 
-==2929== All heap blocks were freed -- no leaks are possible
-==2929== 
-==2929== For counts of detected and suppressed errors, rerun with: -v
-==2929== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==31799== 
+==31799== HEAP SUMMARY:
+==31799==     in use at exit: 0 bytes in 0 blocks
+==31799==   total heap usage: 918,471 allocs, 918,471 frees, 156,994,792 bytes allocated
+==31799== 
+==31799== All heap blocks were freed -- no leaks are possible
+==31799== 
+==31799== For counts of detected and suppressed errors, rerun with: -v
+==31799== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */
 
 #endif
