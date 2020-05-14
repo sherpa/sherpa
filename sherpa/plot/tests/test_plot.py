@@ -148,6 +148,19 @@ def test_ratioplot(setup_plot):
     # tp.plot()
 
 
+@requires_plotting
+@pytest.mark.parametrize("plottype", [sherpa.DelchiPlot,
+                                      sherpa.RatioPlot,
+                                      sherpa.ResidPlot])
+def test_ignore_ylog_prefs(setup_plot, plottype):
+    """Do we ignore the ylog preference setting?"""
+    tp = plottype()
+    tp.plot_prefs['ylog'] = True
+    tp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
+    tp.plot()
+    assert not tp.plot_prefs['ylog']
+
+
 def test_fitplot(setup_plot):
     dp = sherpa.DataPlot()
     dp.prepare(setup_plot.data, setup_plot.f.stat)
