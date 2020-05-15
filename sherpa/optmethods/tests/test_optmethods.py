@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -265,6 +266,26 @@ class test_optmethods(SherpaTestCase):
         npar = 11
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.chebyquad, fmin, x0, xmin, xmax )
+
+    def test_moncar_verbose(self):
+        """issue #788"""
+        from sherpa.data import Data1D
+        from sherpa.models.basic import Gauss1D
+        from sherpa.fit import Fit
+        from sherpa.optmethods import MonCar
+        from sherpa.stats import LeastSq
+        x = np.linspace(-5, 5, 10)
+        g = Gauss1D()
+        y = g(x)
+        d = Data1D('tmp', x, y)
+        o = MonCar()
+        f = Fit(d, g, LeastSq(), o)
+        o.config['verbose'] = 1
+        result = f.fit()
+        assert result.statval == 0.0
+        o.config['numcores'] = 2
+        result = f.fit()
+        assert result.statval == 0.0
 
 
 def tstme():
