@@ -141,7 +141,7 @@ int main( int argc, char* argv[] ) {
 }
 
 /*
-g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestNelderMead NelderMead.cc Simplex.cc -o neldermead
+g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestNelderMead -DNDEBUG NelderMead.cc Simplex.cc -o neldermead
 
 (sherpa) [dtn@devel12 src]$ valgrind neldermead 
 ==31369== Memcheck, a memory error detector

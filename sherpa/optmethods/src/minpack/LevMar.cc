@@ -304,7 +304,7 @@ int main( int argc, char* argv[] ) {
 #endif
 
 /*
-g++ -ansi -pedantic -Wall -O3 -I. -I../../../include -I../.. -DtestLevMar LevMar.cc -o levmar
+g++ -ansi -pedantic -Wall -O3 -I. -I../../../include -I../.. -DtestLevMar -DNDEBUG LevMar.cc -o levmar
 
 (sherpa) [dtn@devel12 minpack]$ valgrind levmar
 ==32580== Memcheck, a memory error detector

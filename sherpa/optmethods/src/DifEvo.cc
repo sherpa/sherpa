@@ -137,7 +137,7 @@ int main( int argc, char* argv[] ) {
 }
 
 /*
-g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestDifEvo DifEvo.cc Simplex.cc -o difevo
+g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestDifEvo -DNDEBUG DifEvo.cc Simplex.cc -o difevo
 
 (sherpa) [dtn@devel12 src]$ valgrind difevo
 ==31799== Memcheck, a memory error detector
