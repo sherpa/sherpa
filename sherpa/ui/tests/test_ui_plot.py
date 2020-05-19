@@ -775,3 +775,68 @@ def test_plot_xdf(plotfunc):
 
     pvals = [0.1, 0.2, 0.1, 0.4, 0.3, 0.2, 0.1, 0.6]
     plotfunc(pvals)
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("plotobj,plotfunc",
+                         [("_residplot", ui.plot_resid),
+                          ("_delchiplot", ui.plot_delchi)
+                          ])
+def test_plot_resid_ignores_ylog(plotobj, plotfunc):
+    """Do the plot_resid-family of routines ignore the ylog setting?
+
+    Note that plot_chisqr is not included in support for ignoring
+    ylog (since the data should be positive in this case).
+    """
+
+    # access it this way to ensure have access to the actual
+    # object used by the session object in this test (as the
+    # clean call done by the clean_ui fixture will reset the
+    # plot objects).
+    #
+    prefs = getattr(ui._session, plotobj).plot_prefs
+
+    setup_example(None)
+
+    ui.set_ylog()
+    assert prefs['ylog']
+
+    plotfunc(ylog=True)
+
+    # Note that the ylog setting has been removed (to reflect
+    # what was displayed).
+    #
+    assert not prefs['ylog']
+
+
+@requires_plotting
+@pytest.mark.usefixtures("clean_ui")
+@pytest.mark.parametrize("plotobj,plotfunc",
+                         [("_residplot", ui.plot_fit_resid),
+                          ("_delchiplot", ui.plot_fit_delchi)
+                          ])
+def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc):
+    """Do the plot_resid-family of routines ignore the ylog setting?"""
+
+    # access it this way to ensure have access to the actual
+    # object used by the session object in this test (as the
+    # clean call done by the clean_ui fixture will reset the
+    # plot objects).
+    #
+    rprefs = getattr(ui._session, plotobj).plot_prefs
+    dprefs = ui._session._dataplot.plot_prefs
+
+    setup_example(None)
+
+    ui.set_ylog()
+    assert rprefs['ylog']
+    assert dprefs['ylog']
+
+    plotfunc(ylog=True)
+
+    # Note that the ylog setting has been removed (to reflect
+    # what was displayed), for the residual-style component only.
+    #
+    assert not rprefs['ylog']
+    assert dprefs['ylog']

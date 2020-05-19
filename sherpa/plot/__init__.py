@@ -474,7 +474,7 @@ class HistogramPlot(Histogram):
            match the names of the keys of the object's
            plot_prefs dictionary.
 
-        See Also        
+        See Also
         --------
         prepare, overplot
 
@@ -1743,6 +1743,11 @@ class DelchiPlot(ModelPlot):
     xlabel, ylabel, title : str
        Plot labels.
 
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
     """
 
     plot_prefs = backend.get_resid_plot_defaults()
@@ -1765,6 +1770,8 @@ class DelchiPlot(ModelPlot):
         self.title = _make_title('Sigma Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        self.plot_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
@@ -1836,6 +1843,11 @@ class ResidPlot(ModelPlot):
     xlabel, ylabel, title : str
        Plot labels.
 
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
     """
 
     plot_prefs = backend.get_resid_plot_defaults()
@@ -1873,6 +1885,8 @@ class ResidPlot(ModelPlot):
         self.title = _make_title('Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        self.plot_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
@@ -1920,6 +1934,11 @@ class RatioPlot(ModelPlot):
     xlabel, ylabel, title : str
        Plot labels.
 
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
     """
 
     plot_prefs = backend.get_ratio_plot_defaults()
@@ -1957,6 +1976,8 @@ class RatioPlot(ModelPlot):
         self.title = _make_title('Ratio of Data to Model', data.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+        self.plot_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
