@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
 #  Copyright (C) 2017, 2018, 2019, 2020
 #         Smithsonian Astrophysical Observatory
 #

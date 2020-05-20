@@ -22,8 +22,6 @@
 A visualization interface to Sherpa
 """
 
-from __future__ import division
-from __future__ import absolute_import
 import numpy
 import logging
 import importlib

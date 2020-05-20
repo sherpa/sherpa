@@ -1,4 +1,3 @@
-from __future__ import division
 #
 #  Copyright (C) 2008, 2016, 2018, 2019, 2020
 #        Smithsonian Astrophysical Observatory
