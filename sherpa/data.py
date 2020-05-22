@@ -1,11 +1,6 @@
 #
-<<<<<<< HEAD
 #  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020
 #     Smithsonian Astrophysical Observatory
-=======
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018
-#             Smithsonian Astrophysical Observatory
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -38,7 +33,6 @@ from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     filter_bins, parallel_map_funcs
 
 
-<<<<<<< HEAD
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
            'Data1DAsymmetricErrs', 'Data2D', 'Data2DInt')
 
@@ -95,9 +89,6 @@ class DataSpace1D(EvaluationSpace1D):
             return self
 
         data = self.grid[0]
-=======
-__all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D', 'Data2DInt')
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 
         data = self.filter.apply(data)
         return DataSpace1D(self.filter, data)
@@ -875,29 +866,18 @@ class DataSimulFit(NoNewAttributesAfterInit):
 
     """
 
-<<<<<<< HEAD
-    def __init__(self, name, datasets):
-        self.name = name
-=======
     def __init__(self, name, datasets, numcores=1):
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
         if len(datasets) == 0:
             raise DataErr('zerodatasimulfit', type(self).__name__)
+        self.name = name
         self.datasets = tuple(datasets)
+        self.numcores = numcores
         NoNewAttributesAfterInit.__init__(self)
 
     def eval_model_to_fit(self, modelfuncs):
-<<<<<<< HEAD
-        total_model = []
-
-        for func, data in zip(modelfuncs, self.datasets):
-            total_model.append(data.eval_model_to_fit(func))
-
-        return numpy.concatenate(total_model)
-=======
         if self.numcores == 1:
             total_model = []
-            for func, data in izip(modelfuncs, self.datasets):
+            for func, data in zip(modelfuncs, self.datasets):
                 tmp_model = data.eval_model_to_fit(func)
                 total_model.append(tmp_model)
             return numpy.concatenate(total_model)
@@ -905,15 +885,14 @@ class DataSimulFit(NoNewAttributesAfterInit):
         # best to make this a different derived class
             funcs = []
             datasets = []
-            for func, data in izip(modelfuncs, self.datasets):
+            for func, data in zip(modelfuncs, self.datasets):
                 funcs.append(func)
                 datasets.append(data.get_indep(filter=False))
             total_model = parallel_map_funcs(funcs, datasets)
             all_model = []
-            for model, data in izip(total_model, self.datasets):
+            for model, data in zip(total_model, self.datasets):
                 all_model.append(data.apply_filter(model))
             return numpy.concatenate(all_model)
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 
     def to_fit(self, staterrfunc=None):
         total_dep = []

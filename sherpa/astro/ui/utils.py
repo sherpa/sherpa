@@ -1,11 +1,6 @@
 #
-<<<<<<< HEAD
 #  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020
 #      Smithsonian Astrophysical Observatory
-=======
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018
-#             Smithsonian Astrophysical Observatory
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -9998,11 +9993,7 @@ class Session(sherpa.ui.utils.Session):
         # validate the kwds to f.fit() so user typos do not
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-<<<<<<< HEAD
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache')
-=======
         valid_keys = ('outfile', 'clobber', 'filter_nan', 'numcores')
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)

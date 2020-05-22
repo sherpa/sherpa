@@ -1,12 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-<<<<<<< HEAD
 #  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
-=======
-#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
->>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #
 #
 #  This program is free software; you can redistribute it and/or modify
