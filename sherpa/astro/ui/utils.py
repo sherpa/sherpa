@@ -9993,7 +9993,7 @@ class Session(sherpa.ui.utils.Session):
         # validate the kwds to f.fit() so user typos do not
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'numcores')
+        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores')
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
