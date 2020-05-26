@@ -54,5 +54,5 @@ script:
 
 notifications:
   email:
-#    - wmclaugh@cfa.harvard.edu
+    - wmclaugh@cfa.harvard.edu
     - mterrell@cfa.harvard.edu
