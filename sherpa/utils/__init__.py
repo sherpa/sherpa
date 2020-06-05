@@ -2737,6 +2737,7 @@ def parallel_map(function, sequence, numcores=None):
 
     return run_tasks(procs, err_q, out_q, numcores)
 
+
 def parallel_map_funcs(funcs, datasets, numcores=None):
     """Run a sequence of function on a sequence of inputs in parallel.
 
@@ -2754,7 +2755,6 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     datasets : a list or tuple of array_like
        The data to be passed to ``func``. The number of elements in
        datasets must match the number of elements of funcs.
-
     numcores : int or None, optional
        The number of calls to ``funcs`` to run in parallel. When
        set to ``None``, all the available CPUs on the machine - as
@@ -2770,15 +2770,14 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
 
     Notes
     -----
-    Due to the overhead involve in passing the functions and datasets
+    Due to the overhead involved in passing the functions and datasets
     to the different cores, the functions should be very time consuming
-    to compute.  A similar requirement (the function is expected to be
-    run on computations that take a significant amount of time to run.)
-    to the the parallel_map function
-
-    An ordered iterable (ie tuple or list) should be used to pass multiple
+    to compute (of order 0.1-1s).  This is similar to the ``parallel_map``
+    function.
+    
+    An ordered iterable (i.e. tuple or list) should be used to pass multiple
     values to the multiple functions. The lengths of the iterable funcs and
-    datasets must be equal. The coressponding funcs and datasets are passed
+    datasets must be equal. The corresponding funcs and datasets are passed
     to the different cores to distribute the work in parallel. There is no
     guarantee to the ordering of the tasks.
 
