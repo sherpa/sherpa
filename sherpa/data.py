@@ -888,7 +888,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
             for func, data in zip(modelfuncs, self.datasets):
                 funcs.append(func)
                 datasets.append(data.get_indep(filter=False))
-            total_model = parallel_map_funcs(funcs, datasets)
+            total_model = parallel_map_funcs(funcs, datasets, self.numcores)
             all_model = []
             for model, data in zip(total_model, self.datasets):
                 all_model.append(data.apply_filter(model))

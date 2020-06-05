@@ -1187,6 +1187,8 @@ class Fit(NoNewAttributesAfterInit):
            this file.
         clobber : bool, optional
            Determines if the output file can be overwritten.
+        numcores : int or None, optional
+           The number of cores to use in fitting simultaneous data.
 
         Returns
         -------
