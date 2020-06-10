@@ -26,6 +26,7 @@ from abc import ABCMeta
 
 import numpy
 
+from sherpa.models.model import RegridWrappedModel
 from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
@@ -1108,7 +1109,10 @@ class Data1D(Data):
     def get_evaluation_indep(self, filter=False, model=None, use_evaluation_space=False):
         data_space = self._data_space.get(filter)
         if use_evaluation_space:
-            return data_space.for_model(model).grid
+            if isinstance(model, RegridWrappedModel):
+                return model.wrapper.grid
+            else:
+                return data_space.for_model(model).grid
         else:
             return data_space.grid
 
