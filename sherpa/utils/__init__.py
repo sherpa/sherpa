@@ -93,8 +93,9 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            'lgam', 'linear_interp', 'nearest_interp',
            'neville', 'neville2d',
            'new_muller', 'normalize', 'numpy_convolve',
-           'pad_bounding_box', 'parallel_map', 'param_apply_limits',
-           'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
+           'pad_bounding_box', 'parallel_map', 'parallel_map_funcs',
+           'param_apply_limits', 'parse_expr', 'poisson_noise',
+           'print_fields', 'rebin',
            'sao_arange', 'sao_fcmp', 'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile')
 
@@ -2734,6 +2735,109 @@ def parallel_map(function, sequence, numcores=None):
                                      args=(function, ii, chunk, out_q, err_q, lock))
              for ii, chunk in enumerate(sequence)]
 
+    return run_tasks(procs, err_q, out_q, numcores)
+
+
+def parallel_map_funcs(funcs, datasets, numcores=None):
+    """Run a sequence of function on a sequence of inputs in parallel.
+
+    Sherpa's parallel_map runs a single function to an iterable set of
+    sequence.  parallel_map_funcs is generalized parallelized version
+    of sherpa's parallel_map function since each element of the ordered
+    iterable funcs shall operate on the each element of the datasets.
+
+    Parameters
+    ----------
+    funcs : a list or tuple of functions
+       An ordered iteratble sequence of functions which accepts an element
+       of the datasets and returns a value.  The number of elements in
+       funcs must match the number of elements of the datasets.
+    datasets : a list or tuple of array_like
+       The data to be passed to ``func``. The number of elements in
+       datasets must match the number of elements of funcs.
+    numcores : int or None, optional
+       The number of calls to ``funcs`` to run in parallel. When
+       set to ``None``, all the available CPUs on the machine - as
+       set either by the 'numcores' setting of the 'parallel' section
+       of Sherpa's preferences or by multiprocessing.cpu_count - are
+       used.
+
+    Returns
+    -------
+    ans : array
+       The return values from the calls, in the same order as the
+       ``sequence`` array.
+
+    Notes
+    -----
+    Due to the overhead involved in passing the functions and datasets
+    to the different cores, the functions should be very time consuming
+    to compute (of order 0.1-1s).  This is similar to the ``parallel_map``
+    function.
+    
+    An ordered iterable (i.e. tuple or list) should be used to pass multiple
+    values to the multiple functions. The lengths of the iterable funcs and
+    datasets must be equal. The corresponding funcs and datasets are passed
+    to the different cores to distribute the work in parallel. There is no
+    guarantee to the ordering of the tasks.
+
+    Examples
+    --------
+
+    In the following examples a simple set of computations, sum and std
+    deviations, are used; in reality the function is expected to be run
+    on computations that take a significant amount of time to run.
+
+    Run the computation (summing up each element of the first input array
+    and calculate the standard deviation of the second input array)
+    on a separate core and return the results (unless the machine only
+    has a single core or the parallel.numcores setting is set to 1).
+
+    >>> funcs = [np.sum, np.std]
+    >>> datasets = [np.arange(3), np.arange(4)]
+    >>> parallel_map_funcs(funcs, datasets, numcores=2)
+
+    """
+    if not numpy.iterable(funcs):
+        raise TypeError("input '%s' is not iterable" % repr(funcs))
+
+    if not numpy.iterable(datasets):
+        raise TypeError("input '%s' is not iterable" % repr(datasets))
+
+    for func in funcs:
+        if not callable(func):
+            raise TypeError("input func '%s' is not callable" % repr(func))
+
+    funcs_size = len(funcs)
+    datasets_size = len(datasets)
+    if funcs_size != datasets_size:
+        msg = "input funcs (%d) and datsets (%d) size must be same" % \
+            (funcs_size, datasets_size)
+        raise TypeError(msg)
+
+    if not _multi or datasets_size == 1 or \
+            (numcores is not None and numcores < 2):
+        return list(map(funcs[0], datasets))
+
+    if numcores is None:
+        numcores = _ncpus
+
+    # Returns a started SyncManager object which can be used for sharing
+    # objects between processes. The returned manager object corresponds
+    # to a spawned child process and has methods which will create shared
+    # objects and return corresponding proxies.
+    manager = multiprocessing.Manager()
+
+    # Create FIFO queue and lock shared objects and return proxies to them.
+    # The managers handles a server process that manages shared objects that
+    # each slave process has access to.  Bottom line -- thread-safe.
+    out_q = manager.Queue()
+    err_q = manager.Queue()
+    lock = manager.Lock()
+
+    procs = [multiprocessing.Process(target=worker,
+                                     args=(funcs[ii], ii, chunk, out_q, err_q, lock))
+             for ii, chunk in enumerate(datasets)]
     return run_tasks(procs, err_q, out_q, numcores)
 
 

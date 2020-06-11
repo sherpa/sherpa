@@ -24,6 +24,11 @@ from numpy.testing import assert_allclose, assert_equal
 from sherpa import utils
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.testing import SherpaTestCase
+from sherpa.data import Data1D
+from sherpa.models.basic import Gauss1D
+from sherpa.optmethods import LevMar
+from sherpa.stats import LeastSq
+from sherpa.fit import Fit, DataSimulFit, SimulFitModel
 
 
 class test_utils(SherpaTestCase):
@@ -283,6 +288,7 @@ def test_parallel_map(num_tasks, num_segments):
         assert_equal(result, numpy.asarray(pararesult))
 
 
+
 @pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
                                             ([], [1], [0,1,2,3,4]),
                                             ([1], [], [0,1,2,3,4]),
@@ -388,3 +394,44 @@ def test_filter_bins_unordered():
     assert len(flags) == len(expected)
     for got, exp in zip(flags, expected):
         assert got == exp
+
+def test_parallel_map_funcs1():
+    for arg in range(1, 5):
+        func = [numpy.sum]
+        funcs = arg * func
+        datas = [numpy.arange(1, 2+2*i) for i in range(arg)]
+        result = []
+        for func, data in zip(funcs, datas):
+            result.extend(numpy.asarray(list(map(func, data))))
+        assert_equal(result, utils.parallel_map_funcs(funcs, datas, arg))
+
+def test_parallel_map_funcs2():
+    def tst(ncores, sg, stat, opt):
+        sd = DataSimulFit('sd', [d, d], numcores=2)
+        f = Fit(sd, sg, stat, opt)
+        result = f.fit()
+        return result
+    def cmp_results(result, tol=1.0e-3):
+        assert(result.succeeded == True)
+        parvals = (1.7555670572301785, 1.5092728216164186, 4.893136872267538)
+        assert result.numpoints == 200
+        assert_allclose(result.parvals, parvals, rtol=tol, atol=tol)
+        
+    numpy.random.seed(0)
+    x = numpy.linspace(-5., 5., 100)
+    ampl = 5
+    pos = 1.5
+    sigma = 0.75
+    err = 0.25
+    y = ampl * numpy.exp(-0.5 * (x - pos)**2 / sigma**2)
+    y += numpy.random.normal(0., err, x.shape)
+    d = Data1D('junk', x, y)
+    g = Gauss1D()
+    opt = LevMar()
+    stat = LeastSq()
+    sg = SimulFitModel('sg', [g, g])
+
+    result = tst(1, sg, stat, opt)
+    cmp_results(result)
+    result = tst(2, sg, stat, opt)
+    cmp_results(result)

@@ -9803,7 +9803,7 @@ class Session(sherpa.ui.utils.Session):
 
         return fit_to_ids, datasets, models
 
-    def _get_bkg_fit(self, id, otherids=(), estmethod=None):
+    def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
 
         fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
 
@@ -9812,7 +9812,7 @@ class Session(sherpa.ui.utils.Session):
 
         fit_to_ids = tuple(fit_to_ids)
 
-        f = self._get_fit_obj(datasets, models, estmethod)
+        f = self._get_fit_obj(datasets, models, estmethod, numcores)
 
         return fit_to_ids, f
 
@@ -9993,15 +9993,17 @@ class Session(sherpa.ui.utils.Session):
         # validate the kwds to f.fit() so user typos do not
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache')
+        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores')
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
 
+        numcores = kwargs.get('numcores', 1)
+
         if fit_bkg:
-            ids, f = self._get_bkg_fit(id, otherids)
+            ids, f = self._get_bkg_fit(id, otherids, numcores=numcores)
         else:
-            ids, f = self._get_fit(id, otherids)
+            ids, f = self._get_fit(id, otherids, numcores=numcores)
 
         if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
             for i in ids:
