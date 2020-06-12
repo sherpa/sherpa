@@ -576,17 +576,41 @@ def test_numpy_histogram_density_vs_normed():
     assert plot.xlo == pytest.approx(expected_xlo)
     assert plot.xhi == pytest.approx(expected_xhi)
 
+
 def test_issue_822():
+
+    def cmp(a, b):
+        assert a == pytest.approx(b)
+
     ui = Session()
     ui.dataspace1d(1,100,2,dstype=Data1D)
-    g0 = sherpa.Gauss1D('g')    
+    g0 = sherpa.Gauss1D('g0')
     ui.set_model(g0)
     grid = numpy.arange(100)
     one = numpy.ones(100)
-    grid = grid + one
-    r0 = g0.regrid(grid)
+    grid0 = grid + one
+    r0 = g0.regrid(grid0)
     ui.set_model(r0)
     xtmp = ui.get_source_component_plot(r0).x
-    numpy.testing.assert_array_almost_equal(xtmp, grid)
+    cmp(xtmp, grid0)
     ytmp = ui.get_source_component_plot(r0).y
-    numpy.testing.assert_array_almost_equal(ytmp, r0(grid))
+    cmp(ytmp, r0(grid0))
+
+    g1 = sherpa.Gauss1D('g1')
+    grid1 = grid + one
+    r1 = g1.regrid(grid1)
+    ui.set_model(r0 + r1)
+    xtmp = ui.get_source_component_plot(r0 + r1).x
+    cmp(xtmp, grid1)
+    ytmp = ui.get_source_component_plot(r0 + r1).y
+    cmp(ytmp, (r0 + r1)(xtmp))
+
+    grid1 = grid + 2 * one
+    r1 = g1.regrid(grid1)
+    ui.set_model(r0 + r1)
+    with pytest.raises(ValueError) as excinfo:
+        xtmp = ui.get_source_component_plot(r0 + r1).x
+    msg = 'src models must have same high resolution grid size'
+    assert msg in str(excinfo.value)
+
+    
