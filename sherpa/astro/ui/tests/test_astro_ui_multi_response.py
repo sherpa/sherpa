@@ -328,8 +328,7 @@ def check_eval_multi_rmf():
     #
     mplot = ui.get_model_plot()
 
-    range_is_8 = np.arange(11, 968)
-    assert mplot.y[range_is_8] == pytest.approx(8)
+    assert mplot.y[11:968] == pytest.approx(8)
 
     # handle "overflow" bins
     assert mplot.y[0] == pytest.approx(84.6)
@@ -340,10 +339,9 @@ def check_eval_multi_rmf():
     is_low = [4.2, 4., 4., 4., 4., 4., 4., 4., 5.2, 7.6]
     assert mplot.y[range_is_low] == pytest.approx(is_low)
 
-    range_is_high = np.arange(968, 988)
     is_high = [6.8, 4.4, 4., 4., 4., 4., 4., 4., 4., 4.,
                4., 4., 4., 4., 4., 4., 4., 4., 4., 4.2]
-    assert mplot.y[range_is_high] == pytest.approx(is_high)
+    assert mplot.y[968:988] == pytest.approx(is_high)
 
 
 def test_eval_multi_rmf(clean_astro_ui):
@@ -369,3 +367,88 @@ def test_eval_multi_rmf_reorder(clean_astro_ui):
     ui.set_rmf(id=1, rmf=rmf1, resp_id=1)
 
     check_eval_multi_rmf()
+
+
+def check_eval_multi_arfrmf():
+    """Test that the data is handled correctly
+
+    For use by test_eval_multi_arfrmf.
+    """
+
+    mdl = ui.create_model_component('const1d', 'mdl')
+    mdl.c0 = 4
+    ui.set_source(mdl)
+
+    # The analysis setting appears to depend on how the
+    # data is set up. This is just to check it is energy.
+    #
+    d = ui.get_data()
+    assert d.units == 'energy'
+
+    # Easiest way to evaluate the model is to grab the
+    # data from plot_source / plot_model
+    #
+    # The source doesn't care about how the instrument is set
+    # up.
+    #
+    splot = ui.get_source_plot()
+    assert (splot.y == 4).all()
+
+    # Comparison to the "truth" is harder than the previous checks
+    # so just hard-code it.
+    #
+    y = ui.get_model_plot().y
+
+    assert y[0] == pytest.approx(93.06)
+    assert y[1] == pytest.approx(4.62)
+    assert y[2:479] == pytest.approx(4.4)
+    assert y[479] == pytest.approx(3.2)
+    assert y[480] == pytest.approx(0.8)
+    assert y[481:498] == pytest.approx(0.4)
+    assert y[498] == pytest.approx(1.24)
+    assert y[499] == pytest.approx(2.92)
+    assert y[500:570] == pytest.approx(3.2)
+    assert y[570] == pytest.approx(3.08)
+    assert y[571] == pytest.approx(2.84)
+    assert y[572:589] == pytest.approx(2.8)
+    assert y[589] == pytest.approx(2.92)
+    assert y[590] == pytest.approx(3.16)
+    assert y[591:968] == pytest.approx(3.2)
+    assert y[968] == pytest.approx(3.08)
+    assert y[969] == pytest.approx(2.84)
+    assert y[970:987] == pytest.approx(2.8)
+    assert y[987] == pytest.approx(2.94)
+    assert y[988] == pytest.approx(30.1)
+
+
+def test_eval_multi_arfrmf(clean_astro_ui):
+    """See also test_eval_multi_arfrmf_reorder"""
+
+    arf1, arf2, dset = make_arf2()
+    rmf1, rmf2, dset = make_rmf2()
+
+    ui.set_data(1, dset)
+    ui.set_arf(id=1, arf=arf1, resp_id=1)
+    ui.set_arf(id=1, arf=arf2, resp_id=2)
+
+    ui.set_rmf(id=1, rmf=rmf1, resp_id=1)
+    ui.set_rmf(id=1, rmf=rmf2, resp_id=2)
+
+    check_eval_multi_arfrmf()
+
+
+def test_eval_multi_arfrmf_reorder(clean_astro_ui):
+    """See also test_eval_multi_arfrmf"""
+
+    arf1, arf2, dset = make_arf2()
+    rmf1, rmf2, dset = make_rmf2()
+
+    ui.set_data(1, dset)
+
+    ui.set_rmf(id=1, rmf=rmf2, resp_id=2)
+    ui.set_rmf(id=1, rmf=rmf1, resp_id=1)
+
+    ui.set_arf(id=1, arf=arf2, resp_id=2)
+    ui.set_arf(id=1, arf=arf1, resp_id=1)
+
+    check_eval_multi_arfrmf()
