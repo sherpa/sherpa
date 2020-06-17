@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -89,11 +89,9 @@ def make_arf2():
 
 
 @pytest.mark.parametrize("id", [None, 1, "three"])
-def test_set_multi_arfs(id):
+def test_set_multi_arfs(id, clean_astro_ui):
 
     arf1, arf2, dset = make_arf2()
-
-    ui.clean()
 
     ui.set_data(id, dset)
     d = ui.get_data(id=id)
@@ -106,15 +104,27 @@ def test_set_multi_arfs(id):
     assert d.response_ids == [1, 2]
 
 
-def test_eval_multi_arf():
+@pytest.mark.parametrize("id", [None, 1, "three"])
+def test_set_multi_arfs_reorder(id, clean_astro_ui):
 
     arf1, arf2, dset = make_arf2()
 
-    ui.clean()
+    ui.set_data(id, dset)
+    d = ui.get_data(id=id)
+    assert d.response_ids == []
 
-    ui.set_data(1, dset)
-    ui.set_arf(id=1, arf=arf1, resp_id=1)
-    ui.set_arf(id=1, arf=arf2, resp_id=2)
+    ui.set_arf(id=id, arf=arf1, resp_id=2)
+    assert d.response_ids == [2]
+
+    ui.set_arf(id=id, arf=arf2, resp_id=1)
+    assert d.response_ids == [2, 1]
+
+
+def check_eval_multi_arf():
+    """Test that the data is handled correctly
+
+    For use by test_eval_multi_arf.
+    """
 
     mdl = ui.create_model_component('const1d', 'mdl')
     mdl.c0 = 4
@@ -154,3 +164,28 @@ def test_eval_multi_arf():
     assert mplot.y[0] == pytest.approx(yfirst)
     assert mplot.y[-1] == pytest.approx(ylast)
     assert mplot.y[600] == pytest.approx(ymid)
+
+
+def test_eval_multi_arf(clean_astro_ui):
+    """See also test_eval_multi_arf_reorder"""
+
+    arf1, arf2, dset = make_arf2()
+    ui.set_data(1, dset)
+    ui.set_arf(id=1, arf=arf1, resp_id=1)
+    ui.set_arf(id=1, arf=arf2, resp_id=2)
+
+    check_eval_multi_arf()
+
+
+def test_eval_multi_arf_reorder(clean_astro_ui):
+    """Change the order of setting the ARFs
+
+    Should be the same as test_eval_multi_arf
+    """
+
+    arf1, arf2, dset = make_arf2()
+    ui.set_data(1, dset)
+    ui.set_arf(id=1, arf=arf2, resp_id=2)
+    ui.set_arf(id=1, arf=arf1, resp_id=1)
+
+    check_eval_multi_arf()
