@@ -1,46 +1,33 @@
 #!/usr/bin/env bash -e
 
-# variable $miniconda is defined in a previous script (setup_conda.sh)
-
-# To build against XSPEC we need libgfortran (it is not needed if the XSPEC
-# module is not being used), so only install it here.
-#
-# At present (April 2020) this requires the use of the conda-forge
-# channel, to get libfortran (due to the way the XSPEC model library
-# was built).
-#
-libgfortranver="3.0"
-
-echo "** Requesting libgfortran=${libgfortranver}"
-conda install --yes libgfortran=${libgfortranver}
-
 ds9_base_url=http://ds9.si.edu/download/
+
+# variable $CONDA_PREFIX should be defined by conda by using conda activate (in setup_conda.sh)
+if [[ "x${CONDA_PREFIX}" == "x" ]];
+then
+    echo "Error: CONDA_PREFIX not set. This should be set for active Conda environments."
+    exit 1
+fi
+
+if [[ -z ${HEADAS} ]];
+then
+    echo "Error: HEADAS not set. Check that Xspec is installed in the Conda environment."
+    exit 1
+fi
+echo "HEADAS=${HEADAS}"
+#Set the xspec_root as the top of the Conda environment
+xspec_root=${CONDA_PREFIX}
 
 if [[ ${TRAVIS_OS_NAME} == linux ]];
 then
     # install build dependencies
     sudo apt-get update
-    sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev
+    sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
     ds9_os=ubuntu14
-    xspec_root=$miniconda/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0
-
-    # Newer versions (or conda builds) of numpy bring in a libgfortran-ng dependency, which our
-    # xspec packages cannot link against, so we need to pass a specific library name to the linker.
-    libgfortran_name=":libgfortran.so.3"
-
-    wcs_library_path=/usr/lib/x86_64-linux-gnu/
-    sed -i.orig "s|#wcslib_lib_dirs = None|wcslib_lib_dirs=${wcs_library_path}|g" setup.cfg
-
 else  # osx
     ds9_os=darwinsierra
-    xspec_root=$miniconda/envs/build/Xspec/x86_64-apple-darwin16.3.0
-    export DYLD_LIBRARY_PATH=${xspec_root}/lib
-
-    # It looks like on macs numpy does not bring in the dependency with libgfortran-ng,
-    # so we can link as usual. Also, on macOS the :libgfortran.3.dylib syntax wouldn't work.
-    libgfortran_name="gfortran"
 
     # It looks like xvfb doesn't "just work" on osx travis, so...
     sudo Xvfb :99 -ac -screen 0 1024x768x8 &
@@ -64,7 +51,7 @@ download  $ds9_base_url/$ds9_os/$xpa_tar
 
 # untar them
 start_dir=$(pwd)
-cd ${miniconda}/bin
+cd ${CONDA_PREFIX}/bin
 tar xf ${start_dir}/${ds9_tar}
 tar xf ${start_dir}/${xpa_tar}
 cd -
@@ -75,16 +62,12 @@ xspec_library_path=${xspec_root}/lib/
 xspec_include_path=${xspec_root}/include/
 
 case "${XSPECVER}" in
-  12.10.1b)
+  12.10.1*)
       xspec_version_string="12.10.1"
-      xspec_include_path="$miniconda/envs/build/include"
-      xspec_library_path="$miniconda/envs/build/lib"
       ;;
   *)
-      xspec_version_string="12.9.1"
-      sed -i.orig "s/#cfitsio_libraries/cfitsio_libraries/g" setup.cfg
-      sed -i.orig "s/#ccfits_libraries/ccfits_libraries/g" setup.cfg
-      sed -i.orig "s/#wcslib_libraries/wcslib_libraries/g" setup.cfg
+      echo "Xspec version listed currently unsuported in Travis jobs."
+      exit 1
       ;;
 esac
 
@@ -92,9 +75,10 @@ esac
 sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
 sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=${xspec_include_path}|g" setup.cfg
-sed -i.orig "s|#gfortran_libraries = gfortran|gfortran_libraries= ${libgfortran_name}|g" setup.cfg
 sed -i.orig "s|#xspec_version = 12.9.0|xspec_version = ${xspec_version_string}|g" setup.cfg
 
-
-# Set HEADAS environment variables
-export HEADAS=$miniconda/envs/build/Xspec/spectral
+#Xspec ~12.10.1n now requires fftw. This disables the fftw build from extern
+sed -i.orig "s|#fftw=local|fftw=local|g" setup.cfg
+sed -i.orig "s|#fftw-include_dirs=build/include|fftw-include_dirs=${CONDA_PREFIX}/include|g" setup.cfg
+sed -i.orig "s|#fftw-lib-dirs=build/lib|fftw-lib-dirs=${CONDA_PREFIX}/lib|g" setup.cfg
+sed -i.orig "s|#fftw-libraries=fftw3|fftw-libraries=fftw3|g" setup.cfg
