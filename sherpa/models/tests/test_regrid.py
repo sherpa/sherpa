@@ -294,7 +294,10 @@ def test_runtime_interp():
 
 def test_regrid_binaryop():
     """issue #762, Cannot regrid a composite model (BinaryOpModel)"""
-    import sherpa.astro.ui as ui
+    from sherpa.stats import LeastSq
+    from sherpa.fit import Fit
+    from sherpa.optmethods import LevMar
+
 
     class MyConst1D(RegriddableModel1D):
 
@@ -326,24 +329,34 @@ def test_regrid_binaryop():
 
 
     np.random.seed(0)
+    leastsq = LeastSq()
+    levmar = LevMar()
     mygauss = MyGauss()
     myconst = MyConst1D()
     mymodel = mygauss + myconst
     x = np.linspace(-5., 5., 5)
     err = 0.25
     y = mymodel(x) + np.random.normal(mygauss.pos.val, err, x.shape)
-    ui.load_arrays(1, x, y)
-
-    x_regrid = np.linspace(-5., 5., 25)
-    mymodel_regrid = mymodel.regrid(x_regrid)
-    ui.set_source(mymodel_regrid)
-    ui.set_stat('leastsq')
-    ui.fit()
-    result = ui.get_fit_results()
+    mygauss.counter = 0
+    myconst.counter = 0
+    data = Data1D('one', x, y)
+    fit = Fit(data, mymodel, leastsq, levmar)
+    result = fit.fit()
     assert result.numpoints == x.size
     assert result.statval < 1.0
     assert mygauss.counter == myconst.counter
-    assert (result.nfev + 4) * len(x_regrid) + len(x) == mygauss.counter
+    assert (result.nfev + 4) * x.size == mygauss.counter
+
+    mygauss.counter = 0
+    myconst.counter = 0
+    x_regrid = np.linspace(-5., 5., 25)
+    mymodel_regrid = mymodel.regrid(x_regrid)
+    fit = Fit(data, mymodel_regrid, leastsq, levmar)
+    result = fit.fit()
+    assert result.numpoints == x.size
+    assert result.statval < 1.0
+    assert mygauss.counter == myconst.counter
+    assert (result.nfev + 4) * x_regrid.size  == mygauss.counter
 
 
 class MyModel(RegriddableModel1D):
