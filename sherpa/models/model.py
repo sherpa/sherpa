@@ -557,7 +557,7 @@ class ArithmeticModel(Model):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
     def regrid_1d(self, *arrays, **kwargs):
-        valid_keys = ('interp')
+        valid_keys = ('interp', )
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
@@ -645,7 +645,7 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
     def regrid(self, *arrays, **kwargs):
         result = self.regrid_1d(*arrays, **kwargs)
         for part in self:
-            part.regrid(*arrays)
+            part.regrid(*arrays, **kwargs)
         return result
 
 
