@@ -556,16 +556,6 @@ class ArithmeticModel(Model):
     def apply(self, outer, *otherargs, **otherkwargs):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
-    def regrid_1d(self, *arrays, **kwargs):
-        valid_keys = ('interp', )
-        for key in kwargs.keys():
-            if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
-        eval_space = EvaluationSpace1D(*arrays)
-        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
-        regridder._make_and_validate_grid(arrays)
-        return regridder.apply_to(self)
-
 
 class RegriddableModel1D(ArithmeticModel):
     def regrid(self, *arrays, **kwargs):
@@ -582,7 +572,15 @@ class RegriddableModel1D(ArithmeticModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        return self.regrid_1d(*arrays, **kwargs)
+        valid_keys = ('interp', )
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise TypeError("unknown keyword argument: '%s'" % key)
+        eval_space = EvaluationSpace1D(*arrays)
+        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
+        regridder._make_and_validate_grid(arrays)
+        return regridder.apply_to(self)
+
 
 class RegriddableModel2D(ArithmeticModel):
     def regrid(self, *arrays):
@@ -603,7 +601,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
-class BinaryOpModel(CompositeModel, ArithmeticModel):
+class BinaryOpModel(CompositeModel, RegriddableModel1D):
 
     @staticmethod
     def wrapobj(obj):
@@ -641,12 +639,6 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
                              (type(self.lhs).__name__, len(lhs),
                               type(self.rhs).__name__, len(rhs)))
         return val
-
-    def regrid(self, *arrays, **kwargs):
-        result = self.regrid_1d(*arrays, **kwargs)
-        for part in self:
-            part.regrid(*arrays, **kwargs)
-        return result
 
 
 class FilterModel(CompositeModel, ArithmeticModel):
