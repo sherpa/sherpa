@@ -53,4 +53,5 @@ contains the classes that implement various models.
    template
    astro_instrument
    xspec_model
+   xspec_regrid
    xspec_utils

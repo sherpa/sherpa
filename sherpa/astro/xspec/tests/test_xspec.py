@@ -96,6 +96,7 @@ def get_xspec_models():
     # could remove valid model names, so be explicit.
     for n in ['XSModel', 'XSMultiplicativeModel', 'XSAdditiveModel',
               'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel',
+              'XSMultiplicativeRegridder',
               'XSBaseParameter', 'XSParameter']:
         remove_item(model_names, n)
 

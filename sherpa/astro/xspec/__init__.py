@@ -98,6 +98,7 @@ import numpy as np
 
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
+from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import SherpaFloat, guess_amplitude, param_apply_limits, bool_cast
@@ -107,6 +108,7 @@ from sherpa.astro.utils import get_xspec_position
 # Note that utils also imports _xspec so it will error out if it is
 # not available.
 #
+from .regrid import XSMultiplicativeRegridder
 from .utils import ModelMeta, version_at_least
 from . import _xspec
 
@@ -1207,7 +1209,11 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #  - it is easier
         #  - it allows for the user to find out what bins are bad,
         #    by directly calling the _calc function of a model
-        out = self._calc(*args, **kwargs)
+        #
+        # At the moment there is no support for kwargs, so strip them
+        # out. These can be added by the regrid support (for instance).
+        # out = self._calc(*args, **kwargs)
+        out = self._calc(*args)
 
         # This check is being skipped in the 4.8.0 release as it
         # has had un-intended consequences. It should be re-evaluated
@@ -1385,6 +1391,17 @@ class XSAdditiveModel(XSModel):
             norm = guess_amplitude(dep, *args)
             param_apply_limits(norm, self.norm, **kwargs)
 
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC additive models.
+
+        Ensure that the grids have low and high bins.
+        """
+
+        if len(arrays) == 1:
+            raise ModelErr('needsint')
+
+        return RegriddableModel1D.regrid(self, *arrays, **kwargs)
+
 
 class XSMultiplicativeModel(XSModel):
     """The base class for XSPEC multiplicative models.
@@ -1401,6 +1418,21 @@ class XSMultiplicativeModel(XSModel):
     def __init__(self, name, pars):
         self._integrate = False
         super().__init__(name, pars)
+
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC multiplicative models.
+
+        Multiplicative models are handled as integrate=False
+        even though called with lo,hi bins.
+        """
+
+        eval_space = EvaluationSpace1D(*arrays)
+        if not eval_space.is_integrated:
+            raise ModelErr('needsint')
+
+        regridder = XSMultiplicativeRegridder(eval_space, **kwargs)
+        regridder._make_and_validate_grid(arrays)
+        return regridder.apply_to(self)
 
 
 class XSConvolutionKernel(XSModel):
