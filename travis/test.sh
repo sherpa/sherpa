@@ -22,7 +22,7 @@ smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 
 # Install coverage tooling and run tests using setuptools
 if [ ${TEST} == submodule ]; then
-    conda install pytest-cov; python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
+    conda install -yq pytest-cov; python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
 fi
 
 # Run smoke test
