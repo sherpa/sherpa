@@ -7169,8 +7169,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set is already grouped.
 
         See Also
         --------
@@ -7257,17 +7255,8 @@ class Session(sherpa.ui.utils.Session):
 
             # Now check if data is already grouped, and send error message
             # if so
-            if (data.grouped is True):
-                raise DataErr(
-                    'groupset', 'data set', str(self._fix_id(id)), 'True')
-        else:
-            # Just grouping one particular background here
-            if (data.grouped is True):
-                raise DataErr(
-                    'groupset', 'background', str(self._fix_id(bkg_id)), 'True')
-
-        # If we get here, checks showed data not grouped, so set group flag
-        data.group()
+        if not (data.grouped is True):
+            data.group()
 
     def set_grouping(self, id, val=None, bkg_id=None):
         """Apply a set of grouping flags to a PHA data set.
@@ -7635,8 +7624,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set is not grouped.
 
         See Also
         --------
@@ -7705,17 +7692,8 @@ class Session(sherpa.ui.utils.Session):
 
             # Now check if data is already ungrouped, and send error message
             # if so
-            if (data.grouped is False):
-                raise DataErr(
-                    'groupset', 'data set', str(self._fix_id(id)), 'False')
-        else:
-            if (data.grouped is False):
-                # Just ungrouping one particular background here
-                raise DataErr(
-                    'groupset', 'background', str(self._fix_id(bkg_id)), 'False')
-
-        # If we get here, checks showed data grouped, so set ungroup flag
-        data.ungroup()
+        if (data.grouped is True):
+            data.ungroup()
 
     # DOC-TODO: need to document somewhere that this ignores existing
     # quality flags and how to use tabStops to include
@@ -8376,8 +8354,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set is already subtracted.
 
         See Also
         --------
@@ -8441,10 +8417,8 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_data(overplot=True)
 
         """
-        if (self._get_pha_data(id).subtracted is True):
-            raise DataErr(
-                'subtractset', 'data set', str(self._fix_id(id)), 'True')
-        self._get_pha_data(id).subtract()
+        if (self._get_pha_data(id).subtracted is False):
+            self._get_pha_data(id).subtract()
 
     def unsubtract(self, id=None):
         """Undo any background subtraction for the data set.
@@ -8466,8 +8440,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set does not have its background subtracted.
 
         See Also
         --------
@@ -8496,10 +8468,8 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
-        if (self._get_pha_data(id).subtracted is False):
-            raise DataErr(
-                'subtractset', 'data set', str(self._fix_id(id)), 'False')
-        self._get_pha_data(id).unsubtract()
+        if (self._get_pha_data(id).subtracted is True):
+            self._get_pha_data(id).unsubtract()
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
