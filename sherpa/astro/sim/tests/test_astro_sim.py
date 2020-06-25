@@ -19,8 +19,10 @@
 #
 
 import logging
-from sherpa.utils.testing import SherpaTestCase, requires_data, \
-    requires_fits, requires_xspec
+
+import pytest
+
+from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import sim
 
 from sherpa.astro.instrument import Response1D
@@ -32,88 +34,87 @@ from sherpa.estmethods import Covariance
 logger = logging.getLogger('sherpa')
 
 
-class test_sim(SherpaTestCase):
+@pytest.fixture
+def setup(make_data_path):
+    from sherpa.astro.io import read_pha
+    from sherpa.astro.xspec import XSwabs, XSpowerlaw
 
-    def setUp(self):
-        from sherpa.astro.io import read_pha
-        from sherpa.astro.xspec import XSwabs, XSpowerlaw
-        # self.startdir = os.getcwd()
-        self.old_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.CRITICAL)
+    old_level = logger.getEffectiveLevel()
+    logger.setLevel(logging.CRITICAL)
 
-        pha = self.make_path("refake_0934_1_21_1e4.fak")
-        # rmf = self.make_path("ccdid7_default.rmf")
-        # arf = self.make_path("quiet_0934.arf")
+    pha = make_data_path("refake_0934_1_21_1e4.fak")
 
-        self.simarf = self.make_path("aref_sample.fits")
-        self.pcaarf = self.make_path("aref_Cedge.fits")
+    simarf = make_data_path("aref_sample.fits")
+    pcaarf = make_data_path("aref_Cedge.fits")
 
-        data = read_pha(pha)
-        data.ignore(None, 0.3)
-        data.ignore(7.0, None)
+    data = read_pha(pha)
+    data.ignore(None, 0.3)
+    data.ignore(7.0, None)
 
-        rsp = Response1D(data)
-        self.abs1 = XSwabs('abs1')
-        self.p1 = XSpowerlaw('p1')
-        model = rsp(self.abs1 * self.p1)
+    rsp = Response1D(data)
+    abs1 = XSwabs('abs1')
+    p1 = XSpowerlaw('p1')
+    model = rsp(abs1 * p1)
 
-        self.fit = Fit(data, model, CStat(), NelderMead(), Covariance())
+    abs1.nh = 0.092886
+    p1.phoindex = 0.994544
+    p1.norm = 9.26369
 
-    def tearDown(self):
-        # os.chdir(self.startdir)
-        if hasattr(self, 'old_level'):
-            logger.setLevel(self.old_level)
+    fit = Fit(data, model, CStat(), NelderMead(), Covariance())
 
-    @requires_xspec
-    @requires_data
-    @requires_fits
-    def test_pragbayes_simarf(self):
-        mcmc = sim.MCMC()
+    yield {'simarf': simarf,
+           'pcaarf': pcaarf,
+           'fit': fit}
 
-        self.abs1.nh = 0.092886
-        self.p1.phoindex = 0.994544
-        self.p1.norm = 9.26369
+    # Reset the logger
+    logger.setLevel(old_level)
 
-        mcmc.set_sampler("PragBayes")
-        mcmc.set_sampler_opt("simarf", self.simarf)
-        mcmc.set_sampler_opt("p_M", 0.5)
-        mcmc.set_sampler_opt("nsubiter", 7)
 
-        covar_results = self.fit.est_errors()
-        cov = covar_results.extra_output
+@requires_xspec
+@requires_data
+@requires_fits
+def test_pragbayes_simarf(setup):
+    fit = setup['fit']
 
-        niter = 10
-        stats, accept, params = mcmc.get_draws(self.fit, cov, niter=niter)
-        # try:
-        #     assert (covar_results.parmaxes < params.std(1)).all()
-        # except AssertionError:
-        #     print 'covar: ', str(covar_results.parmaxes)
-        #     print 'param: ', str(params.std(1))
-        #     raise
+    mcmc = sim.MCMC()
+    mcmc.set_sampler("PragBayes")
+    mcmc.set_sampler_opt("simarf", setup['simarf'])
+    mcmc.set_sampler_opt("p_M", 0.5)
+    mcmc.set_sampler_opt("nsubiter", 7)
 
-    @requires_xspec
-    @requires_data
-    @requires_fits
-    def test_pragbayes_pcaarf(self):
-        mcmc = sim.MCMC()
+    covar_results = fit.est_errors()
+    cov = covar_results.extra_output
 
-        self.abs1.nh = 0.092886
-        self.p1.phoindex = 0.994544
-        self.p1.norm = 9.26369
+    niter = 10
+    stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+    # try:
+    #     assert (covar_results.parmaxes < params.std(1)).all()
+    # except AssertionError:
+    #     print 'covar: ', str(covar_results.parmaxes)
+    #     print 'param: ', str(params.std(1))
+    #     raise
 
-        mcmc.set_sampler("pragBayes")
-        mcmc.set_sampler_opt("simarf", self.pcaarf)
-        mcmc.set_sampler_opt("p_M", 0.5)
-        mcmc.set_sampler_opt("nsubiter", 5)
 
-        covar_results = self.fit.est_errors()
-        cov = covar_results.extra_output
+@requires_xspec
+@requires_data
+@requires_fits
+def test_pragbayes_pcaarf(setup):
+    fit = setup['fit']
 
-        niter = 10
-        stats, accept, params = mcmc.get_draws(self.fit, cov, niter=niter)
-        # try:
-        #     assert (covar_results.parmaxes < params.std(1)).all()
-        # except AssertionError:
-        #     print 'covar: ', str(covar_results.parmaxes)
-        #     print 'param: ', str(params.std(1))
-        #     raise
+    mcmc = sim.MCMC()
+    mcmc.set_sampler("pragBayes")
+    mcmc.set_sampler_opt("simarf", setup['pcaarf'])
+    mcmc.set_sampler_opt("p_M", 0.5)
+    mcmc.set_sampler_opt("nsubiter", 5)
+
+    covar_results = fit.est_errors()
+    cov = covar_results.extra_output
+
+    niter = 10
+    stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+    # try:
+    #     assert (covar_results.parmaxes < params.std(1)).all()
+    # except AssertionError:
+    #     print 'covar: ', str(covar_results.parmaxes)
+    #     print 'param: ', str(params.std(1))
+    #     raise
