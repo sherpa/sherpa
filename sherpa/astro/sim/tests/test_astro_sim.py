@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2018, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -33,8 +34,6 @@ logger = logging.getLogger('sherpa')
 
 class test_sim(SherpaTestCase):
 
-    @requires_fits
-    @requires_xspec
     def setUp(self):
         from sherpa.astro.io import read_pha
         from sherpa.astro.xspec import XSwabs, XSpowerlaw
@@ -67,6 +66,7 @@ class test_sim(SherpaTestCase):
 
     @requires_xspec
     @requires_data
+    @requires_fits
     def test_pragbayes_simarf(self):
         mcmc = sim.MCMC()
 
@@ -93,6 +93,7 @@ class test_sim(SherpaTestCase):
 
     @requires_xspec
     @requires_data
+    @requires_fits
     def test_pragbayes_pcaarf(self):
         mcmc = sim.MCMC()
 
