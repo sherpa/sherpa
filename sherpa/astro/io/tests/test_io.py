@@ -56,3 +56,22 @@ def test_warnings_are_gone_pha(make_data_path):
     with NamedTemporaryFile() as f:
         ui.save_data(1, f.name, ascii=False, clobber=True)
 
+        
+@requires_fits
+@requires_data
+def test_scaling_staterr(make_data_path):
+    '''Regression test for https://github.com/sherpa/sherpa/issues/800
+
+    Notes
+    -----
+    Test files wehre made with
+    dmtcalc sherpa-test-data/sherpatest/source.pi sherpa-test-data/sherpatest/source_edit.pi expression="stat_err=stat_err/exposure"
+    dmcopy "sherpa-test-data/sherpatest/source_edit.pi[cols channel,pi,RATE=count_rate,stat_err]" sherpa-test-data/sherpatest/source_rate.pi clobber=yes
+
+    '''
+    ui.load_pha("phacounts", make_data_path("source.pi"), use_errors=True)
+    ui.load_pha("pharate", make_data_path("source_rate.pi"), use_errors=True)
+    assert np.allclose(ui.get_data("phacounts").counts,
+                        ui.get_data("pharate").counts)
+    assert np.allclose(ui.get_data("phacounts").staterror,
+                        ui.get_data("pharate").staterror)
