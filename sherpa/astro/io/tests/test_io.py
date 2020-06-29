@@ -24,11 +24,6 @@ from sherpa.astro import ui
 
 from tempfile import NamedTemporaryFile
 
-@pytest.fixture
-def setup(make_data_path):
-    ui.clean()
-
-
 @requires_data
 @requires_fits
 @requires_xspec
@@ -59,19 +54,39 @@ def test_warnings_are_gone_pha(make_data_path):
         
 @requires_fits
 @requires_data
-def test_scaling_staterr(make_data_path):
+@pytest.mark.parametrize("use_errors", [True, False])
+def test_scaling_staterr(make_data_path, use_errors):
     '''Regression test for https://github.com/sherpa/sherpa/issues/800
 
     Notes
     -----
-    Test files wehre made with
+    Test files are made with
     dmtcalc sherpa-test-data/sherpatest/source.pi sherpa-test-data/sherpatest/source_edit.pi expression="stat_err=stat_err/exposure"
     dmcopy "sherpa-test-data/sherpatest/source_edit.pi[cols channel,pi,RATE=count_rate,stat_err]" sherpa-test-data/sherpatest/source_rate.pi clobber=yes
 
     '''
-    ui.load_pha("phacounts", make_data_path("source.pi"), use_errors=True)
-    ui.load_pha("pharate", make_data_path("source_rate.pi"), use_errors=True)
-    assert np.allclose(ui.get_data("phacounts").counts,
-                        ui.get_data("pharate").counts)
-    assert np.allclose(ui.get_data("phacounts").staterror,
-                        ui.get_data("pharate").staterror)
+    ui.load_pha("phacounts", make_data_path("source.pi"),
+                use_errors=use_errors)
+    ui.load_pha("pharate", make_data_path("source_rate.pi"),
+                use_errors=use_errors)
+    assert np.all(ui.get_data("phacounts").counts == 
+                  pytest.approx(ui.get_data("pharate").counts))
+    if use_errors is True: 
+        assert np.all(ui.get_data("phacounts").staterror == 
+                      pytest.approx(ui.get_data("pharate").staterror))
+    else:
+        assert ui.get_data("phacounts").staterror is None
+        assert ui.get_data("pharate").staterror is None
+    
+    for n in ['phacounts', 'pharate']:
+        ui.load_arf(n, make_data_path("source.arf"))
+        ui.load_rmf(n, make_data_path("source.rmf"))
+        ui.group_bins(n, 16)
+    ui.set_analysis('energy')
+    ui.ignore(None, 3.)
+    if use_errors is True:
+        assert np.all(ui.get_data("phacounts").get_error() == 
+                  pytest.approx(ui.get_data("pharate").get_error()))
+    else:
+        assert ui.get_data("phacounts").get_error() is None
+        assert ui.get_data("pharate").get_error() is None
