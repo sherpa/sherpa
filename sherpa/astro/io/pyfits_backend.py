@@ -893,9 +893,9 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             staterror = _try_vec(hdu, 'STAT_ERR', num)
             if numpy.equal(counts, None).any():  # _try_vec can return an array of Nones
                 counts = _require_vec(hdu, 'RATE', num,
-                                      fix_type=True) * data['exposure']
+                                      fix_type=True) * exposure
                 if not numpy.equal(staterror, None).any():
-                    staterror *= data['exposure']
+                    staterror *= exposure
 
             syserror = _try_vec(hdu, 'SYS_ERR', num)
             background_up = _try_vec(hdu, 'BACKGROUND_UP', num, fix_type=True)
