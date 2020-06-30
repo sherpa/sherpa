@@ -26,14 +26,18 @@ be used with other data classes.
 
 """
 
+import logging
+
 import numpy
 import numpy.random
-import logging
+
 from sherpa.astro.utils import calc_energy_flux
 from sherpa.utils import parallel_map
 from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
+from sherpa.models.model import SimulFitModel
+
 
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
@@ -358,7 +362,8 @@ def decompose(mdl):
     ----------
     mdl : sherpa.models.model.ArithmeticModel instance
         The model expression. This can be a single component
-        or a combination.
+        or a combination, and can also be a SimulFitModel
+        instance.
 
     Returns
     -------
@@ -372,6 +377,18 @@ def decompose(mdl):
     # so we just drop the sub-expressions.
     #
     out = set([])
+
+    if isinstance(mdl, SimulFitModel):
+        # This is messier than I'd like
+        for mcpt in mdl:
+            for cpt in mcpt:
+                if hasattr(cpt, 'parts'):
+                    continue
+
+                out.add(cpt)
+
+        return out
+
     for cpt in mdl:
         if hasattr(cpt, 'parts'):
             continue
@@ -398,12 +415,15 @@ def sample_flux(fit, data, src,
         the fit.model expression (to allow for calculating the flux of
         a model component), and the fit.data object matches the data
         object. The fit.model argument is expected to include instrumental
-        models (for PHA data sets).
+        models (for PHA data sets). These objects can represent
+        simultaneous fits (e.g. sherpa.data.DataSimulFit and
+        sherpa.models.model.SimulFitModel).
     data : sherpa.data.Data subclass
-        The data object to use.
+        The data object to use. This is not a DataSimulFit instance.
     src : sherpa.models.Arithmetic instance
         The source model (without instrument response for PHA data) that
-        is used for calculating the flux.
+        is used for calculating the flux. This is not a SimulFitModel
+        instance.
     method : function, optional
         How to calculate the flux: assumed to be one of calc_energy_flux
         or calc_photon_flux
@@ -459,7 +479,9 @@ def sample_flux(fit, data, src,
     if num <= 0:
         raise ArgumentErr('bad', 'num', 'must be a positive integer')
 
-    # Ensure we have free parameters
+    # Ensure we have free parameters. Note that this uses the
+    # 'src' model, not 'fit.model'.
+    #
     npar = len(src.thawedpars)
     if npar == 0:
         raise FitErr('nothawedpar')
@@ -491,7 +513,8 @@ def sample_flux(fit, data, src,
         samples = _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num)
 
     # Ensure that samples falls within the hard limits by
-    # clipping the values.
+    # clipping the values. Values outside the hard limit are
+    # set to the hard limit.
     #
     hardmins = src.thawedparhardmins
     hardmaxs = src.thawedparhardmaxes

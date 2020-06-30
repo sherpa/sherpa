@@ -13279,14 +13279,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
+        if bkg_id is None:
+            data = self.get_data(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
 
         if model is None:
-            if bkg_id is not None:
-                data = self.get_bkg(id, bkg_id)
-                model = self.get_bkg_source(id, bkg_id)
-            else:
+            if bkg_id is None:
                 model = self.get_source(id)
+            else:
+                model = self.get_bkg_source(id, bkg_id)
         else:
             _check_type(model, sherpa.models.Model, 'model',
                         'a model object')
@@ -13397,14 +13399,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
+        if bkg_id is None:
+            data = self.get_data(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
 
         if model is None:
-            if bkg_id is not None:
-                data = self.get_bkg(id, bkg_id)
-                model = self.get_bkg_source(id, bkg_id)
-            else:
+            if bkg_id is None:
                 model = self.get_source(id)
+            else:
+                model = self.get_bkg_source(id, bkg_id)
         else:
             _check_type(model, sherpa.models.Model, 'model',
                         'a model object')

@@ -509,6 +509,61 @@ def test_calc_flux_pha_unabsorbed(make_data_path, clean_astro_ui):
     assert eflux_scale == pytest.approx(0.8)
 
 
+@requires_data
+@requires_fits
+def test_calc_flux_bkg(make_data_path, clean_astro_ui):
+    """Basic test of a background dataset.
+
+    This does not test all combinations, as it is expected that
+    they can be checked with existing tests.
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    # ignore low-energy so do not need XSPEC
+    ui.ungroup()
+    ui.notice(0.8, 7)
+
+    ui.set_stat('cstat')
+
+    spl = ui.create_model_component('powlaw1d', 'spl')
+    bpl = ui.create_model_component('powlaw1d', 'bpl')
+
+    spl.gamma = 1.91
+    spl.ampl = 1.85e-4
+    bpl.gamma = 0.73
+    bpl.ampl = 9.27e-6
+
+    ui.set_source(spl)
+    ui.set_bkg_source(bpl)
+
+    ui.fit()
+
+    # just to check the fit hasn't significantly moved
+    check = ui.calc_stat()
+    assert check == pytest.approx(775.6453986960231)
+
+    # These should be the same, by construction
+    sflux_all = ui.calc_energy_flux(0.5, 7)
+    sflux_spl = ui.calc_energy_flux(0.5, 7, model=spl)
+    assert sflux_all == sflux_spl  # do not use pytest.approx
+
+    bflux_all = ui.calc_energy_flux(0.5, 7, bkg_id=1)
+    bflux_bpl = ui.calc_energy_flux(0.5, 7, bkg_id=1, model=bpl)
+    assert bflux_all == bflux_bpl  # do not use pytest.approx
+
+    # check expected flux (regression test).
+    #
+    got = np.log10(sflux_spl)
+    exp = np.log10(8.296745792997814e-13)
+    assert got == pytest.approx(exp)
+
+    got = np.log10(bflux_bpl)
+    exp = np.log10(1.342566520894761e-13)
+    assert got == pytest.approx(exp)
+
+
 def setup_sample(id, make_data_path, fit=True):
     """Set up the given dataset for a sample*flux call
 
@@ -1251,3 +1306,80 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
                  scales=cmat)
     assert ans.shape == (2, 3)
     validate()
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("id", [None, "foo"])
+def test_sample_foo_flux_bkg(id, make_data_path, clean_astro_ui):
+    """Basic test when calculating flux with a background model.
+    """
+
+    infile = make_data_path('3c273.pi')
+    if id is None:
+        ui.load_pha(infile)
+        ui.ungroup()
+    else:
+        ui.load_pha(id, infile)
+        ui.ungroup(id)
+
+    ui.notice(0.5, 7)
+    ui.set_stat('cstat')
+    ui.set_method('levmar')  # use levmar even with cstat for this case
+
+    gal = ui.create_model_component('xswabs', 'gal')
+    spl = ui.create_model_component('powlaw1d', 'spl')
+    bpl = ui.create_model_component('powlaw1d', 'bpl')
+    mdl = gal * spl
+
+    gal.nh = 0.029
+    spl.gamma = 1.96
+    spl.ampl = 1.9e-4
+    bpl.gamma = 0.70
+    bpl.ampl = 9.0e-6
+
+    if id is None:
+        ui.set_source(mdl)
+        ui.set_bkg_source(bpl)
+        ui.fit()
+    else:
+        ui.set_source(id, mdl)
+        ui.set_bkg_source(id, bpl)
+        ui.fit(id)
+
+    # check bkg fit is sensible
+    res = ui.get_fit_results()
+    assert res.numpoints == 892
+    assert res.dof == 887
+    assert res.statval == pytest.approx(803.208946605444)
+    assert res.parnames == ('gal.nH', 'spl.gamma', 'spl.ampl', 'bpl.gamma', 'bpl.ampl')
+    assert res.succeeded
+
+    # Check how many parameters are returned:
+    #   aflux: nh, source gamma, source ampl
+    #   bflux: bgnd gamma, bgnd ampl
+    #
+    niter = 10
+    aflux = ui.sample_energy_flux(0.5, 7, id=id, num=niter)
+    assert aflux.shape == (niter, 4)
+
+    bflux = ui.sample_energy_flux(0.5, 7, id=id, bkg_id=1, num=niter)
+    assert bflux.shape == (niter, 3)
+
+    # expect source flux to be ~8e-13 and background ~1e-13, but it's
+    # random so how easy is this to check. The errors should be much
+    # smaller on amid than bmid, so chose a value closer to 8e-13
+    # than 1e-13 as the check.
+    #
+    amid = np.median(aflux[:, 0])
+    bmid = np.median(bflux[:, 0])
+    assert amid > 6e-13
+    assert bmid < 6e-13
+
+    # check the gamma values: source~2, bgnd~0.7
+    #
+    amid = np.median(aflux[:, 2])
+    bmid = np.median(bflux[:, 1])
+    assert amid > 1.5
+    assert bmid < 1.5
