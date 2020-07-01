@@ -1383,3 +1383,122 @@ def test_sample_foo_flux_bkg(id, make_data_path, clean_astro_ui):
     bmid = np.median(bflux[:, 1])
     assert amid > 1.5
     assert bmid < 1.5
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
+    """Basic test when calculating flux with multiple datasets
+    and, for completeness, fitting the background.
+    """
+
+    # use xswabs as it is simple and unlikely to change
+    # (rather than one of the newwe absorption models)
+    #
+    gal = ui.create_model_component('xswabs', 'gal')
+    spl = ui.create_model_component('powlaw1d', 'spl')
+    bpl = ui.create_model_component('powlaw1d', 'bpl')
+    mdl = gal * spl
+
+    gal.nh = 0.04
+    gal.nh.freeze()
+
+    spl.gamma = 1.77
+    spl.ampl = 7.3e-7
+    bpl.gamma = 1.42
+    bpl.ampl = 1.0e-6
+
+    # read in obs1, obs3, obs4
+    for did in range(1, 5):
+        if did == 2:
+            continue
+
+        # mix and match integer and string ids
+        if did == 3:
+            did = str(did)
+
+        ui.load_pha(did, make_data_path('obs{}.pi'.format(did)))
+        ui.set_source(did, mdl)
+        ui.set_bkg_source(did, bpl)
+
+    ui.notice(0.5, 7)
+
+    ui.set_stat('cstat')
+    ui.set_method('levmar')  # use levmar even with cstat for this case
+
+    ui.fit()
+
+    # check fit is sensible
+    res = ui.get_fit_results()
+    assert res.numpoints == 2676
+    assert res.dof == 2672
+    assert res.statval == pytest.approx(1038.2827482111202)
+    assert res.parnames == ('spl.gamma', 'spl.ampl', 'bpl.gamma', 'bpl.ampl')
+    assert res.datasets == (1, '3', 4)
+    assert res.succeeded
+
+    niter = 100
+
+    # Fitting to all datasets should return similar errors (not identical
+    # because random, and the energy grids could be different, but aren't
+    # in this dataset).
+    #
+    s1 = ui.sample_energy_flux(lo=0.5, hi=7, id=1, otherids=('3', 4),
+                               model=spl, num=niter)
+    b1 = ui.sample_energy_flux(lo=0.5, hi=7, id=1, otherids=('3', 4),
+                               bkg_id=1, model=bpl, num=niter)
+
+    s3 = ui.sample_energy_flux(lo=0.5, hi=7, id='3', otherids=(1, 4),
+                               model=spl, num=niter)
+    b3 = ui.sample_energy_flux(lo=0.5, hi=7, id='3', otherids=(1, 4),
+                               bkg_id=1, model=bpl, num=niter)
+
+    assert s1.shape == (niter, 3)
+    assert b1.shape == (niter, 3)
+
+    assert s3.shape == (niter, 3)
+    assert b3.shape == (niter, 3)
+
+    # Compare the median and std dev of the gamma parameter (as of order 1)
+    # for both the source and background measurements, as they should be
+    # similar. The tolerance for the check is quite large, which reduces
+    # the use of this test.
+    #
+    y1 = np.median(s1[:, 1])
+    y3 = np.median(s3[:, 1])
+    assert y1 == pytest.approx(y3, rel=0.1), 'source gamma: median'
+    assert y3 == pytest.approx(res.parvals[0], rel=0.1)
+
+    y1 = np.median(b1[:, 1])
+    y3 = np.median(b3[:, 1])
+    assert y1 == pytest.approx(y3, rel=0.1), 'background gamma: median'
+    assert y3 == pytest.approx(res.parvals[2], rel=0.1)
+
+    y1 = np.std(s1[:, 1])
+    y3 = np.std(s3[:, 1])
+    assert y1 == pytest.approx(y3, rel=0.2), 'source gamma: std'
+
+    y1 = np.std(b1[:, 1])
+    y3 = np.std(b3[:, 1])
+    assert y1 == pytest.approx(y3, rel=0.2), 'background gamma: std'
+
+    # If we compare to a single run we should see larger errors
+    # for the single-run case.
+    #
+    s4 = ui.sample_energy_flux(lo=0.5, hi=7, id=4, otherids=(),
+                               model=spl, num=niter)
+    b4 = ui.sample_energy_flux(lo=0.5, hi=7, id=4, otherids=(),
+                               bkg_id=1, model=bpl, num=niter)
+
+    assert s4.shape == (niter, 3)
+    assert b4.shape == (niter, 3)
+
+    # These checks are not very informative
+    y4 = np.std(s4[:, 1])
+    y3 = np.std(s3[:, 1])
+    assert y4 > y3, 'source gamma: multi to one'
+
+    y4 = np.std(b4[:, 1])
+    y3 = np.std(b3[:, 1])
+    assert y4 > y3, 'background gamma: multi to one'

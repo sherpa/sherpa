@@ -12492,7 +12492,8 @@ class Session(sherpa.ui.utils.Session):
 
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
-                           numcores=None, bkg_id=None, model=None):
+                           numcores=None, bkg_id=None, model=None,
+                           otherids=()):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12502,7 +12503,7 @@ class Session(sherpa.ui.utils.Session):
         The units for the flux are as returned by `calc_photon_flux`.
 
         .. versionchanged:: 4.12.2
-           The model parameter was added.
+           The model and otherids parameters were added.
 
         Parameters
         ----------
@@ -12550,6 +12551,11 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
+        otherids: list of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from. The default
+           value is () which indicates that only a single dataset
+           is used.
 
         Returns
         -------
@@ -12609,6 +12615,12 @@ class Session(sherpa.ui.utils.Session):
 
         >>> vals = sample_photon_flux(0.5, 7, model=pl, num=1000, correlated=True)
 
+        Calculate the 2-10 keV flux for the pl model using a joint fit
+        to the datasets 1, 2, 3, and 4:
+
+        >>> vals = sample_photon_flux(2, 10, model=pl, id=1, otherids=(2,3,4),
+        ...                           num=1000)
+
         Use the given parameter errors for sampling the parameter distribution.
         The fit must have three free parameters, and each parameter is
         sampled independently (in this case parerrs gives the sigma
@@ -12643,7 +12655,7 @@ class Session(sherpa.ui.utils.Session):
         ...                            model=pl, scales=1.1 * cmat)
 
         """
-        ids, fit = self._get_fit(id)
+        ids, fit = self._get_fit(id, otherids=otherids)
 
         if bkg_id is None:
             data = self.get_data(id)
@@ -12665,7 +12677,8 @@ class Session(sherpa.ui.utils.Session):
 
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
-                           numcores=None, bkg_id=None, model=None):
+                           numcores=None, bkg_id=None, model=None,
+                           otherids=()):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12675,7 +12688,7 @@ class Session(sherpa.ui.utils.Session):
         The units for the flux are as returned by `calc_energy_flux`.
 
         .. versionchanged:: 4.12.2
-           The model parameter was added.
+           The model and otherids parameters were added.
 
         Parameters
         ----------
@@ -12723,6 +12736,11 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
+        otherids: list of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from. The default
+           value is () which indicates that only a single dataset
+           is used.
 
         Returns
         -------
@@ -12782,6 +12800,12 @@ class Session(sherpa.ui.utils.Session):
 
         >>> vals = sample_energy_flux(0.5, 7, model=pl, num=1000, correlated=True)
 
+        Calculate the 2-10 keV flux for the pl model using a joint fit
+        to the datasets 1, 2, 3, and 4:
+
+        >>> vals = sample_energy_flux(2, 10, model=pl, id=1, otherids=(2,3,4),
+        ...                           num=1000)
+
         Use the given parameter errors for sampling the parameter distribution.
         The fit must have three free parameters, and each parameter is
         sampled independently (in this case parerrs gives the sigma
@@ -12816,7 +12840,7 @@ class Session(sherpa.ui.utils.Session):
         ...                            model=pl, scales=1.1 * cmat)
 
         """
-        ids, fit = self._get_fit(id)
+        ids, fit = self._get_fit(id, otherids=otherids)
 
         if bkg_id is None:
             data = self.get_data(id)
@@ -12831,8 +12855,11 @@ class Session(sherpa.ui.utils.Session):
 
         return sherpa.astro.flux.sample_flux(fit, data, model,
                                              method=sherpa.astro.utils.calc_energy_flux,
-                                             correlated=correlated, num=num, lo=lo, hi=hi,
-                                             numcores=numcores, samples=scales)
+                                             correlated=correlated,
+                                             num=num, lo=lo, hi=hi,
+                                             numcores=numcores,
+                                             samples=scales)
+
 
     # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,

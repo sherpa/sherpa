@@ -311,8 +311,7 @@ def _sample_flux_get_samples(fit, src, correlated, num):
         response information. There must be at least one thawed parameter
         in this model. The number of free parameters in src is sfree.
     correlated : bool
-        Are the parameters assumed to be correlated or not? If correlated
-        is True then scales must be 2D.
+        Are the parameters assumed to be correlated or not?
     num : int
         Tne number of samples to return. This must be 1 or greater.
 
