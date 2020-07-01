@@ -1659,6 +1659,78 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
 @requires_fits
 @requires_data
 @requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
+                                  make_data_path, clean_astro_ui):
+    """Can we call plot_energy/photon_flux with multiple datasets.
+    """
+
+    ui.load_pha(1, make_data_path('obs1.pi'))
+    ui.load_pha(3, make_data_path('obs1.pi'))
+
+    ui.notice(0.5, 7)
+
+    mdl = ui.xswabs.gal * ui.powlaw1d.pl
+    gal = ui.get_model_component('gal')
+    pl = ui.get_model_component('pl')
+    gal.nh = 0.04
+    gal.nh.freeze()
+    pl.gamma = 1.93
+    pl.ampl = 1.74e-4
+
+    ui.set_source(1, mdl)
+    ui.set_source(3, mdl)
+
+    ui.set_stat('cstat')
+
+    # Ensure near the minimum
+    ui.fit()
+
+    n = 200
+
+    # Use all datasets since id=None
+    plotfunc(lo=0.5, hi=7, num=n, bins=19, correlated=False)
+    res = getfunc(recalc=False)
+    assert res.y.shape == (20,)
+    avals = res.modelvals.copy()
+
+    # Use all datasets as explicit
+    plotfunc(lo=0.5, hi=7, num=n, bins=19, correlated=False,
+             id=1, otherids=(3,))
+    res = getfunc(recalc=False)
+    assert res.y.shape == (20,)
+    bvals = res.modelvals.copy()
+
+    # Use only dataset 1 (the shorter dataset)
+    plotfunc(lo=0.5, hi=7, num=n, bins=19, correlated=False,
+             id=1)
+    res = getfunc(recalc=False)
+    assert res.y.shape == (20,)
+    cvals = res.modelvals.copy()
+
+    assert avals.shape == (n, 2)
+    assert bvals.shape == (n, 2)
+    assert cvals.shape == (n, 2)
+
+    # Let's just check the standard deviation of the gamma parameter,
+    # which should be similar for avals and bvals, and larger for cvals.
+    #
+    # This is a probabilistic test.
+    #
+    s1 = np.std(avals[:, 0])
+    s2 = np.std(bvals[:, 0])
+    s3 = np.std(cvals[:, 0])
+    assert s1 < 0.2
+    assert s2 < 0.2
+    assert s3 > 0.2
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
 @pytest.mark.parametrize("getfunc,ratio",
                          [(ui.get_energy_flux_hist, 1.13),
                           (ui.get_photon_flux_hist, 1.17)])

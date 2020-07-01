@@ -10772,23 +10772,25 @@ class Session(sherpa.ui.utils.Session):
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores, bkg_id,
-                                  scales=None, model=None):
-        dist = self.sample_energy_flux(lo, hi, id=id, num=num, scales=scales, model=model,
+                                  scales=None, model=None, otherids=()):
+        dist = self.sample_energy_flux(lo, hi, id=id, otherids=otherids,
+                                       num=num, scales=scales, model=model,
                                        correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores, bkg_id,
-                                  scales=None, model=None):
-        dist = self.sample_photon_flux(lo, hi, id=id, num=num, scales=scales, model=model,
+                                  scales=None, model=None, otherids=()):
+        dist = self.sample_photon_flux(lo, hi, id=id, otherids=otherids,
+                                       num=num, scales=scales, model=model,
                                        correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, recalc=True):
+                             scales=None, model=None, otherids=(), recalc=True):
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
@@ -10798,7 +10800,7 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model parameter has been added.
+           model and otherids parameters have been added.
 
         Parameters
         ----------
@@ -10848,6 +10850,11 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
+        otherids: list of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from. The default
+           value is () which indicates that only a single dataset
+           is used.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -10896,12 +10903,13 @@ class Session(sherpa.ui.utils.Session):
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
+                                           otherids=otherids,
                                            numcores=numcores, bkg_id=bkg_id)
         return self._energyfluxplot
 
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, recalc=True):
+                             scales=None, model=None, otherids=(), recalc=True):
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
@@ -10911,7 +10919,7 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model parameter has been added.
+           model and otherids parameters have been added.
 
         Parameters
         ----------
@@ -10961,6 +10969,11 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
+        otherids: list of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from. The default
+           value is () which indicates that only a single dataset
+           is used.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11009,6 +11022,7 @@ class Session(sherpa.ui.utils.Session):
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
+                                           otherids=otherids,
                                            numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
@@ -11860,7 +11874,7 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
-                         scales=None, model=None,
+                         scales=None, model=None, otherids=(),
                          recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the energy flux distribution.
@@ -11875,7 +11889,7 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model parameter has been added.
+           model and otherids parameters have been added.
 
         Parameters
         ----------
@@ -11925,6 +11939,11 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
+        otherids: list of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from. The default
+           value is () which indicates that only a single dataset
+           is used.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11979,6 +11998,7 @@ class Session(sherpa.ui.utils.Session):
             efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
                                                     num=num, bins=bins, scales=scales,
                                                     correlated=correlated, model=model,
+                                                    otherids=otherids,
                                                     numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
@@ -11992,7 +12012,7 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
-                         scales=None, model=None,
+                         scales=None, model=None, otherids=(),
                          recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the photon flux distribution.
@@ -12007,7 +12027,7 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model parameter has been added.
+           model and otherids parameters have been added.
 
         Parameters
         ----------
@@ -12057,6 +12077,11 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
+        otherids: list of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from. The default
+           value is () which indicates that only a single dataset
+           is used.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -12111,6 +12136,7 @@ class Session(sherpa.ui.utils.Session):
             pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id=id,
                                                     num=num, bins=bins, scales=scales,
                                                     correlated=correlated, model=model,
+                                                    otherids=otherids,
                                                     numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
