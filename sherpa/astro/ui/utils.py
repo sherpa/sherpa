@@ -12579,21 +12579,19 @@ class Session(sherpa.ui.utils.Session):
            The model must be part of the source expression.
         otherids: list of integer and string ids, optional
            The list of other datasets that should be included when
-           calculating the errors to draw values from. The default
-           value is () which indicates that only a single dataset
-           is used.
+           calculating the errors to draw values from.
 
         Returns
         -------
         vals
-           The return array has the shape ``(num, N+1)``, where ``N`` is the
-           number of free parameters and num is the `num` parameter.
-           The rows of this array contain the flux value, as
-           calculated by `calc_photon_flux`, followed by the values of
-           the thawed parameters used for that iteration. The order of
-           the parameters matches the data returned by
-           `get_fit_results` (restricted to the model parameter, when
-           set).
+           The return array has the shape ``(num, N+1)``, where ``N``
+           is the number of free parameters in the fit and num is the
+           `num` parameter.  The rows of this array contain the flux
+           value, as calculated by `calc_photon_flux`, followed by the
+           values of the thawed parameters used for that
+           iteration. The order of the parameters matches the data
+           returned by `get_fit_results` (restricted to the model
+           parameter, when set).
 
         See Also
         --------
@@ -12610,11 +12608,16 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When both the model and scales parameters are set then the
-        size of the scales parameter should either match the number of
-        free parameters in the full source expression or that of
-        the model component. The return value in this case is always
-        limited to the number of free parameters in the model component.
+        There are two ways to use this function to calculate fluxes
+        from multiple sources. The first is to leave the `id` argument
+        as `None`, in which case all available datasets will be used.
+        Alternatively, the `id` and `otherids` arguments can be set to
+        list the exact datasets to use, such as `id=1,
+        otherids=(2,3,4)`.
+
+        The returned value contains all free parameters in the fit,
+        even if they are not included in the model argument (e.g.
+        when calculating an unabsorbed flux).
 
         Examples
         --------
@@ -12637,7 +12640,9 @@ class Session(sherpa.ui.utils.Session):
         calculated using the model argument. For the following case,
         an absorbed power-law was used to fit the data -
         `xsphabs.gal * powerlaw.pl` - and then the flux of just the
-        power-law component is calculated:
+        power-law component is calculated. Note that the returned
+        array has columns 'flux', 'gal.nh', 'pl.gamma', and 'pl.ampl'
+        (that is flux and then the free parameters in the full model).
 
         >>> vals = sample_photon_flux(0.5, 7, model=pl, num=1000, correlated=True)
 
@@ -12662,14 +12667,14 @@ class Session(sherpa.ui.utils.Session):
         >>> parerrs = get_covar_results().parmaxes
         >>> vals = sample_photon_flux(0.5, 2, num=1000, scales=parerrs)
 
-        Run covariance to estimate the parameter errors and then extract
-        the covariance matrix from the results (as the `cmat` variable).
-        This matrix is then used to define the parameter widths - including
-        correlated terms - in the flux sampling, after being increased by
-        ten percent. This is used to calculate both the absorbed
-        (`vals1`) and unabsorbed (`vals2`) fluxes. The shapes of these
-        two arrays will be different: 5000 by 4 for `vals1` and
-        5000 by 3 for `vals2`.
+        Run covariance to estimate the parameter errors and then
+        extract the covariance matrix from the results (as the `cmat`
+        variable).  This matrix is then used to define the parameter
+        widths - including correlated terms - in the flux sampling,
+        after being increased by ten percent. This is used to
+        calculate both the absorbed (`vals1`) and unabsorbed (`vals2`)
+        fluxes. Both arrays have columns: flux, gal.nh, pl.gamma, and
+        pl.ampl.
 
         >>> set_source(xsphabs.gal * powlaw1d.pl)
         >>> fit()
@@ -12679,6 +12684,23 @@ class Session(sherpa.ui.utils.Session):
         ...                            scales=1.1 * cmat)
         >>> vals2 = sample_photon_flux(2, 10, num=5000, correlated=True,
         ...                            model=pl, scales=1.1 * cmat)
+
+        Calculate the flux and error distribution using fits
+        to all datasets:
+
+        >>> set_source(xsphabs.gal * xsapec.clus)
+        >>> set_source(2, gal * clus)
+        >>> set_source(3, gal * clus)
+        ... fit the data
+        >>> vals = sample_photon_flux(0.5, 10, model=clus, num=10000)
+
+        Calculate the flux and error distribution using fits
+        to an explicit set of datasets (in this case datasets
+        1 and 2):
+
+        >>> vals = sample_photon_flux(0.5, 10, id=1, otherids=[2],
+        ...                           model=clus, num=10000)
+
 
         """
         ids, fit = self._get_fit(id, otherids=otherids)
@@ -12764,21 +12786,19 @@ class Session(sherpa.ui.utils.Session):
            The model must be part of the source expression.
         otherids: list of integer and string ids, optional
            The list of other datasets that should be included when
-           calculating the errors to draw values from. The default
-           value is () which indicates that only a single dataset
-           is used.
+           calculating the errors to draw values from.
 
         Returns
         -------
         vals
-           The return array has the shape ``(num, N+1)``, where ``N`` is the
-           number of free parameters and num is the `num` parameter.
-           The rows of this array contain the flux value, as
-           calculated by `calc_energy_flux`, followed by the values of
-           the thawed parameters used for that iteration. The order of
-           the parameters matches the data returned by
-           `get_fit_results` (restricted to the model parameter, when
-           set).
+           The return array has the shape ``(num, N+1)``, where ``N``
+           is the number of free parameters in the fit and num is the
+           `num` parameter.  The rows of this array contain the flux
+           value, as calculated by `calc_emergy_flux`, followed by the
+           values of the thawed parameters used for that
+           iteration. The order of the parameters matches the data
+           returned by `get_fit_results` (restricted to the model
+           parameter, when set).
 
         See Also
         --------
@@ -12795,11 +12815,16 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When both the model and scales parameters are set then the
-        size of the scales parameter should either match the number of
-        free parameters in the full source expression or that of
-        the model component. The return value in this case is always
-        limited to the number of free parameters in the model component.
+        There are two ways to use this function to calculate fluxes
+        from multiple sources. The first is to leave the `id` argument
+        as `None`, in which case all available datasets will be used.
+        Alternatively, the `id` and `otherids` arguments can be set to
+        list the exact datasets to use, such as `id=1,
+        otherids=(2,3,4)`.
+
+        The returned value contains all free parameters in the fit,
+        even if they are not included in the model argument (e.g.
+        when calculating an unabsorbed flux).
 
         Examples
         --------
@@ -12822,7 +12847,9 @@ class Session(sherpa.ui.utils.Session):
         calculated using the model argument. For the following case,
         an absorbed power-law was used to fit the data -
         `xsphabs.gal * powerlaw.pl` - and then the flux of just the
-        power-law component is calculated:
+        power-law component is calculated. Note that the returned
+        array has columns 'flux', 'gal.nh', 'pl.gamma', and 'pl.ampl'
+        (that is flux and then the free parameters in the full model).
 
         >>> vals = sample_energy_flux(0.5, 7, model=pl, num=1000, correlated=True)
 
@@ -12847,14 +12874,14 @@ class Session(sherpa.ui.utils.Session):
         >>> parerrs = get_covar_results().parmaxes
         >>> vals = sample_energy_flux(0.5, 2, num=1000, scales=parerrs)
 
-        Run covariance to estimate the parameter errors and then extract
-        the covariance matrix from the results (as the `cmat` variable).
-        This matrix is then used to define the parameter widths - including
-        correlated terms - in the flux sampling, after being increased by
-        ten percent. This is used to calculate both the absorbed
-        (`vals1`) and unabsorbed (`vals2`) fluxes. The shapes of these
-        two arrays will be different: 5000 by 4 for `vals1` and
-        5000 by 3 for `vals2`.
+        Run covariance to estimate the parameter errors and then
+        extract the covariance matrix from the results (as the `cmat`
+        variable).  This matrix is then used to define the parameter
+        widths - including correlated terms - in the flux sampling,
+        after being increased by ten percent. This is used to
+        calculate both the absorbed (`vals1`) and unabsorbed (`vals2`)
+        fluxes. Both arrays have columns: flux, gal.nh, pl.gamma, and
+        pl.ampl.
 
         >>> set_source(xsphabs.gal * powlaw1d.pl)
         >>> fit()
@@ -12864,6 +12891,23 @@ class Session(sherpa.ui.utils.Session):
         ...                            scales=1.1 * cmat)
         >>> vals2 = sample_energy_flux(2, 10, num=5000, correlated=True,
         ...                            model=pl, scales=1.1 * cmat)
+
+        Calculate the flux and error distribution using fits
+        to all datasets:
+
+        >>> set_source(xsphabs.gal * xsapec.clus)
+        >>> set_source(2, gal * clus)
+        >>> set_source(3, gal * clus)
+        ... fit the data
+        >>> vals = sample_energy_flux(0.5, 10, model=clus, num=10000)
+
+        Calculate the flux and error distribution using fits
+        to an explicit set of datasets (in this case datasets
+        1 and 2):
+
+        >>> vals = sample_energy_flux(0.5, 10, id=1, otherids=[2],
+        ...                           model=clus, num=10000)
+
 
         """
         ids, fit = self._get_fit(id, otherids=otherids)
