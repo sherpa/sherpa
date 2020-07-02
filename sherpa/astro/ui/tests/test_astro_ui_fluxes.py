@@ -1088,10 +1088,8 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     unabsorbed = multi(lo=0.5, hi=2, id=id, num=1000,
                        model=pl, correlated=correlated)
 
-    # The number of parameters depends on the model used.
-    #
     assert absorbed.shape == (1000, 4)
-    assert unabsorbed.shape == (1000, 3)
+    assert unabsorbed.shape == (1000, 4)
 
     assert np.isfinite(absorbed).all()
     assert np.isfinite(unabsorbed).all()
@@ -1136,8 +1134,8 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
     assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
 
-    gamma = unabsorbed[:, 1]
-    ampl = unabsorbed[:, 2]
+    gamma = unabsorbed[:, 2]
+    ampl = unabsorbed[:, 3]
 
     assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
     assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
@@ -1149,11 +1147,11 @@ def test_sample_foo_flux_component(multi, fac, correlated,
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("correlated,scales2,scales3",
-                         [(False, [0.12, 2.5e-5], [0.04, 0.12, 2.5e-5]),
-                          (False, COVMAT[1:, 1:], COVMAT),
-                          (True, COVMAT[1:, 1:], COVMAT)])
-def test_sample_foo_flux_component_scales(correlated, scales2, scales3,
+@pytest.mark.parametrize("correlated,scales3",
+                         [(False, [0.04, 0.12, 2.5e-5]),
+                          (False, COVMAT),
+                          (True, COVMAT)])
+def test_sample_foo_flux_component_scales(correlated, scales3,
                                           make_data_path, clean_astro_ui):
     """Can we sample just a component and send in errors?
 
@@ -1179,27 +1177,16 @@ def test_sample_foo_flux_component_scales(correlated, scales2, scales3,
     gamma0 = pl.gamma.val
     ampl0 = pl.ampl.val
 
-    unabsorbed2 = ui.sample_energy_flux(lo=0.5, hi=2, id=id, num=1000,
-                                        model=pl, correlated=correlated,
-                                        scales=scales2)
     unabsorbed3 = ui.sample_energy_flux(lo=0.5, hi=2, id=id, num=1000,
                                         model=pl, correlated=correlated,
                                         scales=scales3)
 
-    assert unabsorbed2.shape == (1000, 3)
-    assert unabsorbed3.shape == (1000, 3)
+    assert unabsorbed3.shape == (1000, 4)
 
-    assert np.isfinite(unabsorbed2).all()
     assert np.isfinite(unabsorbed3).all()
 
-    flux_unabsorbed2 = unabsorbed2[:, 0]
     flux_unabsorbed3 = unabsorbed3[:, 0]
-    assert flux_unabsorbed2.min() > 0
     assert flux_unabsorbed3.min() > 0
-
-    flux2 = np.median(flux_unabsorbed2)
-    flux3 = np.median(flux_unabsorbed3)
-    assert flux2 == pytest.approx(flux3, rel=0.1)
 
     # The distributions of the two sets of parameters should be
     # similar, since they are drawn from the same distributions.
@@ -1213,15 +1200,14 @@ def test_sample_foo_flux_component_scales(correlated, scales2, scales3,
     else:
         errs3 = ans
 
-    for ans in [unabsorbed2, unabsorbed3]:
-        gamma = ans[:, 1]
-        ampl = ans[:, 2]
+    gamma = unabsorbed3[:, 2]
+    ampl = unabsorbed3[:, 3]
 
-        assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
-        assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
+    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
 
-        assert np.std(gamma) == pytest.approx(errs3[1], rel=0.1)
-        assert np.std(ampl) == pytest.approx(errs3[2], rel=0.1)
+    assert np.std(gamma) == pytest.approx(errs3[1], rel=0.1)
+    assert np.std(ampl) == pytest.approx(errs3[2], rel=0.1)
 
 
 
@@ -1237,7 +1223,7 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
     sample_energy/photon_flux can change the model parameters,
     including frozen status, in particular when a component
     of the fit is used and errors for just that component are
-    given.
+    given. This may no-longer be true, but worth a check.
 
     This test checks that running the sample does not change
     the fit statistic, number of degrees of freedom, and
@@ -1286,25 +1272,26 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
             assert par.val == val
             assert par.frozen == state
 
-    errs = [0.12, 3e-5]
-    cmat = [[0.12, 3e-6], [3e-6, 6e-10]]
+    # add in fake errors for the nh values
+    errs = [0.1, 0.12, 3e-5]
+    cmat = [[0.1, 0, 0], [0, 0.12, 3e-6], [0, 3e-6, 6e-10]]
 
     # uncorrelated, give errors
     ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=False,
                  scales=errs)
-    assert ans.shape == (2, 3)
+    assert ans.shape == (2, 4)
     validate()
 
     # uncorrelated, give covariance matrix
     ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=False,
                  scales=cmat)
-    assert ans.shape == (2, 3)
+    assert ans.shape == (2, 4)
     validate()
 
     # correlated, give covariance matrix
     ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=True,
                  scales=cmat)
-    assert ans.shape == (2, 3)
+    assert ans.shape == (2, 4)
     validate()
 
 
@@ -1362,10 +1349,10 @@ def test_sample_foo_flux_bkg(id, make_data_path, clean_astro_ui):
     #
     niter = 10
     aflux = ui.sample_energy_flux(0.5, 7, id=id, num=niter)
-    assert aflux.shape == (niter, 4)
+    assert aflux.shape == (niter, 6)
 
     bflux = ui.sample_energy_flux(0.5, 7, id=id, bkg_id=1, num=niter)
-    assert bflux.shape == (niter, 3)
+    assert bflux.shape == (niter, 6)
 
     # expect source flux to be ~8e-13 and background ~1e-13, but it's
     # random so how easy is this to check. The errors should be much
@@ -1380,7 +1367,7 @@ def test_sample_foo_flux_bkg(id, make_data_path, clean_astro_ui):
     # check the gamma values: source~2, bgnd~0.7
     #
     amid = np.median(aflux[:, 2])
-    bmid = np.median(bflux[:, 1])
+    bmid = np.median(bflux[:, 4])
     assert amid > 1.5
     assert bmid < 1.5
 
@@ -1454,11 +1441,11 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
     b3 = ui.sample_energy_flux(lo=0.5, hi=7, id='3', otherids=(1, 4),
                                bkg_id=1, model=bpl, num=niter)
 
-    assert s1.shape == (niter, 3)
-    assert b1.shape == (niter, 3)
+    assert s1.shape == (niter, 5)
+    assert b1.shape == (niter, 5)
 
-    assert s3.shape == (niter, 3)
-    assert b3.shape == (niter, 3)
+    assert s3.shape == (niter, 5)
+    assert b3.shape == (niter, 5)
 
     # Compare the median and std dev of the gamma parameter (as of order 1)
     # for both the source and background measurements, as they should be
@@ -1470,8 +1457,8 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
     assert y1 == pytest.approx(y3, rel=0.1), 'source gamma: median'
     assert y3 == pytest.approx(res.parvals[0], rel=0.1)
 
-    y1 = np.median(b1[:, 1])
-    y3 = np.median(b3[:, 1])
+    y1 = np.median(b1[:, 3])
+    y3 = np.median(b3[:, 3])
     assert y1 == pytest.approx(y3, rel=0.1), 'background gamma: median'
     assert y3 == pytest.approx(res.parvals[2], rel=0.1)
 
@@ -1479,8 +1466,8 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
     y3 = np.std(s3[:, 1])
     assert y1 == pytest.approx(y3, rel=0.2), 'source gamma: std'
 
-    y1 = np.std(b1[:, 1])
-    y3 = np.std(b3[:, 1])
+    y1 = np.std(b1[:, 3])
+    y3 = np.std(b3[:, 3])
     assert y1 == pytest.approx(y3, rel=0.2), 'background gamma: std'
 
     # If we compare to a single run we should see larger errors
@@ -1491,14 +1478,14 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
     b4 = ui.sample_energy_flux(lo=0.5, hi=7, id=4, otherids=(),
                                bkg_id=1, model=bpl, num=niter)
 
-    assert s4.shape == (niter, 3)
-    assert b4.shape == (niter, 3)
+    assert s4.shape == (niter, 5)
+    assert b4.shape == (niter, 5)
 
     # These checks are not very informative
     y4 = np.std(s4[:, 1])
     y3 = np.std(s3[:, 1])
     assert y4 > y3, 'source gamma: multi to one'
 
-    y4 = np.std(b4[:, 1])
-    y3 = np.std(b3[:, 1])
+    y4 = np.std(b4[:, 3])
+    y3 = np.std(b3[:, 3])
     assert y4 > y3, 'background gamma: multi to one'

@@ -43,27 +43,39 @@ __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
 
 class CalcFluxWorker():
-    """Internal class for use by calc_flux."""
+    """Internal class for use by calc_flux.
 
-    def __init__(self, method, data, src, lo, hi):
+    We always return the full sample, even when only
+    a subset of them are needed to calculate the flux.
+    """
+
+    def __init__(self, method, data, src, lo, hi, subset=None):
         self.method = method
         self.data = data
         self.src = src
         self.lo = lo
         self.hi = hi
+        self.subset = subset
 
     def __call__(self, sample):
-        self.src.thawedpars = sample
+        if self.subset is None:
+            self.src.thawedpars = sample
+        else:
+            self.src.thawedpars = sample[self.subset]
+
         flux = self.method(self.data, self.src, self.lo, self.hi)
         return numpy.asarray([flux] + list(sample))
 
 
 def calc_flux(data, src, samples, method=calc_energy_flux,
-              lo=None, hi=None, numcores=None):
+              lo=None, hi=None, numcores=None, subset=None):
     """Calculate model fluxes from a sample of parameter values.
 
     Given a set of parameter values, calculate the model flux for
     each set.
+
+    .. versionchanged:: 4.12.2
+       The subset parameter was added.
 
     .. versionchanged:: 4.12.1
        The fit parameter was removed.
@@ -77,8 +89,9 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     samples : 2D array
         The rows indicate each set of sample, and the columns the
         parameter values to use. If there are n free parameters
-        in the model then the array must have a size of num by n,
-        where num is the number of fluxes to calculate.
+        in the model then the array must have a size of num by m,
+        where num is the number of fluxes to calculate and m >= n.
+        If m > n then the subset argument must be set.
     method : function, optional
         How to calculate the flux: assumed to be one of calc_energy_flux
         or calc_photon_flux
@@ -88,9 +101,16 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     hi : number or None, optional
         The upper edge of the dataspace range for the flux calculation.
         If None then the upper edge of the data grid is used.
-    numcores : int or None, optonal
+    numcores : int or None, optional
         Should the analysis be split across multiple CPU cores?
         When set to None all available cores are used.
+    subset : list of ints or None, optional
+        This is only used when the sapmles array has more parameters
+        in it than are free in src. In this case the subset array lists
+        the column number of the free parameters in src. So, if the
+        samples represented 'nh', 'gamma', and 'ampl' values for each
+        row, but the src model only contained the 'gamma' and 'ampl'
+        parameters then subset would be [1, 2].
 
     Returns
     -------
@@ -104,21 +124,10 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     --------
     sample_flux
 
-    Notes
-    -----
-    The ordering of the samples array matches that of the free
-    parameters in the src parameter. That is::
-
-        [p.fullname for p in src.pars if not p.frozen]
-
     """
 
     old_vals = src.thawedpars
-    npar = len(old_vals)
-    if npar != samples.shape[1]:
-        raise ModelErr('numthawed', npar, samples.shape[1])
-
-    worker = CalcFluxWorker(method, data, src, lo, hi)
+    worker = CalcFluxWorker(method, data, src, lo, hi, subset)
     try:
         fluxes = parallel_map(worker, samples, numcores)
     finally:
@@ -147,17 +156,19 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
     scales : 1D or 2D array
         The parameter scales. When 1D they are the gaussian sigma
         values for the parameter, and when a 2D array they are
-        the covariance matrix. The scales parameter can either represent
-        the free parameters in fit.model or src; that is have size
-        mfree or sfree (1D) or mfree by mfree or sfree by sfree (2D).
+        the covariance matrix. The scales parameter must match the number
+        of parameters in fit (mfree) and not in src (sfree) when they
+        are different. For 1D the size is mfree and for 2D it is
+        mfree by mfree.
     num : int
         Tne number of samples to return. This must be 1 or greater.
 
     Returns
     -------
     samples : 2D NumPy array
-        The dimensions are num by sfree. The ordering of the parameter
-        values in each row matches that of src.
+        The dimensions are num by mfree. The ordering of the parameter
+        values in each row matches that of the free parameters in
+        fit.model.
 
     Raises
     ------
@@ -166,7 +177,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
         non-finite values) values, or is the wrong shape.
     ModelErr
         If the scales argument has the wrong size (that is, it
-        does not represent either sfree or mfree parameter values).
+        does not represent mfree parameter values).
 
     Notes
     -----
@@ -225,73 +236,18 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
         raise ArgumentErr('bad', 'scales',
                           'when correlated=False, scales must be 1D or 2D')
 
-    # At this point either 1D or 2D square array. We require
-    # either npar or mpar values. This unfortunately doesn't
-    # work with the expected semantics of the numthawed error
-    # type (which expects an integer), so use npar as the
-    # error message for now.
+    # At this point either 1D or 2D square array. Now to check the
+    # number of elements.
     #
-    if scales.shape[0] not in [npar, mpar]:
-        raise ModelErr('numthawed', npar, scales.shape[0])
-
-    # The scales argument to the sampler.get_sample method has to
-    # match the size of the number of free parameters in the
-    # fit.model expression.
-    #
-    # Possible conditions (npar > mpar is impossible):
-    # a) npar == mpar
-    # b) npar < mpar, scales.shape[0] = npar
-    # c) npar < mpar, scales.shape[0] = mpar
-    #
-    # case a is easy, as nothing has to be done.
-    #
-    # case b is handled by temporarily freezing the "extra" free
-    # parameters in the fit.model expression.
-    #
-    # case c is handled by post-processing the samples to remove
-    # the "extra" parameters.
-    #
-    # At this point we requre that src be a subset of fit.model
-    #
-    frozen_pars = []
-    subset = []
-    if npar < mpar:
-        if scales.shape[0] == npar:
-            # Use a set rather than list to potentially improve
-            # the 'in' check below, although the number of elements
-            # is not assumed to be large.
-            #
-            spars = {p for p in src.pars if not p.frozen}
-            for p in fit.model.pars:
-                if p.frozen or p in spars:
-                    continue
-
-                frozen_pars.append(p)
-
-        else:
-            mpars = [p for p in fit.model.pars if not p.frozen]
-            spars = [p for p in src.pars if not p.frozen]
-            mpars = dict(zip(mpars, range(mpar)))
-            subset = [mpars[p] for p in spars]
+    if scales.shape[0] != mpar:
+        raise ModelErr('numthawed', mpar, scales.shape[0])
 
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    try:
-        for p in frozen_pars:
-            p.frozen = True
-
-        samples = sampler.get_sample(fit, scales, num=num)
-    finally:
-        for p in frozen_pars:
-            p.frozen = False
-
-    if subset != []:
-        samples = samples[:, subset]
-
-    return samples
+    return sampler.get_sample(fit, scales, num=num)
 
 
 def _sample_flux_get_samples(fit, src, correlated, num):
@@ -304,12 +260,14 @@ def _sample_flux_get_samples(fit, src, correlated, num):
     ----------
     fit : sherpa.fit.Fit instance
         The fit instance. The fit.model expression is assumed to include
-        any necessary response information.
+        any necessary response information. The number of free parameters
+        in the model expression is mfree.
     src : sherpa.models.ArithmeticModel instance
         The model for which the flux is being calculated. This must be
         a subset of the fit.model expression, and should not include the
         response information. There must be at least one thawed parameter
-        in this model. The number of free parameters in src is sfree.
+        in this model. The number of free parameters in src is sfree and
+        must be <= mfree.
     correlated : bool
         Are the parameters assumed to be correlated or not?
     num : int
@@ -318,8 +276,9 @@ def _sample_flux_get_samples(fit, src, correlated, num):
     Returns
     -------
     samples : 2D NumPy array
-        The dimensions are num by sfree. The ordering of the parameter
-        values in each row matches that of src.
+        The dimensions are num by mfree. The ordering of the parameter
+        values in each row matches that of the free parameters in
+        fit.model.
 
     Notes
     -----
@@ -338,20 +297,7 @@ def _sample_flux_get_samples(fit, src, correlated, num):
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    samples = sampler.get_sample(fit, num=num)
-
-    # Do we need to remove the free parameters that are in
-    # fit.model but not in src from the samples?
-    #
-    if npar < mpar:
-        mpars = [p for p in fit.model.pars if not p.frozen]
-        spars = [p for p in src.pars if not p.frozen]
-        mpars = dict(zip(mpars, range(mpar)))
-        subset = [mpars[p] for p in spars]
-
-        samples = samples[:, subset]
-
-    return samples
+    return sampler.get_sample(fit, num=num)
 
 
 def decompose(mdl):
@@ -444,7 +390,7 @@ def sample_flux(fit, data, src,
         the covariance method is used to estimate the parameter errors.
         If given and correlated is True then samples must be a
         2D array, and contain the covariance matrix for the free
-        parameters in src. If correlated is False then samples
+        parameters in fit.model. If correlated is False then samples
         can either be sent the covariance matrix or a 1D array
         of the error values (i.e. the sigma of the normal distribution).
         If there are n free parameters then the 1D array has to have
@@ -454,7 +400,7 @@ def sample_flux(fit, data, src,
     -------
     vals : 2D NumPy array
         The shape of samples is (num, nfree + 1), where nfree is the
-        number of free parameters in src. Each row contains one
+        number of free parameters in fit.model. Each row contains one
         iteration, and the columns are the calculated flux,
         followed by the free parameters.
 
@@ -465,14 +411,13 @@ def sample_flux(fit, data, src,
     Notes
     -----
     The ordering of the samples array, and the columns in the output,
-    matches that of the free parameters in the src expression. That is::
+    matches that of the free parameters in the fit.model expression. That is::
 
-        [p.fullname for p in src.pars if not p.frozen]
+        [p.fullname for p in fit.model.pars if not p.frozen]
 
     If src is a subset of the full source expression then samples,
-    when not None, can either match the number of free parameters in
-    the full source expression (that given by fit.model), or the src
-    parameter.
+    when not None, must still match the number of free parameters in
+    the full source expression (that given by fit.model).
     """
 
     if num <= 0:
@@ -515,13 +460,39 @@ def sample_flux(fit, data, src,
     # clipping the values. Values outside the hard limit are
     # set to the hard limit.
     #
-    hardmins = src.thawedparhardmins
-    hardmaxs = src.thawedparhardmaxes
+    hardmins = fit.model.thawedparhardmins
+    hardmaxs = fit.model.thawedparhardmaxes
+
     for pvals, pmin, pmax in zip(samples.T, hardmins, hardmaxs):
         # do the clipping in place
         numpy.clip(pvals, pmin, pmax, out=pvals)
 
-    return calc_flux(data, src, samples, method, lo, hi, numcores)
+    # When a subset of the full mdel is use we need to know how
+    # to select which rows in the samples array refer to the
+    # parameters of interest. We could compare on fullname,
+    # but is not sufficient to guarantee the match.
+    #
+    if npar < mpar:
+        full_pars = dict(map(reversed,
+                             enumerate([p for p in fit.model.pars
+                                        if not p.frozen])))
+        cols = []
+        for src_par in [p for p in src.pars if not p.frozen]:
+            try:
+                cols.append(full_pars[src_par])
+            except KeyError:
+                # This should not be possible at this point but the
+                # decompose check above may be insufficient.
+                raise ArgumentErr('bad', 'src',
+                                  'unknown parameter "{}"'.format(src_par.fullname))
+
+        cols = numpy.asarray(cols)
+        assert cols.size == npar, 'We have lost a parameter somewhere'
+    else:
+        cols = None
+
+    return calc_flux(data, src, samples, method, lo, hi, numcores,
+                     subset=cols)
 
 
 def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,

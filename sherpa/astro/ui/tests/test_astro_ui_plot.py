@@ -1639,9 +1639,9 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     res = getfunc(recalc=False)
 
     uvals = res.modelvals
-    assert uvals.shape == (1000, 2)
-    assert np.std(uvals[:, 0]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(uvals[:, 1]) == pytest.approx(errs[2], rel=0.1)
+    assert uvals.shape == (1000, 3)
+    assert np.std(uvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(uvals[:, 2]) == pytest.approx(errs[2], rel=0.1)
 
     assert res.y.shape == (22,)
 
@@ -1776,9 +1776,9 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
                   correlated=False)
 
     uvals = res.modelvals
-    assert uvals.shape == (1000, 2)
-    assert np.std(uvals[:, 0]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(uvals[:, 1]) == pytest.approx(errs[2], rel=0.1)
+    assert uvals.shape == (1000, 3)
+    assert np.std(uvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+    assert np.std(uvals[:, 2]) == pytest.approx(errs[2], rel=0.1)
 
     assert res.y.shape == (22,)
 
