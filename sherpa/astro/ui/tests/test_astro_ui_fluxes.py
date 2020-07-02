@@ -615,7 +615,7 @@ def setup_sample(id, make_data_path, fit=True):
 @pytest.mark.parametrize("method", [ui.sample_energy_flux,
                                     ui.sample_photon_flux])
 @pytest.mark.parametrize("niter", [0, -1])
-@pytest.mark.parametrize("id", [None, 1, 2, "foo"])
+@pytest.mark.parametrize("id", [None, 1, "foo"])
 def test_sample_foo_flux_invalid_niter(method, niter, id,
                                        make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when num is <= 0
@@ -768,7 +768,7 @@ def test_sample_foo_flux_invalid_model(method, make_data_path, clean_astro_ui):
                                            ui.calc_energy_flux),
                                           (ui.sample_photon_flux,
                                            ui.calc_photon_flux)])
-@pytest.mark.parametrize("id", [None, 1, 2, "foo"])
+@pytest.mark.parametrize("id", [None, 1, "foo"])
 @pytest.mark.parametrize("niter", [1, 2, 10])
 @pytest.mark.parametrize("correlated", [False, True])
 def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
@@ -1215,7 +1215,7 @@ def test_sample_foo_flux_component_scales(correlated, scales3,
 @requires_fits
 @requires_xspec
 @pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
-@pytest.mark.parametrize("id", [None, 1, 2, "foo"])
+@pytest.mark.parametrize("id", [None, 1, "foo"])
 def test_sample_foo_flux_component_scales_fitpars(method, id,
                                                   make_data_path, clean_astro_ui):
     """Is the fit unchanged when a component + errors are used?
