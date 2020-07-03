@@ -10811,9 +10811,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -10938,9 +10939,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -11916,9 +11918,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -12073,9 +12076,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -12593,9 +12597,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 1.
         scales : array, optional
@@ -12753,7 +12758,6 @@ class Session(sherpa.ui.utils.Session):
         >>> vals = sample_photon_flux(0.5, 10, id=1, otherids=[2],
         ...                           model=clus, num=10000)
 
-
         """
         ids, fit = self._get_fit(id, otherids=otherids)
 
@@ -12799,9 +12803,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 1.
         scales : array, optional
