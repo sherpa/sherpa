@@ -10850,11 +10850,9 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
-        otherids: list of integer and string ids, optional
+        otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
-           calculating the errors to draw values from. The default
-           value is () which indicates that only a single dataset
-           is used.
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -10897,6 +10895,16 @@ class Session(sherpa.ui.utils.Session):
 
         >>> aflux = get_energy_flux_hist(0.5, 2, num=1000, bins=20)
         >>> uflux = get_energy_flux_hist(0.5, 2, model=pl, num=1000, bins=20)
+
+        When there are multiple datasets loaded,
+        `get_energy_flux_hist` uses all datasets to evaluate the
+        errors when the `id` parameter is left at its default value of
+        `None`. The `otherids` parameter is used, along with `id`, to
+        specify exactly what datasets are used:
+
+        >>> x = get_energy_flux_hist(2, 10, num=1000, bins=20, model=src)
+        >>> y = get_energy_flux_hist(2, 10, num=1000, bins=20, model=src,
+        ...                          id=1, otherids=(2, 3, 4))
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -10969,11 +10977,9 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
-        otherids: list of integer and string ids, optional
+        otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
-           calculating the errors to draw values from. The default
-           value is () which indicates that only a single dataset
-           is used.
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11016,6 +11022,16 @@ class Session(sherpa.ui.utils.Session):
 
         >>> aflux = get_photon_flux_hist(0.5, 2, num=1000, bins=20)
         >>> uflux = get_photon_flux_hist(0.5, 2, model=pl, num=1000, bins=20)
+
+        When there are multiple datasets loaded,
+        `get_photon_flux_hist` uses all datasets to evaluate the
+        errors when the `id` parameter is left at its default value of
+        `None`. The `otherids` parameter is used, along with `id`, to
+        specify exactly what datasets are used:
+
+        >>> x = get_photon_flux_hist(2, 10, num=1000, bins=20, model=src)
+        >>> y = get_photon_flux_hist(2, 10, num=1000, bins=20, model=src,
+        ...                          id=1, otherids=(2, 3, 4))
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -11939,11 +11955,9 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
-        otherids: list of integer and string ids, optional
+        otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
-           calculating the errors to draw values from. The default
-           value is () which indicates that only a single dataset
-           is used.
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11992,7 +12006,28 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_energy_flux(0.5, 2, num=1000, bins=20)
         >>> plot_energy_flux(0.5, 2, model=pl, num=1000, bins=20)
 
+        If you have multiple datasets loaded, each with a model, then
+        all datasets will be used to calculate the errors when the
+        id parameter is not set. A single dataset can be used by
+        specifying a dataset (in this example the overplot is just with
+        dataset 1):
+
+        >>> mdl = xsphabs.gal * xsapec.src
+        >>> set_source(1, mdl)
+        >>> set_source(2, mdl)
+        ...
+        >>> plot_energy_flux(0.5, 2, model=src num=1000, bins=20)
+        >>> plot_energy_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, overplot=True)
+
+        If you have multiple datasets then you can use the otherids
+        argument to specify exactly what set of data is used:
+
+        >>> plot_energy_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, otherids=(2, 3, 4))
+
         """
+
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(recalc):
             efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
@@ -12077,11 +12112,9 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
-        otherids: list of integer and string ids, optional
+        otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
-           calculating the errors to draw values from. The default
-           value is () which indicates that only a single dataset
-           is used.
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -12129,6 +12162,26 @@ class Session(sherpa.ui.utils.Session):
 
         >>> plot_photon_flux(0.5, 2, num=1000, bins=20)
         >>> plot_photon_flux(0.5, 2, model=pl, num=1000, bins=20)
+
+        If you have multiple datasets loaded, each with a model, then
+        all datasets will be used to calculate the errors when the
+        id parameter is not set. A single dataset can be used by
+        specifying a dataset (in this example the overplot is just with
+        dataset 1):
+
+        >>> mdl = xsphabs.gal * xsapec.src
+        >>> set_source(1, mdl)
+        >>> set_source(2, mdl)
+        ...
+        >>> plot_photon_flux(0.5, 2, model=src num=1000, bins=20)
+        >>> plot_photon_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, overplot=True)
+
+        If you have multiple datasets then you can use the otherids
+        argument to specify exactly what set of data is used:
+
+        >>> plot_photon_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, otherids=(2, 3, 4))
 
         """
         pfplot = self._photonfluxplot
@@ -12577,7 +12630,7 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
-        otherids: list of integer and string ids, optional
+        otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
            calculating the errors to draw values from.
 
@@ -12590,8 +12643,7 @@ class Session(sherpa.ui.utils.Session):
            value, as calculated by `calc_photon_flux`, followed by the
            values of the thawed parameters used for that
            iteration. The order of the parameters matches the data
-           returned by `get_fit_results` (restricted to the model
-           parameter, when set).
+           returned by `get_fit_results`.
 
         See Also
         --------
@@ -12784,7 +12836,7 @@ class Session(sherpa.ui.utils.Session):
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
            The model must be part of the source expression.
-        otherids: list of integer and string ids, optional
+        otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
            calculating the errors to draw values from.
 
@@ -12797,8 +12849,7 @@ class Session(sherpa.ui.utils.Session):
            value, as calculated by `calc_emergy_flux`, followed by the
            values of the thawed parameters used for that
            iteration. The order of the parameters matches the data
-           returned by `get_fit_results` (restricted to the model
-           parameter, when set).
+           returned by `get_fit_results`.
 
         See Also
         --------
@@ -13116,7 +13167,7 @@ class Session(sherpa.ui.utils.Session):
            The default is None, in which case get_draws shall be called.
            The user can input the parameter array (e.g. from running
            `sample_flux`).
-        otherids: list of integer ids, optional
+        otherids : sequence of integer or strings, optional
            The default value is (). However, if get_draws is called
            internally which may require otherids to be set if more then
            one data set is to be used then otherids must be set.
