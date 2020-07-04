@@ -24,6 +24,7 @@ from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec
+from sherpa.utils.err import ParameterErr
 
 # How many models should there be?
 # This number includes all additive and multiplicative models, even the ones
@@ -375,6 +376,18 @@ class test_xspec(SherpaTestCase):
     @requires_fits
     def test_xspec_tablemodel_noncontiguous2(self):
         self._test_xspec_tablemodel_noncontiguous2(ui.load_table_model)
+
+    @requires_data
+    @requires_fits
+    def test_xpec_tablemodel_outofbound(self):
+        ui.load_xstable_model('tmod', self.make_path('xspec-tablemodel-RCS.mod'))
+        # when used in the test suite it appears that the tmod
+        # global symbol is not created, so need to access the component
+        tmod = ui.get_model_component('tmod')
+        with pytest.raises(ParameterErr) as e:
+            tmod.calc([0., .2, 1., 1.], numpy.arange(1,5))
+        assert 'minimum' in str(e)
+
 
     def test_convolution_model_cflux(self):
         # Use the cflux convolution model, since this gives
