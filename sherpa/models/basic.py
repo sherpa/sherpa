@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020
+#       Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1478,9 +1479,11 @@ class Gauss2D(RegriddableModel2D):
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)
         norm = guess_amplitude2d(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
         param_apply_limits(xpos, self.xpos, **kwargs)
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
+        param_apply_limits(fwhm, self.fwhm, **kwargs)
 
     def calc(self, *args, **kwargs):
         kwargs['integrate'] = bool_cast(self.integrate)
@@ -1552,6 +1555,16 @@ class SigmaGauss2D(Gauss2D):
                                  (self.sigma_a, self.sigma_b, self.xpos,
                                   self.ypos, self.theta, self.ampl))
         self.cache = 0
+
+    def guess(self, dep, *args, **kwargs):
+        xpos, ypos = guess_position(dep, *args)
+        norm = guess_amplitude2d(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
+        param_apply_limits(xpos, self.xpos, **kwargs)
+        param_apply_limits(ypos, self.ypos, **kwargs)
+        param_apply_limits(fwhm, self.sigma_a, **kwargs)
+        param_apply_limits(fwhm, self.sigma_b, **kwargs)
+        param_apply_limits(norm, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
         kwargs['integrate'] = bool_cast(self.integrate)
@@ -1640,8 +1653,10 @@ class NormGauss2D(RegriddableModel2D):
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)
         ampl = guess_amplitude2d(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
         param_apply_limits(xpos, self.xpos, **kwargs)
         param_apply_limits(ypos, self.ypos, **kwargs)
+        param_apply_limits(fwhm, self.fwhm, **kwargs)
 
         # Apply normalization factor to guessed amplitude
         norm = (numpy.pi / _gfactor) * self.fwhm.val * self.fwhm.val * \

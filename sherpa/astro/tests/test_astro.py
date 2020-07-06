@@ -725,15 +725,15 @@ class test_threads(SherpaTestCase):
     def test_lev3fft(self):
         self.run_thread('lev3fft', scriptname='bar.py')
         self.assertEqualWithinTol(self.locals['src'].fwhm.val,
-                                  0.044178, 1e-4)
+                                  0.0442234, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].xpos.val,
-                                  150.016, 1e-4)
+                                  150.015, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].ypos.val,
-                                  2.66493839, 1e-4)
+                                  2.66494, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].ampl.val,
-                                  1.56090546, 1e-4)
+                                  1.56384, 1e-4)
         self.assertEqualWithinTol(self.locals['bkg'].c0.val,
-                                  -1.513700715, 1e-4)
+                                  -1.51662, 1e-4)
 
         fres = ui.get_fit_results()
         assert fres.istatval == approx(19496.3, rel=1e-4)
