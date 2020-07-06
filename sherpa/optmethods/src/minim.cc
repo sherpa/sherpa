@@ -1,5 +1,24 @@
 #ifdef testMinim
 
+//
+//  Copyright (C) 2020  Smithsonian Astrophysical Observatory
+//
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation; either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License along
+//  with this program; if not, write to the Free Software Foundation, Inc.,
+//  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+//
+
 #include <cstring>
 
 #include "minim.hh"
@@ -146,13 +165,14 @@ int main( int argc, char* argv[] ) {
 #endif
 
 /*
-g++ -o minim -DtestMinim -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
+g++ -o minim -DtestMinim -DNDEBUG -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
 
-==3254== Memcheck, a memory error detector
-==3254== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
-==3254== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
-==3254== Command: sherpa/optmethods/src/minim
-==3254== 
+(sherpa) [dtn@devel12 src]$ valgrind minim
+==32284== Memcheck, a memory error detector
+==32284== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==32284== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==32284== Command: minim
+==32284== 
 #
 #:npar = 6
 #:tol=1e-08
@@ -193,9 +213,9 @@ Minim_LinearFullRank	326	0	1.77494e-30	-1,-1,-1,-1,-1,-1
 Minim_LinearFullRank1	247	1.15385	1.15385	2.97377,2.2046,2.13584,0.15931,0.59993,-2.8661
 Minim_LinearFullRank0cols0rows	244	2.66667	2.66667	2.14801,1.95638,0.261166,0.8645,-1.56419,2.61241
 Minim_Chebyquad	641	0	8.64238e-06	0.04472,0.205762,0.230925,0.424449,0.491337,0.591077,0.761322,0.804917,0.956254
-Minim_McCormick	93	-1.91	-1.91322	-0.547198,-1.5472
+Minim_McCormick	93	-1.9132	-1.91322	-0.547198,-1.5472
 Minim_BoxBetts	94	0	8.5606e-16	1,10,1
-Minim_Paviani	1497	-45.7	-45.6242	9.32565,9.39821,9.34252,9.46265,9.35731,9.36868,9.28165,9.299,9.40574,9.21271
+Minim_Paviani	1497	-45.778	-45.6242	9.32565,9.39821,9.34252,9.46265,9.35731,9.36868,9.28165,9.299,9.40574,9.21271
 Minim_GoldsteinPrice	92	3	3	7.848e-14,-1
 Minim_Shekel5	-171	-10.1532	-5.10077	7.99958,7.99964,7.99958,7.99964
 Minim_Shekel7	-179	-10.4029	-5.12882	7.99951,7.99962,7.9995,7.99961
@@ -220,13 +240,13 @@ Minim_Michalewicz2	77	-1.8013	-1.8013	2.20291,1.5708
 Minim_Michalewicz5	-323	-4.68766	-4.3749	2.20291,1.5708,2.21933,1.92306,0.996677
 Minim_Michalewicz10	-938	-9.66015	-7.54148	2.20303,1.57081,1.28501,1.39237,1.72048,1.57081,2.22106,1.5867,1.65572,1.5708
 Minim_McKinnon	-4098	-0.25	-2.376e+11	-100,-100
-==3254== 
-==3254== HEAP SUMMARY:
-==3254==     in use at exit: 0 bytes in 0 blocks
-==3254==   total heap usage: 93,753 allocs, 93,753 frees, 113,818,312 bytes allocated
-==3254== 
-==3254== All heap blocks were freed -- no leaks are possible
-==3254== 
-==3254== For counts of detected and suppressed errors, rerun with: -v
-==3254== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==32284== 
+==32284== HEAP SUMMARY:
+==32284==     in use at exit: 0 bytes in 0 blocks
+==32284==   total heap usage: 93,753 allocs, 93,753 frees, 113,818,312 bytes allocated
+==32284== 
+==32284== All heap blocks were freed -- no leaks are possible
+==32284== 
+==32284== For counts of detected and suppressed errors, rerun with: -v
+==32284== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */
