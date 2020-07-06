@@ -8073,10 +8073,10 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id : int or str, optional
-           The data set to use. If not given then the default
-           identifier is used, as returned by `get_default_id`.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         *otherids : int or str, optional
-           Include multiple data sets in the calculation.
+           Other data sets to use in the calculation.
 
         Returns
         -------
@@ -8130,10 +8130,10 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id : int or str, optional
-           The data set to use. If not given then all data sets
-           are used.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         *otherids : int or str, optional
-           Include multiple data sets in the calculation.
+           Other data sets to use in the calculation.
 
         Returns
         -------
@@ -8574,11 +8574,10 @@ class Session(NoNewAttributesAfterInit):
            set by the covariance matrix (``True``) or should a
            uni-variate normal be used (``False``)?
         id : int or str, optional
-           The data set containing the model expression. If not given
-           then the default identifier is used, as returned by
-           `get_default_id`.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : sequence of int or str, optional
-           For when multiple source expressions are being used.
+           Other data sets to use in the calculation.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -8640,11 +8639,10 @@ class Session(NoNewAttributesAfterInit):
         factor : number, optional
            Multiplier to expand the scale parameter (default is 4).
         id : int or str, optional
-           The data set containing the model expression. If not given
-           then the default identifier is used, as returned by
-           `get_default_id`.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : sequence of int or str, optional
-           For when multiple source expressions are being used.
+           Other data sets to use in the calculation.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -8696,11 +8694,10 @@ class Session(NoNewAttributesAfterInit):
            The number of degrees of freedom to use (the default
            is to use the number from the current fit).
         id : int or str, optional
-           The data set containing the model expression. If not given
-           then the default identifier is used, as returned by
-           `get_default_id`.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : sequence of int or str, optional
-           For when multiple source expressions are being used.
+           Other data sets to use in the calculation.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -9580,11 +9577,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         parameters : optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the
@@ -9706,11 +9703,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         parameters : optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the
@@ -9909,11 +9906,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         parameters : optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the
@@ -10360,9 +10357,8 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id : int or str, optional
-           The data set containing the data and model. If not given
-           then the default identifier is used, as returned by
-           `get_default_id`.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : sequence of int or str, optional
            Other data sets to use in the calculation.
         niter : int, optional
@@ -14121,10 +14117,10 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot. This argument is only used if `recalc` is
            set to `True`.
         id : str or int, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+           Other data sets to use in the calculation.
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
@@ -14227,10 +14223,10 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot. This argument is only used if `recalc` is
            set to `True`.
         id : str or int, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+           Other data sets to use in the calculation.
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
@@ -14332,10 +14328,10 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
            These arguments are only used if recalc is set to `True`.
         id : str or int, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+           Other data sets to use in the calculation.
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `reg_proj` (or `get_reg_proj`) are returned,
@@ -14454,10 +14450,10 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
            These arguments are only used if `recalc` is set to `True`.
         id : str or int, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+           Other data sets to use in the calculation.
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `reg_unc` (or `get_reg_unc`) are returned,
@@ -14603,11 +14599,11 @@ class Session(NoNewAttributesAfterInit):
         ----------
         par
            The parameter to plot.
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         replot : bool, optional
            Set to ``True`` to use the values calculated by the last
            call to `int_proj`. The default is ``False``.
@@ -14720,11 +14716,11 @@ class Session(NoNewAttributesAfterInit):
         ----------
         par
            The parameter to plot.
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         replot : bool, optional
            Set to ``True`` to use the values calculated by the last
            call to `int_proj`. The default is ``False``.
@@ -14860,11 +14856,11 @@ class Session(NoNewAttributesAfterInit):
         ----------
         par0, par1
            The parameters to plot on the X and Y axes, respectively.
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         replot : bool, optional
            Set to ``True`` to use the values calculated by the last
            call to `int_proj`. The default is ``False``.
@@ -14988,11 +14984,11 @@ class Session(NoNewAttributesAfterInit):
         ----------
         par0, par1
            The parameters to plot on the X and Y axes, respectively.
-        id : str or int, optional
-        otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
-           or data sets are used. If not given, all data sets which
-           have a defined source model are used.
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
         replot : bool, optional
            Set to ``True`` to use the values calculated by the last
            call to `int_proj`. The default is ``False``.

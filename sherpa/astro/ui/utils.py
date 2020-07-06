@@ -13158,9 +13158,8 @@ class Session(sherpa.ui.utils.Session):
            `set_analysis` for the data set). The default value (``None``)
            means that the upper range of the data set is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         bkg_id : int or string, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
@@ -13173,9 +13172,7 @@ class Session(sherpa.ui.utils.Session):
            The user can input the parameter array (e.g. from running
            `sample_flux`).
         otherids : sequence of integer or strings, optional
-           The default value is (). However, if get_draws is called
-           internally which may require otherids to be set if more then
-           one data set is to be used then otherids must be set.
+           Other data sets to use in the calculation.
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
