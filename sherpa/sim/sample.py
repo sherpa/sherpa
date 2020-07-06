@@ -17,6 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 import numpy
 import numpy.random
 
@@ -24,12 +26,10 @@ from sherpa.estmethods import Covariance, Confidence
 from sherpa.utils.err import EstErr
 from sherpa.utils import parallel_map, NoNewAttributesAfterInit
 
-
-import logging
 warning = logging.getLogger("sherpa").warning
 
 
-__all__ = ['multivariate_t', 'multivariate_cauchy',
+__all__ = ('multivariate_t', 'multivariate_cauchy',
            'normal_sample', 'uniform_sample', 't_sample',
            'ParameterScaleVector', 'ParameterScaleMatrix',
            'UniformParameterSampleFromScaleVector',
@@ -38,7 +38,7 @@ __all__ = ['multivariate_t', 'multivariate_cauchy',
            'StudentTParameterSampleFromScaleMatrix',
            'NormalSampleFromScaleMatrix', 'NormalSampleFromScaleVector',
            'UniformSampleFromScaleVector', 'StudentTSampleFromScaleMatrix',
-           ]
+           )
 
 
 def multivariate_t(mean, cov, df, size=None):
