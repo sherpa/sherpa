@@ -12851,7 +12851,7 @@ class Session(sherpa.ui.utils.Session):
            The return array has the shape ``(num, N+1)``, where ``N``
            is the number of free parameters in the fit and num is the
            `num` parameter.  The rows of this array contain the flux
-           value, as calculated by `calc_emergy_flux`, followed by the
+           value, as calculated by `calc_energy_flux`, followed by the
            values of the thawed parameters used for that
            iteration. The order of the parameters matches the data
            returned by `get_fit_results`.
