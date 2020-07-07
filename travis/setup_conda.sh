@@ -91,5 +91,5 @@ export PYTHON_LDFLAGS=" "
 ncores=`python -c 'import multiprocessing; print(multiprocessing.cpu_count());'`
 echo "# Python thinks we have ${ncores} cores"
 echo "# Forcing the number of cores to be 2"
-sed -e "s/^numcore *: *None *$/numcore : 2/" sherpa/sherpa-standalone.rc > .sherpa-standalone.rc
+sed -e "s/^numcore : None/numcore : 2/" sherpa/sherpa-standalone.rc > .sherpa-standalone.rc
 grep numcore .sherpa-standalone.rc  # DBG
