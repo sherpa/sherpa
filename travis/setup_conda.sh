@@ -16,7 +16,7 @@ else  # osx
     #Unset the Travis compiler variables
     unset CC CFLAGS CXXFLAGS
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
-    
+
     #Download and set the location of the macOS 10.9 SDK for the Conda Compilers to work
     mkdir -p 10.9SDK
     wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -O MacOSX10.9.sdk.tar.xz
@@ -77,3 +77,17 @@ export F90=${F77}
 
 # This is required to make sure that the CIAO python extensions being built pick the correct flags
 export PYTHON_LDFLAGS=" "
+
+# Create a customized configuration file where the number of CPU cores
+# can be fixed: on VMs like on Travis the CPU detection logic we use
+# picks up the total number of CPUS on the host machine, not the
+# virtual machine we are running, as described at
+# https://github.com/travis-ci/travis-ci/issues/4696
+#
+# TRAVIS_NUMCORES is from https://github.com/travis-ci/travis-build/pull/1079
+#
+if [ -n "${TRAVIS_NUMCORES}" ]; then
+    echo "Restricting numcores to $TRAVIS_NUMCORES"  # DBG
+    sed -e "s/^numcore *: *None *$/numcore : $TRAVIS_NUMCORES/" sherpa/sherpa-standalone.rc > .sherpa-standalone.rc
+    grep numcore .sherpa-standalone.rc  # DBG
+fi
