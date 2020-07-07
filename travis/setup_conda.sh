@@ -85,9 +85,11 @@ export PYTHON_LDFLAGS=" "
 # https://github.com/travis-ci/travis-ci/issues/4696
 #
 # TRAVIS_NUMCORES is from https://github.com/travis-ci/travis-build/pull/1079
+# but doesn't seem to exist. I am hard-coding to 2 based on
+# https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
 #
-if [ -n "${TRAVIS_NUMCORES}" ]; then
-    echo "Restricting numcores to $TRAVIS_NUMCORES"  # DBG
-    sed -e "s/^numcore *: *None *$/numcore : $TRAVIS_NUMCORES/" sherpa/sherpa-standalone.rc > .sherpa-standalone.rc
-    grep numcore .sherpa-standalone.rc  # DBG
-fi
+ncores=`python -c 'import multiprocessing; print(multiprocessing.cpu_count());'`
+echo "# Python thinks we have ${ncores} cores"
+echo "# Forcing the number of cores to be 2"
+sed -e "s/^numcore *: *None *$/numcore : 2/" sherpa/sherpa-standalone.rc > .sherpa-standalone.rc
+grep numcore .sherpa-standalone.rc  # DBG
