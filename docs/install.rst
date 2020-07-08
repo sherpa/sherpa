@@ -36,7 +36,7 @@ Sherpa has the following requirements:
 Sherpa can take advantage of the following Python packages
 if installed:
 
-* :term:`astropy`: for reading and writing files in
+* :term:`Astropy`: for reading and writing files in
   :term:`FITS` format. The minimum required version of astropy
   is version 1.3, although only versions 2 and higher are used in testing
   (version 3.2 is known to cause problems, but version 3.2.1 is okay).
@@ -441,7 +441,7 @@ additional packages:
 
 * `Sphinx <http://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
-* NumPy and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
+* NumPy and `sphinx-astropy <https://github.com/astropy/sphinx-astropy/>`_
   (the latter can be installed with ``pip``).
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
