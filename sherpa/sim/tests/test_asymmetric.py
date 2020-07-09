@@ -227,7 +227,13 @@ def test_zero_case():
     Fit(data, mdl).fit()
 
     rd = ReSampleData(data, mdl)
-    res = rd.call(niter=10, seed=47)
+
+    # The call method can be used, but it is expected that the
+    # method is called directly (i.e. using __call) since this
+    # resets the model parameters after running the fits.
+    #
+    # res = rd.call(niter=10, seed=47)
+    res = rd(niter=10, seed=47)
 
     # Technically this depends on random chance, but it is rather
     # unlikely we'd get 10 -1 values here. Relax the -1 value and
@@ -237,3 +243,7 @@ def test_zero_case():
     vs = np.unique(res['flat.c0'])
     nvs = len(vs)
     assert nvs > 1
+
+    # minimal testing of the samples return value
+    samples = res['samples']
+    assert samples.shape == (10, 5)

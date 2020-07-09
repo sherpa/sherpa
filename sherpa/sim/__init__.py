@@ -817,17 +817,45 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         return result
 
-    def call(self, niter, seed):
+    def call(self, niter, seed=None):
+        """Resample the data and fit the model to each iteration.
+
+        .. versionadded: 4.12.2
+           The samples key was added to the return value, the
+           parameter values are returned as NumPy arrays rather than a
+           list, and the seed parameter was made optional.
+
+        Parameters
+        ----------
+        niter : int
+            The number of iterations.
+        seed : int or None, optional
+            The seed value.
+
+        Returns
+        -------
+        sampled : dict
+           The keys are samples, which contains the resampled data
+           used in the fits as a niter by ndata array, and the free
+           parameters in the fit, containing a NumPy array containing
+           the fit parameter for each iteration (of size niter).
+
+        Notes
+        -----
+        This routine is not guaranteed to restore the model parameters
+        to their starting values.
+
+        """
 
         pars = {}
-        pars_index = {}
-        index = 0
+        pars_index = []
         for par in self.model.pars:
-            if par.frozen is False:
-                name = '%s.%s' % (par.modelname, par.name)
-                pars_index[index] = name
-                pars[name] = []
-                index += 1
+            if par.frozen:
+                continue
+
+            name = par.fullname
+            pars_index.append(name)
+            pars[name] = numpy.zeros(niter)
 
         data = self.data
         y = data.y
@@ -842,10 +870,15 @@ class ReSampleData(NoNewAttributesAfterInit):
             msg ="{0} {1}".format(ReSampleData.__name__, type(data))
             raise NotImplementedError(msg)
 
+        ny = len(y)
+
+        fake_data = Data1D('tmp', x, numpy.zeros(ny))
+
         numpy.random.seed(seed)
+        ry_all = numpy.zeros((niter, ny), dtype=y_l.dtype)
         for j in range(niter):
-            ry = []
-            for i in range(len(y_l)):
+            ry = ry_all[j]
+            for i in range(ny):
                 a = y_l[i]
                 b = y_h[i]
                 r = None
@@ -885,19 +918,18 @@ class ReSampleData(NoNewAttributesAfterInit):
 
                     r = y[i] + dr * sigma
 
-                ry.append(r)
+                ry[i] = r
 
-            ry = numpy.asarray(ry)
             # fit is performed for each simulated data point
-            fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq(), LevMar())
+            fake_data.y = ry
+            fit = Fit(fake_data, self.model, LeastSq(), LevMar())
             fit_result = fit.fit()
 
-            for index, val in enumerate(fit_result.parvals):
-                name = pars_index[index]
-                pars[name].append(val)
+            for name, val in zip(fit_result.parnames, fit_result.parvals):
+                pars[name][j] = val
 
-        result = {}
-        for index, name in pars_index.items():
+        result = {'samples': ry_all}
+        for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])
             print(name, ': avg =', avg, ', std =', std)
