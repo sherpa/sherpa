@@ -196,6 +196,10 @@ parameter::
 
 """
 
+import logging
+
+import numpy
+
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
 # it looks like the following modules are being re-exported by this
@@ -212,13 +216,10 @@ from sherpa.fit import Fit
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.optmethods import LevMar
 
-import numpy
-import logging
 info = logging.getLogger("sherpa").info
 _log = logging.getLogger("sherpa")
 
 _tol = numpy.finfo(numpy.float).eps
-
 
 string_types = (str, )
 
@@ -766,8 +767,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
 class ReSampleData(NoNewAttributesAfterInit):
-    """
-    The underlying low-level for the resample_data
+    """Re-sample a 1D dataset using asymmtric errors.
 
     Parameters
     ----------
@@ -808,18 +808,13 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     def __call__(self, niter=1000, seed=None):
         orig_pars = self.model.thawedpars
-        _level = _log.getEffectiveLevel()
         result = None
         try:
             result = self.call(niter, seed)
-        except:
-            raise
         finally:
             # set the model back to original state
             self.model.thawedpars = orig_pars
 
-            # set the logger back to previous level
-            _log.setLevel(_level)
         return result
 
     def call(self, niter, seed):
