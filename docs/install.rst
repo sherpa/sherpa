@@ -32,11 +32,11 @@ Sherpa has the following requirements:
 * NumPy (the exact lower limit has not been determined,
   but it is likely to be 1.7.0 or later)
 * Linux or OS-X (patches to add Windows support are welcome)
-  
+
 Sherpa can take advantage of the following Python packages
 if installed:
 
-* :term:`astropy`: for reading and writing files in
+* :term:`Astropy`: for reading and writing files in
   :term:`FITS` format. The minimum required version of astropy
   is version 1.3, although only versions 2 and higher are used in testing
   (version 3.2 is known to cause problems, but version 3.2.1 is okay).
@@ -86,9 +86,9 @@ Citing Sherpa
 
 Information on citing Sherpa can be found from the
 `CITATION document <https://github.com/sherpa/sherpa/blob/master/CITATION>`_
-in the Sherpa repository, or from the 
+in the Sherpa repository, or from the
 `Sherpa Zenodo page <https://doi.org/10.5281/zenodo.593753>`_.
-    
+
 Installing a pre-compiled version of Sherpa
 ===========================================
 
@@ -111,7 +111,7 @@ significant upgrades to the dependencies, Sherpa can be installed
 using::
 
     conda install -c sherpa sherpa
-    
+
 It is **strongly** suggested that Sherpa is installed into a named
 `conda environment <http://conda.pydata.org/docs/using/envs.html>`_
 (i.e. not the default environment).
@@ -125,7 +125,7 @@ command::
 
     pip install sherpa
 
-The NumPy package must already have been installed for this to work.    
+The NumPy package must already have been installed for this to work.
 
 .. _build-from-source:
 
@@ -256,7 +256,7 @@ match the contents of the XSPEC installation.
 
    where the version numbers were taken from version 6.26.1 of HEASOFT and
    may need updating with a newer release.
-   
+
 2. If the full XSPEC 12.10.0 system has been built then use::
 
        with-xspec = True
@@ -288,7 +288,7 @@ match the contents of the XSPEC installation.
    flag when building HEASOFT which simplifies the installation of
    these extra libraries, but can cause problems for the Sherpa build.
 
-A common problem is to set one or both of the ``xspec_lib_dirs`` 
+A common problem is to set one or both of the ``xspec_lib_dirs``
 and ``xspec_lib_include`` options to the value of ``$HEADAS`` instead of
 ``$HEADAS/lib`` and ``$HEADAS/include`` (after expanding out the
 environment variable). Doing so will cause the build to fail with
@@ -423,7 +423,7 @@ When both the `DS9 image viewer <http://ds9.si.edu/site/Home.html>`_ and
 test suite will include tests that check that DS9 can be used from
 Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
-on how X-windows is set up). This can be avoided by installing the 
+on how X-windows is set up). This can be avoided by installing the
 `X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_.
 
 .. note::
@@ -431,17 +431,17 @@ on how X-windows is set up). This can be avoided by installing the
    Although the standard Python setuptools approach is used to build
    Sherpa, there may be issues when using some of the other build
    targets, such as ``build_ext``. Please report these to the
-   `Sherpa issues page <https://github.com/sherpa/sherpa/issues/>`_.   
-  
+   `Sherpa issues page <https://github.com/sherpa/sherpa/issues/>`_.
+
 Building the documentation
 --------------------------
 
 Building the documentation requires the Sherpa source code and several
 additional packages:
 
-* `Sphinx <http://sphinx.pocoo.org/>`_, version 1.3 or later
+* `Sphinx <http://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
-* NumPy and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
+* NumPy and `sphinx-astropy <https://github.com/astropy/sphinx-astropy/>`_
   (the latter can be installed with ``pip``).
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
@@ -479,7 +479,7 @@ the ``sherpa_smoke`` executable::
     OK (skipped=5)
 
 or from the Python prompt::
-  
+
     >>> import sherpa
     >>> sherpa.smoke()
     WARNING: failed to import sherpa.astro.xspec; XSPEC models will not be available
@@ -487,13 +487,13 @@ or from the Python prompt::
     Ran 7 tests in 0.447s
 
     OK (skipped=5)
-    
+
 This provides basic validation that Sherpa has been installed
 correctly, but does not run many functional tests. The screen output
 will include additional warning messages if the ``astropy`` or
 ``matplotlib`` packages are not installed, or Sherpa was built
 without support for the XSPEC model library.
-    
+
 The Sherpa installation also includes the ``sherpa_test`` command-line
 tool which will run through the Sherpa test suite (the number of
 tests depends on what optional packages are available and how
@@ -515,4 +515,3 @@ but it is not set up to do much validation. That is, you need to do something
 quite severe to break this build. Please see
 `issue 491 <https://github.com/sherpa/sherpa/issues/491>`_
 for more information.
-    
