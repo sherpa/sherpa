@@ -787,17 +787,22 @@ class ReSampleData(NoNewAttributesAfterInit):
     Example
     -------
 
-    >>> load_ascii_with_errors(1, 'gro.txt', delta=False)
-    >>> data = get_data(1)
-    >>> method = LevMar()
+    >>> from sherpa.astro import ui
+    >>> from sherpa.models.basic import PowLaw1D
+    >>> from sherpa.fit import Fit
+    >>> ui.load_ascii_with_errors(1, 'gro.txt', delta=False)
+    >>> data = ui.get_data(1)
     >>> model = PowLaw1D('p1')
-    >>> set_model(1, model)
-    >>> fit = Fit(data, model, Chi2Gehrels(), method, Covariance())
+    >>> fit = Fit(data, model)
     >>> results = fit.fit()
     >>> rd = ReSampleData(data, model)
     >>> rd_results = rd(niter=10)
-    >>> print(rd_results)
-    rd_results = {'p1.gamma': [-0.2944764463053398, -0.48025660808404, -0.45290026618472473, -0.5238444562856396, -0.3549169211965681, -0.29119982744489403, -0.5136099861402832, -0.49899714779391674, -0.5308025556771122, -0.5645228923615183], 'p1.ampl': [60.757254200932465, 172.7375230511183, 149.6714174684889, 222.60620753447844, 87.33459341889869, 59.257672491708, 212.86125707286197, 194.83475286439503, 233.33238676025326, 275.75315162410527]}
+    >>> print(rd_results['p1.gamma'])
+    [-0.30524385 -0.26451503 ... -0.57059273 -0.39458303]
+    >>> print(rd_results['p1.ampl'])
+    [ 64.16015336  50.78768941 ... 284.1916223  108.56485544]
+    >>> print(rd_results['samples'].shape)
+    (10, 61)
 
     """
     def __init__(self, data, model):
@@ -822,8 +827,8 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         .. versionadded: 4.12.2
            The samples key was added to the return value, the
-           parameter values are returned as NumPy arrays rather than a
-           list, and the seed parameter was made optional.
+           parameter values are returned as NumPy arrays rather than
+           as lists, and the seed parameter was made optional.
 
         Parameters
         ----------
