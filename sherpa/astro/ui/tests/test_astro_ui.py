@@ -799,10 +799,8 @@ def test_grouped_pha_all_bad_channel():
 @pytest.mark.parametrize("arf,rmf", [(True, False), (False, True), (True, True)])
 @pytest.mark.parametrize("chantype,exp_counts,exp_xmid,lo1,hi1,lo2,hi2",
                          [("channel", 0.8, 3, 0, 7, 2, 6),
-                          pytest.param("energy", 8.0, 0.35, 0.05, 1.0, 0.2, 0.8,
-                                       marks=pytest.mark.xfail),
-                          pytest.param("wave", 0.03871461, 52.59935223, 20, 90, 30, 85,
-                                       marks=pytest.mark.xfail),
+                          ("energy", 8.0, 0.35, 0.05, 1.0, 0.2, 0.8),
+                          ("wave", 0.03871461, 52.59935223, 20, 90, 30, 85)
                          ])
 def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, lo1, hi1, lo2, hi2):
     """Helpdesk ticket: low-count data had no valid bins after grouping #790
