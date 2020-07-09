@@ -812,15 +812,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         return
 
     def __call__(self, niter=1000, seed=None):
-        orig_pars = self.model.thawedpars
-        result = None
-        try:
-            result = self.call(niter, seed)
-        finally:
-            # set the model back to original state
-            self.model.thawedpars = orig_pars
-
-        return result
+        return self.call(niter, seed)
 
     def call(self, niter, seed=None):
         """Resample the data and fit the model to each iteration.
@@ -847,10 +839,14 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         Notes
         -----
-        This routine is not guaranteed to restore the model parameters
-        to their starting values.
+        The fit for each iteration uses the input values of the
+        model parameters as the starting point. The parameters of
+        the model are not changed by this method.
 
         """
+
+        # Each fit is reset to this set of values as the starting point
+        orig_pars = self.model.thawedpars
 
         pars = {}
         pars_index = []
@@ -925,10 +921,16 @@ class ReSampleData(NoNewAttributesAfterInit):
 
                 ry[i] = r
 
-            # fit is performed for each simulated data point
+            # fit is performed for each simulated data point, and we
+            # always start at the original best-fit location to
+            # start the fit (by making sure we always reset after a fit).
+            #
             fake_data.y = ry
             fit = Fit(fake_data, self.model, LeastSq(), LevMar())
-            fit_result = fit.fit()
+            try:
+                fit_result = fit.fit()
+            finally:
+                self.model.thawedpars = orig_pars
 
             for name, val in zip(fit_result.parnames, fit_result.parvals):
                 pars[name][j] = val

@@ -32,7 +32,6 @@ from sherpa.stats import Chi2Gehrels
 from sherpa.sim import ReSampleData
 from sherpa.astro import ui
 
-
 RESULTS_BENCH_AVG = {
     'rstat': 1.4361549916463103,
     'qval': 0.015715747140941,
@@ -59,6 +58,12 @@ RESULTS_BENCH_RMS = {
     'parerrs': np.array([3.01965392e-02, 5.57390091e+01])
 }
 
+# The RESMPLE_BENCH* values were calculated before the code was
+# changed so that each fit starts at the best-fit location,
+# rather than starting at the best-fit location from the
+# previous fit. The relative tolerances have been changed
+# to 1e-4 to keep these values as the reference.
+#
 RESAMPLE_BENCH = np.array([-4.27921009e-01, 1.54966801e-01,
                            1.67211651e+02, 9.01622079e+01])
 
@@ -105,7 +110,7 @@ def resample_data(data, bench, results_bench):
                     np.std(gamma),
                     np.average(ampl),
                     np.std(ampl)])
-    assert got == pytest.approx(bench)
+    assert got == pytest.approx(bench, rel=1e-4)
 
     assert model.thawedpars == pytest.approx(results_bench['parvals'])
 
@@ -210,7 +215,7 @@ def test_ui(make_data_path):
     ui.fit()
     sample = ui.resample_data(1, 10, seed=123)
     for p in ['p1.gamma', 'p1.ampl']:
-        assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p])
+        assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)
 
 
 def test_zero_case():
@@ -228,9 +233,8 @@ def test_zero_case():
 
     rd = ReSampleData(data, mdl)
 
-    # The call method can be used, but it is expected that the
-    # method is called directly (i.e. using __call) since this
-    # resets the model parameters after running the fits.
+    # Both approaches should give the same results (as setting
+    # niter explicitly).
     #
     # res = rd.call(niter=10, seed=47)
     res = rd(niter=10, seed=47)
