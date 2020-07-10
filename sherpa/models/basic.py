@@ -1879,10 +1879,10 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
                                 ('integrate1d(%s)' % self.model.name),
                                 (self.model,))
 
-    def startup(self):
-        self.model.startup()
+    def startup(self, cache=False):
+        self.model.startup(cache)
         self._errflag = 1
-        CompositeModel.startup(self)
+        CompositeModel.startup(self, cache)
 
     def teardown(self):
         self.model.teardown()
