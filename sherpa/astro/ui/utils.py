@@ -12338,9 +12338,9 @@ class Session(sherpa.ui.utils.Session):
         deviation for each parameter.
 
         .. versionadded: 4.12.2
-           The samples key was added to the return value and the
-           parameter values are returned as NumPy arrays rather than
-           as lists.
+           The samples and statistic keys were added to the return
+           value and the parameter values are returned as NumPy arrays
+           rather than as lists.
 
         Parameters
         ----------
@@ -12354,10 +12354,12 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         sampled : dict
-           The keys are samples, which contains the resampled data
-           used in the fits as a niter by ndata array, and the free
-           parameters in the fit, containing a NumPy array containing
-           the fit parameter for each iteration (of size niter).
+           The keys are statistic, which contains the best-fit
+           statistic value for each iteration, samples, which contains
+           the resampled data used in the fits as a niter by ndata
+           array, and the free parameters in the fit, containing a
+           NumPy array containing the fit parameter for each iteration
+           (of size niter).
 
         See Also
         --------
@@ -12390,9 +12392,8 @@ class Session(sherpa.ui.utils.Session):
         >>> print(result['p0.c1'])
         [1510.049972062868, 1995.4742750432902, ... 2235.9753113309894]
 
-        For a large number of realizations the output can be stored in
-        the dictionary and accessed, for example, to visualize the
-        distributions.
+        Display the PDF of the parameter values of the p0.c0 component
+        from a run with 5000 iterations:
 
         >>> sample = resample_data(1, 5000)
         p0.c0 : avg = 3.966543284267264 , std = 0.9104639711036427

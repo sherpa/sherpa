@@ -769,12 +769,19 @@ class MCMC(NoNewAttributesAfterInit):
 class ReSampleData(NoNewAttributesAfterInit):
     """Re-sample a 1D dataset using asymmtric errors.
 
+    For each iteration, each data point is resampled using normal
+    distributions for the lower and upper sides based on the
+    asymmetric errors, and then the data is fit (starting at the model
+    "best-fit" location). The parameter values, statistic value, and
+    re-sampled data for each iteration are returned.
+
     Parameters
     ----------
-    data
-       The data class Data1DAsymmetricErrs
-    model
-       The model to fit the data
+    data : sherpa.data.Data1DAsymmetricErrs instance
+       The data.
+    model : sherpa.models.model.ArithmeticModel instance
+       The model to fit the data. The model parameters are taken
+       to be the best-fit location.
 
     Returns
     -------
@@ -796,11 +803,19 @@ class ReSampleData(NoNewAttributesAfterInit):
     >>> fit = Fit(data, model)
     >>> results = fit.fit()
     >>> rd = ReSampleData(data, model)
-    >>> rd_results = rd(niter=10)
+    p1.gamma : avg = -0.45420248162153376 , std = 0.1263323500098545
+    p1.ampl : avg = 178.84238884771565 , std = 78.40441241963649
+    >>> rd_results = rd(niter=10, seed=47)
     >>> print(rd_results['p1.gamma'])
-    [-0.30524385 -0.26451503 ... -0.57059273 -0.39458303]
+    [-0.32872302 -0.12877417 -0.52554761 -0.57215054 -0.56462214 -0.45767851
+     -0.50537904 -0.49456541 -0.46087699 -0.50370738]
     >>> print(rd_results['p1.ampl'])
-    [ 64.16015336  50.78768941 ... 284.1916223  108.56485544]
+    [ 76.77797067  23.71375218 219.70853134 289.93482138 282.85054769
+     151.11542405 203.62594591 184.68814605 158.73489704 197.27385216]
+    >>> print(rd_results['statistic'])
+    [ 3181.39803175 15640.64148543   526.3225861    269.42556572
+       255.21395223   631.70392914   271.34923174   349.71959439
+      1896.22993898   579.80520809]
     >>> print(rd_results['samples'].shape)
     (10, 61)
 
@@ -818,9 +833,10 @@ class ReSampleData(NoNewAttributesAfterInit):
         """Resample the data and fit the model to each iteration.
 
         .. versionadded: 4.12.2
-           The samples key was added to the return value, the
-           parameter values are returned as NumPy arrays rather than
-           as lists, and the seed parameter was made optional.
+           The samples and statistic keys were added to the return
+           value, the parameter values are returned as NumPy arrays
+           rather than as lists, and the seed parameter was made
+           optional.
 
         Parameters
         ----------
@@ -877,6 +893,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         numpy.random.seed(seed)
         ry_all = numpy.zeros((niter, ny), dtype=y_l.dtype)
+        stats = numpy.zeros(niter)
         for j in range(niter):
             ry = ry_all[j]
             for i in range(ny):
@@ -932,10 +949,11 @@ class ReSampleData(NoNewAttributesAfterInit):
             finally:
                 self.model.thawedpars = orig_pars
 
+            stats[j] = fit_result.statval
             for name, val in zip(fit_result.parnames, fit_result.parvals):
                 pars[name][j] = val
 
-        result = {'samples': ry_all}
+        result = {'samples': ry_all, 'statistic': stats}
         for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])

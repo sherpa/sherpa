@@ -229,7 +229,7 @@ def test_zero_case():
     data = Data1DAsymmetricErrs('zero', xs, ys, dyl, dyh)
     mdl = Const1D('flat')
 
-    Fit(data, mdl).fit()
+    bestfit = Fit(data, mdl).fit()
 
     rd = ReSampleData(data, mdl)
 
@@ -248,6 +248,11 @@ def test_zero_case():
     nvs = len(vs)
     assert nvs > 1
 
-    # minimal testing of the samples return value
+    # Minimal testing of the other return values. We do assume that
+    # we have not found a better fit than the fit.
+    #
     samples = res['samples']
+    stats = res['statistic']
     assert samples.shape == (10, 5)
+    assert stats.shape == (10, )
+    assert (stats >= bestfit.statval).all()
