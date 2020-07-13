@@ -62,7 +62,7 @@ def calc_flux(fit, data, src, samples, method=calc_energy_flux,
 
 
 def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
-                num=1, lo=None, hi=None, numcores=None, samples=None):
+                num=1, lo=None, hi=None, numcores=None, samples=None, est_method_args=None):
 
     #
     # The following function should be modified to take advantage of numpy
@@ -87,7 +87,7 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
         if numpy.ndarray == type(samples):
             samples = samples.diagonal(0)
 
-    samples = sampler.get_sample(fit, samples, num=num)
+    samples = sampler.get_sample(fit, samples, num=num, est_method_args=est_method_args)
 
     hardmins = fit.model._get_thawed_par_hardmins()
     hardmaxs = fit.model._get_thawed_par_hardmaxes()
