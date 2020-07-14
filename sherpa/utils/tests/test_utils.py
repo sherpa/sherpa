@@ -288,7 +288,6 @@ def test_parallel_map(num_tasks, num_segments):
         assert_equal(result, numpy.asarray(pararesult))
 
 
-
 @pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
                                             ([], [1], [0,1,2,3,4]),
                                             ([1], [], [0,1,2,3,4]),
