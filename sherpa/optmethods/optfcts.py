@@ -1,7 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -471,7 +472,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             ncores_nm = ncoresNelderMead()
             nfev, nfval, x = \
                 ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
-        if verbose or False != debug:
+        if verbose or debug != False:
             print('f_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
         ############################# NelderMead #############################
 
@@ -494,8 +495,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             if tmp_fmin < nfval:
                 nfval = tmp_fmin
                 x     = tmp_par
-        if verbose or False != debug:
-            print('f_de_nm%s=%.14e in %d nfev' % (x, fval, nfev))
+        if verbose or debug != False:
+            print('f_de_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
         ############################## nmDifEvo #############################
 
         ofval = FUNC_MAX
@@ -513,24 +514,13 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 if result[2] < nfval:
                     nfval = result[2]
                     x = numpy.asarray(result[1], numpy.float_)
-            # else:
-            #     ncores_de = ncoresDifEvo()
-            #     mystep = None
-            #     tmp_nfev, tmp_fmin, tmp_par = \
-            #         ncores_de(stat_cb0, y, xmin, xmax, ftol, mymaxfev, mystep,
-            #                   numcores, pop, seed, weight, xprob, verbose)
-            #     nfev += tmp_nfev
-            #     if tmp_fmin < nfval:
-            #         nfval = tmp_fmin
-            #         x       = tmp_par
-            if verbose or False != debug:
-                print('f_de_nm%s=%.14e in %d nfev' % (x, result[2],
-                                                      result[4].get('nfev')))
-                    
+                if verbose or debug != False:
+                    print('f_de_nm%s=%.14e in %d nfev' % \
+                          (x, result[2], result[4].get('nfev')))
             ############################ nmDifEvo #############################
 
 
-            if False != debug:
+            if debug != False:
                 print('ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval))
 
             if sao_fcmp(ofval, nfval, ftol) <= 0:

@@ -29,13 +29,13 @@ namespace sherpa {
       return ifault;
     }
 
-
     void minim( std::vector<real>& P, const std::vector<real>& STEP,
                 int NOP, real& FUNC, int MAXNFEV, int IPRINT, real STOPCR,
                 int IQUAD, real SIMP, std::vector<real>& VC, int& IFAULT,
                 int& NEVAL, const sherpa::Bounds<real>& LIMITS ) {
-      return MINIM( P, STEP, NOP, FUNC, MAXNFEV, IPRINT, STOPCR, IQUAD, SIMP,
-                    VC, IFAULT, NEVAL, LIMITS);
+      MINIM( P, STEP, NOP, FUNC, MAXNFEV, IPRINT, STOPCR, IQUAD,
+             SIMP, VC, IFAULT, NEVAL, LIMITS );
+      return;
     }
 
   private:
@@ -43,12 +43,33 @@ namespace sherpa {
     Func usr_func;
     Data usr_data;
 
+    //
+    // minim has over expanded beyond a free parameter's boundary, need
+    // to move back into allowed space by the same amount that was exceeded.
+    // However, one has to make sure that one does not overshoot the other
+    // boundary in the event that the boundaries are very tight
+    //
+    void reflect_about_boundary( int npar, std::vector<real>& par,
+                                 const sherpa::Bounds<real>& limits )
+      const {
+      const std::vector<real> lb = limits.get_lb();
+      const std::vector<real> ub = limits.get_ub();
+
+      for  ( int ii = 0; ii < npar; ++ii ) {
+        if ( par[ ii ] < lb[ ii ] )
+          par[ ii ] = std::max( lb[ ii ], lb[ ii ] - ( par[ ii ] - lb[ ii ] ) );
+        if ( par[ ii ] > ub[ ii ] )
+          par[ ii ] = std::min( ub[ ii ], ub[ ii ] - ( par[ ii ] - ub[ ii ] ) );
+        // just in case limits are tight and have over-corrected
+        if ( par[ ii ] < lb[ ii ] || par[ ii ] > ub[ ii ] )
+          par[ ii ] = ( lb[ ii ] + ub[ ii ] ) * 0.5;
+      }
+
+    }
+
     void eval_usr_func( int npar, std::vector<real>& par, real& fval,
                         const sherpa::Bounds<real>& limits ) {
-
-      if ( sherpa::Opt<Data, real>::are_pars_outside_limits( npar, par,
-                                                             limits ) )
-        fval = std::numeric_limits< real >::max( );
+      reflect_about_boundary( npar, par, limits );
       int ierr = EXIT_SUCCESS;
       usr_func( npar, &par[0], fval, ierr, usr_data );
       if ( EXIT_SUCCESS != ierr )

@@ -7169,8 +7169,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set is already grouped.
 
         See Also
         --------
@@ -7257,17 +7255,8 @@ class Session(sherpa.ui.utils.Session):
 
             # Now check if data is already grouped, and send error message
             # if so
-            if (data.grouped is True):
-                raise DataErr(
-                    'groupset', 'data set', str(self._fix_id(id)), 'True')
-        else:
-            # Just grouping one particular background here
-            if (data.grouped is True):
-                raise DataErr(
-                    'groupset', 'background', str(self._fix_id(bkg_id)), 'True')
-
-        # If we get here, checks showed data not grouped, so set group flag
-        data.group()
+        if not (data.grouped is True):
+            data.group()
 
     def set_grouping(self, id, val=None, bkg_id=None):
         """Apply a set of grouping flags to a PHA data set.
@@ -7635,8 +7624,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set is not grouped.
 
         See Also
         --------
@@ -7705,17 +7692,8 @@ class Session(sherpa.ui.utils.Session):
 
             # Now check if data is already ungrouped, and send error message
             # if so
-            if (data.grouped is False):
-                raise DataErr(
-                    'groupset', 'data set', str(self._fix_id(id)), 'False')
-        else:
-            if (data.grouped is False):
-                # Just ungrouping one particular background here
-                raise DataErr(
-                    'groupset', 'background', str(self._fix_id(bkg_id)), 'False')
-
-        # If we get here, checks showed data grouped, so set ungroup flag
-        data.ungroup()
+        if (data.grouped is True):
+            data.ungroup()
 
     # DOC-TODO: need to document somewhere that this ignores existing
     # quality flags and how to use tabStops to include
@@ -8376,8 +8354,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set is already subtracted.
 
         See Also
         --------
@@ -8441,10 +8417,8 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_data(overplot=True)
 
         """
-        if (self._get_pha_data(id).subtracted is True):
-            raise DataErr(
-                'subtractset', 'data set', str(self._fix_id(id)), 'True')
-        self._get_pha_data(id).subtract()
+        if (self._get_pha_data(id).subtracted is False):
+            self._get_pha_data(id).subtract()
 
     def unsubtract(self, id=None):
         """Undo any background subtraction for the data set.
@@ -8466,8 +8440,6 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain a PHA data set.
-        sherpa.utils.err.DataErr
-           If the data set does not have its background subtracted.
 
         See Also
         --------
@@ -8496,10 +8468,8 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
-        if (self._get_pha_data(id).subtracted is False):
-            raise DataErr(
-                'subtractset', 'data set', str(self._fix_id(id)), 'False')
-        self._get_pha_data(id).unsubtract()
+        if (self._get_pha_data(id).subtracted is True):
+            self._get_pha_data(id).unsubtract()
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
@@ -9803,7 +9773,7 @@ class Session(sherpa.ui.utils.Session):
 
         return fit_to_ids, datasets, models
 
-    def _get_bkg_fit(self, id, otherids=(), estmethod=None):
+    def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
 
         fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
 
@@ -9812,7 +9782,7 @@ class Session(sherpa.ui.utils.Session):
 
         fit_to_ids = tuple(fit_to_ids)
 
-        f = self._get_fit_obj(datasets, models, estmethod)
+        f = self._get_fit_obj(datasets, models, estmethod, numcores)
 
         return fit_to_ids, f
 
@@ -9993,15 +9963,17 @@ class Session(sherpa.ui.utils.Session):
         # validate the kwds to f.fit() so user typos do not
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache')
+        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores')
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
 
+        numcores = kwargs.get('numcores', 1)
+
         if fit_bkg:
-            ids, f = self._get_bkg_fit(id, otherids)
+            ids, f = self._get_bkg_fit(id, otherids, numcores=numcores)
         else:
-            ids, f = self._get_fit(id, otherids)
+            ids, f = self._get_fit(id, otherids, numcores=numcores)
 
         if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
             for i in ids:
@@ -11401,6 +11373,9 @@ class Session(sherpa.ui.utils.Session):
         Display the residuals for the background of a PHA data set
         when it is being fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.12.0
+           The Y axis is now always drawn using a linear scale.
+
         Parameters
         ----------
         id : int or str, optional
@@ -11437,6 +11412,11 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
         set_bkg_model : Set the background model expression for a PHA data set.
 
+        Notes
+        -----
+        The ylog setting is ignored, and the Y axis is drawn using a
+        linear scale.
+
         Examples
         --------
 
@@ -11458,6 +11438,9 @@ class Session(sherpa.ui.utils.Session):
         Display the ratio of data to model values for the background
         of a PHA data set when it is being fit, rather than subtracted
         from the source.
+
+        .. versionchanged:: 4.12.0
+           The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
@@ -11495,6 +11478,11 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
         set_bkg_model : Set the background model expression for a PHA data set.
 
+        Notes
+        -----
+        The ylog setting is ignored, and the Y axis is drawn using a
+        linear scale.
+
         Examples
         --------
 
@@ -11515,6 +11503,9 @@ class Session(sherpa.ui.utils.Session):
         Display the ratio of the residuals (data-model) to the error
         values for the background of a PHA data set when it is being
         fit, rather than subtracted from the source.
+
+        .. versionchanged:: 4.12.0
+           The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
@@ -11551,6 +11542,11 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
         plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
         set_bkg_model : Set the background model expression for a PHA data set.
+
+        Notes
+        -----
+        The ylog setting is ignored, and the Y axis is drawn using a
+        linear scale.
 
         Examples
         --------
@@ -12058,6 +12054,11 @@ class Session(sherpa.ui.utils.Session):
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
+        Notes
+        -----
+        For the residual plot, the ylog setting is ignored, and the Y axis
+        is drawn using a linear scale.
+
         Examples
         --------
 
@@ -12080,6 +12081,10 @@ class Session(sherpa.ui.utils.Session):
 
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_resid` - for a data set.
+
+        .. versionchanged:: 4.12.0
+           The Y axis of the residual plot is now always drawn using a
+           linear scale.
 
         Parameters
         ----------
@@ -12123,6 +12128,11 @@ class Session(sherpa.ui.utils.Session):
         plot_fit_resid : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
+        Notes
+        -----
+        For the residual plot, the ylog setting is ignored, and the Y axis
+        is drawn using a linear scale.
+
         Examples
         --------
 
@@ -12144,6 +12154,10 @@ class Session(sherpa.ui.utils.Session):
 
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_delchi` - for a data set.
+
+        .. versionchanged:: 4.12.0
+           The Y axis of the residual plot is now always drawn using a
+           linear scale.
 
         Parameters
         ----------
@@ -12186,6 +12200,11 @@ class Session(sherpa.ui.utils.Session):
         plot_fit : Plot the fit results (data, model) for a data set.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
+
+        Notes
+        -----
+        For the residual plot, the ylog setting is ignored, and the Y axis
+        is drawn using a linear scale.
 
         Examples
         --------

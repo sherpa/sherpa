@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2014, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2017, 2018, 2020
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -181,6 +182,8 @@ tstoptfct = Extension('sherpa.optmethods._tstoptfct',
                        ['sherpa/include/sherpa/fcmp.hh',
                         'sherpa/include/sherpa/MersenneTwister.h',
                         'sherpa/include/sherpa/functor.hh',
+                        'sherpa/optmethods/tests/tstopt.hh',
+                        'sherpa/optmethods/tests/tstoptfct.hh',
                         'sherpa/optmethods/src/DifEvo.hh',
                         'sherpa/optmethods/src/DifEvo.cc',
                         'sherpa/optmethods/src/NelderMead.hh',

@@ -1,5 +1,24 @@
 #ifdef testMinim
 
+//
+//  Copyright (C) 2020  Smithsonian Astrophysical Observatory
+//
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation; either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License along
+//  with this program; if not, write to the Free Software Foundation, Inc.,
+//  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+//
+
 #include <cstring>
 
 #include "minim.hh"
@@ -144,16 +163,16 @@ int main( int argc, char* argv[] ) {
   return 0;
 }
 #endif
+
 /*
-g++ -o minim -DtestMinim -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
-*/
-/*
-(sherpa3) [dtn@devel12 src]$ valgrind minim
-==2581== Memcheck, a memory error detector
-==2581== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
-==2581== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
-==2581== Command: minim
-==2581==
+g++ -o minim -DtestMinim -DNDEBUG -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
+
+(sherpa) [dtn@devel12 src]$ valgrind minim
+==32284== Memcheck, a memory error detector
+==32284== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==32284== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==32284== Command: minim
+==32284== 
 #
 #:npar = 6
 #:tol=1e-08
@@ -164,7 +183,7 @@ S	N	N	N	N
 Minim_Rosenbrock	-961	0	1.29567	0.184248,0.0284826,1.63673,2.68041,0.529682,0.278636
 Minim_FreudensteinRoth	-574	0	146.953	11.4128,-0.896805,11.4128,-0.896805,11.4128,-0.896805
 Minim_PowellBadlyScaled	1003	0	1.63198e-06	1.50587e-05,6.64168,8.25696e-06,12.1085,1.30173e-05,7.68102
-Minim_BrownBadlyScaled	572	0	1.10634e-17	1e+06,1.99977e-06,1e+06,1.99819e-06,1e+06,2e-06
+Minim_BrownBadlyScaled	2151	0	7.60681e-20	1e+06,1.99991e-06,1e+06,2.0001e-06,1e+06,2e-06
 Minim_Beale	399	0	2.70425e-16	3,0.5,3,0.5,3,0.5
 Minim_JennrichSampson	861	373.086	373.087	0.257825,0.257825,0.257825,0.257825,0.257825,0.257825
 Minim_HelicalValley	145	0	1.12431e-16	1,4.47078e-09,6.95162e-09
@@ -194,20 +213,20 @@ Minim_LinearFullRank	326	0	1.77494e-30	-1,-1,-1,-1,-1,-1
 Minim_LinearFullRank1	247	1.15385	1.15385	2.97377,2.2046,2.13584,0.15931,0.59993,-2.8661
 Minim_LinearFullRank0cols0rows	244	2.66667	2.66667	2.14801,1.95638,0.261166,0.8645,-1.56419,2.61241
 Minim_Chebyquad	641	0	8.64238e-06	0.04472,0.205762,0.230925,0.424449,0.491337,0.591077,0.761322,0.804917,0.956254
-Minim_McCormick	1287	-1.91	-nan	-nan,-nan
-Minim_BoxBetts	84	0	1.02735e-14	1,10,1
-Minim_Paviani	-76813	-45.7	-2.75503	5.78989,7.49795,5.06157,7.23616,4.91172,5.56942,7.55769,6.10409,6.90818,7.98112
-Minim_GoldsteinPrice	83	3	3	-2.85576e-11,-1
+Minim_McCormick	93	-1.9132	-1.91322	-0.547198,-1.5472
+Minim_BoxBetts	94	0	8.5606e-16	1,10,1
+Minim_Paviani	1497	-45.778	-45.6242	9.32565,9.39821,9.34252,9.46265,9.35731,9.36868,9.28165,9.299,9.40574,9.21271
+Minim_GoldsteinPrice	92	3	3	7.848e-14,-1
 Minim_Shekel5	-171	-10.1532	-5.10077	7.99958,7.99964,7.99958,7.99964
 Minim_Shekel7	-179	-10.4029	-5.12882	7.99951,7.99962,7.9995,7.99961
 Minim_Shekel10	-189	-10.5364	-5.17565	7.99948,7.99945,7.99946,7.99944
 Minim_Levy4	-803	-21.502	9.85125	2.64769,1.99586,0.670413,6.99797
-Minim_Levy5	-312	-11.504	38.8617	3.96386,3.99615,3.99623,3.99624,3.99945
-Minim_Levy6	-300	-11.504	47.8504	3.96386,3.99615,3.99623,3.99623,3.99624,3.99945
-Minim_Levy7	-376	-11.504	56.8392	3.96386,3.99615,3.99623,3.99623,3.99623,3.99624,3.99945
+Minim_Levy5	-317	-11.504	38.8617	3.96386,3.99615,3.99623,3.99624,3.99945
+Minim_Levy6	-306	-11.504	47.8504	3.96386,3.99615,3.99623,3.99623,3.99624,3.99945
+Minim_Levy7	-383	-11.504	56.8392	3.96386,3.99615,3.99623,3.99623,3.99623,3.99624,3.99945
 Minim_Griewank	-79	0	4.91141	100.481,-97.6456
-Minim_SixHumpCamel	86	-1.03	-1.03163	0.089842,-0.712656
-Minim_Branin	77	0.397889	0.397887	9.42478,2.475
+Minim_SixHumpCamel	91	-1.03	-1.03163	0.089842,-0.712656
+Minim_Branin	97	0.397889	0.397887	9.42478,2.475
 Minim_Shubert	-96	-24.06	-14.6909	8.82716,5.79179
 Minim_Hansen	113	-176.54	-176.542	4.97648,4.85806
 Minim_Cola	-866	12.8154	256.203	1.94861,-0.57903,0.373911,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108,0.673911,-0.0382,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108,0.0739108
@@ -215,18 +234,19 @@ Minim_Ackley	-85	0	19.3325	16.9988,16.9988
 Minim_Bohachevsky1	122	0	0	-1.20688e-13,-4.84744e-14
 Minim_Bohachevsky2	122	0	0	4.72187e-13,-1.38867e-13
 Minim_Bohachevsky3	119	0	0	-7.20017e-14,5.35598e-14
-Minim_Easom	-19	-1	-0	25.55,25.55
+Minim_Easom	-4096	-1	-0	25.55,25.55
 Minim_Rastrigin	-97	0	7.95966	1.98991,1.98991
 Minim_Michalewicz2	77	-1.8013	-1.8013	2.20291,1.5708
-Minim_Michalewicz5	-322	-4.68766	-4.3749	2.20291,1.5708,2.21933,1.92306,0.996677
+Minim_Michalewicz5	-323	-4.68766	-4.3749	2.20291,1.5708,2.21933,1.92306,0.996677
 Minim_Michalewicz10	-938	-9.66015	-7.54148	2.20303,1.57081,1.28501,1.39237,1.72048,1.57081,2.22106,1.5867,1.65572,1.5708
-==2581==
-==2581== HEAP SUMMARY:
-==2581==     in use at exit: 0 bytes in 0 blocks
-==2581==   total heap usage: 24,021 allocs, 24,021 frees, 3,682,352 bytes allocated
-==2581==
-==2581== All heap blocks were freed -- no leaks are possible
-==2581==
-==2581== For counts of detected and suppressed errors, rerun with: -v
-==2581== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+Minim_McKinnon	-4098	-0.25	-2.376e+11	-100,-100
+==32284== 
+==32284== HEAP SUMMARY:
+==32284==     in use at exit: 0 bytes in 0 blocks
+==32284==   total heap usage: 93,753 allocs, 93,753 frees, 113,818,312 bytes allocated
+==32284== 
+==32284== All heap blocks were freed -- no leaks are possible
+==32284== 
+==32284== For counts of detected and suppressed errors, rerun with: -v
+==32284== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */

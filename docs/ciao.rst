@@ -14,7 +14,7 @@ from the
 with the following modifications:
 
 * the I/O backend uses the CIAO library :term:`Crates` rather than
-  :term:`astropy`;
+  :term:`Astropy`;
 
 * a set of customized IPython routines are provided as part of
   CIAO that automatically loads Sherpa and adjusts the appearance
@@ -22,7 +22,7 @@ with the following modifications:
 
 * and the CIAO version of Sherpa includes the optional XSPEC model
   library (:py:mod:`sherpa.astro.xspec`).
-  
+
 The online documentation provided for Sherpa as part of CIAO,
 namely http://cxc.harvard.edu/sherpa/, can be used with the
 standalone version of Sherpa, but note that the focus of this

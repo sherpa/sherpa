@@ -156,7 +156,7 @@ def setup_stat_single(stat, usestat, usesys):
     return Fit(data, mdl, stat=stat)
 
 
-def setup_stat_multiple(stat, usestat, usesys):
+def setup_stat_multiple(stat, usestat, usesys, numcores):
     """Set up multiple datasets with the given statistic.
 
     The data is stored in sherpa.data.Data1D instances.
@@ -203,7 +203,7 @@ def setup_stat_multiple(stat, usestat, usesys):
     data2 = Data1D("test2", x2, y2, staterror=ystat2, syserror=ysys2)
     data3 = Data1D("test3", x3, y3, staterror=ystat3, syserror=ysys3)
 
-    data = DataSimulFit("multidata", (data1, data2, data3))
+    data = DataSimulFit("multidata", (data1, data2, data3), numcores)
 
     mdl1 = Const1D("mdl1")
     mdl1.c0 = 14
@@ -881,7 +881,7 @@ def test_fit_calc_stat_multiple(stat, usestat, usesys, expected):
     # For now restrict to the default statistic values
     #
     statobj = stat()
-    fit, fits = setup_stat_multiple(statobj, usestat, usesys)
+    fit, fits = setup_stat_multiple(statobj, usestat, usesys, 1)
 
     assert_almost_equal(fit.calc_stat(), expected)
 
@@ -978,7 +978,7 @@ def test_fit_calc_stat_info_multiple(stat, usestat, usesys, expected, qval):
 
     # This test does not use the individual data set results
     statobj = stat()
-    fit, _ = setup_stat_multiple(statobj, usestat, usesys)
+    fit, _ = setup_stat_multiple(statobj, usestat, usesys, 1)
 
     ans = fit.calc_stat_info()
 
@@ -1126,7 +1126,7 @@ def test_fit_calc_chisqr_multiple(stat, usestat, usesys, expected):
 
     # For now restrict the tests to using the default statistic values
     #
-    fit, fits = setup_stat_multiple(stat(), usestat, usesys)
+    fit, fits = setup_stat_multiple(stat(), usestat, usesys, 1)
     ans = fit.calc_chisqr()
 
     allans = [f.calc_chisqr() for f in fits]
@@ -1600,7 +1600,7 @@ def test_fit_calc_stat_error_on_mismatch(stat):
     # them.
     #
     statobj = stat()
-    _, fits = setup_stat_multiple(statobj, False, False)
+    _, fits = setup_stat_multiple(statobj, False, False, 1)
 
     data = [f.data for f in fits]
     models = [f.model for f in fits]
@@ -1710,7 +1710,7 @@ def test_fit_str_multiple(stat):
     """
 
     statobj = stat()
-    fit, _ = setup_stat_multiple(statobj, True, True)
+    fit, _ = setup_stat_multiple(statobj, True, True, 1)
     out = str(fit)
 
     expected = [("data", "multidata"),
@@ -2066,7 +2066,12 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     """
 
     statobj = stat()
-    fit, _ = setup_stat_multiple(statobj, usestat, usesys)
+    fit, _ = setup_stat_multiple(statobj, usestat, usesys, 1)
+    fr = fit.fit()
+    assert fr.succeeded
+    assert_almost_equal(fr.statval, finalstat)
+
+    fit, _ = setup_stat_multiple(statobj, usestat, usesys, 3)
     fr = fit.fit()
     assert fr.succeeded
     assert_almost_equal(fr.statval, finalstat)
@@ -2082,7 +2087,7 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     # much smaller for the likelihood cases.
     #
     # Recall the setup code to ensure separate models are used
-    _, fits = setup_stat_multiple(statobj, usestat, usesys)
+    _, fits = setup_stat_multiple(statobj, usestat, usesys, 1)
     fr2 = fits[2].fit()
 
     # assume only a single free parameter
@@ -2229,7 +2234,7 @@ def test_est_errors_multiple(stat):
     """
 
     statobj = stat()
-    fit, _ = setup_stat_multiple(statobj, True, True)
+    fit, _ = setup_stat_multiple(statobj, True, True, 1)
     fit.estmethod = Covariance()
     fit.fit()
 

@@ -7553,14 +7553,15 @@ class Session(NoNewAttributesAfterInit):
 
         return ids
 
-    def _get_fit_obj(self, datasets, models, estmethod):
+    def _get_fit_obj(self, datasets, models, estmethod, numcores=1):
+
         datasets = tuple(datasets)
         models = tuple(models)
         if len(datasets) == 1:
             d = datasets[0]
             m = models[0]
         else:
-            d = sherpa.data.DataSimulFit('simulfit data', datasets)
+            d = sherpa.data.DataSimulFit('simulfit data', datasets, numcores)
             m = sherpa.models.SimulFitModel('simulfit model', models)
         if not self._current_method.name == 'gridsearch':
             if m.is_discrete:
@@ -7613,13 +7614,13 @@ class Session(NoNewAttributesAfterInit):
 
         return fit_to_ids, datasets, models
 
-    def _get_fit(self, id, otherids=(), estmethod=None):
+    def _get_fit(self, id, otherids=(), estmethod=None, numcores=1):
 
         fit_to_ids, datasets, models = self._prepare_fit(id, otherids)
 
         self._add_extra_data_and_models(fit_to_ids, datasets, models)
 
-        f = self._get_fit_obj(datasets, models, estmethod)
+        f = self._get_fit_obj(datasets, models, estmethod, numcores)
 
         fit_to_ids = tuple(fit_to_ids)
 
@@ -12501,6 +12502,9 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) for a data
         set.
 
+        .. versionchanged:: 4.12.0
+           The Y axis is now always drawn using a linear scale.
+
         Parameters
         ----------
         id : int or str, optional
@@ -12532,13 +12536,14 @@ class Session(NoNewAttributesAfterInit):
         plot_ratio : Plot the ratio of data to model for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
-        set_ylinear : New plots will display a linear Y axis.
-        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
         Notes
         -----
         The additional arguments supported by `plot_resid` are the same
         as the keywords of the dictionary returned by `get_data_plot_prefs`.
+
+        The ylog setting is ignored, and the Y axis is drawn using a
+        linear scale.
 
         Examples
         --------
@@ -12636,6 +12641,9 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) divided by
         the error, for a data set.
 
+        .. versionchanged:: 4.12.0
+           The Y axis is now always drawn using a linear scale.
+
         Parameters
         ----------
         id : int or str, optional
@@ -12657,11 +12665,6 @@ class Session(NoNewAttributesAfterInit):
            If the data set does not exist or a source expression has
            not been set.
 
-        Notes
-        -----
-        The additional arguments supported by `plot_delchi` are the same
-        as the keywords of the dictionary returned by `get_data_plot_prefs`.
-
         See Also
         --------
         get_delchi_plot : Return the data used by plot_delchi.
@@ -12672,8 +12675,14 @@ class Session(NoNewAttributesAfterInit):
         plot_resid : Plot the residuals (data - model) for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
-        set_ylinear : New plots will display a linear Y axis.
-        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Notes
+        -----
+        The additional arguments supported by `plot_delchi` are the same
+        as the keywords of the dictionary returned by `get_data_plot_prefs`.
+
+        The ylog setting is ignored, and the Y axis is drawn using a
+        linear scale.
 
         Examples
         --------
@@ -12707,6 +12716,9 @@ class Session(NoNewAttributesAfterInit):
 
         This function displays the ratio data / model for a data set.
 
+        .. versionchanged:: 4.12.0
+           The Y axis is now always drawn using a linear scale.
+
         Parameters
         ----------
         id : int or str, optional
@@ -12738,13 +12750,14 @@ class Session(NoNewAttributesAfterInit):
         plot_resid : Plot the residuals (data - model) for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
-        set_ylinear : New plots will display a linear Y axis.
-        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
         Notes
         -----
         The additional arguments supported by `plot_ratio` are the same
         as the keywords of the dictionary returned by `get_data_plot_prefs`.
+
+        The ylog setting is ignored, and the Y axis is drawn using a
+        linear scale.
 
         Examples
         --------
@@ -12966,6 +12979,10 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
 
+        .. versionchanged:: 4.12.0
+           The Y axis of the residual plot is now always drawn using a
+           linear scale.
+
         Parameters
         ----------
         id : int or str, optional
@@ -13008,6 +13025,9 @@ class Session(NoNewAttributesAfterInit):
         The additional arguments supported by `plot_fit_resid` are the same
         as the keywords of the dictionary returned by `get_data_plot_prefs`,
         and are applied to both plots.
+
+        For the residual plot, the ylog setting is ignored, and the Y axis
+        is drawn using a linear scale.
 
         Examples
         --------
@@ -13090,6 +13110,9 @@ class Session(NoNewAttributesAfterInit):
         as the keywords of the dictionary returned by `get_data_plot_prefs`,
         and are applied to both plots.
 
+        For the ratio plot, the ylog setting is ignored, and the Y axis
+        is drawn using a linear scale.
+
         Examples
         --------
 
@@ -13125,6 +13148,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_delchi` - for a data set.
+
+        .. versionchanged:: 4.12.0
+           The Y axis of the delchi plot is now always drawn using a
+           linear scale.
 
         Parameters
         ----------
@@ -13168,6 +13195,9 @@ class Session(NoNewAttributesAfterInit):
         The additional arguments supported by `plot_fit_delchi` are the same
         as the keywords of the dictionary returned by `get_data_plot_prefs`,
         and are applied to both plots.
+
+        For the delchi plot, the ylog setting is ignored, and the Y axis
+        is drawn using a linear scale.
 
         Examples
         --------

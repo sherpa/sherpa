@@ -1,6 +1,6 @@
-from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,248 +16,413 @@ from __future__ import print_function
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
 
-from sherpa.utils import _ncpus
-from sherpa.utils.testing import SherpaTestCase
-from sherpa.optmethods import optfcts
+import numpy as np
+import pytest
+
 from sherpa.optmethods import _tstoptfct
+from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead
+from sherpa.utils import _ncpus
 
+def init(name, npar):
+    x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
+    return x0, xmin, xmax, fmin
 
-class test_optmethods(SherpaTestCase):
+def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
+    """The central function for all the optimization test
+    1) Out of the 35 tests from:
+    J. MORE', B. GARBOW & K. HILLSTROM,
+    "Algorithm 566: Fortran Subroutines for Testing Unconstrained 
+    Optimization Software.", ACM TOMS, VOL. 7, PAGES 14-41 AND 136-140, 1981
+    xfail: lmdif(6), minim(5), neldermead(3), moncar(2)
+    2) The remaining random 32 'global' func tests:
+    xfail: minim(14), montecarlo(0), neldermead(10)
+    """
+    x0, xmin, xmax, fmin = init(fct.__name__, npar)
+    status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax)
+    assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
+    if opt == lmdif:
+        status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax, numcores=_ncpus)
+        assert fmin  == pytest.approx(fval, rel=reltol, abs=abstol)
+        assert xtra.get('num_parallel_map') != 0
 
-    def setUp(self):
-        self.tolerance = 1.0e-2
-        self.mc = '_montecarlo'
-        self.nm = '_neldermead'
-        self.lm = '_lmdif'
-        self.verbose = False
+###############################################################################
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_rosenbrock(opt, npar=4):
+    tst_opt(opt, _tstoptfct.rosenbrock, npar)
 
-    def print_result( self, name, f, x, nfev ):
-        print('%s(%s) = %g in %d nfev' % (name, x, f, nfev))
+@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
+                                 pytest.param(minim, marks=pytest.mark.xfail),
+                                 pytest.param(montecarlo,
+                                              marks=pytest.mark.xfail),
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_freudensteinroth(opt, npar=4):
+    tst_opt(opt, _tstoptfct.freudenstein_roth, npar)
+    
+@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
+                                 minim, montecarlo, neldermead])
+def test_powell_badly_scaled(opt, npar=2):
+    tst_opt(opt, _tstoptfct.powell_badly_scaled, npar)
 
-    def tst_all( self, name, fct, fmin, x0, xmin, xmax,
-                 iprint=False ):
-        self.tst( optfcts.neldermead, name + self.nm, fct, fmin,
-                  x0, xmin, xmax, iprint=iprint )
-        self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
-                  x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0) )
-        self.tst( optfcts.lmdif, name + self.lm, fct, fmin,
-                  x0, xmin, xmax, iprint=iprint )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_brown_badly_scaled(opt, npar=2):
+    tst_opt(opt, _tstoptfct.brown_badly_scaled, npar)
 
-    def tst( self, optmethod, name, fct, fmin, x0, xmin, xmax,
-             maxfev=4096, iprint=False, numcores=1 ):
-        if 1 == numcores:
-            status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax,
-                                                     maxfev=maxfev*len(x0))
-        else:
-            status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax,
-                                                     maxfev=maxfev*len(x0),
-                                                     numcores=numcores)
-        nfev = stuff.get('nfev')
-        if iprint:
-            print('fmin = %g vs fval = %g' % ( fmin, fval ))
-        if self.verbose or iprint:
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_beale(opt, npar=2):
+    tst_opt(opt, _tstoptfct.beale, npar)
 
-            self.print_result( name, fval, x, nfev )
-        self.assertEqualWithinTol( fval, fmin, self.tolerance )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_jennrich_sampson(opt, npar=2):
+    tst_opt(opt, _tstoptfct.jennrich_sampson, npar)
 
-    def test_rosenbrock(self):
-        name = 'rosenbrock'
-        npar = 4
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.rosenbrock, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_helical_valley(opt, npar=3):
+    tst_opt(opt, _tstoptfct.helical_valley, npar)
 
-    def test_powell_badly_scaled(self):
-        name = 'powell_badly_scaled'
-        npar = 2
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst( optfcts.neldermead, name + self.nm,
-                  _tstoptfct.powell_badly_scaled, fmin, x0, xmin, xmax )
-        self.tst( optfcts.montecarlo, name + self.mc,
-                  _tstoptfct.powell_badly_scaled, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_bard(opt, npar=3):
+    tst_opt(opt, _tstoptfct.bard, npar)
 
-    def test_brown_badly_scaled(self):
-        name = 'brown_badly_scaled'
-        npar = 2
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.brown_badly_scaled, fmin, x0, xmin,
-                      xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_gaussian(opt, npar=3):
+    tst_opt(opt, _tstoptfct.gaussian, npar)
 
-    def test_beale(self):
-        name = 'beale'
-        npar = 2
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name,_tstoptfct.beale, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
+                                 pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, neldermead])
+def test_meyer(opt, npar=3):
+    tst_opt(opt, _tstoptfct.meyer, npar)
 
-    def test_jennrich_sampson(self):
-        name = 'jennrich_sampson'
-        npar = 2
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.jennrich_sampson, fmin, x0, xmin, xmax )
+@pytest.mark.slow
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_gulf_research_development(opt, npar=3):
+    tst_opt(opt, _tstoptfct.gulf_research_development, npar)
 
-    def test_helical_valley(self):
-        name = 'helical_valley'
-        npar = 3
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.helical_valley, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_box3d(opt, npar=3):
+    tst_opt(opt, _tstoptfct.box3d, npar)
 
-    def test_bard(self):
-        name = 'bard'
-        npar = 3
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.bard, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_powell_singular(opt, npar=4):
+    tst_opt(opt, _tstoptfct.powell_singular, npar)
+    
+@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
+                                 minim, montecarlo, neldermead])
+def test_wood(opt, npar=4):
+    tst_opt(opt, _tstoptfct.wood, npar)
 
-    def test_gaussian(self):
-        name = 'gaussian'
-        npar = 3
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst( optfcts.lmdif, name + self.lm, _tstoptfct.gaussian,
-                  fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_kowalik_osborne(opt, npar=4):
+    tst_opt(opt, _tstoptfct.kowalik_osborne, npar)
 
-##     # This test actually passed, there is a bug with assertEqualWithinTol
-##     def test_meyer(self):
-##         name = 'meyer'
-##         npar = 3
-##         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-##         self.tst_all( name, _tstoptfct.meyer_fct, _tstoptfct.meyer,
-##                       fmin, x0, xmin, xmax )
+@pytest.mark.slow
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_brown_dennis(opt, npar=4):
+    tst_opt(opt, _tstoptfct.brown_dennis, npar)
 
-    def test_gulf_research_development(self):
-        name = 'gulf_research_development'
-        npar = 3
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.gulf_research_development,
-                      fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_osborne1(opt, npar=5):
+    tst_opt(opt, _tstoptfct.osborne1, npar)
 
-    def test_box3d(self):
-        name = 'box3d'
-        npar = 3
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.box3d, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_biggs(opt, npar=6):
+    tst_opt(opt, _tstoptfct.biggs, npar)
 
-    def test_wood(self):
-        name = 'wood'
-        npar = 4
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst( optfcts.neldermead, name + self.nm, _tstoptfct.wood,
-                  fmin, x0, xmin, xmax )
-        self.tst( optfcts.montecarlo, name + self.mc, _tstoptfct.wood,
-                  fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif,
+                                 pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, neldermead])
+def test_osborne2(opt, npar=11):
+    tst_opt(opt, _tstoptfct.osborne2, npar)
 
-    def test_kowalik_osborne(self):
-        name = 'kowalik_osborne'
-        npar = 4
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.kowalik_osborne, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_watson(opt, npar=6):
+    tst_opt(opt, _tstoptfct.watson, npar)
 
-    def test_brown_dennis(self):
-        name = 'brown_dennis'
-        npar = 4
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.brown_dennis, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif,
+                                 pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead, marks=pytest.mark.xfail)])
+def test_extended_rosenbrock(opt, npar=12):
+    tst_opt(opt, _tstoptfct.rosenbrock, npar)
 
-##     # look at why it fails for monte carlo
-    def test_biggs(self):
-        name = 'biggs'
-        npar = 6
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        #self.tst( optfcts.neldermead, name + self.nm, _tstoptfct.biggs_fct,
-        #          fmin, x0, xmin, xmax )
-        self.tst( optfcts.lmdif, name + self.lm, _tstoptfct.biggs,
-                  fmin, x0, xmin, xmax )
+@pytest.mark.slow
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_extended_powell_singular(opt, npar=8):
+    tst_opt(opt, _tstoptfct.powell_singular, npar)
 
-    def test_osborne2(self):
-        name = 'osborne2'
-        npar = 11
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.osborne2, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_penaltyI(opt, npar=4):
+    tst_opt(opt, _tstoptfct.penaltyI, npar)
 
-    def test_watson(self):
-        name = 'watson'
-        npar = 6
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst( optfcts.neldermead, name + self.nm, _tstoptfct.watson,
-                  fmin, x0, xmin, xmax )
-        self.tst( optfcts.montecarlo, name + self.mc, _tstoptfct.watson,
-                  fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
+                                 minim, montecarlo, neldermead])
+def test_penaltyII(opt, npar=4):
+    tst_opt(opt, _tstoptfct.penaltyII, npar)
+    
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_variably_dimensioned(opt, npar=6):
+    tst_opt(opt, _tstoptfct.variably_dimensioned, npar)
 
-    def test_variably_dimensioned(self):
-        name = 'variably_dimensioned'
-        npar = 5
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.variably_dimensioned, fmin, x0, xmin,
-                      xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_trigonometric(opt, npar=4):
+    tst_opt(opt, _tstoptfct.trigonometric, npar)
 
-    def test_trigonometric(self):
-        name = 'trigonometric'
-        npar = 9
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst( optfcts.neldermead, name + self.nm,
-                  _tstoptfct.trigonometric, fmin, x0, xmin, xmax )
-        self.tst( optfcts.montecarlo, name + self.mc,
-                  _tstoptfct.trigonometric, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
+                                 pytest.param(minim, marks=pytest.mark.xfail),
+                                 pytest.param(montecarlo,
+                                              marks=pytest.mark.xfail),
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_brown_almost_linear(opt, npar=3):
+    tst_opt(opt, _tstoptfct.brown_almost_linear, npar)
 
-    def test_discrete_boundary(self):
-        name = 'discrete_boundary'
-        npar = 5
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.discrete_boundary, fmin, x0, xmin,
-                      xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_discrete_boundary(opt, npar=4):
+    tst_opt(opt, _tstoptfct.discrete_boundary, npar)
 
-    def test_discrete_integral(self):
-        name = 'discrete_integral'
-        npar = 5
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.discrete_integral, fmin, x0, xmin,
-                      xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_discrete_integral(opt, npar=4):
+    tst_opt(opt, _tstoptfct.discrete_integral, npar)
+    
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_broyden_tridiagonal(opt, npar=4):
+    tst_opt(opt, _tstoptfct.broyden_tridiagonal, npar)
 
-    def test_broyden_tridiagonal(self):
-        name = 'broyden_tridiagonal'
-        npar = 16
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.broyden_tridiagonal, fmin, x0,
-                      xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_broyden_banded(opt, npar=4):
+    tst_opt(opt, _tstoptfct.broyden_banded, npar)
 
-    def test_broyden_banded(self):
-        name = 'broyden_banded'
-        npar = 18
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.broyden_banded, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_linear_fullrank(opt, npar=4):
+    tst_opt(opt, _tstoptfct.linear_fullrank, npar)
 
-    def test_linear_fullrank(self):
-        name = 'linear_fullrank'
-        npar = 18
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.linear_fullrank, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_linear_fullrank1(opt, npar=4):
+    tst_opt(opt, _tstoptfct.linear_fullrank1, npar)
 
-    def test_linear_fullrank1(self):
-        name = 'linear_fullrank1'
-        npar = 15
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.linear_fullrank1, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_linear_fullrank0cols0rows0(opt, npar=4):
+    tst_opt(opt, _tstoptfct.linear_fullrank0cols0rows, npar)
 
-    def test_linear_fullrank0cols0rows(self):
-        name = 'linear_fullrank0cols0rows'
-        npar = 13
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.linear_fullrank0cols0rows, fmin, x0,
-                      xmin, xmax )
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
+def test_linear_chebyquad(opt, npar=9):
+    tst_opt(opt, _tstoptfct.chebyquad, npar)
+###############################################################################
 
-    def test_chebyquad(self):
-        name = 'chebyquad'
-        npar = 11
-        x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-        self.tst_all( name, _tstoptfct.chebyquad, fmin, x0, xmin, xmax )
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, 
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_Ackley(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Ackley, npar)
 
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Booth(opt, npar=6):
+    tst_opt(opt, _tstoptfct.Booth, npar)
 
-def tstme():
-    from sherpa.utils import SherpaTest
-    import sherpa.optmethods
-    SherpaTest(sherpa.optmethods).test()
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Bohachevsky1(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Bohachevsky1, npar)
 
-#
-# pushd ../../../ ; makeme ; popd ; python test_optmethods.py
-#
-if __name__ == '__main__':
-    tstme()
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Bohachevsky2(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Bohachevsky2, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Bohachevsky3(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Bohachevsky3, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Branin(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Branin, npar)
+
+# why the following test fails for AMD64?
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  montecarlo, neldermead])
+# def test_Branin2(opt, npar=2):
+#     tst_opt(opt, _tstoptfct.Branin2, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_Chichinadze(opt, npar=2):
+#     tst_opt(opt, _tstoptfct.Chichinadze, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_Cola(opt, npar=17):
+#     tst_opt(opt, _tstoptfct.Cola, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Colville(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Colville, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_dcs(opt, npar=5):
+#     tst_opt(opt, _tstoptfct.dcs, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_decanom(opt, npar=2):
+    tst_opt(opt, _tstoptfct.decanom, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_dodecal(opt, npar=3):
+    tst_opt(opt, _tstoptfct.dodecal, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, neldermead])
+def test_DixonPrice(opt, npar=5):
+    tst_opt(opt, _tstoptfct.DixonPrice, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead, marks=pytest.mark.xfail)])
+def test_Easom(opt, npar=5):
+    tst_opt(opt, _tstoptfct.Easom, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_factor(opt, npar=5):
+#     tst_opt(opt, _tstoptfct.factor, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_Func1(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Func1, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_Griewank(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Griewank, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, neldermead])
+def test_Hansen(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Hansen, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Hartman6(opt, npar=6):
+    tst_opt(opt, _tstoptfct.Hartman6, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Himmelblau(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Himmelblau, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Holzman1(opt, npar=3):
+    tst_opt(opt, _tstoptfct.Holzman1, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Holzman2(opt, npar=3):
+    tst_opt(opt, _tstoptfct.Holzman2, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo,
+                                 pytest.param(neldermead, marks=pytest.mark.xfail)])
+def test_Judge(opt, npar=3):
+    tst_opt(opt, _tstoptfct.Judge, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead, marks=pytest.mark.xfail)])
+def test_Levy(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Levy, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_McCormick(opt, npar=2):
+    tst_opt(opt, _tstoptfct.McCormick, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_McKinnon(opt, npar=2):
+#     tst_opt(opt, _tstoptfct.McKinnon, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Michalewicz(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Michalewicz, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, neldermead])
+def test_Paviani(opt, npar=10):
+    tst_opt(opt, _tstoptfct.Paviani, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_Rastrigin(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Rastrigin, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_seqp(opt, npar=2):
+    tst_opt(opt, _tstoptfct.seqp, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_Shekel5(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Shekel5, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
+def test_Shekel7(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Shekel7, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo,
+                                 pytest.param(neldermead, marks=pytest.mark.xfail)])
+def test_Shekel10(opt, npar=4):
+    tst_opt(opt, _tstoptfct.Shekel10, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_ShekelModified(opt, npar=2):
+    tst_opt(opt, _tstoptfct.ShekelModified, npar)
+
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 montecarlo, neldermead])
+def test_Shubert(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Shubert, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_SixHumpCamel(opt, npar=2):
+#     tst_opt(opt, _tstoptfct.SixHumpCamel, npar)
+
+@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+def test_Trecanni(opt, npar=2):
+    tst_opt(opt, _tstoptfct.Trecanni, npar)
+
+# @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+#                                  pytest.param(montecarlo,
+#                                               marks=pytest.mark.xfail),
+#                                  pytest.param(neldermead,
+#                                               marks=pytest.mark.xfail)])
+# def test_Trefethen4(opt, npar=2):
+#     tst_opt(opt, _tstoptfct.Trefethen4, npar)
+    
