@@ -546,6 +546,9 @@ class ArithmeticModel(Model):
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
 
+    def regrid(self, *args, **kwargs):
+        raise NotImplementedError
+
     def startup(self, cache):
         self._queue = ['']
         self._cache = {}
