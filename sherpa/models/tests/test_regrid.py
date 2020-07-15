@@ -27,7 +27,7 @@ from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt, Data1D
 from sherpa.models.basic import Box1D
-from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel
+from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel, Gauss2D
 from sherpa.utils.err import ModelErr
 from sherpa.utils import neville, linear_interp
 from sherpa.utils import akima
@@ -292,7 +292,7 @@ def test_runtime_interp():
     assert ygot == approx(yexpected)
 
 
-def test_regrid_binaryop():
+def test_regrid_binaryop_1d():
     """issue #762, Cannot regrid a composite model (BinaryOpModel)"""
     from sherpa.stats import LeastSq
     from sherpa.fit import Fit
@@ -357,6 +357,40 @@ def test_regrid_binaryop():
     assert result.statval < 1.0
     assert mygauss.counter == myconst.counter
     assert (result.nfev + 4) * x_regrid.size  == mygauss.counter
+
+def test_regrid_binaryop_2d():
+    y0, x0 = np.mgrid[20:29, 10:20]
+    y0 = y0.flatten()
+    x0 = x0.flatten()
+
+    gmdl = Gauss2D()
+    gmdl.fwhm = 14
+    gmdl.xpos = 15
+    gmdl.ypos = 24
+    gmdl.ampl = 10
+
+    cmdl = Const2D()
+    cmdl.c0 = 4
+
+    xr1 = np.arange(10, 20, 1)
+    yr1 = np.arange(20, 29, 1)
+
+    rmdlg = gmdl.regrid(xr1, yr1)
+    rmdlc = cmdl.regrid(xr1, yr1)
+
+    shape = y0.shape
+    truthg = gmdl(x0, y0).reshape(shape)
+    truthc = cmdl(x0, y0).reshape(shape)
+    truth = truthg + truthc
+
+    ans1 = rmdlg(x0, y0).reshape(shape)
+    ans2 = rmdlc(x0, y0).reshape(shape)
+    assert (ans1 != truthg).any() == False
+    assert (ans2 != truthc).any() == False
+
+    rmdl = (gmdl + cmdl).regrid(xr1, yr1)
+    ans3 = rmdl(x0, y0).reshape(shape)
+    assert (ans3 != truth).any() == False
 
 
 class MyModel(RegriddableModel1D):
