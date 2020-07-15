@@ -581,6 +581,12 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
+    def check_regrid_kwargs(self, **kwargs):
+        valid_keys = ('interp', '_self',)
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise TypeError("unknown keyword argument: '%s'" % key)
+
     def startup(self, cache=False):
         self._queue = ['']
         self._cache = {}
@@ -604,7 +610,7 @@ class RegriddableModel1D(ArithmeticModel):
     ndim = 1
     "A one-dimensional model."
 
-    def regrid(self, *arrays, **kwargs):
+    def regrid(self, *args, **kwargs):
         """
         The class RegriddableModel1D allows the user to evaluate in the
         requested space then interpolate onto the data space. An optional
@@ -618,14 +624,14 @@ class RegriddableModel1D(ArithmeticModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        valid_keys = ('interp', )
-        for key in kwargs.keys():
-            if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
-        eval_space = EvaluationSpace1D(*arrays)
+        try:
+            self.check_regrid_kwargs(**kwargs)
+        except TypeError as te:
+            raise te
+        eval_space = EvaluationSpace1D(*args)
         regridder = ModelDomainRegridder1D(eval_space, **kwargs)
-        regridder._make_and_validate_grid(arrays)
-        return regridder.apply_to(self)
+        regridder._make_and_validate_grid(args)
+        return regridder.apply_to(kwargs.get('_self', self))
 
 
 class RegriddableModel2D(ArithmeticModel):
@@ -634,10 +640,14 @@ class RegriddableModel2D(ArithmeticModel):
     ndim = 2
     "A two-dimensional model."
 
-    def regrid(self, *arrays):
-        eval_space = EvaluationSpace2D(*arrays)
+    def regrid(self, *args, **kwargs):
+        try:
+            self.check_regrid_kwargs(**kwargs)
+        except TypeError as te:
+            raise te
+        eval_space = EvaluationSpace2D(*args)
         regridder = ModelDomainRegridder2D(eval_space)
-        return regridder.apply_to(self)
+        return regridder.apply_to(kwargs.get('_self', self))
 
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
@@ -652,7 +662,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
-class BinaryOpModel(CompositeModel, RegriddableModel1D):
+class BinaryOpModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
@@ -669,6 +679,10 @@ class BinaryOpModel(CompositeModel, RegriddableModel1D):
                                 ('(%s %s %s)' %
                                  (self.lhs.name, opstr, self.rhs.name)),
                                 (self.lhs, self.rhs))
+
+    def regrid(self, *args, **kwargs):
+        for part in self.parts:
+            return part.regrid(*args, _self=self, **kwargs)
 
     def startup(self, cache=False):
         self.lhs.startup(cache)
