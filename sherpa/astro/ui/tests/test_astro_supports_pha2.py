@@ -42,17 +42,6 @@ from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 
 
-# TODO: replace by clean_astro_ui
-@pytest.fixture(autouse=True)
-def setup(request):
-    ui.clean()
-
-    def fin():
-        ui.clean()
-
-    request.addfinalizer(fin)
-
-
 def validate_pha(d, bkg=True):
     """Check the data is a PHA with expected structure.
 
@@ -121,7 +110,7 @@ def validate_pha(d, bkg=True):
 
 @requires_data
 @requires_fits
-def test_load_pha2(make_data_path, caplog):
+def test_load_pha2(make_data_path, caplog, clean_astro_ui):
     """Basic test that a pha2 file can be read in."""
 
     basename = '3c120_pha2'
@@ -186,7 +175,7 @@ def test_load_pha2(make_data_path, caplog):
 
 @requires_data
 @requires_fits
-def test_load_pha2_compare_meg_order1(make_data_path):
+def test_load_pha2_compare_meg_order1(make_data_path, clean_astro_ui):
     """Do we read in the MEG +/-1 orders?"""
 
     # The MEG -1 order is dataset 9
@@ -265,7 +254,7 @@ def test_load_pha2_compare_meg_order1(make_data_path):
 #
 @requires_data
 @requires_fits
-def test_list_bkg_ids(make_data_path):
+def test_list_bkg_ids(make_data_path, clean_astro_ui):
     """Does list_bkg_ids return a list"""
 
     basename = '3c120_pha2'
@@ -293,7 +282,7 @@ def test_list_bkg_ids(make_data_path):
 #
 @requires_data
 @requires_fits
-def test_list_response_ids_pha2(make_data_path):
+def test_list_response_ids_pha2(make_data_path, clean_astro_ui):
     """Does list_response_ids return a list when input is pha2"""
 
     basename = '3c120_pha2'
@@ -337,7 +326,7 @@ def test_list_response_ids_pha2(make_data_path):
 #
 @requires_data
 @requires_fits
-def test_list_response_ids_pha1(make_data_path):
+def test_list_response_ids_pha1(make_data_path, clean_astro_ui):
     """Does list_response_ids return a list when input is pha1"""
 
     basename = '3c120_heg_1.pha'
@@ -384,7 +373,7 @@ def test_list_response_ids_pha1(make_data_path):
 
 @requires_data
 @requires_fits
-def test_746(make_data_path):
+def test_746(make_data_path, clean_astro_ui):
     """Test https://github.com/sherpa/sherpa/issues/746
 
     Something in #444 (reverted in #759) caused:
