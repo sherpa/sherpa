@@ -25,7 +25,7 @@ import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
     ArithmeticFunctionModel, RegridWrappedModel
-from sherpa.models.basic import Box1D, Const1D, Gauss1D, Const2D, Gauss2D, \
+from sherpa.models.basic import Box1D, Const1D, Gauss1D, Const2D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
 from sherpa.instrument import PSFModel
@@ -774,7 +774,6 @@ def test_regrid1d_interpolation(eincr, rincr, margs, setup_1d):
     _test_regrid1d_interpolation(rtol=tol, method=method,
                                  eval_incr=eincr, req_incr=rincr, setup_1d=setup_1d)
 
-
 def test_regrid1d_int(setup_1d):
     _test_regrid1d_int(rtol=0.015, setup_1d=setup_1d)
 
@@ -1079,3 +1078,12 @@ def setup_overlapping_spaces(integrated, x_overlaps, y_overlaps):
     else:
         y2 = [-1, -2, -3], None
     return x1, y1, x2, y2, (x_overlaps and y_overlaps)
+
+def test_wrong_kwargs():
+    xgrid = np.arange(2, 6, 0.1)
+    d = Data1D('tst', xgrid, np.ones_like(xgrid))
+    mdl = Box1D()
+    requested = np.arange(1, 7, 0.1)
+    with pytest.raises(TypeError) as excinfo:
+        ygot = d.eval_model(mdl.regrid(requested, fubar='wrong_kwargs'))
+    assert "unknown keyword argument: 'fubar'" in str(excinfo.value)
