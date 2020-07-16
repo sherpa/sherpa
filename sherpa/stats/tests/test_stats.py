@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020
+#       Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,10 +20,12 @@ from __future__ import print_function
 #
 
 import numpy
+import pytest
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_xspec, requires_fits
 from sherpa.data import Data1D
+from sherpa.astro.data import DataPHA
 
 from sherpa.models import PowLaw1D, SimulFitModel
 from sherpa.data import DataSimulFit
@@ -620,3 +623,49 @@ class test_stats(SherpaTestCase):
         ui.set_stat("wstat")
         ui.fit("stat")
         ui.get_stat_info()
+
+
+@pytest.mark.xfail(reason='y errors are not calculated correctly')
+@pytest.mark.parametrize("bexp,yexp,dyexp",
+                         [(1,
+                           [0, -1, -3, 1, 3, 0, -2, 2, 0],
+                           [1, 1, 1.73205078, 1, 1.73205078, 1.41421354, 2, 2, 2.44948983]),
+                          (10,
+                           [0, -0.1, -0.3, 1, 3, 0.9, 0.7, 2.9, 2.7],
+                           [0.1, 0.1, 0.173205078, 1, 1.73205078, 1.0049876, 1.01488912, 1.73493516, 1.74068952]),
+                          (0.1,
+                           [0, -10, -30, 1, 3, -9, -29, -7, -27],
+                           [1, 10, 17.320507, 1, 1.73205078, 10.0498753, 17.3493519, 10.1488914, 17.4068947])
+                          ])
+def test_xspecvar_zero_handling(bexp, yexp, dyexp):
+    """How does XSPEC variance handle 0 in source and/or background?
+
+    The values were calculated using XSPEC 12.10.1m (HEASOFT 6.26.1)
+    using the following commands to create the file foo.dat which
+    contains (after three 'header' lines) the data 'x 0.5 y dy'
+
+        data foo.fits
+	iplot data
+	wplot foo.dat
+	quit
+
+    where foo.fits is a fake PHA file set up to have the channel/count
+    values used below (a CSC-style PHA file was used so that source
+    and background were in the same file but a separate bgnd PHA
+    file could also have been used).
+    """
+
+    stat = Chi2XspecVar()
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    scnts = numpy.asarray([0, 0, 0, 1, 3, 1, 1, 3, 3], dtype=numpy.int16)
+    bcnts = numpy.asarray([0, 1, 3, 0, 0, 1, 3, 1, 3], dtype=numpy.int16)
+
+    s = DataPHA('src', chans, scnts, exposure=1)
+    b = DataPHA('bkg', chans, bcnts, exposure=bexp)
+    s.set_background(b)
+    s.subtract()
+
+    y, dy, other = s.to_fit(staterrfunc=stat.calc_staterror)
+    assert other is None
+    assert y == pytest.approx(yexp)
+    assert dy == pytest.approx(dyexp)
