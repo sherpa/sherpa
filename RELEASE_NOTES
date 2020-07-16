@@ -1,5 +1,73 @@
 Release Notes
 
+Sherpa 4.12.1
+=============
+
+This release of Sherpa supports a patch for CIAO 4.12. This release is driven by fixes that were deemed necessary to warrant a patch to sherpa in the CIAO 4.12 release. The changes include issues which had the potential of impacting users by either stopping an analysis session or providing incorrect or potentially confusing results, particularly in the area of grating analysis and multiple datasets. Additionally, this patch includes several fixes and improvements such as initial support for Python 3.8.
+
+This version of Sherpa has been tested with Python 3.5, 3.6, and 3.7. There has been limited python 3.8 testing as well. 
+
+Details
+-------
+
+Testing and infrastructure fixes have been omitted
+
+#832 - Support building with NumPy 1.19
+    Compatibility updates for numpy v1.19 with regards to numpy.distutils and tostring deprecation
+
+#781 - Docs: fix typo in docstring for calc_kcorr
+    Fixed a typo in docstring for calc_kcorrFix a typo in the documentation 
+    for calc_kcorr: change "0." to "0.5" in one of the examples.
+
+#759 - revert PR #444 (caching) 
+    Revert the ARF cache added in #444, as well as some of the related code 
+    changes, as they caused problems with Analysis in wavelength space 
+    (e.g. #746)
+
+#756 - calculate_photon_flux/calculate_energy_flux fix and improvement
+    Bug fixes and improvements for calculate_photon_flux and calculate_energy_flux:
+        - address flux and flux-density calculation issues discussed (fix #619)
+        - fix documentation of the lo and hi arguments (fix #308)
+        - add model parameter to calc_photon/energy_flux which allows users to
+          easily calculate "unabsorbed" fluxes
+
+#747 - reworked regrid to eval usr grid, but 0 every where else
+    Modifies the 1D grid implementation to evaluate over the user-supplied 
+    range, anything outside that is set to 0
+
+#745 - ensure that min/max limits are applied to linked parameters before use
+    Enforce parameter restrictions (they must lie within their min/max range) 
+    even when the parameter is linked to another (which has a different range).
+
+#739 - Post 4.12.0 Updates 
+    Update readme to include DOI for 4.12.0
+
+#738 - Release 4.12.0 
+    Merge the 4.12 Release into master
+
+#737 - Update copyright year for the documentation
+    Read-The-Docs: update copyright year
+
+#735 - Remove ChIPS support
+    Remove the ChIPS plotting code and configuration options from the code base
+
+#734 - Change datastack query_by_header_keyword to not error if keyword is missing
+    Change the sherpa.astro.datastack query_by_header_keyword routine so that 
+    it skips data sets which do not have the keyword, rather than raising a 
+    KeyError. This also affects query_by_obsid.
+
+#733 - fix a bug with fit(cache=False) passing the runtime option while fitting 
+#732 - Remove unused Python 2.7 compatibility code
+    Remove unused code from the removal of Python 2.7 support.
+
+#696 - Support python 3.8
+    Updates to the support python 3.8 including
+        - remove syntax warnings from use of is with a literal
+        - remove deprecation warnings about PY_SSIZE_T_CLEAN
+        - fix index error (use scalar indexes)
+        - update the documentation to highlight initial python 3.8 support
+
+
 Sherpa 4.12.0
 =============
 

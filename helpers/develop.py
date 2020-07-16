@@ -36,7 +36,7 @@ try:
                 shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
 
 except ImportError:
-    from distutils.core import Command
+    from distutils.cmd import Command
 
     class develop(Command):
 

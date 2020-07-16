@@ -7553,14 +7553,15 @@ class Session(NoNewAttributesAfterInit):
 
         return ids
 
-    def _get_fit_obj(self, datasets, models, estmethod):
+    def _get_fit_obj(self, datasets, models, estmethod, numcores=1):
+
         datasets = tuple(datasets)
         models = tuple(models)
         if len(datasets) == 1:
             d = datasets[0]
             m = models[0]
         else:
-            d = sherpa.data.DataSimulFit('simulfit data', datasets)
+            d = sherpa.data.DataSimulFit('simulfit data', datasets, numcores)
             m = sherpa.models.SimulFitModel('simulfit model', models)
         if not self._current_method.name == 'gridsearch':
             if m.is_discrete:
@@ -7613,13 +7614,13 @@ class Session(NoNewAttributesAfterInit):
 
         return fit_to_ids, datasets, models
 
-    def _get_fit(self, id, otherids=(), estmethod=None):
+    def _get_fit(self, id, otherids=(), estmethod=None, numcores=1):
 
         fit_to_ids, datasets, models = self._prepare_fit(id, otherids)
 
         self._add_extra_data_and_models(fit_to_ids, datasets, models)
 
-        f = self._get_fit_obj(datasets, models, estmethod)
+        f = self._get_fit_obj(datasets, models, estmethod, numcores)
 
         fit_to_ids = tuple(fit_to_ids)
 

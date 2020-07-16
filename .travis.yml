@@ -7,7 +7,7 @@ jobs:
   fast_finish: true
   include:
     # macOS build
-    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=3 XSPECVER="12.10.1b" TRAVIS_PYTHON_VERSION="3.7"
+    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=3 XSPECVER="12.10.1n" TRAVIS_PYTHON_VERSION="3.7"
       os: osx
     # Barebone build to check tests pass when most of the tests must be skipped.
     # We need to use TEST=none to remove the test-data submodule.
@@ -15,11 +15,11 @@ jobs:
     # been bumped to "nearly latest" versions
     - env: INSTALL_TYPE=develop TEST=none NUMPYVER="1.17" TRAVIS_PYTHON_VERSION="3.8"
     # Full build (including ds9 and xspec), Python 3.5, setup.py develop, astropy, matplotlib 2
-    - env: XSPECVER="12.10.1b" NUMPYVER="1.11" FITS="astropy pytest-openfiles<=0.4.0" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.5"
+    - env: XSPECVER="12.10.1n" NUMPYVER="1.11" FITS="astropy pytest-openfiles<=0.4.0 pytest-doctestplus<=0.5.0" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.5"
     # As above, Python 3.6, setup.py install, xspec 12.10
-    - env: XSPECVER="12.10.1b" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.6"
+    - env: XSPECVER="12.10.1n" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.6"
     # As above, python 3.7, numpy 1.15, matplotlib 3
-    - env: XSPECVER="12.10.1b" NUMPYVER="1.15" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=3 TRAVIS_PYTHON_VERSION="3.7"
+    - env: XSPECVER="12.10.1n" NUMPYVER="1.15" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=3 TRAVIS_PYTHON_VERSION="3.7"
     # Experimental support for using Sphinx to build the documentation
     # should we not run tests with this build (to save time); i.e. have
     # a specific build just for the documentation and nothing else?
@@ -28,10 +28,10 @@ jobs:
     # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.6"
     # Install astropy without matplotlib (checks tests are properly skipped)
-    - env: INSTALL_TYPE=develop TEST=submodule FITS="astropy pytest-openfiles<=0.4.0" TRAVIS_PYTHON_VERSION="3.5"
+    - env: INSTALL_TYPE=develop TEST=submodule FITS="astropy pytest-openfiles<=0.4.0 pytest-doctestplus<=0.5.0" TRAVIS_PYTHON_VERSION="3.5"
     # A relatively basic installation - NumPy and AstroPy - with no test data; this is similar to the preceeding
     # test, so perhaps could be combined?
-    - env: INSTALL_TYPE=develop TEST=none FITS="astropy pytest-openfiles<=0.4.0" TRAVIS_PYTHON_VERSION="3.5"
+    - env: INSTALL_TYPE=develop TEST=none FITS="astropy pytest-openfiles<=0.4.0 pytest-doctestplus<=0.5.0" TRAVIS_PYTHON_VERSION="3.5"
 
 before_install:
   - source travis/setup_conda.sh

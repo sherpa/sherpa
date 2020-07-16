@@ -1,7 +1,7 @@
 #ifdef testNelderMead
 
 //
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -141,13 +141,14 @@ int main( int argc, char* argv[] ) {
 }
 
 /*
-g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestNelderMead NelderMead.cc Simplex.cc -o neldermead
+g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestNelderMead -DNDEBUG NelderMead.cc Simplex.cc -o neldermead
 
-==7855== Memcheck, a memory error detector
-==7855== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
-==7855== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
-==7855== Command: tstnm
-==7855==
+(sherpa) [dtn@devel12 src]$ valgrind neldermead 
+==31369== Memcheck, a memory error detector
+==31369== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==31369== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==31369== Command: neldermead
+==31369== 
 #
 #:npar = 6
 #:tol=1e-08
@@ -353,24 +354,24 @@ NelderMead_0_1_Chebyquad	2046	0	1.50681e-09	0.0442028,0.199493,0.235614,0.416064
 NelderMead_1_1_Chebyquad	2617	0	4.6099e-07	0.0440289,0.236508,0.198236,0.414554,0.582641,0.501506,0.799873,0.764807,0.955755
 NelderMead_0_2_Chebyquad	3115	0	2.56713e-16	0.0442053,0.199491,0.235619,0.416047,0.5,0.583953,0.764381,0.800509,0.955795
 NelderMead_1_2_Chebyquad	4102	0	1.49195e-13	0.0442053,0.235619,0.199491,0.416047,0.583953,0.5,0.800509,0.764381,0.955795
-NelderMead_0_0_McCormick	66	-1.91	-1.91322	-0.547127,-1.54715
-NelderMead_1_0_McCormick	68	-1.91	-1.91322	-0.547201,-1.54716
-NelderMead_0_1_McCormick	124	-1.91	-1.91322	-0.547214,-1.54716
-NelderMead_1_1_McCormick	129	-1.91	-1.91322	-0.547201,-1.54716
-NelderMead_0_2_McCormick	184	-1.91	-1.91322	-0.547214,-1.54716
-NelderMead_1_2_McCormick	190	-1.91	-1.91322	-0.547201,-1.54716
+NelderMead_0_0_McCormick	66	-1.9132	-1.91322	-0.547127,-1.54715
+NelderMead_1_0_McCormick	68	-1.9132	-1.91322	-0.547201,-1.54716
+NelderMead_0_1_McCormick	124	-1.9132	-1.91322	-0.547214,-1.54716
+NelderMead_1_1_McCormick	129	-1.9132	-1.91322	-0.547201,-1.54716
+NelderMead_0_2_McCormick	184	-1.9132	-1.91322	-0.547214,-1.54716
+NelderMead_1_2_McCormick	190	-1.9132	-1.91322	-0.547201,-1.54716
 NelderMead_0_0_BoxBetts	112	0	1.46974e-10	1.00004,9.9997,0.999971
 NelderMead_1_0_BoxBetts	119	0	1.8843e-10	1.00003,9.99999,0.999983
 NelderMead_0_1_BoxBetts	183	0	1.46974e-10	1.00004,9.9997,0.999971
 NelderMead_1_1_BoxBetts	191	0	1.8843e-10	1.00003,9.99999,0.999983
 NelderMead_0_2_BoxBetts	1074	0	4.00593e-32	1,10,1
 NelderMead_1_2_BoxBetts	1092	0	6.16298e-33	1,10,1
-NelderMead_0_0_Paviani	916	-45.7	-45.7785	9.35053,9.35058,9.35035,9.35037,9.34932,9.35131,9.34967,9.35021,9.35147,9.35032
-NelderMead_1_0_Paviani	1216	-45.7	-45.7784	9.34889,9.35141,9.34997,9.34849,9.35104,9.35041,9.3501,9.35006,9.3512,9.35108
-NelderMead_0_1_Paviani	1299	-45.7	-45.7785	9.35046,9.35051,9.3504,9.3503,9.34999,9.35023,9.35017,9.35022,9.35029,9.35034
-NelderMead_1_1_Paviani	1679	-45.7	-45.7785	9.35019,9.35034,9.35017,9.35011,9.35015,9.35013,9.35021,9.35031,9.35031,9.35012
-NelderMead_0_2_Paviani	1733	-45.7	-45.7785	9.35025,9.35029,9.3503,9.35029,9.35025,9.35025,9.35023,9.35026,9.35029,9.3503
-NelderMead_1_2_Paviani	2143	-45.7	-45.7785	9.35023,9.35029,9.35031,9.35028,9.35022,9.35027,9.35022,9.35031,9.35026,9.35036
+NelderMead_0_0_Paviani	916	-45.778	-45.7785	9.35053,9.35058,9.35035,9.35037,9.34932,9.35131,9.34967,9.35021,9.35147,9.35032
+NelderMead_1_0_Paviani	1216	-45.778	-45.7784	9.34889,9.35141,9.34997,9.34849,9.35104,9.35041,9.3501,9.35006,9.3512,9.35108
+NelderMead_0_1_Paviani	1299	-45.778	-45.7785	9.35046,9.35051,9.3504,9.3503,9.34999,9.35023,9.35017,9.35022,9.35029,9.35034
+NelderMead_1_1_Paviani	1679	-45.778	-45.7785	9.35019,9.35034,9.35017,9.35011,9.35015,9.35013,9.35021,9.35031,9.35031,9.35012
+NelderMead_0_2_Paviani	1733	-45.778	-45.7785	9.35025,9.35029,9.3503,9.35029,9.35025,9.35025,9.35023,9.35026,9.35029,9.3503
+NelderMead_1_2_Paviani	2143	-45.778	-45.7785	9.35023,9.35029,9.35031,9.35028,9.35022,9.35027,9.35022,9.35031,9.35026,9.35036
 NelderMead_0_0_GoldsteinPrice	63	3	3	5.56372e-06,-1.00002
 NelderMead_1_0_GoldsteinPrice	72	3	3	-2.83725e-05,-0.999983
 NelderMead_0_1_GoldsteinPrice	134	3	3	-4.76258e-06,-0.999994
@@ -432,11 +433,11 @@ NelderMead_1_1_SixHumpCamel	153	-1.03	-1.03163	0.0898139,-0.712667
 NelderMead_0_2_SixHumpCamel	270	-1.03	-1.03163	0.0898672,-0.712641
 NelderMead_1_2_SixHumpCamel	217	-1.03	-1.03163	0.0898139,-0.712667
 NelderMead_0_0_Branin	58	0.397889	0.397887	9.42484,2.47488
-NelderMead_1_0_Branin	68	0.397889	0.397887	9.4249,2.47518
-NelderMead_0_1_Branin	114	0.397889	0.397887	9.42476,2.47496
-NelderMead_1_1_Branin	121	0.397889	0.397887	-3.14158,12.275
-NelderMead_0_2_Branin	178	0.397889	0.397887	-3.14162,12.2751
-NelderMead_1_2_Branin	190	0.397889	0.397887	3.14157,2.275
+NelderMead_1_0_Branin	57	0.397889	0.397887	9.42484,2.47496
+NelderMead_0_1_Branin	120	0.397889	0.397887	9.42475,2.47497
+NelderMead_1_1_Branin	118	0.397889	0.397887	9.42481,2.47503
+NelderMead_0_2_Branin	186	0.397889	0.397887	9.42478,2.47505
+NelderMead_1_2_Branin	183	0.397889	0.397887	9.42477,2.47502
 NelderMead_0_0_Shubert	-59	-24.06	-14.6909	8.82759,5.79172
 NelderMead_1_0_Shubert	-51	-24.06	-7.21602	6.86033,6.86023
 NelderMead_0_1_Shubert	128	-24.06	-24.0625	5.79182,5.7918
@@ -509,15 +510,21 @@ NelderMead_0_1_Michalewicz10	-1491	-9.66015	-8.63743	2.2029,1.5708,1.285,1.92305
 NelderMead_1_1_Michalewicz10	-3389	-9.66015	-9.36542	2.14938,1.51456,1.29891,1.1225,1.70948,1.56669,1.44722,1.75381,1.65608,1.57376
 NelderMead_0_2_Michalewicz10	-2302	-9.66015	-8.94266	2.20294,1.57079,1.285,1.92306,1.72046,1.5708,1.87723,2.83104,1.65571,1.5708
 NelderMead_1_2_Michalewicz10	4135	-9.66015	-9.61839	2.20288,1.57079,1.28498,1.11378,1.72047,1.5708,1.45442,1.75609,1.65572,1.5708
-==7855==
-==7855== HEAP SUMMARY:
-==7855==     in use at exit: 0 bytes in 0 blocks
-==7855==   total heap usage: 206,641 allocs, 206,641 frees, 28,491,924 bytes allocated
-==7855==
-==7855== All heap blocks were freed -- no leaks are possible
-==7855==
-==7855== For counts of detected and suppressed errors, rerun with: -v
-==7855== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 6 from 6)
+NelderMead_0_0_McKinnon	-120	-0.25	-2.36366e+11	-99.8273,-99.9979
+NelderMead_1_0_McKinnon	-99	-0.25	-1.80752e+11	-99.9988,-76.3162
+NelderMead_0_1_McKinnon	-264	-0.25	-2.376e+11	-100,-100
+NelderMead_1_1_McKinnon	-443	-0.25	-2.376e+11	-100,-100
+NelderMead_0_2_McKinnon	-878	-0.25	-2.376e+11	-100,-100
+NelderMead_1_2_McKinnon	-1176	-0.25	-2.376e+11	-100,-100
+==31369== 
+==31369== HEAP SUMMARY:
+==31369==     in use at exit: 0 bytes in 0 blocks
+==31369==   total heap usage: 206,016 allocs, 206,016 frees, 27,406,656 bytes allocated
+==31369== 
+==31369== All heap blocks were freed -- no leaks are possible
+==31369== 
+==31369== For counts of detected and suppressed errors, rerun with: -v
+==31369== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */
 
 #endif

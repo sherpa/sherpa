@@ -15,7 +15,7 @@
 # look at sherpa.utils which provides docstrings for the code in
 # sherpa.utils._utils.
 #
-# The minimum supported version of Sphinx is 1.3.
+# The minimum supported version of Sphinx is 1.8.
 #
 # The minimum requirements are:
 #    numpy  - since setup.py enforces this
@@ -123,10 +123,9 @@ sherpa_version = sherpa_release[:sherpa_release.find('+')]
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# If use napoleon, force 1.3 rather than try and support the external
-# napoleon code.
+# The use of app.add_js_file requires Sphinx 1.8.
 #
-needs_sphinx = '1.3'
+needs_sphinx = '1.8'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -485,4 +484,4 @@ texinfo_documents = [
 #
 
 def setup(app):
-    app.add_javascript('copybutton.js')
+    app.add_js_file('copybutton.js')
