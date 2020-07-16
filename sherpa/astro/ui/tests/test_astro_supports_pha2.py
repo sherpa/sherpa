@@ -110,7 +110,12 @@ def validate_pha(d, bkg=True):
 
 @requires_data
 @requires_fits
-def test_load_pha2(make_data_path, caplog, clean_astro_ui):
+@pytest.mark.parametrize("id0,ids",
+                         [(None, [1,2,3,4,5,6,7,8,9,10,11,12]),
+                          (1, [1,2,3,4,5,6,7,8,9,10,11,12]),
+                          (100, [100,101,102,103,104,105,106,107,108,109,110,111]),
+                          ("x", ["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12"])])
+def test_load_pha2(id0, ids, make_data_path, caplog, clean_astro_ui):
     """Basic test that a pha2 file can be read in."""
 
     basename = '3c120_pha2'
@@ -120,7 +125,10 @@ def test_load_pha2(make_data_path, caplog, clean_astro_ui):
 
     # The file is stored gzip-encoded
     infile = make_data_path(basename)
-    ui.load_pha(infile)
+    if id0 is None:
+        ui.load_pha(infile)
+    else:
+        ui.load_pha(id0, infile)
 
     pha_ids = ui.list_data_ids()
     assert len(pha_ids) == 12
@@ -130,10 +138,9 @@ def test_load_pha2(make_data_path, caplog, clean_astro_ui):
     # all at once) to make it easier to see what is missing
     # (if any)
     #
-    for i in range(1, 13):
+    for i in ids:
         assert i in pha_ids
 
-    for i in range(1, 13):
         d = ui.get_data(i)
         validate_pha(d, bkg=True)
 
@@ -162,7 +169,9 @@ def test_load_pha2(make_data_path, caplog, clean_astro_ui):
 
     msg_three = "read background_up into a dataset from file {}".format(infile)
     msg_four = "read background_down into a dataset from file {}".format(infile)
-    msg_five = "Multiple data sets have been input: 1-12"
+
+    msg_five = "Multiple data sets have been input: " + \
+               "{}-{}".format(ids[0], ids[11])
 
     assert caplog.record_tuples == [
         ('sherpa.astro.io', logging.WARNING, msg_one),

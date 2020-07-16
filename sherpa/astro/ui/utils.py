@@ -1739,12 +1739,20 @@ class Session(sherpa.ui.utils.Session):
         multiple data sets can be loaded with this command, as
         described in the `sherpa.astro.datastack` module.
 
+        .. versionchanged:: 4.12.2
+           The id argument is now used to define the first identifier
+           when loading in a PHA2 file (previously they always used
+           the range 1 to number of files).
+
         Parameters
         ----------
         id : int or str, optional
-           The identifier for the data set to use. If not given then
-           the default identifier is used, as returned by
-           `get_default_id`.
+           The identifier for the data set to use. For PHA2 files,
+           that is those that contain multiple datasets, the id value
+           indicates the first dataset: if it is an integer then the
+           numbering starts at id, and if a string then a suffix of 1
+           to n is added.  If not given then the default identifier is
+           used, as returned by `get_default_id`.
         arg
            Identify the data to read: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
@@ -1804,12 +1812,33 @@ class Session(sherpa.ui.utils.Session):
         >>> load_pha('bg', 'x2.fits')
 
         If a type II PHA data set is loaded, then multiple data sets
-        will be created, one for each order.
+        will be created, one for each order. The default behavior is
+        to use the dataset identifiers 1 to the number of files.
 
         >>> clean()
         >>> load_pha('src.pha2')
         >>> list_data_ids()
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+        If given an identifier as the first argument then this is used
+        to start the numbering scheme for PHA2 files. If id is an
+        integer then the numbers go from id:
+
+        >>> clean()
+        >>> load_pha(20, 'src.pha2')
+        >>> list_data_ids()
+        [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+
+        If the id is a string then the identtifier is formed by adding
+        the number of the dataset (starting at 1) to the end of
+        id. Note that the `list_data_ids` routine does not guarantee
+        an ordering to the output (as shown below):
+
+        >>> clean()
+        >>> load_pha('x', 'src.pha2')
+        >>> list_data_ids()
+        ['x1', 'x10', 'x11', 'x12', 'x2', 'x3', 'x4', 'x5', 'x6',
+         'x7', 'x8', 'x9']
 
         Create the data set from the data read in by Crates:
 
@@ -1841,14 +1870,35 @@ class Session(sherpa.ui.utils.Session):
 
         phasets = self.unpack_pha(arg, use_errors)
 
-        if numpy.iterable(phasets):
-            num = len(phasets)
-            for id, pha in enumerate(phasets):
-                self.set_data(id + 1, pha)
-            if num > 1:
-                info("Multiple data sets have been input: 1-%s" % num)
-        else:
+        if not numpy.iterable(phasets):
             self.set_data(id, phasets)
+            return
+
+        # One issue with the following is that if there's
+        # only one dataset in phasets and id is a string then the
+        # output will be "foo1" rather than "foo" (when
+        # id="foo").  DJB thinks we can live with this.
+        #
+        if id is None:
+            id = self.get_default_id()
+
+        num = len(phasets)
+        ids = []
+        for ctr, pha in enumerate(phasets):
+            try:
+                idval = id + ctr
+            except TypeError:
+                # id is assumed to be a string
+                idval = id + str(ctr + 1)
+
+            self.set_data(idval, pha)
+            ids.append(idval)
+
+        if num > 1:
+            info("Multiple data sets have been input: " +
+                 "{}-{}".format(ids[0], ids[-1]))
+        else:
+            info("One data set has been input: {}".format(ids[0]))
 
     def _get_pha_data(self, id):
         data = self.get_data(id)
