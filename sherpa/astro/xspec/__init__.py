@@ -63,6 +63,7 @@ from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
+from sherpa.utils.err import ParameterErr
 from sherpa.astro.utils import get_xspec_position
 
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
@@ -957,6 +958,12 @@ class XSTableModel(XSModel):
         # logic could be in __init__, but that can be changed
         # at a later date.
         #
+        for param, value in zip(self.pars, p):
+            if value < param._hard_min:
+                raise ParameterErr('edge', self.name, 'minimum', param._hard_min)
+            if value > param._hard_max:
+                raise ParameterErr('edge', self.name, 'maximum', param._hard_max)
+
         if hasattr(_xspec, 'tabint'):
             tabtype = 'add' if self.addmodel else 'mul'
             return _xspec.tabint(p,
