@@ -69,13 +69,18 @@ def test_calc_erf():
     assert_almost_equal(0.520499877, _utils.erf(0.5))
 
 
-def test_calc_gamma():
+@pytest.mark.parametrize("expected, arg", [
+    (1.7724538509, 0.5),
+    (1.2254167024651774, 0.75),
+    ([0.9086387328532907, 0.9617658319073873], [1.7, 1.9])
+])
+def test_calc_gamma(expected, arg):
     """
     used math.gamma as oracle
 
     py3-todo: should we use the built-in python function instead?
     """
-    assert_almost_equal(1.7724538509, _utils.gamma(0.5))
+    assert_almost_equal(expected, _utils.gamma(arg))
 
 
 @pytest.mark.parametrize("tolerance, expected", [
@@ -177,7 +182,8 @@ def test_lgam(z, expected):
 
 @pytest.mark.parametrize("x, expected", [
     (0.1, -1.2815515655446004),
-    ([0.1, 0.4, 0.95], [-1.28155157, -0.2533471, 1.64485363])
+    ([0.1, 0.4, 0.95], [-1.28155157, -0.2533471, 1.64485363]),
+    ([0.2, 0.99], [-0.8416212335729142, 2.3263478740408408])
 ])
 def test_ndtri(x, expected):
     """
