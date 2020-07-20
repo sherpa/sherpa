@@ -28,6 +28,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 #include "sherpa/fcmp.hh"
 
 // Prior to XSPEC 12.10.1, the table models were split into different
@@ -290,9 +291,8 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
-        for (int i = 0; i < ngrid; i++) {
-          fear[i] = (FloatArrayType) ear[i];
-        }
+        std::transform(std::begin(ear), std::end(ear), std::begin(fear),
+                       [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
@@ -1011,9 +1011,8 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args )
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
-        for (int i = 0; i < ngrid; i++) {
-          fear[i] = (FloatArrayType) ear[i];
-        }
+        std::transform(std::begin(ear), std::end(ear), std::begin(fear),
+                       [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
@@ -1245,9 +1244,8 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
-        for (int i = 0; i < ngrid; i++) {
-          fear[i] = (FloatArrayType) ear[i];
-        }
+        std::transform(std::begin(ear), std::end(ear), std::begin(fear),
+                       [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
@@ -1498,9 +1496,8 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
-        for (int i = 0; i < ngrid; i++) {
-          fear[i] = (FloatArrayType) ear[i];
-        }
+        std::transform(std::begin(ear), std::end(ear), std::begin(fear),
+                       [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
