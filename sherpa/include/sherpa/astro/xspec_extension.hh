@@ -266,6 +266,125 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
 } /* create_grid */
 
 
+// Similar to create_grid except that it does not support grids that are
+// not contiguous (an error is raised).
+//
+template <typename CType, int ArrayType>
+static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
+				   const sherpa::Array<CType, ArrayType> &xhi,
+				   std::vector<CType> &ear) {
+
+  int nelem = int( xlo.get_size() );
+  if ( nelem < 2 ) {
+    std::ostringstream err;
+    err << "input array must have at least 2 elements, found " << nelem;
+    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    return false;
+  }
+
+  if( xhi && (nelem != int(xhi.get_size())) ) {
+    std::ostringstream err;
+    err << "input arrays are not the same size: " << nelem
+        << " and " << int( xhi.get_size() );
+    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    return false;
+  }
+
+  bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
+  const sherpa::Array<CType, ArrayType> *x1 = (is_wave && xhi) ? &xhi : &xlo;
+  const sherpa::Array<CType, ArrayType> *x2 = (is_wave && xhi) ? &xlo : &xhi;
+
+  // Are there any non-contiguous bins? The check lets through
+  // overlapping bins.
+  if (xhi) {
+    const int gap_found = is_wave ? 1 : -1;
+    for (int i = 0; i < nelem-1; i++) {
+      int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
+      if (cmp == gap_found) {
+	/*** Maybe confusing to users
+	     std::ostringstream err;
+	     err << "Grid cells are not contiguous: cell " << i
+	     << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
+	     << " and cell " << (i+1)
+	     << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
+	     PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+	***/
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"XSPEC convolution model requires a contiguous grid" );
+	return false;
+      }
+    }
+  }
+
+  // The size of the energy array sent to XSpec
+  int ngrid = nelem;
+  if (xhi) {
+    ngrid += 1;
+  }
+
+  // XSpec traditionally refers to the input energy grid as ear.
+  // Do a two-step conversion; create the array and then a type
+  // conversion (which is excessive if no grid points are added
+  // in, and the input is in keV).
+  //
+  ear.assign(ngrid, 0);
+
+  // The grid is created, converted from Angstrom to Energy
+  // (if required), and then checked for being monotonic.
+  // The code has been kept similar to create_grid.
+  //
+  {
+    for(int i = 0; i < nelem; i++) {
+      ear[i] = (*x1)[i];
+    }
+
+    // Add on the last bin value if needed
+    if (xhi) {
+      ear[ngrid - 1] = (*x2)[nelem - 1];
+    }
+  }
+
+  if (is_wave) {
+    CType hc = (sherpa::constants::c_ang<CType>() *
+                 sherpa::constants::h_kev<CType>());
+    for (int i = 0; i < ngrid; i++) {
+      if (ear[i] <= 0.0) {
+        std::ostringstream err;
+        err << "Wavelength must be > 0, sent " << ear[i];
+        PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+        return NULL;
+      }
+      ear[i] = hc / ear[i];
+    }
+  }
+
+  // Check for monotonic (could be included in the above, but
+  // this is much simpler to write here).
+  // Should this be done, or just let the user get invalid
+  // results?
+  //
+  // The earlier check with sao_fcmp catches some of these,
+  // but not all of them (if xhi is not given, or if xlo==xhi
+  // for any bin).
+  //
+  /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
+       UNSURE ABOUT ARF/RMF GRIDS
+  for (int i = 0; i < ngrid - 1; i++) {
+    if (ear[i] >= ear[i+1]) {
+      std::ostringstream err;
+      err << "Grid is not monotonic: " << ear[i] << " to " <<
+        ear[i+1];
+      PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+      return NULL;
+    }
+  }
+  ***/
+
+  return true;
+
+} /* create_contiguous_grid */
+
+
 // Remove any elements that were inserted to deal with gaps in the grid.
 //
 template <typename CType, int ArrayType>
@@ -550,22 +669,15 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
           return NULL;
 	}
 
-	int nelem = int( xlo.get_size() );
-
-	if ( nelem < 2 ) {
-          std::ostringstream err;
-          err << "input array must have at least 2 elements, found " << nelem;
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
+        // XSpec traditionally refers to the input energy grid as ear.
+        std::vector<SherpaFloat> ear;
+	if (!create_contiguous_grid(xlo, xhi, ear)) {
+	  return NULL;
 	}
 
-        if( xhi && (nelem != int(xhi.get_size())) ) {
-          std::ostringstream err;
-          err << "input arrays are not the same size: " << nelem
-              << " and " << int( xhi.get_size() );
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
-        }
+	int nelem = int( xlo.get_size() );
+	int ngrid = ear.size();
+        int ifl = 1;
 
         // For now require the fluxes array to have the same
         // size as the input grid. If xhi is not given then
@@ -579,117 +691,6 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
           PyErr_SetString( PyExc_TypeError, err.str().c_str() );
           return NULL;
         }
-
-        int ifl = 1;
-
-        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
-        if (is_wave && xhi) {
-            x1 = &xhi;
-            x2 = &xlo;
-        }
-
-        // Are there any non-contiguous bins? The check lets through
-        // overlapping bins.
-        if (xhi) {
-          const int gap_found = is_wave ? 1 : -1;
-          for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (cmp == gap_found) {
-              /*** Maybe confusing to users
-              std::ostringstream err;
-              err << "Grid cells are not contiguous: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              ***/
-              PyErr_SetString( PyExc_ValueError,
-                               (char*)"XSPEC convolution model requires a contiguous grid" );
-              return NULL;
-              /***
-            } else if (cmp != 0) {
-              std::ostringstream err;
-              // not convinced this is understandable to users, particularly
-              // if the grid is in Angstrom. It is also possible that the
-              // format used isn't sufficient to show the problem, but I
-              // do not want to tweak the format here just yet.
-              err << "Grid cells overlap: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL
-               ***/
-            }
-          }
-        }
-
-        // The following matches that used by xspecmodelfct_c but
-        // with ngaps = 0.
-
-        // The size of the energy array sent to XSpec
-        int ngrid = nelem;
-        if (xhi) {
-          ngrid += 1;
-        }
-
-        // XSpec traditionally refers to the input energy grid as ear.
-        std::vector<SherpaFloat> ear(ngrid);
-
-        // The grid is created, converted from Angstrom to Energy
-        // (if required), and then checked for being monotonic.
-        // The multiple loops are not necessarily as efficient
-        // as a single loop, but simpler to write and keep in
-        // sync with xspecmodelfct_C.
-        //
-        {
-          for(int i = 0; i < nelem; i++) {
-            ear[i] = (*x1)[i];
-          }
-
-          // Add on the last bin value if needed
-          if (xhi) {
-            ear[ngrid - 1] = (*x2)[nelem - 1];
-          }
-        }
-
-        if (is_wave) {
-          SherpaFloat hc = (sherpa::constants::c_ang<SherpaFloat>() *
-			    sherpa::constants::h_kev<SherpaFloat>());
-          for (int i = 0; i < ngrid; i++) {
-            if (ear[i] <= 0.0) {
-              std::ostringstream err;
-              err << "Wavelength must be > 0, sent " << ear[i];
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-            }
-            ear[i] = hc / ear[i];
-          }
-        }
-
-        // Check for monotonic (could be included in the above, but
-        // this is much simpler to write here).
-        // Should this be done, or just let the user get invalid
-        // results?
-        //
-        // The earlier check with sao_fcmp catches some of these,
-        // but not all of them (if xhi is not given, or if xlo==xhi
-        // for any bin).
-        //
-        /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
-             UNSURE ABOUT ARF/RMF GRIDS
-        for (int i = 0; i < ngrid - 1; i++) {
-          if (ear[i] >= ear[i+1]) {
-            std::ostringstream err;
-            err << "Grid is not monotonic: " << ear[i] << " to " <<
-              ear[i+1];
-            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-            return NULL;
-          }
-        }
-        ***/
 
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
@@ -778,22 +779,15 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args )
           return NULL;
 	}
 
-	int nelem = int( xlo.get_size() );
-
-	if ( nelem < 2 ) {
-          std::ostringstream err;
-          err << "input array must have at least 2 elements, found " << nelem;
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
+        // XSpec traditionally refers to the input energy grid as ear.
+        std::vector<SherpaFloat> ear;
+	if (!create_contiguous_grid(xlo, xhi, ear)) {
+	  return NULL;
 	}
 
-        if( xhi && (nelem != int(xhi.get_size())) ) {
-          std::ostringstream err;
-          err << "input arrays are not the same size: " << nelem
-              << " and " << int( xhi.get_size() );
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
-        }
+	int nelem = int( xlo.get_size() );
+	int ngrid = ear.size();
+        int ifl = 1;
 
         // For now require the fluxes array to have the same
         // size as the input grid. If xhi is not given then
@@ -807,117 +801,6 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args )
           PyErr_SetString( PyExc_TypeError, err.str().c_str() );
           return NULL;
         }
-
-        int ifl = 1;
-
-        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
-        if (is_wave && xhi) {
-            x1 = &xhi;
-            x2 = &xlo;
-        }
-
-        // Are there any non-contiguous bins? The check lets through
-        // overlapping bins.
-        if (xhi) {
-          const int gap_found = is_wave ? 1 : -1;
-          for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (cmp == gap_found) {
-              /*** Maybe confusing to users
-              std::ostringstream err;
-              err << "Grid cells are not contiguous: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              ***/
-              PyErr_SetString( PyExc_ValueError,
-                               (char*)"XSPEC convolution model requires a contiguous grid" );
-              return NULL;
-              /***
-            } else if (cmp != 0) {
-              std::ostringstream err;
-              // not convinced this is understandable to users, particularly
-              // if the grid is in Angstrom. It is also possible that the
-              // format used isn't sufficient to show the problem, but I
-              // do not want to tweak the format here just yet.
-              err << "Grid cells overlap: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL
-               ***/
-            }
-          }
-        }
-
-        // The following matches that used by xspecmodelfct_c but
-        // with ngaps = 0.
-
-        // The size of the energy array sent to XSpec
-        int ngrid = nelem;
-        if (xhi) {
-          ngrid += 1;
-        }
-
-        // XSpec traditionally refers to the input energy grid as ear.
-        std::vector<SherpaFloat> ear(ngrid);
-
-        // The grid is created, converted from Angstrom to Energy
-        // (if required), and then checked for being monotonic.
-        // The multiple loops are not necessarily as efficient
-        // as a single loop, but simpler to write and keep in
-        // sync with xspecmodelfct_C.
-        //
-        {
-          for(int i = 0; i < nelem; i++) {
-            ear[i] = (*x1)[i];
-          }
-
-          // Add on the last bin value if needed
-          if (xhi) {
-            ear[ngrid - 1] = (*x2)[nelem - 1];
-          }
-        }
-
-        if (is_wave) {
-          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-                       sherpa::constants::h_kev<SherpaFloat>());
-          for (int i = 0; i < ngrid; i++) {
-            if (ear[i] <= 0.0) {
-              std::ostringstream err;
-              err << "Wavelength must be > 0, sent " << ear[i];
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-            }
-            ear[i] = hc / ear[i];
-          }
-        }
-
-        // Check for monotonic (could be included in the above, but
-        // this is much simpler to write here).
-        // Should this be done, or just let the user get invalid
-        // results?
-        //
-        // The earlier check with sao_fcmp catches some of these,
-        // but not all of them (if xhi is not given, or if xlo==xhi
-        // for any bin).
-        //
-        /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
-             UNSURE ABOUT ARF/RMF GRIDS
-        for (int i = 0; i < ngrid - 1; i++) {
-          if (ear[i] >= ear[i+1]) {
-            std::ostringstream err;
-            err << "Grid is not monotonic: " << ear[i] << " to " <<
-              ear[i+1];
-            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-            return NULL;
-          }
-        }
-        ***/
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
