@@ -419,6 +419,22 @@ static void finalize_grid(int nelem,
 } /* finalize_grid */
 
 
+template <typename T>
+static bool create_output(int nbins, T &a, T &b) {
+
+  npy_intp dims[1] = { nbins };
+
+  if ( EXIT_SUCCESS != a.zeros( 1, dims ) )
+    return false;
+
+  if ( EXIT_SUCCESS != b.zeros( 1, dims ) )
+    return false;
+
+  return true;
+
+} /* create_output */
+
+
 template <npy_intp NumPars, bool HasNorm,
 void (*XSpecFunc)( float* ear, int* ne, float* param, int* ifl,
 		float* photar, float* photer )>
@@ -479,22 +495,14 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
         std::transform(std::begin(ear), std::end(ear), std::begin(fear),
                        [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
-        // Although the XSpec model expects the flux/fluxerror arrays
-        // to have size ngrid-1, the return array has to match the
-        // input size.
-        npy_intp dims[1] = { ngrid };
-        if (xhi)
-          dims[0]--;
+	// Number of bins to send to XSPEC
+	int nout = ngrid;
+	if (xhi) nout--;
 
-	FloatArray result;
-	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
-          return NULL;
-
-        // Since the flux error is discarded, it does not need to be a
-        // NumPy array. Should be set to zeros for safety.
-        FloatArray error;
-	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
-          return NULL;
+	FloatArray result, error;
+	if (!create_output(nout, result, error)) {
+	  return NULL;
+	}
 
 	// Even though the XSPEC model function is Fortran, it could call
 	// C++ functions, so swallow exceptions here
@@ -576,22 +584,14 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	int ngrid = ear.size();
         int ifl = 1;
 
-        // Although the XSpec model expects the flux/fluxerror arrays
-        // to have size ngrid-1, the return array has to match the
-        // input size.
-        npy_intp dims[1] = { ngrid };
-        if (xhi)
-          dims[0]--;
+	// Number of bins to send to XSPEC
+	int nout = ngrid;
+	if (xhi) nout--;
 
-	DoubleArray result;
-	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
-          return NULL;
-
-        // Since the flux error is discarded, it does not need to be a
-        // NumPy array. Should be set to zeros for safety.
-	DoubleArray error;
-	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
-          return NULL;
+	DoubleArray result, error;
+	if (!create_output(nout, result, error)) {
+	  return NULL;
+	}
 
 	try {
 
@@ -692,26 +692,18 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
           return NULL;
         }
 
-        // Although the XSpec model expects the flux/fluxerror arrays
-        // to have size ngrid-1, the return array has to match the
-        // input size.
-        npy_intp dims[1] = { ngrid };
-        if (xhi)
-          dims[0]--;
+	// Number of bins to send to XSPEC
+	int nout = ngrid;
+	if (xhi) nout--;
 
-	DoubleArray result;
-	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
-          return NULL;
+	DoubleArray result, error;
+	if (!create_output(nout, result, error)) {
+	  return NULL;
+	}
 
         // Copy over the flux array
-        for (int i = 0; i < dims[0]; i++)
+        for (int i = 0; i < nout; i++)
           result[i] = fluxes[i];
-
-        // Since the flux error is discarded, it does not need to be a
-        // NumPy array. Should be set to zeros for safety.
-	DoubleArray error;
-	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
-          return NULL;
 
 	try {
 
@@ -807,26 +799,18 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args )
         std::transform(std::begin(ear), std::end(ear), std::begin(fear),
                        [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
-        // Although the XSpec model expects the flux/fluxerror arrays
-        // to have size ngrid-1, the return array has to match the
-        // input size.
-        npy_intp dims[1] = { ngrid };
-        if (xhi)
-          dims[0]--;
+	// Number of bins to send to XSPEC
+	int nout = ngrid;
+	if (xhi) nout--;
 
-	FloatArray result;
-	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
-          return NULL;
+	FloatArray result, error;
+	if (!create_output(nout, result, error)) {
+	  return NULL;
+	}
 
         // Copy over the flux array
-        for (int i = 0; i < dims[0]; i++)
+        for (int i = 0; i < nout; i++)
           result[i] = fluxes[i];
-
-        // Since the flux error is discarded, it does not need to be a
-        // NumPy array. Should be set to zeros for safety.
-	FloatArray error;
-	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
-          return NULL;
 
 	try {
 
@@ -917,22 +901,14 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
         std::transform(std::begin(ear), std::end(ear), std::begin(fear),
                        [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
-        // Although the XSpec model expects the flux/fluxerror arrays
-        // to have size ngrid-1, the return array has to match the
-        // input size.
-        npy_intp dims[1] = { ngrid };
-        if (xhi)
-          dims[0]--;
+	// Number of bins to send to XSPEC
+	int nout = ngrid;
+	if (xhi) nout--;
 
-	FloatArray result;
-	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
-          return NULL;
-
-        // Since the flux error is discarded, it does not need to be a
-        // NumPy array. Should be set to zeros for safety.
-        FloatArray error;
-	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
-          return NULL;
+	FloatArray result, error;
+	if (!create_output(nout, result, error)) {
+	  return NULL;
+	}
 
 	// Swallow exceptions here
 
@@ -1028,22 +1004,14 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
         std::transform(std::begin(ear), std::end(ear), std::begin(fear),
                        [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
-        // Although the XSpec model expects the flux/fluxerror arrays
-        // to have size ngrid-1, the return array has to match the
-        // input size.
-        npy_intp dims[1] = { ngrid };
-        if (xhi)
-          dims[0]--;
+	// Number of bins to send to XSPEC
+	int nout = ngrid;
+	if (xhi) nout--;
 
-	FloatArray result;
-	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
-          return NULL;
-
-        // Since the flux error is discarded, it does not need to be a
-        // NumPy array. Should be set to zeros for safety.
-        FloatArray error;
-	if ( EXIT_SUCCESS != error.zeros( 1, dims ) )
-          return NULL;
+	FloatArray result, error;
+	if (!create_output(nout, result, error)) {
+	  return NULL;
+	}
 
 	// Swallow exceptions here
 
