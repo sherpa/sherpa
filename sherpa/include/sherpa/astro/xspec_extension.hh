@@ -111,6 +111,195 @@ typedef float FloatArrayType;
 // so that a model instance can be associated with a particular dataset).
 // This might be enough to then support the smaug model.
 
+
+// Perform sanity checks and then create the grid of points that
+// is sent to XSPEC. Complications include
+//    - convert from Angstrom to KeV (this is based purely on the
+//      grid being in descending order, and not due to any sort of
+//      unit checking)
+//    - if sent low and high bin edges, this needs to be converted
+//      into a single array AND any gaps need a bin inserted
+//      (these extra bins are removed by finalize_grid)
+//
+// This is only ever used with a SherpaFloat (aka double), and its
+// internals rely on a double, due to sao_fcmp, but it's
+// left as a template for now.
+//
+template <typename CType, int ArrayType>
+static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
+			const sherpa::Array<CType, ArrayType> &xhi,
+			std::vector<CType> &ear,
+			std::vector<int> &gaps_index,
+			std::vector<CType> &gaps_edges) {
+
+  int nelem = int( xlo.get_size() );
+  if ( nelem < 2 ) {
+    std::ostringstream err;
+    err << "input array must have at least 2 elements, found " << nelem;
+    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    return false;
+  }
+
+  if( xhi && (nelem != int(xhi.get_size())) ) {
+    std::ostringstream err;
+    err << "input arrays are not the same size: " << nelem
+        << " and " << int( xhi.get_size() );
+    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    return false;
+  }
+
+  bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
+  const sherpa::Array<CType, ArrayType> *x1 = (is_wave && xhi) ? &xhi : &xlo;
+  const sherpa::Array<CType, ArrayType> *x2 = (is_wave && xhi) ? &xlo : &xhi;
+
+  // assume the gaps array is empty on input
+
+  if (xhi) {
+    const int gap_found = is_wave ? 1 : -1;
+    for (int i = 0; i < nelem-1; i++) {
+      int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
+      if (cmp == gap_found) {
+        gaps_index.push_back(i);
+        gaps_edges.push_back((*x2)[i]);
+        /*** DO NOT INCLUDE THIS CHECK YET, AS UNSURE IF
+             IT IS GOING TO CAUSE PROBLEMS, GIVEN THAT
+             ARF/RMF GRIDS CAN BE POORLY DEFINED
+      } else if (cmp != 0) {
+        std::ostringstream err;
+        // not convinced this is understandable to users, particularly
+        // if the grid is in Angstrom. It is also possible that the
+        // format used isn't sufficient to show the problem, but I
+        // do not want to tweak the format here just yet.
+        err << "Grid cells overlap: cell " << i
+            << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
+            << " and cell " << (i+1)
+            << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
+        PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+        return NULL;
+        ***/
+      }
+    }
+  }
+
+  int ngaps = (int) gaps_edges.size();
+
+  // The size of the energy array sent to XSpec
+  int ngrid = nelem;
+  if (xhi) {
+    ngrid += 1 + ngaps;
+  }
+
+  // XSpec traditionally refers to the input energy grid as ear.
+  // Do a two-step conversion; create the array and then a type
+  // conversion (which is excessive if no grid points are added
+  // in, and the input is in keV).
+  //
+  ear.assign(ngrid, 0);
+
+  // The grid is created, converted from Angstrom to Energy
+  // (if required), and then checked for being monotonic.
+  // The multiple loops are not necessarily as efficient
+  // as a single loop, but simpler to write.
+  //
+  {
+    // Process the contiguous sections by looping through
+    // the gaps_index/edges arrays.
+    int start = 0;
+    for (int j = 0 ; j < ngaps; j++) {
+      int end = gaps_index[j] + 1;
+      for(int i = start; i < end; i++) {
+        ear[i + j] = (*x1)[i];
+      }
+      ear[end + j] = gaps_edges[j];
+      start = end;
+    }
+
+    // need to do the last contiguous grid
+    for(int i = start; i < nelem; i++) {
+      ear[i + ngaps] = (*x1)[i];
+    }
+
+    // Add on the last bin value if needed
+    if (xhi) {
+      ear[ngrid - 1] = (*x2)[nelem - 1];
+    }
+  }
+
+  if (is_wave) {
+    CType hc = (sherpa::constants::c_ang<CType>() *
+                 sherpa::constants::h_kev<CType>());
+    for (int i = 0; i < ngrid; i++) {
+      if (ear[i] <= 0.0) {
+        std::ostringstream err;
+        err << "Wavelength must be > 0, sent " << ear[i];
+        PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+        return NULL;
+      }
+      ear[i] = hc / ear[i];
+    }
+  }
+
+  // Check for monotonic (could be included in the above, but
+  // this is much simpler to write here).
+  // Should this be done, or just let the user get invalid
+  // results?
+  //
+  // The earlier check with sao_fcmp catches some of these,
+  // but not all of them (if xhi is not given, or if xlo==xhi
+  // for any bin).
+  //
+  /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
+       UNSURE ABOUT ARF/RMF GRIDS
+  for (int i = 0; i < ngrid - 1; i++) {
+    if (ear[i] >= ear[i+1]) {
+      std::ostringstream err;
+      err << "Grid is not monotonic: " << ear[i] << " to " <<
+        ear[i+1];
+      PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+      return NULL;
+    }
+  }
+  ***/
+
+  return true;
+
+} /* create_grid */
+
+
+// Remove any elements that were inserted to deal with gaps in the grid.
+//
+template <typename CType, int ArrayType>
+static void finalize_grid(int nelem,
+			  sherpa::Array< CType, ArrayType > &result,
+			  std::vector<int> &gaps_index) {
+
+  // Remove gaps. It is assumed there are some.
+  int ngaps = (int) gaps_index.size();
+  // if (ngaps <= 0) { return; }  this check assumed to be made by the caller
+
+  // We can skip copying the first contiguous block
+  // as it is the identity transform.
+  //
+  int start = gaps_index[0] + 1;
+  for (int j = 1 ; j < ngaps; j++) {
+    int end = gaps_index[j] + 1;
+    for(int i = start; i < end; i++) {
+      result[i] = result[i + j];
+    }
+    start = end;
+  }
+
+  // need to do the last contiguous grid
+  for(int i = start; i < nelem; i++) {
+    result[i] = result[i + ngaps];
+  }
+
+  // Resize the data.
+  result.resize1d(nelem);
+
+} /* finalize_grid */
+
+
 template <npy_intp NumPars, bool HasNorm,
 void (*XSpecFunc)( float* ear, int* ne, float* param, int* ifl,
 		float* photar, float* photer )>
@@ -153,141 +342,18 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
           return NULL;
 	}
 
-	int nelem = int( xlo.get_size() );
-
-	if ( nelem < 2 ) {
-          std::ostringstream err;
-          err << "input array must have at least 2 elements, found " << nelem;
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
+	// The grid to send to XSPEC (double precision).
+	//
+	std::vector<SherpaFloat> ear;
+        std::vector<SherpaFloat> gaps_edges;
+        std::vector<int> gaps_index;
+	if (!create_grid(xlo, xhi, ear, gaps_index, gaps_edges)) {
+	  return NULL;
 	}
 
-        if( xhi && (nelem != int(xhi.get_size())) ) {
-          std::ostringstream err;
-          err << "input arrays are not the same size: " << nelem
-              << " and " << int( xhi.get_size() );
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
-        }
-
+	int nelem = int( xlo.get_size() );
+	int ngrid = ear.size();
 	int ifl = 1;
-
-        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
-        if (is_wave && xhi) {
-            x1 = &xhi;
-            x2 = &xlo;
-        }
-
-        // Are there any non-contiguous bins?
-        std::vector<int> gaps_index;
-        std::vector<SherpaFloat> gaps_edges;
-        if (xhi) {
-          const int gap_found = is_wave ? 1 : -1;
-          for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (cmp == gap_found) {
-              gaps_index.push_back(i);
-              gaps_edges.push_back((*x2)[i]);
-              /*** DO NOT INCLUDE THIS CHECK YET, AS UNSURE IF
-                   IT IS GOING TO CAUSE PROBLEMS, GIVEN THAT
-                   ARF/RMF GRIDS CAN BE POORLY DEFINED
-            } else if (cmp != 0) {
-              std::ostringstream err;
-              // not convinced this is understandable to users, particularly
-              // if the grid is in Angstrom. It is also possible that the
-              // format used isn't sufficient to show the problem, but I
-              // do not want to tweak the format here just yet.
-              err << "Grid cells overlap: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-              ***/
-            }
-          }
-        }
-
-        int ngaps = (int) gaps_edges.size();
-
-        // The size of the energy array sent to XSpec
-        int ngrid = nelem;
-        if (xhi) {
-          ngrid += 1 + ngaps;
-        }
-
-        // XSpec traditionally refers to the input energy grid as ear.
-        // Do a two-step conversion; create the array and then a type
-        // conversion (which is excessive if no grid points are added
-        // in, and the input is in keV).
-        std::vector<SherpaFloat> ear(ngrid);
-
-        // The grid is created, converted from Angstrom to Energy
-        // (if required), and then checked for being monotonic.
-        // The multiple loops are not necessarily as efficient
-        // as a single loop, but simpler to write.
-        //
-        {
-          // Process the contiguous sections by looping through
-          // the gaps_index/edges arrays.
-          int start = 0;
-          for (int j = 0 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              ear[i + j] = (*x1)[i];
-            }
-            ear[end + j] = gaps_edges[j];
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            ear[i + ngaps] = (*x1)[i];
-          }
-
-          // Add on the last bin value if needed
-          if (xhi) {
-            ear[ngrid - 1] = (*x2)[nelem - 1];
-          }
-        }
-
-        if (is_wave) {
-          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-                       sherpa::constants::h_kev<SherpaFloat>());
-          for (int i = 0; i < ngrid; i++) {
-            if (ear[i] <= 0.0) {
-              std::ostringstream err;
-              err << "Wavelength must be > 0, sent " << ear[i];
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-            }
-            ear[i] = hc / ear[i];
-          }
-        }
-
-        // Check for monotonic (could be included in the above, but
-        // this is much simpler to write here).
-        // Should this be done, or just let the user get invalid
-        // results?
-        //
-        // The earlier check with sao_fcmp catches some of these,
-        // but not all of them (if xhi is not given, or if xlo==xhi
-        // for any bin).
-        //
-        /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
-             UNSURE ABOUT ARF/RMF GRIDS
-        for (int i = 0; i < ngrid - 1; i++) {
-          if (ear[i] >= ear[i+1]) {
-            std::ostringstream err;
-            err << "Grid is not monotonic: " << ear[i] << " to " <<
-              ear[i+1];
-            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-            return NULL;
-          }
-        }
-        ***/
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
@@ -328,28 +394,10 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 
 	}
 
-        // Remove gaps
-        if (ngaps > 0) {
-          // We can skip copying the first contiguous block
-          // as it is the identity transform.
-          //
-          int start = gaps_index[0] + 1;
-          for (int j = 1 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              result[i] = result[i + j];
-            }
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            result[i] = result[i + ngaps];
-          }
-
-          // Resize the data.
-          result.resize1d(nelem);
-        }
+	int ngaps = (int) gaps_index.size();
+	if (ngaps > 0) {
+	  finalize_grid(nelem, result, gaps_index);
+	}
 
 	// Apply normalization if required
 	if ( HasNorm )
@@ -396,138 +444,18 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
           return NULL;
 	}
 
-	int nelem = int( xlo.get_size() );
-
-	if ( nelem < 2 ) {
-          std::ostringstream err;
-          err << "input array must have at least 2 elements, found " << nelem;
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
+	// The grid to send to XSPEC (double precision).
+	//
+	std::vector<SherpaFloat> ear;
+        std::vector<SherpaFloat> gaps_edges;
+        std::vector<int> gaps_index;
+	if (!create_grid(xlo, xhi, ear, gaps_index, gaps_edges)) {
+	  return NULL;
 	}
 
-        if( xhi && (nelem != int(xhi.get_size())) ) {
-          std::ostringstream err;
-          err << "input arrays are not the same size: " << nelem
-              << " and " << int( xhi.get_size() );
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
-        }
-
+	int nelem = int( xlo.get_size() );
+	int ngrid = ear.size();
         int ifl = 1;
-
-        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
-        if (is_wave && xhi) {
-            x1 = &xhi;
-            x2 = &xlo;
-        }
-
-        // Are there any non-contiguous bins?
-        std::vector<int> gaps_index;
-        std::vector<SherpaFloat> gaps_edges;
-        if (xhi) {
-          const int gap_found = is_wave ? 1 : -1;
-          for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (cmp == gap_found) {
-              gaps_index.push_back(i);
-              gaps_edges.push_back((*x2)[i]);
-              /*** DO NOT INCLUDE THIS CHECK YET, AS UNSURE IF
-                   IT IS GOING TO CAUSE PROBLEMS, GIVEN THAT
-                   ARF/RMF GRIDS CAN BE POORLY DEFINED
-            } else if (cmp != 0) {
-              std::ostringstream err;
-              // not convinced this is understandable to users, particularly
-              // if the grid is in Angstrom. It is also possible that the
-              // format used isn't sufficient to show the problem, but I
-              // do not want to tweak the format here just yet.
-              err << "Grid cells overlap: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-              ***/
-            }
-          }
-        }
-
-        int ngaps = (int) gaps_edges.size();
-
-        // The size of the energy array sent to XSpec
-        int ngrid = nelem;
-        if (xhi) {
-          ngrid += 1 + ngaps;
-        }
-
-        // XSpec traditionally refers to the input energy grid as ear.
-        std::vector<SherpaFloat> ear(ngrid);
-
-        // The grid is created, converted from Angstrom to Energy
-        // (if required), and then checked for being monotonic.
-        // The multiple loops are not necessarily as efficient
-        // as a single loop, but simpler to write.
-        //
-        {
-          // Process the contiguous sections by looping through
-          // the gaps_index/edges arrays.
-          int start = 0;
-          for (int j = 0 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              ear[i + j] = (*x1)[i];
-            }
-            ear[end + j] = gaps_edges[j];
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            ear[i + ngaps] = (*x1)[i];
-          }
-
-          // Add on the last bin value if needed
-          if (xhi) {
-            ear[ngrid - 1] = (*x2)[nelem - 1];
-          }
-        }
-
-        if (is_wave) {
-          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-                       sherpa::constants::h_kev<SherpaFloat>());
-          for (int i = 0; i < ngrid; i++) {
-            if (ear[i] <= 0.0) {
-              std::ostringstream err;
-              err << "Wavelength must be > 0, sent " << ear[i];
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-            }
-            ear[i] = hc / ear[i];
-          }
-        }
-
-        // Check for monotonic (could be included in the above, but
-        // this is much simpler to write here).
-        // Should this be done, or just let the user get invalid
-        // results?
-        //
-        // The earlier check with sao_fcmp catches some of these,
-        // but not all of them (if xhi is not given, or if xlo==xhi
-        // for any bin).
-        //
-        /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
-             UNSURE ABOUT ARF/RMF GRIDS
-        for (int i = 0; i < ngrid - 1; i++) {
-          if (ear[i] >= ear[i+1]) {
-            std::ostringstream err;
-            err << "Grid is not monotonic: " << ear[i] << " to " <<
-              ear[i+1];
-            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-            return NULL;
-          }
-        }
-        ***/
 
         // Although the XSpec model expects the flux/fluxerror arrays
         // to have size ngrid-1, the return array has to match the
@@ -560,28 +488,10 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 
 	}
 
-        // Remove gaps
-        if (ngaps > 0) {
-          // We can skip copying the first contiguous block
-          // as it is the identity transform.
-          //
-          int start = gaps_index[0] + 1;
-          for (int j = 1 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              result[i] = result[i + j];
-            }
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            result[i] = result[i + ngaps];
-          }
-
-          // Resize the data.
-          result.resize1d(nelem);
-        }
+	int ngaps = (int) gaps_index.size();
+	if (ngaps > 0) {
+	  finalize_grid(nelem, result, gaps_index);
+	}
 
 	// Apply normalization if required
 	if ( HasNorm )
@@ -746,8 +656,8 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
         }
 
         if (is_wave) {
-          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-                       sherpa::constants::h_kev<SherpaFloat>());
+          SherpaFloat hc = (sherpa::constants::c_ang<SherpaFloat>() *
+			    sherpa::constants::h_kev<SherpaFloat>());
           for (int i = 0; i < ngrid; i++) {
             if (ear[i] <= 0.0) {
               std::ostringstream err;
@@ -1106,141 +1016,18 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
         npy_intp npars = pars.get_size();
         if (HasNorm) { npars -= 1; }
 
-	int nelem = int( xlo.get_size() );
-
-	if ( nelem < 2 ) {
-          std::ostringstream err;
-          err << "input array must have at least 2 elements, found " << nelem;
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
+	// The grid to send to XSPEC (double precision).
+	//
+	std::vector<SherpaFloat> ear;
+        std::vector<SherpaFloat> gaps_edges;
+        std::vector<int> gaps_index;
+	if (!create_grid(xlo, xhi, ear, gaps_index, gaps_edges)) {
+	  return NULL;
 	}
 
-        if( xhi && (nelem != int(xhi.get_size())) ) {
-          std::ostringstream err;
-          err << "input arrays are not the same size: " << nelem
-              << " and " << int( xhi.get_size() );
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
-        }
-
+	int nelem = int( xlo.get_size() );
+	int ngrid = ear.size();
 	int ifl = 1;
-
-        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
-        if (is_wave && xhi) {
-            x1 = &xhi;
-            x2 = &xlo;
-        }
-
-        // Are there any non-contiguous bins?
-        std::vector<int> gaps_index;
-        std::vector<SherpaFloat> gaps_edges;
-        if (xhi) {
-          const int gap_found = is_wave ? 1 : -1;
-          for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (cmp == gap_found) {
-              gaps_index.push_back(i);
-              gaps_edges.push_back((*x2)[i]);
-              /*** DO NOT INCLUDE THIS CHECK YET, AS UNSURE IF
-                   IT IS GOING TO CAUSE PROBLEMS, GIVEN THAT
-                   ARF/RMF GRIDS CAN BE POORLY DEFINED
-            } else if (cmp != 0) {
-              std::ostringstream err;
-              // not convinced this is understandable to users, particularly
-              // if the grid is in Angstrom. It is also possible that the
-              // format used isn't sufficient to show the problem, but I
-              // do not want to tweak the format here just yet.
-              err << "Grid cells overlap: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-              ***/
-            }
-          }
-        }
-
-        int ngaps = (int) gaps_edges.size();
-
-        // The size of the energy array sent to XSpec
-        int ngrid = nelem;
-        if (xhi) {
-          ngrid += 1 + ngaps;
-        }
-
-        // XSpec traditionally refers to the input energy grid as ear.
-        // Do a two-step conversion; create the array and then a type
-        // conversion (which is excessive if no grid points are added
-        // in, and the input is in keV).
-        std::vector<SherpaFloat> ear(ngrid);
-
-        // The grid is created, converted from Angstrom to Energy
-        // (if required), and then checked for being monotonic.
-        // The multiple loops are not necessarily as efficient
-        // as a single loop, but simpler to write.
-        //
-        {
-          // Process the contiguous sections by looping through
-          // the gaps_index/edges arrays.
-          int start = 0;
-          for (int j = 0 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              ear[i + j] = (*x1)[i];
-            }
-            ear[end + j] = gaps_edges[j];
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            ear[i + ngaps] = (*x1)[i];
-          }
-
-          // Add on the last bin value if needed
-          if (xhi) {
-            ear[ngrid - 1] = (*x2)[nelem - 1];
-          }
-        }
-
-        if (is_wave) {
-          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-                       sherpa::constants::h_kev<SherpaFloat>());
-          for (int i = 0; i < ngrid; i++) {
-            if (ear[i] <= 0.0) {
-              std::ostringstream err;
-              err << "Wavelength must be > 0, sent " << ear[i];
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-            }
-            ear[i] = hc / ear[i];
-          }
-        }
-
-        // Check for monotonic (could be included in the above, but
-        // this is much simpler to write here).
-        // Should this be done, or just let the user get invalid
-        // results?
-        //
-        // The earlier check with sao_fcmp catches some of these,
-        // but not all of them (if xhi is not given, or if xlo==xhi
-        // for any bin).
-        //
-        /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
-             UNSURE ABOUT ARF/RMF GRIDS
-        for (int i = 0; i < ngrid - 1; i++) {
-          if (ear[i] >= ear[i+1]) {
-            std::ostringstream err;
-            err << "Grid is not monotonic: " << ear[i] << " to " <<
-              ear[i+1];
-            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-            return NULL;
-          }
-        }
-        ***/
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
@@ -1281,28 +1068,10 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 	}
 
-        // Remove gaps
-        if (ngaps > 0) {
-          // We can skip copying the first contiguous block
-          // as it is the identity transform.
-          //
-          int start = gaps_index[0] + 1;
-          for (int j = 1 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              result[i] = result[i + j];
-            }
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            result[i] = result[i + ngaps];
-          }
-
-          // Resize the data.
-          result.resize1d(nelem);
-        }
+	int ngaps = (int) gaps_index.size();
+	if (ngaps > 0) {
+	  finalize_grid(nelem, result, gaps_index);
+	}
 
 	// Apply normalization if required (note that npars
         // has been reduced by 1 if HasNorm is true, so it is
@@ -1358,141 +1127,18 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 	npy_intp npars = pars.get_size();
 
-	int nelem = int( xlo.get_size() );
-
-	if ( nelem < 2 ) {
-          std::ostringstream err;
-          err << "input array must have at least 2 elements, found " << nelem;
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
+	// The grid to send to XSPEC (double precision).
+	//
+	std::vector<SherpaFloat> ear;
+        std::vector<SherpaFloat> gaps_edges;
+        std::vector<int> gaps_index;
+	if (!create_grid(xlo, xhi, ear, gaps_index, gaps_edges)) {
+	  return NULL;
 	}
 
-        if( xhi && (nelem != int(xhi.get_size())) ) {
-          std::ostringstream err;
-          err << "input arrays are not the same size: " << nelem
-              << " and " << int( xhi.get_size() );
-          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-          return NULL;
-        }
-
+	int nelem = int( xlo.get_size() );
+	int ngrid = ear.size();
 	int ifl = 1;
-
-        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
-        if (is_wave && xhi) {
-            x1 = &xhi;
-            x2 = &xlo;
-        }
-
-        // Are there any non-contiguous bins?
-        std::vector<int> gaps_index;
-        std::vector<SherpaFloat> gaps_edges;
-        if (xhi) {
-          const int gap_found = is_wave ? 1 : -1;
-          for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (cmp == gap_found) {
-              gaps_index.push_back(i);
-              gaps_edges.push_back((*x2)[i]);
-              /*** DO NOT INCLUDE THIS CHECK YET, AS UNSURE IF
-                   IT IS GOING TO CAUSE PROBLEMS, GIVEN THAT
-                   ARF/RMF GRIDS CAN BE POORLY DEFINED
-            } else if (cmp != 0) {
-              std::ostringstream err;
-              // not convinced this is understandable to users, particularly
-              // if the grid is in Angstrom. It is also possible that the
-              // format used isn't sufficient to show the problem, but I
-              // do not want to tweak the format here just yet.
-              err << "Grid cells overlap: cell " << i
-                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
-                  << " and cell " << (i+1)
-                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-              ***/
-            }
-          }
-        }
-
-        int ngaps = (int) gaps_edges.size();
-
-        // The size of the energy array sent to XSpec
-        int ngrid = nelem;
-        if (xhi) {
-          ngrid += 1 + ngaps;
-        }
-
-        // XSpec traditionally refers to the input energy grid as ear.
-        // Do a two-step conversion; create the array and then a type
-        // conversion (which is excessive if no grid points are added
-        // in, and the input is in keV).
-        std::vector<SherpaFloat> ear(ngrid);
-
-        // The grid is created, converted from Angstrom to Energy
-        // (if required), and then checked for being monotonic.
-        // The multiple loops are not necessarily as efficient
-        // as a single loop, but simpler to write.
-        //
-        {
-          // Process the contiguous sections by looping through
-          // the gaps_index/edges arrays.
-          int start = 0;
-          for (int j = 0 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              ear[i + j] = (*x1)[i];
-            }
-            ear[end + j] = gaps_edges[j];
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            ear[i + ngaps] = (*x1)[i];
-          }
-
-          // Add on the last bin value if needed
-          if (xhi) {
-            ear[ngrid - 1] = (*x2)[nelem - 1];
-          }
-        }
-
-        if (is_wave) {
-          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-                       sherpa::constants::h_kev<SherpaFloat>());
-          for (int i = 0; i < ngrid; i++) {
-            if (ear[i] <= 0.0) {
-              std::ostringstream err;
-              err << "Wavelength must be > 0, sent " << ear[i];
-              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-              return NULL;
-            }
-            ear[i] = hc / ear[i];
-          }
-        }
-
-        // Check for monotonic (could be included in the above, but
-        // this is much simpler to write here).
-        // Should this be done, or just let the user get invalid
-        // results?
-        //
-        // The earlier check with sao_fcmp catches some of these,
-        // but not all of them (if xhi is not given, or if xlo==xhi
-        // for any bin).
-        //
-        /*** DO NOT INCLUDE FOR THE SAME REASON AS ABOVE, AS
-             UNSURE ABOUT ARF/RMF GRIDS
-        for (int i = 0; i < ngrid - 1; i++) {
-          if (ear[i] >= ear[i+1]) {
-            std::ostringstream err;
-            err << "Grid is not monotonic: " << ear[i] << " to " <<
-              ear[i+1];
-            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-            return NULL;
-          }
-        }
-        ***/
 
         // convert to 32-byte float
         std::vector<FloatArrayType> fear(ngrid);
@@ -1532,28 +1178,10 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 	}
 
-        // Remove gaps
-        if (ngaps > 0) {
-          // We can skip copying the first contiguous block
-          // as it is the identity transform.
-          //
-          int start = gaps_index[0] + 1;
-          for (int j = 1 ; j < ngaps; j++) {
-            int end = gaps_index[j] + 1;
-            for(int i = start; i < end; i++) {
-              result[i] = result[i + j];
-            }
-            start = end;
-          }
-
-          // need to do the last contiguous grid
-          for(int i = start; i < nelem; i++) {
-            result[i] = result[i + ngaps];
-          }
-
-          // Resize the data.
-          result.resize1d(nelem);
-        }
+	int ngaps = (int) gaps_index.size();
+	if (ngaps > 0) {
+	  finalize_grid(nelem, result, gaps_index);
+	}
 
 	// Apply normalization if required
 	if ( HasNorm )
