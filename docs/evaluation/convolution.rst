@@ -50,7 +50,7 @@ can not be evaluated by passing it the data grid. Instead,
 the kernel is used to wrap another model expression,
 normally done by passing the model to be wrapped as the
 argument to the model, and the result of this is then
-a model that can be evaluated as normal.
+a model that can be evaluated on the data grid.
 
 .. note::
 
@@ -115,7 +115,7 @@ composite model):
 
 .. _convolution-1d-fold:
 
-The model can be evaluated bith before and after convolution, by
+The model can be evaluated both before and after convolution, by
 passing it the data grid. Unlike normal model evaluation the
 `PSFModel` class requires that its
 :py:meth:`~sherpa.instrument.PSFModel.fold` model be called before

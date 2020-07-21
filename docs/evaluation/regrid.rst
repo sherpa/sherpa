@@ -56,7 +56,7 @@ method:
 The "new" model is really just a wrapper around the original model,
 which means that it shares the parameter values and settings. This
 is shown below where the ``pos`` and ``fwhm`` parameters of the
-``rmdl`` are labbeled by the label given to ``mdl`` (namely
+``rmdl`` are labeled by the label given to ``mdl`` (namely
 "orig"):
 
     >>> mdl.pos = 4500
