@@ -10,15 +10,15 @@ Welcome to Sherpa's documentation
 .. image:: _static/sherpa_logo.png
     :width: 350px
     :height: 132px
-    :target: http://cxc.harvard.edu/contrib/sherpa/
+    :target: https://cxc.harvard.edu/contrib/sherpa/
 
 Welcome to the Sherpa documentation.
-`Sherpa <http://cxc.harvard.edu/contrib/sherpa/>`_
+`Sherpa <https://cxc.harvard.edu/contrib/sherpa/>`_
 is a Python package for
 modeling and fitting data. It was originally developed by the
-`Chandra X-ray Center <http://cxc.harvard.edu/>`_ for use in
+`Chandra X-ray Center <https://cxc.harvard.edu/>`_ for use in
 `analysing X-ray data (both spectral and imaging)
-<http://cxc.harvard.edu/sherpa>`_
+<https://cxc.harvard.edu/sherpa>`_
 from the  Chandra X-ray telescope, but it is designed to be a
 general-purpose package, which can be enhanced with domain-specific
 tasks (such as X-ray Astronomy).

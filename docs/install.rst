@@ -65,7 +65,7 @@ Releases and version numbers
 The Sherpa release policy has a major release at the start of
 the year, corresponding to the code that is released in the
 previous December as part of the
-`CIAO release <http://cxc.harvard.edu/ciao/>`_, followed by
+`CIAO release <https://cxc.harvard.edu/ciao/>`_, followed by
 several smaller releases throughout the year.
 
 Information on the Sherpa releases is available from the
@@ -113,7 +113,7 @@ using::
     conda install -c sherpa sherpa
 
 It is **strongly** suggested that Sherpa is installed into a named
-`conda environment <http://conda.pydata.org/docs/using/envs.html>`_
+`conda environment <https://conda.pydata.org/docs/using/envs.html>`_
 (i.e. not the default environment).
 
 Using pip
@@ -336,7 +336,7 @@ Other options
 
 The remaining options in the ``setup.cfg`` file allow Sherpa to be
 built in specific environments, such as when it is built as part
-of the `CIAO analysis system <http://cxc.harvard.edu/ciao/>`_. Please
+of the `CIAO analysis system <https://cxc.harvard.edu/ciao/>`_. Please
 see the comments in the ``setup.cfg`` file for more information on
 these options.
 
@@ -351,7 +351,7 @@ Building and Installing
 
 It is highly recommended that some form of virtual environment,
 such as a
-`conda environment <http://conda.pydata.org/docs/using/envs.html>`_
+`conda environment <https://conda.pydata.org/docs/using/envs.html>`_
 or that provided by
 `Virtualenv <https://virtualenv.pypa.io/en/stable/>`_,
 be used when building and installing Sherpa.
@@ -433,8 +433,8 @@ which used ``git`` to access the source code)::
     git submodule init
     git submodule update
 
-When both the `DS9 image viewer <http://ds9.si.edu/site/Home.html>`_ and
-`XPA toolset <http://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
+When both the `DS9 image viewer <https://ds9.si.edu/>`_ and
+`XPA toolset <https://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
 test suite will include tests that check that DS9 can be used from
 Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
@@ -454,7 +454,7 @@ Building the documentation
 Building the documentation requires the Sherpa source code and several
 additional packages:
 
-* `Sphinx <http://sphinx.pocoo.org/>`_, version 1.8 or later
+* `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
 * NumPy and `sphinx-astropy <https://github.com/astropy/sphinx-astropy/>`_
   (the latter can be installed with ``pip``).

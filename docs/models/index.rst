@@ -47,7 +47,7 @@ The parameter values have a current value, a valid range
 and a units field. The units field is a string, describing the
 expected units for the parameter; there is currently *no support* for
 using `astropy.units
-<http://docs.astropy.org/en/stable/units/index.html>`_ to set a
+<https://docs.astropy.org/en/stable/units/index.html>`_ to set a
 parameter value.  The "Type" column refers to whether the parameter is
 fixed, (``frozen``) or can be varied during a fit (``thawed``),
 as described below, in the :ref:`params-freeze` section.

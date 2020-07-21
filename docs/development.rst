@@ -14,7 +14,7 @@ problems or feature requests on github
 At present we do not have any explicit documentation on how
 to contribute to Sherpa, but it is similar to other open-source
 packages such as
-`AstroPy <http://docs.astropy.org/en/stable/index.html#contributing>`_.
+`AstroPy <https://docs.astropy.org/en/stable/index.html#contributing>`_.
 
 The developer documentation is also currently lacking.
 
@@ -39,7 +39,7 @@ Conda can be used to install all the dependencies for Sherpa.
     conda install -n sherpaciao -c anaconda -c astropy sphinx graphviz sphinx-astropy sphinx_rtd_theme
 
 The first line installes the full `CIAO release
-<http://cxc.harvard.edu/ciao/>`_ and astropy, required for building
+<https://cxc.harvard.edu/ciao/>`_ and astropy, required for building
 and running tests locally. The last line adds all requirements for
 building the documentation.  Sherpa can use either astropy or crates
 as backend for reading and writing files. The default configuration in

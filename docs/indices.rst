@@ -27,7 +27,7 @@ Glossary
        The data reduction and analysis provided by the :term:`CXC`
        for users of the Chandra X-ray telescope. Sherpa is provided
        as part of CIAO, but can also be used separately. The
-       CIAO system is available from http://cxc.harvard.edu/ciao/.
+       CIAO system is available from https://cxc.harvard.edu/ciao/.
 
    Crates
        The Input/Output library provided as part of :term:`CIAO`.
@@ -37,12 +37,12 @@ Glossary
        files).
 
    CXC
-       The `Chandra X-ray Center <http://cxc.harvard.edu/>`_.
+       The `Chandra X-ray Center <https://cxc.harvard.edu/>`_.
 
    DS9
        An external image viewer designed to allow users to interact with
        gridded data sets (2D and 3D). Is is used by Sherpa to display
-       image data, and is available from http://ds9.si.edu/. It uses
+       image data, and is available from https://ds9.si.edu/. It uses
        the :term:`XPA` messaging system to communicate with external
        processes.
 
@@ -122,7 +122,7 @@ Glossary
 
    XPA
        The `XPA messaging system
-       <http://hea-www.harvard.edu/saord/xpa/>`_
+       <https://hea-www.harvard.edu/saord/xpa/>`_
        is used by :term:`DS9` to communicate
        with external programs. Sherpa uses this functionality to
        control DS9 - by sending it images to display and retriving
