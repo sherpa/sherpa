@@ -196,35 +196,30 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
   //
   ear.assign(ngrid, 0);
 
-  // The grid is created, converted from Angstrom to Energy
-  // (if required), and then checked for being monotonic.
-  // The multiple loops are not necessarily as efficient
-  // as a single loop, but simpler to write.
-  //
-  {
-    // Process the contiguous sections by looping through
-    // the gaps_index/edges arrays.
-    int start = 0;
-    for (int j = 0 ; j < ngaps; j++) {
-      int end = gaps_index[j] + 1;
-      for(int i = start; i < end; i++) {
-        ear[i + j] = (*x1)[i];
-      }
-      ear[end + j] = gaps_edges[j];
-      start = end;
+  // Process the contiguous sections by looping through
+  // the gaps_index/edges arrays.
+  int start = 0;
+  for (int j = 0 ; j < ngaps; j++) {
+    int end = gaps_index[j] + 1;
+    for(int i = start; i < end; i++) {
+      ear[i + j] = (*x1)[i];
     }
-
-    // need to do the last contiguous grid
-    for(int i = start; i < nelem; i++) {
-      ear[i + ngaps] = (*x1)[i];
-    }
-
-    // Add on the last bin value if needed
-    if (xhi) {
-      ear[ngrid - 1] = (*x2)[nelem - 1];
-    }
+    ear[end + j] = gaps_edges[j];
+    start = end;
   }
 
+  // need to do the last contiguous grid
+  for(int i = start; i < nelem; i++) {
+    ear[i + ngaps] = (*x1)[i];
+  }
+
+  // Add on the last bin value if needed
+  if (xhi) {
+    ear[ngrid - 1] = (*x2)[nelem - 1];
+  }
+
+  // Convert from wavelength (Angstrom) to energy (keV)
+  //
   if (is_wave) {
     CType hc = (sherpa::constants::c_ang<CType>() *
                  sherpa::constants::h_kev<CType>());
@@ -333,17 +328,16 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
   // (if required), and then checked for being monotonic.
   // The code has been kept similar to create_grid.
   //
-  {
-    for(int i = 0; i < nelem; i++) {
-      ear[i] = (*x1)[i];
-    }
-
-    // Add on the last bin value if needed
-    if (xhi) {
-      ear[ngrid - 1] = (*x2)[nelem - 1];
-    }
+  for(int i = 0; i < nelem; i++) {
+    ear[i] = (*x1)[i];
   }
 
+  // Add on the last bin value if needed
+  if (xhi) {
+    ear[ngrid - 1] = (*x2)[nelem - 1];
+  }
+
+  // Convert from Angstrom to keV
   if (is_wave) {
     CType hc = (sherpa::constants::c_ang<CType>() *
                  sherpa::constants::h_kev<CType>());
