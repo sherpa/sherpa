@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 #
 # Copyright (C) 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #

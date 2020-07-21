@@ -56,7 +56,6 @@ References
 
 """
 
-from __future__ import absolute_import
 
 import string
 from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D

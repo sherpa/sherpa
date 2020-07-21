@@ -283,7 +283,6 @@ public domain. The `_version.py` that it creates is also in the public
 domain.
 
 """
-from __future__ import print_function
 
 import errno
 import os
