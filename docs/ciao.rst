@@ -24,7 +24,7 @@ with the following modifications:
   library (:py:mod:`sherpa.astro.xspec`).
 
 The online documentation provided for Sherpa as part of CIAO,
-namely http://cxc.harvard.edu/sherpa/, can be used with the
+namely https://cxc.harvard.edu/sherpa/, can be used with the
 standalone version of Sherpa, but note that the focus of this
 documentation is the
 :doc:`session-based API <ui/index>`

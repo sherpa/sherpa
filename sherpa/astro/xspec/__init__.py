@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015-2018, 2019, 2020
-#                Smithsonian Astrophysical Observatory
+#         Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.10.1, 12.10.0, 12.9.1, and 12.9.0 of XSPEC [1]_,
-and can be built against the model library or the full application.  There is
-no guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
+of XSPEC [1]_, and can be built against the model library or the full
+application.  There is no guarantee of support for older or newer
+versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -30,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.10.1b'
+   '12.11.0'
 
 Initializing XSPEC
 ------------------
@@ -1068,7 +1069,7 @@ class XSagnsed(XSAdditiveModel):
 
     See Also
     --------
-    XSqsosed
+    XSagnslim, XSqsosed
 
     Notes
     -----
@@ -1109,7 +1110,7 @@ class XSagnsed(XSAdditiveModel):
         self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
                                  '(_selfg)', frozen=True)
 
-        self.Htmax = Parameter(name, 'Htmax', 100, 6, 200, 6, 200,
+        self.Htmax = Parameter(name, 'Htmax', 10, 6, 10, 6, 10,
                                'Rg', frozen=True)
 
         self.reprocess = Parameter(name, 'reprocess', 1, 0, 1, 0, 1,
@@ -1123,6 +1124,114 @@ class XSagnsed(XSAdditiveModel):
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
                 self.R_hot, self.R_warm, self.logrout, self.Htmax,
                 self.reprocess, self.redshift, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.11.0")
+class XSagnslim(XSAdditiveModel):
+    """The XSPEC agnslim model: AGN super-Eddington accretion model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass, in solar units.
+    dist
+        The comoving (proper) distance, in Mpc.
+    logmdot
+        log of mdot, where mdot = Mdot/Mdot_Edd and
+        eta Mdot_Edd c^2 = L_Edd
+    astar
+        The black hole spin (dimensionless)
+    cosi
+        The cosine of the inclination angle i for the warm
+        Comptonising component and the outer disc.
+    kTe_hot
+        The electron temperature for the hot Comptonisation component
+        in keV. If negative then only the hot Comptonisation component
+        is used.
+    kTe_warm
+        The electron temperature for the warm Comptonisation component
+        in keV. If negative then only the warm Comptonisation component
+        is used.
+    Gamma_hot
+        The spectral index of the hot Comptonisation component.
+    Gamma_warm
+        The spectral index of the warm Comptonisation component. If
+        negative then only the outer disc component is used.
+    R_hot
+        The outer radius of the hot Comptonisation component in Rg.
+    R_warm
+        The outer radius of the warm Comptonisation component in Rg.
+    logrout
+        The log of the outer radius of the disc in units of Rg. If
+        negative, the code will use the self gravity radius as calculated
+        from Laor & Netzer (1989) (see [1]_).
+    rin
+        The inner radius of the disc in Rg. If this parameter is -1
+        (the default), the model will use the radius calculated from KD19.
+        This must be greater than R_hot for mdot greater than 6 and greater
+        than R_isco for mdot less than 6.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model. This must be fixed at 1.
+
+    See Also
+    --------
+    XSagnsed, XSqsosed
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgnslim.html
+
+    """
+
+    __function__ = "agnslim"
+
+    def __init__(self, name='agnslim'):
+        self.mass = Parameter(name, 'mass', 1e7, 1.0, 1e10, 1.0, 1e10,
+                              'solar', frozen=True)
+        self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
+                              'Mpc', frozen=True)
+        self.logmdot = Parameter(name, 'logmdot', -1, -10, 3, -10, 3)
+        self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
+                               frozen=True)
+        self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
+                              frozen=True)
+        # TODO: allow negative values
+        self.kTe_hot = Parameter(name, 'kTe_hot', 100.0, 10, 300, 10, 300,
+                                 'keV(-pl)', frozen=True)
+        self.kTe_warm = Parameter(name, 'kTe_warm', 0.2, 0.1, 0.5, 0.1, 0.5,
+                                  'keV(-sc)')
+        self.Gamma_hot = Parameter(name, 'Gamma_hot', 2.4, 1.3, 3, 1.3, 3)
+        self.Gamma_warm = Parameter(name, 'Gamma_warm', 3.0, 2, 5, 2, 10,
+                                    '(-disk)')
+
+        self.R_hot = Parameter(name, 'R_hot', 10, 2, 500, 2, 500, 'Rg')
+        self.R_warm = Parameter(name, 'R_warm', 20, 2, 500, 2, 500, 'Rg')
+
+        self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
+                                 '(-selfg)', frozen=True)
+
+        self.rin = Parameter(name, 'rin', -1, -1, 100, -1, 100,
+                                   frozen=True)  # TODO: make alwaysfrozen?
+
+        self.redshift = Parameter(name, 'redshift', 0, 0, 5, 0, 5,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
+                self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
+                self.R_hot, self.R_warm, self.logrout, self.rin,
+                self.redshift, self.norm)
 
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -1822,6 +1931,77 @@ class XSbvrnei(XSAdditiveModel):
         self.Velocity = Parameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1.e6, 'km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity, self.norm))
+
+
+@version_at_least("12.11.0")
+class XSbwcycl(XSAdditiveModel):
+    """The XSPEC bwcycl model: Becker-Wolff self-consistent cyclotron line model.
+
+    The model is described at [1]_. Please review the restrictions
+    on the model and parameter values at this reference before using
+    the model.
+
+    Attributes
+    ----------
+    Radius
+        The radius of the Neutron star, in km. Keep frozen.
+    Mass
+        The mass of the Neutron star, in solar units. Keep frozen.
+    csi
+        Parameter linked to the photon escape time (order of some
+        unities).
+    delta
+        Ratio between bulk and thermal Comptonization importances.
+    B
+        The magnetic field in units of 10^12 G.
+    Mdot
+        The mass accretion rate, in 10^17 g/s.
+    Te
+        The electron temperature in units of keV.
+    r0
+        The column radius in m.
+    D
+        The source distance in kpc. Keep frozen.
+    BBnorm
+        The normalization of the blackbody seed photon component
+        (fix it to zero at first).
+    CYCnorm
+        The normalization of the cyclotron emission seed photon
+        component (fix it to one).
+    FFnorm
+        The normalization of the Bremsstrahlung emission seed photon
+        component (fix it to one).
+    norm
+        The normalization of the model (fix it to one).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBwcycl.html
+
+    """
+
+    __function__ = "beckerwolff"  # "c_beckerwolff"  do not have a direct interface to c_xxx
+
+    def __init__(self, name='bwcycl'):
+        self.Radius = Parameter(name, 'Radius', 10, 5, 20, 5, 20, units='km', frozen=True)
+        self.Mass = Parameter(name, 'Mass', 1.4, 1, 3, 1, 3, units='Solar', frozen=True)
+        self.csi = Parameter(name, 'csi', 1.5, 0.01, 20, 0.01, 20)
+        self.delta = Parameter(name, 'delta', 1.8, 0.01, 20, 0.01, 20)
+        self.B = Parameter(name, 'B', 4, 0.01, 100, 0.01, 100, units='1e12G')
+        self.Mdot = Parameter(name, 'Mdot', 1, 1e-6, 1e6, 1e-6, 1e6, units='1e17g/s')
+        self.Te = Parameter(name, 'Te', 5, 0.1, 100, 0.1, 100, units='keV')
+        self.r0 = Parameter(name, 'r0', 44, 10, 1000, 10, 1000, units='m')
+        self.D = Parameter(name, 'D', 5, 1, 20, 1, 20, units='km', frozen=True)
+        self.BBnorm = Parameter(name, 'BBnorm', 0.0, 0, 100, 0, 100, frozen=True)
+        self.CYCnorm = Parameter(name, 'CYCnorm', 1.0, -1, 100, -1, 100, frozen=True)
+        self.FFnorm = Parameter(name, 'FFnorm', 1.0, -1, 100, -1, 100, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval, frozen=True)
+
+        XSAdditiveModel.__init__(self, name, (self.Radius, self.Mass, self.csi, self.delta,
+                                              self.B, self.Mdot, self.Te, self.r0, self.D,
+                                              self.BBnorm, self.CYCnorm, self.FFnorm,
+                                              self.norm))
 
 
 class XSc6mekl(XSAdditiveModel):
@@ -3222,7 +3402,7 @@ class XSgrad(XSAdditiveModel):
 
     See Also
     --------
-    XSkerbb
+    XSkerrbb
 
     References
     ----------
@@ -3368,7 +3548,7 @@ class XSkerrbb(XSAdditiveModel):
         [1]_ for more details.
     a
         The specific angular momentum of the black hole in units of the
-        black hole mass M (when G=c=1). It should be in the range [0, 1).
+        black hole mass M (when G=c=1). It should be in the range [-1, 1).
     i
         The disk inclination angle, in degrees. A face-on disk has
         i=0. It must be less than or equal to 85 degrees.
@@ -3397,7 +3577,7 @@ class XSkerrbb(XSAdditiveModel):
 
     See Also
     --------
-    XSgrad
+    XSgrad, XSzkerrbb
 
     References
     ----------
@@ -3416,8 +3596,8 @@ class XSkerrbb(XSAdditiveModel):
         self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'Mdd0')
         self.Dbh = Parameter(name, 'Dbh', 10., 0., 10000., 0.0, hugeval, 'kpc', True)
         self.hd = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
-        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, frozen=True)
-        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, frozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.Dbh, self.hd, self.rflag, self.lflag, self.norm))
 
@@ -6683,6 +6863,74 @@ class XSzgauss(XSAdditiveModel):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
         pos = get_xspec_position(dep, *args)
         param_apply_limits(pos, self.LineE, **kwargs)
+
+
+@version_at_least("12.11.0")
+class XSzkerrbb(XSAdditiveModel):
+    """The XSPEC zkerrbb model: multi-temperature blackbody model for thin accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    eta
+        The ratio of the disk power produced by a torque at the disk
+        inner boundary to the disk power arising from accretion. See
+        [1]_ for more details.
+    a
+        The specific angular momentum of the black hole in units of the
+        black hole mass M (when G=c=1). It should be in the range [-1, 1).
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0. It must be less than or equal to 85 degrees.
+    Mbh
+        The mass of the black hole, in solar masses.
+    Mdd
+        The "effective" mass accretion rate in units of M_solar/year.
+        See [1]_ for more details.
+    z
+        The redshift of the black hole
+    fcol
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    rflag
+        A flag to switch on or off the effect of self irradiation:
+        when greater than zero the self irradition is included,
+        otherwise it is not. This parameter can not be thawed.
+    lflag
+        A flag to switch on or off the effect of limb darkening:
+        when greater than zero the disk emission is assumed to be
+        limb darkened, otherwise it is isotropic.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1
+        if the inclination, mass, and distance are frozen.
+
+    See Also
+    --------
+    XSkerrbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrbb.html
+
+    """
+
+    __function__ = "C_zkerrbb"
+
+    def __init__(self, name='zkerrbb'):
+        self.eta = Parameter(name, 'eta', 0., 0., 1.0, 0.0, hugeval, frozen=True)
+        self.a = Parameter(name, 'a', 0., -1., 0.9999, -hugeval, hugeval)
+        self.i = Parameter(name, 'i', 30., 0., 85., 0.0, hugeval, 'deg', True)
+        self.Mbh = Parameter(name, 'Mbh', 1., 0., 100., 0.0, hugeval, 'M_sun')
+        self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'M0yr')
+        self.z = Parameter(name, 'z', 0.01, 0., 10., 0.0, 10, frozen=True)
+        self.fcol = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.z, self.fcol, self.rflag, self.lflag, self.norm))
 
 
 @version_at_least("12.10.1")
@@ -10647,6 +10895,128 @@ class XSismabs(XSMultiplicativeModel):
                                         self.Fe, self.redshift))
 
 
+@version_at_least("12.11.0")
+class XSismdust(XSMultiplicativeModel):
+    """The XSPEC ismdust model: Extinction due to a power-law distribution of dust grains.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    msil
+        The dust mass column for silicate (in units of 10^-4).
+    mgra
+        The dust mass column for graphite (in units of 10^-4).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSolivineabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelIsmdust.html
+
+    """
+
+    __function__ = "ismdust"
+
+    def __init__(self, name='ismdust'):
+        self.msil = Parameter(name, 'msil', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.mgra = Parameter(name, 'mgra', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.msil, self.mgra,
+                                        self.redshift))
+
+
+@version_at_least("12.11.0")
+class XSlogconst(XSMultiplicativeModel):
+    """The XSPEC logconst model: Constant in log units.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    logfact
+        The constant factor in natural log.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLogconst.html
+
+    """
+
+    __function__ = "C_logconst"
+
+    def __init__(self, name='logconst'):
+        self.logfact = Parameter(name, 'logfact', 0.0, -20.0, 20, -20, 20)
+        XSMultiplicativeModel.__init__(self, name, (self.logfact, ))
+
+
+@version_at_least("12.11.0")
+class XSlog10con(XSMultiplicativeModel):
+    """The XSPEC log10con model: Constant in base 10 log units.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    log10fac
+        The constant factor in base 10 log.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLog10con.html
+
+    """
+
+    __function__ = "C_log10con"
+
+    def __init__(self, name='log10con'):
+        self.log10fac = Parameter(name, 'log10fac', 0.0, -20.0, 20, -20, 20)
+        XSMultiplicativeModel.__init__(self, name, (self.log10fac, ))
+
+
+@version_at_least("12.11.0")
+class XSolivineabs(XSMultiplicativeModel):
+    """The XSPEC olivineabs model: Absorption due to olivine.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    moliv
+        The dust mass column for olivine grains (in units of 10^-4).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSismdust
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOlivineabs.html
+
+    """
+
+    __function__ = "olivineabs"
+
+    def __init__(self, name='olivineabs'):
+        self.moliv = Parameter(name, 'moliv', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.moliv, self.redshift))
+
+
 @version_at_least("12.9.1")
 class XSslimbh(XSAdditiveModel):
     """The XSPEC slimbh model: Stationary slim accretion disk.
@@ -11102,8 +11472,8 @@ class XSxscat(XSMultiplicativeModel):
 
     def __init__(self, name='xscat'):
         self.NH = Parameter(name, 'NH', 1., 0., 1000.0, 0.0, 1000.0, '10^22')
-        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.95, 0, 0.95)
-        self.Rext = Parameter(name, 'Rext', 10.0, 0, 115.0, 0, 119.0, 'arcsec',
+        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.99, 0, 0.999)
+        self.Rext = Parameter(name, 'Rext', 10.0, 0, 235.0, 0, 240.0, 'arcsec',
                               frozen=True)
         # The maxmimum number of models depends on the data file, so pick
         # a value that is unlikely to be exceeded (the max at the time

@@ -22,12 +22,12 @@ Glossary
    Astropy
        A community Python library for Astronomy:
        https://www.astropy.org/.
-       
+
    CIAO
        The data reduction and analysis provided by the :term:`CXC`
        for users of the Chandra X-ray telescope. Sherpa is provided
        as part of CIAO, but can also be used separately. The
-       CIAO system is available from http://cxc.harvard.edu/ciao/.
+       CIAO system is available from https://cxc.harvard.edu/ciao/.
 
    Crates
        The Input/Output library provided as part of :term:`CIAO`.
@@ -35,19 +35,19 @@ Glossary
        speciality support for X-ray data formats that follow
        :term:`OGIP` standards (such as :term:`ARF` and :term:`RMF`
        files).
-       
+
    CXC
-       The `Chandra X-ray Center <http://cxc.harvard.edu/>`_.
+       The `Chandra X-ray Center <https://cxc.harvard.edu/>`_.
 
    DS9
        An external image viewer designed to allow users to interact with
        gridded data sets (2D and 3D). Is is used by Sherpa to display
-       image data, and is available from http://ds9.si.edu/. It uses
+       image data, and is available from https://ds9.si.edu/. It uses
        the :term:`XPA` messaging system to communicate with external
        processes.
-       
+
    FITS
-       The `Flexible Image Transport System 
+       The `Flexible Image Transport System
        <https://en.wikipedia.org/wiki/FITS>`_ is a common data format in
        Astronomy, originally defined to represent imaging data from radio
        telescopes, but has since been extended to contain a mixture of
@@ -85,7 +85,7 @@ Glossary
        `OGIP/92-007
        <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
        and
-       `OGIP/92-007a 
+       `OGIP/92-007a
        <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html>`_.
        Confusingly, PHA can also refer to the Pulse Height Amplitude (the
        amount of charge detected) of an event, which is one of the
@@ -98,7 +98,7 @@ Glossary
        dependent on the optical design of the system but can also be
        influenced by other factors (e.g. for ground-based observatories
        the atmosphere can add additional blurring).
-       
+
    RMF
        The Redistribution Matrix Function used to describe the response
        of an Astronomical X-ray detector. It is a matrix containing the
@@ -119,10 +119,10 @@ Glossary
        coordinates)
        for a given image pixel, but it can also be used to map between
        row on a spectrograph and the corresponding wavelength of light.
-       
+
    XPA
        The `XPA messaging system
-       <http://hea-www.harvard.edu/saord/xpa/>`_
+       <https://hea-www.harvard.edu/saord/xpa/>`_
        is used by :term:`DS9` to communicate
        with external programs. Sherpa uses this functionality to
        control DS9 - by sending it images to display and retriving
@@ -134,7 +134,7 @@ Glossary
        <https://packages.ubuntu.com/xenial/xpa-tools>`_,
        or they can be
        `built from source <https://github.com/ericmandel/xpa>`_.
-   
+
    XSPEC
        This can refer to either the X-ray Spectral fitting package,
        or the models from this package. XSPEC is distributed by
@@ -144,5 +144,5 @@ Glossary
        `models from XSPEC
        <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixExternal.html>`_.
 
-       Sherpa can be built to use XSPEC versions 12.10.1 (patch level `a`
+       Sherpa can be built to use XSPEC versions 12.11.0, 12.10.1 (patch level `a`
        or later), 12.10.0, 12.9.1, or 12.9.0.

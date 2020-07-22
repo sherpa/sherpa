@@ -7,8 +7,8 @@ is to create a new issue on the Sherpa
 `GitHub issue page <https://github.com/sherpa/sherpa/issues/>`_; that
 requires creating a free account on GitHub if you do not have one.
 For those using Sherpa as part of
-`CIAO <http://cxc.harvard.edu/ciao/>`_, please use the
-`CXC HelpDesk system <http://cxc.harvard.edu/helpdesk/>`_.
+`CIAO <https://cxc.harvard.edu/ciao/>`_, please use the
+`CXC HelpDesk system <https://cxc.harvard.edu/helpdesk/>`_.
 
 Please include an example that demonstrates the issue that will allow
 the developers to reproduce and fix the problem. You may be asked to

@@ -13,7 +13,7 @@ Sherpa provides a
 method designed for Poisson-distributed data.
 It was originally developed as the
 `Bayesian Low-Count X-ray Spectral (BLoCXS)
-<http://hea-www.harvard.edu/astrostat/pyblocxs/>`_
+<https://hea-www.harvard.edu/astrostat/pyblocxs/>`_
 package, but has since been incorporated into Sherpa.
 It is developed from the work presented in
 `Analysis of Energy Spectra with Low Photon Counts

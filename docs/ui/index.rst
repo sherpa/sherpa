@@ -22,7 +22,7 @@ to identify data sets and model components. The Astronomy-specific
 version adds domain-specific functionality; in this case support
 for Astronomical data analysis, with a strong focus on high-energy (X-ray)
 data. It is currently documented on the
-http://cxc.harvard.edu/sherpa/ web site.
+https://cxc.harvard.edu/sherpa/ web site.
 
 The :py:class:`~sherpa.ui.utils.Session` object provides methods
 that allow you to:
@@ -49,7 +49,7 @@ Examples
 
 The following examples are *very* basic, since they are
 intended to highlight how the Sesssion API is used.
-The CIAO documentation for Sherpa at http://cxc.harvard.edu/sherpa/
+The CIAO documentation for Sherpa at https://cxc.harvard.edu/sherpa/
 provides more documentation and examples.
 
 There are two examples which show the same process -
