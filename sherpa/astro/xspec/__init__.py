@@ -63,14 +63,11 @@ References
 
 .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/index.html
 
-.. [2] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/node131.html
-       (link valid for XSPEC 12.11.0)
+.. [2] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Additive.html
 
-.. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node231.html
-       (link valid for XSPEC 12.11.0)
+.. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplicative.html
 
-.. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node279.html
-       (link valid for XSPEC 12.11.0)
+.. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
 
 .. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
 
@@ -215,7 +212,7 @@ def get_xsversion():
     --------
 
     >>> get_xsversion()
-    '12.9.1p'
+    '12.11.0m'
     """
 
     return _xspec.get_xsversion()
@@ -1009,8 +1006,7 @@ class XSAdditiveModel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/node131.html
-           (link valid for XSPEC 12.11.0)
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Additive.html
 
     """
 
@@ -1028,8 +1024,7 @@ class XSMultiplicativeModel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node231.html
-           (link valid for XSPEC 12.11.0)
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplivative.html
 
     """
 
@@ -1066,8 +1061,7 @@ class XSConvolutionKernel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node279.html
-           (link valid for XSPEC 12.11.0)
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
 
     Examples
     --------
@@ -11061,6 +11055,8 @@ class XSismabs(XSMultiplicativeModel):
     element name to avoid conflict: that is Si_I and S_I refer to
     the XSPEC SiI and SI parameters respectively.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -11449,6 +11445,8 @@ class XSTBfeo(XSMultiplicativeModel):
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -11491,6 +11489,8 @@ class XSTBgas(XSMultiplicativeModel):
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -11531,6 +11531,8 @@ class XSTBpcf(XSMultiplicativeModel):
     -----
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11587,6 +11589,8 @@ class XSTBrel(XSMultiplicativeModel):
     -----
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11694,6 +11698,10 @@ class XSvoigt(XSAdditiveModel):
     --------
     XSgauss, XSlorentz
 
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -11731,6 +11739,10 @@ class XSxscat(XSMultiplicativeModel):
         The radius of the circular extraction region, in arcsec.
     DustModel
         The dust model used: see [1]_ for more information.
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11854,6 +11866,8 @@ class XSclumin(XSConvolutionKernel):
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
     emission component (or components) at 1.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     Examples
     --------
@@ -12550,6 +12564,8 @@ class XSrfxconv(XSConvolutionKernel):
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     See Also
     --------
     XSxilconv
@@ -12686,6 +12702,8 @@ class XSthcomp(XSConvolutionKernel):
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
 
+    This model is only available when used with XSPEC 12.10.0 or later.
+
     References
     ----------
 
@@ -12730,6 +12748,8 @@ class XSvashift(XSConvolutionKernel):
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     See Also
     --------
     XSvmshift, XSzashift
@@ -12766,6 +12786,8 @@ class XSvmshift(XSConvolutionKernel):
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     See Also
     --------
@@ -12821,6 +12843,8 @@ class XSxilconv(XSConvolutionKernel):
     the ``set_xsxset`` function to set the value of the XILCONV_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     See Also
     --------
