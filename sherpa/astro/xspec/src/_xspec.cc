@@ -1371,17 +1371,7 @@ static PyMethodDef XSpecMethods[] = {
 
   XSPECMODELFCT_C_NORM(C_carbatm, 4),
   XSPECMODELFCT_C_NORM(C_hatm, 4),
-#ifdef XSPEC_12_10_0
-  XSPECMODELFCT_NORM(jet, 16),
-#endif
   XSPECMODELFCT(ismabs, 31),
-
-#ifdef XSPEC_12_11_0
-  XSPECMODELFCT(ismdust, 3),
-  XSPECMODELFCT(olivineabs, 2),
-  XSPECMODELFCT_C(C_logconst, 1),
-  XSPECMODELFCT_C(C_log10con, 1),
-#endif
 
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),
   XSPECMODELFCT_C_NORM(C_snapec, 7),
@@ -1398,6 +1388,17 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_vmshift, 1),
   XSPECMODELFCT_CON(C_xilconv, 6),
   #endif
+
+#ifdef XSPEC_12_10_0
+  XSPECMODELFCT_NORM(jet, 16),
+#endif
+
+#ifdef XSPEC_12_11_0
+  XSPECMODELFCT(ismdust, 3),
+  XSPECMODELFCT(olivineabs, 2),
+  XSPECMODELFCT_C(C_logconst, 1),
+  XSPECMODELFCT_C(C_log10con, 1),
+#endif
 
   { NULL, NULL, 0, NULL }
 
