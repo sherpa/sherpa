@@ -64,13 +64,13 @@ References
 .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/index.html
 
 .. [2] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/node131.html
-       (link valid for XSPEC 12.10.1)
+       (link valid for XSPEC 12.11.0)
 
-.. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node229.html
-       (link valid for XSPEC 12.10.1)
+.. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node231.html
+       (link valid for XSPEC 12.11.0)
 
-.. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node273.html
-       (link valid for XSPEC 12.10.1)
+.. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node279.html
+       (link valid for XSPEC 12.11.0)
 
 .. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
 
@@ -209,7 +209,7 @@ def get_xsversion():
     References
     ----------
 
-    .. [1] http://heasarc.nasa.gov/docs/xanadu/xspec/
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/
 
     Examples
     --------
@@ -285,35 +285,35 @@ def set_xsabund(abundance):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSabund.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
 
     .. [2] Anders E. & Grevesse N. (1989, Geochimica et
            Cosmochimica Acta 53, 197)
-           http://adsabs.harvard.edu/abs/1989GeCoA..53..197A
+           https://adsabs.harvard.edu/abs/1989GeCoA..53..197A
 
     .. [3] Asplund M., Grevesse N., Sauval A.J. & Scott P.
            (2009, ARAA, 47, 481)
-           http://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
+           https://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
 
     .. [4] Feldman U.(1992, Physica Scripta 46, 202)
-           http://adsabs.harvard.edu/abs/1992PhyS...46..202F
+           https://adsabs.harvard.edu/abs/1992PhyS...46..202F
 
     .. [5] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
            Acta 46, 2363)
-           http://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
+           https://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
 
     .. [6] Grevesse, N. & Sauval, A.J. (1998, Space Science
            Reviews 85, 161)
-           http://adsabs.harvard.edu/abs/1998SSRv...85..161G
+           https://adsabs.harvard.edu/abs/1998SSRv...85..161G
 
     .. [7] Wilms, Allen & McCray (2000, ApJ 542, 914)
-           http://adsabs.harvard.edu/abs/2000ApJ...542..914W
+           https://adsabs.harvard.edu/abs/2000ApJ...542..914W
 
     .. [8] Lodders, K (2003, ApJ 591, 1220)
-           http://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+           https://adsabs.harvard.edu/abs/2003ApJ...591.1220L
 
     Examples
     --------
@@ -358,7 +358,7 @@ def set_xschatter(level):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSchatter.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSchatter.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
@@ -397,7 +397,7 @@ def set_xscosmo(h0, q0, l0):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XScosmo.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XScosmo.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
@@ -438,20 +438,20 @@ def set_xsxsect(name):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSxsect.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSxsect.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
 
     .. [2] Balucinska-Church & McCammon (1992; Ap.J.400, 699).
-           http://adsabs.harvard.edu/abs/1992ApJ...400..699B
+           https://adsabs.harvard.edu/abs/1992ApJ...400..699B
 
     .. [3] Yan, M., Sadeghpour, H. R., Dalgarno, A. 1998,
            Ap.J. 496, 1044
-           http://adsabs.harvard.edu/abs/1998ApJ...496.1044Y
+           https://adsabs.harvard.edu/abs/1998ApJ...496.1044Y
 
     .. [4] Verner et. al., 1996, Ap.J., 465, 487.
-           http://adsabs.harvard.edu/abs/1996ApJ...465..487V
+           https://adsabs.harvard.edu/abs/1996ApJ...465..487V
 
     Examples
     --------
@@ -467,7 +467,7 @@ def set_xsxsect(name):
 # the strings the user sent as specific XSPEC model strings (if any) during
 # the session.  Only store if setting was successful.
 # See:
-# http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
+# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
 modelstrings = {}
 
 # Store any path changes
@@ -547,7 +547,7 @@ def set_xsxset(name, value):
     References
     ----------
 
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSabund.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
@@ -647,8 +647,8 @@ def set_xspath_manager(path):
 # strings.  The chatter setting is an integer.  Please see the
 # XSPEC manual concerning the following commands: abund, chatter,
 # cosmo, xsect, and xset.
-# http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
-# http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
+# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
+# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
 #
 # The path dictionary contains the manager path, which can be
 # explicitly set. It could also contain the model path, but there
@@ -755,11 +755,11 @@ def read_xstable_model(modelname, filename):
     References
     ----------
 
-    .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
 
-    .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+    .. [2] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-    .. [3] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+    .. [3] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     Examples
     --------
@@ -918,7 +918,7 @@ class XSTableModel(XSModel):
     ----------
 
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
-    .. [2] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+    .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     """
 
@@ -1010,7 +1010,7 @@ class XSAdditiveModel(XSModel):
     ----------
 
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/node131.html
-           (link valid for XSPEC 12.10.1)
+           (link valid for XSPEC 12.11.0)
 
     """
 
@@ -1028,8 +1028,8 @@ class XSMultiplicativeModel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node229.html
-           (link valid for XSPEC 12.10.1)
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node231.html
+           (link valid for XSPEC 12.11.0)
 
     """
 
@@ -1066,8 +1066,8 @@ class XSConvolutionKernel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node273.html
-           (link valid for XSPEC 12.10.1)
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/node279.html
+           (link valid for XSPEC 12.11.0)
 
     Examples
     --------
