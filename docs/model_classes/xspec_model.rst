@@ -12,17 +12,19 @@ the abundance table information. The models provided by XSPEC
 are described in :doc:`astro_xspec`.
 
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
       XSModel
       XSAdditiveModel
       XSMultiplicativeModel
+      XSConvolutionKernel
+      XSConvolutionModel
       XSTableModel
 
    .. rubric:: Functions
-               
+
    .. autosummary::
       :toctree: api
 
@@ -47,6 +49,5 @@ are described in :doc:`astro_xspec`.
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: XSModel XSAdditiveModel XSMultiplicativeModel XSTableModel
+.. inheritance-diagram:: XSModel XSAdditiveModel XSMultiplicativeModel XSConvolutionKernel XSConvolutionModel XSTableModel
    :parts: 1
-

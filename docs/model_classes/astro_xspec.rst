@@ -11,9 +11,18 @@ The sherpa.astro.xspec module
    .. autosummary::
       :toctree: api
 
+      XSSSS_ice
+      XSTBabs
+      XSTBfeo
+      XSTBgas
+      XSTBgrain
+      XSTBpcf
+      XSTBrel
+      XSTBvarabs
+      XSabsori
+      XSacisabs
       XSagauss
       XSagnsed
-      XSagnslim
       XSapec
       XSbapec
       XSbbody
@@ -37,10 +46,13 @@ The sherpa.astro.xspec module
       XSc6pmekl
       XSc6pvmkl
       XSc6vmekl
+      XScabs
       XScarbatm
       XScemekl
       XScevmkl
       XScflow
+      XScflux
+      XSclumin
       XScompLS
       XScompPS
       XScompST
@@ -49,9 +61,12 @@ The sherpa.astro.xspec module
       XScompmag
       XScomptb
       XScompth
+      XSconstant
+      XScpflux
       XScph
       XScplinear
       XScutoffpl
+      XScyclabs
       XSdisk
       XSdiskbb
       XSdiskir
@@ -60,33 +75,51 @@ The sherpa.astro.xspec module
       XSdisko
       XSdiskpbb
       XSdiskpn
+      XSdust
+      XSedge
       XSeplogpar
       XSeqpair
       XSeqtherm
       XSequil
+      XSexpabs
       XSexpdec
+      XSexpfac
       XSezdiskbb
+      XSgabs
       XSgadem
       XSgaussian
       XSgnei
       XSgrad
       XSgrbcomp
       XSgrbm
+      XSgsmooth
       XShatm
+      XSheilin
+      XShighecut
+      XShrefl
+      XSireflect
+      XSismabs
       XSjet
+      XSkdblur
+      XSkdblur2
       XSkerrbb
+      XSkerrconv
       XSkerrd
       XSkerrdisk
+      XSkyconv
       XSkyrline
       XSlaor
       XSlaor2
       XSlogpar
       XSlorentz
+      XSlsmooth
+      XSlyman
       XSmeka
       XSmekal
       XSmkcflow
       XSnei
       XSnlapec
+      XSnotch
       XSnpshock
       XSnsa
       XSnsagrav
@@ -98,29 +131,48 @@ The sherpa.astro.xspec module
       XSnthComp
       XSoptxagn
       XSoptxagnf
+      XSpartcov
+      XSpcfabs
       XSpegpwrlw
       XSpexmon
       XSpexrav
       XSpexriv
+      XSphabs
+      XSplabs
       XSplcabs
       XSposm
       XSpowerlaw
       XSpshock
+      XSpwab
       XSqsosed
       XSraymond
+      XSrdblur
+      XSredden
       XSredge
+      XSreflect
       XSrefsch
+      XSrfxconv
+      XSrgsxsrc
       XSrnei
       XSsedov
+      XSsimpl
       XSsirf
       XSslimbh
+      XSsmedge
       XSsnapec
+      XSspexpcut
+      XSspline
       XSsrcut
       XSsresc
       XSssa
       XSstep
+      XSswind1
       XStapec
+      XSthcomp
+      XSuvred
       XSvapec
+      XSvarabs
+      XSvashift
       XSvbremss
       XSvcph
       XSvequil
@@ -129,9 +181,11 @@ The sherpa.astro.xspec module
       XSvmcflow
       XSvmeka
       XSvmekal
+      XSvmshift
       XSvnei
       XSvnpshock
       XSvoigt
+      XSvphabs
       XSvpshock
       XSvraymond
       XSvrnei
@@ -145,67 +199,29 @@ The sherpa.astro.xspec module
       XSvvrnei
       XSvvsedov
       XSvvtapec
+      XSwabs
+      XSwndabs
+      XSxilconv
+      XSxion
+      XSxscat
+      XSzTBabs
       XSzagauss
+      XSzashift
+      XSzbabs
       XSzbbody
       XSzbknpower
       XSzbremss
       XSzcutoffpl
-      XSzgauss
-      XSzkerrbb
-      XSzlogpar
-      XSzpowerlw
-      XSSSS_ice
-      XSTBabs
-      XSTBfeo
-      XSTBgas
-      XSTBgrain
-      XSTBpcf
-      XSTBrel
-      XSTBvarabs
-      XSabsori
-      XSacisabs
-      XScabs
-      XSconstant
-      XScyclabs
-      XSdust
-      XSedge
-      XSexpabs
-      XSexpfac
-      XSgabs
-      XSheilin
-      XShighecut
-      XShrefl
-      XSismabs
-      XSismdust
-      XSlog10con
-      XSlogconst
-      XSlyman
-      XSnotch
-      XSolivineabs
-      XSpcfabs
-      XSphabs
-      XSplabs
-      XSpwab
-      XSredden
-      XSsmedge
-      XSspexpcut
-      XSspline
-      XSswind1
-      XSuvred
-      XSvarabs
-      XSvphabs
-      XSwabs
-      XSwndabs
-      XSxion
-      XSxscat
-      XSzTBabs
-      XSzbabs
       XSzdust
       XSzedge
+      XSzgauss
       XSzhighect
       XSzigm
+      XSzlogpar
+      XSzmshift
       XSzpcfabs
       XSzphabs
+      XSzpowerlw
       XSzredden
       XSzsmdust
       XSzvarabs
@@ -222,4 +238,7 @@ Class Inheritance Diagram
    :parts: 1
 
 .. inheritance-diagram:: XSSSS_ice XSTBabs XSTBfeo XSTBgas XSTBgrain XSTBpcf XSTBrel XSTBvarabs XSabsori XSacisabs XScabs XSconstant XScyclabs XSdust XSedge XSexpabs XSexpfac XSgabs XSheilin XShighecut XShrefl XSismabs XSismdust XSlog10con XSlogconst XSlyman XSnotch XSolivineabs XSpcfabs XSphabs XSplabs XSpwab XSredden XSsmedge XSspexpcut XSspline XSswind1 XSuvred XSvarabs XSvphabs XSwabs XSwndabs XSxion XSxscat XSzTBabs XSzbabs XSzdust XSzedge XSzhighect XSzigm XSzpcfabs XSzphabs XSzredden XSzsmdust XSzvarabs XSzvfeabs XSzvphabs XSzwabs XSzwndabs XSzxipcf
+   :parts: 1
+
+.. inheritance-diagram:: XScflux XSclumin XScpflux XSgsmooth XSireflect XSkdblur XSkdblur2 XSkerrconv XSkyconv XSlsmooth XSpartcov XSrdblur XSreflect XSrfxconv XSrgsxsrc XSsimpl XSthcomp XSvashift XSvmshift XSxilconv XSzashift XSzmshift
    :parts: 1
