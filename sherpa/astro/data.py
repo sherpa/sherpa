@@ -1137,7 +1137,7 @@ class DataPHA(Data1D):
     def get_backscal(self, group=True, filter=False):
         """Return the area scaling of the PHA data set.
 
-        Return the BACKSCAL setting [1]_ for the PHA data set.
+        Return the BACKSCAL setting [BSCAL]_ for the PHA data set.
 
         Parameters
         ----------
@@ -1169,7 +1169,7 @@ class DataPHA(Data1D):
         References
         ----------
 
-        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+        .. [BSCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
                http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
@@ -1187,7 +1187,7 @@ class DataPHA(Data1D):
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
 
-        Return the AREASCAL setting [1]_ for the PHA data set.
+        Return the AREASCAL setting [ASCAL]_ for the PHA data set.
 
         Parameters
         ----------
@@ -1213,7 +1213,7 @@ class DataPHA(Data1D):
         References
         ----------
 
-        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+        .. [ASCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
                http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
