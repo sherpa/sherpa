@@ -3297,7 +3297,7 @@ class XSdiskm(XSAdditiveModel):
 
     Attributes
     ----------
-    NSmass
+    accrate
         The accretion rate, in Eddington luminosities.
     NSmass
         The central mass, in solar mass units.
@@ -3338,7 +3338,7 @@ class XSdisko(XSAdditiveModel):
 
     Attributes
     ----------
-    NSmass
+    accrate
         The accretion rate, in Eddington luminosities.
     NSmass
         The central mass, in solar mass units.
@@ -10411,7 +10411,7 @@ class XSzbabs(XSMultiplicativeModel):
         The H column density, in 10^22 atoms/cm^2.
     nHeI
         The He I column density, in 10^22 atoms/cm^2.
-    nHeI
+    nHeII
         The He II column density, in 10^22 atoms/cm^2.
     z
         The redshift of the absorber.
