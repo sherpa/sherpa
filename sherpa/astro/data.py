@@ -1102,6 +1102,25 @@ class DataPHA(Data1D):
         return self.sum_background_data(lambda key, bkg: 1.)
 
     def _check_scale(self, scale, group=True, filter=False):
+        """Ensure the scale value is positive and filtered/grouped.
+
+        Parameters
+        ----------
+        scale : number or numpy array
+            The scale factor.
+        group : bool, optional
+            Is any grouping applied to the data? This is only
+            relevant for an array.
+        filter : bool, optional
+            Is any filter applied? This is only checked if group
+            is True.
+
+        Returns
+        -------
+        scale : number or numpy array
+            Negative values are replaced by 1.0.
+
+        """
         if numpy.isscalar(scale) and scale <= 0.0:
             scale = 1.0
         elif numpy.iterable(scale):
