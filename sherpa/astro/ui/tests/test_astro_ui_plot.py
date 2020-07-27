@@ -1728,7 +1728,7 @@ def validate_flux_histogram(fhist):
     # Very minimal checks.
     #
     assert fhist.flux.shape == (200,)
-    assert fhist.modelvals.shape == (200, 3)
+    assert fhist.modelvals.shape == (200, 4)
     assert fhist.xlo.shape == (21,)
     assert fhist.xhi.shape == (21,)
     assert fhist.y.shape == (21,)
@@ -1968,7 +1968,7 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
     pvals = res.modelvals
 
     assert res.flux.shape == (1000,)
-    assert res.modelvals.shape == (1000, 2)
+    assert res.modelvals.shape == (1000, 3)
     assert res.xlo.shape == (21,)
     assert res.xhi.shape == (21,)
     assert res.y.shape == (21,)
@@ -2035,7 +2035,7 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     res = getfunc(recalc=False)
 
     avals = res.modelvals
-    assert avals.shape == (1000, 3)
+    assert avals.shape == (1000, 4)
 
     std1 = np.std(avals[:, 1])
     std2 = np.log10(np.std(avals[:, 2]))
@@ -2052,7 +2052,7 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     res = getfunc(recalc=False)
 
     uvals = res.modelvals
-    assert uvals.shape == (1000, 3)
+    assert uvals.shape == (1000, 4)
 
     std1 = np.std(uvals[:, 1])
     std2 = np.log10(np.std(uvals[:, 2]))
@@ -2129,9 +2129,9 @@ def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
     assert res.y.shape == (20,)
     cvals = res.modelvals.copy()
 
-    assert avals.shape == (n, 2)
-    assert bvals.shape == (n, 2)
-    assert cvals.shape == (n, 2)
+    assert avals.shape == (n, 3)
+    assert bvals.shape == (n, 3)
+    assert cvals.shape == (n, 3)
 
     # Let's just check the standard deviation of the gamma parameter,
     # which should be similar for avals and bvals, and larger for cvals.
@@ -2184,7 +2184,7 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
     res = getfunc(lo=0.5, hi=2, num=1000, bins=19, correlated=False)
 
     avals = res.modelvals
-    assert avals.shape == (1000, 3)
+    assert avals.shape == (1000, 4)
 
     std1 = np.std(avals[:, 1])
     std2 = np.log10(np.std(avals[:, 2]))
@@ -2200,7 +2200,7 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
                   correlated=False)
 
     uvals = res.modelvals
-    assert uvals.shape == (1000, 3)
+    assert uvals.shape == (1000, 4)
 
     std1 = np.std(uvals[:, 1])
     std2 = np.log10(np.std(uvals[:, 2]))

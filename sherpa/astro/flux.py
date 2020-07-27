@@ -345,13 +345,18 @@ def decompose(mdl):
 
 def sample_flux(fit, data, src,
                 method=calc_energy_flux, correlated=False,
-                num=1, lo=None, hi=None, numcores=None, samples=None):
+                num=1, lo=None, hi=None, numcores=None, samples=None,
+                clip="hard"):
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
     the model flux for each set of parameter values. The values are
     drawn from normal distributions, and the distributions can either
     be independent or have correlations between the parameters.
+
+    .. versionchanged:: 4.12.2
+       The clip parameter was added and an extra column is added to
+       the return to indicate if each row was clipped.
 
     Parameters
     ----------
@@ -395,14 +400,22 @@ def sample_flux(fit, data, src,
         1D array of the error values (i.e. the sigma of the normal
         distribution). If there are n free parameters then the 1D array has
         to have n elements and the 2D array n by n elements.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping. The last
+        column in the returned arrays indicates if the row had any
+        clipped parameters (even when clip is set to 'none').
 
     Returns
     -------
     vals : 2D NumPy array
-        The shape of samples is (num, nfree + 1), where nfree is the
+        The shape of samples is (num, nfree + 2), where nfree is the
         number of free parameters in fit.model. Each row contains one
-        iteration, and the columns are the calculated flux,
-        followed by the free parameters.
+        iteration, and the columns are the calculated flux, followed
+        by the free parameters, and then a flag column indicating if
+        the parameters were clipped (1) or not (0).
 
     See Also
     --------
@@ -418,6 +431,7 @@ def sample_flux(fit, data, src,
     If src is a subset of the full source expression then samples,
     when not None, must still match the number of free parameters in
     the full source expression (that given by fit.model).
+
     """
 
     if num <= 0:
@@ -456,18 +470,35 @@ def sample_flux(fit, data, src,
     else:
         samples = _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num)
 
-    # Ensure that samples falls within the hard limits by
-    # clipping the values. Values outside the hard limit are
-    # set to the hard limit.
+    # Are the parameters clipped, and if so by what limits?
     #
-    hardmins = fit.model.thawedparhardmins
-    hardmaxs = fit.model.thawedparhardmaxes
+    clipped = numpy.zeros(num, dtype=numpy.bool)
+    if clip != 'none':
 
-    for pvals, pmin, pmax in zip(samples.T, hardmins, hardmaxs):
-        # do the clipping in place
-        numpy.clip(pvals, pmin, pmax, out=pvals)
+        # Values are clipped to lie within mins/maxs (inclusive)
+        #
+        if clip == 'hard':
+            mins = fit.model.thawedparhardmins
+            maxs = fit.model.thawedparhardmaxes
+        elif clip == 'soft':
+            mins = fit.model.thawedparmins
+            maxs = fit.model.thawedparmaxes
+        else:
+            # should not be possible
+            raise ValueError('Invalid clip parameter')
 
-    # When a subset of the full mdel is use we need to know how
+        for pvals, pmin, pmax in zip(samples.T, mins, maxs):
+            porig = pvals.copy()
+
+            # do the clipping in place
+            numpy.clip(pvals, pmin, pmax, out=pvals)
+
+            # update the clipped array (which is True if a
+            # value on the row has been clipped).
+            #
+            clipped |= (pvals != porig)
+
+    # When a subset of the full model is use we need to know how
     # to select which rows in the samples array refer to the
     # parameters of interest. We could compare on fullname,
     # but is not sufficient to guarantee the match.
@@ -491,8 +522,12 @@ def sample_flux(fit, data, src,
     else:
         cols = None
 
-    return calc_flux(data, src, samples, method, lo, hi, numcores,
+    # Need to append the clipped array (it would be nice to retain
+    # the boolean nature of this).
+    #
+    vals = calc_flux(data, src, samples, method, lo, hi, numcores,
                      subset=cols)
+    return numpy.concatenate((vals, numpy.expand_dims(clipped, 1)), axis=1)
 
 
 def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
