@@ -31,7 +31,7 @@ class BackgroundSumModel(CompositeModel, ArithmeticModel):
     """Combine multiple background datasets.
 
     Define the model expression to be applied to the source
-    region accounting for the backgroud models.
+    region accounting for the background models.
 
     Parameters
     ----------
@@ -40,7 +40,7 @@ class BackgroundSumModel(CompositeModel, ArithmeticModel):
     bkgmodels : dict
         The background components, where the key is the identifier
         in this dataset and the value is the model. This dictionary
-        is not empty.
+        cannot be empty.
 
     """
 
