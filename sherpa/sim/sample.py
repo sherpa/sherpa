@@ -315,6 +315,60 @@ class ParameterSample(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
+    def clip(self, fit, samples, clip='none'):
+        """Clip the samples if out of bounds.
+
+        Parameter
+        --------
+        fit : sherpa.fit.Fit instance
+            Contains the thawed parameters used to generate the
+            samples.
+        samples : 2D numpy array
+            The samples array, stored as a n by npar matrix. This
+            array is changed in place.
+        clip : {'none', 'hard', 'soft'} optional
+            How should the values be clipped? The default ('none') has no
+            clipping. The other methods restrict the values to lie within
+            the hard or soft limits of the parameters.
+
+        Returns
+        -------
+        clipped : 1D numpy array
+            The clipped samples (may be unchanged) and a 1D boolean
+            array indicating whether any sample in a row was clipped.
+
+        """
+
+        niter = samples.shape[0]
+        clipped = numpy.zeros(niter, dtype=numpy.bool)
+        if clip == 'none':
+            return clipped
+
+        # Values are clipped to lie within mins/maxs (inclusive)
+        #
+        if clip == 'hard':
+            mins = fit.model.thawedparhardmins
+            maxs = fit.model.thawedparhardmaxes
+        elif clip == 'soft':
+            mins = fit.model.thawedparmins
+            maxs = fit.model.thawedparmaxes
+        else:
+            raise ValueError('invalid clip argument: sent {}'.format(clip))
+
+        for pvals, pmin, pmax in zip(samples.T, mins, maxs):
+            porig = pvals.copy()
+
+            # do the clipping in place
+            numpy.clip(pvals, pmin, pmax, out=pvals)
+
+            # update the clipped array (which is True if a
+            # value on the row has been clipped).
+            #
+            clipped |= (pvals != porig)
+
+        return clipped
+
+
 class ParameterSampleFromScaleVector(ParameterSample):
     """Samples drawn from uncorrelated parameters.
     """
