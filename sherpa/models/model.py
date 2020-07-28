@@ -581,15 +581,6 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
-    def check_regrid_kwargs(self, **kwargs):
-        valid_keys = ('interp', '_self',)
-        for key in kwargs.keys():
-            if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
-
-    def regrid(self, *args, **kwargs):
-        raise NotImplementedError
-
     def startup(self, cache=False):
         self._queue = ['']
         self._cache = {}
@@ -607,7 +598,19 @@ class ArithmeticModel(Model):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
 
-class RegriddableModel1D(ArithmeticModel):
+class RegriddableModel(ArithmeticModel):
+    def check_regrid_kwargs(self, **kwargs):
+        valid_keys = ('interp', '_self',)
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise TypeError("unknown keyword argument: '%s'" % key)
+        return kwargs.get('_self', self)
+
+    def regrid(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+class RegriddableModel1D(RegriddableModel):
     """Allow 1D models to be regridded."""
 
     ndim = 1
@@ -627,30 +630,24 @@ class RegriddableModel1D(ArithmeticModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        try:
-            self.check_regrid_kwargs(**kwargs)
-        except TypeError as te:
-            raise te
+        myself = self.check_regrid_kwargs(**kwargs)
         eval_space = EvaluationSpace1D(*args)
         regridder = ModelDomainRegridder1D(eval_space, **kwargs)
         regridder._make_and_validate_grid(args)
-        return regridder.apply_to(kwargs.get('_self', self))
+        return regridder.apply_to(myself)
 
 
-class RegriddableModel2D(ArithmeticModel):
+class RegriddableModel2D(RegriddableModel):
     """Allow 2D models to be regridded."""
 
     ndim = 2
     "A two-dimensional model."
 
     def regrid(self, *args, **kwargs):
-        try:
-            self.check_regrid_kwargs(**kwargs)
-        except TypeError as te:
-            raise te
+        myself = self.check_regrid_kwargs(**kwargs)
         eval_space = EvaluationSpace2D(*args)
         regridder = ModelDomainRegridder2D(eval_space)
-        return regridder.apply_to(kwargs.get('_self', self))
+        return regridder.apply_to(myself)
 
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
@@ -685,6 +682,8 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
 
     def regrid(self, *args, **kwargs):
         for part in self.parts:
+            # The entire model expression must be passed so
+            #  RegridWrappedModel can return the correct model expression
             return part.regrid(*args, _self=self, **kwargs)
 
     def startup(self, cache=False):
