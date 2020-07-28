@@ -1728,7 +1728,7 @@ def validate_flux_histogram(fhist):
     # Very minimal checks.
     #
     assert fhist.flux.shape == (200,)
-    assert fhist.modelvals.shape == (200, 4)
+    assert fhist.modelvals.shape == (200, 3)
     assert fhist.xlo.shape == (21,)
     assert fhist.xhi.shape == (21,)
     assert fhist.y.shape == (21,)
@@ -1968,7 +1968,7 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
     pvals = res.modelvals
 
     assert res.flux.shape == (1000,)
-    assert res.modelvals.shape == (1000, 3)
+    assert res.modelvals.shape == (1000, 2)
     assert res.xlo.shape == (21,)
     assert res.xhi.shape == (21,)
     assert res.y.shape == (21,)
@@ -2035,12 +2035,14 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     res = getfunc(recalc=False)
 
     avals = res.modelvals
-    assert avals.shape == (1000, 4)
+    assert avals.shape == (1000, 3)
 
     std1 = np.std(avals[:, 1])
     std2 = np.log10(np.std(avals[:, 2]))
     assert std1 == pytest.approx(0.1330728846451271, rel=1e-3)
     assert std2 == pytest.approx(-4.54079387550295, rel=1e-3)
+
+    assert res.clipped.shape == (1000,)
 
     assert res.y.shape == (20,)
 
@@ -2052,7 +2054,7 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     res = getfunc(recalc=False)
 
     uvals = res.modelvals
-    assert uvals.shape == (1000, 4)
+    assert uvals.shape == (1000, 3)
 
     std1 = np.std(uvals[:, 1])
     std2 = np.log10(np.std(uvals[:, 2]))
@@ -2104,7 +2106,7 @@ def test_pha1_plot_foo_flux_soft(plotfunc, getfunc, clean_astro_ui, basic_pha1):
 
     # check we have clip information and assume at least one bin is
     # clipped (expect ~ 40 of 200 from testing this)
-    clip = res.modelvals[:, 3]
+    clip = res.clipped
     c0 = clip == 0
     c1 = clip == 1
     assert (c0 | c1).all()
@@ -2146,7 +2148,7 @@ def test_pha1_plot_foo_flux_none(plotfunc, getfunc, clean_astro_ui, basic_pha1):
     validate_flux_histogram(res)
 
     # check we have clip information but that it's all zeros
-    clip = res.modelvals[:, 3]
+    clip = res.clipped
     c0 = clip == 0
     c1 = clip == 1
     assert (c0 | c1).all()
@@ -2178,7 +2180,7 @@ def test_pha1_get_foo_flux_soft(getfunc, clean_astro_ui, basic_pha1):
 
     # check we have clip information and assume at least one bin is
     # clipped (expect ~ 40 of 200 from testing this)
-    clip = res.modelvals[:, 3]
+    clip = res.clipped
     c0 = clip == 0
     c1 = clip == 1
     assert (c0 | c1).all()
@@ -2211,7 +2213,7 @@ def test_pha1_get_foo_flux_none(getfunc, clean_astro_ui, basic_pha1):
     validate_flux_histogram(res)
 
     # check we have clip information and all are 0
-    clip = res.modelvals[:, 3]
+    clip = res.clipped
     c0 = clip == 0
     c1 = clip == 1
     assert (c0 | c1).all()
@@ -2277,9 +2279,9 @@ def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
     assert res.y.shape == (20,)
     cvals = res.modelvals.copy()
 
-    assert avals.shape == (n, 3)
-    assert bvals.shape == (n, 3)
-    assert cvals.shape == (n, 3)
+    assert avals.shape == (n, 2)
+    assert bvals.shape == (n, 2)
+    assert cvals.shape == (n, 2)
 
     # Let's just check the standard deviation of the gamma parameter,
     # which should be similar for avals and bvals, and larger for cvals.
@@ -2332,12 +2334,14 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
     res = getfunc(lo=0.5, hi=2, num=1000, bins=19, correlated=False)
 
     avals = res.modelvals
-    assert avals.shape == (1000, 4)
+    assert avals.shape == (1000, 3)
 
     std1 = np.std(avals[:, 1])
     std2 = np.log10(np.std(avals[:, 2]))
     assert std1 == pytest.approx(0.13478302893162564, rel=1e-3)
     assert std2 == pytest.approx(-4.518960679037794, rel=1e-3)
+
+    assert res.clipped.shape == (1000,)
 
     assert res.y.shape == (20,)
 
@@ -2348,7 +2352,7 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
                   correlated=False)
 
     uvals = res.modelvals
-    assert uvals.shape == (1000, 4)
+    assert uvals.shape == (1000, 3)
 
     std1 = np.std(uvals[:, 1])
     std2 = np.log10(np.std(uvals[:, 2]))
