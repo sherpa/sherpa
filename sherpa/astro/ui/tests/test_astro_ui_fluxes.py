@@ -943,6 +943,81 @@ def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
     assert ans[:, 0].min() > 0
 
 
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("id", [None, "foo"])
+def test_sample_foo_flux_clip_soft(multi, id,
+                                   make_data_path, clean_astro_ui):
+    """Can we clip with soft limits?
+    """
+
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    niter = 100
+
+    # make this even more obvious than test_sample_foo_flux_params
+    pl.gamma.min = 1.9
+    pl.gamma.max = 2.1
+
+    ans = multi(lo=0.5, hi=7, id=id, num=niter, clip='soft')
+    assert ans.shape == (niter, 5)
+
+    # check clipped is 0/1; expect just under 50% clipped but just check
+    # we have some clipped, not the number
+    #
+    clipped = ans[:, 4]
+    v0 = clipped == 0
+    v1 = clipped == 1
+    v = v0 | v1
+    assert v.all()
+    assert v0.any()
+    assert v1.any()
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("id", [None, "foo"])
+def test_sample_foo_flux_clip_none(multi, id,
+                                   make_data_path, clean_astro_ui):
+    """We get no clipping.
+
+    Same setup as test_sample_foo_flux_clip_soft
+    """
+
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    niter = 100
+
+    # make this even more obvious than test_sample_foo_flux_params
+    pl.gamma.min = 1.9
+    pl.gamma.max = 2.1
+
+    ans = multi(lo=0.5, hi=7, id=id, num=niter, clip='none')
+    assert ans.shape == (niter, 5)
+
+    # check clipped is 0/1
+    #
+    clipped = ans[:, 4]
+    v0 = clipped == 0
+    v1 = clipped == 1
+    v = v0 | v1
+    assert v.all()
+    assert v0.all()
+    assert not(v1.any())
+
+
 # The covariance matrix should be close to the following
 # (found from running the code):
 #
