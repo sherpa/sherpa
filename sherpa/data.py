@@ -30,7 +30,7 @@ from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, calc_total_error, bool_cast, \
-    filter_bins
+    filter_bins, parallel_map_funcs
 
 
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
@@ -866,20 +866,33 @@ class DataSimulFit(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, name, datasets):
-        self.name = name
+    def __init__(self, name, datasets, numcores=1):
         if len(datasets) == 0:
             raise DataErr('zerodatasimulfit', type(self).__name__)
+        self.name = name
         self.datasets = tuple(datasets)
+        self.numcores = numcores
         NoNewAttributesAfterInit.__init__(self)
 
     def eval_model_to_fit(self, modelfuncs):
-        total_model = []
-
-        for func, data in zip(modelfuncs, self.datasets):
-            total_model.append(data.eval_model_to_fit(func))
-
-        return numpy.concatenate(total_model)
+        if self.numcores == 1:
+            total_model = []
+            for func, data in zip(modelfuncs, self.datasets):
+                tmp_model = data.eval_model_to_fit(func)
+                total_model.append(tmp_model)
+            return numpy.concatenate(total_model)
+        else:
+        # best to make this a different derived class
+            funcs = []
+            datasets = []
+            for func, data in zip(modelfuncs, self.datasets):
+                funcs.append(func)
+                datasets.append(data.get_indep(filter=False))
+            total_model = parallel_map_funcs(funcs, datasets, self.numcores)
+            all_model = []
+            for model, data in zip(total_model, self.datasets):
+                all_model.append(data.apply_filter(model))
+            return numpy.concatenate(all_model)
 
     def to_fit(self, staterrfunc=None):
         total_dep = []

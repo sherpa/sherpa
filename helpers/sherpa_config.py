@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@ from __future__ import absolute_import
 from .extensions import build_ext, build_lib_arrays
 from .deps import build_deps
 
-from numpy.distutils.core import Command
+from distutils.cmd import Command
 import os
 import sys
 

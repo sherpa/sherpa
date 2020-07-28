@@ -26,13 +26,871 @@
 #include <sherpa/extension.hh>
 #include "tstoptfct.hh"
 
-static PyObject *bard( PyObject *self, PyObject *args ) {
-
+static PyObject *Ackley( PyObject *self, PyObject *args ) {
   DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Ackley<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Ackley Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
 
-  if ( !PyArg_ParseTuple( args,
-			  "O&",
-			  CONVERTME(DoubleArray), &xpar ) )
+static PyObject *Booth( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Booth<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Booth Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Bohachevsky1( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Bohachevsky1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Bohachevsky1 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Bohachevsky2( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Bohachevsky2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Bohachevsky2 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Bohachevsky3( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Bohachevsky3<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Bohachevsky3 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *BoxBetts( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::BoxBetts<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for BoxBetts Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Branin( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Branin<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Branin Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Branin2( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Branin2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Branin2 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Chichinadze( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Chichinadze<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Chichinadze Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Cola( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Cola<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Cola Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Colville( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Colville<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Colville Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *dcs( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::dcs<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for dcs Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *decanom( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::decanom<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for decanom Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *dodecal( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::dodecal<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for dodecal Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *DixonPrice( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::DixonPrice<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for DixonPrice Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Easom( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Easom<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Easom Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *factor( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::factor<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for factor Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Func1( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Func1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Func1 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *GoldsteinPrice( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::GoldsteinPrice<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for GoldsteinPrice Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Griewank( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Griewank<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Griewank Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Hansen( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Hansen<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Hansen Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Hartman6( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Hartman6<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Hartman6 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Himmelblau( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Himmelblau<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Himmelblau Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Holzman1( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Holzman1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Holzman1 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Holzman2( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Holzman2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Holzman2 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Judge( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Judge<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Judge Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Levy( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Levy<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Levy Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *McCormick( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::McCormick<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for McCormick Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *McKinnon( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::McKinnon<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for McKinnon Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Michalewicz( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Michalewicz<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Michalewicz Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Paviani( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Paviani<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Paviani Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Rastrigin( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Rastrigin<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Rastrigin Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *seqp( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::seqp<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for seqp Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Shekel5( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Shekel5<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Shekel5 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Shekel7( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Shekel7<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Shekel7 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Shekel10( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Shekel10<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Shekel10 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *ShekelModified( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::ShekelModified<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for ShekelModified Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Shubert( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Shubert<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Shubert Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *SixHumpCamel( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::SixHumpCamel<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for SixHumpCamel Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Trecanni( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Trecanni<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Trecanni Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+static PyObject *Trefethen4( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
+    return NULL;
+  npy_intp npar = xpar.get_size( );
+  if ( EXIT_SUCCESS != fvec.create( 1, &npar ) ) {
+    PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
+    return NULL;
+  }
+  double fval = 0;  
+  int ierr = EXIT_SUCCESS;
+  {
+    tstoptfct::Trefethen4<double,void*>( npar, &xpar[0], fval, ierr, NULL );
+    if ( EXIT_SUCCESS != ierr ) {
+      PyErr_SetString( PyExc_ValueError, "error returned for Trefethen4 Fct function" );
+      return NULL;
+    }
+  }
+  return Py_BuildValue( "dN", fval, fvec.return_new_ref() );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+static PyObject *bard( PyObject *self, PyObject *args ) {
+  DoubleArray xpar, fvec;
+  if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
     return NULL;
   npy_intp npar = xpar.get_size( );
   npy_intp mfct = 15 * npar / 3;
@@ -1277,7 +2135,90 @@ static PyObject *init_optfcn( PyObject *self, PyObject *args ) {
 
   int mfct;
   double answer;
-  if ( 0 == strncmp( &name[0], "rosenbrock", name_length ) )
+  if ( 0 == strncmp( &name[0], "Ackley", name_length ) )
+    tstoptfct::AckleyInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Booth", name_length ) )
+    tstoptfct::BoothInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Bohachevsky1", name_length ) )
+    tstoptfct::Bohachevsky1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Bohachevsky2", name_length ) )
+    tstoptfct::Bohachevsky2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Bohachevsky3", name_length ) )
+    tstoptfct::Bohachevsky3Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );  
+  else if ( 0 == strncmp( &name[0], "BoxBetts", name_length ) )
+    tstoptfct::BoxBettsInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Branin", name_length ) )
+    tstoptfct::BraninInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );    
+  else if ( 0 == strncmp( &name[0], "Branin2", name_length ) )
+    tstoptfct::Branin2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Chichinadze", name_length ) )
+    tstoptfct::ChichinadzeInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );      
+  else if ( 0 == strncmp( &name[0], "Cola", name_length ) )
+    tstoptfct::ColaInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
+  else if ( 0 == strncmp( &name[0], "Colville", name_length ) )
+    tstoptfct::ColvilleInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "dcs", name_length ) )
+    tstoptfct::dcsInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "decanom", name_length ) )
+    tstoptfct::decanomInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "dodecal", name_length ) )
+    tstoptfct::dodecalInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "DixonPrice", name_length ) )
+    tstoptfct::DixonPriceInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Easom", name_length ) )
+    tstoptfct::EasomInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "factor", name_length ) )
+    tstoptfct::factorInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Func1", name_length ) )
+    tstoptfct::Func1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "GoldsteinPrice", name_length ) )
+    tstoptfct::GoldsteinPriceInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Griewank", name_length ) )
+    tstoptfct::GriewankInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Hansen", name_length ) )
+    tstoptfct::HansenInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Hartman6", name_length ) )
+    tstoptfct::Hartman6Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Himmelblau", name_length ) )
+    tstoptfct::HimmelblauInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Holzman1", name_length ) )
+    tstoptfct::Holzman1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Holzman2", name_length ) )
+    tstoptfct::Holzman2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Judge", name_length ) )
+    tstoptfct::JudgeInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Levy", name_length ) )
+    tstoptfct::LevyInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "McCormick", name_length ) )
+    tstoptfct::McCormickInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "McKinnon", name_length ) )
+    tstoptfct::McKinnonInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Michalewicz", name_length ) )
+    tstoptfct::MichalewiczInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Paviani", name_length ) )
+    tstoptfct::PavianiInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Rastrigin", name_length ) )
+    tstoptfct::RastriginInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "seqp", name_length ) )
+    tstoptfct::seqpInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Shekel5", name_length ) )
+    tstoptfct::Shekel5Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Shekel7", name_length ) )
+    tstoptfct::Shekel7Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Shekel10", name_length ) )
+    tstoptfct::Shekel10Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "ShekelModified", name_length ) )
+    tstoptfct::ShekelModifiedInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Shubert", name_length ) )
+    tstoptfct::ShubertInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "SixHumpCamel", name_length ) )
+    tstoptfct::SixHumpCamelInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Trecanni", name_length ) )
+    tstoptfct::TrecanniInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+  else if ( 0 == strncmp( &name[0], "Trefethen4", name_length ) )
+    tstoptfct::Trefethen4Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    //////////////////////////////////////////////////////////////////////
+  else if ( 0 == strncmp( &name[0], "rosenbrock", name_length ) )
     tstoptfct::RosenbrockInit( npar, mfct, answer, &xpar[0],
 			       &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "freudenstein_roth", name_length ) )
@@ -1395,66 +2336,107 @@ static PyMethodDef _tstoptfct_methods[] = {
   // name, function, argument type, docstring
 
   { "init", init_optfcn, METH_VARARGS, "init starting params and bounds" },
+  { "Ackley", Ackley, METH_VARARGS, "ackley function vector" },
+  { "Booth", Booth, METH_VARARGS, "booth function vector" },
+  { "Bohachevsky1", Bohachevsky1, METH_VARARGS, "bohachevsky1 function vector" },
+  { "Bohachevsky2", Bohachevsky2, METH_VARARGS, "bohachevsky2 function vector" },
+  { "Bohachevsky3", Bohachevsky3, METH_VARARGS, "bohachevsky3 function vector" },
+  { "BoxBetts", BoxBetts, METH_VARARGS, "boot function vector" },
+  { "Branin", Branin, METH_VARARGS, "branin function vector" },
+  { "Branin2", Branin2, METH_VARARGS, "branin2 function vector" },
+  { "Chichinadze", Chichinadze, METH_VARARGS, "boot function vector" },
+  { "Cola", Cola, METH_VARARGS, "cola function vector" },
+  { "Colville", Colville, METH_VARARGS, "colville function vector" },
+  { "dcs", dcs, METH_VARARGS, "dcs function vector" },
+  { "decanom", decanom, METH_VARARGS, "decanom function vector" },
+  { "dodecal", dodecal, METH_VARARGS, "dodecal function vector" },              
+  { "DixonPrice", DixonPrice, METH_VARARGS, "DixonPrice function vector" },
+  { "Easom", Easom, METH_VARARGS, "Easom function vector" },
+  { "factor", factor, METH_VARARGS, "factor function vector" },
+  { "Func1", Func1, METH_VARARGS, "Func1 function vector" },
+  { "GoldsteinPrice", GoldsteinPrice, METH_VARARGS, "GoldsteinPrice function vector" },
+  { "Griewank", Griewank, METH_VARARGS, "Griewank function vector" },
+  { "Hansen", Hansen, METH_VARARGS, "Hansen function vector" },
+  { "Hartman6", Hartman6, METH_VARARGS, "Hartman6 function vector" },
+  { "Himmelblau", Himmelblau, METH_VARARGS, "Himmelblau function vector" },      
+  { "Holzman1", Holzman1, METH_VARARGS, "Holzman1 function vector" },      
+  { "Holzman2", Holzman2, METH_VARARGS, "Holzman2 function vector" },
+  { "Judge", Judge, METH_VARARGS, "Judge function vector" },
+  { "Levy", Levy, METH_VARARGS, "Levy function vector" },
+  { "McCormick", McCormick, METH_VARARGS, "McCormick function vector" },
+  { "McKinnon", McKinnon, METH_VARARGS, "McKinnon function vector" },
+  { "Michalewicz", Michalewicz, METH_VARARGS, "Michalewicz function vector" },
+  { "Paviani", Paviani, METH_VARARGS, "Paviani function vector" },
+  { "Rastrigin", Rastrigin, METH_VARARGS, "Rastrigin function vector" },
+  { "seqp", seqp, METH_VARARGS, "seqp function vector" },
+  { "Shekel5", Shekel5, METH_VARARGS, "Shekel5 function vector" },
+  { "Shekel7", Shekel7, METH_VARARGS, "Shekel7 function vector" },
+  { "Shekel10", Shekel10, METH_VARARGS, "Shekel10 function vector" },
+  { "ShekelModified", ShekelModified, METH_VARARGS, "ShekelModified function vector" },
+  { "Shubert", Shubert, METH_VARARGS, "Shubert function vector" },
+  { "SixHumpCamel", SixHumpCamel, METH_VARARGS, "SixHumpCamel function vector" },
+  { "Trecanni", Trecanni, METH_VARARGS, "Trecanni function vector" },
+    { "Trefethen4", Trefethen4, METH_VARARGS, "Trefethen4 function vector" },      
+  ////////////////////////////////////////////////////////////////////////
+  { "bard", bard, METH_VARARGS, "bard function vector" },
+  { "beale", beale, METH_VARARGS, "beale function vector" },
+  { "biggs", biggs, METH_VARARGS, "biggs function vector" },
+  { "box3d", box3d, METH_VARARGS, "box3d function vector" },
+  { "broyden_banded", broyden_banded, METH_VARARGS, "broyden_banded function vector" },
+  { "broyden_tridiagonal", broyden_tridiagonal, METH_VARARGS, "broyden_tridiagonal function vector" },
+  { "brown_almost_linear", brown_almost_linear, METH_VARARGS, "brown_almost_linear function vector" },
+  { "brown_badly_scaled", brown_badly_scaled, METH_VARARGS, "brown_badly_scaled function vector" },
 
-  { "bard",bard, METH_VARARGS, "bard function vector" },
-  { "beale",beale, METH_VARARGS, "beale function vector" },
-  { "biggs",biggs, METH_VARARGS, "biggs function vector" },
-  { "box3d",box3d, METH_VARARGS, "box3d function vector" },
-  { "broyden_banded",broyden_banded, METH_VARARGS, "broyden_banded function vector" },
-  { "broyden_tridiagonal",broyden_tridiagonal, METH_VARARGS, "broyden_tridiagonal function vector" },
-  { "brown_almost_linear",brown_almost_linear, METH_VARARGS, "brown_almost_linear function vector" },
-  { "brown_badly_scaled",brown_badly_scaled, METH_VARARGS, "brown_badly_scaled function vector" },
+  { "brown_dennis", brown_dennis, METH_VARARGS, "brown_dennis function vector" },
+  { "chebyquad", chebyquad, METH_VARARGS, "chebyquad function vector" },
 
-  { "brown_dennis",brown_dennis, METH_VARARGS, "brown_dennis function vector" },
-  { "chebyquad",chebyquad, METH_VARARGS, "chebyquad function vector" },
+  { "discrete_boundary", discrete_boundary, METH_VARARGS, "discrete_boundary function vector" },
 
-  { "discrete_boundary",discrete_boundary, METH_VARARGS, "discrete_boundary function vector" },
+  { "discrete_integral", discrete_integral, METH_VARARGS, "discrete_integral function vector" },
 
-  { "discrete_integral",discrete_integral, METH_VARARGS, "discrete_integral function vector" },
+  { "freudenstein_roth", freudenstein_roth, METH_VARARGS, "freudenstein_roth function vector" },
 
-  { "freudenstein_roth",freudenstein_roth, METH_VARARGS, "freudenstein_roth function vector" },
+  { "gaussian", gaussian, METH_VARARGS, "gaussian function vector" },
 
-  { "gaussian",gaussian, METH_VARARGS, "gaussian function vector" },
+  { "gulf_research_development", gulf_research_development, METH_VARARGS, "gulf_research_development function vector" },
 
-  { "gulf_research_development",gulf_research_development, METH_VARARGS, "gulf_research_development function vector" },
+  { "helical_valley", helical_valley, METH_VARARGS, "helical_valley function vector" },
 
-  { "helical_valley",helical_valley, METH_VARARGS, "helical_valley function vector" },
+  { "jennrich_sampson", jennrich_sampson, METH_VARARGS, "jennrich_sampson function vector" },
 
-  { "jennrich_sampson",jennrich_sampson, METH_VARARGS, "jennrich_sampson function vector" },
+  { "kowalik_osborne", kowalik_osborne, METH_VARARGS, "kowalik_osborne function vector" },
 
-  { "kowalik_osborne",kowalik_osborne, METH_VARARGS, "kowalik_osborne function vector" },
+  { "linear_fullrank", linear_fullrank, METH_VARARGS, "linear_fullrank function vector" },
 
-  { "linear_fullrank",linear_fullrank, METH_VARARGS, "linear_fullrank function vector" },
+  { "linear_fullrank1", linear_fullrank1, METH_VARARGS, "linear_fullrank1 function vector" },
 
-  { "linear_fullrank1",linear_fullrank1, METH_VARARGS, "linear_fullrank1 function vector" },
+  { "linear_fullrank0cols0rows", linear_fullrank0col0rows, METH_VARARGS, "linear_fullrank0cols0rows function vector" },
 
-  { "linear_fullrank0cols0rows",linear_fullrank0col0rows, METH_VARARGS, "linear_fullrank0cols0rows function vector" },
+  { "meyer", meyer, METH_VARARGS, "meyer function vector" },
 
-  { "meyer",meyer, METH_VARARGS, "meyer function vector" },
+  { "osborne1", osborne1, METH_VARARGS, "osborne1 function vector" },
 
-  { "osborne1",osborne1, METH_VARARGS, "osborne1 function vector" },
+  { "osborne2", osborne2, METH_VARARGS, "osborne2 function vector" },
 
-  { "osborne2",osborne2, METH_VARARGS, "osborne2 function vector" },
+  { "penaltyI", penaltyI, METH_VARARGS, "penaltyI function vector" },
 
-  { "penaltyI",penaltyI, METH_VARARGS, "penaltyI function vector" },
+  { "penaltyII", penaltyII, METH_VARARGS, "penaltyII function vector" },
 
-  { "penaltyII",penaltyII, METH_VARARGS, "penaltyII function vector" },
+  { "powell_badly_scaled", powell_badly_scaled, METH_VARARGS, "powell_badly_scaled function vector" },
 
-  { "powell_badly_scaled",powell_badly_scaled, METH_VARARGS, "powell_badly_scaled function vector" },
+  { "powell_singular", powell_singular, METH_VARARGS, "powellsingular function vector" },
 
-  { "powell_singular",powell_singular, METH_VARARGS, "powellsingular function vector" },
+  { "rosenbrock", rosenbrock, METH_VARARGS, "rosenbrock function vector" },
 
-  { "rosenbrock",rosenbrock, METH_VARARGS, "rosenbrock function vector" },
+  { "trigonometric", trigonometric, METH_VARARGS, "trigonometric function vector" },
 
-  { "trigonometric",trigonometric, METH_VARARGS, "trigonometric function vector" },
-
-  { "variably_dimensioned",variably_dimensioned, METH_VARARGS, "Variably_Dimensioned function vector" },
+  { "variably_dimensioned", variably_dimensioned, METH_VARARGS, "Variably_Dimensioned function vector" },
 
 
-  { "watson",watson, METH_VARARGS, "Watson function vector" },
+  { "watson", watson, METH_VARARGS, "Watson function vector" },
 
 
-  { "wood",wood, METH_VARARGS, "Wood function vector" },
+  { "wood", wood, METH_VARARGS, "Wood function vector" },
 
 
   { NULL, NULL, 0, NULL }                 /* sentinel */

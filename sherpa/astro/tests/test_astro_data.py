@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020
 #        Smithsonian Astrophysical Observatory
 #
 #
@@ -877,3 +877,53 @@ def test_rmf_get_x_unit():
     expected_rmf_x = (rmf_x_hi + rmf_x_lo)/2
     actual_rmf_x = rmf.get_x()
     np.testing.assert_array_almost_equal(expected_rmf_x, actual_rmf_x)
+
+# https://github.com/sherpa/sherpa/pull/766
+def test_ungroup():
+    '''Make sure that ungrouped data can be ungrouped.
+
+    This test just groups and ungroups a few times.
+    '''
+    session = Session()
+    testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
+                                   np.zeros(50),
+                                   bin_lo=1,
+                                   bin_hi=10)
+    session.set_data(1, testdata)
+    session.ungroup(1)
+    session.group_bins(1, 5)
+    assert np.all(session.get_grouping(1)[::10] == 1)
+    assert testdata.grouped
+    # test it can be ungrouped
+    session.ungroup(1)
+    assert not testdata.grouped
+    # test ungrouped data can be ungrouped without altering
+    # the grouping
+    session.ungroup(1)
+    assert not testdata.grouped
+
+# https://github.com/sherpa/sherpa/pull/766
+def test_unsubtract():
+    '''Make sure that unsubtracted data can be unsubtracted.
+
+    This test just subtracts and unsubtracts a few times.
+    '''
+    session = Session()
+    testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
+                       np.zeros(50),
+                       bin_lo=1, bin_hi=10)
+    testbkg = DataPHA('testbkg', np.arange(50, dtype=float) + .5,
+                      np.zeros(50),
+                      bin_lo=1, bin_hi=10)
+    session.set_data(1, testdata)
+    session.set_bkg(1, testbkg)
+    session.unsubtract(1)
+    session.subtract(1)
+    assert testdata.subtracted
+    # test it can be ungrouped
+    session.unsubtract(1)
+    assert not testdata.subtracted
+    # test ungrouped data can be ungrouped without altering
+    # the grouping
+    session.unsubtract(1)
+    assert not testdata.subtracted

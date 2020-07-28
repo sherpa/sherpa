@@ -21,7 +21,7 @@ import sys
 import os
 
 from distutils.version import LooseVersion
-from numpy.distutils.core import Command
+from distutils.cmd import Command
 from .extensions import build_ext, build_lib_arrays
 
 def clean(xs):

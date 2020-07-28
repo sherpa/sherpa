@@ -26,6 +26,14 @@ Sherpa contains an expressive and powerful
 modeling language, coupled with a
 range of statistics and robust optimisers.
 
+.. seealso::
+
+   If you are looking for the similarly named package
+   "SHERPA" for hyperparameter tuning of machine learning models
+   go here:
+   https://parameter-sherpa.readthedocs.io/
+   
+
 Sherpa is released under the
 `GNU General Public License v3.0
 <https://github.com/sherpa/sherpa/blob/master/LICENSE>`_,

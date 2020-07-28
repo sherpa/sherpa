@@ -1,7 +1,7 @@
 #ifdef testLevMar
 
 //
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -304,13 +304,14 @@ int main( int argc, char* argv[] ) {
 #endif
 
 /*
-g++ -ansi -pedantic -Wall -O3 -I. -I../../../include -I../.. -DtestLevMar.cc LevMar.cc -o levmar
+g++ -ansi -pedantic -Wall -O3 -I. -I../../../include -I../.. -DtestLevMar -DNDEBUG LevMar.cc -o levmar
 
-==23858== Memcheck, a memory error detector
-==23858== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
-==23858== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
-==23858== Command: a.out
-==23858==
+(sherpa) [dtn@devel12 minpack]$ valgrind levmar
+==32580== Memcheck, a memory error detector
+==32580== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
+==32580== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
+==32580== Command: levmar
+==32580== 
 #
 #:npar = 16
 #:tol=1.49012e-08
@@ -351,13 +352,13 @@ lmdif_LinearFullRank	35	0	7.88861e-31	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 lmdif_LinearFullRank1	34	3.63636	3.63636	-176.185,-87.5926,-161.918,-43.2963,-320.277,-80.4592,210.955,-21.1481,-58.5169,-159.638,86.4791,-39.7296,125.641,105.978,52.753,-29.5472	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0016159
 lmdif_LinearFullRank0cols0rows	34	5.13793	5.13793	1,102.112,305.423,51.5561,-65.5527,153.211,-281.776,26.2781,110.795,-32.2763,-45.1477,77.1057,0.221514,-140.388,46.907,1	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.00209255,0
 lmdif_Chebyquad	84	0	3.50827e-25	0.0442053,0.199491,0.235619,0.416047,0.5,0.583953,0.764381,0.800509,0.955795	0.370106,2.06127,1.55376,2.76913,2.92582,2.76943,1.55377,2.06202,0.369586
-==23858==
-==23858== HEAP SUMMARY:
-==23858==     in use at exit: 0 bytes in 0 blocks
-==23858==   total heap usage: 345 allocs, 345 frees, 115,024 bytes allocated
-==23858==
-==23858== All heap blocks were freed -- no leaks are possible
-==23858==
-==23858== For counts of detected and suppressed errors, rerun with: -v
-==23858== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 6 from 6)
+==32580== 
+==32580== HEAP SUMMARY:
+==32580==     in use at exit: 0 bytes in 0 blocks
+==32580==   total heap usage: 345 allocs, 345 frees, 115,024 bytes allocated
+==32580== 
+==32580== All heap blocks were freed -- no leaks are possible
+==32580== 
+==32580== For counts of detected and suppressed errors, rerun with: -v
+==32580== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */

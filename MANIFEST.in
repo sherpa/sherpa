@@ -1,6 +1,7 @@
 graft extern
 
 include versioneer.py
+include pyproject.toml
 
 include README.md
 include COPYRIGHT

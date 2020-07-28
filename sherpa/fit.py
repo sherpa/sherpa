@@ -1177,7 +1177,7 @@ class Fit(NoNewAttributesAfterInit):
                                dof, qval, rstat)
 
     @evaluates_model
-    def fit(self, outfile=None, clobber=False):
+    def fit(self, outfile=None, clobber=False, numcores=1):
         """Fit the model to the data.
 
         Parameters
@@ -1187,6 +1187,8 @@ class Fit(NoNewAttributesAfterInit):
            this file.
         clobber : bool, optional
            Determines if the output file can be overwritten.
+        numcores : int or None, optional
+           The number of cores to use in fitting simultaneous data.
 
         Returns
         -------
@@ -1230,7 +1232,8 @@ class Fit(NoNewAttributesAfterInit):
 
         init_stat = self.calc_stat()
         # output = self.method.fit ...
-        output = self._iterfit.fit(self._iterfit._get_callback(outfile, clobber),
+        tmp = self._iterfit._get_callback(outfile, clobber)
+        output = self._iterfit.fit(tmp,
                                    self.model.thawedpars,
                                    self.model.thawedparmins,
                                    self.model.thawedparmaxes)

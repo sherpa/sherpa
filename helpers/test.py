@@ -56,7 +56,7 @@ try:
             sys.exit(errno)
 
 except ImportError:
-    from distutils.core import Command
+    from distutils.cmd import Command
 
     class PyTest(Command):
         user_options = []

@@ -55,10 +55,11 @@ def modelCacher1d(func):
         digest = ''
         if use_caching:
 
-            data = [numpy.array(pars).tostring(), boolean_to_byte(kwargs.get('integrate', False)),
-                    numpy.asarray(xlo).tostring()]
+            data = [numpy.array(pars).tobytes(),
+                    boolean_to_byte(kwargs.get('integrate', False)),
+                    numpy.asarray(xlo).tobytes()]
             if args:
-                data.append(numpy.asarray(args[0]).tostring())
+                data.append(numpy.asarray(args[0]).tobytes())
 
             token = b''.join(data)
             digest = hashlib.sha256(token).digest()
@@ -205,8 +206,13 @@ class Model(NoNewAttributesAfterInit):
                     for alias in val.aliases:
                         self._par_index[alias] = val
 
-    def startup(self):
+    def startup(self, cache=False):
         """Called before a model may be evaluated multiple times.
+
+        Parameters
+        ----------
+        cache : bool, optional
+            Should a cache be used when evaluating the models.
 
         See Also
         --------
@@ -405,7 +411,7 @@ class CompositeModel(Model):
 
         return parts
 
-    def startup(self, cache):
+    def startup(self, cache=False):
         pass
 
     def teardown(self):
@@ -449,7 +455,7 @@ class SimulFitModel(CompositeModel):
     def __iter__(self):
         return iter(self.parts)
 
-    def startup(self, cache):
+    def startup(self, cache=False):
         for part in self:
             part.startup(cache)
         CompositeModel.startup(self, cache)
@@ -469,7 +475,7 @@ class ArithmeticConstantModel(Model):
         self.val = SherpaFloat(val)
         Model.__init__(self, self.name)
 
-    def startup(self, cache):
+    def startup(self, cache=False):
         pass
 
     def calc(self, p, *args, **kwargs):
@@ -540,7 +546,7 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
-    def startup(self, cache):
+    def startup(self, cache=False):
         self._queue = ['']
         self._cache = {}
         self._use_caching = cache
@@ -634,7 +640,7 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
             #  RegridWrappedModel can return the correct model expression
             return part.regrid(*args, _self=self, **kwargs)
 
-    def startup(self, cache):
+    def startup(self, cache=False):
         self.lhs.startup(cache)
         self.rhs.startup(cache)
         CompositeModel.startup(self, cache)
@@ -707,7 +713,7 @@ class ArithmeticFunctionModel(Model):
     def calc(self, p, *args, **kwargs):
         return self.func(*args, **kwargs)
 
-    def startup(self):
+    def startup(self, cache=False):
         pass
 
     def teardown(self):
@@ -732,7 +738,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
                                  (self.outer.name, self.inner.name)),
                                 (self.outer, self.inner))
 
-    def startup(self, cache):
+    def startup(self, cache=False):
         self.inner.startup(cache)
         self.outer.startup(cache)
         CompositeModel.startup(self, cache)

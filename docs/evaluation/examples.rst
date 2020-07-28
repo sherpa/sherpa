@@ -139,7 +139,7 @@ is used to show the grid used by
 
 ::
    
-    >>> twod.ignore(x0lo=2, x0hi=3, x1l0=0, x1hi=10)
+    >>> twod.ignore(x0lo=2, x0hi=3, x1lo=0, x1hi=10)
     >>> twod.eval_model(mdl)
     array([  0.,  10.,   10.,   0.])
     >>> twod.get_indep(filter=True)
