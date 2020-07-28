@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,9 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections import namedtuple
+import logging
 
 import numpy
-import logging
+import pytest
 
 from sherpa.data import Data1D
 from sherpa.models import Gauss1D, PowLaw1D
@@ -29,211 +31,219 @@ from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
 from sherpa import sim
 
-from sherpa.utils.testing import SherpaTestCase
-
 
 _max  = numpy.finfo(numpy.float32).max
 _tiny = numpy.finfo(numpy.float32).tiny
 _eps  = numpy.finfo(numpy.float32).eps
 
 
-class test_sim(SherpaTestCase):
+_fit_results_bench = {
+    'rstat': 89.29503933428586,
+    'qval': 0.0,
+    'succeeded': 1,
+    'numpoints': 100,
+    'dof': 95,
+    'nfev': 93,
+    'statval': 8483.0287367571564,
+    'parnames': ['p1.gamma', 'p1.ampl', 'g1.fwhm',
+                 'g1.pos', 'g1.ampl'],
+    'parvals': numpy.array(
+        [1.0701938169914813,
+         9.1826254677279469,
+         2.5862083052721028,
+         2.601619746022207,
+         47.262657692418749])
+    }
 
-    _fit_results_bench = {
-        'rstat': 89.29503933428586,
-        'qval': 0.0,
-        'succeeded': 1,
-        'numpoints': 100,
-        'dof': 95,
-        'nfev': 93,
-        'statval': 8483.0287367571564,
-        'parnames': ['p1.gamma', 'p1.ampl', 'g1.fwhm',
-                     'g1.pos', 'g1.ampl'],
-        'parvals': numpy.array(
-            [1.0701938169914813,
-             9.1826254677279469,
-             2.5862083052721028,
-             2.601619746022207,
-             47.262657692418749])
-        }
-
-    _x = numpy.arange(0.1, 10.1, 0.1)
-    _y = numpy.array(
-        [ 114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
-          29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
-          52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
-          31, 34, 18, 24, 25, 11, 17, 17, 11,  9,  8,  5,
-           4, 10,  3,  4,  6,  3,  0,  2,  4,  4,  0,  1,
-           2,  0,  3,  3,  0,  2,  1,  2,  3,  0,  1,  0,
-           1,  0,  0,  1,  3,  3,  0,  2,  0,  0,  1,  2,
-           0,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,
-           1,  0,  1,  0
-          ]
-        )
-    _err = numpy.ones(100) * 0.4
-
-    def setUp(self):
-        data = Data1D('fake', self._x, self._y, self._err)
-
-        g1 = Gauss1D('g1')
-        g1.fwhm.set(1.0, _tiny, _max, frozen=False)
-        g1.pos.set(1.0, -_max, _max, frozen=False)
-        g1.ampl.set(1.0, -_max, _max, frozen=False)
-        p1 = PowLaw1D('p1')
-        p1.gamma.set(1.0, -10, 10, frozen=False)
-        p1.ampl.set(1.0, 0.0, _max, frozen=False)
-        p1.ref.set(1.0, -_max, _max, frozen=True)
-        model = p1 + g1
-
-        method = LevMar()
-        method.config['maxfev'] = 10000
-        method.config['ftol'] = float(_eps)
-        method.config['epsfcn'] = float(_eps)
-        method.config['gtol'] = float(_eps)
-        method.config['xtol'] = float(_eps)
-        method.config['factor'] = float(100)
-
-        self.fit = Fit(data, model, Chi2DataVar(), method, Covariance())
-        results = self.fit.fit()
-
-        for key in ["succeeded", "numpoints", "nfev"]:
-            assert self._fit_results_bench[key] == int(getattr(results, key))
-
-        for key in ["rstat", "qval", "statval", "dof"]:
-            assert numpy.allclose(float(self._fit_results_bench[key]),
-                                  float(getattr(results, key)),
-                                  1.e-7, 1.e-7)
-
-        for key in ["parvals"]:
-            try:
-                assert numpy.allclose(self._fit_results_bench[key],
-                                      getattr(results, key),
-                                      1.e-4, 1.e-4)
-            except AssertionError:
-                print('parvals bench: ', self._fit_results_bench[key])
-                print('parvals fit:   ', getattr(results, key))
-                print('results', results)
-                raise
-
-        covresults = self.fit.est_errors()
-        self.dof = results.dof
-        self.mu = numpy.array(results.parvals)
-        self.cov = numpy.array(covresults.extra_output)
-        self.num = 10
-
-    def test_student_t(self):
-        sim.multivariate_t(self.mu, self.cov, self.dof, self.num)
-
-    def test_cauchy(self):
-        sim.multivariate_cauchy(self.mu, self.cov, self.num)
-
-    def test_parameter_scale_vector(self):
-        ps = sim.ParameterScaleVector()
-        ps.get_scales(self.fit)
-
-    def test_parameter_scale_matrix(self):
-        ps = sim.ParameterScaleMatrix()
-        ps.get_scales(self.fit)
-
-    def test_uniform_parameter_sample(self):
-        up = sim.UniformParameterSampleFromScaleVector()
-        up.get_sample(self.fit, num=self.num)
-
-    def test_normal_parameter_sample_vector(self):
-        np = sim.NormalParameterSampleFromScaleVector()
-        np.get_sample(self.fit, num=self.num)
-
-    def test_normal_parameter_sample_matrix(self):
-        np = sim.NormalParameterSampleFromScaleMatrix()
-        np.get_sample(self.fit, num=self.num)
-
-    def test_t_parameter_sample_matrix(self):
-        np = sim.StudentTParameterSampleFromScaleMatrix()
-        np.get_sample(self.fit, self.dof, num=self.num)
-
-    def test_uniform_sample(self):
-        up = sim.UniformSampleFromScaleVector()
-        up.get_sample(self.fit, num=self.num)
-
-    def test_normal_sample_vector(self):
-        np = sim.NormalSampleFromScaleVector()
-        np.get_sample(self.fit, num=self.num)
-
-    def test_normal_sample_matrix(self):
-        np = sim.NormalSampleFromScaleMatrix()
-        np.get_sample(self.fit, num=self.num)
-
-    def test_t_sample_matrix(self):
-        np = sim.StudentTSampleFromScaleMatrix()
-        np.get_sample(self.fit, self.num, self.dof)
-
-    # TODO: this overwrites the test_uniform_sample routine above,
-    #       should one be renamed?
-    def test_uniform_sample(self):
-        sim.uniform_sample(self.fit, num=self.num)
-
-    def test_normal_sample(self):
-        sim.normal_sample(self.fit, num=self.num, correlate=False)
-
-    def test_normal_sample_correlated(self):
-        sim.normal_sample(self.fit, num=self.num, correlate=True)
-
-    def test_t_sample(self):
-        sim.t_sample(self.fit, self.num, self.dof)
-
-    def test_lrt(self):
-        results = sim.LikelihoodRatioTest.run(self.fit, self.fit.model.lhs,
-                                              self.fit.model, niter=25)
+_x = numpy.arange(0.1, 10.1, 0.1)
+_y = numpy.array(
+    [ 114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
+      29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
+      52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
+      31, 34, 18, 24, 25, 11, 17, 17, 11,  9,  8,  5,
+       4, 10,  3,  4,  6,  3,  0,  2,  4,  4,  0,  1,
+       2,  0,  3,  3,  0,  2,  1,  2,  3,  0,  1,  0,
+       1,  0,  0,  1,  3,  3,  0,  2,  0,  0,  1,  2,
+       0,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,
+       1,  0,  1,  0
+      ]
+    )
+_err = numpy.ones(100) * 0.4
 
 
-    def test_mh(self):
+@pytest.fixture
+def setup():
+    data = Data1D('fake', _x, _y, _err)
 
-        self.fit.method = NelderMead()
-        self.fit.stat = Cash()
-        results = self.fit.fit()
-        results = self.fit.est_errors()
-        cov = results.extra_output
+    g1 = Gauss1D('g1')
+    g1.fwhm.set(1.0, _tiny, _max, frozen=False)
+    g1.pos.set(1.0, -_max, _max, frozen=False)
+    g1.ampl.set(1.0, -_max, _max, frozen=False)
+    p1 = PowLaw1D('p1')
+    p1.gamma.set(1.0, -10, 10, frozen=False)
+    p1.ampl.set(1.0, 0.0, _max, frozen=False)
+    p1.ref.set(1.0, -_max, _max, frozen=True)
+    model = p1 + g1
 
-        mcmc = sim.MCMC()
+    method = LevMar()
+    method.config['maxfev'] = 10000
+    method.config['ftol'] = float(_eps)
+    method.config['epsfcn'] = float(_eps)
+    method.config['gtol'] = float(_eps)
+    method.config['xtol'] = float(_eps)
+    method.config['factor'] = float(100)
 
-        samplers = mcmc.list_samplers()
-        priors = mcmc.list_priors()
-        for par in self.fit.model.pars:
-            mcmc.set_prior(par, sim.flat)
-            prior = mcmc.get_prior(par)
+    fit = Fit(data, model, Chi2DataVar(), method, Covariance())
+    results = fit.fit()
 
-        sampler = mcmc.get_sampler()
-        name = mcmc.get_sampler_name()
+    for key in ["succeeded", "numpoints", "nfev"]:
+        assert _fit_results_bench[key] == int(getattr(results, key))
 
-        mcmc.set_sampler('MH')
+    for key in ["rstat", "qval", "statval", "dof"]:
+        # used rel and abs tol of 1e-7 with numpy allclose
+        assert float(getattr(results, key)) == pytest.approx(_fit_results_bench[key])
 
-        opt = mcmc.get_sampler_opt('defaultprior')
-        mcmc.set_sampler_opt('defaultprior', opt)
-        # mcmc.set_sampler_opt('verbose', True)
+    for key in ["parvals"]:
+        try:
+            # used rel and abs tol of 1e-4 with numpy allclose
+            assert getattr(results, key) == pytest.approx(_fit_results_bench[key])
+        except AssertionError:
+            print('parvals bench: ', _fit_results_bench[key])
+            print('parvals fit:   ', getattr(results, key))
+            print('results', results)
+            raise
 
-        log = logging.getLogger("sherpa")
-        level = log.level
-        log.setLevel(logging.ERROR)
-        stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
+    fields = ['data', 'model', 'method', 'fit', 'results',
+              'covresults', 'dof', 'mu', 'num']
+    out = namedtuple('Results', fields)
+
+    out.data = data
+    out.model = model
+    out.method = method
+    out.fit = fit
+    out.results = results
+    out.covresults = fit.est_errors()
+    out.dof = results.dof
+    out.mu = numpy.array(results.parvals)
+    out.cov = numpy.array(out.covresults.extra_output)
+    out.num = 10
+    return out
+
+
+def test_student_t(setup):
+    sim.multivariate_t(setup.mu, setup.cov, setup.dof, setup.num)
+
+def test_cauchy(setup):
+    sim.multivariate_cauchy(setup.mu, setup.cov, setup.num)
+
+def test_parameter_scale_vector(setup):
+    ps = sim.ParameterScaleVector()
+    ps.get_scales(setup.fit)
+
+def test_parameter_scale_matrix(setup):
+    ps = sim.ParameterScaleMatrix()
+    ps.get_scales(setup.fit)
+
+def test_uniform_parameter_sample(setup):
+    up = sim.UniformParameterSampleFromScaleVector()
+    up.get_sample(setup.fit, num=setup.num)
+
+def test_normal_parameter_sample_vector(setup):
+    np = sim.NormalParameterSampleFromScaleVector()
+    np.get_sample(setup.fit, num=setup.num)
+
+def test_normal_parameter_sample_matrix(setup):
+    np = sim.NormalParameterSampleFromScaleMatrix()
+    np.get_sample(setup.fit, num=setup.num)
+
+def test_t_parameter_sample_matrix(setup):
+    np = sim.StudentTParameterSampleFromScaleMatrix()
+    np.get_sample(setup.fit, setup.dof, num=setup.num)
+
+def test_uniform_sample(setup):
+    up = sim.UniformSampleFromScaleVector()
+    up.get_sample(setup.fit, num=setup.num)
+
+def test_normal_sample_vector(setup):
+    np = sim.NormalSampleFromScaleVector()
+    np.get_sample(setup.fit, num=setup.num)
+
+def test_normal_sample_matrix(setup):
+    np = sim.NormalSampleFromScaleMatrix()
+    np.get_sample(setup.fit, num=setup.num)
+
+def test_t_sample_matrix(setup):
+    np = sim.StudentTSampleFromScaleMatrix()
+    np.get_sample(setup.fit, setup.num, setup.dof)
+
+# TODO: this overwrites the test_uniform_sample routine above,
+#       should one be renamed?
+def test_uniform_sample(setup):
+    sim.uniform_sample(setup.fit, num=setup.num)
+
+def test_normal_sample(setup):
+    sim.normal_sample(setup.fit, num=setup.num, correlate=False)
+
+def test_normal_sample_correlated(setup):
+    sim.normal_sample(setup.fit, num=setup.num, correlate=True)
+
+def test_t_sample(setup):
+    sim.t_sample(setup.fit, setup.num, setup.dof)
+
+def test_lrt(setup):
+    results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
+                                          setup.fit.model, niter=25)
+
+
+def test_mh(setup):
+
+    setup.fit.method = NelderMead()
+    setup.fit.stat = Cash()
+    results = setup.fit.fit()
+    results = setup.fit.est_errors()
+    cov = results.extra_output
+
+    mcmc = sim.MCMC()
+
+    samplers = mcmc.list_samplers()
+    priors = mcmc.list_priors()
+    for par in setup.fit.model.pars:
+        mcmc.set_prior(par, sim.flat)
+        prior = mcmc.get_prior(par)
+
+    sampler = mcmc.get_sampler()
+    name = mcmc.get_sampler_name()
+
+    mcmc.set_sampler('MH')
+
+    opt = mcmc.get_sampler_opt('defaultprior')
+    mcmc.set_sampler_opt('defaultprior', opt)
+    # mcmc.set_sampler_opt('verbose', True)
+
+    log = logging.getLogger("sherpa")
+    level = log.level
+    log.setLevel(logging.ERROR)
+    try:
+        stats, accept, params = mcmc.get_draws(setup.fit, cov, niter=1e2)
+    finally:
         log.setLevel(level)
 
-    def test_metropolisMH(self):
+def test_metropolisMH(setup):
 
-        self.fit.method = NelderMead()
-        self.fit.stat = CStat()
-        results = self.fit.fit()
-        results = self.fit.est_errors()
-        cov = results.extra_output
+    setup.fit.method = NelderMead()
+    setup.fit.stat = CStat()
+    results = setup.fit.fit()
+    results = setup.fit.est_errors()
+    cov = results.extra_output
 
-        mcmc = sim.MCMC()
-        mcmc.set_sampler('MetropolisMH')
-        # mcmc.set_sampler_opt('verbose', True)
+    mcmc = sim.MCMC()
+    mcmc.set_sampler('MetropolisMH')
+    # mcmc.set_sampler_opt('verbose', True)
 
-        log = logging.getLogger("sherpa")
-        level = log.level
-        log.setLevel(logging.ERROR)
-        stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
+    log = logging.getLogger("sherpa")
+    level = log.level
+    log.setLevel(logging.ERROR)
+    try:
+        stats, accept, params = mcmc.get_draws(setup.fit, cov, niter=1e2)
+    finally:
         log.setLevel(level)
-
-    def tearDown(self):
-        pass
