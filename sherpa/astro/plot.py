@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,10 +34,13 @@ import logging
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('DataPHAPlot', 'SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelHistogram',
-           'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
-           'BkgRatioPlot', 'BkgChisqrPlot',
-           'OrderPlot', 'ModelHistogram')
+__all__ = ('DataPHAPlot', 'ModelHistogram', 'SourcePlot', 'ComponentModelPlot',
+           'ComponentSourcePlot', 'ARFPlot', 'BkgDataPlot',
+           'BkgSourcePlot',
+           'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot',
+           'BkgRatioPlot', 'BkgChisqrPlot', 'BkgSourcePlot',
+           'OrderPlot', 'BkgModelHistogram',
+           'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
 
 
 def to_latex(txt):
