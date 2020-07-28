@@ -99,16 +99,65 @@ def multivariate_cauchy(mean, cov, size=None):
 
 
 class ParameterScale(NoNewAttributesAfterInit):
+    """Create the scaling used to generate parameters.
 
+    The scaling generally refers to an error value (defaulting
+    to one sigma) for each parameter.
+
+    """
+
+    # The sigma value to use
     sigma = 1
 
-    def get_scales(self, fit, myscale=None):
+    def get_scales(self, fit, myscales=None):
+        """Return the samples.
+
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to
+            generate the samples, along with any possible error
+            analysis.
+        myscales : numpy array or None, optional
+            The scales to use. If None then they are
+            calculated from the fit.
+
+        Returns
+        -------
+        scales : numpy array
+            The scales array (npar elements, matching the free
+            parameters in fit). It may be multi-dimensional.
+
+        """
         raise NotImplementedError
 
 
 class ParameterScaleVector(ParameterScale):
+    """Uncorrelated errors for the parameters.
+
+    """
 
     def get_scales(self, fit, myscales=None):
+        """Return the samples.
+
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to
+            generate the samples, along with any possible error
+            analysis.
+        myscales : numpy array or None, optional
+            The scales to use. If None then they are
+            calculated from the fit.
+
+        Returns
+        -------
+        scales : numpy array
+            One-dimensional scales array (npar elements, matching the
+            free parameters in fit). The values are the sigma errors
+            for the parameters (or the input values if given).
+
+        """
 
         scales = []
         thawedpars = [par for par in fit.model.pars if not par.frozen]
@@ -131,8 +180,9 @@ class ParameterScaleVector(ParameterScale):
                 if lo is not None and hi is not None:
                     scale = numpy.abs(lo)
                 else:
-                    warning("Covariance failed for '%s', trying Confidence..." %
-                            par.fullname)
+                    wmsg = "Covariance failed for '{}',".format(par.fullname) + \
+                           " trying Confidence..."
+                    warning(wmsg)
 
                     conf = Confidence()
                     conf.config['sigma'] = self.sigma
@@ -163,22 +213,41 @@ class ParameterScaleVector(ParameterScale):
 
         else:
             if not numpy.iterable(myscales):
-                raise TypeError(
-                    "scales option must be iterable of length %d " % len(thawedpars))
+                emsg = "scales option must be iterable of " + \
+                       "length {}".format(len(thawedpars))
+                raise TypeError(emsg)
             scales = list(map(abs, myscales))
         scales = numpy.asarray(scales).transpose()
         return scales
 
 
 class ParameterScaleMatrix(ParameterScale):
+    """Correlated errors for the parameters.
+
+    """
 
     def get_scales(self, fit, myscales=None):
+        """Return the samples.
 
-        def get_size_of_covar(pars):
-            thawedpars = [par for par in pars if not par.frozen]
-            npar = len(thawedpars)
-            msg = 'scales must be a numpy array of size (%d,%d)' % (npar, npar)
-            return npar, msg
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to
+            generate the samples, along with any possible error
+            analysis.
+        myscales : numpy array or None, optional
+            The scales to use. If None then they are
+            calculated from the fit.
+
+        Returns
+        -------
+        scales : numpy array
+            Two-dimensional scales array (npar by npar elements,
+            matching the free parameters in fit). The values are the
+            covariance matrix for the parameters (or the input values if
+            given).
+
+        """
 
         if myscales is None:
             oldestmethod = fit.estmethod
@@ -192,15 +261,17 @@ class ParameterScaleMatrix(ParameterScale):
             cov = r.extra_output
 
         else:
-            if isinstance(myscales, (numpy.ndarray)):
-                npar, msg = get_size_of_covar(fit.model.pars)
-                if (npar, npar) == myscales.shape:
-                    cov = myscales
-                else:
-                    raise EstErr(msg)
-            else:
-                npar, msg = get_size_of_covar(fit.model.pars)
+
+            thawedpars = [par for par in fit.model.pars if not par.frozen]
+            npar = len(thawedpars)
+            msg = 'scales must be a numpy array of size ({0},{0})'.format(npar)
+
+            if not isinstance(myscales, numpy.ndarray):
                 raise EstErr(msg)
+
+            if (npar, npar) != myscales.shape:
+                raise EstErr(msg)
+
             cov = myscales
 
         if cov is None:
@@ -219,29 +290,78 @@ class ParameterScaleMatrix(ParameterScale):
         return cov
 
 
-class ParameterSampleFromScaleVector(NoNewAttributesAfterInit):
+class ParameterSample(NoNewAttributesAfterInit):
+    """Create a set of parameter samples.
+
+    """
+
+    def get_sample(self, fit, num=1):
+        """Return the samples.
+
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        num : int, optional
+            The number of samples to return.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by npar size, where npar is the number of
+            free parameters in the fit argument.
+
+        """
+        raise NotImplementedError
+
+class ParameterSampleFromScaleVector(ParameterSample):
+    """Samples drawn from uncorrelated parameters.
+    """
 
     def __init__(self):
         self.scale = ParameterScaleVector()
-        NoNewAttributesAfterInit.__init__(self)
-
-    def get_sample(self):
-        raise NotImplementedError
+        ParameterSample.__init__(self)
 
 
-class ParameterSampleFromScaleMatrix(NoNewAttributesAfterInit):
+class ParameterSampleFromScaleMatrix(ParameterSample):
+    """Samples drawn from correlated parameters.
+    """
 
     def __init__(self):
         self.scale = ParameterScaleMatrix()
-        NoNewAttributesAfterInit.__init__(self)
-
-    def get_sample(self):
-        raise NotImplementedError
+        ParameterSample.__init__(self)
 
 
 class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
+    """Use a uniform distribution to sample parameters.
+
+    The parameters are drawn from a uniform distribution which is set
+    to `factor` times the parameter error (the lower bound is included
+    but the upper bound is not).
+    """
 
     def get_sample(self, fit, factor=4, num=1):
+        """Return the parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        factor : number, optional
+            The half-width of the uniform distribution is factor times
+            the one-sigma error.
+        num : int, optional
+            The number of samples to return.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by npar size, where npar is the number of
+            free parameters in the fit argument.
+
+        """
         vals = numpy.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit)
         samples = [numpy.random.uniform(val - factor * abs(scale),
@@ -251,8 +371,36 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
 
 class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
+    """Use a normal distribution to sample parameters (uncorrelated),
+
+    The parameters are drawn from a normal distribution based on the
+    parameter errors, and do not include any correlations between the
+    parameters. The errors will be generated from the fit object or
+    specified directly.
+
+    """
 
     def get_sample(self, fit, myscales=None, num=1):
+        """Return the parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        myscales : 1D numpy array or None, optional
+            The error values (one sigma values) to use. If None then
+            it is calculated from the fit object.
+        num : int, optional
+            The number of samples to return.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by npar size, where npar is the number of
+            free parameters in the fit argument.
+
+        """
         vals = numpy.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit, myscales)
         samples = [numpy.random.normal(
@@ -261,16 +409,71 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
 
 class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
+    """Use a normal distribution to sample parameters (correlated),
+
+    The parameters are drawn from a normal distribution based on the
+    parameter errors, and include the correlations between the
+    parameters. The errors will be generated from the fit object or
+    specified directly as a covariance matrix.
+
+    """
 
     def get_sample(self, fit, mycov=None, num=1):
+        """Return the parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        mycov : 2D numpy array or None, optional
+            The covariance matrix to use. If None then it is
+            calculated from the fit object.
+        num : int, optional
+            The number of samples to return.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by npar size, where npar is the number of
+            free parameters in the fit argument.
+
+        """
         vals = numpy.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit, mycov)
         return numpy.random.multivariate_normal(vals, cov, int(num))
 
 
 class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
+    """Use a student's t-distribution to sample parameters (correlated),
+
+    The parameters are drawn from a normal distribution based on the
+    parameter errors, and include the correlations between the
+    parameters. The errors will be generated from the fit object or
+    specified directly as a covariance matrix.
+
+    """
 
     def get_sample(self, fit, dof, num=1):
+        """Return the parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        dof : int
+            The degrees of freedon of the distribution.
+        num : int, optional
+            The number of samples to return.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by npar size, where npar is the number of
+            free parameters in the fit argument.
+
+        """
         vals = numpy.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit)
         return multivariate_t(vals, cov, dof, int(num))
@@ -281,6 +484,9 @@ class Evaluate():
     Callable class for _sample_stat multiprocessing call
     This class used to be a nested function, which can't be pickled and results in
     python3 failing to execute the code.
+
+    Note that this does not guarantee to reset the model
+    parameters after being run.
     """
     def __init__(self, fit):
         self.fit = fit
@@ -291,11 +497,34 @@ class Evaluate():
 
 
 def _sample_stat(fit, samples, numcores=None, cache=True):
+    """Calculate the statistic for each set of samples.
+
+    Parameter
+    ----------
+    fit : sherpa.fit.Fit instance
+        This defines the thawed parameters that are used to generate
+        the samples, along with any possible error analysis.
+    samples : 2D numpy array
+        The samples array, stored as a npar by niter matrix.
+    numcores : int or None, optional
+        Should the calculation be done on multiple CPUs?  The default
+        (None) is to rely on the parallel.numcores setting of the
+        configuration file.
+    cache : bool, optional
+        Should the model cache be used?
+
+    Returns
+    -------
+    vals : 2D numpy array
+        A copy of the samples input with an extra row added to its
+        start, giving the statistic value for that row.
+
+    """
 
     oldvals = fit.model.thawedpars
 
     try:
-        fit.model.startup(cache)
+        fit.model.startup(cache=cache)
         stats = numpy.asarray(parallel_map(Evaluate(fit), samples, numcores))
     finally:
         fit.model.teardown()
@@ -305,32 +534,160 @@ def _sample_stat(fit, samples, numcores=None, cache=True):
 
 
 class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
+    """Use a normal distribution to sample statistic and parameters (correlated),
+
+    The parameters are drawn from a normal distribution based on the
+    parameter errors, and include the correlations between the
+    parameters. The errors will be generated from the fit object or
+    specified directly as a covariance matrix.
+
+    """
 
     def get_sample(self, fit, num=1, numcores=None):
+        """Return the statistic and parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        num : int, optional
+            The number of samples to return.
+        numcores : int or None, optional
+            Should the calculation be done on multiple CPUs?
+            The default (None) is to rely on the parallel.numcores
+            setting of the configuration file.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by (npar + 1) size, where npar is the
+            number of free parameters in the fit argument. The first
+            element in each row is the statistic value, and the
+            remaining are the parameter values.
+
+        """
+
         samples = NormalParameterSampleFromScaleMatrix.get_sample(
             self, fit, num=num)
         return _sample_stat(fit, samples, numcores)
 
 
 class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
+    """Use a normal distribution to sample statistic and parameters (uncorrelated),
+
+    The parameters are drawn from a normal distribution based on the
+    parameter errors, and do not include any correlations between the
+    parameters. The errors will be generated from the fit object or
+    specified directly as a covariance matrix.
+
+    """
 
     def get_sample(self, fit, num=1, numcores=None):
+        """Return the statistic and parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        num : int, optional
+            The number of samples to return.
+        numcores : int or None, optional
+            Should the calculation be done on multiple CPUs?
+            The default (None) is to rely on the parallel.numcores
+            setting of the configuration file.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by (npar + 1) size, where npar is the
+            number of free parameters in the fit argument. The first
+            element in each row is the statistic value, and the
+            remaining are the parameter values.
+
+        """
         samples = NormalParameterSampleFromScaleVector.get_sample(
             self, fit, num=num)
         return _sample_stat(fit, samples, numcores)
 
 
 class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
+    """Use a uniform distribution to sample statistic and parameters.
+
+    The parameters are drawn from a uniform distribution which is set
+    to `factor` times the parameter error (the lower bound is included
+    but the upper bound is not).
+    """
 
     def get_sample(self, fit, num=1, factor=4, numcores=None):
+        """Return the statistic and parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        num : int, optional
+            The number of samples to return.
+        factor : number, optional
+            The half-width of the uniform distribution is factor times
+            the one-sigma error.
+        numcores : int or None, optional
+            Should the calculation be done on multiple CPUs?
+            The default (None) is to rely on the parallel.numcores
+            setting of the configuration file.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by (npar + 1) size, where npar is the
+            number of free parameters in the fit argument. The first
+            element in each row is the statistic value, and the
+            remaining are the parameter values.
+
+        """
         samples = UniformParameterSampleFromScaleVector.get_sample(self, fit,
                                                                    factor=factor, num=num)
         return _sample_stat(fit, samples, numcores)
 
 
 class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
+    """Use a student's t-distribution to sample statistic and parameters (correlated),
+
+    The parameters are drawn from a normal distribution based on the
+    parameter errors, and include the correlations between the
+    parameters. The errors will be generated from the fit object or
+    specified directly as a covariance matrix.
+
+    """
 
     def get_sample(self, fit, num=1, dof=2, numcores=None):
+        """Return the statistic and parameter samples.
+
+        Parameter
+        ---------
+        fit : sherpa.fit.Fit instance
+            This defines the thawed parameters that are used to generate
+            the samples, along with any possible error analysis.
+        num : int, optional
+            The number of samples to return.
+        dof : int
+            The degrees of freedon of the distribution.
+        numcores : int or None, optional
+            Should the calculation be done on multiple CPUs?
+            The default (None) is to rely on the parallel.numcores
+            setting of the configuration file.
+
+        Returns
+        -------
+        samples : 2D numpy array
+            The array is num by (npar + 1) size, where npar is the
+            number of free parameters in the fit argument. The first
+            element in each row is the statistic value, and the
+            remaining are the parameter values.
+
+        """
         samples = StudentTParameterSampleFromScaleMatrix.get_sample(
             self, fit, dof, num)
         return _sample_stat(fit, samples, numcores)
