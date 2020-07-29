@@ -31,7 +31,7 @@ import numpy
 from numpy.testing import assert_allclose
 
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_group
+    requires_group, requires_xspec
 from sherpa.utils.err import DataErr, IdentifierErr, StatErr
 from sherpa.astro import ui
 from sherpa.astro.instrument import RMFModelPHA
@@ -592,3 +592,55 @@ def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
 
     assert src.gamma.val == pytest.approx(1.9298, rel=1.0e-4)
     assert src.ampl.val == pytest.approx(1.73862e-4 / 2, rel=1.0e-4)
+
+
+@requires_xspec
+@requires_fits
+@requires_data
+def test_pileup_model(make_data_path, clean_astro_ui):
+    """Basic check of setting a pileup model.
+
+    It is more to check we can set a pileup model, not to
+    check the model works.
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha('pileup', infile)
+    ui.subtract('pileup')
+    ui.notice(0.3, 7)
+
+    ui.set_stat('chi2datavar')
+    ui.set_source('pileup', ui.xswabs.amdl * ui.powlaw1d.pl)
+
+    # get close to the best fit, but don't need to fit
+    pl.ampl = 1.82e-4
+    pl.gamma = 1.97
+    amdl.nh = 0.012
+
+    stat0 = ui.calc_stat('pileup')
+
+    # We want to compare the data to the pileup model,
+    # which should be run with the higher-energy bins included,
+    # but that's not relevant here where I am just
+    # checking the statistic value.
+
+    ui.set_pileup_model('pileup', ui.jdpileup.jdp)
+
+    # pick some values to make the model change the data
+    jdp.ftime = 3.2
+    jdp.fracexp = 1
+    jdp.alpha = 0.95
+    jdp.f = 0.91
+
+    # Ensure that the statistic has got worse (technically
+    # it coud get better, but not for this case).
+    #
+    stat1 = ui.calc_stat('pileup')
+    assert stat1 > stat0
+
+    # As a test, check the actual statistic values
+    # (evaluated with XSPEC 12.11.0 and Sherpa with the
+    # master branch 2020/07/29, on Linux).
+    #
+    assert stat0 == pytest.approx(35.99899827358692)
+    assert stat1 == pytest.approx(36.58791181460404)
