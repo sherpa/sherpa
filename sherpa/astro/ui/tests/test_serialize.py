@@ -1204,10 +1204,6 @@ def test_restore_pha_back(make_data_path):
     fname, (bgrp, bqual), _ = setup_pha_back(make_data_path)
     statval = ui.calc_stat('bgrp')
 
-    # At present the model is not saved correctly for the
-    # background component - it includes apply_arf/rmf
-    # statements - which means that running the saved script
-    # results in an error.
     restore()
 
     assert ui.list_data_ids() == ['bgrp']
