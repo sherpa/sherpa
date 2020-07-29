@@ -18,12 +18,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections import namedtuple
+import logging
+import re
+
 import numpy as np
 
-from sherpa.utils.testing import SherpaTestCase, requires_data
+import pytest
+
+from sherpa.utils.testing import requires_data
 from sherpa.data import Data1D
 from sherpa.fit import Fit
-from sherpa.models import ArithmeticModel
 from sherpa.stats import LeastSq
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
@@ -35,13 +40,18 @@ from sherpa import ui
 # by its full module name
 import sherpa.models.basic
 
-import numpy
-import logging
-
-import pytest
-
 
 logger = logging.getLogger("sherpa")
+
+
+@pytest.fixture(autouse=True)
+def hide_logging():
+    "hide INFO-level logging in all these tests"
+
+    olevel = logger.getEffectiveLevel()
+    logger.setLevel(logging.ERROR)
+    yield
+    logger.setLevel(olevel)
 
 
 class UserModel(ArithmeticModel):
@@ -60,235 +70,220 @@ class UserModel(ArithmeticModel):
 #
 def um_line(pars, xlo, *args, **kwargs):
     """A test user model: straight line with slope and intercept"""
-    return pars[0] * numpy.asarray(xlo) + pars[1]
+    return pars[0] * np.asarray(xlo) + pars[1]
+
+
+"""
+Tests for PR #155
+
+TODO: Some test cases cannot be implemented (easily) without mock
+In particular one cannot test that the correct matrix is used when one is not
+provided and that an error is thrown when, for any reason, the computed covariance matrix
+is None.
+"""
+
+
+WRONG_STAT_MSG = "Fit statistic must be cash, cstat or wstat, not {}"
+WSTAT_ERR_MSG = "No background data has been supplied. Use cstat"
+NO_COVAR_MSG = "covariance has not been performed"
+RIGHT_STATS = {'cash', 'cstat', 'wstat'}
+
+@pytest.fixture
+def setup_covar(make_data_path):
+
+    print("A")
+    ui.load_data(make_data_path('sim.poisson.1.dat'))
+    ui.set_model(PowLaw1D("p1"))
 
 
 @requires_data
-class test_get_draws(SherpaTestCase):
-    """
-    Tests for PR #155
+@pytest.mark.parametrize('stat', set(ui.list_stats()) - RIGHT_STATS)
+def test_covar_wrong_stat(stat, clean_ui, setup_covar):
+    "Test an exception is thrown is the proper stat is not set"
 
-    TODO: Some test cases would be more readable if using pytest to parameterize a test case
-    TODO: Some test cases cannot be implemented (easily) without mock
-    In particular one cannot test that the correct matrix is used when one is not
-    provided and that an error is thrown when, for any reason, the computed covariance matrix
-    is None.
-    """
+    ui.covar()
+    ui.set_stat(stat)
+    with pytest.raises(ValueError) as exc:
+        ui.get_draws()
 
-    def setUp(self):
-        self._old_logger_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-        ui.clean()
-
-        self.ascii = self.make_path('sim.poisson.1.dat')
-
-        self.wrong_stat_msg = "Fit statistic must be cash, cstat or wstat, not {}"
-        self.wstat_err_msg = "No background data has been supplied. Use cstat"
-        self.no_covar_msg = "covariance has not been performed"
-        self.fail_msg = "Call should not have succeeded"
-        self.right_stats = {'cash', 'cstat', 'wstat'}
-        self.model = PowLaw1D("p1")
-
-        ui.load_data(self.ascii)
-        ui.set_model(self.model)
-
-    def tearDown(self):
-        if hasattr(self, '_old_logger_level'):
-            logger.setLevel(self._old_logger_level)
-        ui.clean()
-
-    # Test an exception is thrown is the proper stat is not set
-    def test_covar_wrong_stat(self):
-        ui.covar()
-        fail = False
-        wrong_stats = set(ui.list_stats()) - self.right_stats
-        for stat in wrong_stats:
-            ui.set_stat(stat)
-            try:
-                ui.get_draws()
-            except ValueError as ve:
-                self.assertEqual(self.wrong_stat_msg.format(stat), str(ve))
-                continue
-            fail = True
-            break
-        if fail:
-            self.fail(self.fail_msg)
-
-    # Test an exception is thrown when wstat is used without background
-    def test_covar_wstat_no_background(self):
-        ui.covar()
-        ui.set_stat("wstat")
-        try:
-            ui.get_draws()
-        except StatErr as ve:
-            self.assertEqual(self.wstat_err_msg, str(ve))
-            return
-        self.fail(self.fail_msg)
-
-    # Test an exception is thrown if covar is not run
-    def test_no_covar(self):
-        for stat in self.right_stats:
-            ui.set_stat(stat)
-            try:
-                ui.get_draws()
-            except SessionErr as ve:
-                self.assertEqual(self.no_covar_msg, str(ve))
-                return
-        self.fail(self.fail_msg)
-
-    # Test get_draws returns a valid response when the covariance matrix is provided
-    # Note the accuracy of the returned values is not assessed here
-    def test_covar_as_argument(self):
-        for stat in self.right_stats - {'wstat'}:
-            ui.set_stat(stat)
-            ui.fit()
-            matrix = [[0.00064075, 0.01122127], [0.01122127, 0.20153251]]
-            niter = 10
-            stat, accept, params = ui.get_draws(niter=niter, covar_matrix=matrix)
-            self.assertEqual(niter + 1, stat.size)
-            self.assertEqual(niter + 1, accept.size)
-            self.assertEqual((2, niter + 1), params.shape)
-            self.assertTrue(numpy.any(accept))
-
-    # Test get_draws returns a valid response when the covariance matrix is not provided
-    # Note the accuracy of the returned values is not assessed here
-    def test_covar_as_none(self):
-        for stat in self.right_stats - {'wstat'}:
-            ui.set_stat(stat)
-            ui.fit()
-            ui.covar()
-            niter = 10
-            stat, accept, params = ui.get_draws(niter=niter)
-            self.assertEqual(niter + 1, stat.size)
-            self.assertEqual(niter + 1, accept.size)
-            self.assertEqual((2, niter + 1), params.shape)
-            self.assertTrue(numpy.any(accept))
+    assert WRONG_STAT_MSG.format(stat) == str(exc.value)
 
 
 @requires_data
-class test_ui(SherpaTestCase):
-    def setUp(self):
-        ui.clean()
-        self._old_logger_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
+def test_covar_wstat_no_background(clean_ui, setup_covar):
+    "Test an exception is thrown when wstat is used without background"
 
-        self.ascii = self.make_path('sim.poisson.1.dat')
-        self.single = self.make_path('single.dat')
-        self.double = self.make_path('double.dat')
-        self.filter = self.make_path('filter_single_integer.dat')
-        self.func = lambda x: x
+    ui.covar()
+    ui.set_stat("wstat")
+    with pytest.raises(StatErr) as exc:
+        ui.get_draws()
 
-        ui.dataspace1d(1, 1000, dstype=ui.Data1D)
+    assert WSTAT_ERR_MSG == str(exc.value)
 
-    def tearDown(self):
-        if hasattr(self, '_old_logger_level'):
-            logger.setLevel(self._old_logger_level)
-        ui.clean()
 
-    def test_ascii(self):
-        ui.load_data(1, self.ascii)
-        ui.load_data(1, self.ascii, 2)
-        ui.load_data(1, self.ascii, 2, ("col2", "col1"))
+@requires_data
+@pytest.mark.parametrize("stat", RIGHT_STATS)
+def test_no_covar(stat, clean_ui, setup_covar):
+    "Test an exception is thrown if covar is not run"
 
-    # Test table model
-    def test_table_model_ascii_table(self):
-        ui.load_table_model('tbl', self.single)
-        ui.load_table_model('tbl', self.double)
+    ui.set_stat(stat)
+    with pytest.raises(SessionErr) as exc:
+        ui.get_draws()
 
-    # Test user model
-    def test_user_model_ascii_table(self):
-        ui.load_user_model(self.func, 'mdl', self.single)
-        ui.load_user_model(self.func, 'mdl', self.double)
+    assert NO_COVAR_MSG == str(exc.value)
 
-    def test_filter_ascii(self):
-        ui.load_filter(self.filter)
-        ui.load_filter(self.filter, ignore=True)
 
-    def test_add_model(self):
-        ui.add_model(UserModel)
-        ui.set_model('usermodel.user1')
+# Test get_draws returns a valid response when the covariance matrix is provided
+# Note the accuracy of the returned values is not assessed here
+@requires_data
+@pytest.mark.parametrize('stat', RIGHT_STATS - {'wstat'})
+def test_covar_as_argument(stat, clean_ui, setup_covar):
 
-    def test_set_full_model(self):
-        ui.load_psf('psf1', 'gauss2d.g1')
-        ui.set_full_model('psf1(gauss2d.g2)+const2d.c1')
-        ui.get_model()
+    ui.set_stat(stat)
+    ui.fit()
 
-    #        ui.get_source()
+    matrix = [[0.00064075, 0.01122127], [0.01122127, 0.20153251]]
+    niter = 10
+    stat, accept, params = ui.get_draws(niter=niter, covar_matrix=matrix)
 
-    # Bug 12644
-    def test_source_methods_with_full_model(self):
-        from sherpa.utils.err import IdentifierErr
+    n = niter + 1
+    assert stat.size == n
+    assert accept.size == n
+    assert params.shape == (2, n)
+    assert np.any(accept)
 
-        ui.load_data('full', self.ascii)
-        ui.set_full_model('full', 'powlaw1d.p1')
 
-        # Test Case 1
-        try:
-            ui.get_source('full')
-        except IdentifierErr as e:
-            self.assertRegex(str(e),
-                             "Convolved model\n.*\n is set for dataset full. You should use get_model instead.",
-                             str(e))
-        try:
-            ui.plot_source('full')
-        except IdentifierErr as e:
-            self.assertRegex(str(e),
-                            "Convolved model\n.*\n is set for dataset full. You should use plot_model instead.",
-                            str(e))
+# Test get_draws returns a valid response when the covariance matrix is not provided
+# Note the accuracy of the returned values is not assessed here
+@requires_data
+@pytest.mark.parametrize('stat', RIGHT_STATS - {'wstat'})
+def test_covar_as_none(stat, clean_ui, setup_covar):
 
-        # Test Case 2
-        ui.set_source('full', 'powlaw1d.p2')
+    ui.set_stat(stat)
+    ui.fit()
+    ui.covar()
+
+    niter = 10
+    stat, accept, params = ui.get_draws(niter=niter)
+
+    n = niter + 1
+    assert stat.size == n
+    assert accept.size == n
+    assert params.shape == (2, n)
+    assert np.any(accept)
+
+
+def identity(x):
+    return x
+
+
+@pytest.fixture
+def setup_ui(make_data_path):
+
+    ui.dataspace1d(1, 1000, dstype=ui.Data1D)
+
+    out = namedtuple('setup_ui_data', ['ascii', 'single', 'double',
+                                       'filter'])
+
+    out.ascii = make_data_path('sim.poisson.1.dat')
+    out.single = make_data_path('single.dat')
+    out.double = make_data_path('double.dat')
+    out.filter = make_data_path('filter_single_integer.dat')
+    return out
+
+
+@requires_data
+def test_ui_ascii(clean_ui, setup_ui):
+    ui.load_data(1, setup_ui.ascii)
+    ui.load_data(1, setup_ui.ascii, 2)
+    ui.load_data(1, setup_ui.ascii, 2, ("col2", "col1"))
+
+
+# Test table model
+@requires_data
+def test_ui_table_model_ascii_table(clean_ui, setup_ui):
+    ui.load_table_model('tbl', setup_ui.single)
+    ui.load_table_model('tbl', setup_ui.double)
+
+
+# Test user model
+@requires_data
+def test_ui_user_model_ascii_table(clean_ui, setup_ui):
+    ui.load_user_model(identity, 'mdl', setup_ui.single)
+    ui.load_user_model(identity, 'mdl', setup_ui.double)
+
+
+@requires_data
+def test_ui_filter_ascii(clean_ui, setup_ui):
+    ui.load_filter(setup_ui.filter)
+    ui.load_filter(setup_ui.filter, ignore=True)
+
+
+@requires_data
+def test_ui_add_model(clean_ui, setup_ui):
+    ui.add_model(UserModel)
+    ui.set_model('usermodel.user1')
+
+
+@requires_data
+def test_ui_set_full_model(clean_ui, setup_ui):
+    ui.load_psf('psf1', 'gauss2d.g1')
+    ui.set_full_model('psf1(gauss2d.g2)+const2d.c1')
+    ui.get_model()
+
+
+# Bug 12644
+@requires_data
+def test_ui_source_methods_with_full_model(clean_ui, setup_ui):
+
+    ui.load_data('full', setup_ui.ascii)
+    ui.set_full_model('full', 'powlaw1d.p1')
+
+    # Test Case 1
+    with pytest.raises(IdentifierErr) as exc:
         ui.get_source('full')
 
-        # Test Case 3
-        ui.load_data('not_full', self.ascii)
-        try:
-            ui.get_source('not_full')
-        except IdentifierErr as e:
-            self.assertEqual('source not_full has not been set, consider using set_source() or set_model()', str(e))
+    emsg = "Convolved model\n.*\n is set for dataset full. You should use get_model instead."
+    assert re.match(emsg, str(exc.value))
+
+    with pytest.raises(IdentifierErr) as exc:
+        ui.plot_source('full')
+
+    emsg = "Convolved model\n.*\n is set for dataset full. You should use plot_model instead."
+    assert re.match(emsg, str(exc.value))
+
+    # Test Case 2
+    ui.set_source('full', 'powlaw1d.p2')
+    ui.get_source('full')
+
+    # Test Case 3
+    ui.load_data('not_full', setup_ui.ascii)
+    with pytest.raises(IdentifierErr) as exc:
+        ui.get_source('not_full')
+
+    emsg = 'source not_full has not been set, consider using set_source() or set_model()'
+    assert emsg == str(exc.value)
 
 
-class test_psf_ui(SherpaTestCase):
-    models1d = ['gauss1d', 'delta1d', 'normgauss1d']
-    models2d = ['gauss2d', 'delta2d', 'normgauss2d']
-
-    def setUp(self):
-        self._old_logger_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-
-    def tearDown(self):
-        if hasattr(self, '_old_logger_level'):
-            logger.setLevel(self._old_logger_level)
-
-    def test_psf_model1d(self):
-        ui.dataspace1d(1, 10)
-        for model in self.models1d:
-            try:
-                ui.load_psf('psf1d', model + '.mdl')
-                ui.set_psf('psf1d')
-                mdl = ui.get_model_component('mdl')
-                self.assertTrue((numpy.array(mdl.get_center()) ==
-                                 numpy.array([4])).all())
-            except:
-                print(model)
-                raise
-
-    def test_psf_model2d(self):
-        ui.dataspace2d([216, 261])
-        for model in self.models2d:
-            try:
-                ui.load_psf('psf2d', model + '.mdl')
-                ui.set_psf('psf2d')
-                mdl = ui.get_model_component('mdl')
-                self.assertTrue((numpy.array(mdl.get_center()) ==
-                                 numpy.array([108, 130])).all())
-            except:
-                print(model)
-                raise
+@pytest.mark.parametrize('model', ['gauss1d', 'delta1d', 'normgauss1d'])
+def test_psf_model1d(model, clean_ui):
+    ui.dataspace1d(1, 10)
+    ui.load_psf('psf1d', model + '.mdl')
+    ui.set_psf('psf1d')
+    mdl = ui.get_model_component('mdl')
+    assert mdl.get_center() == (4.0, )
 
 
-@pytest.mark.usefixtures("clean_ui")
-def test_does_user_model_get_cleaned():
+@pytest.mark.parametrize('model', ['gauss2d', 'delta2d', 'normgauss2d'])
+def test_psf_model2d(model):
+    ui.dataspace2d([216, 261])
+    ui.load_psf('psf2d', model + '.mdl')
+    ui.set_psf('psf2d')
+    mdl = ui.get_model_component('mdl')
+    assert mdl.get_center() == (108.0, 130.0)
+
+
+def test_does_user_model_get_cleaned(clean_ui):
     """Do user models get removed from the session by clean?"""
 
     mname = "test_model"
@@ -308,8 +303,7 @@ def test_does_user_model_get_cleaned():
 
 # Test simple use of load_user_model and add_user_pars
 #
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model_create_pars_default():
+def test_user_model_create_pars_default(clean_ui):
 
     mname = "test_model"
     ui.load_user_model(um_line, mname)
@@ -325,8 +319,7 @@ def test_user_model_create_pars_default():
     assert par.max == pytest.approx(hugeval)
 
 
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model_create_pars_names():
+def test_user_model_create_pars_names(clean_ui):
 
     mname = "test_model"
     ui.load_user_model(um_line, mname)
@@ -359,8 +352,7 @@ def test_user_model_create_pars_names():
     assert p1.max == pytest.approx(hugeval)
 
 
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model_create_pars_full():
+def test_user_model_create_pars_full(clean_ui):
 
     mname = "test_model"
     ui.load_user_model(um_line, mname)
@@ -393,8 +385,7 @@ def test_user_model_create_pars_full():
 # diagnose and test out GitHub issue #609; the inability to change
 # parameter values for a user model using direct access
 #
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model_change_par():
+def test_user_model_change_par(clean_ui):
 
     mname = "test_model"
     ui.load_user_model(um_line, mname)
@@ -438,8 +429,7 @@ def test_user_model_change_par():
     ui.clean()
 
 
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model1d_eval_fail():
+def test_user_model1d_eval_fail(clean_ui):
     """This is expected to fail as the number of pars does not match."""
 
     mname = "test_model"
@@ -449,8 +439,7 @@ def test_user_model1d_eval_fail():
         mdl([2.3, 5.4, 8.7])
 
 
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model1d_eval():
+def test_user_model1d_eval(clean_ui):
     """Simple evaluation check for 1D case."""
 
     mname = "test_model"
@@ -464,7 +453,7 @@ def test_user_model1d_eval():
     mdl.slope = m
     mdl.intercept = c
 
-    x = numpy.asarray([2.3, 5.4, 8.7])
+    x = np.asarray([2.3, 5.4, 8.7])
     y = mdl(x)
 
     yexp = x * m + c
@@ -474,18 +463,17 @@ def test_user_model1d_eval():
     assert y == pytest.approx(yexp)
 
 
-@pytest.mark.usefixtures("clean_ui")
-def test_user_model1d_fit():
+def test_user_model1d_fit(clean_ui):
     """Check can use in a fit."""
 
     mname = "test_model"
     ui.load_user_model(um_line, mname)
     ui.add_user_pars(mname, ["slope", "intercept"],
-                     parvals = [1.0, 1.0])
+                     parvals=[1.0, 1.0])
 
     mdl = ui.get_model_component(mname)
 
-    x = numpy.asarray([-2.4, 2.3, 5.4, 8.7, 12.3])
+    x = np.asarray([-2.4, 2.3, 5.4, 8.7, 12.3])
 
     # Set up the data to be scattered around y = -0.2 x + 2.8
     # Pick the deltas so that they sum to 0 (except for central
@@ -494,7 +482,7 @@ def test_user_model1d_fit():
     slope = -0.2
     intercept = 2.8
 
-    dy = numpy.asarray([0.1, -0.2, 0.14, -0.1, 0.2])
+    dy = np.asarray([0.1, -0.2, 0.14, -0.1, 0.2])
     ydata = x * slope + intercept + dy
 
     ui.load_arrays(1, x, ydata)
@@ -533,11 +521,11 @@ class MyCacheTestModel(ArithmeticModel):
         A = par[0]
         mylambda = par[1]
         b = par[2]
-        fvec = A * np.exp( - mylambda * x ) + b
+        fvec = A * np.exp(- mylambda * x) + b
         if self.counter == 0:
-            assert True == self._use_caching
+            assert self._use_caching
         else:
-            assert False == self._use_caching
+            assert not self._use_caching
         self.counter += 1
         return fvec
 
