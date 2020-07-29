@@ -1503,8 +1503,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_data(id, data)
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def unpack_image(self, arg, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
         """Create an image data structure.
@@ -1617,8 +1615,6 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     # DOC-TODO: what does this return when given a PHA2 file?
     def unpack_pha(self, arg, use_errors=False):
         """Create a PHA data structure.
@@ -1671,8 +1667,6 @@ class Session(sherpa.ui.utils.Session):
         use_errors = sherpa.utils.bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors)
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     # DOC-TODO: what does this return when given a PHA2 file?
     def unpack_bkg(self, arg, use_errors=False):
         """Create a PHA data structure for a background data set.
@@ -1901,12 +1895,14 @@ class Session(sherpa.ui.utils.Session):
             info("One data set has been input: {}".format(ids[0]))
 
     def _get_pha_data(self, id):
+        """Ensure the dataset is a PHA"""
         data = self.get_data(id)
         if not isinstance(data, sherpa.astro.data.DataPHA):
             raise ArgumentErr('nopha', self._fix_id(id))
         return data
 
     def _get_img_data(self, id):
+        """Ensure the dataset is an image"""
         data = self.get_data(id)
         if not isinstance(data, sherpa.astro.data.DataIMG):
             raise ArgumentErr('noimg', self._fix_id(id))
@@ -1932,8 +1928,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_filter(self, id, filename=None, bkg_id=None, ignore=False,
                     ncols=2, *args, **kwargs):
         """Load the filter array from a file and add to a data set.
@@ -2012,8 +2006,6 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id, ignore=ignore)
 
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     # DOC-TODO: prob. needs a review as the existing ahelp documentation
     # talks about 2 cols, but experimentation suggests 1 col.
     def load_grouping(self, id, filename=None, bkg_id=None, *args, **kwargs):
@@ -2102,8 +2094,6 @@ class Session(sherpa.ui.utils.Session):
         self.set_grouping(id,
                           self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
         """Load the quality array from a file and add to a PHA data set.
 
@@ -4605,8 +4595,6 @@ class Session(sherpa.ui.utils.Session):
 
         sherpa.astro.io.write_pha(filename, d, ascii, clobber)
 
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the grouping scheme to a file.
 
@@ -4690,8 +4678,6 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the quality array to a file.
 
@@ -5007,8 +4993,6 @@ class Session(sherpa.ui.utils.Session):
                     except:
                         raise
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def pack_pha(self, id=None):
         """Convert a PHA data set into a file structure.
 
@@ -5037,8 +5021,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def pack_image(self, id=None):
         """Convert a data set into an image structure.
 
@@ -5062,8 +5044,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def pack_table(self, id=None):
         """Convert a data set into a table structure.
 
@@ -5366,8 +5346,6 @@ class Session(sherpa.ui.utils.Session):
         if data.units == 'channel':
             data._set_initial_quantity()
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def unpack_arf(self, arg):
         """Create an ARF data structure.
 
@@ -5422,8 +5400,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_arf(self, id, arg=None, resp_id=None, bkg_id=None):
         """Load an ARF from a file and add it to a PHA data set.
 
@@ -5553,8 +5529,6 @@ class Session(sherpa.ui.utils.Session):
         return self.get_arf(id, resp_id, bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_bkg_arf(self, id, arg=None):
         """Load an ARF from a file and add it to the background of a
         PHA data set.
@@ -5843,8 +5817,6 @@ class Session(sherpa.ui.utils.Session):
         if data.units == 'channel':
             data._set_initial_quantity()
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def unpack_rmf(self, arg):
         """Create a RMF data structure.
 
@@ -5899,8 +5871,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_rmf(self, id, arg=None, resp_id=None, bkg_id=None):
         """Load a RMF from a file and add it to a PHA data set.
 
@@ -6025,8 +5995,6 @@ class Session(sherpa.ui.utils.Session):
         return self.get_rmf(id, resp_id, bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_bkg_rmf(self, id, arg=None):
         """Load a RMF from a file and add it to the background of a
         PHA data set.
