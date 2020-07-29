@@ -8939,6 +8939,7 @@ class Session(sherpa.ui.utils.Session):
         get_model : Return the model expression for a data set.
         get_source : Return the source model expression for a data set.
         sherpa.astro.models.JDPileup : The ACIS pile up model.
+        list_pileup_model_ids : List of all the data sets with a pile up model.
         set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
 
         Examples
@@ -8964,8 +8965,9 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        set_pileup_model : Add a pile up model to a data set.
         get_pileup_model : Return the pile up model for a data set.
+        list_pileup_model_ids : List of all the data sets with a pile up model.
+        set_pileup_model : Add a pile up model to a data set.
 
         Examples
         --------
@@ -8977,6 +8979,25 @@ class Session(sherpa.ui.utils.Session):
         """
         id = self._fix_id(id)
         self._pileup_models.pop(id, None)
+
+    def list_pileup_model_ids(self):
+        """List of all the data sets with a pile up model.
+
+        Returns
+        -------
+        ids : list of int or str
+           The identifiers for all the data sets which have a pile up
+           model set by `set_pileup_model`.
+
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
+        set_pileup_model : Add a pile up model to a data set.
+
+        """
+        keys = list(self._pileup_models.keys())
+        return sorted(keys, key=str)
 
     # DOC-NOTE: should this be made a general function, since it
     # presumably does not care about pileup, just adds the
@@ -9004,6 +9025,7 @@ class Session(sherpa.ui.utils.Session):
         fit : Fit one or more data sets.
         get_pileup_model : Return the pile up model for a data set.
         sherpa.models.model.JDPileup : The ACIS pile up model.
+        list_pileup_model_ids : List of all the data sets with a pile up model.
         set_full_model : Define the convolved model expression for a data set.
         set_model : Set the source model expression for a data set.
 

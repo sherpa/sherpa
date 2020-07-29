@@ -667,3 +667,32 @@ def test_pileup_model(make_data_path, clean_astro_ui):
 
     stat2 = ui.calc_stat('pileup')
     assert stat2 == stat0
+
+
+def test_list_pileup_ids_empty(clean_astro_ui):
+    assert ui.list_pileup_model_ids() == []
+
+
+@pytest.mark.parametrize("id", [None, 2, "2"])
+def test_list_pileup_ids_single(id, clean_astro_ui):
+
+    # Note: do not need to set a source model
+    ui.load_arrays(id, [1, 2, 3], [1, 1, 1], ui.DataPHA)
+    ui.set_pileup_model(id, ui.jdpileup.jdp)
+
+    if id is None:
+        id = 1
+
+    assert ui.list_pileup_model_ids() == [id]
+
+
+def test_list_pileup_ids_multi(clean_astro_ui):
+
+    jdp = ui.create_model_component('jdpileup', "jdp")
+
+    for id in [1, "2"]:
+        ui.load_arrays(id, [1, 2, 3], [1, 1, 1], ui.DataPHA)
+        ui.set_pileup_model(id, jdp)
+
+    ans = ui.list_pileup_model_ids()
+    assert ans == [1, "2"]
