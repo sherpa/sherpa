@@ -1104,6 +1104,22 @@ class DataPHA(Data1D):
         self.background_ids = ids
 
     def get_background_scale(self):
+        """Return the correction factor for the background datasets.
+
+        Returns
+        -------
+        scale : None, number, or NumPy array
+            The scaling factor to correct the background data onto the
+            source data set. If there are no associated backgrounds
+            then None is returned.
+
+        Notes
+        -----
+        The corrections include BACKSCAL, AREASCAL, and exposure
+        corrections.
+
+        """
+
         if len(self.background_ids) == 0:
             return None
         return self.sum_background_data(lambda key, bkg: 1.)
