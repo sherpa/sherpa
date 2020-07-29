@@ -610,6 +610,8 @@ def test_pileup_model(make_data_path, clean_astro_ui):
     ui.notice(0.3, 7)
 
     ui.set_stat('chi2datavar')
+
+    # pick xswabs as it is unlikely to change with XSPEC
     ui.set_source('pileup', ui.xswabs.amdl * ui.powlaw1d.pl)
 
     # get close to the best fit, but don't need to fit
@@ -632,6 +634,14 @@ def test_pileup_model(make_data_path, clean_astro_ui):
     jdp.alpha = 0.95
     jdp.f = 0.91
 
+    # Check pileup is added to get_model
+    #
+    mlines = str(ui.get_model('pileup')).split('\n')
+    assert mlines[0] == 'apply_rmf(jdpileup.jdp((xswabs.amdl * powlaw1d.pl)))'
+    assert mlines[3].strip() == 'jdp.alpha    thawed         0.95            0            1'
+    assert mlines[5].strip() == 'jdp.f        thawed         0.91          0.9            1'
+    assert mlines[11].strip() == 'pl.gamma     thawed         1.97          -10           10'
+
     # Ensure that the statistic has got worse (technically
     # it coud get better, but not for this case).
     #
@@ -644,3 +654,16 @@ def test_pileup_model(make_data_path, clean_astro_ui):
     #
     assert stat0 == pytest.approx(35.99899827358692)
     assert stat1 == pytest.approx(36.58791181460404)
+
+    # Can we remove the pileup model?
+    #
+    ui.delete_pileup_model('pileup')
+
+    # Check pileup is not in get_model
+    #
+    mlines = str(ui.get_model('pileup')).split('\n')
+    assert mlines[0] == 'apply_rmf(apply_arf((38564.608926889 * (xswabs.amdl * powlaw1d.pl))))'
+    assert mlines[4].strip() == 'pl.gamma     thawed         1.97          -10           10'
+
+    stat2 = ui.calc_stat('pileup')
+    assert stat2 == stat0

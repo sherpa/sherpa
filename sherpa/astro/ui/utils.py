@@ -8934,6 +8934,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_pileup_model : Delete the pile up model for a data set.
         fit : Fit one or more data sets.
         get_model : Return the model expression for a data set.
         get_source : Return the source model expression for a data set.
@@ -8949,6 +8950,33 @@ class Session(sherpa.ui.utils.Session):
         """
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
+
+    def delete_pileup_model(self, id=None):
+        """Delete the pile up model for a data set.
+
+        Remove the pile up model applied to a source model.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        See Also
+        --------
+        set_pileup_model : Add a pile up model to a data set.
+        get_pileup_model : Return the pile up model for a data set.
+
+        Examples
+        --------
+
+        >>> delete_pileup_model()
+
+        >>> delete_pileup_model('core')
+
+        """
+        id = self._fix_id(id)
+        self._pileup_models.pop(id, None)
 
     # DOC-NOTE: should this be made a general function, since it
     # presumably does not care about pileup, just adds the
@@ -8972,6 +9000,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_pileup_model : Delete the pile up model for a data set.
         fit : Fit one or more data sets.
         get_pileup_model : Return the pile up model for a data set.
         sherpa.models.model.JDPileup : The ACIS pile up model.
