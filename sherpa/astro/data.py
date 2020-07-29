@@ -1096,8 +1096,15 @@ class DataPHA(Data1D):
             ids.remove(id)
         self.background_ids = ids
 
-    def get_background_scale(self):
+    def get_background_scale(self, group=True, filter=False):
         """Return the correction factor for the background datasets.
+
+        Parameters
+        ----------
+        group : bool, optional
+            Should the values be grouped to match the data?
+        filter : bool, optional
+            Should the values be filtered to match the data?
 
         Returns
         -------
@@ -1115,7 +1122,9 @@ class DataPHA(Data1D):
 
         if len(self.background_ids) == 0:
             return None
-        return self.sum_background_data(lambda key, bkg: 1.)
+
+        bscale = self.sum_background_data(lambda key, bkg: 1.)
+        return self._check_scale(bscale, group=group, filter=filter)
 
     def _check_scale(self, scale, group=True, filter=False):
         """Ensure the scale value is positive and filtered/grouped.
