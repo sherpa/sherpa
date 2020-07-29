@@ -209,16 +209,20 @@ def test_image_12578_set_coord_bad_coord(make_data_path, clean_astro_ui):
     assert okmsg in str(exc.value)
 
 
-@unittest.skip("TODO: failing test used to have a different name and " +
-               "was never executed")
-@pytest.mark.parametrize("model", ['beta1d', 'lorentz1d', 'normbeta1d'])
-def test_psf_model1d(model, clean_astro_ui):
+# DJB notes (2020/02/29) that these tests used to not be run,
+# because the lorentz1d model retrned 1 rather than 4. This
+# has now been included in the test so that we can check
+# the behavior if the PSF centering code is ever changed.
+#
+@pytest.mark.parametrize("model,center", [('beta1d', 4.0),
+                                          ('lorentz1d', 1.0),
+                                          ('normbeta1d', 4.0)])
+def test_psf_model1d(model, center, clean_astro_ui):
     ui.dataspace1d(1, 10)
     ui.load_psf('psf1d', model + '.mdl')
     ui.set_psf('psf1d')
     mdl = ui.get_model_component('mdl')
-    assert (numpy.array(mdl.get_center()) ==
-            numpy.array([4])).all()
+    assert mdl.get_center() == (center, )
 
 
 @pytest.mark.parametrize("model", ['beta2d', 'devaucouleurs2d', 'hubblereynolds', 'lorentz2d'])
