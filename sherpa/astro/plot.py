@@ -552,12 +552,21 @@ class FluxHistogram(ModelHistogram):
             vals = array2string(asarray(self.modelvals), separator=',',
                                 precision=4, suppress_small=False)
 
+        clip = self.clipped
+        if self.clipped is not None:
+            # Could convert to boolean, but it is surprising for
+            # anyone trying to access the clipped field
+            clip = array2string(asarray(self.clipped), separator=',',
+                                precision=4, suppress_small=False)
+
         flux = self.flux
         if self.flux is not None:
             flux = array2string(asarray(self.flux), separator=',',
                                 precision=4, suppress_small=False)
 
-        return '\n'.join(['modelvals = %s' % vals, 'flux = %s' % flux,
+        return '\n'.join(['modelvals = {}'.format(vals),
+                          'clipped = {}'.format(clip),
+                          'flux = {}'.format(flux),
                           ModelHistogram.__str__(self)])
 
     def prepare(self, fluxes, bins):
