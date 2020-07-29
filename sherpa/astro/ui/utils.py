@@ -8858,34 +8858,55 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
     def _add_convolution_models(self, id, data, model, is_source):
+
+        id = self._fix_id(id)
+
+        # Add any convolution components from the sherpa.ui layer
         model = \
             sherpa.ui.utils.Session._add_convolution_models(self, id, data,
                                                             model, is_source)
-        id = self._fix_id(id)
-        if (isinstance(data, sherpa.astro.data.DataPHA) and is_source):
-            if not data.subtracted:
-                bkg_srcs = self._background_sources.get(self._fix_id(id), {})
-                if len(bkg_srcs.keys()) != 0:
-                    model = (model +
-                             sherpa.astro.background.BackgroundSumModel
-                             (data, bkg_srcs))
 
-            pileup_model = self._pileup_models.get(self._fix_id(id))
-            if pileup_model is not None:
-                resp = \
-                    sherpa.astro.instrument.PileupResponse1D(
-                        data, pileup_model)
-                model = resp(model)
+        # If we don't need to deal with DataPHA issues we can return
+        if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
+            return model
 
-            elif len(data._responses) > 1:
-                resp = sherpa.astro.instrument.MultipleResponse1D(data)
-                model = resp(model)
+        if not data.subtracted:
+            bkg_srcs = self._background_sources.get(id, {})
+            if len(bkg_srcs.keys()) != 0:
+                model = (model +
+                         sherpa.astro.background.BackgroundSumModel
+                         (data, bkg_srcs))
 
-            else:
-                resp = sherpa.astro.instrument.Response1D(data)
-                model = resp(model)
+        resp = self._get_response(id, data)
+        return resp(model)
 
-        return model
+    def _get_response(self, id, pha):
+        """Calculate the response for the dataset.
+
+        Parameter
+        ---------
+        id : int or str
+            The identifier (this is required to be valid).
+        pha : sherpa.astro.data.DataPHA
+            The dataset
+
+        Returns
+        -------
+        response
+           The return value depends on whether an ARF, RMF, or pile up
+           model has been associated with the data set.
+
+        """
+
+        pileup_model = self._pileup_models.get(id)
+        if pileup_model is not None:
+            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
+        elif len(pha._responses) > 1:
+            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
+        else:
+            resp = sherpa.astro.instrument.Response1D(pha)
+
+        return resp
 
     def get_response(self, id=None, bkg_id=None):
         """Return the response information applied to a PHA data set.
@@ -8942,20 +8963,13 @@ class Session(sherpa.ui.utils.Session):
         >>> set_full_model(rsp(powlaw1d.pl) + const1d.bgnd)
 
         """
-        pha = self._get_pha_data(id)
+        id = self._fix_id(id)
         if bkg_id is not None:
             pha = self.get_bkg(id, bkg_id)
-        resp = None
-
-        pileup_model = self._pileup_models.get(self._fix_id(id))
-        if pileup_model is not None:
-            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
-        elif len(pha._responses) > 1:
-            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
         else:
-            resp = sherpa.astro.instrument.Response1D(pha)
+            pha = self._get_pha_data(id)
 
-        return resp
+        return self._get_response(id, pha)
 
     def get_pileup_model(self, id=None):
         """Return the pile up model for a data set.
