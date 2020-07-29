@@ -5542,6 +5542,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         list_data_ids : List the identifiers for the loaded data sets.
         list_model_components : List the names of all the model components.
+        list_psf_ids : List of all the data sets with a PSF.
         set_model : Set the source model expression for a data set.
 
         """
@@ -7142,6 +7143,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         delete_psf : Delete the PSF model for a data set.
         image_psf : Display the 2D PSF model for a data set in the image viewer.
+        list_psf_ids : List of all the data sets with a PSF.
         load_psf : Create a PSF model.
         plot_psf : Plot the 1D PSF model applied to a data set.
         set_psf : Add a PSF model to a data set.
@@ -7171,6 +7173,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        list_psf_ids : List of all the data sets with a PSF.
         load_psf : Create a PSF model.
         set_psf : Add a PSF model to a data set.
         get_psf : Return the PSF model defined for a data set.
@@ -7185,6 +7188,25 @@ class Session(NoNewAttributesAfterInit):
         """
         id = self._fix_id(id)
         self._psf.pop(id, None)
+
+    def list_psf_ids(self):
+        """List of all the data sets with a PSF.
+
+        Returns
+        -------
+        ids : list of int or str
+           The identifiers for all the data sets which have a PSF
+           model set by `set_psf`.
+
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
+        set_psf : Add a PSF model to a data set.
+
+        """
+        keys = list(self._psf.keys())
+        return sorted(keys, key=str)
 
     def _add_psf(self, id, data, model):
         id = self._fix_id(id)

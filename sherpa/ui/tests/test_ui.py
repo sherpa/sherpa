@@ -548,3 +548,31 @@ def test_cache():
     data = Data1D('tmp', x, y)
     fit = Fit(data, model, LeastSq())
     fit.fit(cache=False)
+
+
+def test_list_psf_ids_empty(clean_ui):
+    assert ui.list_psf_ids() == []
+
+
+@pytest.mark.parametrize("id", [None, 2, "2"])
+def test_list_psf_ids_single(id, clean_ui):
+    ui.dataspace1d(1, 10, id=id)
+    ui.load_psf('psf1d', 'gauss1d.mdl')
+    ui.set_psf(id, 'psf1d')
+
+    if id is None:
+        id = 1
+
+    assert ui.list_psf_ids() == [id]
+
+
+def test_list_psf_ids_multi(clean_ui):
+
+    ui.dataspace1d(1, 10)
+    ui.dataspace1d(1, 10, id="2")
+    ui.load_psf('psf1d', 'gauss1d.mdl')
+    ui.set_psf('psf1d')
+    ui.set_psf("2", 'psf1d')
+
+    ans = ui.list_psf_ids()
+    assert ans == [1, "2"]
