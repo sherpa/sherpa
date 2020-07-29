@@ -1135,7 +1135,7 @@ class DataPHA(Data1D):
         return scale
 
     def get_backscal(self, group=True, filter=False):
-        """Return the area scaling of the PHA data set.
+        """Return the background scaling of the PHA data set.
 
         Return the BACKSCAL setting [BSCAL]_ for the PHA data set.
 
@@ -1162,7 +1162,7 @@ class DataPHA(Data1D):
         to the total number of image pixels. The fact that there is no
         ironclad definition for this quantity does not matter so long
         as the value for a source dataset and its associated
-        background dataset are defined in the similar manner, because
+        background dataset are defined in the same manner, because
         only the ratio of source and background BACKSCAL values is
         used. It can be a scalar or an array.
 
@@ -1683,9 +1683,56 @@ class DataPHA(Data1D):
 
     def sum_background_data(self,
                             get_bdata_func=(lambda key, bkg: bkg.counts)):
+        """Sum up data, applying the background correction value.
+
+        Parameter
+        ---------
+        get_bdata_func : function, optional
+            What data should be used for each background dataset. The
+            function takes the background identifier and background
+            DataPHA object and returns the data to use. The default is
+            to use the counts array of the background dataset.
+
+        Returns
+        -------
+        value : scalar or NumPy array
+            The sum of the data, including any area, background, and
+            exposure-time corrections.
+
+        Notes
+        -----
+        For each associated background, the data is retrieved (via
+        the get_bdata_func parameter), and then
+
+          - divided by its BACKSCAL value (if set)
+          - divided by its AREASCAL value (if set)
+          - divided by its exposure time (if set)
+
+        The individual background components are then summed together,
+        and then multiplied by the source BACKSCAL (if set),
+        multiplied by the source AREASCAL (if set), and multiplied
+        by the source exposure time (if set). The final step is
+        to divide by the number of background files used.
+
+        Example
+        -------
+
+        Calculate the background counts, per channel, scaled to match
+        the source:
+
+        >>> bcounts = src.sum_background_data()
+
+        Calculate the scaling factor that you need to multiply the
+        background data to match the source data. In this case the
+        background data has been replaced by the value 1 (rather than
+        the per-channel values used with the default argument):
+
+        >>> bscale = src.sum_background_data(lambda k, d: 1)
+
+        """
+
         bdata_list = []
 
-        # for key, bkg in self._backgrounds.items():
         for key in self.background_ids:
             bkg = self.get_background(key)
             bdata = get_bdata_func(key, bkg)
@@ -1705,7 +1752,10 @@ class DataPHA(Data1D):
             bdata_list.append(bdata)
 
         nbkg = len(bdata_list)
-        assert (nbkg > 0)
+        if nbkg == 0:
+            # do not have a good id to use for the error message
+            raise DataErr('nobkg', self.name)
+
         if nbkg == 1:
             bkgsum = bdata_list[0]
         else:
