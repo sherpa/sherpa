@@ -52,7 +52,7 @@ evaluation:
    stored in the model itself. This can be useful when a model is to
    be embedded within another one, as shown in the
    :ref:`two-dimensional user model <example-usermodel-2d>`
-   example. 
+   example.
 
 .. _evaluation_data:
 
@@ -70,3 +70,17 @@ not a simple one-to-one relation, such as when analyzing
 astronomical X-ray spectral data with an associated response
 (i.e. a :term:`RMF` file), or
 :ref:`when using a PSF <convolution-psf2d-evaluate>`.
+
+.. _evaluation-reference-api:
+
+Reference/API
+=============
+
+This section describes some of the classes used to evaluate the
+models, in particular in supporting models evaluated against
+:py:class:`~sherpa.astro.data.DataPHA` objects.
+
+.. toctree::
+   :maxdepth: 2
+
+   astro_background
