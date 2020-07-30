@@ -18,10 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import pytest
 import os
 import sys
 import re
+import logging
+
+import pytest
 
 import numpy as np
 from numpy import VisibleDeprecationWarning
@@ -465,3 +467,16 @@ def reset_seed(request):
 
     yield
     np.random.seed()
+
+
+@pytest.fixture
+def hide_logging():
+    """Set Sherpa's logging to ERROR for the test.
+
+    """
+
+    logger = logging.getLogger('sherpa')
+    olvl = logger.getEffectiveLevel()
+    logger.setLevel(logging.ERROR)
+    yield
+    logger.setLevel(olvl)
