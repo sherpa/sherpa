@@ -1443,6 +1443,57 @@ class DataPHA(Data1D):
         bscale = self.sum_background_data(lambda key, bkg: 1.)
         return self._check_scale(bscale, group=group, filter=filter)
 
+    def _get_background_scales(self):
+        """Return the correction factors for the background datasets.
+
+        Returns
+        -------
+        scales : None or dict
+            The per-background scaling factors, indexed by the
+            background identifier, where each element can be a scalar
+            or array. If there are no associated backgrounds then None
+            is returned.
+
+        Notes
+        -----
+        The corrections include BACKSCAL, AREASCAL, and exposure
+        corrections.
+
+        """
+
+        nbkg = len(self.background_ids)
+        if nbkg == 0:
+            return None
+
+        def correct(obj):
+            """Correction factor for the object"""
+            ans = 1.0
+
+            if obj.backscal is not None:
+                ans *= self._check_scale(obj.backscal, group=False)
+
+            if obj.areascal is not None:
+                ans *= self._check_scale(obj.areascal, group=False)
+
+            if obj.exposure is not None:
+                ans *= self._check_scale(obj.exposure, group=False)
+
+            return ans
+
+        # what are the source correction factors
+        #
+        src = correct(self)
+
+        # calculate the factors for each background component
+        #
+        out = {}
+        for key in self.background_ids:
+
+            bkg = correct(self.get_background(key))
+            out[key] = src / bkg / nbkg
+
+        return out
+
     def _check_scale(self, scale, group=True, filter=False):
         """Ensure the scale value is positive and filtered/grouped.
 

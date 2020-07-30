@@ -172,7 +172,8 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     assert ui.list_model_components() == ['bpl', 'pl']
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((1234.5 * (powlaw1d.pl + 0.11363 * (powlaw1d.bpl)))))'
+    assert smdl.name.startswith('apply_rmf(apply_arf((1234.5 * (powlaw1d.pl + (0.11363')
+    assert smdl.name.endswith(' * powlaw1d.bpl)))))')
     assert ui.list_model_components() == ['bpl', 'pl']
 
     bmdl = ui.get_bkg_model(id)
@@ -239,6 +240,16 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     bmdl = ui.get_bkg_source(id)
     assert bmdl.name == 'powlaw1d.bpl'
 
+    # Now try the "model" model:
+    # - fail when only 1 background dataset has a model
+    #
+    with pytest.raises(ModelErr) as exc:
+        ui.get_model(id)
+
+    iid = 1 if id is None else id
+    estr = "background model 2 for data set {} has not been set".format(iid)
+    assert estr == str(exc.value)
+
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
 
@@ -252,7 +263,26 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
 
     smdl = ui.get_model(id)
 
-    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
+    # The string representation can depend on Python version, so break
+    # it up so we can check terms separately.
+    #
+    toks = smdl.name.split('(')
+    assert toks[0] == 'apply_rmf'
+    assert toks[1] == 'apply_arf'
+    assert toks[2] == ''
+    assert toks[3] == '100.0 * '
+    assert toks[4] == ''
+    assert toks[5] == 'powlaw1d.pl + '
+
+    x1 = '0.025 * powlaw1d.bpl)) + '
+    x2 = '0.005000000000000001 * polynom1d.bpl2)))))'
+
+    y1 = '0.005000000000000001 * polynom1d.bpl2)) + '
+    y2 = '0.025 * powlaw1d.bpl)))))'
+
+    assert toks[6] in [x1, y1]
+    assert toks[7] in [x2, y2]
+    assert len(toks) == 8
 
     assert ui.list_model_components() == ['bpl', 'bpl2', 'pl']
 
@@ -297,7 +327,7 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * powlaw1d.bpl)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100.0 * ((powlaw1d.pl + (0.025 * powlaw1d.bpl)) + (0.005000000000000001 * powlaw1d.bpl)))))'
 
     assert ui.list_model_components() == ['bpl', 'pl']
 
@@ -476,10 +506,8 @@ def test_pha1_instruments_missing(bid, clean_astro_ui):
 # Try and pick routines with different pathways through the code
 # to catch all cases.
 #
-@pytest.mark.parametrize("func,etype,emsg",
-                         [(ui.calc_stat, ModelErr, "background model 2 for data set 1 has not been set"),
-                          (ui.get_model_plot, DataErr, "background 2 has no associated model")])
-def test_evaluation_requires_models(func, etype, emsg, clean_astro_ui):
+@pytest.mark.parametrize("func", [ui.calc_stat, ui.get_model_plot])
+def test_evaluation_requires_models(func, clean_astro_ui):
     """We need a background model for each dataset"""
 
     exps = (100.0, 1000.0, 1500.0)
@@ -490,10 +518,10 @@ def test_evaluation_requires_models(func, etype, emsg, clean_astro_ui):
     ui.set_source(ui.box1d.smdl)
     ui.set_bkg_source(ui.box1d.bmdl)
 
-    with pytest.raises(etype) as exc:
+    with pytest.raises(ModelErr) as exc:
         func()
 
-    assert str(exc.value) == emsg
+    assert str(exc.value) == 'background model 2 for data set 1 has not been set'
 
 
 SCALING = np.ones(19)
@@ -629,10 +657,6 @@ def test_pha1_eval(clean_astro_ui):
     assert bplot2.y == pytest.approx(by2)
 
 
-# Fails from ui.get_model raising
-# TypeError: only size-1 arrays can be converted to Python scalars
-#
-@pytest.mark.xfail
 def test_pha1_eval_vector_show(clean_astro_ui):
     """Check we can show the source/bgnd models with vector scaling
 
@@ -714,10 +738,32 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
 
     assert ui.list_model_components() == ['bmdl1', 'smdl']
 
-    with pytest.raises(TypeError) as exc:
-        smdl = ui.get_model()
+    smdl = ui.get_model()
 
-    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+    src = '((apply_arf((100.0 * box1d.smdl))'
+    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
+    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
+
+    assert smdl.name == src
+
+    assert ui.list_model_components() == ['bmdl1', 'smdl']
+
+    # deconstruct the model to extract the components of the scale factor
+    #
+    scale = smdl.parts[1].parts[1]
+    assert isinstance(scale, ArithmeticConstantModel)
+
+    def r1(sval, bval1, bval2):
+        return sval / bval1
+
+    def r2(sval, bval1, bval2):
+        return sval / bval2
+
+    expected = r2(*exps) * r2(*bscales) * r2(*ascales) / 2
+    # expected = (r1(*exps) * r1(*bscales) * r1(*ascales) + \
+    #             r2(*exps) * r2(*bscales) * r2(*ascales)) / 2
+    # expected = (r1(*bscales) + r2(*bscales)) / 2
+    assert scale.val == pytest.approx(expected)
 
 
 def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
@@ -752,16 +798,41 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
 
     assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
 
-    with pytest.raises(TypeError) as exc:
-        smdl = ui.get_model('foo')
+    smdl = ui.get_model('foo')
 
-    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+    src = '((apply_arf((100.0 * box1d.smdl))'
+    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
+    src += ' + (apply_arf((100.0 * const1d.bmdl2)) * float64[19]))'
+
+    assert smdl.name == src
+
+    assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
+
+    # deconstruct the model to extract the components of the scale factor
+    #
+    lterm, rterm = smdl.parts
+
+    scale1 = lterm.parts[1].parts[1]
+    scale2 = rterm.parts[1]
+    assert isinstance(scale1, ArithmeticConstantModel)
+    assert isinstance(scale2, ArithmeticConstantModel)
+
+    def r1(sval, bval1, bval2):
+        return sval / bval1
+
+    def r2(sval, bval1, bval2):
+        return sval / bval2
+
+    expected1 = r1(*exps) * r1(*bscales) * r1(*ascales) / 2
+    expected2 = r2(*exps) * r2(*bscales) * r2(*ascales) / 2
+
+    # expected1 = r1(*bscales) / 2
+    # expected2 = r2(*bscales) / 2
+
+    assert scale1.val == pytest.approx(expected1)
+    assert scale2.val == pytest.approx(expected2)
 
 
-# Fails from ui.get_model_plot raising
-# TypeError: only size-1 arrays can be converted to Python scalars
-#
-@pytest.mark.xfail
 def test_pha1_eval_vector(clean_astro_ui):
     """Check we can evaluate the source/bgnd values and vector scaling
 
@@ -851,11 +922,16 @@ def test_pha1_eval_vector(clean_astro_ui):
     assert bplot1.y == pytest.approx(by1)
 
 
-def test_pha1_eval_vector_two(clean_astro_ui):
-    """Check we can evaluate the source/bgnd values and vector scaling
+@pytest.mark.parametrize('dofilter,expected',
+                         [(False, 15.059210673609382),
+                          (True, 4.344584636218002)])
+def test_pha1_eval_vector_two(dofilter, expected, clean_astro_ui):
+    """Compare statistic, with and without filtering.
 
     test_pha1_eval_vector but with two background components.
 
+    The statistic values are calculated from the code, and
+    so only act as a regression test.
     """
 
     scale1 = np.ones(19)
@@ -922,14 +998,10 @@ def test_pha1_eval_vector_two(clean_astro_ui):
 
     # Check the evaluation of the source (with instrument)
     #
-    with pytest.raises(TypeError) as exc:
-        splot = ui.get_model_plot()
-
-    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
-
+    splot = ui.get_model_plot()
     bplot1 = ui.get_bkg_model_plot()
 
-    # assert splot.title == 'Model'
+    assert splot.title == 'Model'
     assert bplot1.title == 'Model'
 
     # check the model evaluates correctly
@@ -955,7 +1027,10 @@ def test_pha1_eval_vector_two(clean_astro_ui):
     # sy += r1(*bscales) * 100 * by1 / 2
     # sy += r2(*bscales) * 100 * by1 / 2
 
-    # assert splot.y == pytest.approx(sy)
+    # Just check a problem I encountered during development
+    assert splot.y.ndim == 1
+
+    assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1 * 90)
 
     bplot2 = ui.get_bkg_model_plot(bkg_id=2)
@@ -969,16 +1044,18 @@ SCALING2 = np.ones(19)
 SCALING2[9:15] = 0.8
 
 
-@pytest.mark.parametrize('exps,bscales,ascales,dofilter',
-                         [((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), False),
-                          ((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), True),
-                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), False),
-                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True)
+@pytest.mark.parametrize('exps,bscales,ascales,dofilter,expected',
+                         [((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), False, 15.059210673609382),
+                          ((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), True, 4.344584636218002),
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), False, 53926037.03021918),
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True, 28776634.521582037)
                          ])
 def test_pha1_eval_vector_stat(exps, bscales, ascales,
-                               dofilter, clean_astro_ui):
+                               dofilter, expected, clean_astro_ui):
     """Compare statistic, with and without filtering.
 
+    The statistic values are calculated from the code, and
+    so only act as a regression test.
     """
 
     ui.set_data(setup_pha1(exps, bscales, ascales))
@@ -1025,10 +1102,8 @@ def test_pha1_eval_vector_stat(exps, bscales, ascales,
         ui.ignore(None, 0.79)
         ui.ignore(1.38, None)
 
-    with pytest.raises(TypeError) as exc:
-        ui.calc_stat()
-
-    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+    s = ui.calc_stat()
+    assert s == pytest.approx(expected)
 
 
 def test_jdpileup_no_warning(caplog, clean_astro_ui):
@@ -1051,7 +1126,7 @@ def test_jdpileup_no_warning(caplog, clean_astro_ui):
 
 
 def test_jdpileup_warning(caplog, clean_astro_ui):
-    """jdpileup model has error when vector scaling"""
+    """jdpileup model has warning when vector scaling"""
 
     exps = (100.0, 1000.0, 200)
     bscales = (0.01, 0.02, 0.05)
@@ -1065,12 +1140,13 @@ def test_jdpileup_warning(caplog, clean_astro_ui):
     ui.set_pileup_model('x', ui.jdpileup.jdp)
 
     with caplog.at_level(logging.INFO, logger='sherpa'):
-        with pytest.raises(TypeError) as exc:
-            ui.get_model('x')
+        ui.get_model('x')
 
-        assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
-
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    name, level, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.astro.background'
+    assert level == logging.WARNING
+    assert msg == 'model results for dataset x likely wrong: use of pileup model and scaling of bkg_id=2'
 
 
 @requires_data

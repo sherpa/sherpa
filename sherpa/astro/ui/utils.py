@@ -17,10 +17,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
 import logging
 import os
 import sys
 import warnings
+import operator
+
+from collections import defaultdict
+from functools import reduce
 
 import numpy
 
@@ -8815,6 +8820,22 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
     def _add_convolution_models(self, id, data, model, is_source):
+        """Add in "hidden" components to the model expression.
+
+        This includes PSF and pileup models and, for PHA data sets,
+        it adds in any background terms and the response function.
+
+        Notes
+        -----
+        If a background is added to a PHA data set using a vector,
+        rather than scalar, value, the code has to convert from
+        the model evaluation grid (e.g. keV or Angstroms) to the
+        scale array, which will be in channels. The only way to do
+        this is to apply the instrument response to the background
+        model separately from the source model, which will fail if
+        the instrument model is not linear, such as the jdpileup
+        model.
+        """
 
         id = self._fix_id(id)
 

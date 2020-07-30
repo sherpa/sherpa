@@ -21,57 +21,21 @@
 
 """
 
-from sherpa.models.model import CompositeModel, ArithmeticModel
-from sherpa.utils.err import DataErr
+from collections import defaultdict
+from functools import reduce
+import logging
+import operator
+
+import numpy as np
+
+from sherpa.astro.instrument import PileupResponse1D
+from sherpa.utils.err import ModelErr
 
 
-__all__ = ('BackgroundSumModel', 'add_response')
+__all__ = ('add_response', )
 
 
-class BackgroundSumModel(CompositeModel, ArithmeticModel):
-    """Combine multiple background datasets.
-
-    Define the model expression to be applied to the source
-    region accounting for the background models.
-
-    Parameters
-    ----------
-    srcdata : sherpa.astro.data.DataPHA instance
-        The source dataset.
-    bkgmodels : dict
-        The background components, where the key is the identifier
-        in this dataset and the value is the model. This dictionary
-        cannot be empty.
-
-    """
-
-    def __init__(self, srcdata, bkgmodels):
-        self.srcdata = srcdata
-        self.bkgmodels = bkgmodels
-        scale_factor = self.srcdata.sum_background_data(lambda key, bkg:1)
-        bkgnames = [model.name for model in bkgmodels.values()]
-        name = '%g * (' % scale_factor + ' + '.join(bkgnames) + ')'
-        CompositeModel.__init__(self, name, self.bkgmodels.values())
-
-    def calc(self, p, *args, **kwargs):
-        def eval_bkg_model(key, bkg):
-            bmodel = self.bkgmodels.get(key)
-            if bmodel is None:
-                raise DataErr('bkgmodel', key)
-            # FIXME: we're not using p here (and therefore assuming that the
-            # parameter values have already been updated to match the contents
-            # of p)
-            return bmodel(*args, **kwargs)
-
-        # Evaluate the background model for each dataset using the same
-        # grid and apply the background-to-source correction factors.
-        #
-        # This will only work if the scaling factors are scalars,
-        # since if there are any array elements then the models
-        # have been evaluated on the energy/wavelength grid,
-        # but the correction factors are defined in channel space.
-        #
-        return self.srcdata.sum_background_data(eval_bkg_model)
+warning = logging.getLogger(__name__).warning
 
 
 def add_response(session, id, data, model):
@@ -99,11 +63,73 @@ def add_response(session, id, data, model):
 
     """
 
-    if not data.subtracted:
-        bkg_srcs = session._background_sources.get(id, {})
-        if len(bkg_srcs.keys()) != 0:
-            model = (model +
-                     BackgroundSumModel(data, bkg_srcs))
-
     resp = session._get_response(id, data)
-    return resp(model)
+    if data.subtracted:
+        return resp(model)
+
+    bkg_srcs = session._background_sources.get(id, {})
+    if len(bkg_srcs) == 0:
+        return resp(model)
+
+    # What are the scaling factors for each background component?
+    # This gives the value you multply the background model to
+    # correct it to the source aperture, exposure time, and
+    # area scaling.
+    #
+    scales = data._get_background_scales()
+
+    # Check we have a background model for each background.
+    #
+    for key in scales.keys():
+        if key not in bkg_srcs:
+            raise ModelErr('nobkg', key, id)
+
+    # Group by the scale factor: numpy arrays do not hash,
+    # so we need a way to handle them. For now I am
+    # going to assume that each vector is unique (i.e.
+    # it is not worth combining components).
+    # later on th
+    # an issue here, in terms of memory or space?
+    # I am going to assume it isn't for now, otherwise we could
+    # go with something like a hash of the value as a key.
+    #
+    flattened = defaultdict(list)
+    vectors = []
+    for key, scale in scales.items():
+        if np.isscalar(scale):
+            flattened[scale].append(key)
+        else:
+            vectors.append((key, scale))
+
+    for scale in sorted(flattened.keys(), reverse=True):
+        ms = [bkg_srcs[k] for k in flattened[scale]]
+        combined = reduce(operator.add, ms)
+        model += scale * combined
+
+    model = resp(model)
+    if len(vectors) == 0:
+        return model
+
+    # Warn if a pileup model is being used. The error message here
+    # is terrible.
+    #
+    # Should this be a Python Warning rather than a logged message?
+    #
+    if isinstance(resp, PileupResponse1D):
+        bkg_ids = ",".join([str(k) for k, _ in vectors])
+        wmsg = "model results for dataset {} ".format(id) + \
+                "likely wrong: use of pileup model and scaling " + \
+                "of bkg_id={}".format(bkg_ids)
+
+        # warnings.warn(wmsg)
+        warning(wmsg)
+
+    for key, scale in vectors:
+        # NOTE: with a NumPy array we need to
+        # say mdl * array and not the other way
+        # around, otherwise the mdl will get
+        # broadcast to each element of array.
+        #
+        model += resp(bkg_srcs[key]) * scale
+
+    return model
