@@ -267,8 +267,6 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     ui.set_bkg_source(id, ui.powlaw1d.bpl)
     ui.set_bkg_source(id, ui.powlaw1d.bpl, bkg_id=2)
 
-    iid = 1 if id is None else id
-
     bmdl = ui.get_bkg_model(id, bkg_id=1)
     assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
 
