@@ -29,7 +29,8 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataARF, DataPHA
+from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -218,3 +219,160 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
 
     smdl = ui.get_model(id)
     assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
+
+
+def setup_pha1(exps, bscals, ascals):
+    """Create multiple PHA files (source + backgrounds).
+
+    There's an ARF (for each dataset) but no RMF.
+
+    """
+
+    channels = np.arange(1, 20, dtype=np.int16)
+    counts = np.ones(19, dtype=np.int16)
+
+    egrid = 0.5 + np.arange(1, 21) / 10
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    dset = None
+    for i, (exp, bscal, ascal) in enumerate(zip(exps, bscals, ascals)):
+        d = DataPHA('tst{}'.format(i),
+                    channel=channels, counts=counts,
+                    exposure=exp, backscal=bscal, areascal=ascal)
+
+        a = DataARF('arf{}'.format(i), elo, ehi,
+                    np.ones(19) * 100 - i * 10)
+        d.set_response(arf=a)
+
+        if dset is None:
+            dset = d
+        else:
+            dset.set_background(d, id=i)
+
+    dset.set_analysis('energy')
+    return dset
+
+
+def test_evaluation_requires_models(clean_astro_ui):
+    """We need a background model for each dataset"""
+
+    exps = (100.0, 1000.0, 1500.0)
+    bscales = (0.01, 0.05, 0.02)
+    ascales = (0.8, 0.4, 0.5)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl)
+
+    with pytest.raises(ModelErr) as exc:
+        ui.calc_stat()
+
+    assert "background model 2 for data set 1 has not been set" == str(exc.value)
+
+
+def test_pha1_eval(clean_astro_ui):
+    """Check we can evaluate the source/bgnd values.
+
+    A faked-up PHA file is created, with only ARFs,
+    and two background components.
+
+    """
+    exps = (100.0, 1000.0, 1500.0)
+    bscales = (0.01, 0.05, 0.02)
+    ascales = (0.8, 0.4, 0.5)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+    ui.set_bkg_source(ui.box1d.bmdl2, bkg_id=2)
+
+    smdl.ampl.max = 10
+    smdl.ampl = 10
+    smdl.xlow = 0.95
+    smdl.xhi = 1.59
+
+    bmdl1.ampl.max = 2
+    bmdl1.ampl = 2
+    bmdl1.xlow = 0.74
+    bmdl1.xhi = 1.71
+
+    bmdl2.ampl = 1
+    bmdl2.xlow = 1.85
+    bmdl2.xhi = 2.21
+
+    # Check the evaluation of the source (no instrument)
+    #
+    splot = ui.get_source_plot()
+    bplot1 = ui.get_bkg_source_plot()
+
+    assert splot.title == 'Source Model of tst0'
+    assert bplot1.title == 'Source Model of tst1'
+
+    # check the model evaluates correctly
+    #
+    # source: bins 3-9
+    # bgnd 1:      1-11
+    # bgnd 2:      12-16
+    #
+    sy = np.zeros(19)
+    sy[3] = 5
+    sy[4:9] = 10
+    sy[9] = 9
+
+    by1 = np.zeros(19)
+    by1[1] = 1.2
+    by1[2:11] = 2
+    by1[11] = 0.2
+
+    by2 = np.zeros(19)
+    by2[12] = 0.5
+    by2[13:16] = 1
+    by2[16] = 0.1
+
+    assert splot.y == pytest.approx(sy)
+    assert bplot1.y == pytest.approx(by1)
+
+    # only check bplot2 after finishing with bplot1 as the
+    # return value actually refers to the same object.
+    #
+    bplot2 = ui.get_bkg_source_plot(bkg_id=2)
+    assert bplot2.title == 'Source Model of tst2'
+    assert bplot2.y == pytest.approx(by2)
+
+    # Check the evaluation of the source (no instrument)
+    #
+    splot = ui.get_model_plot()
+    bplot1 = ui.get_bkg_model_plot()
+
+    assert splot.title == 'Model'
+    assert bplot1.title == 'Model'
+
+    # check the model evaluates correctly
+    # - backgrond is just multiplied by the arf
+    # - source needs to include the scaled background
+    #
+    sy *= 100
+    by1 *= 90
+    by2 *= 80
+
+    # need to correct by exposure time, backscal,
+    # area scaling, and to correct for the ARF used to
+    # calculate by, and then divide by the number of
+    # backgrounds.
+    #
+    def r1(sval, bval1, bval2):
+        return sval / bval1
+
+    def r2(sval, bval1, bval2):
+        return sval / bval2
+
+    sy += r1(*exps) * r1(*bscales) * r1(*ascales) * (100 / 90) * by1 / 2
+    sy += r2(*exps) * r2(*bscales) * r2(*ascales) * (100 / 80) * by2 / 2
+
+    assert splot.y == pytest.approx(sy)
+    assert bplot1.y == pytest.approx(by1)
+
+    bplot2 = ui.get_bkg_model_plot(bkg_id=2)
+    assert bplot2.title == 'Model'
+    assert bplot2.y == pytest.approx(by2)
