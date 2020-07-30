@@ -138,7 +138,7 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     assert bmdl.name == 'powlaw1d.bpl'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((38564.608926889 * (powlaw1d.pl + 0.134921 * (powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((38564.608926889 * (powlaw1d.pl + (0.134920643888096 * powlaw1d.bpl)))))'
 
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((38564.608926889 * powlaw1d.bpl)))'
@@ -203,8 +203,15 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     bmdl = ui.get_bkg_source(id)
     assert bmdl.name == 'powlaw1d.bpl'
 
-    smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl)))))'
+    # Now try the "model" model:
+    # - fail when only 1 background dataset has a model
+    #
+    with pytest.raises(ModelErr) as exc:
+        ui.get_model(id)
+
+    iid = 1 if id is None else id
+    estr = "background model 2 for data set {} has not been set".format(iid)
+    assert estr == str(exc.value)
 
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
@@ -218,7 +225,7 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     assert bmdl.name == 'apply_rmf(apply_arf((2000 * polynom1d.bpl2)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100 * ((powlaw1d.pl + (0.025 * powlaw1d.bpl)) + (0.005000000000000001 * polynom1d.bpl2)))))'
 
 
 def setup_pha1(exps, bscals, ascals):
@@ -376,3 +383,124 @@ def test_pha1_eval(clean_astro_ui):
     bplot2 = ui.get_bkg_model_plot(bkg_id=2)
     assert bplot2.title == 'Model'
     assert bplot2.y == pytest.approx(by2)
+
+
+def test_pha1_eval_vector_show(clean_astro_ui):
+    """Check we can show the source/bgnd models with vector scaling
+
+    test_pha1_eval does most of the work; this test is
+    to check when there's a vector, not scalar, for
+    scaling the background to match the source.
+
+    """
+
+    scale = np.ones(19)
+    scale[9:15] = 0.8
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.05 * scale)
+    ascales = (0.8, 0.4)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+
+    def r(sval, bval):
+        return sval / bval
+
+    bmdl = ui.get_bkg_model()
+    assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+
+    smdl = ui.get_model()
+
+    array = r(*exps) * r(*bscales) * r(*ascales)
+    src = '(apply_arf((100.0 * box1d.smdl))'
+    src += ' + (apply_arf((100.0 * box1d.bmdl1))'
+    src += ' * {}))'.format(array)
+
+    assert smdl.name == src
+
+
+def test_pha1_eval_vector(clean_astro_ui):
+    """Check we can evaluate the source/bgnd values and vector scaling
+
+    test_pha1_eval does most of the work; this test is
+    to check when there's a vector, not scalar, for
+    scaling the background to match the source.
+
+    """
+
+    scale = np.ones(19)
+    scale[9:15] = 0.8
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.05 * scale)
+    ascales = (0.8, 0.4)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+
+    smdl.ampl.max = 10
+    smdl.ampl = 10
+    smdl.xlow = 0.95
+    smdl.xhi = 1.59
+
+    bmdl1.ampl.max = 2
+    bmdl1.ampl = 2
+    bmdl1.xlow = 0.74
+    bmdl1.xhi = 1.71
+
+    # Check the evaluation of the source (no instrument)
+    #
+    splot = ui.get_source_plot()
+    bplot1 = ui.get_bkg_source_plot()
+
+    assert splot.title == 'Source Model of tst0'
+    assert bplot1.title == 'Source Model of tst1'
+
+    # check the model evaluates correctly
+    #
+    # source: bins 3-9
+    # bgnd 1:      1-11
+    #
+    sy = np.zeros(19)
+    sy[3] = 5
+    sy[4:9] = 10
+    sy[9] = 9
+
+    by1 = np.zeros(19)
+    by1[1] = 1.2
+    by1[2:11] = 2
+    by1[11] = 0.2
+
+    assert splot.y == pytest.approx(sy)
+    assert bplot1.y == pytest.approx(by1)
+
+    # Check the evaluation of the source (no instrument)
+    #
+    splot = ui.get_model_plot()
+    bplot1 = ui.get_bkg_model_plot()
+
+    assert splot.title == 'Model'
+    assert bplot1.title == 'Model'
+
+    # check the model evaluates correctly
+    # - backgrond is just multiplied by the arf
+    # - source needs to include the scaled background
+    #
+    sy *= 100
+    by1 *= 90
+
+    # need to correct by exposure time, backscal,
+    # area scaling, and to correct for the ARF used to
+    # calculate by, and then divide by the number of
+    # backgrounds.
+    #
+    def r(sval, bval):
+        return sval / bval
+
+    sy += r(*exps) * r(*bscales) * r(*ascales) * (100 / 90) * by1
+
+    assert splot.y == pytest.approx(sy)
+    assert bplot1.y == pytest.approx(by1)

@@ -17,10 +17,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
 import logging
 import os
 import sys
 import warnings
+import operator
+
+from collections import defaultdict
+from functools import reduce
 
 import numpy
 
@@ -8780,6 +8785,22 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
     def _add_convolution_models(self, id, data, model, is_source):
+        """Add in "hidden" components to the model expression.
+
+        This includes PSF and pileup models and, for PHA data sets,
+        it adds in any background terms and the response function.
+
+        Notes
+        -----
+        If a background is added to a PHA data set using a vector,
+        rather than scalar, value, the code has to convert from
+        the model evaluation grid (e.g. keV or Angstroms) to the
+        scale array, which will be in channels. The only way to do
+        this is to apply the instrument response to the background
+        model separately from the source model, which will fail if
+        the instrument model is not linear, such as the jdpileup
+        model.
+        """
 
         id = self._fix_id(id)
 
@@ -8792,15 +8813,62 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
             return model
 
-        if not data.subtracted:
-            bkg_srcs = self._background_sources.get(id, {})
-            if len(bkg_srcs.keys()) != 0:
-                model = (model +
-                         sherpa.astro.background.BackgroundSumModel
-                         (data, bkg_srcs))
-
         resp = self._get_response(id, data)
-        return resp(model)
+        if data.subtracted:
+            return resp(model)
+
+        bkg_srcs = self._background_sources.get(id, {})
+        if len(bkg_srcs) == 0:
+            return resp(model)
+
+        # What are the scaling factors for each background component?
+        # This gives the value you multply the background model to
+        # correct it to the source aperture, exposure time, and
+        # area scaling.
+        #
+        scales = data._get_background_scales()
+
+        # Check we have a background model for each background.
+        #
+        for key in scales.keys():
+            if key not in bkg_srcs:
+                raise ModelErr('nobkg', key, id)
+
+        # Group by the scale factor: numpy arrays do not hash,
+        # so we need a way to handle them. For now I am
+        # going to assume that each vector is unique (i.e.
+        # it is not worth combining components).
+        # later on th
+        # an issue here, in terms of memory or space?
+        # I am going to assume it isn't for now, otherwise we could
+        # go with something like a hash of the value as a key.
+        #
+        flattened = defaultdict(list)
+        vectors = []
+        for key, scale in scales.items():
+            if numpy.isscalar(scale):
+                flattened[scale].append(key)
+            else:
+                vectors.append((key, scale))
+
+        for scale in sorted(flattened.keys(), reverse=True):
+            ms = [bkg_srcs[k] for k in flattened[scale]]
+            combined = reduce(operator.add, ms)
+            model += scale * combined
+
+        model = resp(model)
+        if len(vectors) == 0:
+            return model
+
+        for key, scale in vectors:
+            # NOTE: with a NumPy array we need to
+            # say mdl * array and not the other way
+            # around, otherwise the mdl will get
+            # broadcast to each element of array.
+            #
+            model += resp(bkg_srcs[key]) * scale
+
+        return model
 
     def _get_response(self, id, pha):
         """Calculate the response for the dataset.
