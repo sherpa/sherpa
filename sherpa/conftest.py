@@ -18,10 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import pytest
 import os
 import sys
 import re
+import logging
+
+import pytest
 
 from numpy import VisibleDeprecationWarning
 
@@ -443,3 +445,16 @@ def restore_xspec_settings():
 
     # clean up after test
     xspec.set_xsstate(state)
+
+
+@pytest.fixture
+def hide_logging():
+    """Set Sherpa's logging to ERROR for the test.
+
+    """
+
+    logger = logging.getLogger('sherpa')
+    olvl = logger.getEffectiveLevel()
+    logger.setLevel(logging.ERROR)
+    yield
+    logger.setLevel(olvl)
