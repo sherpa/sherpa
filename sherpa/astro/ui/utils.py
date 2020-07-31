@@ -8860,6 +8860,20 @@ class Session(sherpa.ui.utils.Session):
         if len(vectors) == 0:
             return model
 
+        # Warn if a pileup model is being used. The error message here
+        # is terrible.
+        #
+        # Should this be a Python Warning rather than a logged message?
+        #
+        if isinstance(resp, sherpa.astro.instrument.PileupResponse1D):
+            bkg_ids = ",".join([str(k) for k, _ in vectors])
+            wmsg = "model results for dataset {} ".format(id) + \
+                    "likely wrong: use of pileup model and scaling " + \
+                    "of bkg_id={}".format(bkg_ids)
+
+            # warnings.warn(wmsg)
+            warning(wmsg)
+
         for key, scale in vectors:
             # NOTE: with a NumPy array we need to
             # say mdl * array and not the other way

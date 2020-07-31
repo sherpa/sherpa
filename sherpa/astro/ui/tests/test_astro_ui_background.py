@@ -24,6 +24,8 @@ attempts to provide a solid test base. There is likely to be
 overlap in the WSTAT tests, for one.
 """
 
+import logging
+
 import numpy as np
 
 import pytest
@@ -504,3 +506,46 @@ def test_pha1_eval_vector(clean_astro_ui):
 
     assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1)
+
+
+def test_jdpileup_no_warning(caplog, clean_astro_ui):
+    """jdpileup model has no warning when scalar scaling"""
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.05)
+    ascales = (0.8, 0.4)
+    ui.set_data('x', setup_pha1(exps, bscales, ascales))
+
+    ui.set_source('x', ui.box1d.smdl)
+    ui.set_bkg_source('x', ui.box1d.bmdl1)
+
+    ui.set_pileup_model('x', ui.jdpileup.jdp)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.get_model('x')
+
+    assert len(caplog.records) == 0
+
+
+def test_jdpileup_warning(caplog, clean_astro_ui):
+    """jdpileup model has warnng when vector scaling"""
+
+    exps = (100.0, 1000.0, 200)
+    bscales = (0.01, 0.02, 0.05)
+    ascales = (0.8, 0.8, 0.4 * np.ones(19))
+    ui.set_data('x', setup_pha1(exps, bscales, ascales))
+
+    ui.set_source('x', ui.box1d.smdl)
+    ui.set_bkg_source('x', ui.box1d.bmdl1)
+    ui.set_bkg_source('x', bmdl1, bkg_id=2)
+
+    ui.set_pileup_model('x', ui.jdpileup.jdp)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.get_model('x')
+
+    assert len(caplog.records) == 1
+    name, level, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.astro.ui.utils'
+    assert level == logging.WARNING
+    assert msg == 'model results for dataset x likely wrong: use of pileup model and scaling of bkg_id=2'
