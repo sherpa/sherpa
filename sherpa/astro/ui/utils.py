@@ -8882,19 +8882,26 @@ class Session(sherpa.ui.utils.Session):
             # need to deal with the namespace for these
             # models, and cleaning up after ourselves.
             #
-            # The current approach is to not use the global
-            # name table for models, which means we do not
-            # need to bother about name clashes or cleaning-up
-            # once the model has been disposed, but it is
-            # not user friendly.
+            # The tablemodel is set with x and y (rather than
+            # setting x to None in the load call) so that it
+            # can be filtered (although this doesn't seem to
+            # actually work).
             #
             npts = scale.size
             tbl = TableModel('scale{}_{}'.format(id, key))
             tbl.load(numpy.arange(1, npts + 1), scale)
             tbl.ampl.freeze()
 
-            # self._tbl_models.append(tbl)
-            # self._add_model_component(tbl)
+            # Add the model to the global symbol list, so
+            # users can interrogate it. The issues are:
+            #  - name clash: it's okay to overwrite models created
+            #    here, but what happens if a user has created a
+            #    model with this name?
+            #  - how do we clean up after the data goes out of
+            #    scope (or the background scaling changes)
+            #
+            self._tbl_models.append(tbl)
+            self._add_model_component(tbl)
 
             model += tbl * resp(bkg_srcs[key])
 
