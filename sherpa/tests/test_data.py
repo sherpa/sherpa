@@ -1017,9 +1017,9 @@ def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
 
 
 # https://github.com/sherpa/sherpa/issues/695
-@pytest.mark.parametrize('arrpos', [POS_X_ARRAY, POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
+@pytest.mark.parametrize('arrpos', [POS_X_ARRAY])
 @pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
-def test_data_indeperr_masked_numpyarray(arrpos, Dataclass):
+def test_data_indep_masked_numpyarray(arrpos, Dataclass):
     i = arrpos[Dataclass]
     args = list(INSTANCE_ARGS[Dataclass])
     mask = numpy.random.rand(*(args[i].shape)) > 0.5
@@ -1027,7 +1027,32 @@ def test_data_indeperr_masked_numpyarray(arrpos, Dataclass):
     with pytest.warns(UserWarning, match="for dependent variables only"):
         data = Dataclass(*args)
     assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
- 
+
+@pytest.mark.parametrize('arrpos', [POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_err_masked_numpyarray(arrpos, Dataclass):
+    i = arrpos[Dataclass]
+    args = list(INSTANCE_ARGS[Dataclass])
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args[i] = numpy.ma.array(args[i], mask=mask)
+    with pytest.warns(UserWarning, match="differs from the mask of the dependent array"):
+        data = Dataclass(*args)
+    assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
+
+
+@pytest.mark.parametrize('arrpos', [POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_deperr_masked_numpyarray(arrpos, Dataclass):
+    '''Error arrays can be masked as long as that mask is the same as the dependent array'''
+    i = arrpos[Dataclass]
+    j = POS_Y_ARRAY[Dataclass]
+    args = list(INSTANCE_ARGS[Dataclass])
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args[i] = numpy.ma.array(args[i], mask=mask)
+    args[j] = numpy.ma.array(args[j], mask=mask)
+    data = Dataclass(*args)
+    assert len(data.get_dep(filter=True)) == (~mask).sum()    
+    
 
 @pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
 def test_data_dep_masked_numpyarray(Dataclass):
