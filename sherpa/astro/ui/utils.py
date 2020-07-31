@@ -41,6 +41,7 @@ import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
+from sherpa.models.basic import TableModel
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -9646,7 +9647,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-        tablemodel = sherpa.models.TableModel(modelname)
+        tablemodel = TableModel(modelname)
         # interpolation method
         tablemodel.method = method
         tablemodel.filename = filename

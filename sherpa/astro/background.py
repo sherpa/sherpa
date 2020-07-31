@@ -29,6 +29,7 @@ import operator
 import numpy as np
 
 from sherpa.astro.instrument import PileupResponse1D
+from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import ModelErr
 
 
@@ -149,15 +150,29 @@ def add_response(session, id, data, model):
         # warnings.warn(wmsg)
         warning(wmsg)
 
-    # NOTE: with a NumPy array we need to
-    # say mdl * array and not the other way
-    # around, otherwise the mdl will get
-    # broadcast to each element of array.
+    # Combine the vector terms, grouping by the model. A trick here
+    # is that,to make the string version of the model be readable,
+    # we add a model to contain the scale values, using the
+    # ArithmeticConstantModel.
+    #
+    # Note that the model is given a name, to make it "easy" to
+    # read in the model expression, but this name is not registered
+    # anywhere. An alternative would be to use the default naming
+    # convention of the model, which will use 'float64[n]' as a label.
     #
     nvectors = len(scales_vector)
     for i, (mdl, scales) in enumerate(scales_vector.items(), 1):
 
+        # special case the single-value case
+        if nvectors == 1:
+            name = 'scale{}'.format(id)
+        else:
+            name = 'scale{}_{}'.format(id, i)
+
+        # We sum up the scale arrays for this model.
+        #
         scale = sum(scales)
-        model += resp(mdl) * scale
+        tbl = ArithmeticConstantModel(scale, name=name)
+        model += tbl * resp(mdl)
 
     return model

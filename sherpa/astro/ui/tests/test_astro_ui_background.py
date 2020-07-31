@@ -687,7 +687,7 @@ def test_pha1_eval_vector_show(clean_astro_ui):
     smdl = ui.get_model()
 
     src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
+    src += ' + (scale1 * apply_arf((100.0 * box1d.bmdl1))))'
 
     assert smdl.name == src
 
@@ -695,7 +695,7 @@ def test_pha1_eval_vector_show(clean_astro_ui):
 
     # deconstruct the model to extract the components of the scale factor
     #
-    scale = smdl.parts[1].parts[1]
+    scale = smdl.parts[1].parts[0]
     assert isinstance(scale, ArithmeticConstantModel)
 
     def r(sval, bval):
@@ -740,9 +740,8 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
 
     smdl = ui.get_model()
 
-    src = '((apply_arf((100.0 * box1d.smdl))'
-    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
-    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
+    src = '(apply_arf((100.0 * box1d.smdl))'
+    src += ' + (scale1 * apply_arf((100.0 * box1d.bmdl1))))'
 
     assert smdl.name == src
 
@@ -750,7 +749,7 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
 
     # deconstruct the model to extract the components of the scale factor
     #
-    scale = smdl.parts[1].parts[1]
+    scale = smdl.parts[1].parts[0]
     assert isinstance(scale, ArithmeticConstantModel)
 
     def r1(sval, bval1, bval2):
@@ -759,9 +758,8 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
     def r2(sval, bval1, bval2):
         return sval / bval2
 
-    expected = r2(*exps) * r2(*bscales) * r2(*ascales) / 2
-    # expected = (r1(*exps) * r1(*bscales) * r1(*ascales) + \
-    #             r2(*exps) * r2(*bscales) * r2(*ascales)) / 2
+    expected = (r1(*exps) * r1(*bscales) * r1(*ascales) + \
+                r2(*exps) * r2(*bscales) * r2(*ascales)) / 2
     # expected = (r1(*bscales) + r2(*bscales)) / 2
     assert scale.val == pytest.approx(expected)
 
@@ -801,8 +799,8 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
     smdl = ui.get_model('foo')
 
     src = '((apply_arf((100.0 * box1d.smdl))'
-    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
-    src += ' + (apply_arf((100.0 * const1d.bmdl2)) * float64[19]))'
+    src += ' + (scalefoo_1 * apply_arf((100.0 * box1d.bmdl1))))'
+    src += ' + (scalefoo_2 * apply_arf((100.0 * const1d.bmdl2))))'
 
     assert smdl.name == src
 
@@ -812,8 +810,8 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
     #
     lterm, rterm = smdl.parts
 
-    scale1 = lterm.parts[1].parts[1]
-    scale2 = rterm.parts[1]
+    scale1 = lterm.parts[1].parts[0]
+    scale2 = rterm.parts[0]
     assert isinstance(scale1, ArithmeticConstantModel)
     assert isinstance(scale2, ArithmeticConstantModel)
 
