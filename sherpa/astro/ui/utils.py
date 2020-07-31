@@ -41,6 +41,7 @@ import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
+from sherpa.models.basic import TableModel
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -8875,12 +8876,27 @@ class Session(sherpa.ui.utils.Session):
             warning(wmsg)
 
         for key, scale in vectors:
-            # NOTE: with a NumPy array we need to
-            # say mdl * array and not the other way
-            # around, otherwise the mdl will get
-            # broadcast to each element of array.
+
+            # Use a tablemodel to contain the array values:
+            # this makes the string output nicer, but we
+            # need to deal with the namespace for these
+            # models, and cleaning up after ourselves.
             #
-            model += resp(bkg_srcs[key]) * scale
+            # The current approach is to not use the global
+            # name table for models, which means we do not
+            # need to bother about name clashes or cleaning-up
+            # once the model has been disposed, but it is
+            # not user friendly.
+            #
+            npts = scale.size
+            tbl = TableModel('scale{}_{}'.format(id, key))
+            tbl.load(numpy.arange(1, npts + 1), scale)
+            tbl.ampl.freeze()
+
+            # self._tbl_models.append(tbl)
+            # self._add_model_component(tbl)
+
+            model += tbl * resp(bkg_srcs[key])
 
         return model
 
@@ -9634,7 +9650,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-        tablemodel = sherpa.models.TableModel(modelname)
+        tablemodel = TableModel(modelname)
         # interpolation method
         tablemodel.method = method
         tablemodel.filename = filename

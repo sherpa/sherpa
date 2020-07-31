@@ -415,10 +415,9 @@ def test_pha1_eval_vector_show(clean_astro_ui):
 
     smdl = ui.get_model()
 
-    array = r(*exps) * r(*bscales) * r(*ascales)
+    # array = r(*exps) * r(*bscales) * r(*ascales)
     src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (apply_arf((100.0 * box1d.bmdl1))'
-    src += ' * {}))'.format(array)
+    src += ' + (scale1_1 * apply_arf((100.0 * box1d.bmdl1))))'
 
     assert smdl.name == src
 
