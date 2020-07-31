@@ -44,9 +44,9 @@ def _check(array):
 
     if hasattr(array, "shape"):
         if len(array.shape) != 1:
-            raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {})".format(array))
+            raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {}?)".format(array))
     else:
-        warnings.warn("Converting array {} to numpy array".format(array))
+        warnings.warn("Converting array {} to numpy array.".format(array))
         array = numpy.asanyarray(array)
         return _check(array)
     return array
@@ -54,8 +54,9 @@ def _check(array):
 
 def _check_nomask(array):
     if hasattr(array, 'mask'):
-        warnings.warn('Input array {} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ingored and values `behind the mask` are used.'.format(array))
+        warnings.warn('Input array {} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.'.format(array))
     return array
+
 
 def _check_dep(array):
     if not hasattr(array, 'mask'):
@@ -68,6 +69,15 @@ def _check_dep(array):
         else:
             warnings.warn('Format of mask for array {} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.'.format(array))
             return _check(array), True
+
+
+def _check_err(array, masktemplate):
+    '''Accept array without mask or with a mask that matches the template'''
+    if ((hasattr(array, 'mask') and not hasattr(masktemplate, 'mask')) or
+        (hasattr(array, 'mask') and not numpy.all(array.mask == masktemplate.mask))):
+        warnings.warn('The mask of {} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.'.format(array))
+    return array
+        
 
 
 class DataSpace1D(EvaluationSpace1D):
@@ -513,8 +523,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
-        self.staterror = _check_nomask(staterror)
-        self.syserror = _check_nomask(syserror)
+        self.staterror = _check_err(staterror, y)
+        self.syserror = _check_err(syserror, y)
         NoNewAttributesAfterInit.__init__(self)
 
     def _init_data_space(self, filter, *data):
