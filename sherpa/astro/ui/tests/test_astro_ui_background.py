@@ -30,7 +30,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
-from sherpa.utils.err import ModelErr
+from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -254,7 +254,13 @@ def setup_pha1(exps, bscals, ascals):
     return dset
 
 
-def test_evaluation_requires_models(clean_astro_ui):
+# Try and pick routines with different pathways through the code
+# to catch all cases.
+#
+@pytest.mark.parametrize("func,etype,emsg",
+                         [(ui.calc_stat, ModelErr, "background model 2 for data set 1 has not been set"),
+                          (ui.get_model_plot, DataErr, "background 2 has no associated model")])
+def test_evaluation_requires_models(func, etype, emsg, clean_astro_ui):
     """We need a background model for each dataset"""
 
     exps = (100.0, 1000.0, 1500.0)
@@ -265,10 +271,36 @@ def test_evaluation_requires_models(clean_astro_ui):
     ui.set_source(ui.box1d.smdl)
     ui.set_bkg_source(ui.box1d.bmdl)
 
-    with pytest.raises(ModelErr) as exc:
-        ui.calc_stat()
+    with pytest.raises(etype) as exc:
+        func()
 
-    assert "background model 2 for data set 1 has not been set" == str(exc.value)
+    assert str(exc.value) == emsg
+
+
+SCALING = np.ones(19)
+SCALING[2:5] = 0.8
+SCALING[15] = 0.7
+
+@pytest.mark.parametrize("exps,bscales,ascales,result",
+                         [((100, 1000), (0.01, 0.05), (0.4, 0.5),
+                           (100 * 0.01 * 0.4) / (1000 * 0.05 * 0.5)),
+                          ((100, 1000, 1500), (0.01, 0.05, 0.04), (0.2, 0.5, 0.4),
+                           0.5 * (100 * 0.01 * 0.2) *
+                           (1 / (1000 * 0.05 * 0.5) + 1 / (1500 * 0.04 * 0.4))),
+                          ((100, 1000), (0.01, 0.05 * SCALING), (0.4, 0.5),
+                           (100 * 0.01 * 0.4) / (1000 * 0.05 * SCALING * 0.5)),
+                          ((100, 1000, 1500), (0.01, 0.05 * SCALING, 0.04), (0.4, 0.5, 0.6 * SCALING),
+                           0.5 * (100 * 0.01 * 0.4) *
+                           (1 / (1000 * 0.05 * SCALING * 0.5) +
+                            1 / (1500 * 0.04 * 0.6 * SCALING))),
+                         ])
+@pytest.mark.parametrize("id", [None, "x"])
+def test_pha1_get_bkg_scale(id, exps, bscales, ascales, result, clean_astro_ui):
+    """Check we can calculate the scaling factor"""
+
+    ui.set_data(id, setup_pha1(exps, bscales, ascales))
+    bscal = ui.get_bkg_scale(id)
+    assert bscal == pytest.approx(result)
 
 
 def test_pha1_eval(clean_astro_ui):
@@ -376,3 +408,69 @@ def test_pha1_eval(clean_astro_ui):
     bplot2 = ui.get_bkg_model_plot(bkg_id=2)
     assert bplot2.title == 'Model'
     assert bplot2.y == pytest.approx(by2)
+
+
+# The calc_stat call fails because of
+# TypeError: only size-1 arrays can be converted to Python scalars
+#
+# The current expected stats are "best guess" (based on developoing
+# the code) and may need to be adjusted once the code is fixed.
+#
+@pytest.mark.xfail
+@pytest.mark.parametrize('dofilter,expected',
+                         [(False, 15.059210673609382),
+                          (True, 2.6057323845799996)])
+def test_pha1_eval_vector_stat(dofilter, expected, clean_astro_ui):
+    """Compare statistic, with and without filtering.
+
+    The statistic values are calculated from the code, and
+    so only act as a regression test.
+    """
+
+    scale = np.ones(19)
+    scale[9:15] = 0.8
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.05 * scale)
+    ascales = (0.8, 0.4)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    # change counts to reduce the statistic difference
+    #
+    y = np.zeros(19, dtype=np.int16)
+    y[1] = 4
+    y[2] = 10
+    y[3] = 507
+    y[4:9] = 1007
+    y[9] = 910
+    y[10] = 11
+    y[11] = 2
+    ui.set_dep(y * 8)
+
+    y = np.zeros(19, dtype=np.int16)
+    y[1] = 110
+    y[2:11] = 181
+    y[11] = 17
+    ui.set_dep(y * 40, bkg_id=1)
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+
+    smdl.ampl.max = 10
+    smdl.ampl = 10
+    smdl.xlow = 0.95
+    smdl.xhi = 1.59
+
+    bmdl1.ampl.max = 2
+    bmdl1.ampl = 2
+    bmdl1.xlow = 0.74
+    bmdl1.xhi = 1.71
+
+    ui.set_stat('chi2datavar')
+
+    if dofilter:
+        ui.ignore(None, 0.79)
+        ui.ignore(1.38, None)
+
+    s = ui.calc_stat()
+    assert s == pytest.approx(expected)
