@@ -37,6 +37,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 import sherpa.astro.all
+from sherpa.astro.background import ScaleArray
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
@@ -8880,17 +8881,13 @@ class Session(sherpa.ui.utils.Session):
             # Use a tablemodel to contain the array values:
             # this makes the string output nicer, but we
             # need to deal with the namespace for these
-            # models, and cleaning up after ourselves.
+            # models, and cleaning up after ourselves. We actually
+            # use a specialized model class, rather than a tablemodel,
+            # since it has to just return the full data (in
+            # the same way the RSP models do).
             #
-            # The tablemodel is set with x and y (rather than
-            # setting x to None in the load call) so that it
-            # can be filtered (although this doesn't seem to
-            # actually work).
-            #
-            npts = scale.size
-            tbl = TableModel('scale{}_{}'.format(id, key))
-            tbl.load(numpy.arange(1, npts + 1), scale)
-            tbl.ampl.freeze()
+            tbl = ScaleArray('scale{}_{}'.format(id, key))
+            tbl.y = scale
 
             # Add the model to the global symbol list, so
             # users can interrogate it. The issues are:
@@ -8900,7 +8897,6 @@ class Session(sherpa.ui.utils.Session):
             #  - how do we clean up after the data goes out of
             #    scope (or the background scaling changes)
             #
-            self._tbl_models.append(tbl)
             self._add_model_component(tbl)
 
             model += tbl * resp(bkg_srcs[key])

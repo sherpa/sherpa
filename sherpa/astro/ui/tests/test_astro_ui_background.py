@@ -462,7 +462,7 @@ def test_pha1_eval_vector_show(clean_astro_ui):
 
     # array = r(*exps) * r(*bscales) * r(*ascales)
     src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (tablemodel.scale1_1 * apply_arf((100.0 * box1d.bmdl1))))'
+    src += ' + (scalearray.scale1_1 * apply_arf((100.0 * box1d.bmdl1))))'
 
     assert smdl.name == src
 
@@ -556,8 +556,7 @@ def test_pha1_eval_vector(clean_astro_ui):
 
 @pytest.mark.parametrize('dofilter,expected',
                          [(False, 15.059210673609382),
-                          pytest.param(True, 2.6057323845799996,
-                                       marks=pytest.mark.xfail)])
+                          (True, 4.34458466)])
 def test_pha1_eval_vector_stat(dofilter, expected, clean_astro_ui):
     """Compare statistic, with and without filtering.
 
