@@ -26,14 +26,14 @@ import sys
 import os
 import inspect
 import pydoc
+
 import numpy
+
 import sherpa.all
+from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, export_method
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, IOErr, ModelErr, SessionErr
-
-# There are three "raise AttributeErr(..)" lines below which have been changed
-# to the Python AttributeError class, as Sherpa has no AttributeErr class.
 
 from sherpa import get_config
 
@@ -1261,6 +1261,10 @@ class Session(NoNewAttributesAfterInit):
 
     @staticmethod
     def _valid_id(id):
+        """Is the identifier valid for Sherpa?
+
+        This does not treat None as a valid identifier.
+        """
         return (_is_integer(id) or isinstance(id, string_types))
 
     def _fix_id(self, id):
@@ -5601,13 +5605,24 @@ class Session(NoNewAttributesAfterInit):
         return (model, is_source)
 
     def _add_convolution_models(self, id, data, model, is_source):
+        """Add in "hidden" components to the model expression.
 
-        [tbl.fold(data) for tbl in self._tbl_models if tbl in model]
+        This handles PSF and table models (ensuring that the
+        model is folded on the dataset and adding the response
+        if necessary).
+        """
+
+        def fold(mdls):
+            for mdl in mdls:
+                if mdl in model:
+                    mdl.fold(data)
+
+        fold(self._tbl_models)
 
         if is_source:
             model = self._add_psf(id, data, model)
         else:
-            [psf.fold(data) for psf in self._psf_models if psf in model]
+            fold(self._psf_models)
 
         return model
 
@@ -6418,7 +6433,7 @@ class Session(NoNewAttributesAfterInit):
             if len(tcols) == 1:
                 raise sherpa.utils.err.IOErr('onecolneedtwo', filename)
             elif len(tcols) == 2:
-                tm = sherpa.models.TableModel(filename)
+                tm = TableModel(filename)
                 tm.method = method  # interpolation method
                 tm.load(*tcols)
                 tm.ampl.freeze()
@@ -6548,7 +6563,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
         """
-        tablemodel = sherpa.models.TableModel(modelname)
+        tablemodel = TableModel(modelname)
         # interpolation method
         tablemodel.method = method
         tablemodel.filename = filename
