@@ -54,7 +54,7 @@ def _check(array):
 
 def _check_nomask(array):
     if hasattr(array, 'mask'):
-        warnings.warn('Dropping mask attribute for array {}. Masks are supported for dependent variables only.'.format(array))
+        warnings.warn('Input array {} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ingored and values `behind the mask` are used.'.format(array))
     return array
 
 def _check_dep(array):
@@ -66,7 +66,7 @@ def _check_dep(array):
             return _check(array), ~array.mask
         # We don't know what the mask convention is
         else:
-            warnings.warn('Dropping mask for array {}. Set .mask attribute manually or use "set_filter" function.'.format(array))
+            warnings.warn('Format of mask for array {} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.'.format(array))
             return _check(array), True
 
 
@@ -399,11 +399,13 @@ class Filter():
     def mask(self, val):
         if (val is True) or (val is False):
             self._mask = val
-        # if val is of type np.bool_ and True, it was failed the previous test because
+        # if val is of type np.bool_ and True, it failed the previous test because
         # "is True" compares with Python "True" singelton.
         # Yet, we do not want to allow arbitrary values that evaluate as True.
-        elif (val is numpy.ma.nomask) or (numpy.isscalar(val) and val and isinstance(val, numpy.bool_)):
+        elif val is numpy.ma.nomask:
             self._mask = True
+        elif numpy.isscalar(val) and isinstance(val, numpy.bool_):
+            self._mask = bool(val)
         elif (val is None) or numpy.isscalar(val):
             raise DataErr('ismask')
         else:
@@ -475,13 +477,20 @@ class Data(NoNewAttributesAfterInit, BaseData):
     Data class for generic, N-Dimensional data sets, where N depends on the number of independent axes passed during
     initialization.
 
-    A data class is the collection of a data space and a number of data array for the dependent variable and
+    A data class is the collection of a data space and a number of data arrays for the dependent variable and
     associated errors.
 
     This class can be extended by classes definining data sets of specific dimensionality. Extending classes should
     override the `_init_data_space` method.
 
-    This classe provides most of the infrastructure for extending classes for free.
+    This class provides most of the infrastructure for extending classes for free.
+
+    Data classes contain a ``mask`` attribute, which can be used ignore certain values in the array
+    when fitting or plotting that data. The convention in Sherpa is that ``True`` marks a values as
+    *valid* and ``False`` as *invalid* (note that this is opposite to the numpy convention). When a `Data`
+    instance is initialized with a dependent array that has a ``mask`` attribute (e.g. numpy masked array),
+    it will attempt to convert that mask to the Sherpa convention and raise a warning otherwise. In any case,
+    the user can set ``data.mask`` after initialization if that conversion does not yield the expected result.
     """
     _fields = ("name", "indep", "dep", "staterror", "syserror")
 
@@ -492,10 +501,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
         name : basestring
             name of this dataset
         indep: tuple of array_like
-            the tuple of independent arrays. If this is an numpy masked array,
-            the mask will used.
+            the tuple of independent arrays.
         y : array_like
-            the values of the dependent observable
+            The values of the dependent observable. If this is a numpy masked array,
+            the mask will used to initialize a mask.
         staterror : array_like
             the statistical error associated with the data
         syserror : array_like
