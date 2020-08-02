@@ -277,6 +277,43 @@ def setup_pha1(exps, bscals, ascals):
 
 @pytest.mark.parametrize("exps,bscales,ascales,results",
                          [((100, 200), (2, 4), (0.5, 0.1),
+                           [(100 * 2 * 1) / (200 * 4 * 1)]),
+                          ((100, 200, 400), (2, 4, 0.5), (0.5, 0.1, 0.8),
+                           [0.5 * (100 * 2 * 1) / (200 * 4 * 1),
+                            0.5 * (100 * 2 * 1) / (400 * 0.5 * 1)]),
+                          ((100, 200, 400),
+                           (2, 4 * np.ones(19) * 0.8, 0.5 * np.ones(19) * 1.1),
+                           (0.5, 0.1, 0.8),
+                           [0.5 * (100 * 2 * 1) / (200 * 4 * np.ones(19) * 0.8 * 1),
+                            0.5 * (100 * 2 * 1) / (400 * 0.5 * np.ones(19) * 1.1 * 1)]),
+                          ])
+@pytest.mark.parametrize("id", [None, 1, "bgnd"])
+def test_pha1_subtract(id, exps, bscales, ascales, results, clean_astro_ui, hide_logging):
+    """Check we can subtract the background.
+
+    NOTE: the correction factor does NOT include the
+          areascal correction - is this a bug?
+
+    """
+
+    ui.set_data(id, setup_pha1(exps, bscales, ascales))
+
+    sdata = ui.get_dep(id)
+    expected = np.zeros(19)
+    for i, r in enumerate(results, 1):
+        expected += r * ui.get_dep(id, bkg_id=i)
+
+    expected = sdata - expected
+
+    ui.subtract(id)
+    data = ui.get_dep(id)
+
+    assert (data < sdata).all()  # this just checks the subtraction does subtract
+    assert data == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("exps,bscales,ascales,results",
+                         [((100, 200), (2, 4), (0.5, 0.1),
                            [(100 * 2 * 0.5) / (200 * 4 * 0.1)]),
                           ((100, 200, 400), (2, 4, 0.5), (0.5, 0.1, 0.8),
                            [0.5 * (100 * 2 * 0.5) / (200 * 4 * 0.1),
