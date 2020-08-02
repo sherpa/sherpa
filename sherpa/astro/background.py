@@ -83,7 +83,7 @@ def add_response(session, id, data, model):
     #
     #   resp(model + sum (scale_i * bgnd_i))        [1]
     #
-    # but if any are arrays then we have apply the scale factor
+    # but if any are arrays then we have to apply the scale factor
     # after applying the response, that is
     #
     #   resp(model) + sum(scale_i * resp(bgnd_i))   [2]
@@ -106,7 +106,6 @@ def add_response(session, id, data, model):
     # Identify the scalar and vector scale values for each
     # background dataset, and combine using the model as a key.
     #
-    scales = data._get_background_scales()
     scales_scalar = defaultdict(list)
     scales_vector = defaultdict(list)
     for bkg_id in data.background_ids:
@@ -115,7 +114,7 @@ def add_response(session, id, data, model):
         except KeyError:
             raise ModelErr('nobkg', bkg_id, id)
 
-        scale = scales[bkg_id]  # assume it exists
+        scale = data.get_background_scale(bkg_id, group=False)
 
         if np.isscalar(scale):
             store = scales_scalar
