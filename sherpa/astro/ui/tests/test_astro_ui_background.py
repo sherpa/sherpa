@@ -223,6 +223,53 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
 
 
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("id", [None, 1, "bgnd"])
+def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, hide_logging):
+    """The common use case is for the same background model
+
+    See test_setup_pha1_file_models_two
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(id, infile)
+
+    sdata = ui.get_data(id)
+    sdata.exposure = 100
+    sdata.get_arf().exposure = 150
+    sdata.backscal = 0.1
+    sdata.areascal = 0.8
+
+    bdata1 = ui.get_bkg(id, bkg_id=1)
+    bdata1.exposure = 1000
+    bdata1.backscal = 0.4
+    bdata1.areascal = 0.4
+
+    bdata2 = ui.unpack_pha(make_data_path('3c273_bg.pi'))
+    bdata2.exposure = 2000
+    bdata2.backscal = 0.8
+    bdata2.areascal = 0.5
+    ui.set_bkg(id, bdata2, bkg_id=2)
+
+    ui.set_source(id, ui.powlaw1d.pl)
+    ui.set_bkg_source(id, ui.powlaw1d.bpl)
+    ui.set_bkg_source(id, ui.powlaw1d.bpl, bkg_id=2)
+
+    iid = 1 if id is None else id
+
+    bmdl = ui.get_bkg_model(id, bkg_id=1)
+    assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
+
+    bmdl = ui.get_bkg_model(id, bkg_id=2)
+    assert bmdl.name == 'apply_rmf(apply_arf((2000 * powlaw1d.bpl)))'
+
+    smdl = ui.get_model(id)
+    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + powlaw1d.bpl)))))'
+
+    assert ui.list_model_components() == ['bpl', 'pl']
+
+
 def setup_pha1(exps, bscals, ascals):
     """Create multiple PHA files (source + backgrounds).
 
