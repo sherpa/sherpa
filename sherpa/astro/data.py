@@ -1096,11 +1096,18 @@ class DataPHA(Data1D):
             ids.remove(id)
         self.background_ids = ids
 
-    def get_background_scale(self, group=True, filter=False):
-        """Return the correction factor for the background datasets.
+    def get_background_scale(self, bkg_id=1, group=True, filter=False):
+        """Return the correction factor for the background dataset.
+
+        .. versionchanged:: 4.12.2
+           The bkg_id parameter has been added and the routine
+           no-longer calculates the average scaling for all the
+           background components but just for the given component.
 
         Parameters
         ----------
+        bkg_id : int or str, optional
+           The background component to use (the default is 1).
         group : bool, optional
             Should the values be grouped to match the data?
         filter : bool, optional
@@ -1110,48 +1117,32 @@ class DataPHA(Data1D):
         -------
         scale : None, number, or NumPy array
             The scaling factor to correct the background data onto the
-            source data set. If there are no associated backgrounds
-            then None is returned.
+            source data set. If bkg_id is not valid then None is
+            returned.
 
         Notes
         -----
-        The corrections include BACKSCAL, AREASCAL, and exposure
-        corrections.
+        The correction factor is::
+
+            scale_exposure * scale_backscal * scale_areascal / nbkg
+
+        where nbkg is the number of background components and
+        scale_x is the source value divided by the background
+        value for the field x.
 
         """
 
-        if len(self.background_ids) == 0:
+        if bkg_id not in self.background_ids:
             return None
-
-        bscale = self.sum_background_data(lambda key, bkg: 1.)
-        return self._check_scale(bscale, group=group, filter=filter)
-
-    def _get_background_scales(self):
-        """Return the correction factors for the background datasets.
-
-        Returns
-        -------
-        scales : None or dict
-            The per-background scaling factors, indexed by the
-            background identifier, where each element can be a scalar
-            or array. If there are no associated backgrounds then None
-            is returned.
-
-        Notes
-        -----
-        The corrections include BACKSCAL, AREASCAL, and exposure
-        corrections.
-
-        """
 
         nbkg = len(self.background_ids)
-        if nbkg == 0:
-            return None
 
         def correct(obj):
             """Correction factor for the object"""
             ans = 1.0
 
+            # Should we set 0 values to 1 at this stage?
+            #
             if obj.backscal is not None:
                 ans *= self._check_scale(obj.backscal, group=False)
 
@@ -1163,19 +1154,10 @@ class DataPHA(Data1D):
 
             return ans
 
-        # what are the source correction factors
-        #
         src = correct(self)
-
-        # calculate the factors for each background component
-        #
-        out = {}
-        for key in self.background_ids:
-
-            bkg = correct(self.get_background(key))
-            out[key] = src / bkg / nbkg
-
-        return out
+        bkg = correct(self.get_background(bkg_id))
+        scale = src / bkg / nbkg
+        return self._check_scale(scale, group=group, filter=filter)
 
     def _check_scale(self, scale, group=True, filter=False):
         """Ensure the scale value is positive and filtered/grouped.

@@ -24,6 +24,7 @@ attempts to provide a solid test base. There is likely to be
 overlap in the WSTAT tests, for one.
 """
 
+from io import StringIO
 import logging
 
 import numpy as np
@@ -274,6 +275,62 @@ def setup_pha1(exps, bscals, ascals):
     return dset
 
 
+@pytest.mark.parametrize("exps,bscales,ascales,results",
+                         [((100, 200), (2, 4), (0.5, 0.1),
+                           [(100 * 2 * 0.5) / (200 * 4 * 0.1)]),
+                          ((100, 200, 400), (2, 4, 0.5), (0.5, 0.1, 0.8),
+                           [0.5 * (100 * 2 * 0.5) / (200 * 4 * 0.1),
+                            0.5 * (100 * 2 * 0.5) / (400 * 0.5 * 0.8)]),
+                          ((100, 200, 1.0), (2, 4, 1 * np.ones(19)), (0.5, 0.1, 1.0),
+                           [0.5 * (100 * 2 * 0.5) / (200 * 4 * 0.1),
+                            None]),
+                         ])
+@pytest.mark.parametrize("id", [None, 1, "x"])
+def test_pha1_show_data(id, exps, bscales, ascales, results, clean_astro_ui):
+    """Check we can show the data and get the scaling.
+
+    This *only* checks the background scaling, not the
+    full output. Since the scaling value isn't shown
+    when it's a vector we don't need to care about the values
+    """
+
+    iid = 1 if id is None else id
+
+    ui.set_data(id, setup_pha1(exps, bscales, ascales))
+
+    out = StringIO()
+    ui.show_data(outfile=out)
+    msg = out.getvalue().split('\n')
+
+    assert msg[0] == 'Data Set: {}'.format(iid)
+    assert msg[1] == 'Filter: 0.6500-2.4500 Energy (keV)'
+
+    def check(line, result, bkg_id=None):
+        out = 'Bkg Scale'
+        if bkg_id is not None:
+            out += ' {}'.format(bkg_id)
+
+        out += ': '
+        if result is None:
+            out += 'float64[19]'
+        else:
+            out += '{}'.format(result)
+
+        assert line == out
+
+    nbkg = len(results)
+    notice = 2 + nbkg
+    if len(results) == 1:
+        check(msg[2], results[0])
+    else:
+        for i, r in enumerate(results, 1):
+            check(msg[1 + i], r, bkg_id=i)
+
+    # just check we have the correct following lines
+    assert msg[notice] == 'Noticed Channels: 1-19'
+    assert msg[notice + 1] == 'name           = tst0'
+
+
 # Try and pick routines with different pathways through the code
 # to catch all cases.
 #
@@ -299,25 +356,24 @@ SCALING = np.ones(19)
 SCALING[2:5] = 0.8
 SCALING[15] = 0.7
 
-@pytest.mark.parametrize("exps,bscales,ascales,result",
+@pytest.mark.parametrize("exps,bscales,ascales,bkg_id,result",
                          [((100, 1000), (0.01, 0.05), (0.4, 0.5),
-                           (100 * 0.01 * 0.4) / (1000 * 0.05 * 0.5)),
+                           1, (100 * 0.01 * 0.4) / (1000 * 0.05 * 0.5)),
                           ((100, 1000, 1500), (0.01, 0.05, 0.04), (0.2, 0.5, 0.4),
-                           0.5 * (100 * 0.01 * 0.2) *
-                           (1 / (1000 * 0.05 * 0.5) + 1 / (1500 * 0.04 * 0.4))),
-                          ((100, 1000), (0.01, 0.05 * SCALING), (0.4, 0.5),
-                           (100 * 0.01 * 0.4) / (1000 * 0.05 * SCALING * 0.5)),
+                           1, 0.5 * (100 * 0.01 * 0.2) / (1000 * 0.05 * 0.5)),
+                          ((100, 1000, 1500), (0.01, 0.05, 0.04), (0.2, 0.5, 0.4),
+                           2, 0.5 * (100 * 0.01 * 0.2) / (1500 * 0.04 * 0.4)),
                           ((100, 1000, 1500), (0.01, 0.05 * SCALING, 0.04), (0.4, 0.5, 0.6 * SCALING),
-                           0.5 * (100 * 0.01 * 0.4) *
-                           (1 / (1000 * 0.05 * SCALING * 0.5) +
-                            1 / (1500 * 0.04 * 0.6 * SCALING))),
+                           1, 0.5 * (100 * 0.01 * 0.4) / (1000 * 0.05 * SCALING * 0.5)),
+                          ((100, 1000, 1500), (0.01, 0.05 * SCALING, 0.04), (0.4, 0.5, 0.6 * SCALING),
+                           2, 0.5 * (100 * 0.01 * 0.4) / (1500 * 0.04 * 0.6 * SCALING)),
                          ])
 @pytest.mark.parametrize("id", [None, "x"])
-def test_pha1_get_bkg_scale(id, exps, bscales, ascales, result, clean_astro_ui):
+def test_pha1_get_bkg_scale(id, exps, bscales, ascales, bkg_id, result, clean_astro_ui):
     """Check we can calculate the scaling factor"""
 
     ui.set_data(id, setup_pha1(exps, bscales, ascales))
-    bscal = ui.get_bkg_scale(id)
+    bscal = ui.get_bkg_scale(id, bkg_id)
     assert bscal == pytest.approx(result)
 
 
