@@ -729,6 +729,51 @@ class RMF1D(NoNewAttributesAfterInit):
 
 
 class Response1D(NoNewAttributesAfterInit):
+    """A factory class for generating the instrument response.
+
+    This should not be used when a pileup model is required.
+
+    Parameters
+    ----------
+    pha : sherpa.astro.data.DataPHA instance
+        The data object which defines the channel grid and instrument
+        response. There must be either an ARF or RMF associated
+        with the dataset.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        The argument does not contain any response information (it is
+        missing an ARF and a RMF).
+
+    See Also
+    --------
+    MultipleResponse1D, PileupResponse1D
+
+    Notes
+    -----
+    When the object is called it can be sent a ``session`` parameter,
+    which defines the session to use when converting a string model to
+    a ArithmeticModel instance. It is not used for any other function.
+    The default value for this parameter is `None`, in which case the
+    code uses the sherpa.astro.ui._session object.
+
+    The response will include the exposure time if is is defined in
+    either the PHA or ARF datasets (PHA taking precedence). The final
+    response will be one of RSPModelPHA, ARFModelPHA, or RMFModelPHA.
+
+    Examples
+    --------
+
+    Add the response to a model (``src_model``) and then evaluate it.
+    The response will ignore the input argument, and evaluate it for
+    all channels (hence the use of a dummy argument [1]):
+
+    >>> rsp = Response1D(pha)
+    >>> full_model = rsp(src_model)
+    >>> ycnts = full_model([1])
+
+    """
 
     def __init__(self, pha):
         self.pha = pha
@@ -944,6 +989,27 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
 
 class MultipleResponse1D(Response1D):
+    """A factory class for generating the instrument response.
+
+    This should not be used when a pileup model is required.
+
+    Parameters
+    ----------
+    pha : sherpa.astro.data.DataPHA instance
+        Support PHA files with multiple responses (e.g. orders) to
+        describe the data.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        The argument does not contain any response information (it is
+        missing an ARF and a RMF).
+
+    See Also
+    --------
+    Response1D
+
+    """
 
     def __call__(self, model, session=None):
         pha = self.pha
@@ -1051,6 +1117,29 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
 
 class PileupResponse1D(NoNewAttributesAfterInit):
+    """A factory class for generating a response including pileup.
+
+    Parameters
+    ----------
+    pha : sherpa.astro.data.DataPHA instance
+        The data object which defines the channel grid and instrument
+        response. There must be both an ARF or RMF associated
+        with the dataset when it is called.
+    pileup_model : sherpa.astro.models.JDPileup instance
+        The pileup model.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        The argument does not contain any response information (it is
+        missing an ARF or RMF).
+
+    See Also
+    --------
+    Response1D
+
+    """
+
 
     def __init__(self, pha, pileup_model):
         self.pha = pha

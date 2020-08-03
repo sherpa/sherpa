@@ -2055,8 +2055,8 @@ class DataPHA(Data1D):
                             get_bdata_func=(lambda key, bkg: bkg.counts)):
         """Sum up data, applying the background correction value.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         get_bdata_func : function, optional
             What data should be used for each background dataset. The
             function takes the background identifier and background

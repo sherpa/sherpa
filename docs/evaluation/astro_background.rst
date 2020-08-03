@@ -11,9 +11,17 @@ The sherpa.astro.background module
    .. autosummary::
       :toctree: api
 
-      BackgroundSumModel
+      ScaleArray
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: api
+
+      add_response
+
 
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: BackgroundSumModel
+.. inheritance-diagram:: ScaleArray
