@@ -238,7 +238,27 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     assert bmdl.name == 'apply_rmf(apply_arf((2000 * polynom1d.bpl2)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * ((powlaw1d.pl + (0.025 * powlaw1d.bpl)) + (0.005000000000000001 * polynom1d.bpl2)))))'
+
+    # The string representation can depend on Python version, so break
+    # it up so we can check terms separately.
+    #
+    toks = smdl.name.split('(')
+    assert toks[0] == 'apply_rmf'
+    assert toks[1] == 'apply_arf'
+    assert toks[2] == ''
+    assert toks[3] == '100 * '
+    assert toks[4] == ''
+    assert toks[5] == 'powlaw1d.pl + '
+
+    x1 = '0.025 * powlaw1d.bpl)) + '
+    x2 = '0.005000000000000001 * polynom1d.bpl2)))))'
+
+    y1 = '0.005000000000000001 * polynom1d.bpl2)) + '
+    y2 = '0.025 * powlaw1d.bpl)))))'
+
+    assert toks[6] in [x1, y1]
+    assert toks[7] in [x2, y2]
+    assert len(toks) == 8
 
     assert ui.list_model_components() == ['bpl', 'bpl2', 'pl']
 
