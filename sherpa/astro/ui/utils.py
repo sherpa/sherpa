@@ -9173,18 +9173,19 @@ class Session(sherpa.ui.utils.Session):
         if src is None:
             raise ModelErr('nobkg', bkg_id, id)
 
+        # Evaluate these even if is_source is False
         data = self._get_pha_data(id)
         bkg = self.get_bkg(id, bkg_id)
 
-        model = src
-        if is_source:
-            if len(bkg.response_ids) != 0:
-                resp = sherpa.astro.instrument.Response1D(bkg)
-                model = resp(src)
-            else:
-                resp = sherpa.astro.instrument.Response1D(data)
-                model = resp(src)
-        return model
+        if not is_source:
+            return src
+
+        if len(bkg.response_ids) != 0:
+            resp = sherpa.astro.instrument.Response1D(bkg)
+        else:
+            resp = sherpa.astro.instrument.Response1D(data)
+
+        return resp(src)
 
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
         """Define the convolved background model expression for a PHA data set.
