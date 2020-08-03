@@ -26,7 +26,7 @@ from functools import reduce
 import logging
 import operator
 
-import numpy
+import numpy as np
 
 from sherpa.astro.instrument import PileupResponse1D
 from sherpa.models.parameter import Parameter
@@ -101,7 +101,32 @@ class ScaleArray(ArithmeticModel):
 def add_response(session, id, data, model):
     """Create the response model describing the source and model.
 
+    Include any background components and apply the response
+    model for the dataset.
+
+    Parameters
+    ----------
+    session : sherpa.astro.ui.utils.Session instance
+    id : int ot str
+        The identifier for the dataset.
+    data : sherpa.astro.data.DataPHA instance
+        The dataset (may be a background dataset).
+    model : sherpa.models.model.ArithmeticModel instance
+        The model (without response or background components)
+        to match to data.
+
+    Returns
+    -------
+    fullmodel : sherpa.models.model.ArithmeticModel
+        The model including the necessary response models and
+        background components.
+
     """
+
+    # QUS: if this gets used to generate the response for the
+    #      background then how does it pick up the correct response
+    #      (ie when fit_bkg is used). Or does that get generated
+    #      by a different code path?
 
     resp = session._get_response(id, data)
     if data.subtracted:
@@ -111,40 +136,63 @@ def add_response(session, id, data, model):
     if len(bkg_srcs) == 0:
         return resp(model)
 
-    # What are the scaling factors for each background component?
-    # This gives the value you multply the background model to
-    # correct it to the source aperture, exposure time, and
-    # area scaling.
+    # At this point we have background one or more background
+    # components that need to be added to the overall model.
+    # If the scale factors are all scalars then we can return
     #
-    scales = {}
+    #   resp(model + sum (scale_i * bgnd_i))        [1]
+    #
+    # but if any are arrays then we have apply the scale factor
+    # after applying the response, that is
+    #
+    #   resp(model) + sum(scale_i * resp(bgnd_i))   [2]
+    #
+    # This is because the scale values are in channel space,
+    # and not the instrument response (i.e. the values used inside
+    # the resp call).
+    #
+    # Note that if resp is not a linear response - for instance,
+    # it is a pileup model - then we will not get the correct
+    # answer if there's an array value for the scale factor
+    # (i.e. equation [2] above). A warning message is created in this
+    # case, but it is not treated as an error.
+    #
+    # For multiple background datasets we can have different models -
+    # that is, one for each dataset - but it is expected that the
+    # same model is used for all backgrounds (i.e. this is what
+    # we 'optimise' for).
+
+    # Identify the scalar and vector scale values for each
+    # background dataset, and combine using the model as a key.
+    #
+    scales_scalar = defaultdict(list)
+    scales_vector = defaultdict(list)
     for bkg_id in data.background_ids:
-        if bkg_id not in bkg_srcs:
+        try:
+            bmdl = bkg_srcs[bkg_id]
+        except KeyError:
             raise ModelErr('nobkg', bkg_id, id)
 
-        scales[bkg_id] = data.get_background_scale(bkg_id, group=False)
+        scale = data.get_background_scale(bkg_id, group=False)
 
-    # Group by the scale factor: numpy arrays do not hash,
-    # so we need a way to handle them. For now I am
-    # going to assume that each vector is unique (i.e.
-    # it is not worth combining components).
-    #
-    # TODO: combine with the above loop.
-    #
-    flattened = defaultdict(list)
-    vectors = []
-    for key, scale in scales.items():
-        if numpy.isscalar(scale):
-            flattened[scale].append(key)
+        if np.isscalar(scale):
+            store = scales_scalar
         else:
-            vectors.append((key, scale))
+            store = scales_vector
 
-    for scale in sorted(flattened.keys(), reverse=True):
-        ms = [bkg_srcs[k] for k in flattened[scale]]
-        combined = reduce(operator.add, ms)
-        model += scale * combined
+        store[bmdl].append(scale)
 
+    # Combine the scalar terms, grouping by the model.
+    #
+    for mdl, scales in scales_scalar.items():
+        scale = sum(scales)
+        model += scale * mdl
+
+    # Apply the instrument response.
+    #
     model = resp(model)
-    if len(vectors) == 0:
+
+    if len(scales_vector) == 0:
         return model
 
     # Warn if a pileup model is being used. The error message here
@@ -153,37 +201,43 @@ def add_response(session, id, data, model):
     # Should this be a Python Warning rather than a logged message?
     #
     if isinstance(resp, PileupResponse1D):
-        bkg_ids = ",".join([str(k) for k, _ in vectors])
         wmsg = "model results for dataset {} ".format(id) + \
-                "likely wrong: use of pileup model and scaling " + \
-                "of bkg_id={}".format(bkg_ids)
+                "likely wrong: use of pileup model and array scaling " + \
+                "for the background"
 
         # warnings.warn(wmsg)
         warning(wmsg)
 
-    for key, scale in vectors:
+    # Combine the vector terms, grouping by the model. A trick here
+    # is that,to make the string version of the model be readable,
+    # we add a model to contain the scale values. This model is
+    # similar to a tablemodel but is different enough that we use
+    # the ScaleArray class.
+    #
+    # The choice of namespace for the array (i.e. how to keep
+    # it from colliding with a user component whilst still fitting
+    # into the Schema scheme) is an open question.
+    #
+    # Another question is how to remove the model once it's not
+    # needed.
+    #
+    nvectors = len(scales_vector)
+    for i, (mdl, scales) in enumerate(scales_vector.items(), 1):
+        # special case the single-value case
+        if nvectors == 1:
+            name = 'scale{}'.format(id)
+        else:
+            name = 'scale{}_{}'.format(id, i)
 
-        # Use a tablemodel to contain the array values:
-        # this makes the string output nicer, but we
-        # need to deal with the namespace for these
-        # models, and cleaning up after ourselves. We actually
-        # use a specialized model class, rather than a tablemodel,
-        # since it has to just return the full data (in
-        # the same way the RSP models do).
-        #
-        tbl = ScaleArray('scale{}_{}'.format(id, key))
-        tbl.y = scale
+        tbl = ScaleArray(name)
+        tbl.y = sum(scales)
 
-        # Add the model to the global symbol list, so
-        # users can interrogate it. The issues are:
-        #  - name clash: it's okay to overwrite models created
-        #    here, but what happens if a user has created a
-        #    model with this name?
-        #  - how do we clean up after the data goes out of
-        #    scope (or the background scaling changes)
+        # register the component before using it in an expression,
+        # so that the str method will create 'scalearray.name'
+        # rather than just 'name'.
         #
         session._add_model_component(tbl)
 
-        model += tbl * resp(bkg_srcs[key])
+        model += tbl * resp(mdl)
 
     return model

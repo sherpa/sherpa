@@ -284,7 +284,7 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     assert bmdl.name == 'apply_rmf(apply_arf((2000 * powlaw1d.bpl)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * ((powlaw1d.pl + (0.025 * powlaw1d.bpl)) + (0.005000000000000001 * powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + (0.030000000000000002 * powlaw1d.bpl)))))'
 
     assert ui.list_model_components() == ['bpl', 'pl']
 
@@ -602,11 +602,11 @@ def test_pha1_eval_vector_show(clean_astro_ui):
 
     # array = r(*exps) * r(*bscales) * r(*ascales)
     src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (scalearray.scale1_1 * apply_arf((100.0 * box1d.bmdl1))))'
+    src += ' + (scalearray.scale1 * apply_arf((100.0 * box1d.bmdl1))))'
 
     assert smdl.name == src
 
-    assert ui.list_model_components() == ['bmdl1', 'scale1_1', 'smdl']
+    assert ui.list_model_components() == ['bmdl1', 'scale1', 'smdl']
 
 
 def test_pha1_eval_vector(clean_astro_ui):
@@ -773,7 +773,7 @@ def test_jdpileup_no_warning(caplog, clean_astro_ui):
 
 
 def test_jdpileup_warning(caplog, clean_astro_ui):
-    """jdpileup model has warnng when vector scaling"""
+    """jdpileup model has warning when vector scaling"""
 
     exps = (100.0, 1000.0, 200)
     bscales = (0.01, 0.02, 0.05)
@@ -793,4 +793,4 @@ def test_jdpileup_warning(caplog, clean_astro_ui):
     name, level, msg = caplog.record_tuples[0]
     assert name == 'sherpa.astro.background'
     assert level == logging.WARNING
-    assert msg == 'model results for dataset x likely wrong: use of pileup model and scaling of bkg_id=2'
+    assert msg == 'model results for dataset x likely wrong: use of pileup model and array scaling for the background'
