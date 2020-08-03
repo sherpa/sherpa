@@ -32,6 +32,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
+from sherpa.astro.instrument import ARFModelPHA
 from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
@@ -401,6 +402,28 @@ def test_pha1_show_data(id, exps, bscales, ascales, results, clean_astro_ui):
 
     assert msg[notice] == 'Noticed Channels: 1-19'
     assert msg[notice + 1] == 'name           = tst0'
+
+
+def test_pha1_instruments(clean_astro_ui):
+    """Check we get the correct responses for various options.
+    """
+
+    # We don't check the scaling here
+    scales = (1, 1, 1)
+    ui.set_data(1, setup_pha1(scales, scales, scales))
+    ui.set_source(1, ui.stephi1d.smdl)
+    ui.set_bkg_source(1, ui.steplo1d.bmdl)
+    ui.set_bkg_source(1, bmdl, bkg_id=2)
+
+    smdl = ui.get_model()
+    bmdl1 = ui.get_bkg_model(bkg_id=1)
+    bmdl2 = ui.get_bkg_model(bkg_id=2)
+
+    # check the response contains the correct names
+    for i, mdl in enumerate([smdl, bmdl1, bmdl2]):
+        assert isinstance(mdl, ARFModelPHA)
+        assert mdl.pha.name == 'tst{}'.format(i)
+        assert mdl.arf.name == 'arf{}'.format(i)
 
 
 SCALING = np.ones(19)
