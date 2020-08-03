@@ -3510,7 +3510,7 @@ class Session(sherpa.ui.utils.Session):
         return self._get_pha_data(id).exposure
 
     def get_backscal(self, id=None, bkg_id=None):
-        """Return the background scaling of a PHA data set.
+        """Return the BACKSCAL scaling of a PHA data set.
 
         Return the BACKSCAL setting [1]_ for the source or background
         component of a PHA data set.
