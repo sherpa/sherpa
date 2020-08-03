@@ -63,6 +63,11 @@ def add_response(session, id, data, model):
 
     """
 
+    # QUS: if this gets used to generate the response for the
+    #      background then how does it pick up the correct response
+    #      (ie when fit_bkg is used). Or does that get generated
+    #      by a different code path?
+
     resp = session._get_response(id, data)
     if data.subtracted:
         return resp(model)
@@ -71,43 +76,64 @@ def add_response(session, id, data, model):
     if len(bkg_srcs) == 0:
         return resp(model)
 
-    # What are the scaling factors for each background component?
-    # This gives the value you multply the background model to
-    # correct it to the source aperture, exposure time, and
-    # area scaling.
+    # At this point we have background one or more background
+    # components that need to be added to the overall model.
+    # If the scale factors are all scalars then we can return
+    #
+    #   resp(model + sum (scale_i * bgnd_i))        [1]
+    #
+    # but if any are arrays then we have apply the scale factor
+    # after applying the response, that is
+    #
+    #   resp(model) + sum(scale_i * resp(bgnd_i))   [2]
+    #
+    # This is because the scale values are in channel space,
+    # and not the instrument response (i.e. the values used inside
+    # the resp call).
+    #
+    # Note that if resp is not a linear response - for instance,
+    # it is a pileup model - then we will not get the correct
+    # answer if there's an array value for the scale factor
+    # (i.e. equation [2] above). A warning message is created in this
+    # case, but it is not treated as an error.
+    #
+    # For multiple background datasets we can have different models -
+    # that is, one for each dataset - but it is expected that the
+    # same model is used for all backgrounds (i.e. this is what
+    # we 'optimise' for).
+
+    # Identify the scalar and vector scale values for each
+    # background dataset, and combine using the model as a key.
     #
     scales = data._get_background_scales()
+    scales_scalar = defaultdict(list)
+    scales_vector = defaultdict(list)
+    for bkg_id in data.background_ids:
+        try:
+            bmdl = bkg_srcs[bkg_id]
+        except KeyError:
+            raise ModelErr('nobkg', bkg_id, id)
 
-    # Check we have a background model for each background.
-    #
-    for key in scales.keys():
-        if key not in bkg_srcs:
-            raise ModelErr('nobkg', key, id)
+        scale = scales[bkg_id]  # assume it exists
 
-    # Group by the scale factor: numpy arrays do not hash,
-    # so we need a way to handle them. For now I am
-    # going to assume that each vector is unique (i.e.
-    # it is not worth combining components).
-    # later on th
-    # an issue here, in terms of memory or space?
-    # I am going to assume it isn't for now, otherwise we could
-    # go with something like a hash of the value as a key.
-    #
-    flattened = defaultdict(list)
-    vectors = []
-    for key, scale in scales.items():
         if np.isscalar(scale):
-            flattened[scale].append(key)
+            store = scales_scalar
         else:
-            vectors.append((key, scale))
+            store = scales_vector
 
-    for scale in sorted(flattened.keys(), reverse=True):
-        ms = [bkg_srcs[k] for k in flattened[scale]]
-        combined = reduce(operator.add, ms)
-        model += scale * combined
+        store[bmdl].append(scale)
 
+    # Combine the scalar terms, grouping by the model.
+    #
+    for mdl, scales in scales_scalar.items():
+        scale = sum(scales)
+        model += scale * mdl
+
+    # Apply the instrument response.
+    #
     model = resp(model)
-    if len(vectors) == 0:
+
+    if len(scales_vector) == 0:
         return model
 
     # Warn if a pileup model is being used. The error message here
@@ -116,20 +142,22 @@ def add_response(session, id, data, model):
     # Should this be a Python Warning rather than a logged message?
     #
     if isinstance(resp, PileupResponse1D):
-        bkg_ids = ",".join([str(k) for k, _ in vectors])
         wmsg = "model results for dataset {} ".format(id) + \
-                "likely wrong: use of pileup model and scaling " + \
-                "of bkg_id={}".format(bkg_ids)
+                "likely wrong: use of pileup model and array scaling " + \
+                "for the background"
 
         # warnings.warn(wmsg)
         warning(wmsg)
 
-    for key, scale in vectors:
-        # NOTE: with a NumPy array we need to
-        # say mdl * array and not the other way
-        # around, otherwise the mdl will get
-        # broadcast to each element of array.
-        #
-        model += resp(bkg_srcs[key]) * scale
+    # NOTE: with a NumPy array we need to
+    # say mdl * array and not the other way
+    # around, otherwise the mdl will get
+    # broadcast to each element of array.
+    #
+    nvectors = len(scales_vector)
+    for i, (mdl, scales) in enumerate(scales_vector.items(), 1):
+
+        scale = sum(scales)
+        model += resp(mdl) * scale
 
     return model

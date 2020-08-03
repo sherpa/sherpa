@@ -327,7 +327,7 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * powlaw1d.bpl)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100.0 * ((powlaw1d.pl + (0.025 * powlaw1d.bpl)) + (0.005000000000000001 * powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + (0.030000000000000002 * powlaw1d.bpl)))))'
 
     assert ui.list_model_components() == ['bpl', 'pl']
 
@@ -1146,7 +1146,7 @@ def test_jdpileup_warning(caplog, clean_astro_ui):
     name, level, msg = caplog.record_tuples[0]
     assert name == 'sherpa.astro.background'
     assert level == logging.WARNING
-    assert msg == 'model results for dataset x likely wrong: use of pileup model and scaling of bkg_id=2'
+    assert msg == 'model results for dataset x likely wrong: use of pileup model and array scaling for the background'
 
 
 @requires_data
