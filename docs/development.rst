@@ -104,6 +104,18 @@ can be activated and Sherpa can be build from source.
     conda activate sherpaciao
     python setup.py develop
 
+
+.. warning::
+
+   Just like in the case of a normal source install, when building Sherpa
+   on recent versions of macOS within a conda environment, the following
+   environment variable must be set::
+
+     export PYTHON_LDFLAGS=' '
+
+   That is, the variable is set to a space, not the empty string.
+
+
 How do I ...
 ============
 
