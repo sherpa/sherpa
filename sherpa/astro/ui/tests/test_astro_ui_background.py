@@ -791,6 +791,6 @@ def test_jdpileup_warning(caplog, clean_astro_ui):
 
     assert len(caplog.records) == 1
     name, level, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.astro.ui.utils'
+    assert name == 'sherpa.astro.background'
     assert level == logging.WARNING
     assert msg == 'model results for dataset x likely wrong: use of pileup model and scaling of bkg_id=2'
