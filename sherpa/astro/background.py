@@ -53,8 +53,6 @@ class ScaleArray(ArithmeticModel):
     ----------
     ampl
         The amplitude of the model.
-    y
-        The array of values.
 
     Examples
     --------
@@ -77,7 +75,7 @@ class ScaleArray(ArithmeticModel):
 
     @property
     def y(self):
-        """The data to return"""
+        """The array of values."""
         return self._y
 
     @y.setter
