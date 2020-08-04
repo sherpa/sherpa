@@ -41,16 +41,18 @@
 // In XSPEC 12.11.0 (the next one after 12.10.1), the tabint function
 // was moved into C scope.
 //
-#if defined (XSPEC_12_10_1) && !defined(XSPEC_12_11_0)
-void tabint(float* ear, int ne, float* param, int npar, const char* filenm, int ifl,
-             const char* tabtyp, float* photar, float* photer);
-#endif
-
+#ifdef XSPEC_12_10_1
 #ifdef XSPEC_12_11_0
 extern "C" {
-void tabint(float* ear, int ne, float* param, int npar, const char* filenm, int ifl,
-             const char* tabtyp, float* photar, float* photer);
+#endif
+
+  void tabint(float* ear, int ne, float* param, int npar, const char* filenm, int ifl,
+	      const char* tabtyp, float* photar, float* photer);
+
+#ifdef XSPEC_12_11_0
 }
+#endif
+
 #endif
 
 
