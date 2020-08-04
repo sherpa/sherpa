@@ -1002,6 +1002,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
             data['channel'] = data['channel'] + 1
 
         data['counts'] = None
+        staterror = _try_col(pha, 'STAT_ERR', make_copy)
         if pha.column_exists('COUNTS'):
             data['counts'] = _require_col(
                 pha, 'COUNTS', make_copy, fix_type=True)
@@ -1010,8 +1011,10 @@ def get_pha_data(arg, make_copy=True, use_background=False):
                 raise IOErr('reqcol', 'COUNTS or RATE', filename)
             data['counts'] = _require_col(
                 pha, 'RATE', make_copy, fix_type=True) * data['exposure']
+            if staterror is not None:
+                staterror *= data['exposure']
 
-        data['staterror'] = _try_col(pha, 'STAT_ERR', make_copy)
+        data['staterror'] = staterror
         data['syserror'] = _try_col(pha, 'SYS_ERR', make_copy)
         data['background_up'] = _try_col(
             pha, 'BACKGROUND_UP', make_copy, fix_type=True)
@@ -1066,6 +1069,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
                 channel[ii] += 1
 
         counts = None
+        staterror = _try_col_list(pha, 'STAT_ERR', num, make_copy)
         if pha.column_exists('COUNTS'):
             counts = _require_col_list(
                 pha, 'COUNTS', num, make_copy, fix_type=True)
@@ -1074,8 +1078,9 @@ def get_pha_data(arg, make_copy=True, use_background=False):
                 raise IOErr('reqcol', 'COUNTS or RATE', filename)
             counts = _require_col_list(
                 pha, 'RATE', num, make_copy, fix_type=True) * exposure
+            if staterror is not None:
+                staterror *= exposure
 
-        staterror = _try_col_list(pha, 'STAT_ERR', num, make_copy)
         syserror = _try_col_list(pha, 'SYS_ERR', num, make_copy)
         background_up = _try_col_list(
             pha, 'BACKGROUND_UP', num, make_copy, fix_type=True)
