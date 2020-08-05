@@ -44,6 +44,9 @@ _session._add_model_types(sherpa.instrument,baselist=(sherpa.models.Model,))
 # Get RMFModel, ARFModel in list of models
 _session._add_model_types(sherpa.astro.instrument)
 
+# Do we want to add ScaleArray or not?
+_session._add_model_types(sherpa.astro.background)
+
 if hasattr(sherpa.astro, 'xspec'):
     _session._add_model_types(sherpa.astro.xspec,
                               (sherpa.astro.xspec.XSAdditiveModel,
