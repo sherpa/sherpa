@@ -172,8 +172,7 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     assert ui.list_model_components() == ['bpl', 'pl']
 
     smdl = ui.get_model(id)
-    assert smdl.name.startswith('apply_rmf(apply_arf((1234.5 * (powlaw1d.pl + (0.11363')
-    assert smdl.name.endswith(' * powlaw1d.bpl)))))')
+    assert smdl.name == 'apply_rmf(apply_arf((1234.5 * (powlaw1d.pl + (0.5 * powlaw1d.bpl)))))'
     assert ui.list_model_components() == ['bpl', 'pl']
 
     bmdl = ui.get_bkg_model(id)
@@ -196,15 +195,17 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     #
     sdata = ui.get_data(id)
     sdata.exposure = 100
-    sdata.get_arf().exposure = 150
     sdata.backscal = 0.1
     sdata.areascal = 0.8
+
+    # Check that the ARF exposure isn't used
+    sdata.get_arf().exposure = 15000
 
     # scale factor to correct to source is
     #   = (100 / 1000) * (0.1 / 0.4) * (0.8 / 0.4)
     #     exp = 0.1   back = 0.25  area = 2
-    #   = 0.025 if exclude the area scaling
-    #   = 0.05  if include the area scaling
+    #   = 0.25  if only have BACKSCAL
+    #   = 0.05  if include all scaling
     #
     bdata1 = ui.get_bkg(id, bkg_id=1)
     bdata1.exposure = 1000
@@ -217,8 +218,8 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     # scale factor
     #   = (100 / 2000) * (0.1 / 0.8) * (0.8 / 0.5)
     #     exp = 0.05   back = 0.125  area = 1.6
-    #   = 0.00625 if exclude the area scaling
-    #   = 0.01    if include the area scaling
+    #   = 0.125   if only have BACKSCAL
+    #   = 0.01    if include all scaling
     #
     bdata2 = ui.unpack_pha(make_data_path('3c273_bg.pi'))
     bdata2.exposure = 2000
@@ -274,11 +275,14 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     assert toks[4] == ''
     assert toks[5] == 'powlaw1d.pl + '
 
-    x1 = '0.025 * powlaw1d.bpl)) + '
-    x2 = '0.005000000000000001 * polynom1d.bpl2)))))'
+    # The scale factors here are half of the values above, as there are
+    # now two background components.
+    #
+    x1 = '0.125 * powlaw1d.bpl)) + '
+    x2 = '0.0625 * polynom1d.bpl2)))))'
 
-    y1 = '0.005000000000000001 * polynom1d.bpl2)) + '
-    y2 = '0.025 * powlaw1d.bpl)))))'
+    y1 = '0.0625 * polynom1d.bpl2)) + '
+    y2 = '0.125 * powlaw1d.bpl)))))'
 
     assert toks[6] in [x1, y1]
     assert toks[7] in [x2, y2]
@@ -327,7 +331,7 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * powlaw1d.bpl)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + (0.030000000000000002 * powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + (0.1875 * powlaw1d.bpl)))))'
 
     assert ui.list_model_components() == ['bpl', 'pl']
 
@@ -456,6 +460,48 @@ def test_pha1_show_data(id, exps, bscales, ascales, results, clean_astro_ui):
     # just check we have the correct following lines
     assert msg[notice] == 'Noticed Channels: 1-19'
     assert msg[notice + 1] == 'name           = tst0'
+
+
+def test_pha1_show_data_missing(clean_astro_ui):
+    """Check we can show the data and get the scaling (with a missing component).
+
+    This does not check all the cases that
+    test_pha1_show_data does.
+    """
+
+    exps = (10, 20, 100)
+    bscales = (0.1, 0.2, 0.4)
+    ascales = (1, 1, 1)
+    ui.set_data('x', setup_pha1(exps, bscales, ascales))
+
+    d = ui.get_data('x')
+    d.delete_background(id=1)
+
+    out = StringIO()
+    ui.show_data('x', outfile=out)
+    msg = out.getvalue().split('\n')
+
+    assert msg[0] == 'Data Set: x'
+    assert msg[1] == 'Filter: 0.6500-2.4500 Energy (keV)'
+    assert msg[2] == 'Bkg Scale 2: 0.025'
+    assert msg[3] == 'Noticed Channels: 1-19'
+    assert msg[4] == 'name           = tst0'
+
+
+def test_pha1_show_data_no_bkg(clean_astro_ui):
+    """Check we don't get a scaling value if there is no background,
+    """
+
+    ui.load_arrays(2, np.arange(1, 4), np.ones(3), ui.DataPHA)
+
+    out = StringIO()
+    ui.show_data(2, outfile=out)
+    msg = out.getvalue().split('\n')
+
+    assert msg[0] == 'Data Set: 2'
+    assert msg[1] == 'Filter: 1-3 Channel'
+    assert msg[2] == 'Noticed Channels: 1-3'
+    assert msg[3] == 'name           = '
 
 
 def test_pha1_instruments(clean_astro_ui):
@@ -661,8 +707,11 @@ def test_pha1_eval(clean_astro_ui):
     def r2(sval, bval1, bval2):
         return sval / bval2
 
-    sy += r1(*exps) * r1(*bscales) * r1(*ascales) * (100 / 90) * by1 / 2
-    sy += r2(*exps) * r2(*bscales) * r2(*ascales) * (100 / 80) * by2 / 2
+    # sy += r1(*exps) * r1(*bscales) * r1(*ascales) * (100 / 90) * by1 / 2
+    # sy += r2(*exps) * r2(*bscales) * r2(*ascales) * (100 / 80) * by2 / 2
+
+    sy += r1(*bscales) * (100 / 90) * by1 / 2
+    sy += r2(*bscales) * (100 / 80) * by2 / 2
 
     assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1)
@@ -716,8 +765,8 @@ def test_pha1_eval_vector_show(clean_astro_ui):
     def r(sval, bval):
         return sval / bval
 
-    expected = r(*exps) * r(*bscales) * r(*ascales)
-    # expected = r(*bscales)
+    # expected = r(*exps) * r(*bscales) * r(*ascales)
+    expected = r(*bscales)
     assert scale.val == pytest.approx(expected)
 
 
@@ -773,9 +822,9 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
     def r2(sval, bval1, bval2):
         return sval / bval2
 
-    expected = (r1(*exps) * r1(*bscales) * r1(*ascales) + \
-                r2(*exps) * r2(*bscales) * r2(*ascales)) / 2
-    # expected = (r1(*bscales) + r2(*bscales)) / 2
+    # expected = (r1(*exps) * r1(*bscales) * r1(*ascales) + \
+    #             r2(*exps) * r2(*bscales) * r2(*ascales)) / 2
+    expected = (r1(*bscales) + r2(*bscales)) / 2
     assert scale.val == pytest.approx(expected)
 
 
@@ -813,15 +862,26 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
 
     smdl = ui.get_model('foo')
 
+    # The ordering of this test can depend on the Python version
+    # (before Python 3.7).
+    #
     src = '((apply_arf((100.0 * box1d.smdl))'
-    src += ' + (scalefoo_1 * apply_arf((100.0 * box1d.bmdl1))))'
-    src += ' + (scalefoo_2 * apply_arf((100.0 * const1d.bmdl2))))'
 
-    assert smdl.name == src
+    src1 = src
+    src1 += ' + (scalefoo_1 * apply_arf((100.0 * box1d.bmdl1))))'
+    src1 += ' + (scalefoo_2 * apply_arf((100.0 * const1d.bmdl2))))'
+
+    src2 = src
+    src2 += ' + (scalefoo_1 * apply_arf((100.0 * const1d.bmdl2))))'
+    src2 += ' + (scalefoo_2 * apply_arf((100.0 * box1d.bmdl1))))'
+
+    assert smdl.name in [src1, src2]
 
     assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
 
     # deconstruct the model to extract the components of the scale factor
+    # (and because of the ordering it requires some work to get
+    # the path pre Python 3.7)
     #
     lterm, rterm = smdl.parts
 
@@ -836,14 +896,22 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
     def r2(sval, bval1, bval2):
         return sval / bval2
 
-    expected1 = r1(*exps) * r1(*bscales) * r1(*ascales) / 2
-    expected2 = r2(*exps) * r2(*bscales) * r2(*ascales) / 2
+    # expected1 = r1(*exps) * r1(*bscales) * r1(*ascales) / 2
+    # expected2 = r2(*exps) * r2(*bscales) * r2(*ascales) / 2
 
-    # expected1 = r1(*bscales) / 2
-    # expected2 = r2(*bscales) / 2
+    # assert scale1.val == pytest.approx(expected1)
+    # assert scale2.val == pytest.approx(expected2)
 
-    assert scale1.val == pytest.approx(expected1)
-    assert scale2.val == pytest.approx(expected2)
+    expected1 = r1(*bscales) / 2
+    expected2 = r2(*bscales) / 2
+
+    check1_a = scale1.val == pytest.approx(expected1)
+    check2_a = scale2.val == pytest.approx(expected2)
+
+    check1_b = scale1.val == pytest.approx(expected2)
+    check2_b = scale2.val == pytest.approx(expected1)
+
+    assert (check1_a and check2_a) or (check1_b and check2_b)
 
 
 def test_pha1_eval_vector(clean_astro_ui):
@@ -925,7 +993,8 @@ def test_pha1_eval_vector(clean_astro_ui):
     def r(sval, bval):
         return sval / bval
 
-    sy += r(*exps) * r(*bscales) * r(*ascales) * (100 / 90) * by1
+    # sy += r(*exps) * r(*bscales) * r(*ascales) * (100 / 90) * by1
+    sy += r(*bscales) * (100 / 90) * by1
 
     # Just check a problem I encountered during development
     ndim = splot.y.ndim
@@ -1034,11 +1103,11 @@ def test_pha1_eval_vector_two(dofilter, expected, clean_astro_ui):
     def r2(sval, bval1, bval2):
         return sval / bval2
 
-    sy += r1(*exps) * r1(*bscales) * r1(*ascales) * 100 * by1 / 2
-    sy += r2(*exps) * r2(*bscales) * r2(*ascales) * 100 * by1 / 2
+    # sy += r1(*exps) * r1(*bscales) * r1(*ascales) * 100 * by1 / 2
+    # sy += r2(*exps) * r2(*bscales) * r2(*ascales) * 100 * by1 / 2
 
-    # sy += r1(*bscales) * 100 * by1 / 2
-    # sy += r2(*bscales) * 100 * by1 / 2
+    sy += r1(*bscales) * 100 * by1 / 2
+    sy += r2(*bscales) * 100 * by1 / 2
 
     # Just check a problem I encountered during development
     assert splot.y.ndim == 1
@@ -1058,10 +1127,10 @@ SCALING2[9:15] = 0.8
 
 
 @pytest.mark.parametrize('exps,bscales,ascales,dofilter,expected',
-                         [((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), False, 15.059210673609382),
-                          ((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), True, 4.344584636218002),
-                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), False, 53926037.03021918),
-                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True, 28776634.521582037)
+                         [((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), False, 2742.484820710452),
+                          ((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), True, 764.242724090022),
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), False, 53935156.203287244),
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True, 28780409.397312585)
                          ])
 def test_pha1_eval_vector_stat(exps, bscales, ascales,
                                dofilter, expected, clean_astro_ui):
@@ -1141,9 +1210,10 @@ def test_jdpileup_no_warning(caplog, clean_astro_ui):
 def test_jdpileup_warning(caplog, clean_astro_ui):
     """jdpileup model has warning when vector scaling"""
 
+    # The vector needs to be added to BACKSCAL
     exps = (100.0, 1000.0, 200)
-    bscales = (0.01, 0.02, 0.05)
-    ascales = (0.8, 0.8, 0.4 * np.ones(19))
+    bscales = (0.01, 0.02, 0.05 * np.ones(19))
+    ascales = (0.8, 0.8, 0.4)
     ui.set_data('x', setup_pha1(exps, bscales, ascales))
 
     ui.set_source('x', ui.box1d.smdl)
@@ -1160,6 +1230,62 @@ def test_jdpileup_warning(caplog, clean_astro_ui):
     assert name == 'sherpa.astro.background'
     assert level == logging.WARNING
     assert msg == 'model results for dataset x likely wrong: use of pileup model and array scaling for the background'
+
+
+def test_get_bkg_scale_nodata(clean_astro_ui):
+    """Can we call get_bkg_scale with no background?"""
+
+    ui.set_data(ui.DataPHA('foo', np.arange(3), np.arange(3)))
+
+    with pytest.raises(DataErr) as exc:
+        ui.get_bkg_scale()
+
+    assert str(exc.value) == "data set '1' does not have any associated backgrounds"
+
+
+def test_get_bkg_scale_invalid(clean_astro_ui):
+    """Can we call get_bkg_scale with invalid units?"""
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.02)
+    ascales = (0.8, 0.8)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    with pytest.raises(ValueError) as exc:
+        ui.get_bkg_scale(units='subtract')
+
+    assert str(exc.value) == 'Invalid units argument: subtract'
+
+
+def test_get_bkg_scale(clean_astro_ui):
+    """Can we call get_bkg_scale with units=counts and rate?"""
+
+    # Due to the choice of scalar vs vector values the scale
+    # factor depends on whether units=counts or rate.
+    #
+    exps = (100.0, 1000.0, 200)
+    bscales = (0.01, 0.02, 0.05 * np.ones(19))
+    ascales = (0.8, 0.8 * np.ones(19), 0.4)
+    ui.set_data('x', setup_pha1(exps, bscales, ascales))
+
+    def r(vals, bkg):
+        return vals[0] / vals[bkg]
+
+    bscale1 = ui.get_bkg_scale('x')
+    assert bscale1.size == 19
+    assert bscale1 == pytest.approx(0.5 * r(exps, 1) * r(bscales, 1) * r(ascales, 1))
+
+    bscale2 = ui.get_bkg_scale('x', bkg_id=2)
+    assert bscale2.size == 19
+    assert bscale2 == pytest.approx(0.5 * r(exps, 2) * r(bscales, 2) * r(ascales, 2))
+
+    bscale1 = ui.get_bkg_scale('x', units='rate')
+    assert np.isscalar(bscale1)
+    assert bscale1 == pytest.approx(0.5 * r(bscales, 1))
+
+    bscale2 = ui.get_bkg_scale('x', bkg_id=2, units='rate')
+    assert bscale2.size == 19
+    assert bscale2 == pytest.approx(0.5 * r(bscales, 2))
 
 
 @requires_data

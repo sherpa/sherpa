@@ -3618,18 +3618,20 @@ class Session(sherpa.ui.utils.Session):
             return self.get_bkg(id, bkg_id).backscal
         return self._get_pha_data(id).backscal
 
-    def get_bkg_scale(self, id=None, bkg_id=1, group=True, filter=False):
+    def get_bkg_scale(self, id=None, bkg_id=1, units='counts',
+                      group=True, filter=False):
         """Return the background scaling factor for a background data set.
 
         Return the factor applied to the background component to scale
-        it to match it to the source (either when subtracting the
-        background, or fitting it simultaneously).
+        it to match it to the source, either when subtracting the
+        background (units='counts'), or fitting it simultaneously
+        (units='rate').
 
         .. versionchanged:: 4.12.2
-           The bkg_id, group, and filter parameters have been added
-           and the routine no-longer calculates the average scaling
-           for all the background components but just for the given
-           component.
+           The bkg_id, counts, group, and filter parameters have been
+           added and the routine no-longer calculates the average
+           scaling for all the background components but just for the
+           given component.
 
         Parameters
         ----------
@@ -3640,6 +3642,11 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Set to identify which background component to use.  The
            default value is 1.
+        units : {'counts', 'rate'}, optional
+           The correction is applied to a model defined as counts, the
+           default, or a rate. The latter should be used when
+           calculating the correction factor for adding the background
+           data to the source aperture.
         group : bool, optional
             Should the values be grouped to match the data?
         filter : bool, optional
@@ -3661,7 +3668,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The scale factor is::
+        The scale factor when units='counts' is::
 
           exp_src * bscale_src * areascal_src /
           (exp_bgnd * bscale_bgnd * areascal_ngnd) /
@@ -3671,7 +3678,8 @@ class Session(sherpa.ui.utils.Session):
         exposure, BACKSCAL, and AREASCAL values for the source
         (``x=src``) and background (``x=bgnd``) regions, respectively,
         and ``nbkg`` is the number of background datasets associated
-        with the source aperture.
+        with the source aperture. When units='rate', the exposure and
+        areascal corrections are not included.
 
         Examples
         --------
@@ -3688,14 +3696,17 @@ class Session(sherpa.ui.utils.Session):
         0.034514770047217924
 
         Calculate the factors for the first two background components
-        of the default dataset:
+        of the default dataset, valid for combining the source
+        and background models to fit the source aperture:
 
-        >>> scale1 = get_bkg_scale()
-        >>> scale2 = get_bkg_scale(bkg_id=2)
+        >>> scale1 = get_bkg_scale(units='rate')
+        >>> scale2 = get_bkg_scale(units='rate', bkg_id=2)
 
         """
 
-        scale = self._get_pha_data(id).get_background_scale(bkg_id, group=group, filter=filter)
+        dset = self._get_pha_data(id)
+        scale = dset.get_background_scale(bkg_id, units=units,
+                                          group=group, filter=filter)
         if scale is None:
             # TODO: need to add bkg_id?
             raise DataErr('nobkg', self._fix_id(id))

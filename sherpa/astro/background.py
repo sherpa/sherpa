@@ -114,7 +114,7 @@ def add_response(session, id, data, model):
         except KeyError:
             raise ModelErr('nobkg', bkg_id, id)
 
-        scale = data.get_background_scale(bkg_id, group=False)
+        scale = data.get_background_scale(bkg_id, units='rate', group=False)
 
         if np.isscalar(scale):
             store = scales_scalar

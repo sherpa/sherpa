@@ -1413,18 +1413,25 @@ class DataPHA(Data1D):
             ids.remove(id)
         self.background_ids = ids
 
-    def get_background_scale(self, bkg_id=1, group=True, filter=False):
+    def get_background_scale(self, bkg_id=1, units='counts',
+                             group=True, filter=False):
         """Return the correction factor for the background dataset.
 
         .. versionchanged:: 4.12.2
-           The bkg_id parameter has been added and the routine
-           no-longer calculates the average scaling for all the
-           background components but just for the given component.
+           The bkg_id, units, group, and filter parameters have been
+           added and the routine no-longer calculates the average
+           scaling for all the background components but just for the
+           given component.
 
         Parameters
         ----------
         bkg_id : int or str, optional
            The background component to use (the default is 1).
+        units : {'counts', 'rate'}, optional
+           The correction is applied to a model defined as counts, the
+           default, or a rate. The latter should be used when
+           calculating the correction factor for adding the background
+           data to the source aperture.
         group : bool, optional
             Should the values be grouped to match the data?
         filter : bool, optional
@@ -1439,7 +1446,7 @@ class DataPHA(Data1D):
 
         Notes
         -----
-        The correction factor is::
+        The correction factor when units is 'counts' is::
 
             scale_exposure * scale_backscal * scale_areascal / nbkg
 
@@ -1447,7 +1454,17 @@ class DataPHA(Data1D):
         scale_x is the source value divided by the background
         value for the field x.
 
+        When units is 'rate' the correction is:
+
+            scale_backscal / nbkg
+
+        and it is currently uncertain whether it should include the
+        AREASCAL scaling.
+
         """
+
+        if units not in ['counts', 'rate']:
+            raise ValueError("Invalid units argument: {}".format(units))
 
         if bkg_id not in self.background_ids:
             return None
@@ -1463,10 +1480,10 @@ class DataPHA(Data1D):
             if obj.backscal is not None:
                 ans *= self._check_scale(obj.backscal, group=False)
 
-            if obj.areascal is not None:
+            if obj.areascal is not None and units == 'counts':
                 ans *= self._check_scale(obj.areascal, group=False)
 
-            if obj.exposure is not None:
+            if obj.exposure is not None and units == 'counts':
                 ans *= self._check_scale(obj.exposure, group=False)
 
             return ans
