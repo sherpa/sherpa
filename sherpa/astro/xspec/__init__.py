@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015-2018, 2019, 2020
-#                Smithsonian Astrophysical Observatory
+#         Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.10.1, 12.10.0, 12.9.1, and 12.9.0 of XSPEC [1]_,
-and can be built against the model library or the full application.  There is
-no guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
+of XSPEC [1]_, and can be built against the model library or the full
+application.  There is no guarantee of support for older or newer
+versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -30,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.10.1b'
+   '12.11.0'
 
 Initializing XSPEC
 ------------------
@@ -49,20 +50,40 @@ are now taken from the user's XSPEC configuration file - either
 for these settings. The default value for the photo-ionization table
 in this case is now ``vern`` rather than ``bcmc``.
 
+Supported models
+----------------
+
+The additive [2]_, multiplicative [3]_, and convolution [4]_ models
+from the XSPEC model library are supported, except for the `smaug`
+model [5]_, since it requires use of information from the XFLT keywords
+in the data file).
+
 References
 ----------
 
 .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/index.html
 
+.. [2] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Additive.html
+
+.. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplicative.html
+
+.. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
+
+.. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
+
 """
 
-from __future__ import absolute_import
 
 import string
-from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D
+
+import numpy as np
+
+from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
+    CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
+from sherpa.utils.err import ParameterErr
 from sherpa.astro.utils import get_xspec_position
 
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
@@ -185,13 +206,13 @@ def get_xsversion():
     References
     ----------
 
-    .. [1] http://heasarc.nasa.gov/docs/xanadu/xspec/
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/
 
     Examples
     --------
 
     >>> get_xsversion()
-    '12.9.1p'
+    '12.11.0m'
     """
 
     return _xspec.get_xsversion()
@@ -261,35 +282,35 @@ def set_xsabund(abundance):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSabund.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
 
     .. [2] Anders E. & Grevesse N. (1989, Geochimica et
            Cosmochimica Acta 53, 197)
-           http://adsabs.harvard.edu/abs/1989GeCoA..53..197A
+           https://adsabs.harvard.edu/abs/1989GeCoA..53..197A
 
     .. [3] Asplund M., Grevesse N., Sauval A.J. & Scott P.
            (2009, ARAA, 47, 481)
-           http://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
+           https://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
 
     .. [4] Feldman U.(1992, Physica Scripta 46, 202)
-           http://adsabs.harvard.edu/abs/1992PhyS...46..202F
+           https://adsabs.harvard.edu/abs/1992PhyS...46..202F
 
     .. [5] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
            Acta 46, 2363)
-           http://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
+           https://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
 
     .. [6] Grevesse, N. & Sauval, A.J. (1998, Space Science
            Reviews 85, 161)
-           http://adsabs.harvard.edu/abs/1998SSRv...85..161G
+           https://adsabs.harvard.edu/abs/1998SSRv...85..161G
 
     .. [7] Wilms, Allen & McCray (2000, ApJ 542, 914)
-           http://adsabs.harvard.edu/abs/2000ApJ...542..914W
+           https://adsabs.harvard.edu/abs/2000ApJ...542..914W
 
     .. [8] Lodders, K (2003, ApJ 591, 1220)
-           http://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+           https://adsabs.harvard.edu/abs/2003ApJ...591.1220L
 
     Examples
     --------
@@ -334,7 +355,7 @@ def set_xschatter(level):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSchatter.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSchatter.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
@@ -373,7 +394,7 @@ def set_xscosmo(h0, q0, l0):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XScosmo.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XScosmo.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
@@ -414,20 +435,20 @@ def set_xsxsect(name):
 
     References
     ----------
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSxsect.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSxsect.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
 
     .. [2] Balucinska-Church & McCammon (1992; Ap.J.400, 699).
-           http://adsabs.harvard.edu/abs/1992ApJ...400..699B
+           https://adsabs.harvard.edu/abs/1992ApJ...400..699B
 
     .. [3] Yan, M., Sadeghpour, H. R., Dalgarno, A. 1998,
            Ap.J. 496, 1044
-           http://adsabs.harvard.edu/abs/1998ApJ...496.1044Y
+           https://adsabs.harvard.edu/abs/1998ApJ...496.1044Y
 
     .. [4] Verner et. al., 1996, Ap.J., 465, 487.
-           http://adsabs.harvard.edu/abs/1996ApJ...465..487V
+           https://adsabs.harvard.edu/abs/1996ApJ...465..487V
 
     Examples
     --------
@@ -443,7 +464,7 @@ def set_xsxsect(name):
 # the strings the user sent as specific XSPEC model strings (if any) during
 # the session.  Only store if setting was successful.
 # See:
-# http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
+# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
 modelstrings = {}
 
 # Store any path changes
@@ -523,7 +544,7 @@ def set_xsxset(name, value):
     References
     ----------
 
-    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSabund.html
            Note that this may refer to a newer version than the
            compiled version used by Sherpa; use `get_xsversion` to
            check.
@@ -623,8 +644,8 @@ def set_xspath_manager(path):
 # strings.  The chatter setting is an integer.  Please see the
 # XSPEC manual concerning the following commands: abund, chatter,
 # cosmo, xsect, and xset.
-# http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
-# http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
+# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
+# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
 #
 # The path dictionary contains the manager path, which can be
 # explicitly set. It could also contain the model path, but there
@@ -731,11 +752,11 @@ def read_xstable_model(modelname, filename):
     References
     ----------
 
-    .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
 
-    .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+    .. [2] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-    .. [3] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+    .. [3] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     Examples
     --------
@@ -894,7 +915,7 @@ class XSTableModel(XSModel):
     ----------
 
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
-    .. [2] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+    .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     """
 
@@ -957,6 +978,12 @@ class XSTableModel(XSModel):
         # logic could be in __init__, but that can be changed
         # at a later date.
         #
+        for param, value in zip(self.pars, p):
+            if value < param._hard_min:
+                raise ParameterErr('edge', self.name, 'minimum', param._hard_min)
+            if value > param._hard_max:
+                raise ParameterErr('edge', self.name, 'maximum', param._hard_max)
+
         if hasattr(_xspec, 'tabint'):
             tabtype = 'add' if self.addmodel else 'mul'
             return _xspec.tabint(p,
@@ -997,11 +1024,248 @@ class XSMultiplicativeModel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Multiplicative.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplivative.html
 
     """
 
     pass
+
+
+class XSConvolutionKernel(XSModel):
+    """The base class for XSPEC convolution models.
+
+    The XSPEC convolution models are listed at [1]_.
+
+    Notes
+    -----
+
+    As these models are applied to the result of other models, this
+    model class isn't called directly, but creates a wrapper instance
+    (`XSConvolutionModel`) that is. This wrapping is done by applying
+    the kernel to the model expression using normal function
+    application, that is the following creates a model called ``mdl``
+    which aplies the comvolution model (in this case `XScflux`) to the
+    model expression (an absorbed APEC model):
+
+    >>> cmdl = XScflux()
+    >>> src = XSapec()
+    >>> gal = XSphabs()
+    >>> mdl = cmdl(gal  * src)
+
+    These expressions can then be nested, so for instance you can
+    apply a convolution model to only part of the model expression, as
+    in:
+
+    >>> mdl = gal * cmdl(src)
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
+
+    Examples
+    --------
+
+    Create an instance of the XSPEC cflux convolution model, and set
+    its parameters:
+
+    >>> from sherpa.astro import xspec
+    >>> cmdl = xspec.XScflux()
+    >>> cmdl.emin = 0.5
+    >>> cmdl.emax = 7.0
+    >>> cmdl.lg10flux = -12.1
+    >>> print(cmdl)
+    xscflux
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       xscflux.Emin frozen          0.5            0        1e+06        keV
+       xscflux.Emax frozen           10            0        1e+06        keV
+       xscflux.lg10Flux thawed          -12         -100          100        cgs
+
+    The convolution models are not evaluated directly. Instead they
+    are applied to a model expression which you specify as the
+    argument to the convolved model. The following creates two
+    different models: mdl1 applies the convolution to the
+    full model expression (absorbed powerlaw), and mdl
+    applies the convolution to the powerlaw component and then
+    multiplies this by the absorption model.
+
+    >>> gal = xspec.XSphabs()
+    >>> pl = xspec.XSpowerlaw()
+    >>> mdl1 = cmdl(gal * pl)
+    >>> mdl2 = gal * cmdl(pl)
+
+    For the XScflux use case it is important to freeze the normalization
+    parameter of the emission model (i.e. additive component) to 1,
+    to ensure the lg10Flux value is calculated correctly. That is:
+
+    >>> pl.norm = 1
+    >>> pl.norm.freeze()
+
+    """
+
+    def __repr__(self):
+        return "<{} kernel instance '{}'>".format(type(self).__name__,
+                                                  self.name)
+
+    def __call__(self, model):
+        return XSConvolutionModel(model, self)
+
+    def calc(self, pars, rhs, *args, **kwargs):
+        """Evaluate the convolved model.
+
+        Note that this method is not cached by
+        sherpa.models.modelCacher1d (may change in the future).
+
+        Parameters
+        ----------
+        pars : sequence of numbers
+            The parameters of the convolved model. The first npars
+            parameters (where npars is the lenth of the objecs pars
+            attribute) are applied to the convolution model, and the
+            remaining are passed to the rhs model.
+        rhs : sherpa.models.model.ArithmeticModel
+            The model that is being convolved.
+        *args
+            The model grid. There should be two arrays (the low and
+            high edges of the bin) to make sure the wrapped model is
+            evaluated correctly. One array can be used but this should
+            only be used when the wrapped model only contains XSPEC
+            models.
+        **kwargs
+            At present all additional keyword arguments are dropped.
+
+        """
+
+        npars = len(self.pars)
+        lpars = pars[:npars]
+        rpars = pars[npars:]
+
+        # We do not pass kwargs on to either rhs or self._calc;
+        # this is needed because when used with regrid support the
+        # kwargs may include keywords like 'integrate' but this
+        # can then cause problems downstream (that is, they then
+        # get sent to the xspec compiled routine, which doesn't
+        # support them). This may be a problem with the XSPEC
+        # interface (i.e. it should not pass on kwargs to the compiled
+        # code), but for now stop it here.
+        #
+        # DJB is worried that if there is a nested set of grids
+        # then this could be a problem, but has no experience or
+        # tests to back this up.
+        #
+        # fluxes = np.asarray(rhs(rpars, *args, **kwargs))
+        fluxes = np.asarray(rhs(rpars, *args))
+        return self._calc(lpars, fluxes, *args)
+
+
+# It makes sense to derive from XSModel to say "this is XSPEC",
+# but does the extra machinery it provides cause a problem here?
+#
+class XSConvolutionModel(CompositeModel, XSModel):
+    """Evaluate a model and pass it to an XSPEC convolution model.
+
+    Calculate the convolved data - that is evaluate the model and then
+    pass it to the wrapper model which applies the convolution model.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.ArithmeticModel instance
+        The model whose results, when evaluated, are passed to
+        the convolution model.
+    wrapper : sherpa.astro.xspec.XSConvolutionKernel instance
+        The XSPEC convolution model.
+
+    Examples
+    --------
+
+    The following evaluates two models (creating the y1 and y2
+    arrays), where y1 applies the `XScfux` convolution model to the
+    combined absorption times powerlaw model, and y2 applies the
+    convolution model to only the power-law model, and then multiples
+    this by the absorption model. In the following mdl1 and mdl2
+    are instances of XSConvolutionModel:
+
+    >>> import numpy as np
+    >>> from sherpa.astro import xspec
+    >>> cmdl = xspec.XScflux()
+    >>> gal = xspec.XSphabs()
+    >>> pl = xspec.XSpowerlaw()
+    >>> pl.norm.freeze()
+    >>> mdl1 = cmdl(gal * pl)
+    >>> mdl2 = gal * cmdl(pl)
+    >>> cmdl.emin = 0.5
+    >>> cmdl.emax = 7.0
+    >>> cmdl.lg10flux = -12.1
+    >>> egrid = np.arange(0.1, 10, 0.01)
+    >>> elo, ehi = egrid[:-1], egrid[1:]
+    >>> y1 = mdl1(elo, ehi)
+    >>> y2 = mdl2(elo, ehi)
+
+    Display the combined model:
+
+    >>> print(mdl1)
+    xscflux((phabs * powerlaw))
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       xscflux.Emin frozen          0.5            0        1e+06        keV
+       xscflux.Emax frozen           10            0        1e+06        keV
+       xscflux.lg10Flux thawed          -12         -100          100        cgs
+       phabs.nH     thawed            1            0       100000 10^22 atoms / cm^2
+       powerlaw.PhoIndex thawed            1           -2            9
+       powerlaw.norm frozen            1            0        1e+24
+
+    >>> print(mdl2)
+    (phabs * xscflux(powerlaw))
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       phabs.nH     thawed            1            0       100000 10^22 atoms / cm^2
+       xscflux.Emin frozen          0.5            0        1e+06        keV
+       xscflux.Emax frozen           10            0        1e+06        keV
+       xscflux.lg10Flux thawed          -12         -100          100        cgs
+       powerlaw.PhoIndex thawed            1           -2            9
+       powerlaw.norm frozen            1            0        1e+24
+
+    """
+
+    @staticmethod
+    def wrapobj(obj):
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        else:
+            return ArithmeticFunctionModel(obj)
+
+    def __init__(self, model, wrapper):
+        self.model = self.wrapobj(model)
+        self.wrapper = wrapper
+        CompositeModel.__init__(self,
+                                "{}({})".format(self.wrapper.name,
+                                                self.model.name),
+                                (self.wrapper, self.model))
+
+    # for now this is not cached
+    def calc(self, p, *args, **kwargs):
+        """Evaluate the convolved model on a grid.
+
+        Parameters
+        ----------
+        p : sequence of numbers
+            The parameters of the model, matching the ``pars``
+            field. This will start with the convolution model
+            parameters (if any) and then the model.
+        *args
+            The model grid. There should be two arrays (the low and
+            high edges of the bin) to make sure the wrapped model is
+            evaluated correctly. One array can be used but this should
+            only be used when the wrapped model only contains XSPEC
+            models.
+        **kwargs
+            Additional keyword arguments.
+
+        """
+
+        return self.wrapper.calc(p, self.model.calc,
+                                 *args, **kwargs)
 
 
 @version_at_least("12.10.1")
@@ -1062,7 +1326,7 @@ class XSagnsed(XSAdditiveModel):
 
     See Also
     --------
-    XSqsosed
+    XSagnslim, XSqsosed
 
     Notes
     -----
@@ -1103,7 +1367,7 @@ class XSagnsed(XSAdditiveModel):
         self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
                                  '(_selfg)', frozen=True)
 
-        self.Htmax = Parameter(name, 'Htmax', 100, 6, 200, 6, 200,
+        self.Htmax = Parameter(name, 'Htmax', 10, 6, 10, 6, 10,
                                'Rg', frozen=True)
 
         self.reprocess = Parameter(name, 'reprocess', 1, 0, 1, 0, 1,
@@ -1117,6 +1381,114 @@ class XSagnsed(XSAdditiveModel):
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
                 self.R_hot, self.R_warm, self.logrout, self.Htmax,
                 self.reprocess, self.redshift, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.11.0")
+class XSagnslim(XSAdditiveModel):
+    """The XSPEC agnslim model: AGN super-Eddington accretion model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass, in solar units.
+    dist
+        The comoving (proper) distance, in Mpc.
+    logmdot
+        log of mdot, where mdot = Mdot/Mdot_Edd and
+        eta Mdot_Edd c^2 = L_Edd
+    astar
+        The black hole spin (dimensionless)
+    cosi
+        The cosine of the inclination angle i for the warm
+        Comptonising component and the outer disc.
+    kTe_hot
+        The electron temperature for the hot Comptonisation component
+        in keV. If negative then only the hot Comptonisation component
+        is used.
+    kTe_warm
+        The electron temperature for the warm Comptonisation component
+        in keV. If negative then only the warm Comptonisation component
+        is used.
+    Gamma_hot
+        The spectral index of the hot Comptonisation component.
+    Gamma_warm
+        The spectral index of the warm Comptonisation component. If
+        negative then only the outer disc component is used.
+    R_hot
+        The outer radius of the hot Comptonisation component in Rg.
+    R_warm
+        The outer radius of the warm Comptonisation component in Rg.
+    logrout
+        The log of the outer radius of the disc in units of Rg. If
+        negative, the code will use the self gravity radius as calculated
+        from Laor & Netzer (1989) (see [1]_).
+    rin
+        The inner radius of the disc in Rg. If this parameter is -1
+        (the default), the model will use the radius calculated from KD19.
+        This must be greater than R_hot for mdot greater than 6 and greater
+        than R_isco for mdot less than 6.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model. This must be fixed at 1.
+
+    See Also
+    --------
+    XSagnsed, XSqsosed
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgnslim.html
+
+    """
+
+    __function__ = "agnslim"
+
+    def __init__(self, name='agnslim'):
+        self.mass = Parameter(name, 'mass', 1e7, 1.0, 1e10, 1.0, 1e10,
+                              'solar', frozen=True)
+        self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
+                              'Mpc', frozen=True)
+        self.logmdot = Parameter(name, 'logmdot', -1, -10, 3, -10, 3)
+        self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
+                               frozen=True)
+        self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
+                              frozen=True)
+        # TODO: allow negative values
+        self.kTe_hot = Parameter(name, 'kTe_hot', 100.0, 10, 300, 10, 300,
+                                 'keV(-pl)', frozen=True)
+        self.kTe_warm = Parameter(name, 'kTe_warm', 0.2, 0.1, 0.5, 0.1, 0.5,
+                                  'keV(-sc)')
+        self.Gamma_hot = Parameter(name, 'Gamma_hot', 2.4, 1.3, 3, 1.3, 3)
+        self.Gamma_warm = Parameter(name, 'Gamma_warm', 3.0, 2, 5, 2, 10,
+                                    '(-disk)')
+
+        self.R_hot = Parameter(name, 'R_hot', 10, 2, 500, 2, 500, 'Rg')
+        self.R_warm = Parameter(name, 'R_warm', 20, 2, 500, 2, 500, 'Rg')
+
+        self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
+                                 '(-selfg)', frozen=True)
+
+        self.rin = Parameter(name, 'rin', -1, -1, 100, -1, 100,
+                                   frozen=True)  # TODO: make alwaysfrozen?
+
+        self.redshift = Parameter(name, 'redshift', 0, 0, 5, 0, 5,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
+                self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
+                self.R_hot, self.R_warm, self.logrout, self.rin,
+                self.redshift, self.norm)
 
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -1357,7 +1729,7 @@ class XSbexrav(XSAdditiveModel):
 
     See Also
     --------
-    XSbexriv
+    XSbexriv, XSreflect
 
     Notes
     -----
@@ -1432,7 +1804,7 @@ class XSbexriv(XSAdditiveModel):
 
     See Also
     --------
-    XSbexrav
+    XSbexrav, XSireflect
 
     Notes
     -----
@@ -1816,6 +2188,77 @@ class XSbvrnei(XSAdditiveModel):
         self.Velocity = Parameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1.e6, 'km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity, self.norm))
+
+
+@version_at_least("12.11.0")
+class XSbwcycl(XSAdditiveModel):
+    """The XSPEC bwcycl model: Becker-Wolff self-consistent cyclotron line model.
+
+    The model is described at [1]_. Please review the restrictions
+    on the model and parameter values at this reference before using
+    the model.
+
+    Attributes
+    ----------
+    Radius
+        The radius of the Neutron star, in km. Keep frozen.
+    Mass
+        The mass of the Neutron star, in solar units. Keep frozen.
+    csi
+        Parameter linked to the photon escape time (order of some
+        unities).
+    delta
+        Ratio between bulk and thermal Comptonization importances.
+    B
+        The magnetic field in units of 10^12 G.
+    Mdot
+        The mass accretion rate, in 10^17 g/s.
+    Te
+        The electron temperature in units of keV.
+    r0
+        The column radius in m.
+    D
+        The source distance in kpc. Keep frozen.
+    BBnorm
+        The normalization of the blackbody seed photon component
+        (fix it to zero at first).
+    CYCnorm
+        The normalization of the cyclotron emission seed photon
+        component (fix it to one).
+    FFnorm
+        The normalization of the Bremsstrahlung emission seed photon
+        component (fix it to one).
+    norm
+        The normalization of the model (fix it to one).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBwcycl.html
+
+    """
+
+    __function__ = "beckerwolff"  # "c_beckerwolff"  do not have a direct interface to c_xxx
+
+    def __init__(self, name='bwcycl'):
+        self.Radius = Parameter(name, 'Radius', 10, 5, 20, 5, 20, units='km', frozen=True)
+        self.Mass = Parameter(name, 'Mass', 1.4, 1, 3, 1, 3, units='Solar', frozen=True)
+        self.csi = Parameter(name, 'csi', 1.5, 0.01, 20, 0.01, 20)
+        self.delta = Parameter(name, 'delta', 1.8, 0.01, 20, 0.01, 20)
+        self.B = Parameter(name, 'B', 4, 0.01, 100, 0.01, 100, units='1e12G')
+        self.Mdot = Parameter(name, 'Mdot', 1, 1e-6, 1e6, 1e-6, 1e6, units='1e17g/s')
+        self.Te = Parameter(name, 'Te', 5, 0.1, 100, 0.1, 100, units='keV')
+        self.r0 = Parameter(name, 'r0', 44, 10, 1000, 10, 1000, units='m')
+        self.D = Parameter(name, 'D', 5, 1, 20, 1, 20, units='km', frozen=True)
+        self.BBnorm = Parameter(name, 'BBnorm', 0.0, 0, 100, 0, 100, frozen=True)
+        self.CYCnorm = Parameter(name, 'CYCnorm', 1.0, -1, 100, -1, 100, frozen=True)
+        self.FFnorm = Parameter(name, 'FFnorm', 1.0, -1, 100, -1, 100, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval, frozen=True)
+
+        XSAdditiveModel.__init__(self, name, (self.Radius, self.Mass, self.csi, self.delta,
+                                              self.B, self.Mdot, self.Te, self.r0, self.D,
+                                              self.BBnorm, self.CYCnorm, self.FFnorm,
+                                              self.norm))
 
 
 class XSc6mekl(XSAdditiveModel):
@@ -2818,6 +3261,10 @@ class XSdiskline(XSAdditiveModel):
     norm
         The model normalization in photon/cm^2/s.
 
+    See Also
+    --------
+    XSrdblur
+
     References
     ----------
 
@@ -2850,7 +3297,7 @@ class XSdiskm(XSAdditiveModel):
 
     Attributes
     ----------
-    NSmass
+    accrate
         The accretion rate, in Eddington luminosities.
     NSmass
         The central mass, in solar mass units.
@@ -2891,7 +3338,7 @@ class XSdisko(XSAdditiveModel):
 
     Attributes
     ----------
-    NSmass
+    accrate
         The accretion rate, in Eddington luminosities.
     NSmass
         The central mass, in solar mass units.
@@ -3216,7 +3663,7 @@ class XSgrad(XSAdditiveModel):
 
     See Also
     --------
-    XSkerbb
+    XSkerrbb
 
     References
     ----------
@@ -3362,7 +3809,7 @@ class XSkerrbb(XSAdditiveModel):
         [1]_ for more details.
     a
         The specific angular momentum of the black hole in units of the
-        black hole mass M (when G=c=1). It should be in the range [0, 1).
+        black hole mass M (when G=c=1). It should be in the range [-1, 1).
     i
         The disk inclination angle, in degrees. A face-on disk has
         i=0. It must be less than or equal to 85 degrees.
@@ -3391,7 +3838,7 @@ class XSkerrbb(XSAdditiveModel):
 
     See Also
     --------
-    XSgrad
+    XSgrad, XSzkerrbb
 
     References
     ----------
@@ -3410,8 +3857,8 @@ class XSkerrbb(XSAdditiveModel):
         self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'Mdd0')
         self.Dbh = Parameter(name, 'Dbh', 10., 0., 10000., 0.0, hugeval, 'kpc', True)
         self.hd = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
-        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, frozen=True)
-        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, frozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.Dbh, self.hd, self.rflag, self.lflag, self.norm))
 
@@ -3517,7 +3964,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     See Also
     --------
-    XSdiskline, XSlaor
+    XSdiskline, XSkerrconv, XSlaor
 
     References
     ----------
@@ -3660,7 +4107,7 @@ class XSlaor(XSAdditiveModel):
 
     See Also
     --------
-    XSlaor2
+    XSkdblur, XSlaor2
 
     References
     ----------
@@ -3721,7 +4168,7 @@ class XSlaor2(XSAdditiveModel):
 
     See Also
     --------
-    XSlaor
+    XSkdblur2, XSlaor
 
     References
     ----------
@@ -4556,6 +5003,10 @@ class XSnthComp(XSAdditiveModel):
     norm
         The normalization of the model: see [1]_ for more details.
 
+    See Also
+    --------
+    XSthcomp
+
     References
     ----------
 
@@ -4645,7 +5096,7 @@ class XSpexrav(XSAdditiveModel):
 
     See Also
     --------
-    XSpexriv, XSpexmon
+    XSpexriv, XSpexmon, XSreflect
 
     Notes
     -----
@@ -4710,7 +5161,7 @@ class XSpexriv(XSAdditiveModel):
 
     See Also
     --------
-    XSpexrav, XSpexmon
+    XSireflect, XSpexrav, XSpexmon
 
     Notes
     -----
@@ -6677,6 +7128,74 @@ class XSzgauss(XSAdditiveModel):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
         pos = get_xspec_position(dep, *args)
         param_apply_limits(pos, self.LineE, **kwargs)
+
+
+@version_at_least("12.11.0")
+class XSzkerrbb(XSAdditiveModel):
+    """The XSPEC zkerrbb model: multi-temperature blackbody model for thin accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    eta
+        The ratio of the disk power produced by a torque at the disk
+        inner boundary to the disk power arising from accretion. See
+        [1]_ for more details.
+    a
+        The specific angular momentum of the black hole in units of the
+        black hole mass M (when G=c=1). It should be in the range [-1, 1).
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0. It must be less than or equal to 85 degrees.
+    Mbh
+        The mass of the black hole, in solar masses.
+    Mdd
+        The "effective" mass accretion rate in units of M_solar/year.
+        See [1]_ for more details.
+    z
+        The redshift of the black hole
+    fcol
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    rflag
+        A flag to switch on or off the effect of self irradiation:
+        when greater than zero the self irradition is included,
+        otherwise it is not. This parameter can not be thawed.
+    lflag
+        A flag to switch on or off the effect of limb darkening:
+        when greater than zero the disk emission is assumed to be
+        limb darkened, otherwise it is isotropic.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1
+        if the inclination, mass, and distance are frozen.
+
+    See Also
+    --------
+    XSkerrbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrbb.html
+
+    """
+
+    __function__ = "C_zkerrbb"
+
+    def __init__(self, name='zkerrbb'):
+        self.eta = Parameter(name, 'eta', 0., 0., 1.0, 0.0, hugeval, frozen=True)
+        self.a = Parameter(name, 'a', 0., -1., 0.9999, -hugeval, hugeval)
+        self.i = Parameter(name, 'i', 30., 0., 85., 0.0, hugeval, 'deg', True)
+        self.Mbh = Parameter(name, 'Mbh', 1., 0., 100., 0.0, hugeval, 'M_sun')
+        self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'M0yr')
+        self.z = Parameter(name, 'z', 0.01, 0., 10., 0.0, 10, frozen=True)
+        self.fcol = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.z, self.fcol, self.rflag, self.lflag, self.norm))
 
 
 @version_at_least("12.10.1")
@@ -9892,7 +10411,7 @@ class XSzbabs(XSMultiplicativeModel):
         The H column density, in 10^22 atoms/cm^2.
     nHeI
         The He I column density, in 10^22 atoms/cm^2.
-    nHeI
+    nHeII
         The He II column density, in 10^22 atoms/cm^2.
     z
         The redshift of the absorber.
@@ -10536,6 +11055,8 @@ class XSismabs(XSMultiplicativeModel):
     element name to avoid conflict: that is Si_I and S_I refer to
     the XSPEC SiI and SI parameters respectively.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -10639,6 +11160,128 @@ class XSismabs(XSMultiplicativeModel):
                                         self.CaII,
                                         self.CaIII,
                                         self.Fe, self.redshift))
+
+
+@version_at_least("12.11.0")
+class XSismdust(XSMultiplicativeModel):
+    """The XSPEC ismdust model: Extinction due to a power-law distribution of dust grains.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    msil
+        The dust mass column for silicate (in units of 10^-4).
+    mgra
+        The dust mass column for graphite (in units of 10^-4).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSolivineabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelIsmdust.html
+
+    """
+
+    __function__ = "ismdust"
+
+    def __init__(self, name='ismdust'):
+        self.msil = Parameter(name, 'msil', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.mgra = Parameter(name, 'mgra', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.msil, self.mgra,
+                                        self.redshift))
+
+
+@version_at_least("12.11.0")
+class XSlogconst(XSMultiplicativeModel):
+    """The XSPEC logconst model: Constant in log units.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    logfact
+        The constant factor in natural log.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLogconst.html
+
+    """
+
+    __function__ = "C_logconst"
+
+    def __init__(self, name='logconst'):
+        self.logfact = Parameter(name, 'logfact', 0.0, -20.0, 20, -20, 20)
+        XSMultiplicativeModel.__init__(self, name, (self.logfact, ))
+
+
+@version_at_least("12.11.0")
+class XSlog10con(XSMultiplicativeModel):
+    """The XSPEC log10con model: Constant in base 10 log units.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    log10fac
+        The constant factor in base 10 log.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLog10con.html
+
+    """
+
+    __function__ = "C_log10con"
+
+    def __init__(self, name='log10con'):
+        self.log10fac = Parameter(name, 'log10fac', 0.0, -20.0, 20, -20, 20)
+        XSMultiplicativeModel.__init__(self, name, (self.log10fac, ))
+
+
+@version_at_least("12.11.0")
+class XSolivineabs(XSMultiplicativeModel):
+    """The XSPEC olivineabs model: Absorption due to olivine.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    moliv
+        The dust mass column for olivine grains (in units of 10^-4).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSismdust
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOlivineabs.html
+
+    """
+
+    __function__ = "olivineabs"
+
+    def __init__(self, name='olivineabs'):
+        self.moliv = Parameter(name, 'moliv', 1.0, 0.0, 1e4, 0, 1e5, '10^-4')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.moliv, self.redshift))
 
 
 @version_at_least("12.9.1")
@@ -10802,6 +11445,8 @@ class XSTBfeo(XSMultiplicativeModel):
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -10844,6 +11489,8 @@ class XSTBgas(XSMultiplicativeModel):
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
 
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -10884,6 +11531,8 @@ class XSTBpcf(XSMultiplicativeModel):
     -----
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -10940,6 +11589,8 @@ class XSTBrel(XSMultiplicativeModel):
     -----
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11047,6 +11698,10 @@ class XSvoigt(XSAdditiveModel):
     --------
     XSgauss, XSlorentz
 
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -11085,6 +11740,10 @@ class XSxscat(XSMultiplicativeModel):
     DustModel
         The dust model used: see [1]_ for more information.
 
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
     References
     ----------
 
@@ -11096,8 +11755,8 @@ class XSxscat(XSMultiplicativeModel):
 
     def __init__(self, name='xscat'):
         self.NH = Parameter(name, 'NH', 1., 0., 1000.0, 0.0, 1000.0, '10^22')
-        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.95, 0, 0.95)
-        self.Rext = Parameter(name, 'Rext', 10.0, 0, 115.0, 0, 119.0, 'arcsec',
+        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.99, 0, 0.999)
+        self.Rext = Parameter(name, 'Rext', 10.0, 0, 235.0, 0, 240.0, 'arcsec',
                               frozen=True)
         # The maxmimum number of models depends on the data file, so pick
         # a value that is unlikely to be exceeded (the max at the time
@@ -11109,5 +11768,1191 @@ class XSxscat(XSMultiplicativeModel):
                                         self.DustModel))
 
 
+class XScflux(XSConvolutionKernel):
+    """The XSPEC cflux convolution model: calculate flux
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Emin
+        Minimum energy over which the flux is calculated.
+    Emax
+        Maximum energy over which the flux is calculated.
+    lg10Flux
+        log (base 10) of the flux in erg/cm^2/s
+
+    See Also
+    --------
+    XSclumin, XScpflux
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    See [1]_ for the meaning and restrictions, in particular the
+    necessity of freezing the amplitude, or normalization, of the
+    emission component (or components) at 1.
+
+    Examples
+    --------
+
+    With the following definitions:
+
+    >>> cflux = XScflux()
+    >>> absmdl = XSphabs()
+    >>> plmdl = XSpowerlaw()
+    >>> gmdl = XSgaussian()
+    >>> srcmdl = plmdl + gmdl
+
+    then the model can be applied in a number of ways, such as:
+
+    >>> mdl1 = cflux(absmdl * srcmdl)
+    >>> mdl2 = absmdl * cflux(srcmdl)
+    >>> mdl3 = absmdl * (plmdl + cflux(gmdl))
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCflux.html
+
+    """
+
+    _calc = _xspec.C_cflux
+
+    def __init__(self, name='xscflux'):
+        self.Emin = Parameter(name, 'Emin', 0.5, min=0.0, max=1e6,
+                              hard_min=0.0, hard_max=1e6, frozen=True,
+                              units='keV')
+        self.Emax = Parameter(name, 'Emax', 10.0, min=0.0, max=1e6,
+                              hard_min=0.0, hard_max=1e6, frozen=True,
+                              units='keV')
+        self.lg10Flux = Parameter(name, 'lg10Flux', -12.0, min=-100.0,
+                                  max=100.0, hard_min=-100.0, hard_max=100.0,
+                                  frozen=False, units='cgs')
+        XSConvolutionKernel.__init__(self, name, (self.Emin,
+                                                  self.Emax,
+                                                  self.lg10Flux
+                                                  ))
+
+
+@version_at_least("12.9.1")
+class XSclumin(XSConvolutionKernel):
+    """The XSPEC clumin convolution model: calculate luminosity
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Emin
+        Minimum energy over which the luminosity is calculated.
+    Emax
+        Maximum energy over which the luminosity is calculated.
+    Redshift
+        redshift of the source
+    lg10Lum
+        log (base 10) of the luminosity in erg/s
+
+    See Also
+    --------
+    XSclumin, XScpflux
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    See [1]_ for the meaning and restrictions, in particular the
+    necessity of freezing the amplitude, or normalization, of the
+    emission component (or components) at 1.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    Examples
+    --------
+
+    With the following definitions:
+
+    >>> clumin = XSclumin()
+    >>> absmdl = XSphabs()
+    >>> plmdl = XSpowerlaw()
+    >>> gmdl = XSgaussian()
+    >>> srcmdl = plmdl + gmdl
+
+    then the model can be applied in a number of ways, such as:
+
+    >>> mdl1 = clumin(absmdl * srcmdl)
+    >>> mdl2 = absmdl * clumin(srcmdl)
+    >>> mdl3 = absmdl * (plmdl + clumin(gmdl))
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelClumin.html
+
+    """
+
+    __function__ = "C_clumin"
+
+    def __init__(self, name='xsclumin'):
+        self.Emin = Parameter(name, 'Emin', 0.5, min=0.0, max=1e6,
+                              hard_min=0.0, hard_max=1e6, frozen=True,
+                              units='keV')
+        self.Emax = Parameter(name, 'Emax', 10.0, min=0.0, max=1e6,
+                              hard_min=0.0, hard_max=1e6, frozen=True,
+                              units='keV')
+        self.Redshift = Parameter(name, 'Redshift', 0, min=-0.999, max=10,
+                                  hard_min=-0.999, hard_max=10, frozen=True)
+        self.lg10Lum = Parameter(name, 'lg10Lum', -40.0, min=-100.0,
+                                 max=100.0, hard_min=-100.0, hard_max=100.0,
+                                 frozen=False, units='cgs')
+        XSConvolutionKernel.__init__(self, name, (self.Emin,
+                                                  self.Emax,
+                                                  self.Redshift,
+                                                  self.lg10Lum
+                                                  ))
+
+
+class XScpflux(XSConvolutionKernel):
+    """The XSPEC cpflux convolution model: calculate photon flux
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Emin
+        Minimum energy over which the photon flux is calculated.
+    Emax
+        Maximum energy over which the photon flux is calculated.
+    Flux
+        photon flux in photon/cm^2/s
+
+    See Also
+    --------
+    XScflux, XSclumin
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    See [1]_ for the meaning and restrictions, in particular the
+    necessity of freezing the amplitude, or normalization, of the
+    emission component (or components) at 1.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCpflux.html
+
+    """
+
+    _calc = _xspec.C_cpflux
+
+    def __init__(self, name='xscpflux'):
+        self.Emin = Parameter(name, 'Emin', 0.5, min=0.0, max=1e6,
+                              hard_min=0.0, hard_max=1e6, frozen=True,
+                              units='keV')
+        self.Emax = Parameter(name, 'Emax', 10.0, min=0.0, max=1e6,
+                              hard_min=0.0, hard_max=1e6, frozen=True,
+                              units='keV')
+        self.Flux = Parameter(name, 'Flux', 1.0, min=0.0, max=1e10,
+                              hard_min=0.0, hard_max=1e10,
+                              frozen=False, units='')
+        XSConvolutionKernel.__init__(self, name, (self.Emin,
+                                                  self.Emax,
+                                                  self.Flux
+                                                  ))
+
+
+class XSgsmooth(XSConvolutionKernel):
+    """The XSPEC gsmooth convolution model: gaussian smoothing
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    SigAt6keV
+        gaussian sigma at 6 keV
+    Index
+        power of energy for sigma variation
+
+    See Also
+    --------
+    XSlsmooth
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGsmooth.html
+
+    """
+
+    _calc = _xspec.C_gsmooth
+
+    def __init__(self, name='xsgsmooth'):
+        self.SigAt6keV = Parameter(name, 'SigAt6keV', 1.0, min=0.0, max=10.0,
+                                   hard_min=0.0, hard_max=20.0,
+                                   frozen=False, units='keV')
+        self.Index = Parameter(name, 'Index', 0.0, min=-1.0, max=1.0,
+                               hard_min=-1.0, hard_max=1.0, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.SigAt6keV, self.Index))
+
+
+class XSireflect(XSConvolutionKernel):
+    """The XSPEC ireflect convolution model: reflection from ionized material
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    rel_refl
+        The reflection scaling factor (1 for isotropic source above disk).
+    Redshift
+        The redshift of the source.
+    abund
+        The abundance of elements heaver than He relative to their solar
+        abundances.
+    Fe_abund
+        The iron abundance relative to the above.
+    cosIncl
+        The cosine of the inclination angle.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk ionization parameter: see [1]_ for an explanation.
+
+    See Also
+    --------
+    XSbexriv, XSpexriv
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the IREFLECT_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelIreflect.html
+
+    """
+
+    _calc = _xspec.C_ireflct
+
+    def __init__(self, name='xsireflect'):
+        self.rel_refl = Parameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
+                                  hard_min=-1.0, hard_max=1e6, frozen=False)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                  hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.abund = Parameter(name, 'abund', 1.0, min=0.0, max=1e6,
+                               hard_min=0.0, hard_max=1e6, frozen=True)
+        self.Fe_abund = Parameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
+                                  hard_min=0.0, hard_max=1e6, frozen=True)
+        self.cosIncl = Parameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
+                                 hard_min=0.05, hard_max=0.95, frozen=True)
+        self.T_disk = Parameter(name, 'T_disk', 3e4, min=1e4, max=1e6,
+                                hard_min=1e4, hard_max=1e6, frozen=True,
+                                units='K')
+        self.xi = Parameter(name, 'xi', 1.0, min=0.0, max=1e3, hard_min=0.0,
+                            hard_max=5e3, frozen=True, units='erg cm/s')
+        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
+                                                  self.Redshift,
+                                                  self.abund,
+                                                  self.Fe_abund,
+                                                  self.cosIncl,
+                                                  self.T_disk,
+                                                  self.xi
+                                                  ))
+
+
+class XSkdblur(XSConvolutionKernel):
+    """The XSPEC kdblur convolution model: convolve with the laor model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Index
+        The power law dependence of emissivity (scales as R^-Index).
+    Rin_G
+        The inner radius, in units of GM/c^2.
+    Rout_G
+        The outer radius, in units of GM/c^2.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+
+    See Also
+    --------
+    XSkdblur2, XSlaor
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKdblur.html
+
+    """
+
+    _calc = _xspec.C_kdblur
+
+    def __init__(self, name='xskdblur'):
+        self.Index = Parameter(name, 'Index', 3.0, min=-10.0, max=10.0,
+                               hard_min=-10.0, hard_max=10.0, frozen=True)
+        self.Rin_G = Parameter(name, 'Rin_G', 4.5, min=1.235, max=400.0,
+                               hard_min=1.235, hard_max=400.0, frozen=True)
+        self.Rout_G = Parameter(name, 'Rout_G', 100.0, min=1.235, max=400.0,
+                                hard_min=1.235, hard_max=400.0, frozen=True)
+        self.Incl = Parameter(name, 'Incl', 30.0, min=0.0, max=90.0,
+                              hard_min=0.0, hard_max=90.0, frozen=False,
+                              units='deg')
+        XSConvolutionKernel.__init__(self, name, (self.Index,
+                                                  self.Rin_G,
+                                                  self.Rout_G,
+                                                  self.Incl
+                                                  ))
+
+
+class XSkdblur2(XSConvolutionKernel):
+    """The XSPEC kdblur2 convolution model: convolve with the laor2 model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Index
+        The power law dependence of emissivity (scales as R^-Index).
+    Rin_G
+        The inner radius, in units of GM/c^2.
+    Rout_G
+        The outer radius, in units of GM/c^2.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rbreak
+        The radius at which the emissivity power-law index changes.
+    Index1
+        The emissivity power-law index for r>Rbreak.
+
+    See Also
+    --------
+    XSkdblur, XSlaor2
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKdblur2.html
+
+    """
+
+    _calc = _xspec.C_kdblur2
+
+    def __init__(self, name='xskdblur2'):
+        self.Index = Parameter(name, 'Index', 3.0, min=-10.0, max=10.0,
+                               hard_min=-10.0, hard_max=10.0, frozen=True)
+        self.Rin_G = Parameter(name, 'Rin_G', 4.5, min=1.235, max=400.0,
+                               hard_min=1.235, hard_max=400.0, frozen=True)
+        self.Rout_G = Parameter(name, 'Rout_G', 100.0, min=1.235, max=400.0,
+                                hard_min=1.235, hard_max=400.0, frozen=True)
+        self.Incl = Parameter(name, 'Incl', 30.0, min=0.0, max=90.0,
+                              hard_min=0.0, hard_max=90.0, frozen=False,
+                              units='deg')
+        self.Rbreak = Parameter(name, 'Rbreak', 20.0, min=1.235, max=400.0,
+                                hard_min=1.235, hard_max=400.0, frozen=True)
+        self.Index1 = Parameter(name, 'Index1', 3.0, min=-10.0, max=10.0,
+                                hard_min=-10.0, hard_max=10.0, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Index,
+                                                  self.Rin_G,
+                                                  self.Rout_G,
+                                                  self.Incl,
+                                                  self.Rbreak,
+                                                  self.Index1))
+
+
+class XSkerrconv(XSConvolutionKernel):
+    """The XSPEC kerrconv convolution model: accretion disk line shape with BH spin as free parameter
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Index1
+        The emissivity index for the inner disk.
+    Index2
+        The emissivity index for the outer disk.
+    r_br_g
+        The break radius separating the inner and outer portions of the
+        disk, in gravitational radii.
+    a
+        The dimensionless black hole spin.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rin_ms
+        The inner radius of the disk, in units of the radius of
+        marginal stability.
+    Rout_ms
+        The outer radius of the disk, in units of the radius of
+        marginal stability.
+
+    See Also
+    --------
+    XSdiskline, XSkerrdisk, XSlaor
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrconv.html
+
+    """
+
+    _calc = _xspec.C_spinconv
+
+    def __init__(self, name='xskerrconv'):
+        self.Index = Parameter(name, 'Index', 3.0, min=-10.0, max=10.0,
+                               hard_min=-10.0, hard_max=10.0, frozen=True)
+        self.Index1 = Parameter(name, 'Index1', 3.0, min=-10.0, max=10.0,
+                                hard_min=-10.0, hard_max=10.0, frozen=True)
+        self.r_br_g = Parameter(name, 'r_br_g', 6.0, min=1.0, max=400.0,
+                                hard_min=1.0, hard_max=400.0, frozen=True)
+        self.a = Parameter(name, 'a', 0.998, min=0.0, max=0.998,
+                           hard_min=0.0, hard_max=0.998, frozen=False)
+        self.Incl = Parameter(name, 'Incl', 30.0, min=0.0, max=90.0,
+                              hard_min=0.0, hard_max=90.0, frozen=False,
+                              units='deg')
+        self.Rin_ms = Parameter(name, 'Rin_ms', 1.0, min=1.0, max=400.0,
+                                hard_min=1.0, hard_max=400.0, frozen=True)
+        self.Rout_ms = Parameter(name, 'Rout_ms', 400.0, min=1.0, max=400.0,
+                                 hard_min=1.0, hard_max=400.0, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Index,
+                                                  self.Index1,
+                                                  self.r_br_g,
+                                                  self.a,
+                                                  self.Incl,
+                                                  self.Rin_ms,
+                                                  self.Rout_ms
+                                                  ))
+
+
+@version_at_least("12.10.1")
+class XSkyconv(XSConvolutionKernel):
+    """The XSPEC kyconv convolution model: convolution using a relativistic line from axisymmetric accretion disk
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    a
+        a/M, the black-hole angular momentum in (GM/c).
+    theta_o
+        The observer inclinitation in degrees (0 is pole on).
+    rin
+        The inner radius, in GM/c^2.
+    ms
+        Flag: 0 means integrate from rin, 1 means integrate the emission
+        from above the marginally-stable orbit only.
+    rout
+        The outer radius, in GM/c^2.
+    alpha
+        The accretion disk emissivity scales as r^-alpha for r < rb.
+    beta
+        The accretion disk emissivity scales as r^-beta for r > rb.
+    rb
+        The boundary radius between inner and outer emissivity laws,
+        in units of GM/c^2.
+    zshift
+        The  overall Doppler shift.
+    limb
+        Flag: 0 means isotropic emission, 1 means Laor's limb darkening
+        (1 + 0.26 \\mu), 2 means Haardt's limb brightening (log(1 + 1 / \\mu)).
+    ne_loc
+        The number of grid points in local energy (energy resolution of
+        local flux, the grid is equidistant in logarithmic scale).
+    normal
+        Flag: 0 means normalize total flux to unity, > 0 means normalize
+        to unity at the energy given by the parameter value, and
+        < 0 means unnormalized.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKyconv.html
+
+    """
+
+    __function__ = "kyconv"
+
+    def __init__(self, name='xskyconv'):
+        self.a = Parameter(name, 'a', 0.9982, min=0.0, max=1.0,
+                           hard_min=0.0, hard_max=1.0, frozen=False,
+                           units='GM/c')
+        self.theta_o = Parameter(name, 'theta_o', 30.0, min=0.0, max=89.0,
+                                 hard_min=0.0, hard_max=89.0, frozen=False,
+                                 units='deg')
+        self.rin = Parameter(name, 'rin', 1.0, min=1.0, max=1000.0,
+                             hard_min=1.0, hard_max=1000.0, frozen=True,
+                             units='GM/c^2')
+        self.ms = Parameter(name, 'ms', 1.0, min=0.0, max=1.0,
+                            hard_min=0.0, hard_max=1.0, frozen=True)
+        self.rout = Parameter(name, 'rout', 400.0, min=1.0, max=1000.0,
+                              hard_min=1.0, hard_max=1000.0, frozen=True,
+                              units='GM/c^2')
+        self.alpha = Parameter(name, 'alpha', 3.0, min=-20.0, max=20.0,
+                               hard_min=-20.0, hard_max=20.0, frozen=True)
+        self.beta = Parameter(name, 'beta', 3.0, min=-20.0, max=20.0,
+                              hard_min=-20.0, hard_max=20.0, frozen=True)
+        self.rb = Parameter(name, 'rb', 400.0, min=1.0, max=1000.0,
+                            hard_min=1.0, hard_max=1000.0, frozen=True,
+                            units='GM/c^2')
+        self.zshift = Parameter(name, 'zshift', 0.0, min=-0.999, max=10.0,
+                                hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.limb = Parameter(name, 'limb', 0.0, min=0.0, max=2.0,
+                              hard_min=0.0, hard_max=2.0, frozen=True)
+        self.ne_loc = Parameter(name, 'ne_loc', 100.0, min=3.0, max=5000.0,
+                                hard_min=3.0, hard_max=5000.0, frozen=True)
+        self.normal = Parameter(name, 'normal', 1.0, min=-1.0, max=100.0,
+                                hard_min=-1.0, hard_max=100.0, frozen=True)
+
+        pars = (self.a, self.theta_o, self.rin, self.ms, self.rout,
+                self.alpha, self.beta, self.rb, self.zshift, self.limb,
+                self.ne_loc, self.normal)
+        XSConvolutionKernel.__init__(self, name, pars)
+
+
+class XSlsmooth(XSConvolutionKernel):
+    """The XSPEC lsmooth convolution model: lorentzian smoothing
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    SigAt6keV
+        lorentzian sigma at 6 keV
+    Index
+        power of energy for sigma variation
+
+    See Also
+    --------
+    XSgsmooth
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLsmooth.html
+
+    """
+
+    _calc = _xspec.C_lsmooth
+
+    def __init__(self, name='xslsmooth'):
+        self.SigAt6keV = Parameter(name, 'SigAt6keV', 1.0, min=0.0, max=10.0,
+                                   hard_min=0.0, hard_max=20.0, frozen=False,
+                                   units='keV')
+        self.Index = Parameter(name, 'Index', 0.0, min=-1.0, max=1.0,
+                               hard_min=-1.0, hard_max=1.0, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.SigAt6keV, self.Index))
+
+
+class XSpartcov(XSConvolutionKernel):
+    """The XSPEC partcov convolution model: partial covering
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    CvrFract
+        The covering fraction (0 to 1).
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPartcov.html
+
+    """
+    _calc = _xspec.C_PartialCovering
+
+    def __init__(self, name='xspartcov'):
+        self.CvrFract = Parameter(name, 'CvrFract', 0.5, min=0.05, max=0.95,
+                                  hard_min=0.0, hard_max=1.0, frozen=False)
+        XSConvolutionKernel.__init__(self, name, (self.CvrFract,))
+
+
+class XSrdblur(XSConvolutionKernel):
+    """The XSPEC rdblur convolution model: convolve with the diskline model shape
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Betor10
+        The power law dependence of emissivity: see [1]_ for more details.
+    Rin_M
+        The inner radius, in units of GM^2/c.
+    Rout_M
+        The outer radius, in units of GM^2/c.
+    Incl
+        The inclination, in degrees.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    See Also
+    --------
+    XSdiskline
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRdblur.html
+
+    """
+    _calc = _xspec.C_rdblur
+
+    def __init__(self, name='xsrdblur'):
+        self.Betor10 = Parameter(name, 'Betor10', -2.0, min=-10.0, max=20.0,
+                                 hard_min=-10.0, hard_max=20.0, frozen=True)
+        self.Rin_M = Parameter(name, 'Rin_M', 10.0, min=6.0, max=1000.0,
+                               hard_min=6.0, hard_max=10000.0, frozen=True)
+        self.Rout_M = Parameter(name, 'Rout_M', 1000.0, min=0.0,
+                                max=1000000.0, hard_min=0.0,
+                                hard_max=10000000.0, frozen=True)
+        self.Incl = Parameter(name, 'Incl', 30.0, min=0.0, max=90.0,
+                              hard_min=0.0, hard_max=90.0, frozen=False,
+                              units='deg')
+        XSConvolutionKernel.__init__(self, name, (self.Betor10,
+                                                  self.Rin_M,
+                                                  self.Rout_M,
+                                                  self.Incl
+                                                  ))
+
+
+class XSreflect(XSConvolutionKernel):
+    """The XSPEC reflect convolution model: reflection from neutral material
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        reflected component).
+    Redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+
+    See Also
+    --------
+    XSbexrav, XSpexrav
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the REFLECT_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelReflect.html
+
+    """
+    _calc = _xspec.C_reflct
+
+    def __init__(self, name='xsreflect'):
+        self.rel_refl = Parameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
+                                  hard_min=-1.0, hard_max=1e6, frozen=False)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                  hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.abund = Parameter(name, 'abund', 1.0, min=0.0, max=1e6,
+                               hard_min=0.0, hard_max=1e6, frozen=True)
+        self.Fe_abund = Parameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
+                                  hard_min=0.0, hard_max=1e6, frozen=True)
+        self.cosIncl = Parameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
+                                 hard_min=0.05, hard_max=0.95, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
+                                                  self.Redshift,
+                                                  self.abund,
+                                                  self.Fe_abund,
+                                                  self.cosIncl
+                                                  ))
+
+
+@version_at_least("12.9.1")
+class XSrfxconv(XSConvolutionKernel):
+    """The XSPEC rfxconv convolution model: angle-dependent reflection from an ionized disk
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    rel_refl
+        The relative reflection normalization. If negative then only
+        the reflected component is returned.
+    redshift
+        The redshift of the source.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function. ALl other elements are assumed to
+        have Solar abundances.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+    log_xi
+        The ionization parameter used by the table models.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the RFXCONV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    See Also
+    --------
+    XSxilconv
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRfxconv.html
+
+    """
+
+    __function__ = "C_rfxconv"
+
+    def __init__(self, name='xsrfxconv'):
+        self.rel_refl = Parameter(name, 'rel_refl', -1.0, min=-1.0, max=1e6,
+                                  hard_min=-1.0, hard_max=1e6)
+        self.redshift = Parameter(name, 'redshift', 0.0, min=0.0, max=4.0,
+                                  hard_min=0.0, hard_max=4.0, frozen=True)
+        self.Fe_abund = Parameter(name, 'Fe_abund', 1.0, min=0.5, max=3,
+                                  hard_min=0.5, hard_max=3, frozen=True)
+        self.cosIncl = Parameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
+                                 hard_min=0.05, hard_max=0.95, frozen=True)
+        self.log_xi = Parameter(name, 'log_xi', 1.0, min=1.0, max=6.0,
+                                hard_min=1.0, hard_max=6.0)
+        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
+                                                  self.redshift,
+                                                  self.Fe_abund,
+                                                  self.cosIncl,
+                                                  self.log_xi
+                                                  ))
+
+
+class XSrgsxsrc(XSConvolutionKernel):
+    """The XSPEC rgxsrc convolution model: convolve an RGS spectrum for extended emission.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    order
+        The order, which must be -1 to -3 inclusive.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    The ``set_xsxset`` function must be used to set the RGS_XSOURCE_FILE
+    value to point to a file as described in [1]_.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRgxsrc.html
+
+    """
+
+    _calc = _xspec.rgsxsrc
+
+    def __init__(self, name='xsrgsxsrc'):
+        self.order = Parameter(name, 'order', -1.0, min=-3.0, max=-1,
+                               hard_min=-3.0, hard_max=-1, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.order,))
+
+
+class XSsimpl(XSConvolutionKernel):
+    """The XSPEC simpl convolution model: comptonization of a seed spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma
+        The photon power law index.
+    FracSctr
+        The scattered fraction (between 0 and 1).
+    UpScOnly
+        A flag to switch between up-scattering only (when greater than
+        zero) or both up- and down-scattering (when zero or less).
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSimpl.html
+
+    """
+
+    _calc = _xspec.C_simpl
+
+    def __init__(self, name='xssimpl'):
+        self.Gamma = Parameter(name, 'Gamma', 2.3, min=1.1, max=4.0,
+                               hard_min=1.0, hard_max=5.0, frozen=False)
+        self.FracSctr = Parameter(name, 'FracSctr', 0.05, min=0.0, max=0.4,
+                                  hard_min=0.0, hard_max=1.0, frozen=False)
+        self.UpScOnly = Parameter(name, 'UpScOnly', 1.0, min=0.0, max=100.0,
+                                  hard_min=0.0, hard_max=100.0, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Gamma,
+                                                  self.FracSctr,
+                                                  self.UpScOnly
+                                                  ))
+
+
+@version_at_least("12.11.0")
+class XSthcomp(XSConvolutionKernel):
+    """The XSPEC thcomp convolution model: Thermally comptonized continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    gamma_tau
+        The low-energy power-law photon index when positive and the Thomson
+        optical depth (multiplied by -1) when negative.
+    kT_e
+        The electron temperature (high energy rollover)
+    FracSctr
+        The scattering fraction (between 0 and 1). If 1 then all of the
+        seed photons will be Comptonized, and if 0 then only the original
+        seed photons will be seen.
+    z
+        redshift
+
+    See Also
+    --------
+    XSnthcomp
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    This model is only available when used with XSPEC 12.10.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelThcomp.html
+
+    """
+
+    __function__ = "thcompf"
+
+    def __init__(self, name='xsthcomp'):
+        # TODO: allow negative
+        self.gamma_tau = Parameter(name, 'gamma_tau', 1.7, min=1.001, max=5.0,
+                                   hard_min=1.001, hard_max=10.0, frozen=False)
+        self.kT_e = Parameter(name, 'kT_e', 50.0, min=0.5, max=150.0,
+                              hard_min=0.5, hard_max=150.0, units='keV',
+                              frozen=False)
+        self.FracStr = Parameter(name, 'FracSctr', 1.0, min=0.0, max=1.0,
+                                  hard_min=0.0, hard_max=1.0, frozen=False)
+        self.z = Parameter(name, 'z', 0.0, min=0.0, max=5.0,
+                           hard_min=0.0, hard_max=5.0, frozen=True)
+
+        XSConvolutionKernel.__init__(self, name, (self.gamma_tau,
+                                                  self.kT_e,
+                                                  self.FracStr,
+                                                  self.z
+                                                  ))
+
+
+@version_at_least("12.9.1")
+class XSvashift(XSConvolutionKernel):
+    """The XSPEC vashift convolution model: velocity shift an additive model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Velocity
+        The velocity, in km/s.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    See Also
+    --------
+    XSvmshift, XSzashift
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVashift.html
+
+    """
+
+    __function__ = "C_vashift"
+
+    def __init__(self, name='xsvashift'):
+        self.Redshift = Parameter(name, 'Velocity', 0.0,
+                                  min=-1e4, max=1e4,
+                                  hard_min=-1e4, hard_max=1e4,
+                                  units='km/s', frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Velocity,))
+
+
+@version_at_least("12.9.1")
+class XSvmshift(XSConvolutionKernel):
+    """The XSPEC vmshift convolution model: velocity shift a multiplicative model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Velocity
+        The velocity, in km/s.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    See Also
+    --------
+    XSvashift, XSzmshift
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVmshift.html
+
+    """
+
+    __function__ = "C_vmshift"
+
+    def __init__(self, name='xsvmshift'):
+        self.Redshift = Parameter(name, 'Velocity', 0.0,
+                                  min=-1e4, max=1e4,
+                                  hard_min=-1e4, hard_max=1e4,
+                                  units='km/s', frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Velocity,))
+
+
+@version_at_least("12.9.1")
+class XSxilconv(XSConvolutionKernel):
+    """The XSPEC xilconv convolution model: angle-dependent reflection from an ionized disk
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    rel_refl
+        The relative reflection normalization. If negative then only
+        the reflected component is returned.
+    redshift
+        The redshift of the source.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function. ALl other elements are assumed to
+        have Solar abundances.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+    log_xi
+        The ionization parameter used by the table models.
+    cutoff
+        The exponential cut-off energy, in keV.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the XILCONV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    See Also
+    --------
+    XSrfxconv
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelXilconv.html
+
+    """
+
+    __function__ = "C_xilconv"
+
+    def __init__(self, name='xsxilconv'):
+        self.rel_refl = Parameter(name, 'rel_refl', -1.0, min=-1.0, max=1e6,
+                                  hard_min=-1.0, hard_max=1e6)
+        self.redshift = Parameter(name, 'redshift', 0.0, min=0.0, max=4.0,
+                                  hard_min=0.0, hard_max=4.0, frozen=True)
+        self.Fe_abund = Parameter(name, 'Fe_abund', 1.0, min=0.5, max=3.0,
+                                  hard_min=0.5, hard_max=3.0, frozen=True)
+        self.cosIncl = Parameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
+                                 hard_min=0.05, hard_max=0.95, frozen=True)
+        self.log_xi = Parameter(name, 'log_xi', 1.0, min=1.0, max=1e6,
+                                hard_min=1.0, hard_max=1e6)
+        self.cutoff = Parameter(name, 'cutoff', 300.0, min=20.0, max=300.0,
+                                hard_min=20.0, hard_max=300.0,
+                                units='keV', frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
+                                                  self.redshift,
+                                                  self.Fe_abund,
+                                                  self.cosIncl,
+                                                  self.log_xi,
+                                                  self.cutoff
+                                                  ))
+
+
+class XSzashift(XSConvolutionKernel):
+    """The XSPEC zashift convolution model: redshift an additive model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Redshift
+        The redshift.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    See Also
+    --------
+    XSvashift, XSzmshift
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZashift.html
+
+    """
+
+    _calc = _xspec.C_zashift
+
+    def __init__(self, name='xszashift'):
+        self.Redshift = Parameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                  hard_min=-0.999, hard_max=10, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Redshift,))
+
+
+class XSzmshift(XSConvolutionKernel):
+    """The XSPEC zmshift convolution model: redshift a multiplicative model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Redshift
+        The redshift.
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather then using the multiplication symbol.
+
+    See Also
+    --------
+    XSvmshift, XSzashift
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZmshift.html
+
+    """
+
+    _calc = _xspec.C_zmshift
+
+    def __init__(self, name='xszmshift'):
+        self.Redshift = Parameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                  hard_min=-0.999, hard_max=10, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.Redshift,))
+
+
 # Add model classes to __all__
+#
+# Should this remove the "base" classes, such as
+# XSModel and XSConvolutionModel?
+#
 __all__ += tuple(n for n in globals() if n.startswith('XS'))

@@ -39,7 +39,7 @@ field.
 Additional optimisers can be built by extending from the
 :py:class:`sherpa.optmethods.OptMethod` class. This can be used
 to provide access to external packages such as
-`CERN's MINUIT optimisation library <http://iminuit.readthedocs.io>`_.
+`CERN's MINUIT optimisation library <https://iminuit.readthedocs.io>`_.
 
 Choosing an optimiser
 =====================

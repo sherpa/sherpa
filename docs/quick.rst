@@ -4,7 +4,7 @@ A quick guide to modeling and fitting in Sherpa
 
 Here are some examples of using Sherpa to model and fit data.
 It is based on some of the examples used in the `astropy.modelling
-documentation <http://docs.astropy.org/en/stable/modeling/>`_.
+documentation <https://docs.astropy.org/en/stable/modeling/>`_.
 
 .. _getting-started:
 
@@ -851,7 +851,7 @@ and then displaying it::
 
    The :py:mod:`sherpa.image` model provides support for *interactive*
    image visualization, but this only works if the
-   `DS9 <http://ds9.si.edu/site/Home.html>`_ image viewer is installed.
+   `DS9 <https://ds9.si.edu/site/Home.html>`_ image viewer is installed.
    For the examples in this document, matplotlib plots will be
    created to view the data directly.
    

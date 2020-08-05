@@ -25,7 +25,7 @@ A one-dimensional model
 =======================
 
 An example is the
-`AstroPy trapezoidal model <http://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Trapezoid1D.html>`_,
+`AstroPy trapezoidal model <https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Trapezoid1D.html>`_,
 which has four parameters: the amplitude of the central region, the center
 and width of this region, and the slope. The following model class,
 which was not written for efficiancy or robustness, implements this
@@ -105,7 +105,7 @@ of the ``calc`` method.
 It also shows one way of embedding models from a different system,
 in this case the
 `two-dimemensional polynomial model 
-<http://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Polynomial2D.html>`_
+<https://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Polynomial2D.html>`_
 from the AstroPy package.
 
 .. literalinclude:: ../code/poly.py

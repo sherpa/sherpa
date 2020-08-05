@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #
 #  Copyright (C) 2010, 2016, 2018, 2019, 2020
 #       Smithsonian Astrophysical Observatory

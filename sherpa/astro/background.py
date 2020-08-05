@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Support multiple background components for a PHA dataset.
+
+"""
+
 from sherpa.models.model import CompositeModel, ArithmeticModel
 from sherpa.utils.err import DataErr
 
@@ -24,6 +28,21 @@ __all__ = ('BackgroundSumModel',)
 
 
 class BackgroundSumModel(CompositeModel, ArithmeticModel):
+    """Combine multiple background datasets.
+
+    Define the model expression to be applied to the source
+    region accounting for the background models.
+
+    Parameters
+    ----------
+    srcdata : sherpa.astro.data.DataPHA instance
+        The source dataset.
+    bkgmodels : dict
+        The background components, where the key is the identifier
+        in this dataset and the value is the model. This dictionary
+        cannot be empty.
+
+    """
 
     def __init__(self, srcdata, bkgmodels):
         self.srcdata = srcdata
@@ -43,4 +62,4 @@ class BackgroundSumModel(CompositeModel, ArithmeticModel):
             # of p)
             return bmodel(*args, **kwargs)
 
-        return self.srcdata.sum_background_data(eval_bkg_model)            
+        return self.srcdata.sum_background_data(eval_bkg_model)

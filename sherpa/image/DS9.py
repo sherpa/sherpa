@@ -135,7 +135,6 @@ History:
 2008-05-28 Stephen Doe  Always raise exception on error (doRaise=True always)
 2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
-from __future__ import print_function
 
 import numpy as np
 import os

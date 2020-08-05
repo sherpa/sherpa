@@ -1102,6 +1102,25 @@ class DataPHA(Data1D):
         return self.sum_background_data(lambda key, bkg: 1.)
 
     def _check_scale(self, scale, group=True, filter=False):
+        """Ensure the scale value is positive and filtered/grouped.
+
+        Parameters
+        ----------
+        scale : number or numpy array
+            The scale factor.
+        group : bool, optional
+            Is any grouping applied to the data? This is only
+            relevant for an array.
+        filter : bool, optional
+            Is any filter applied? This is only checked if group
+            is True.
+
+        Returns
+        -------
+        scale : number or numpy array
+            Negative values are replaced by 1.0.
+
+        """
         if numpy.isscalar(scale) and scale <= 0.0:
             scale = 1.0
         elif numpy.iterable(scale):
@@ -1118,7 +1137,7 @@ class DataPHA(Data1D):
     def get_backscal(self, group=True, filter=False):
         """Return the area scaling of the PHA data set.
 
-        Return the BACKSCAL setting [1]_ for the PHA data set.
+        Return the BACKSCAL setting [BSCAL]_ for the PHA data set.
 
         Parameters
         ----------
@@ -1150,7 +1169,7 @@ class DataPHA(Data1D):
         References
         ----------
 
-        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+        .. [BSCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
                http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
@@ -1168,7 +1187,7 @@ class DataPHA(Data1D):
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
 
-        Return the AREASCAL setting [1]_ for the PHA data set.
+        Return the AREASCAL setting [ASCAL]_ for the PHA data set.
 
         Parameters
         ----------
@@ -1194,7 +1213,7 @@ class DataPHA(Data1D):
         References
         ----------
 
-        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+        .. [ASCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
                http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples

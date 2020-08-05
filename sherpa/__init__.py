@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 #  Copyright (C) 2007, 2014, 2015, 2016, 2019
 #     Smithsonian Astrophysical Observatory

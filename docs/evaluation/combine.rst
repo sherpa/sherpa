@@ -56,7 +56,7 @@ Example
 The following example fits two one-dimensional gaussians to a
 simulated dataset.
 It is based on the `AstroPy modelling documentation
-<http://docs.astropy.org/en/stable/modeling/#compound-models>`_,
+<https://docs.astropy.org/en/stable/modeling/#compound-models>`_,
 but has :ref:`linked the positions of the two gaussians <params-link>`
 during the fit.
 

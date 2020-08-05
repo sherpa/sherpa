@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020
 #    Smithsonian Astrophysical Observatory
 #
 #
@@ -827,10 +827,12 @@ def get_pha_data(arg, make_copy=False, use_background=False):
                 data['channel'] = data['channel'] + 1
 
             data['counts'] = _try_col(hdu, 'COUNTS', fix_type=True)
+            data['staterror'] = _try_col(hdu, 'STAT_ERR')
             if data['counts'] is None:
                 data['counts'] = _require_col(hdu, 'RATE',
                                               fix_type=True) * data['exposure']
-            data['staterror'] = _try_col(hdu, 'STAT_ERR')
+                if data['staterror'] is not None:
+                    data['staterror'] = data['staterror'] * data['exposure']
             data['syserror'] = _try_col(hdu, 'SYS_ERR')
             data['background_up'] = _try_col(hdu, 'BACKGROUND_UP',
                                              fix_type=True)
@@ -888,10 +890,13 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             #     channel += 1
 
             counts = _try_vec(hdu, 'COUNTS', num, fix_type=True)
+            staterror = _try_vec(hdu, 'STAT_ERR', num)
             if numpy.equal(counts, None).any():  # _try_vec can return an array of Nones
                 counts = _require_vec(hdu, 'RATE', num,
-                                      fix_type=True) * data['exposure']
-            staterror = _try_vec(hdu, 'STAT_ERR', num)
+                                      fix_type=True) * exposure
+                if not numpy.equal(staterror, None).any():
+                    staterror *= exposure
+
             syserror = _try_vec(hdu, 'SYS_ERR', num)
             background_up = _try_vec(hdu, 'BACKGROUND_UP', num, fix_type=True)
             background_down = _try_vec(hdu, 'BACKGROUND_DOWN', num,

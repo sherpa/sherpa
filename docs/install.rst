@@ -51,7 +51,7 @@ if installed:
 The Sherpa build can be configured to create the
 :py:mod:`sherpa.astro.xspec` module, which provides the models and utility
 functions from the :term:`XSPEC`.
-The supported versions of XSPEC are 12.10.1 (patch level `a` or later),
+The supported versions of XSPEC are 12.11.0, 12.10.1 (patch level `a` or later),
 12.10.0, 12.9.1, and 12.9.0.
 
 Interactive display and manipulation of two-dimensional images
@@ -65,7 +65,7 @@ Releases and version numbers
 The Sherpa release policy has a major release at the start of
 the year, corresponding to the code that is released in the
 previous December as part of the
-`CIAO release <http://cxc.harvard.edu/ciao/>`_, followed by
+`CIAO release <https://cxc.harvard.edu/ciao/>`_, followed by
 several smaller releases throughout the year.
 
 Information on the Sherpa releases is available from the
@@ -113,7 +113,7 @@ using::
     conda install -c sherpa sherpa
 
 It is **strongly** suggested that Sherpa is installed into a named
-`conda environment <http://conda.pydata.org/docs/using/envs.html>`_
+`conda environment <https://conda.pydata.org/docs/using/envs.html>`_
 (i.e. not the default environment).
 
 Using pip
@@ -202,6 +202,8 @@ the ``fftw`` options in the ``sherpa_config`` section of the
 The ``fftw`` option must be set to ``local`` and then the remaining
 options changed to match the location of the local installation.
 
+.. _build-xspec:
+
 XSPEC
 ^^^^^
 
@@ -213,7 +215,7 @@ XSPEC
    to support changes made in XSPEC 12.10.0.
 
 Sherpa can be built to use the Astronomy models provided by
-:term:`XSPEC` versions 12.10.1 (patch level `a` or later), 12.10.0,
+:term:`XSPEC` versions 12.11.0, 12.10.1 (patch level `a` or later), 12.10.0,
 12.9.1, and 12.9.0. To enable XSPEC support, several changes must be
 made to the ``xspec_config`` section of the ``setup.cfg`` file. The
 available options (with default values) are::
@@ -244,7 +246,20 @@ by the actual path to the HEADAS installation, and the versions of
 the libraries - such as ``CCfits_2.5`` - may need to be changed to
 match the contents of the XSPEC installation.
 
-1. If the full XSPEC 12.10.1 system has been built then use::
+1. If the full XSPEC 12.11.0 system has been built then use::
+
+       with-xspec = True
+       xspec_version = 12.11.0
+       xspec_lib_dirs = $HEADAS/lib
+       xspec_include_dirs = $HEADAS/include
+       xspec_libraries = XSFunctions XSUtil XS hdsp_6.27
+       ccfits_libraries = CCfits_2.5
+       wcslib_libraries = wcs-5.19.1
+
+   where the version numbers were taken from version 6.27 of HEASOFT and
+   may need updating with a newer release.
+
+2. If the full XSPEC 12.10.1 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.10.1
@@ -257,7 +272,7 @@ match the contents of the XSPEC installation.
    where the version numbers were taken from version 6.26.1 of HEASOFT and
    may need updating with a newer release.
 
-2. If the full XSPEC 12.10.0 system has been built then use::
+3. If the full XSPEC 12.10.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.10.0
@@ -267,7 +282,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
 
-3. If the full XSPEC 12.9.x system has been built then use::
+4. If the full XSPEC 12.9.x system has been built then use::
 
        with-xspec = True
        xspec_version = 12.9.1
@@ -279,7 +294,7 @@ match the contents of the XSPEC installation.
 
    changing ``12.9.1`` to ``12.9.0`` as appropriate.
 
-4. If the model-only build of XSPEC has been installed, then
+5. If the model-only build of XSPEC has been installed, then
    the configuration is similar, but the library names may
    not need version numbers and locations, depending on how the
    ``cfitsio``, ``CCfits``, and ``wcs`` libraries were installed.
@@ -307,7 +322,7 @@ module, but a quick check of an installed version can be made with
 the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.10.1n
+    12.11.0
 
 .. warning::
 
@@ -321,7 +336,7 @@ Other options
 
 The remaining options in the ``setup.cfg`` file allow Sherpa to be
 built in specific environments, such as when it is built as part
-of the `CIAO analysis system <http://cxc.harvard.edu/ciao/>`_. Please
+of the `CIAO analysis system <https://cxc.harvard.edu/ciao/>`_. Please
 see the comments in the ``setup.cfg`` file for more information on
 these options.
 
@@ -336,7 +351,7 @@ Building and Installing
 
 It is highly recommended that some form of virtual environment,
 such as a
-`conda environment <http://conda.pydata.org/docs/using/envs.html>`_
+`conda environment <https://conda.pydata.org/docs/using/envs.html>`_
 or that provided by
 `Virtualenv <https://virtualenv.pypa.io/en/stable/>`_,
 be used when building and installing Sherpa.
@@ -418,8 +433,8 @@ which used ``git`` to access the source code)::
     git submodule init
     git submodule update
 
-When both the `DS9 image viewer <http://ds9.si.edu/site/Home.html>`_ and
-`XPA toolset <http://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
+When both the `DS9 image viewer <https://ds9.si.edu/>`_ and
+`XPA toolset <https://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
 test suite will include tests that check that DS9 can be used from
 Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
@@ -439,7 +454,7 @@ Building the documentation
 Building the documentation requires the Sherpa source code and several
 additional packages:
 
-* `Sphinx <http://sphinx.pocoo.org/>`_, version 1.8 or later
+* `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
 * NumPy and `sphinx-astropy <https://github.com/astropy/sphinx-astropy/>`_
   (the latter can be installed with ``pip``).

@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 #  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
@@ -614,25 +613,48 @@ def test_bug_316(make_data_path):
 
 @requires_data
 @requires_fits
-@requires_xspec
 def test_load_multi_arfsrmfs(make_data_path):
+    """Added in #728 to ensure cache parameter is sent along by
+    MultiResponseSumModel.
+
+    This has since been simplified to switch from xsapec to
+    powlaw1d as it drops the need for XSPEC and is a simpler
+    model, so is less affected by changes in the model code.
+
+    A fit of the Sherpa powerlaw-model to 3c273.pi with a
+    single response in CIAO 4.11 (background subtracted,
+    0.5-7 keV) returns gamma = 1.9298, ampl = 1.73862e-4
+    so doubling the response should halve the amplitude but
+    leave the gamma value the same when using two responses,
+    as below. This is with chi2datavar.
+    """
+
     pha_pi = make_data_path("3c273.pi")
     ui.load_pha(1, pha_pi)
     ui.load_pha(2, pha_pi)
-    bkg_pi = make_data_path("3c273_bg.pi")
-    ui.load_bkg(1, bkg_pi)
-    ui.load_bkg(2, bkg_pi)
 
     arf = make_data_path("3c273.arf")
+    rmf = make_data_path("3c273.rmf")
+
     ui.load_multi_arfs(1, [arf, arf], [1, 2])
     ui.load_multi_arfs(2, [arf, arf], [1, 2])
 
-    rmf = make_data_path("3c273.rmf")
     ui.load_multi_rmfs(1, [rmf, rmf], [1, 2])
     ui.load_multi_rmfs(2, [rmf, rmf], [1, 2])
-    ui.set_model(1, ui.xsapec.src)
-    ui.set_model(2, ui.xsapec.src)
+
+    ui.notice(0.5, 7)
+    ui.subtract(1)
+    ui.subtract(2)
+
+    src = ui.create_model_component('powlaw1d', 'src')
+    ui.set_model(1, src)
+    ui.set_model(2, src)
+
+    ui.set_stat('chi2datavar')
     ui.fit()
-    parvals = ui.get_fit_results().parvals
-    assert(parvals[0] == pytest.approx(1.03364, rel=1.0e-3))
-    assert(parvals[1] == pytest.approx(4.56712e-05, rel=1.03e-3))
+    fr = ui.get_fit_results()
+    assert fr.succeeded
+    assert fr.datasets == (1, 2)
+
+    assert src.gamma.val == pytest.approx(1.9298, rel=1.0e-4)
+    assert src.ampl.val == pytest.approx(1.73862e-4 / 2, rel=1.0e-4)
