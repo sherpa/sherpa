@@ -6232,6 +6232,11 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        If the background has no grouping of quality arrays then they
+        are copied from the source region. If the background has no
+        response information (ARF or RMF) then the response is copied
+        from the source region.
+
         Examples
         --------
 
@@ -6254,7 +6259,7 @@ class Session(sherpa.ui.utils.Session):
         data.set_background(bkg, bkg_id)
         if bkg.grouping is None:
             bkg.grouping = data.grouping
-            bkg.grouped = (bkg.grouping is not None)
+            bkg.grouped = bkg.grouping is not None
         if bkg.quality is None:
             bkg.quality = data.quality
 
