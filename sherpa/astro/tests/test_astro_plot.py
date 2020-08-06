@@ -19,11 +19,13 @@
 import numpy as np
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import DataPlot, SourcePlot
+from sherpa.astro.plot import BkgDataPlot, DataPlot, SourcePlot
 from sherpa.models.basic import Const1D, Gauss1D
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa import stats
 
 import pytest
+import logging
 
 
 def test_sourceplot():
@@ -135,3 +137,273 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
     dplot = DataPlot()
     dplot.prepare(pha, stat=stat)
+
+
+@pytest.fixture
+def setup_pha():
+    """Create a PHA dataset with the given label."""
+
+    nchans = 10
+    arf0 = 0.6
+
+    e0 = 0.1
+    de = 0.125
+
+    def _return_data(label, exposure=None, areascal=None, backscal=None):
+
+        egrid = e0 + np.arange(nchans + 1) * de
+        elo = egrid[:-1]
+        ehi = egrid[1:]
+
+        x = np.arange(1, 11)
+        y = np.ones(nchans)
+
+        arf = create_arf(elo, ehi, arf0 * np.ones(nchans))
+        rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+        data = DataPHA(label, x, y, exposure=exposure)
+        data.units = "energy"
+        data.rate = True
+
+        data.set_arf(arf)
+        data.set_rmf(rmf)
+
+        data.areascal = areascal
+        data.backscal = backscal
+        return data
+
+    return _return_data
+
+
+# as this is ungrouped data, the "rate=False" option is not per bin
+@pytest.mark.parametrize("unit,xstart,xwidth,rate,xlabel,ylabel,ynorm",
+                         [('energy', 0.1, 0.125, True, 'Energy (keV)',
+                           'Counts/sec/keV', 100.0 * 0.125),
+                          ('energy', 0.1, 0.125, False, 'Energy (keV)',
+                           'Counts', 1.0),
+                          ('channel', 0.5, 1.0, True, 'Channel',
+                           'Counts/sec/channel', 100.0),
+                          ('channel', 0.5, 1.0, False, 'Channel',
+                           'Counts', 1.0)])
+def test_pha_bkg_dataplot(setup_pha, unit, xstart, xwidth, rate, xlabel,
+                          ylabel, ynorm):
+    """Test out BkgDataPlot"""
+
+    bkg = setup_pha('example-bkg', exposure=100.0)
+    bkg.units = unit
+    bkg.rate = rate
+
+    bplot = BkgDataPlot()
+    bplot.prepare(bkg)
+
+    assert bplot.xlabel == xlabel
+    assert bplot.ylabel == ylabel
+    assert bplot.title == 'example-bkg'
+
+    nchans = 10
+    xmid = xstart + xwidth / 2 + np.arange(nchans) * xwidth
+
+    assert bplot.x == pytest.approx(xmid)
+    assert bplot.y == pytest.approx(np.ones(nchans) / ynorm)
+    assert bplot.xerr == pytest.approx(np.ones(nchans) * xwidth)
+    assert bplot.yerr is None
+
+
+@pytest.mark.parametrize("unit", ["channel", "energy", "wave"])
+def test_pha_bkg_dataplot_areascal(setup_pha, unit):
+    """The areascal is applied for DataPHA obects but not backscal.
+
+    This is really a check for the DataPHA class, but the behavior
+    is important for the rescale behavior, so add an explicit check
+    here. At present it is assumed that plots of DataPHA data apply
+    the area scaling to the y axis, but do not apply the backscale
+    value (since that requires both a source and background dataset
+    to be meaningful).
+
+    See Also
+    --------
+    test_pha_bkg_dataplot_exposure
+    """
+
+    pha0 = setup_pha('example-bkg', areascal=1.0, exposure=100, backscal=1e-6)
+    pha0.units = unit
+    pha0.rate = False
+
+    bplot0 = BkgDataPlot()
+    bplot0.prepare(pha0)
+
+    pha = setup_pha('example-bkg', areascal=0.4, exposure=200, backscal=1e-5)
+    pha.units = unit
+    pha.rate = False
+
+    bplot = BkgDataPlot()
+    bplot.prepare(pha)
+
+    # since rate is False the different exposure values are not relevant
+    # here: see test_pha_bkg_dataplot_exposure
+    assert bplot.y == pytest.approx(bplot0.y / 0.4)
+
+
+@pytest.mark.parametrize("unit", ["channel", "energy", "wave"])
+def test_pha_bkg_dataplot_exposure(setup_pha, unit):
+    """Is exposure handled correctly?
+
+    This is really a check for the DataPHA class, but the behavior
+    is important for the rescale behavior, so add an explicit check
+    here.
+
+    See Also
+    --------
+    test_pha_bkg_dataplot_areascal
+    """
+
+    pha0 = setup_pha('example-bkg', areascal=1.0, exposure=100, backscal=1e-6)
+    pha0.units = unit
+    pha0.rate = True
+
+    bplot0 = BkgDataPlot()
+    bplot0.prepare(pha0)
+
+    pha = setup_pha('example-bkg', areascal=1.0, exposure=200, backscal=1e-5)
+    pha.units = unit
+    pha.rate = True
+
+    bplot = BkgDataPlot()
+    bplot.prepare(pha)
+
+    assert bplot.y == pytest.approx(bplot0.y / 2.0)
+
+
+def test_pha_bkg_dataplot_rescale_vals(setup_pha):
+    """Test out BkgDataPlot using the rescale option: compare to Sherpa
+
+    This tests that the background scaling matches that done by the
+    DataPHA class. The test_pha_bkg_rescale test checks that other
+    settings are as expected.
+    """
+
+    src = setup_pha('example-src', exposure=100.0, areascal=1.0, backscal=1e-6)
+    src.units = 'channel'
+    src.rate = False
+
+    bkg = setup_pha('example-bkg', exposure=500.0, areascal=0.8, backscal=2e-6)
+    bkg.units = 'channel'
+    bkg.rate = False
+
+    bplot = BkgDataPlot()
+    bplot.prepare(bkg, source=src)
+
+    # by using ungrouped data, with channel analysis and displaying
+    # counts, not a rate, the y value from the plot should match
+    # the background returned by sum_background_data.
+    #
+    src.set_background(bkg)
+    expected = src.sum_background_data()
+
+    assert bplot.y == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("unit,xstart,xwidth,rate,xlabel,ylabel,norm",
+                         [('energy', 0.1, 0.125, True, 'Energy (keV)',
+                           'Counts/sec/keV', 500.0 * 0.125),
+                          ('energy', 0.1, 0.125, False, 'Energy (keV)',
+                           'Counts', 1.0),
+                          ('channel', 0.5, 1.0, True, 'Channel',
+                           'Counts/sec/channel', 500.0),
+                          ('channel', 0.5, 1.0, False, 'Channel',
+                           'Counts', 1.0)])
+def test_pha_bkg_dataplot_rescale(setup_pha, unit, xstart, xwidth, rate,
+                                  xlabel, ylabel, norm):
+    """Test out BkgDataPlot using the rescale option.
+
+    Here we use the same data for source and background, but adjust the
+    scale factors to ensure that some scaling has happened.
+    """
+
+    src = setup_pha('example-src', exposure=100.0, areascal=1.0, backscal=1e-6)
+    src.units = unit
+    src.rate = rate
+
+    bkg = setup_pha('example-bkg', exposure=500.0, areascal=0.8, backscal=2e-6)
+    bkg.units = unit
+    bkg.rate = rate
+
+    bplot = BkgDataPlot()
+    bplot.prepare(bkg, source=src)
+
+    assert bplot.xlabel == xlabel
+    assert bplot.ylabel == (ylabel + ' (scaled)')
+    assert bplot.title == 'example-bkg'
+
+    nchans = 10
+    xmid = xstart + xwidth / 2 + np.arange(nchans) * xwidth
+
+    assert bplot.x == pytest.approx(xmid)
+
+    # the scaling factors could be included in norm, but leave that value
+    # to be the same as the "non-rescaled" test, so add in the areascale,
+    # backscale, and exposure-time ratios here where appropriate.
+    #
+    src_factors = 1.0 * 1e-6
+    bkg_factors = 0.8 * 2e-6
+    if not rate:
+        src_factors *= 100.0
+        bkg_factors *= 500.0
+
+    expected = np.ones(nchans) * src_factors / (bkg_factors * norm)
+
+    assert bplot.y == pytest.approx(expected)
+    assert bplot.xerr == pytest.approx(np.ones(nchans) * xwidth)
+    assert bplot.yerr is None
+
+
+def test_pha_bkg_dataplot_nowarn(caplog, setup_pha):
+    """Check we don't get warnings if the missing value is "unused".
+
+    areascal is handled elsewhere, and exposure is only used when
+    the rate flag is not set
+    """
+
+    bplot = BkgDataPlot()
+    src = setup_pha('a', exposure=100.0, areascal=1.0, backscal=1e-6)
+    bkg = setup_pha('b', exposure=None, areascal=None, backscal=2e-6)
+    bplot.prepare(bkg, source=src)
+
+    assert len(caplog.records) == 0
+
+
+@pytest.mark.parametrize('change_bkg', [False, True])
+@pytest.mark.parametrize('label,kw',
+                         [('backscale', 'backscal'),
+                          ('exposure', 'exposure')])
+def test_pha_bkg_dataplot_warn(caplog, setup_pha, change_bkg, label, kw):
+    "Do we get warnings when a required attribute is not set?"
+
+    assert len(caplog.records) == 0
+
+    kwargs = {'exposure': 1.0, 'backscal': 1.0}
+    if change_bkg:
+        srctype = 'background'
+        src = setup_pha('example-src', **kwargs)
+        del kwargs[kw]
+        bkg = setup_pha('example-bkg', **kwargs)
+    else:
+        srctype = 'source'
+        bkg = setup_pha('example-bkg', **kwargs)
+        del kwargs[kw]
+        src = setup_pha('example-src', **kwargs)
+
+    src.rate = False
+    bkg.rate = False
+
+    bplot = BkgDataPlot()
+    bplot.prepare(bkg, source=src)
+
+    assert len(caplog.records) == 1
+    log_name, log_level, message = caplog.record_tuples[0]
+    assert log_name == 'sherpa.astro.plot'
+    assert log_level == logging.WARNING
+
+    wmsg = 'The {} value is missing from the '.format(label) + \
+           '{} dataset, so the correction is ignored.'.format(srctype)
+    assert message == wmsg
