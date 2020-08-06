@@ -33,6 +33,7 @@ import pytest
 from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import ARFModelPHA
+from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
@@ -106,11 +107,20 @@ def test_setup_pha1_file_group(id, make_data_path, clean_astro_ui, hide_logging)
     assert sgrouping.sum() == -932
     assert (bdata.grouping == sgrouping).all()
 
+    # check the UI get_grouping method agrees
+    #
+    assert (ui.get_grouping(id) == ui.get_grouping(id, bkg_id=1)).all()
+
+    # The quality array is all 0's, so not an illuminating test
+    assert (ui.get_quality(id) == ui.get_quality(id, bkg_id=1)).all()
+
     # Change the grouping of the background daga
     #
     ui.group_counts(id, 5, bkg_id=1)
     assert (sdata.grouping == sgrouping).all()
     assert bdata.grouping.sum() == -952
+
+    assert (ui.get_grouping(id) != ui.get_grouping(id, bkg_id=1)).any()
 
     # check we can ungroup just the background
     ui.ungroup(id, bkg_id=1)
@@ -568,7 +578,7 @@ def test_pha1_eval(clean_astro_ui):
 @pytest.mark.xfail
 @pytest.mark.parametrize('dofilter,expected',
                          [(False, 15.059210673609382),
-                          (True, 2.6057323845799996)])
+                          (True, 4.344584636218002)])
 def test_pha1_eval_vector_stat(dofilter, expected, clean_astro_ui):
     """Compare statistic, with and without filtering.
 
@@ -748,3 +758,533 @@ def test_pha1_eval_vector(clean_astro_ui):
 
     assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1)
+
+
+@requires_data
+@requires_fits
+def test_use_source_data(make_data_path, clean_astro_ui, hide_logging):
+    """Check a fit uses the sousrce data to define its fit
+
+    The source region binning and filtering is used here
+    as nothing has been set for the background.
+
+    It does not check the statistic value
+
+    See also test_use_background_data
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    # Use the source to define grouping and filtering
+    ui.notice(0.5, 7)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+
+    stats = ui.get_stat_info()
+    assert len(stats) == 3
+
+    src = stats[0]
+    bgnd = stats[1]
+    comb = stats[2]
+
+    assert src.name == 'Dataset 1'
+    assert bgnd.name == 'Background 1 for Dataset 1'
+    assert comb.name == 'Dataset [1]'
+
+    assert src.ids == (1,)
+    assert bgnd.ids == (1,)
+    assert comb.ids == [1]
+
+    assert src.bkg_ids is None
+    assert bgnd.bkg_ids == (1,)
+    assert comb.bkg_ids is None
+
+    assert src.numpoints == 42
+    assert bgnd.numpoints == 42
+    assert comb.numpoints == 84
+
+    # Note: comb.dof > src.dof + bgnd.dof here
+    #
+    # source dataset is fit with powlaw1d + const1d, so has
+    # three free parameters.
+    # background dataset is fit with const1d, so has 1 free
+    # parameter.
+    # the combined dataset is fit with powlae1d+const1d, const1d
+    # so has three free parameters
+    #
+    assert src.dof == 39
+    assert bgnd.dof == 41
+    assert comb.dof == 81
+
+
+@requires_data
+@requires_fits
+def test_use_source_data_manual(make_data_path, clean_astro_ui, hide_logging):
+    """Check a fit uses the source data to define its fit (load in bkg)
+
+    The source region binning and filtering is used here
+    as nothing has been set for the background. Unlike test_use_source_data
+    we load in the background separately (ie not via BACKFILE keyword)
+    to see if this makes any difference.
+
+    It does not check the statistic value
+
+    See also test_use_background_data
+    """
+
+    infile = make_data_path('12845.pi')
+    ui.load_pha(infile)
+
+    assert ui.list_bkg_ids() == []
+
+    # Add in a background
+    bpha = ui.unpack_pha(infile)
+    bpha.delete_response()
+
+    ui.set_bkg(bpha)
+
+    assert ui.list_bkg_ids() == [1]
+
+    # Use the source to define grouping and filtering
+    ui.notice(0.5, 7)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+
+    stats = ui.get_stat_info()
+    assert len(stats) == 3
+
+    src = stats[0]
+    bgnd = stats[1]
+    comb = stats[2]
+
+    assert src.name == 'Dataset 1'
+    assert bgnd.name == 'Background 1 for Dataset 1'
+    assert comb.name == 'Dataset [1]'
+
+    assert src.ids == (1,)
+    assert bgnd.ids == (1,)
+    assert comb.ids == [1]
+
+    assert src.bkg_ids is None
+    assert bgnd.bkg_ids == (1,)
+    assert comb.bkg_ids is None
+
+    assert src.numpoints == 446
+    assert bgnd.numpoints == 446
+    assert comb.numpoints == 892
+
+    assert src.dof == 443
+    assert bgnd.dof == 445
+    assert comb.dof == 889
+
+
+@requires_group
+@requires_data
+@requires_fits
+def test_use_background_data(make_data_path, clean_astro_ui, hide_logging):
+    """Check a fit uses the background data to define its fit
+
+    See also test_use_source_data and test_use_backgroud_data_two
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    bexpval = ui.get_exposure(bkg_id=1)
+
+    # Use different grouping and filtering for source and
+    # background apertures.
+    #
+    ui.group_width(5, bkg_id=1)
+
+    ui.notice(0.5, 7)
+
+    ui.notice(None, None, bkg_id=1)
+    ui.notice(0.3, 8, bkg_id=1)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+
+    stats = ui.get_stat_info()
+    assert len(stats) == 3
+
+    src = stats[0]
+    bgnd = stats[1]
+    comb = stats[2]
+
+    assert src.name == 'Dataset 1'
+    assert bgnd.name == 'Background 1 for Dataset 1'
+    assert comb.name == 'Dataset [1]'
+
+    assert src.ids == (1,)
+    assert bgnd.ids == (1,)
+    assert comb.ids == [1]
+
+    assert src.bkg_ids is None
+    assert bgnd.bkg_ids == (1,)
+    assert comb.bkg_ids is None
+
+    assert src.numpoints == 42
+    assert bgnd.numpoints == 106
+    assert comb.numpoints == 148
+
+    assert src.dof == 39
+    assert bgnd.dof == 105
+    assert comb.dof == 145
+
+
+@requires_group
+@requires_data
+@requires_fits
+def test_use_background_data_two(make_data_path, clean_astro_ui, hide_logging):
+    """Check a fit uses the background data to define its fit (2 backgrounds)
+
+    See also test_use_source_data and  and test_use_backgroud_data
+    """
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    # Fake a second background, and use one with a response
+    # (this one doesn't have a background)
+    bgfile = make_data_path('12845.pi')
+    ui.load_bkg(bgfile, bkg_id=2)
+
+    # Use different grouping and filtering for source and
+    # background apertures.
+    #
+    ui.group_width(5, bkg_id=1)
+    ui.group_width(10, bkg_id=2)
+
+    ui.notice(0.5, 7)
+
+    ui.notice(None, None, bkg_id=1)
+    ui.notice(0.3, 8, bkg_id=1)
+
+    ui.notice(None, None, bkg_id=2)
+    ui.notice(1, 6, bkg_id=2)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+    ui.set_bkg_source(bmdl, bkg_id=2)
+
+    stats = ui.get_stat_info()
+    assert len(stats) == 4
+
+    src = stats[0]
+    bgnd1 = stats[1]
+    bgnd2 = stats[2]
+    comb = stats[3]
+
+    assert src.name == 'Dataset 1'
+    assert bgnd1.name == 'Background 1 for Dataset 1'
+    assert bgnd2.name == 'Background 2 for Dataset 1'
+    assert comb.name == 'Dataset [1]'
+
+    assert src.ids == (1,)
+    assert bgnd1.ids == (1,)
+    assert bgnd2.ids == (1,)
+    assert comb.ids == [1]
+
+    assert src.bkg_ids is None
+    assert bgnd1.bkg_ids == (1,)
+    assert bgnd2.bkg_ids == (2,)
+    assert comb.bkg_ids is None
+
+    assert src.numpoints == 42
+    assert bgnd1.numpoints == 106
+    assert bgnd2.numpoints == 36
+    assert comb.numpoints == 184
+
+    assert src.dof == 39
+    assert bgnd1.dof == 105
+    assert bgnd2.dof == 35
+    assert comb.dof == 181
+
+
+@requires_data
+@requires_fits
+def test_response_source_data(make_data_path, clean_astro_ui, hide_logging):
+    """Check the full model expressions"""
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    bexpval = ui.get_exposure(bkg_id=1)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+
+    # What is used as the background response?
+    #
+    mdl = ui.get_bkg_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == '3c273_bg.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '3c273.arf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '3c273.rmf'
+
+    # Check the exposure time (this is sensitive to the
+    # structure of the model expression).
+    #
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(bexpval)
+
+    # Source response
+    #
+    mdl = ui.get_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == '3c273.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '3c273.arf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '3c273.rmf'
+
+    # The exposure time is the same as the background
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(bexpval)
+
+
+@requires_data
+@requires_fits
+def test_response_source_data_manual(make_data_path, clean_astro_ui, hide_logging):
+    """Check the full model expressions: explicitly load background"""
+
+    infile = make_data_path('12845.pi')
+    ui.load_pha(infile)
+
+    assert ui.list_bkg_ids() == []
+
+    expval = ui.get_exposure()
+
+    # Change scaling and remove response from the fake background
+    bpha = ui.unpack_pha(infile)
+    bpha.name = 'fake'
+    bpha.exposure *= 5
+    bpha.backscal *= 2
+    bpha.delete_response()
+
+    ui.set_bkg(bpha)
+
+    bexpval = ui.get_exposure(bkg_id=1)
+    assert bexpval == pytest.approx(expval * 5)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+
+    # What is used as the response?
+    #
+    mdl = ui.get_bkg_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == 'fake'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(bexpval)
+
+    # Source response
+    #
+    mdl = ui.get_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == '12845.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    # The exposure time is the same as not the same as the background
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(expval)
+
+
+@requires_data
+@requires_fits
+def test_response_source_data_manual_datapha(make_data_path, clean_astro_ui, hide_logging):
+    """Check the full model expressions: explicitly load background: DataPHA
+
+    This is test_response_source_data_manual but using the
+    DataPHA method to add the background to the source, since it
+    leads to different behavior with the background instrument
+    response.
+    """
+
+    infile = make_data_path('12845.pi')
+    ui.load_pha(infile)
+
+    assert ui.list_bkg_ids() == []
+
+    expval = ui.get_exposure()
+
+    # Change scaling and remove response from the fake background
+    bpha = ui.unpack_pha(infile)
+    bpha.name = 'fake'
+    bpha.exposure *= 5
+    bpha.backscal *= 2
+    bpha.delete_response()
+
+    ui.get_data().set_background(bpha)
+
+    bexpval = ui.get_exposure(bkg_id=1)
+    assert bexpval == pytest.approx(expval * 5)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+
+    # What is used as the response?
+    #
+    # Note: unlike test_response_source_data_manual we use the
+    #       source dataset for the background model.
+    #
+    mdl = ui.get_bkg_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    # assert pname == 'fake'
+    assert pname == '12845.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    # assert eterm.val == pytest.approx(bexpval)
+    assert eterm.val == pytest.approx(expval)
+
+    # Source response
+    #
+    mdl = ui.get_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == '12845.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    # The exposure time is the same as not the same as the background
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(expval)
+
+
+@requires_data
+@requires_fits
+def test_response_two_backgrounds(make_data_path, clean_astro_ui, hide_logging):
+    """Check the full model expressions: two backgrounds"""
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    # Fake a second background, and use one with a response
+    # (this one doesn't have a background)
+    bgfile = make_data_path('12845.pi')
+    ui.load_bkg(bgfile, bkg_id=2)
+
+    bexpval1 = ui.get_exposure(bkg_id=1)
+    bexpval2 = ui.get_exposure(bkg_id=2)
+
+    assert bexpval1 == pytest.approx(38564.608926889)
+    assert bexpval2 == pytest.approx(37845.662207644)
+
+    ui.set_source(ui.powlaw1d.smdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+    ui.set_bkg_source(bmdl, bkg_id=2)
+
+    # What is used as the response?
+    #
+    mdl1 = ui.get_bkg_model()
+
+    pname = mdl1.pha.name.split('/')[-1]
+    assert pname == '3c273_bg.pi'
+
+    aname = mdl1.arf.name.split('/')[-1]
+    assert aname == '3c273.arf'
+
+    rname = mdl1.rmf.name.split('/')[-1]
+    assert rname == '3c273.rmf'
+
+    eterm = mdl1.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(bexpval1)
+
+    mdl2 = ui.get_bkg_model(bkg_id=2)
+
+    pname = mdl2.pha.name.split('/')[-1]
+    assert pname == '12845.pi'
+
+    aname = mdl2.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl2.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    eterm = mdl2.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(bexpval2)
+
+    # Source response
+    #
+    mdl = ui.get_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == '3c273.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '3c273.arf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '3c273.rmf'
+
+    # The exposure time is the same as the first background
+    # component
+    #
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(bexpval1)
+
+
+@requires_data
+@requires_fits
+def test_source_overwrites_background(make_data_path, clean_astro_ui, hide_logging):
+    """Changing the source clears out the background filters"""
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    ui.notice(2, 4, bkg_id=1)
+
+    assert ui.get_dep(filter=True).size == 46
+    assert ui.get_dep(filter=True, bkg_id=1).size == 13
+
+    # This over-writes the background filter
+    ui.notice(0.5, 7)
+
+    assert ui.get_dep(filter=True).size == 42
+    assert ui.get_dep(filter=True, bkg_id=1).size == 42
