@@ -73,7 +73,7 @@ def example_pha_data():
     d = ui.DataPHA('example', _data_chan.copy(),
                    _data_counts.copy(),
                    exposure=etime,
-                   backscal=0.1)
+                   backscal=0.2)
 
     a = ui.create_arf(_energies[:-1].copy(),
                       _energies[1:].copy(),
@@ -136,7 +136,7 @@ def example_bkg_model():
     ui.create_model_component('powlaw1d', 'bcpt')
     bcpt = ui.get_model_component('bcpt')
     bcpt.gamma = 0.0  # use a flat model to make it easy to evaluate
-    bcpt.ampl = 1e-1
+    bcpt.ampl = 0.4
     return bcpt
 
 
@@ -519,7 +519,7 @@ def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
 
     # TODO: this is the same output as test_get_bkg_model_plot_energy,
     #       which doesn't make sense.
-    yexp = _arf / 100
+    yexp = _arf / 25
     if direct:
         yexp /= _bexpscale
 
@@ -571,7 +571,7 @@ def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
 
     # TODO: The factor of 100 comes from the bin width (0.1 keV), but
     # why is there a scaling by _bexpscale?
-    yexp = _arf / 100
+    yexp = _arf / 25
     if direct:
         yexp /= _bexpscale
     else:
@@ -600,7 +600,7 @@ def test_get_bkg_resid_plot(idval):
 
     # correct the counts by the bin width and exposure time
     #
-    yexp = (_data_bkg * 100.0 / 1201.0 - _arf) / (_bexpscale * 100)
+    yexp = (_data_bkg * 25.0 / 1201.0 - _arf) / (_bexpscale * 25)
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Residuals of example-bkg - Bkg Model'
@@ -628,7 +628,7 @@ def test_get_bkg_resid_plot_energy(idval):
 
     # correct the counts by the bin width and exposure time
     #
-    yexp = (_data_bkg * 100.0 / 1201.0 - _arf) / (_bexpscale * 100)
+    yexp = (_data_bkg * 25.0 / 1201.0 - _arf) / (_bexpscale * 25)
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Residuals of example-bkg - Bkg Model'
@@ -662,7 +662,7 @@ def test_get_bkg_fit_plot(idval):
     yexp = _data_bkg / 1201.0 / _bexpscale
     assert dp.y == pytest.approx(dp.y)
 
-    yexp = _arf / 100.0 / _bexpscale
+    yexp = _arf / 25.0 / _bexpscale
     assert mp.y == pytest.approx(yexp)
 
 
@@ -696,7 +696,7 @@ def test_get_bkg_fit_plot_energy(idval):
     yexp = _data_bkg / 1201.0 / _bexpscale
     assert dp.y == pytest.approx(dp.y)
 
-    yexp = _arf / 100.0 / _bexpscale
+    yexp = _arf / 25.0 / _bexpscale
     assert mp.y == pytest.approx(yexp)
 
 
@@ -730,7 +730,7 @@ def check_bkg_fit(plotfunc):
     yexp = _data_bkg / 1201.0 / _bexpscale
     assert dplot.y == pytest.approx(yexp)
 
-    yexp = _arf / (_bexpscale * 100)
+    yexp = _arf / (_bexpscale * 25.0)
     assert mplot.y == pytest.approx(yexp)
 
 
