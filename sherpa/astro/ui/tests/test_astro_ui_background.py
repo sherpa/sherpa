@@ -1498,7 +1498,7 @@ def test_bkg_analysis_setting_no_response(idval, direct, clean_astro_ui):
         with pytest.raises(DataErr) as exc:
             ui.set_analysis(idval, 'energy')
 
-    assert str(exc.value) == 'No instrument model found for dataset ex'
+    assert str(exc.value) == 'No instrument response found for dataset ex'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one"])
