@@ -1201,7 +1201,7 @@ def test_response_source_data(make_data_path, clean_astro_ui, hide_logging):
     assert eterm.val == pytest.approx(bexpval)
 
 
-def validate_response_source_data_manual(direct=True):
+def validate_response_source_data_manual():
     """Tests for test_response_source_data_manual[_datapha]
 
     It checks out issue #880.
@@ -1221,10 +1221,7 @@ def validate_response_source_data_manual(direct=True):
     # adapt to the current behavior.
     #
     pname = mdl.pha.name.split('/')[-1]
-    if direct:
-        assert pname == 'fake'
-    else:
-        assert pname == '12845.pi'
+    assert pname == 'fake'
 
     aname = mdl.arf.name.split('/')[-1]
     assert aname == '12845.warf'
@@ -1234,10 +1231,7 @@ def validate_response_source_data_manual(direct=True):
 
     eterm = mdl.parts[0].parts[0]
     assert isinstance(eterm, ArithmeticConstantModel)
-    if direct:
-        assert eterm.val == pytest.approx(bexpval)
-    else:
-        assert eterm.val == pytest.approx(expval)
+    assert eterm.val == pytest.approx(bexpval)
 
     # Source response
     #
@@ -1321,7 +1315,7 @@ def test_response_source_data_manual_datapha(make_data_path, clean_astro_ui, hid
     ui.set_source(ui.powlaw1d.smdl)
     ui.set_bkg_source(ui.const1d.bmdl)
 
-    validate_response_source_data_manual(direct=False)
+    validate_response_source_data_manual()
 
 
 @requires_data
@@ -1506,16 +1500,6 @@ def test_bkg_analysis_setting_changed(idval, direct, analysis, clean_astro_ui):
 
     src = ui.get_data(idval)
     bkg = ui.get_bkg(idval)
-
-    # Want to be able to mark some tests as XFAIL, but as it
-    # involves a parameter setting, how best to do this and
-    # get to see a XPASS when the code is fixed?
-    #
-    if direct and analysis != 'channel':
-        if bkg.units == analysis:
-            assert False, "Test was expected to fail, but can not mark XPASS"
-
-        pytest.xfail("Using set_background does not set units")
 
     assert src.units == analysis
     assert bkg.units == analysis
