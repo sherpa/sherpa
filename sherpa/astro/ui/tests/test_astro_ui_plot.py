@@ -501,7 +501,7 @@ def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
     """Basic testing of get_bkg_model_plot
 
     We test ui.set_bkg as well as datapha.set_background to check
-    issue #879.
+    issue #879 and #880.
 
     The same ARF is used as the source (by construction), which is
     likely to be a common use case.
@@ -537,6 +537,11 @@ def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
     logic that set_bkg can do (issues #879 and #880)
     """
 
+    # The way I have set up the data means that set_analysis
+    # doesn't seem to change the setting for the background,
+    # which should be tracked down (Sep 2019) but not just now
+    # (issue #879)
+    #
     setup_example_bkg_model(idval, direct=direct)
     if idval is None:
         ui.set_analysis('energy')
@@ -545,6 +550,13 @@ def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
         ui.set_analysis(idval, 'energy')
         bp = ui.get_bkg_model_plot(idval)
 
+    # TODO: is this a bug in the plotting code, or does it just
+    # indicate that the test hasn't set up the correct invariants
+    # (which may be true as the code above has to change the units
+    # setting of the background object)?
+    #
+    # I was expecting bp.x to return energy and not channel values
+    #
     if direct:
         assert bp.xlo == pytest.approx(_data_chan)
         assert bp.xhi == pytest.approx(_data_chan + 1)
@@ -555,6 +567,7 @@ def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
     yexp = _arf * BGND_NORM
     if direct:
         yexp *= (_energies_width / _bexpscale)
+
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Model'
