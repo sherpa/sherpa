@@ -790,8 +790,39 @@ class DataPHA(Data1D):
         self.__dict__.update(state)
 
     primary_response_id = 1
+    """The identifier for the response component when not set."""
 
     def set_analysis(self, quantity, type='rate', factor=0):
+        """Return the units used when fitting spectral data.
+
+        Parameters
+        ----------
+        quantity : {'channel', 'energy', 'wavelength'}
+            The analysis setting.
+        type : {'rate', 'counts'}, optional
+            Do plots display a rate or show counts?
+        factor : int, optional
+           The Y axis of plots is multiplied by Energy^factor or
+           Wavelength^factor before display. The default is 0.
+
+        Raises
+        ------
+        sherpa.utils.err.DatatErr
+           If the type argument is invalid, the RMF or ARF has the
+           wrong size, or there in no response.
+
+        See Also
+        --------
+        get_analysis
+
+        Examples
+        --------
+
+        >>> pha.set_analysis('energy')
+
+        >>> pha.set_analysis('wave', type='counts' factor=1)
+
+        """
         self.plot_fac = factor
 
         type = str(type).strip().lower()
@@ -848,10 +879,49 @@ class DataPHA(Data1D):
         return id
 
     def get_response(self, id=None):
+        """Return the response component.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        Returns
+        -------
+        arf, rmf: sherpa.astro.data.DataARF,sherpa.astro.data.DataRMF instances or None
+           The response, as an ARF and RMF. Either, or both,
+           components can be None.
+
+        See Also
+        --------
+        delete_response, get_arf, get_rmf, set_response
+
+        """
         id = self._fix_response_id(id)
         return self._responses.get(id, (None, None))
 
     def set_response(self, arf=None, rmf=None, id=None):
+        """Add or replace a response component.
+
+        To remove a response use delete_response(), as setting arf and
+        rmf to None here does nothing.
+
+        Parameters
+        ----------
+        arf : sherpa.astro.data.DataARF instance or None, optional
+           The ARF to add if any.
+        rmf : sherpa.astro.data.DataRMF instance or None, optional
+           The RMF to add, if any.
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        See Also
+        --------
+        delete_response, get_response, set_arf, set_rmf
+
+        """
         if (arf is None) and (rmf is None):
             return
 
@@ -863,6 +933,22 @@ class DataPHA(Data1D):
         self.response_ids = ids
 
     def delete_response(self, id=None):
+        """Remove the response component.
+
+        If the response component does not exist then the method
+        does nothing.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        See Also
+        --------
+        set_response
+
+        """
         id = self._fix_response_id(id)
         self._responses.pop(id, None)
         ids = self.response_ids[:]
@@ -870,15 +956,89 @@ class DataPHA(Data1D):
         self.response_ids = ids
 
     def get_arf(self, id=None):
+        """Return the ARF from the response.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        Returns
+        -------
+        arf: sherpa.astro.data.DataARF instance or None
+           The ARF, if set.
+
+        See Also
+        --------
+        get_response, get_rmf
+
+        """
         return self.get_response(id)[0]
 
     def get_rmf(self, id=None):
+        """Return the RMF from the response.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        Returns
+        -------
+        rmf: sherpa.astro.data.DataRMF instance or None
+           The RMF, if set.
+
+        See Also
+        --------
+        get_arf, get_response
+
+        """
         return self.get_response(id)[1]
 
     def set_arf(self, arf, id=None):
+        """Add or replace the ARF in a response component.
+
+        This replaces the existing ARF of the response, keeping the
+        previous RMF (if set). Use the delete_response method to
+        remove the response, rather than setting arf to None.
+
+        Parameters
+        ----------
+        arf : sherpa.astro.data.DataARF instance
+           The ARF to add.
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        See Also
+        --------
+        delete_response, set_response, set_rmf
+
+        """
         self.set_response(arf, self.get_rmf(id), id)
 
     def set_rmf(self, rmf, id=None):
+        """Add or replace the RMF in a response component.
+
+        This replaces the existing RMF of the response, keeping the
+        previous ARF (if set). Use the delete_response method to
+        remove the response, rather than setting rmf to None.
+
+        Parameters
+        ----------
+        rmf : sherpa.astro.data.DataRMF instance
+           The RMF to add.
+        id : int or str, optional
+           The identifier of the response component. If it is None
+           then the default response identifier is used.
+
+        See Also
+        --------
+        delete_response, set_response, set_arf
+
+        """
         self.set_response(self.get_arf(id), rmf, id)
 
     def get_specresp(self, filter=False):
@@ -1139,6 +1299,7 @@ class DataPHA(Data1D):
         return self._energy_to_channel(vals)
 
     default_background_id = 1
+    """The identifier for the background component when not set."""
 
     def _fix_background_id(self, id):
         if id is None:
@@ -1146,6 +1307,25 @@ class DataPHA(Data1D):
         return id
 
     def get_background(self, id=None):
+        """Return the background component.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the background component. If it is None
+           then the default background identifier is used.
+
+        Returns
+        -------
+        bkg : sherpa.astro.data.DataPHA instance or None
+           The background dataset. If there is no component then None
+           is returned.
+
+        See Also
+        --------
+        delete_background, set_background
+
+        """
         id = self._fix_background_id(id)
         return self._backgrounds.get(id)
 
@@ -1202,6 +1382,28 @@ class DataPHA(Data1D):
         bkg.plot_fac = self.plot_fac
 
     def delete_background(self, id=None):
+        """Remove the background component.
+
+        If the background component does not exist then the method
+        does nothing.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier of the background component. If it is None
+           then the default background identifier is used.
+
+        See Also
+        --------
+        set_background
+
+        Notes
+        -----
+        If this call removes the last of the background components
+        then the subtracted flag is cleared (if set).
+
+        """
+
         id = self._fix_background_id(id)
         self._backgrounds.pop(id, None)
         if len(self._backgrounds) == 0:
