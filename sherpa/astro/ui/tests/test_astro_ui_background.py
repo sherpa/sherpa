@@ -35,7 +35,7 @@ from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import ARFModelPHA
 from sherpa.models.model import ArithmeticConstantModel
-from sherpa.utils.err import ModelErr
+from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -1201,6 +1201,63 @@ def test_response_source_data(make_data_path, clean_astro_ui, hide_logging):
     assert eterm.val == pytest.approx(bexpval)
 
 
+def validate_response_source_data_manual(direct=True):
+    """Tests for test_response_source_data_manual[_datapha]
+
+    It checks out issue #880.
+    """
+
+    expval = ui.get_exposure()
+    bexpval = ui.get_exposure(bkg_id=1)
+    assert expval == pytest.approx(37845.662207644)
+    assert bexpval == pytest.approx(37845.662207644 * 5)
+
+    # What is used as the response?
+    #
+    mdl = ui.get_bkg_model()
+
+    # The value here should be 'fake' but thanks to #880 it
+    # depends. Rather than make this an XFAIL for one case,
+    # adapt to the current behavior.
+    #
+    pname = mdl.pha.name.split('/')[-1]
+    if direct:
+        assert pname == 'fake'
+    else:
+        assert pname == '12845.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    if direct:
+        assert eterm.val == pytest.approx(bexpval)
+    else:
+        assert eterm.val == pytest.approx(expval)
+
+    # Source response
+    #
+    mdl = ui.get_model()
+
+    pname = mdl.pha.name.split('/')[-1]
+    assert pname == '12845.pi'
+
+    aname = mdl.arf.name.split('/')[-1]
+    assert aname == '12845.warf'
+
+    rname = mdl.rmf.name.split('/')[-1]
+    assert rname == '12845.wrmf'
+
+    # The exposure time is the same as not the same as the background
+    eterm = mdl.parts[0].parts[0]
+    assert isinstance(eterm, ArithmeticConstantModel)
+    assert eterm.val == pytest.approx(expval)
+
+
 @requires_data
 @requires_fits
 def test_response_source_data_manual(make_data_path, clean_astro_ui, hide_logging):
@@ -1228,40 +1285,7 @@ def test_response_source_data_manual(make_data_path, clean_astro_ui, hide_loggin
     ui.set_source(ui.powlaw1d.smdl)
     ui.set_bkg_source(ui.const1d.bmdl)
 
-    # What is used as the response?
-    #
-    mdl = ui.get_bkg_model()
-
-    pname = mdl.pha.name.split('/')[-1]
-    assert pname == 'fake'
-
-    aname = mdl.arf.name.split('/')[-1]
-    assert aname == '12845.warf'
-
-    rname = mdl.rmf.name.split('/')[-1]
-    assert rname == '12845.wrmf'
-
-    eterm = mdl.parts[0].parts[0]
-    assert isinstance(eterm, ArithmeticConstantModel)
-    assert eterm.val == pytest.approx(bexpval)
-
-    # Source response
-    #
-    mdl = ui.get_model()
-
-    pname = mdl.pha.name.split('/')[-1]
-    assert pname == '12845.pi'
-
-    aname = mdl.arf.name.split('/')[-1]
-    assert aname == '12845.warf'
-
-    rname = mdl.rmf.name.split('/')[-1]
-    assert rname == '12845.wrmf'
-
-    # The exposure time is the same as not the same as the background
-    eterm = mdl.parts[0].parts[0]
-    assert isinstance(eterm, ArithmeticConstantModel)
-    assert eterm.val == pytest.approx(expval)
+    validate_response_source_data_manual()
 
 
 @requires_data
@@ -1272,7 +1296,7 @@ def test_response_source_data_manual_datapha(make_data_path, clean_astro_ui, hid
     This is test_response_source_data_manual but using the
     DataPHA method to add the background to the source, since it
     leads to different behavior with the background instrument
-    response.
+    response. This is a combination of issue #879 and #880
     """
 
     infile = make_data_path('12845.pi')
@@ -1297,45 +1321,7 @@ def test_response_source_data_manual_datapha(make_data_path, clean_astro_ui, hid
     ui.set_source(ui.powlaw1d.smdl)
     ui.set_bkg_source(ui.const1d.bmdl)
 
-    # What is used as the response?
-    #
-    # Note: unlike test_response_source_data_manual we use the
-    #       source dataset for the background model.
-    #
-    mdl = ui.get_bkg_model()
-
-    pname = mdl.pha.name.split('/')[-1]
-    # assert pname == 'fake'
-    assert pname == '12845.pi'
-
-    aname = mdl.arf.name.split('/')[-1]
-    assert aname == '12845.warf'
-
-    rname = mdl.rmf.name.split('/')[-1]
-    assert rname == '12845.wrmf'
-
-    eterm = mdl.parts[0].parts[0]
-    assert isinstance(eterm, ArithmeticConstantModel)
-    # assert eterm.val == pytest.approx(bexpval)
-    assert eterm.val == pytest.approx(expval)
-
-    # Source response
-    #
-    mdl = ui.get_model()
-
-    pname = mdl.pha.name.split('/')[-1]
-    assert pname == '12845.pi'
-
-    aname = mdl.arf.name.split('/')[-1]
-    assert aname == '12845.warf'
-
-    rname = mdl.rmf.name.split('/')[-1]
-    assert rname == '12845.wrmf'
-
-    # The exposure time is the same as not the same as the background
-    eterm = mdl.parts[0].parts[0]
-    assert isinstance(eterm, ArithmeticConstantModel)
-    assert eterm.val == pytest.approx(expval)
+    validate_response_source_data_manual(direct=False)
 
 
 @requires_data
@@ -1432,3 +1418,104 @@ def test_source_overwrites_background(make_data_path, clean_astro_ui, hide_loggi
 
     assert ui.get_dep(filter=True).size == 42
     assert ui.get_dep(filter=True, bkg_id=1).size == 42
+
+
+def fake_pha(idval, direct, response=True):
+    """Create a fake PHA file with a response and background"""
+
+    chans = np.arange(3, dtype=np.int16)
+    d = ui.DataPHA('ex', chans, chans * 0, exposure=20, backscal=0.1)
+    b = ui.DataPHA('bg', chans, chans * 0, exposure=200, backscal=0.2)
+
+    # add in a RMF
+    if response:
+        ebins = np.asarray([0.1, 0.2, 0.4, 0.5])
+        elo = ebins[:-1]
+        ehi = ebins[1:]
+        r = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+        d.set_rmf(r)
+
+    if direct:
+        d.set_background(b)
+
+    if idval is None:
+        ui.set_data(d)
+    else:
+        ui.set_data(idval, d)
+
+    if not direct:
+        if idval is None:
+            ui.set_bkg(b)
+        else:
+            ui.set_bkg(idval, b)
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one"])
+@pytest.mark.parametrize("direct", [True, False])
+def test_bkg_analysis_setting_no_response(idval, direct, clean_astro_ui):
+    """There's no response, so setting the analysis will error out.
+    """
+
+    fake_pha(idval, direct, response=False)
+
+    if idval is None:
+        with pytest.raises(DataErr) as exc:
+            ui.set_analysis('energy')
+    else:
+        with pytest.raises(DataErr) as exc:
+            ui.set_analysis(idval, 'energy')
+
+    assert str(exc.value) == 'No instrument model found for dataset ex'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one"])
+@pytest.mark.parametrize("direct", [True, False])
+def test_bkg_analysis_setting_default(idval, direct, clean_astro_ui):
+    """Check the analysis setting of the background.
+
+    The default setting is channel
+
+    """
+
+    fake_pha(idval, direct)
+
+    src = ui.get_data(idval)
+    bkg = ui.get_bkg(idval)
+
+    assert src.units == 'channel'
+    assert bkg.units == 'channel'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one"])
+@pytest.mark.parametrize("direct", [True, False])
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wavelength'])
+def test_bkg_analysis_setting_changed(idval, direct, analysis, clean_astro_ui):
+    """Change the analysis setting of the background.
+
+    This compares datapha.set_background to ui.set_bkg to
+    check issue #879
+
+    """
+
+    fake_pha(idval, direct)
+
+    if idval is None:
+        ui.set_analysis(analysis)
+    else:
+        ui.set_analysis(idval, analysis)
+
+    src = ui.get_data(idval)
+    bkg = ui.get_bkg(idval)
+
+    # Want to be able to mark some tests as XFAIL, but as it
+    # involves a parameter setting, how best to do this and
+    # get to see a XPASS when the code is fixed?
+    #
+    if direct and analysis != 'channel':
+        if bkg.units == analysis:
+            assert False, "Test was expected to fail, but can not mark XPASS"
+
+        pytest.xfail("Using set_background does not set units")
+
+    assert src.units == analysis
+    assert bkg.units == analysis

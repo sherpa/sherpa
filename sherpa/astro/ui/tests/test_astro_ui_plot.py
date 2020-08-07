@@ -92,10 +92,19 @@ def example_pha_data():
     return d
 
 
-def example_pha_with_bkg_data():
+def example_pha_with_bkg_data(direct=True):
     """Create an example data set with background
 
     There is no response for the background.
+
+    Parameters
+    ----------
+    direct : bool, optional
+        If True then the background is added to the source
+        and only the source is returned. If False then the
+        return is (source, bgnd) and the backgrouund is not
+        associated with the source.
+
     """
 
     d = example_pha_data()
@@ -105,8 +114,11 @@ def example_pha_with_bkg_data():
                    exposure=1201.0 * _bexpscale,
                    backscal=0.4)
 
-    d.set_background(b)
-    return d
+    if direct:
+        d.set_background(b)
+        return d
+
+    return d, b
 
 
 def example_model():
@@ -180,7 +192,7 @@ def setup_example_bkg(idval):
         ui.set_source(idval, m)
 
 
-def setup_example_bkg_model(idval):
+def setup_example_bkg_model(idval, direct=True):
     """Set up a simple dataset + background for use in the tests.
 
     This includes a model for the background, unlike
@@ -196,16 +208,25 @@ def setup_example_bkg_model(idval):
     setup_example_bkg
     """
 
-    d = example_pha_with_bkg_data()
+    d = example_pha_with_bkg_data(direct=direct)
     m = example_model()
     bm = example_bkg_model()
     if idval is None:
-        ui.set_data(d)
+        if direct:
+            ui.set_data(d)
+        else:
+            ui.set_data(d[0])
+            ui.set_bkg(d[1])
+
         ui.set_source(m)
         ui.set_bkg_model(bm)
 
     else:
-        ui.set_data(idval, d)
+        if direct:
+            ui.set_data(idval, d)
+        else:
+            ui.set_data(idval, d[0])
+            ui.set_bkg(idval, d[1])
         ui.set_source(idval, m)
         ui.set_bkg_model(idval, bm)
 
@@ -476,13 +497,17 @@ def test_get_source_plot_energy(idval):
     # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_model_plot(idval):
+@pytest.mark.parametrize("direct", [True, False])
+def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
     """Basic testing of get_bkg_model_plot
+
+    We test ui.set_bkg as well as datapha.set_background,
+    since I have seen subtle differences due to the extra
+    logic that set_bkg can do (issues #879 and #880)
     """
 
-    setup_example_bkg_model(idval)
+    setup_example_bkg_model(idval, direct=direct)
     if idval is None:
         bp = ui.get_bkg_model_plot()
     else:
@@ -494,7 +519,10 @@ def test_get_bkg_model_plot(idval):
 
     # TODO: this is the same output as test_get_bkg_model_plot_energy,
     #       which doesn't make sense.
-    yexp = _arf / (_bexpscale * 100)
+    yexp = _arf / 100
+    if direct:
+        yexp /= _bexpscale
+
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Model'
@@ -502,17 +530,22 @@ def test_get_bkg_model_plot(idval):
     assert bp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_model_plot_energy(idval):
+@pytest.mark.parametrize("direct", [True, False])
+def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
     """Basic testing of get_bkg_model_plot: energy
+
+    We test ui.set_bkg as well as datapha.set_background,
+    since I have seen subtle differences due to the extra
+    logic that set_bkg can do (issues #879 and #880)
     """
 
     # The way I have set up the data means that set_analysis
     # doesn't seem to change the setting for the background,
-    # which should be tracked down (Sep 2019) but not just now.
+    # which should be tracked down (Sep 2019) but not just now
+    # (issue #879)
     #
-    setup_example_bkg_model(idval)
+    setup_example_bkg_model(idval, direct=direct)
     if idval is None:
         ui.set_analysis('energy')
         ui.get_bkg().units = 'energy'
@@ -529,12 +562,21 @@ def test_get_bkg_model_plot_energy(idval):
     #
     # I was expecting bp.x to return energy and not channel values
     #
-    assert bp.xlo == pytest.approx(_data_chan - 0.5)
-    assert bp.xhi == pytest.approx(_data_chan + 0.5)
+    if direct:
+        assert bp.xlo == pytest.approx(_data_chan - 0.5)
+        assert bp.xhi == pytest.approx(_data_chan + 0.5)
+    else:
+        assert bp.xlo == pytest.approx(_energies[:-1])
+        assert bp.xhi == pytest.approx(_energies[1:])
 
     # TODO: The factor of 100 comes from the bin width (0.1 keV), but
     # why is there a scaling by _bexpscale?
-    yexp = _arf / (_bexpscale * 100)
+    yexp = _arf / 100
+    if direct:
+        yexp /= _bexpscale
+    else:
+        yexp *= 10  # what is this from?
+
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Model'
