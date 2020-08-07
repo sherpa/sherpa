@@ -1109,10 +1109,6 @@ def validate_response_source_data_manual():
     #
     mdl = ui.get_bkg_model()
 
-    # The value here should be 'fake' but thanks to #880 it
-    # depends. Rather than make this an XFAIL for one case,
-    # adapt to the current behavior.
-    #
     pname = mdl.pha.name.split('/')[-1]
     assert pname == 'fake'
 
