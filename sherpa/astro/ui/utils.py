@@ -9059,22 +9059,6 @@ class Session(sherpa.ui.utils.Session):
         self._set_item(id, model, self._pileup_models, sherpa.models.Model,
                        'model', 'a model object or model expression string')
 
-    def _get_bkg_model_status(self, id=None, bkg_id=None):
-        src = self._background_sources.get(id, {}).get(bkg_id)
-        mdl = self._background_models.get(id, {}).get(bkg_id)
-
-        if src is None and mdl is None:
-            IdentifierErr('getitem', 'model', id, 'has not been set')
-
-        model = mdl
-        is_source = False
-
-        if mdl is None and src is not None:
-            is_source = True
-            model = src
-
-        return (model, is_source)
-
     def get_bkg_source(self, id=None, bkg_id=None):
         """Return the model expression for the background of a PHA data set.
 
@@ -9170,23 +9154,33 @@ class Session(sherpa.ui.utils.Session):
         """
         id = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
-        src, is_source = self._get_bkg_model_status(id, bkg_id)
+
+        mdl = self._background_models.get(id, {}).get(bkg_id)
+
+        if mdl is None:
+            is_source = True
+            src = self._background_sources.get(id, {}).get(bkg_id)
+        else:
+            is_source = False
+            src = mdl
 
         if src is None:
             raise ModelErr('nobkg', bkg_id, id)
 
-        # Evaluate these even if is_source is False
-        data = self._get_pha_data(id)
-        bkg = self.get_bkg(id, bkg_id)
-
         if not is_source:
             return src
 
-        if len(bkg.response_ids) != 0:
-            resp = sherpa.astro.instrument.Response1D(bkg)
-        else:
-            resp = sherpa.astro.instrument.Response1D(data)
+        # The background response is set bu the DataPHA.set_background
+        # method (copying one over, if it does not exist), which means
+        # that the only way to get to this point is if the user has
+        # explicitly deleted the background response. In this case
+        # we error out.
+        #
+        bkg = self.get_bkg(id, bkg_id)
+        if len(bkg.response_ids) == 0:
+            raise DataErr('nobrsp', str(id), str(bkg_id))
 
+        resp = sherpa.astro.instrument.Response1D(bkg)
         return resp(src)
 
     def set_bkg_full_model(self, id, model=None, bkg_id=None):

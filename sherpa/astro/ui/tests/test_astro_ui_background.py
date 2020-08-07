@@ -458,9 +458,20 @@ def test_pha1_instruments(clean_astro_ui):
     # We don't check the scaling here
     scales = (1, 1, 1)
     ui.set_data(1, setup_pha1(scales, scales, scales))
-    ui.set_source(1, ui.stephi1d.smdl)
-    ui.set_bkg_source(1, ui.steplo1d.bmdl)
-    ui.set_bkg_source(1, bmdl, bkg_id=2)
+
+    s = ui.stephi1d.s
+    b = ui.steplo1d.b
+    ui.set_source(1, s)
+    ui.set_bkg_source(1, b)
+    ui.set_bkg_source(1, b, bkg_id=2)
+
+    ssrc = ui.get_source()
+    bsrc1 = ui.get_bkg_source(bkg_id=1)
+    bsrc2 = ui.get_bkg_source(bkg_id=2)
+
+    assert ssrc == s
+    assert bsrc1 == b
+    assert bsrc2 == b
 
     smdl = ui.get_model()
     bmdl1 = ui.get_bkg_model(bkg_id=1)
@@ -471,6 +482,34 @@ def test_pha1_instruments(clean_astro_ui):
         assert isinstance(mdl, ARFModelPHA)
         assert mdl.pha.name == 'tst{}'.format(i)
         assert mdl.arf.name == 'arf{}'.format(i)
+
+
+@pytest.mark.parametrize('bid', [1, 2])
+def test_pha1_instruments_missing(bid, clean_astro_ui):
+    """Check we get the correct responses for various options.
+    """
+
+    # We don't check the scaling here
+    scales = (1, 1, 1)
+    ui.set_data(1, setup_pha1(scales, scales, scales))
+
+    # Why can we not say ui.stephi1d.bmdl here?
+    #
+    bmdl = ui.create_model_component('stephi1d', 'bmdl')
+    ui.set_bkg_source(1, bmdl)
+    ui.set_bkg_source(1, bmdl, bkg_id=2)
+
+    bkg = ui.get_bkg(1, bkg_id=bid)
+    bkg.delete_response()
+
+    with pytest.raises(DataErr) as exc:
+        ui.get_bkg_model(bkg_id=bid)
+
+    assert str(exc.value) == 'No instrument response found for dataset 1 background {}'.format(bid)
+
+    oid = 1 if bid == 2 else 2
+    bmdl = ui.get_bkg_model(bkg_id=oid)
+    assert isinstance(bmdl, ARFModelPHA)
 
 
 # Try and pick routines with different pathways through the code

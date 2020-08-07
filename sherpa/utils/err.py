@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019
+#  Copyright (C) 2010, 2016, 2017, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -232,6 +232,7 @@ class DataErr(SherpaErr):
             'normffake': 'An RMF has not been found or supplied for data set %s',
             'noenerg': 'no energy grid found in PHA response',
             'norsp': 'No instrument response found for dataset %s',
+            'nobrsp': 'No instrument response found for dataset %s background %s',
             'ogip-error': "The %s '%s' %s"
             }
 
