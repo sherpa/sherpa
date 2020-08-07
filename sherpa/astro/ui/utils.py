@@ -2231,8 +2231,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     d.mask &= ~filter
             else:
-                raise sherpa.utils.err.DataErr('mismatch',
-                                               len(d.mask), len(filter))
+                raise DataErr('mismatch', len(d.mask), len(filter))
         else:
             if len(d.get_y(False)) == len(filter):
                 if not ignore:
@@ -2240,8 +2239,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     d.mask = ~filter
             else:
-                raise sherpa.utils.err.DataErr('mismatch',
-                                               len(d.get_y(False)), len(filter))
+                raise DataErr('mismatch', len(d.get_y(False)), len(filter))
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
@@ -2958,7 +2956,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         err = d.get_syserror(filter)
         if err is None or not numpy.iterable(err):
-            raise sherpa.utils.err.DataErr('nosyserr', id)
+            raise DataErr('nosyserr', id)
         return err
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
@@ -4233,9 +4231,9 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
         if d.mask is False:
-            raise sherpa.utils.err.DataErr('notmask')
+            raise DataErr('notmask')
         if not numpy.iterable(d.mask):
-            raise sherpa.utils.err.DataErr('nomask', id)
+            raise DataErr('nomask', id)
 
         x = d.get_indep(filter=False)[0]
         mask = numpy.asarray(d.mask, numpy.int)
@@ -4673,7 +4671,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
 
         if d.grouping is None or not numpy.iterable(d.grouping):
-            raise sherpa.utils.err.DataErr('nogrouping', id)
+            raise DataErr('nogrouping', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
@@ -4756,7 +4754,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
 
         if d.quality is None or not numpy.iterable(d.quality):
-            raise sherpa.utils.err.DataErr('noquality', id)
+            raise DataErr('noquality', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
                                      ['CHANNEL', 'QUALITY'], ascii, clobber)

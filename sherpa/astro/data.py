@@ -804,7 +804,7 @@ class DataPHA(Data1D):
         if (rmf is None and arf is None) and \
            (self.bin_lo is None and self.bin_hi is None) and \
            quantity != 'channel':
-            raise DataErr('noinstr', self.name)
+            raise DataErr('norsp', self.name)
 
         if rmf is None and arf is not None and quantity != 'channel' and \
            len(arf.energ_lo) != len(self.channel):
