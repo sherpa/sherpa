@@ -160,6 +160,29 @@ def test_models_all():
     assert nall == len(mcomb)
 
 
+def test_get_functions():
+    """Limited check of get_functions"""
+
+    s = Session()
+    fns = s.get_functions()
+    assert type(fns) == list
+    assert len(fns) > 1
+    assert all([type(f) == str for f in fns])
+    assert 'load_data' in fns
+
+
+def test_list_functions():
+    """Limited check of list_functions"""
+
+    s = Session()
+    store = StringIO()
+    s.list_functions(outfile=store)
+    txt = store.getvalue()
+    fns = txt.split('\n')
+    assert len(fns) > 1
+    assert 'calc_stat' in fns
+
+
 def test_paramprompt_function():
     """Does paramprompt toggle the state setting?"""
 
