@@ -27,6 +27,9 @@ from sherpa.ui.utils import Session
 from numpy.testing import assert_array_equal
 from sherpa.models import parameter
 import sherpa.models.basic
+from sherpa import optmethods as opt
+from sherpa import stats
+from sherpa.utils.err import ArgumentTypeErr
 
 import pytest
 
@@ -332,3 +335,141 @@ def test_list_model_ids():
 
     s.set_model('const1d.mdla')
     assert set(s.list_model_ids()) == set([1, 'ma', 'mb'])
+
+
+def test_list_methods():
+    """we have some methods"""
+
+    s = Session()
+    methods = s.list_methods()
+    assert type(methods) == list
+    assert len(methods) > 1  # do not check exact number
+    assert 'levmar' in methods
+
+
+def test_list_iter_methods():
+    """we have some iteration methods"""
+
+    s = Session()
+    methods = s.list_iter_methods()
+    assert type(methods) == list
+    assert len(methods) > 1  # do not check exact number
+    assert 'none' in methods
+    assert 'sigmarej' in methods
+    assert 'primini' in methods
+
+
+def test_get_method_default():
+    """get_method returns default instance (LevMar)"""
+
+    s = Session()
+    method = s.get_method()
+    assert isinstance(method, opt.LevMar)
+
+
+@pytest.mark.parametrize("name,req",
+                         [("GridSearch", opt.GridSearch),
+                          ("levmar", opt.LevMar),
+                          ("MONCAR", opt.MonCar),
+                          ("neldermead", opt.NelderMead),
+                          ("simplex", opt.NelderMead)])
+def test_get_method_named(name, req):
+    """get_method returns requested instance"""
+
+    s = Session()
+    method = s.get_method(name)
+    assert isinstance(method, req)
+
+
+def test_get_method_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.get_method(opt.MonCar)
+
+    assert str(exc.value) == "'name' must be a string"
+
+
+@pytest.mark.parametrize("name,req",
+                         [("moncar", opt.MonCar),
+                          (opt.GridSearch(), opt.GridSearch)])
+def test_set_method(name, req):
+    """We can set the method"""
+
+    s = Session()
+    s.set_method(name)
+    ans = s.get_method()
+    assert isinstance(ans, req)
+
+
+def test_set_method_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.set_method(sherpa.models.basic.Const1D)
+
+    assert str(exc.value) == "'meth' must be a method name or object"
+
+
+def test_get_stat_default():
+    """get_stat returns default instance (Chi2Gehrels)"""
+
+    s = Session()
+    stat = s.get_stat()
+    assert isinstance(stat, stats.Chi2Gehrels)
+
+
+@pytest.mark.parametrize("name,req",
+                         [("chi2gehrels", stats.Chi2Gehrels),
+                          ("Chi2DataVar", stats.Chi2DataVar),
+                          ("leastsq", stats.LeastSq),
+                          ("Wstat", stats.WStat)])
+def test_get_stat_named(name, req):
+    """get_stat returns requested instance"""
+
+    s = Session()
+    stat = s.get_stat(name)
+    assert isinstance(stat, req)
+
+
+def test_get_stat_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.get_stat(stats.Cash)
+
+    assert str(exc.value) == "'name' must be a string"
+
+
+@pytest.mark.parametrize("name,req",
+                         [("chi2modvar", stats.Chi2ModVar),
+                          (stats.CStat(), stats.CStat)])
+def test_set_stat(name, req):
+    """We can set the statistic"""
+
+    s = Session()
+    s.set_stat(name)
+    ans = s.get_stat()
+    assert isinstance(ans, req)
+
+
+def test_set_stat_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.set_stat(sherpa.models.basic.Const1D)
+
+    assert str(exc.value) == "'stat' must be a statistic name or object"
+
+
+def test_get_default_id():
+    """Does the default id react correctly?"""
+    s = Session()
+    assert s.get_default_id() == 1
+
+    s.set_default_id('alpha')
+    assert s.get_default_id() == 'alpha'
