@@ -27,9 +27,11 @@ from sherpa.ui.utils import Session
 from numpy.testing import assert_array_equal
 from sherpa.models import parameter
 import sherpa.models.basic
+from sherpa import estmethods as est
 from sherpa import optmethods as opt
 from sherpa import stats
-from sherpa.utils.err import ArgumentTypeErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
+    IdentifierErr, SessionErr
 
 import pytest
 
@@ -473,3 +475,107 @@ def test_get_default_id():
 
     s.set_default_id('alpha')
     assert s.get_default_id() == 'alpha'
+
+
+@pytest.mark.parametrize("name,req",
+                         [('covar', est.Covariance),
+                          ('conf', est.Confidence),
+                          ('proj', est.Projection)])
+def test_get_error_estimator(name, req):
+    """Can we get the error estimator?"""
+
+    s = Session()
+    func = getattr(s, 'get_{}'.format(name))
+    ans = func()
+    assert isinstance(ans, req)
+
+
+@pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
+def test_get_error_opt(name):
+    """Can we get an option for an error estimator?
+
+    Fortunately they all have a sigma option.
+    """
+
+    s = Session()
+    func = getattr(s, 'get_{}_opt'.format(name))
+    ans = func('sigma')
+    assert ans == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("name,fullname",
+                         [('covar', 'covariance'),
+                          ('conf', 'confidence'),
+                          ('proj', 'projection')])
+def test_get_error_opt_invalid(name, fullname):
+    """We can not ask for an error option that does not exist"""
+
+    s = Session()
+    func = getattr(s, 'get_{}_opt'.format(name))
+
+    with pytest.raises(ArgumentErr) as exc:
+        func('the-real-sigma')
+
+    assert str(exc.value) == "'the-real-sigma' is not a valid option for method {}".format(fullname)
+
+
+@pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
+def test_set_error_opt(name):
+    """Can we set an option for an error estimator?
+
+    Fortunately they all have a sigma option.
+    """
+
+    s = Session()
+    gfunc = getattr(s, 'get_{}_opt'.format(name))
+    sfunc = getattr(s, 'set_{}_opt'.format(name))
+
+    sfunc('sigma', 1.6)
+    ans = gfunc('sigma')
+    assert ans == pytest.approx(1.6)
+
+
+@pytest.mark.parametrize("name,fullname",
+                         [('covar', 'covariance'),
+                          ('conf', 'confidence'),
+                          ('proj', 'projection')])
+def test_set_error_opt_invalid(name, fullname):
+    """We can not set an error option that does not exist"""
+
+    s = Session()
+    func = getattr(s, 'set_{}_opt'.format(name))
+
+    with pytest.raises(ArgumentErr) as exc:
+        func('the-real-sigma', 2.4)
+
+    assert str(exc.value) == "'the-real-sigma' is not a valid option for method {}".format(fullname)
+
+
+@pytest.mark.parametrize("name,fullname",
+                         [('covar', 'covariance'),
+                          ('conf', 'confidence'),
+                          ('proj', 'projection')])
+def test_error_estimate_not_set(name, fullname):
+    """Error out if the error estimate is not set"""
+
+    s = Session()
+    func = getattr(s, 'get_{}_results'.format(name))
+
+    with pytest.raises(SessionErr) as exc:
+        func()
+
+    assert str(exc.value) == "{} has not been performed".format(fullname)
+
+
+@pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
+def test_error_estimate_not_run(name):
+    """Can not rn the error estimate if data is not set up"""
+
+    s = Session()
+    s.set_default_id('bob')
+    func = getattr(s, name)
+
+    with pytest.raises(IdentifierErr) as exc:
+        func()
+
+    assert str(exc.value) == "data set bob has not been set"
