@@ -5163,14 +5163,18 @@ class Session(NoNewAttributesAfterInit):
             if item in keys:
                 keys.remove(item)
 
+        select = None
         if show.startswith("xspec"):
-            return filter(lambda x: x.startswith('xs'), keys)
+            select = lambda x: x.startswith('xs')
         elif show.startswith("1d"):
-            return filter(lambda x: (not x.startswith('xs')) and (not x.endswith("2d")), keys)
+            select = lambda x: (not x.startswith('xs')) and (not x.endswith("2d"))
         elif show.startswith("2d"):
-            return filter(lambda x: x.endswith('2d'), keys)
+            select = lambda x: x.endswith('2d')
 
-        return keys
+        if select is None:
+            return keys
+
+        return list(filter(select, keys))
 
     def list_model_components(self):
         """List the names of all the model components.

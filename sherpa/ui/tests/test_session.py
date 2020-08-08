@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,11 +24,12 @@ to be kept up to date.
 import numpy
 
 from sherpa.astro.data import DataPHA
-from sherpa.utils.testing import requires_plotting
+from sherpa.utils.testing import requires_plotting, requires_xspec
 from sherpa.ui.utils import Session
 from sherpa.astro.ui.utils import Session as AstroSession
 from numpy.testing import assert_array_equal
 from sherpa.models import parameter, Const1D
+import sherpa.models.basic
 
 import pytest
 
@@ -89,11 +90,74 @@ def test_save_restore(tmpdir):
     assert_array_equal(TEST2, session.get_data(1).get_dep())
 
 
-def test_default_models():
+def test_models_models():
     """There are no models available by default"""
 
     s = Session()
     assert s.list_models() == []
+
+
+def test_models_all():
+    """We can get a list of all models"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    models = s.list_models()
+    assert type(models) == list
+    assert len(models) > 1
+    assert all([type(m) == str for m in models])
+
+
+# XSPEC is only needed for the xspec test but easiest to just
+# mark it for all cases
+#
+@requires_xspec
+@pytest.mark.parametrize("mtype", ["1d", "2d", "xspec"])
+def test_models_filtered(mtype):
+    """We can get a list of a subset of models
+
+    Check the fix for issue #749
+    """
+
+    import sherpa.astro.xspec
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.xspec)
+
+    models = s.list_models(mtype)
+    assert type(models) == list
+    assert len(models) > 1
+    assert all([type(m) == str for m in models])
+
+
+@requires_xspec
+def test_models_all():
+    """Check all models are returned"""
+
+    import sherpa.astro.xspec
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.xspec)
+
+    # Actually, it's not guaranteed that these models are disjoint
+    # but they are at the moment.
+    #
+    mall = s.list_models('all')
+    m1d = s.list_models('1d')
+    m2d = s.list_models('2d')
+    mxs = s.list_models('xspec')
+
+    nall = len(mall)
+    assert nall == len(m1d) + len(m2d) + len(mxs)
+
+    mall = set(mall)
+    assert nall == len(mall)
+
+    mcomb = set(m1d).union(set(m2d)).union(set(mxs))
+    assert nall == len(mcomb)
 
 
 def test_paramprompt_function():
@@ -117,9 +181,11 @@ def test_paramprompt():
     assert s.list_model_components() == []
 
     # Add in some models
-    import sherpa.models.basic
     s._add_model_types(sherpa.models.basic)
-    assert s.list_models() != []
+
+    models = s.list_models()
+    assert models != []
+    assert 'const1d' in models
 
     s.create_model_component('const1d', 'm1')
     assert s.list_model_ids() == []
@@ -234,7 +300,6 @@ def test_list_model_ids():
     # This issue was found when developing the paramprompt test.
     s = Session()
 
-    import sherpa.models.basic
     s._add_model_types(sherpa.models.basic)
 
     assert s.list_model_ids() == []
@@ -249,7 +314,7 @@ def test_list_model_ids():
     assert set(s.list_model_ids()) == set([1, 'ma', 'mb'])
 
 
-# Fix 476
+# Fix 476 - this should be in sherpa/ui/tests/test_session.py
 def test_zero_division_calc_stat():
     ui = AstroSession()
     x = numpy.arange(100)
