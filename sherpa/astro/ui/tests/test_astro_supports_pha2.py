@@ -42,17 +42,6 @@ from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 
 
-# TODO: replace by clean_astro_ui
-@pytest.fixture(autouse=True)
-def setup(request):
-    ui.clean()
-
-    def fin():
-        ui.clean()
-
-    request.addfinalizer(fin)
-
-
 def validate_pha(d, bkg=True):
     """Check the data is a PHA with expected structure.
 
@@ -121,7 +110,12 @@ def validate_pha(d, bkg=True):
 
 @requires_data
 @requires_fits
-def test_load_pha2(make_data_path, caplog):
+@pytest.mark.parametrize("id0,ids",
+                         [(None, [1,2,3,4,5,6,7,8,9,10,11,12]),
+                          (1, [1,2,3,4,5,6,7,8,9,10,11,12]),
+                          (100, [100,101,102,103,104,105,106,107,108,109,110,111]),
+                          ("x", ["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12"])])
+def test_load_pha2(id0, ids, make_data_path, caplog, clean_astro_ui):
     """Basic test that a pha2 file can be read in."""
 
     basename = '3c120_pha2'
@@ -131,7 +125,10 @@ def test_load_pha2(make_data_path, caplog):
 
     # The file is stored gzip-encoded
     infile = make_data_path(basename)
-    ui.load_pha(infile)
+    if id0 is None:
+        ui.load_pha(infile)
+    else:
+        ui.load_pha(id0, infile)
 
     pha_ids = ui.list_data_ids()
     assert len(pha_ids) == 12
@@ -141,10 +138,9 @@ def test_load_pha2(make_data_path, caplog):
     # all at once) to make it easier to see what is missing
     # (if any)
     #
-    for i in range(1, 13):
+    for i in ids:
         assert i in pha_ids
 
-    for i in range(1, 13):
         d = ui.get_data(i)
         validate_pha(d, bkg=True)
 
@@ -173,7 +169,9 @@ def test_load_pha2(make_data_path, caplog):
 
     msg_three = "read background_up into a dataset from file {}".format(infile)
     msg_four = "read background_down into a dataset from file {}".format(infile)
-    msg_five = "Multiple data sets have been input: 1-12"
+
+    msg_five = "Multiple data sets have been input: " + \
+               "{}-{}".format(ids[0], ids[11])
 
     assert caplog.record_tuples == [
         ('sherpa.astro.io', logging.WARNING, msg_one),
@@ -186,7 +184,7 @@ def test_load_pha2(make_data_path, caplog):
 
 @requires_data
 @requires_fits
-def test_load_pha2_compare_meg_order1(make_data_path):
+def test_load_pha2_compare_meg_order1(make_data_path, clean_astro_ui):
     """Do we read in the MEG +/-1 orders?"""
 
     # The MEG -1 order is dataset 9
@@ -265,7 +263,7 @@ def test_load_pha2_compare_meg_order1(make_data_path):
 #
 @requires_data
 @requires_fits
-def test_list_bkg_ids(make_data_path):
+def test_list_bkg_ids(make_data_path, clean_astro_ui):
     """Does list_bkg_ids return a list"""
 
     basename = '3c120_pha2'
@@ -293,7 +291,7 @@ def test_list_bkg_ids(make_data_path):
 #
 @requires_data
 @requires_fits
-def test_list_response_ids_pha2(make_data_path):
+def test_list_response_ids_pha2(make_data_path, clean_astro_ui):
     """Does list_response_ids return a list when input is pha2"""
 
     basename = '3c120_pha2'
@@ -337,7 +335,7 @@ def test_list_response_ids_pha2(make_data_path):
 #
 @requires_data
 @requires_fits
-def test_list_response_ids_pha1(make_data_path):
+def test_list_response_ids_pha1(make_data_path, clean_astro_ui):
     """Does list_response_ids return a list when input is pha1"""
 
     basename = '3c120_heg_1.pha'
@@ -384,7 +382,7 @@ def test_list_response_ids_pha1(make_data_path):
 
 @requires_data
 @requires_fits
-def test_746(make_data_path):
+def test_746(make_data_path, clean_astro_ui):
     """Test https://github.com/sherpa/sherpa/issues/746
 
     Something in #444 (reverted in #759) caused:
