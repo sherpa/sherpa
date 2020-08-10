@@ -24,6 +24,8 @@ attempts to provide a solid test base. There is likely to be
 overlap in the WSTAT tests, for one.
 """
 
+from io import StringIO
+
 import numpy as np
 
 import pytest
@@ -275,6 +277,46 @@ def test_evaluation_requires_models(func, etype, emsg, clean_astro_ui):
         func()
 
     assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("exps,bscales,ascales,results",
+                         [((100, 200), (2, 4), (0.5, 0.1),
+                           [(100 * 2 * 0.5) / (200 * 4 * 0.1)]),
+                          ((100, 200, 400), (2, 4, 0.5), (0.5, 0.1, 0.8),
+                           [0.5 * (100 * 2 * 0.5) / (200 * 4 * 0.1),
+                            0.5 * (100 * 2 * 0.5) / (400 * 0.5 * 0.8)]),
+                          ((100, 200, 1.0), (2, 4, 1 * np.ones(19)), (0.5, 0.1, 1.0),
+                           [0.5 * (100 * 2 * 0.5) / (200 * 4 * 0.1),
+                            None]),
+                         ])
+@pytest.mark.parametrize("id", [None, 1, "x"])
+def test_pha1_show_data(id, exps, bscales, ascales, results, clean_astro_ui):
+    """Check we can show the data and get the scaling.
+
+    This *only* checks the background scaling, not the
+    full output.
+    """
+
+    iid = 1 if id is None else id
+
+    ui.set_data(id, setup_pha1(exps, bscales, ascales))
+
+    out = StringIO()
+    ui.show_data(outfile=out)
+    msg = out.getvalue().split('\n')
+
+    assert msg[0] == 'Data Set: {}'.format(iid)
+    assert msg[1] == 'Filter: 0.6500-2.4500 Energy (keV)'
+
+    if None not in results:
+        bscale = sum([r for r in results if r is not None])
+        assert msg[2] == 'Bkg Scale: {}'.format(bscale)
+        notice = 3
+    else:
+        notice = 2
+
+    assert msg[notice] == 'Noticed Channels: 1-19'
+    assert msg[notice + 1] == 'name           = tst0'
 
 
 SCALING = np.ones(19)
