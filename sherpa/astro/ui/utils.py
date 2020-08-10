@@ -6217,6 +6217,11 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        If the background has no grouping of quality arrays then they
+        are copied from the source region. If the background has no
+        response information (ARF or RMF) then the response is copied
+        from the source region.
+
         Examples
         --------
 
@@ -6237,20 +6242,6 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_pha_data(id)
         _check_type(bkg, sherpa.astro.data.DataPHA, 'bkg', 'a PHA data set')
         data.set_background(bkg, bkg_id)
-        if bkg.grouping is None:
-            bkg.grouping = data.grouping
-            bkg.grouped = (bkg.grouping is not None)
-        if bkg.quality is None:
-            bkg.quality = data.quality
-
-        if bkg.get_response() == (None, None):
-            bkg.set_response(*data.get_response())
-
-        if bkg.get_response() != (None, None):
-            bkg.units = data.units
-
-        bkg.rate = data.rate
-        bkg.plot_fac = data.plot_fac
 
     def list_bkg_ids(self, id=None):
         """List all the background identifiers for a data set.

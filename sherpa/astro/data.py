@@ -1086,12 +1086,56 @@ class DataPHA(Data1D):
         return self._backgrounds.get(id)
 
     def set_background(self, bkg, id=None):
+        """Add or replace a background component.
+
+        If the background has no grouping of quality arrays then they
+        are copied from the source region. If the background has no
+        response information (ARF or RMF) then the response is copied
+        from the source region.
+
+        Parameters
+        ----------
+        bkg : sherpa.astro.data.DataPHA instance
+           The background dataset to add. This object may be changed
+           by this method.
+        id : int or str, optional
+           The identifier of the background component. If it is None
+           then the default background identifier is used.
+
+        See Also
+        --------
+        delete_background, get_background
+
+        """
         id = self._fix_background_id(id)
         self._backgrounds[id] = bkg
         ids = self.background_ids[:]
         if id not in ids:
             ids.append(id)
         self.background_ids = ids
+
+        # Copy over data from the source to the background
+        # if its not present in the background:
+        #  - background and grouping
+        #  - response information (ONLY THE FIRST TERM)
+        #
+        # The units (only when a response is present), rate, and
+        # plot_fac values are always copied.
+        #
+        if bkg.grouping is None:
+            bkg.grouping = self.grouping
+            bkg.grouped = bkg.grouping is not None
+        if bkg.quality is None:
+            bkg.quality = self.quality
+
+        if bkg.get_response() == (None, None):
+            bkg.set_response(*self.get_response())
+
+        if bkg.get_response() != (None, None):
+            bkg.units = self.units
+
+        bkg.rate = self.rate
+        bkg.plot_fac = self.plot_fac
 
     def delete_background(self, id=None):
         id = self._fix_background_id(id)
