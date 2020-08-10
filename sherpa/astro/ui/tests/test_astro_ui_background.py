@@ -314,29 +314,6 @@ def setup_pha1(exps, bscals, ascals):
     return dset
 
 
-# Try and pick routines with different pathways through the code
-# to catch all cases.
-#
-@pytest.mark.parametrize("func,etype,emsg",
-                         [(ui.calc_stat, ModelErr, "background model 2 for data set 1 has not been set"),
-                          (ui.get_model_plot, DataErr, "background 2 has no associated model")])
-def test_evaluation_requires_models(func, etype, emsg, clean_astro_ui):
-    """We need a background model for each dataset"""
-
-    exps = (100.0, 1000.0, 1500.0)
-    bscales = (0.01, 0.05, 0.02)
-    ascales = (0.8, 0.4, 0.5)
-    ui.set_data(setup_pha1(exps, bscales, ascales))
-
-    ui.set_source(ui.box1d.smdl)
-    ui.set_bkg_source(ui.box1d.bmdl)
-
-    with pytest.raises(etype) as exc:
-        func()
-
-    assert str(exc.value) == emsg
-
-
 @pytest.mark.parametrize("exps,bscales,ascales,results",
                          [((100, 200), (2, 4), (0.5, 0.1),
                            [(100 * 2 * 1) / (200 * 4 * 1)]),
@@ -434,6 +411,56 @@ def test_pha1_instruments(clean_astro_ui):
         assert isinstance(mdl, ARFModelPHA)
         assert mdl.pha.name == 'tst{}'.format(i)
         assert mdl.arf.name == 'arf{}'.format(i)
+
+
+@pytest.mark.parametrize('bid', [1, 2])
+def test_pha1_instruments_missing(bid, clean_astro_ui):
+    """Check we get the correct responses for various options.
+    """
+
+    # We don't check the scaling here
+    scales = (1, 1, 1)
+    ui.set_data(1, setup_pha1(scales, scales, scales))
+
+    # Why can we not say ui.stephi1d.bmdl here?
+    #
+    bmdl = ui.create_model_component('stephi1d', 'bmdl')
+    ui.set_bkg_source(1, bmdl)
+    ui.set_bkg_source(1, bmdl, bkg_id=2)
+
+    bkg = ui.get_bkg(1, bkg_id=bid)
+    bkg.delete_response()
+
+    # Where is this response coming from?
+    ans = ui.get_bkg_model(bkg_id=bid)
+    assert isinstance(ans, ARFModelPHA)
+
+    oid = 1 if bid == 2 else 2
+    bmdl = ui.get_bkg_model(bkg_id=oid)
+    assert isinstance(bmdl, ARFModelPHA)
+
+
+# Try and pick routines with different pathways through the code
+# to catch all cases.
+#
+@pytest.mark.parametrize("func,etype,emsg",
+                         [(ui.calc_stat, ModelErr, "background model 2 for data set 1 has not been set"),
+                          (ui.get_model_plot, DataErr, "background 2 has no associated model")])
+def test_evaluation_requires_models(func, etype, emsg, clean_astro_ui):
+    """We need a background model for each dataset"""
+
+    exps = (100.0, 1000.0, 1500.0)
+    bscales = (0.01, 0.05, 0.02)
+    ascales = (0.8, 0.4, 0.5)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl)
+
+    with pytest.raises(etype) as exc:
+        func()
+
+    assert str(exc.value) == emsg
 
 
 SCALING = np.ones(19)
