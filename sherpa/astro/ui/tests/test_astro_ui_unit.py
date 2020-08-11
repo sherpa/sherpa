@@ -32,6 +32,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.utils import poisson_noise
+from sherpa.utils.err import ArgumentTypeErr, DataErr
 
 
 # This is part of #397
@@ -119,3 +120,81 @@ def test_fit_profile(model, stat, pars, reset_seed, clean_astro_ui):
 
     assert ui.calc_stat() == pytest.approx(stat)
     assert np.asarray(mdl.thawedpars) == pytest.approx(np.asarray(pars))
+
+
+@pytest.mark.parametrize("func", [ui.notice_id, ui.ignore_id])
+def test_check_ids_not_none(func):
+    """Check they error out when id is None"""
+
+    with pytest.raises(ArgumentTypeErr) as exc:
+        func(None)
+
+    assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
+
+
+@pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
+@pytest.mark.parametrize("bid", [None, 1])
+def test_set_filter_mismatch(f, bid):
+    """Does set_filter error when there's a mis-match?
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+    with pytest.raises(DataErr) as exc:
+        ui.set_filter(f, bkg_id=bid)
+
+    assert str(exc.value) == 'size mismatch between 3 and 2'
+
+
+@pytest.mark.parametrize("bid", [None, 1])
+def test_get_syserror_missing(bid):
+    """Does get_syserror error out?"""
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+    with pytest.raises(DataErr) as exc:
+        ui.get_syserror(bkg_id=bid)
+
+    assert str(exc.value) == "data set '1' does not specify systematic errors"
+
+
+@pytest.mark.parametrize("bid", [None, 1])
+def test_save_filter_ignored(bid):
+    """Does save_filter error out if everything is masked?
+
+    We should be able to write out the filter in this case,
+    as it's easy (all False).
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+
+    ui.ignore(None, None)
+
+    with pytest.raises(DataErr) as exc:
+        ui.save_filter("temp-file-that-should-not-be-created",
+                       bkg_id=bid)
+
+    assert str(exc.value) == "mask excludes all data"
+
+
+@pytest.mark.parametrize("func,emsg",
+                         [(ui.save_filter, "data set '1' has no filter"),
+                          (ui.save_grouping, "data set '1' does not specify grouping flags"),
+                          (ui.save_quality, "data set '1' does not specify quality flags")])
+@pytest.mark.parametrize("bid", [None, 1])
+def test_save_xxx_nodata(func, emsg, bid):
+    """Does save_xxx error out if there's no data to save?
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+
+    with pytest.raises(DataErr) as exc:
+        func("temp-file-that-should-not-be-created", bkg_id=bid)
+
+    assert str(exc.value) == emsg

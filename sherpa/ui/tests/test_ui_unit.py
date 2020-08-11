@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,10 @@ Note that this test is almost duplicated in
 sherpa/astro/ui/tests/test_astro_ui_unit.py
 """
 
+import pytest
+
 from sherpa import ui
+from sherpa.utils.err import ArgumentTypeErr
 
 
 # This is part of #397
@@ -63,3 +66,13 @@ def test_all_has_no_repeated_elements():
     n1 = len(ui.__all__)
     n2 = len(set(ui.__all__))
     assert n1 == n2
+
+
+@pytest.mark.parametrize("func", [ui.notice_id, ui.ignore_id])
+def test_check_ids_not_none(func):
+    """Check they error out when id is None"""
+
+    with pytest.raises(ArgumentTypeErr) as exc:
+        func(None)
+
+    assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
