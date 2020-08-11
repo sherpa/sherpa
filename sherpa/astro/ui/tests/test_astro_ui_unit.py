@@ -147,6 +147,27 @@ def test_set_filter_mismatch(f, bid):
     assert str(exc.value) == 'size mismatch between 3 and 2'
 
 
+@pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
+@pytest.mark.parametrize("bid", [None, 1])
+def test_set_filter_mismatch_with_filter(f, bid):
+    """Does set_filter error when there's a mis-match after a filter?
+
+    test_set_filter_mismatch checks when .mask is a scalar,
+    so now check when it's a NumPy array.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+
+    ui.ignore(3, None)  # set the .mask attribute to an array
+
+    with pytest.raises(DataErr) as exc:
+        ui.set_filter(f, bkg_id=bid)
+
+    assert str(exc.value) == 'size mismatch between 3 and 2'
+
+
 @pytest.mark.parametrize("bid", [None, 1])
 def test_get_syserror_missing(bid):
     """Does get_syserror error out?"""
