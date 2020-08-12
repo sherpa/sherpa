@@ -542,3 +542,77 @@ def test_functionmodel_check():
         ArithmeticFunctionModel(23)
 
     assert str(exc.value) == 'attempted to create ArithmeticFunctionModel from non-callable object of type int'
+
+
+@pytest.mark.parametrize('model,mtype',
+                         [(ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel),
+                          (ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel)
+                         ])
+def test_unop_arithmeticxxx(model, mtype):
+    """Can we apply a function to an Arithmetic*Model object?
+
+    Unlike the BinOpModel test we can't rely on Python numeric
+    types, since there's no slots for __neg__ or __abs__ for
+    the ArithmeticXXXModel classes, so we can not just say
+    mneg = -<model>.
+
+    """
+
+    mneg = UnaryOpModel(model, numpy.negative, '-')
+    assert isinstance(mneg, UnaryOpModel)
+    assert mneg.op == numpy.negative
+    assert isinstance(mneg.arg, mtype)
+
+    x = numpy.linspace(0.1, 0.5, 5)
+    y1 = -1 * model(x)
+    y2 = mneg(x)
+    assert y2 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize('model,mtype',
+                         [(23, ArithmeticConstantModel),
+                          pytest.param(ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel, marks=pytest.mark.xfail),
+                          pytest.param(ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel, marks=pytest.mark.xfail)
+                         ])
+def test_binop_arithmeticxxx(model, mtype):
+    """Can we create and combine Arithmetic*Model objects?"""
+
+    m1 = Const1D()
+    m1.c0 = 2
+
+    mleft = model + m1
+    assert isinstance(mleft, BinaryOpModel)
+    assert mleft.op == numpy.add
+    assert len(mleft.parts) == 2
+    assert isinstance(mleft.parts[0], mtype)
+    assert isinstance(mleft.parts[1], Const1D)
+
+    mright = m1 + model
+    assert isinstance(mright, BinaryOpModel)
+    assert mright.op == numpy.add
+    assert len(mright.parts) == 2
+    assert isinstance(mright.parts[0], Const1D)
+    assert isinstance(mright.parts[1], mtype)
+
+    x = numpy.linspace(0.1, 0.5, 5)
+    if mtype == ArithmeticConstantModel:
+        y1 = 25 * numpy.ones(5)
+    else:
+        y1 = model(x) + 2
+
+    y2 = mleft(x)
+    y3 = mright(x)
+    assert y2 == pytest.approx(y1)
+    assert y3 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize('value,name,expected',
+                         [(23, None, '23'),
+                          (numpy.asarray([3, 5, -1]), None, '[ 3  5 -1]'),
+                          (23, '24', '24'),  # this is not a good name
+                          (numpy.asarray([3, 5, -1]), 'arrayval', 'arrayval')])
+def test_constant_show(value, name, expected):
+    """Does the ArithmeticConstantModel convert names as expected?"""
+
+    m = ArithmeticConstantModel(value, name=name)
+    assert m.name == expected
