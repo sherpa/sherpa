@@ -481,10 +481,31 @@ class SimulFitModel(CompositeModel):
 
 
 class ArithmeticConstantModel(Model):
+    """Represent a constant value, or values.
+
+    Parameters
+    ----------
+    val : number or sequence
+        The number, or numbers, to store.
+    name : str or None, optional
+        The display name. If not set the value is used when the value
+        is a scalar, otherwise it indicates an array of elements.
+
+    Attributes
+    ----------
+    val : number
+
+    """
 
     def __init__(self, val, name=None):
+        val = SherpaFloat(val)
         if name is None:
-            name = str(val)
+            if numpy.isscalar(val):
+                name = str(val)
+            else:
+                name = '{}[{}]'.format(val.dtype.name,
+                                       ','.join([str(s) for s in val.shape]))
+
         self.name = name
         self.val = val
 
@@ -685,7 +706,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
             # The full model expression must be used
             return part.__class__.regrid(self, *args, **kwargs)
         raise ModelErr('Neither component supports regrid method')
-    
+
     def startup(self, cache=False):
         self.lhs.startup(cache)
         self.rhs.startup(cache)

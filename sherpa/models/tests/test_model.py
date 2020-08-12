@@ -607,8 +607,8 @@ def test_binop_arithmeticxxx(model, mtype):
 
 
 @pytest.mark.parametrize('value,name,expected',
-                         [(23, None, '23'),
-                          (numpy.asarray([3, 5, -1]), None, '[ 3  5 -1]'),
+                         [(23, None, '23.0'),
+                          (numpy.asarray([3, 5, -1]), None, 'float64[3]'),
                           (23, '24', '24'),  # this is not a good name
                           (numpy.asarray([3, 5, -1]), 'arrayval', 'arrayval')])
 def test_constant_show(value, name, expected):

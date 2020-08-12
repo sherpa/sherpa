@@ -240,21 +240,21 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     assert bmdl.name == 'powlaw1d.bpl'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl)))))'
 
     bmdl = ui.get_bkg_model(id)
-    assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
 
     ui.set_bkg_source(id, ui.polynom1d.bpl2, bkg_id=2)
 
     bmdl = ui.get_bkg_model(id, bkg_id=1)
-    assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
 
     bmdl = ui.get_bkg_model(id, bkg_id=2)
-    assert bmdl.name == 'apply_rmf(apply_arf((2000 * polynom1d.bpl2)))'
+    assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * polynom1d.bpl2)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
 
     assert ui.list_model_components() == ['bpl', 'bpl2', 'pl']
 
@@ -293,13 +293,13 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     ui.set_bkg_source(id, ui.powlaw1d.bpl, bkg_id=2)
 
     bmdl = ui.get_bkg_model(id, bkg_id=1)
-    assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
 
     bmdl = ui.get_bkg_model(id, bkg_id=2)
-    assert bmdl.name == 'apply_rmf(apply_arf((2000 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * powlaw1d.bpl)))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + powlaw1d.bpl)))))'
 
     assert ui.list_model_components() == ['bpl', 'pl']
 
