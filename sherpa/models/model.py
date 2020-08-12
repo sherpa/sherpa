@@ -647,8 +647,12 @@ class RegriddableModel2D(RegriddableModel):
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
 
+    @staticmethod
+    def wrapobj(obj):
+        return _wrapobj(obj, ArithmeticConstantModel)
+
     def __init__(self, arg, op, opstr):
-        self.arg = arg
+        self.arg = self.wrapobj(arg)
         self.op = op
         CompositeModel.__init__(self, ('%s(%s)' % (opstr, self.arg.name)),
                                 (self.arg,))
@@ -661,9 +665,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 
     @staticmethod
     def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
-            return obj
-        return ArithmeticConstantModel(obj)
+        return _wrapobj(obj, ArithmeticConstantModel)
 
     def __init__(self, lhs, rhs, op, opstr):
         self.lhs = self.wrapobj(lhs)
@@ -768,9 +770,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
-            return obj
-        return ArithmeticFunctionModel(obj)
+        return _wrapobj(obj, ArithmeticFunctionModel)
 
     def __init__(self, outer, inner, *otherargs, **otherkwargs):
         self.outer = self.wrapobj(outer)
@@ -857,7 +857,33 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
-            return obj
-        else:
-            return ArithmeticFunctionModel(obj)
+        # TODO: choice of ArithmeticConstandModel or
+        #       ArithmeticFunctionModel?
+        return _wrapobj(obj, ArithmeticFunctionModel)
+
+
+def _wrapobj(obj, wrapper):
+    """Wrap an object with the wrapper if needed.
+
+    Parameters
+    ----------
+    obj
+        The input object.
+    wrapper
+        The wrapper class which is applied to obj if needed.
+
+    Returns
+    -------
+    newobj
+        This is either obj or wrapper(obj).
+
+    """
+
+    # This has been placed outside the classes as
+    # the full list of classes are needed to be accessible
+    # when called.
+    #
+    if isinstance(obj, (ArithmeticModel, ArithmeticConstantModel, ArithmeticFunctionModel)):
+        return obj
+
+    return wrapper(obj)

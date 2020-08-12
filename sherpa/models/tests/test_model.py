@@ -571,8 +571,8 @@ def test_unop_arithmeticxxx(model, mtype):
 
 @pytest.mark.parametrize('model,mtype',
                          [(23, ArithmeticConstantModel),
-                          pytest.param(ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel, marks=pytest.mark.xfail),
-                          pytest.param(ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel, marks=pytest.mark.xfail)
+                          (ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel),
+                          (ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel)
                          ])
 def test_binop_arithmeticxxx(model, mtype):
     """Can we create and combine Arithmetic*Model objects?"""
