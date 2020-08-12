@@ -17,11 +17,15 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections import namedtuple
 import logging
 import operator
-import numpy
 import warnings
-from sherpa.utils.testing import SherpaTestCase
+
+import numpy
+
+import pytest
+
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
@@ -29,142 +33,19 @@ from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.basic import Sin, Const1D
 
 
+def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
+    assert num == len(warning_capturer)
+    for warning in warning_capturer:
+        assert issubclass(warning.category, DeprecationWarning)
+        expected_warning_message = 'Parameter name {} is deprecated for model {}, use {} instead'.format(
+            parameter_name, model_name, actual_name
+        )
+        assert expected_warning_message == str(warning.message)
+
+
 def my_sin(pars, x):
     return (pars[2].val *
             numpy.sin(2.0 * numpy.pi * (x - pars[1].val) / pars[0].val))
-
-
-class test_model(SherpaTestCase):
-
-    def setUp(self):
-        self.m = Sin('m')
-        self.expected_names = ['period', 'offset', 'ampl']
-
-    def test_name(self):
-        self.assertEqual(self.m.name, 'm')
-
-    def test_iter(self):
-        for part in self.m:
-            self.assertIs(part, self.m)
-
-    def test_num_pars(self):
-        self.assertEqual(len(self.m.pars), 3)
-
-    def test_par_names(self):
-        self.assertEqual([p.name for p in self.m.pars],
-                         self.expected_names)
-
-    def test_getpar(self):
-        for par in (self.m.period, self.m.PerioD, self.m.PERIod):
-            self.assertIs(par, self.m.pars[0])
-        self.assertRaises(AttributeError, getattr, self.m, 'perio')
-
-    def test_setpar(self):
-        self.assertNotEqual(self.m.offset.val, 17.0)
-        self.m.offset = 17
-        self.assertEqual(self.m.offset.val, 17.0)
-        self.m.ofFseT = 18
-        self.assertEqual(self.m.offset.val, 18.0)
-        self.assertRaises(AttributeError, setattr, self.m, 'ofset', 19)
-
-    def test_calc_and_call(self):
-        x = numpy.arange(10.0)
-        refvals = my_sin(self.m.pars, x)
-        pars = [p.val for p in self.m.pars]
-        for vals in (self.m.calc(pars, x), self.m(x)):
-            self.assertEqualWithinTol(vals, refvals, 1e-12)
-
-    def test_get_thawed_pars(self):
-        tp = [p.val for p in self.m.pars if not p.frozen]
-        self.assertEqual(self.m.thawedpars, tp)
-
-    def test_set_thawed_pars(self):
-        pars = [7, 8, 9]
-        self.assertNotEqual(pars, self.m.thawedpars)
-        self.m.thawedpars = pars
-        self.assertEqual(pars, self.m.thawedpars)
-        self.assertRaises(ModelErr, setattr, self.m, 'thawedpars', pars[:2])
-        self.assertRaises(ValueError, setattr, self.m, 'thawedpars',
-                          [1, 2, 'ham'])
-
-        pars[0] = self.m.pars[0].hard_min / 10
-        pars[1] = self.m.pars[1].hard_max * 10
-
-        logger = logging.getLogger('sherpa')
-        old_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-
-        try:
-            self.m.thawedpars = pars
-        finally:
-            logger.setLevel(old_level)
-
-        self.assertEqual(self.m.pars[0].val, self.m.pars[0].min)
-        self.assertEqual(self.m.pars[1].val, self.m.pars[1].max)
-
-    def test_get_mins_maxes(self):
-        self.assertEqual(self.m.thawedparmins,
-                         [p.min for p in self.m.pars if not p.frozen])
-        self.assertEqual(self.m.thawedparmaxes,
-                         [p.max for p in self.m.pars if not p.frozen])
-        self.assertEqual(self.m.thawedparhardmins,
-                         [p.hard_min for p in self.m.pars if not p.frozen])
-        self.assertEqual(self.m.thawedparhardmaxes,
-                         [p.hard_max for p in self.m.pars if not p.frozen])
-
-
-class test_composite_model(SherpaTestCase):
-
-    def setUp(self):
-        self.m  = Const1D('m')
-        self.m2 = Const1D('m2')
-        self.m.c0  = 2
-        self.m2.c0 = 4
-        self.s = Sin('s')
-        self.x = 1.0
-        self.xx = numpy.arange(-10.0, 10.0)
-
-    def test_iter(self):
-        m = 3 * self.m + self.m2
-        parts = list(m)
-        self.assertIs(type(parts[0]), BinaryOpModel)
-        self.assertIs(type(parts[1]), ArithmeticConstantModel)
-        self.assertIs(parts[2], self.m)
-        self.assertIs(parts[3], self.m2)
-
-    def test_unop(self):
-        for op in (abs, operator.neg):
-            m = op(self.m)
-            self.assertTrue(isinstance(m, UnaryOpModel))
-            self.assertEqual(m(self.x), op(self.m(self.x)))
-
-    def test_binop(self):
-        ops = [operator.add, operator.sub, operator.mul,
-               operator.floordiv, operator.truediv, operator.mod,
-               operator.pow]
-
-        for op in ops:
-            for m in (op(self.m, self.m2.c0.val), op(self.m.c0.val, self.m2),
-                      op(self.m, self.m2)):
-                self.assertTrue(isinstance(m, BinaryOpModel))
-                self.assertEqual(m(self.x), op(self.m.c0.val, self.m2.c0.val))
-
-    def test_complex_expression(self):
-        cmplx = (3 * self.m + self.m2) / (self.m ** 3.2)
-        m = self.m(self.x)
-        m2 = self.m2(self.x)
-        self.assertEqual(cmplx(self.x), (3 * m + m2) / (m ** 3.2))
-
-    def test_filter(self):
-        m = self.s[::2]
-        self.assertIs(type(m), FilterModel)
-        self.assertTrue(numpy.all(m(self.xx) == self.s(self.xx)[::2]))
-
-    def test_nested(self):
-        for func in (numpy.sin, self.s):
-            m = self.m.apply(func)
-            self.assertIs(type(m), NestedModel)
-            self.assertEqual(m(self.x), func(self.m(self.x)))
 
 
 # Test support for renamed parameters by sub-classing
@@ -180,48 +61,6 @@ class RenamedPars(Sin):
         self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=['norm'])
         ArithmeticModel.__init__(self, name,
                                  (self.period, self.offset, self.ampl))
-
-
-class test_model_renamed(test_model):
-
-    def setUp(self):
-        test_model.setUp(self)
-        self.m = RenamedPars('m')
-
-    def test_getpar_rename(self):
-        with warnings.catch_warnings(record=True) as warn:
-            warnings.simplefilter("always", DeprecationWarning)
-            for par in (self.m.norm, self.m.NorM, self.m.NOrm):
-                self.assertIs(par, self.m.pars[2])
-            if self.__class__ == test_model_renamed:
-                validate_warning(warn, "norm", "RenamedPars", "ampl", num=3)
-            else:
-                validate_warning(warn, num=3)
-
-    def test_setpar_rename(self):
-        self.m.ampl = 1
-        self.assertNotEqual(self.m.ampl.val, 12.0)
-        with warnings.catch_warnings(record=True) as warn:
-            warnings.simplefilter("always", DeprecationWarning)
-            self.m.norm = 12
-            if (self.__class__ == test_model_renamed):
-                validate_warning(warn, "norm", "RenamedPars", "ampl")
-            else:
-                validate_warning(warn)
-
-        self.assertEqual(self.m.ampl.val, 12.0)
-
-        with warnings.catch_warnings(record=True) as warn:
-            warnings.simplefilter("always", DeprecationWarning)
-            self.m.NoRM = 18
-            if self.__class__ == test_model_renamed:
-                validate_warning(warn, "norm", "RenamedPars", "ampl")
-            else:
-                validate_warning(warn)
-
-        self.assertEqual(self.m.ampl.val, 18.0)
-        self.m.ampl = 1
-        self.assertEqual(self.m.ampl.val, 1.0)
 
 
 # During testing an XSPEC model was found to refer to one of its
@@ -252,21 +91,287 @@ class ParameterCase(ArithmeticModel):
         return self._basemodel.calc(*args, **kwargs)
 
 
-def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
-    assert num == len(warning_capturer)
-    for warning in warning_capturer:
-        assert issubclass(warning.category, DeprecationWarning)
-        expected_warning_message = 'Parameter name {} is deprecated for model {}, use {} instead'.format(
-            parameter_name, model_name, actual_name
-        )
-        assert expected_warning_message == str(warning.message)
+def setup_model():
+    return Sin('m'), ['period', 'offset', 'ampl']
 
 
-class test_model_parametercase_instance(test_model_renamed):
+def setup_renamed():
+    return RenamedPars('m'), ['period', 'offset', 'ampl']
 
-    def setUp(self):
-        self.m = ParameterCase()
-        self.expected_names = ['Period', 'Offset', 'Ampl']
 
-    def test_name(self):
-        self.assertEqual(self.m.name, 'parametercase')
+def setup_parametercase():
+    return ParameterCase(), ['Period', 'Offset', 'Ampl']
+
+
+def setup_composite():
+    out = namedtuple('composite', ['m', 'm2', 's', 'x', 'xx'])
+    out.m  = Const1D('m')
+    out.m2 = Const1D('m2')
+    out.m.c0  = 2
+    out.m2.c0 = 4
+    out.s = Sin('s')
+    out.x = 1.0
+    out.xx = numpy.arange(-10.0, 10.0)
+    return out
+
+
+@pytest.mark.parametrize('setup,name',
+                         [(setup_model, 'm'),
+                          (setup_renamed, 'm'),
+                          (setup_parametercase, 'parametercase')])
+def test_name(setup, name):
+    mdl, _ = setup()
+    assert mdl.name == name
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_iter(setup):
+    mdl, _ = setup()
+    for part in mdl:
+        assert part is mdl
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_num_pars(setup):
+    mdl, _ = setup()
+    assert len(mdl.pars) == 3
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_par_names(setup):
+    mdl, names = setup()
+    assert len(names) == len(mdl.pars)
+    for name, par in zip(names, mdl.pars):
+        assert par.name == name
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_getpar(setup):
+    mdl, _ = setup()
+    for par in (mdl.period, mdl.PerioD, mdl.PERIod):
+        assert par is mdl.pars[0]
+
+    with pytest.raises(AttributeError):
+        mdl.perio
+
+    with pytest.raises(AttributeError):
+        getattr(mdl, 'perio')
+
+
+@pytest.mark.parametrize('setup,warns',
+                         [(setup_renamed, ["norm", "RenamedPars", "ampl"]),
+                          (setup_parametercase, [])])
+def test_getpar_rename(setup, warns):
+    mdl, _ = setup()
+
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always", DeprecationWarning)
+
+        for par in (mdl.norm, mdl.NorM, mdl.NOrm):
+            assert par is mdl.pars[2]
+
+        validate_warning(warn, *warns, num=3)
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_setpar(setup):
+    mdl, _ = setup()
+
+    assert mdl.offset.val != 17.0
+
+    mdl.offset = 17
+    assert mdl.offset.val == 17.0
+
+    mdl.ofFseT = 18
+    assert mdl.offset.val == 18.0
+
+    with pytest.raises(AttributeError):
+        mdl.ofset = 19
+
+    with pytest.raises(AttributeError):
+        setattr(mdl, 'ofset', 19)
+
+
+@pytest.mark.parametrize('setup,warns',
+                         [(setup_renamed, ["norm", "RenamedPars", "ampl"]),
+                          (setup_parametercase, [])])
+def test_setpar_rename(setup, warns):
+    mdl, _ = setup()
+
+    mdl.ampl = 1
+    assert mdl.ampl.val != 12.0
+
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always", DeprecationWarning)
+
+        mdl.norm = 12
+        validate_warning(warn, *warns)
+
+    assert mdl.ampl.val == 12.0
+
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always", DeprecationWarning)
+
+        mdl.NoRM = 18
+        validate_warning(warn, *warns)
+
+    assert mdl.ampl.val == 18.0
+    mdl.ampl = 1
+    assert mdl.ampl.val == 1.0
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_calc_and_call(setup):
+    mdl, _ = setup()
+
+    x = numpy.arange(10.0)
+    refvals = my_sin(mdl.pars, x)
+
+    pars = [p.val for p in mdl.pars]
+
+    y1 = mdl.calc(pars, x)
+    assert y1 == pytest.approx(refvals, rel=1e-12)
+
+    y2 = mdl(x)
+    assert y2 == pytest.approx(refvals, rel=1e-12)
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_get_thawed_pars(setup):
+    mdl, _names = setup()
+
+    tp = [p.val for p in mdl.pars if not p.frozen]
+    assert len(mdl.thawedpars) == len(tp)
+    for a, b in zip(mdl.thawedpars, tp):
+        assert a == b
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_set_thawed_pars(setup):
+    mdl, _ = setup()
+    pars = [7, 8, 9]
+
+    assert pars != mdl.thawedpars
+
+    mdl.thawedpars = pars
+
+    assert pars == mdl.thawedpars
+
+    with pytest.raises(ModelErr):
+        mdl.thawedpars = [7, 8]
+
+    with pytest.raises(ValueError):
+        mdl.thawedpars = [1, 2, 'ham']
+
+    pars[0] = mdl.pars[0].hard_min / 10
+    pars[1] = mdl.pars[1].hard_max * 10
+    pars[2] = 8
+
+    logger = logging.getLogger('sherpa')
+    old_level = logger.getEffectiveLevel()
+    logger.setLevel(logging.ERROR)
+
+    try:
+        mdl.thawedpars = pars
+    finally:
+        logger.setLevel(old_level)
+
+    assert mdl.pars[0].val == mdl.pars[0].min
+    assert mdl.pars[1].val == mdl.pars[1].max
+    assert mdl.pars[2].val == 8
+
+
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_get_mins_maxes(setup):
+    mdl, _ = setup()
+
+    assert mdl.thawedparmins == [p.min for p in mdl.pars if not p.frozen]
+    assert mdl.thawedparmaxes == [p.max for p in mdl.pars if not p.frozen]
+
+    assert mdl.thawedparhardmins == [p.hard_min for p in mdl.pars if not p.frozen]
+    assert mdl.thawedparhardmaxes == [p.hard_max for p in mdl.pars if not p.frozen]
+
+
+def test_composite_iter():
+    out = setup_composite()
+    m = 3 * out.m + out.m2
+    parts = list(m)
+
+    assert type(parts[0]) is BinaryOpModel
+    assert type(parts[1]) is ArithmeticConstantModel
+    assert parts[1].val == 3.0
+    assert parts[2] is out.m
+    assert parts[3] is out.m2
+    assert len(parts) == 4
+
+
+def test_composite_unop():
+    out = setup_composite()
+    for op in (abs, operator.neg):
+        m = op(out.m)
+
+        assert isinstance(m, UnaryOpModel)
+
+        y1 = m(out.x)
+        y2 = op(out.m(out.x))
+        assert y1 == y2
+
+
+def test_composite_binop():
+    out = setup_composite()
+    ops = [operator.add, operator.sub, operator.mul,
+           operator.floordiv, operator.truediv, operator.mod,
+           operator.pow]
+
+    for op in ops:
+        for m in (op(out.m, out.m2.c0.val),
+                  op(out.m.c0.val, out.m2),
+                  op(out.m, out.m2)):
+
+            assert isinstance(m, BinaryOpModel)
+
+            y1 = m(out.x)
+            y2 = op(out.m.c0.val, out.m2.c0.val)
+            assert y1 == y2
+
+
+def test_composite_complex_expression():
+    out = setup_composite()
+    cmplx = (3 * out.m + out.m2) / (out.m ** 3.2)
+    m = out.m(out.x)
+    m2 = out.m2(out.x)
+
+    y1 = cmplx(out.x)
+    y2 = (3 * m + m2) / (m ** 3.2)
+    assert y1 == y2
+
+
+def test_filter():
+    out = setup_composite()
+    m = out.s[::2]
+
+    assert type(m) is FilterModel
+
+    assert numpy.all(m(out.xx) == out.s(out.xx)[::2])
+
+
+def test_nested():
+    out = setup_composite()
+
+    for func in (numpy.sin, out.s):
+        m = out.m.apply(func)
+
+        assert type(m) is NestedModel
+
+        y1 = m(out.x)
+        y2 = func(out.m(out.x))
+        assert y1 == y2
