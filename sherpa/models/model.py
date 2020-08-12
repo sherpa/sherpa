@@ -20,9 +20,10 @@
 
 
 import logging
-import numpy
 import hashlib
 import warnings
+
+import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
@@ -295,7 +296,8 @@ class Model(NoNewAttributesAfterInit):
             else:
                 p._val = v
 
-    thawedpars = property(_get_thawed_pars, _set_thawed_pars)
+    thawedpars = property(_get_thawed_pars, _set_thawed_pars,
+                          doc='Access to the thawed parameters of the model')
 
     def _get_thawed_par_mins(self):
         return [p.min for p in self.pars if not p.frozen]
@@ -323,7 +325,8 @@ class Model(NoNewAttributesAfterInit):
             else:
                 p._min = v
 
-    thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins)
+    thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
+                             doc='Access to the minimum limits for the thawed parameters')
 
     def _get_thawed_par_maxes(self):
         return [p.max for p in self.pars if not p.frozen]
@@ -351,24 +354,43 @@ class Model(NoNewAttributesAfterInit):
             else:
                 p._max = v
 
-    thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes)
+    thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
+                              doc='Access to the maximum limits for the thawed parameters')
 
     def _get_thawed_par_hardmins(self):
         return [p.hard_min for p in self.pars if not p.frozen]
 
-    thawedparhardmins = property(_get_thawed_par_hardmins)
+    thawedparhardmins = property(_get_thawed_par_hardmins,
+                                 doc='The hard minimum values for the thawed parameters.')
 
     def _get_thawed_par_hardmaxes(self):
         return [p.hard_max for p in self.pars if not p.frozen]
 
-    thawedparhardmaxes = property(_get_thawed_par_hardmaxes)
+    thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
+                                 doc='The hard maximum values for the thawed parameters.')
 
     def reset(self):
+        """Reset the parameter values."""
+
         for p in self.pars:
             p.reset()
 
 
 class CompositeModel(Model):
+    """Represent a model with composite parts.
+
+    Parameters
+    ----------
+    name : str
+        The name for the collection of models.
+    parts : sequence of Model objects
+        The models.
+
+    Attributes
+    ----------
+    parts : sequence of Model
+
+    """
 
     def __init__(self, name, parts):
         self.parts = tuple(parts)
@@ -480,6 +502,10 @@ class SimulFitModel(CompositeModel):
         CompositeModel.teardown(self)
 
 
+# TODO: what benefit does this provide versus just using the number?
+# I guess it does simplify any attempt to parse the components of
+# a model expression.
+#
 class ArithmeticConstantModel(Model):
     """Represent a constant value, or values.
 
@@ -558,6 +584,7 @@ def _make_binop(op, opstr):
 
 
 class ArithmeticModel(Model):
+    """Support combining model expressions and cacheing results."""
 
     def __init__(self, name, pars=()):
         self.integrate = True
@@ -667,6 +694,34 @@ class RegriddableModel2D(RegriddableModel):
 
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
+    """Apply an operator to a model expression.
+
+    Parameters
+    ----------
+    arg : Model instance
+        The expression.
+    op : function reference
+        The ufunc to apply to the model values.
+    opstr : str
+        The symbol used to represent the operator.
+
+    Attributes
+    ----------
+    arg : Model instance
+        The model.
+    op : function reference
+
+    See Also
+    --------
+    BinaryOpModel
+
+    Examples
+    --------
+
+    >>> m1 = Gauss1d()
+    >>> m2 = UnaryOpModel(m1, numpy.negative, '-')
+
+    """
 
     @staticmethod
     def wrapobj(obj):
@@ -683,6 +738,39 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
 
 
 class BinaryOpModel(CompositeModel, RegriddableModel):
+    """Combine two model expressions.
+
+    Parameters
+    ----------
+    lhs : Model instance
+        The left-hand sides of the expression.
+    rhs : Model instance
+        The right-hand sides of the expression.
+    op : function reference
+        The ufunc which combines two array values.
+    opstr : str
+        The symbol used to represent the operator.
+
+    Attributes
+    ----------
+    lhs : Model instance
+        The left-hand sides of the expression.
+    rhs : Model instance
+        The right-hand sides of the expression.
+    op : function reference
+
+    See Also
+    --------
+    UnaryOpModel
+
+    Examples
+    --------
+
+    >>> m1 = Gauss1d()
+    >>> m2 = Polynom1D()
+    >>> m = BinaryOpModel(m1, m2, numpy.add, '+')
+
+    """
 
     @staticmethod
     def wrapobj(obj):
@@ -730,6 +818,10 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         return val
 
 
+# TODO: do we actually make use of this functionality anywhere?
+# We only have 1 test that checks this class, and it is an existence
+# test (check that it works), not that it is used anywhere.
+#
 class FilterModel(CompositeModel, ArithmeticModel):
 
     def __init__(self, model, filter):
@@ -768,6 +860,20 @@ class FilterModel(CompositeModel, ArithmeticModel):
 
 
 class ArithmeticFunctionModel(Model):
+    """Represent a callable function.
+
+    Parameters
+    ----------
+    func : function reference
+        A callable function. It is called with the grid arguments and
+        any keyword arguments sent to calc(), but not the model
+        parameter values.
+
+    Attributes
+    ----------
+    func : function reference
+
+    """
 
     def __init__(self, func):
         if isinstance(func, Model):
@@ -788,6 +894,31 @@ class ArithmeticFunctionModel(Model):
 
 
 class NestedModel(CompositeModel, ArithmeticModel):
+    """Apply a model to the results of a model.
+
+    Parameters
+    ----------
+    outer : Model instance
+        The model to apply second.
+    inner : Model instance
+        The model to apply first.
+    *otherargs
+        Arguments that are to be applied to the outer model.
+    **otherkwargs
+        Keyword arguments that are to be applied to the outer model.
+
+    Attributes
+    ----------
+    outer : Model instance
+        The outer model.
+    inner : Model instance
+        The inner model.
+    otherargs
+        Arguments that are to be applied to the outer model.
+    otherkwargs
+        Keyword arguments that are to be applied to the outer model.
+
+    """
 
     @staticmethod
     def wrapobj(obj):
