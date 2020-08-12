@@ -28,9 +28,9 @@ import pytest
 
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
-from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.basic import Sin, Const1D
+    ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
+from sherpa.models.parameter import Parameter, hugeval, tinyval
+from sherpa.models.basic import Sin, Const1D, Box1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
@@ -89,6 +89,18 @@ class ParameterCase(ArithmeticModel):
 
         self._basemodel.integrate = self.integrate
         return self._basemodel.calc(*args, **kwargs)
+
+
+class ShowableModel(ArithmeticModel):
+    """Test out hidden parameter"""
+
+    def __init__(self, name='thetestmodel'):
+        self.notseen = Parameter(name, 'notseen', 10, min=5, max=15, hidden=True)
+        self.p1 = Parameter(name, 'P1', 1, min=0, max=10)
+        self.accent = Parameter(name, 'accent', 2, min=0, max=10, frozen=True)
+        self.norm = Parameter(name, 'norm', 100, min=0, max=1e4)
+
+        ArithmeticModel.__init__(self, name, (self.notseen, self.p1, self.accent, self.norm))
 
 
 def setup_model():
@@ -301,6 +313,95 @@ def test_get_mins_maxes(setup):
     assert mdl.thawedparhardmaxes == [p.hard_max for p in mdl.pars if not p.frozen]
 
 
+@pytest.mark.parametrize('setup',
+                         [setup_model, setup_renamed, setup_parametercase])
+def test_get_mins_maxes_errors(setup):
+    """Check that we get errors when setting values incorrectly"""
+    mdl, _ = setup()
+
+    with pytest.raises(ModelErr):
+        mdl.thawedparmins = [-5, -7]
+
+    with pytest.raises(ModelErr):
+        mdl.thawedparmaxes = [2, 3, 4, 5]
+
+
+def test_get_mins_maxes_warns(caplog):
+    """What happens if min/max set outside valid range"""
+
+    mdl = Box1D()
+    mdl.xlow.set(min=0, max=100, val=50)
+    mdl.xhi.set(min=200, max=300, val=250)
+
+    # Some tests can change the logging level, so make sure
+    # we have the level set correctly.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.thawedparmins = [10, -1e40, -10]
+        mdl.thawedparmaxes = [1e40, 290, 10]
+
+    assert mdl.thawedparmins == [10, -hugeval, -10]
+    assert mdl.thawedparmaxes == [hugeval, 290, 10]
+
+    # The handling of setting min to greater > hard_max
+    # (and vice versa) isn't as easily checked, as the
+    # parameter value ends up causing the code to
+    # error out, so we set the parameter value to the
+    # limit beforehand.
+    #
+    mdl.xhi.set(max=hugeval, val=hugeval)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.thawedparmins = [10, 1e40, -10]
+        mdl.thawedparmaxes = [1000, 1e41, 10]
+
+    mdl.xlow.set(min=-hugeval, val=-hugeval)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.thawedparmins = [-1e41, hugeval, -10]
+        mdl.thawedparmaxes = [-1e40, hugeval, 10]
+
+    assert len(caplog.records) == 6
+    msgs = []
+    for (log_name, log_level, message) in caplog.record_tuples:
+        assert log_level == logging.WARNING
+        assert log_name == 'sherpa.models.model'
+        msgs.append(message)
+
+    assert msgs[0] == 'value of parameter box1d.xhi minimum is below hard minimum; setting to hard minimum'
+    assert msgs[1] == 'value of parameter box1d.xlow maximum is above hard maximum; setting to hard maximum'
+
+    assert msgs[2] == 'value of parameter box1d.xhi minimum is above hard maximum; setting to hard maximum'
+    assert msgs[3] == 'value of parameter box1d.xhi maximum is above hard maximum; setting to hard maximum'
+
+    assert msgs[4] == 'value of parameter box1d.xlow minimum is below hard minimum; setting to hard minimum'
+    assert msgs[5] == 'value of parameter box1d.xlow maximum is below hard minimum; setting to hard minimum'
+
+
+def test_reset():
+    """The reset method restores the last-changed values, so is a no-op here"""
+
+    mdl, _ = setup_model()
+
+    defvals = [p.val for p in mdl.pars]
+    assert not mdl.ampl.frozen
+
+    mdl.offset = 10
+    mdl.ampl.freeze()
+
+    newvals = [p.val for p in mdl.pars]
+    assert newvals != defvals
+
+    # Since this test does not adjust the parameter values using a low-level
+    # routine it has no effect.
+    #
+    mdl.reset()
+
+    vals = [p.val for p in mdl.pars]
+    assert vals == newvals
+    assert mdl.ampl.frozen
+
+
 def test_composite_iter():
     out = setup_composite()
     m = 3 * out.m + out.m2
@@ -375,3 +476,69 @@ def test_nested():
         y1 = m(out.x)
         y2 = func(out.m(out.x))
         assert y1 == y2
+
+
+def test_show_model():
+    """Can we show the model?"""
+
+    m = ShowableModel()
+    n = Const1D()
+    n.c0 = 2
+
+    # add a test of parameter linking
+    m.norm = 10 + n.c0
+
+    toks = str(m).split('\n')
+    assert len(toks) == 6
+    assert toks[0] == 'thetestmodel'
+    assert toks[1].strip().split() == ['Param', 'Type', 'Value', 'Min', 'Max', 'Units']
+    assert toks[2].strip().split() == ['-----', '----', '-----', '---', '---', '-----']
+    assert toks[3].strip().split() == ['thetestmodel.P1', 'thawed', '1', '0', '10']
+    assert toks[4].strip().split() == ['thetestmodel.accent', 'frozen', '2', '0', '10']
+    assert toks[5].strip().split() == ['thetestmodel.norm', 'linked', '12',
+                                       'expr:', '(10', '+', 'const1d.c0)']
+
+    # Should hidden parameters be capable of being thawed?
+    assert m.notseen.val == 10
+    assert m.notseen.min == 5
+    assert m.notseen.max == 15
+    assert not m.notseen.frozen
+
+
+def test_binop_checks_sizes():
+    """We error out if the sides generate different sizes.
+
+    It requires a bit of effort to trigger this behavior.
+    """
+
+    m1 = Const1D()
+    m1.c0 = 2
+    m2 = numpy.asarray([2, 3, 4])
+    m = m1 + m2
+    assert isinstance(m, BinaryOpModel)
+
+    # check we can evaluate with 3 elements:
+    ans = m([100, 200, 300])
+    assert ans == pytest.approx([4, 5, 6])
+
+    # If we use a different number we error out.
+    #
+    with pytest.raises(ValueError) as exc:
+        m([10, 20])
+
+    emsg = "shape mismatch between 'Const1D: 2' and 'ArithmeticConstantModel: 3'"
+    assert str(exc.value) == emsg
+
+
+def test_functionmodel_check():
+    """ArithmeticFunctionModel errors out with invalid input"""
+
+    with pytest.raises(ModelErr) as exc:
+        ArithmeticFunctionModel(Const1D())
+
+    assert str(exc.value) == 'ArithmeticFunctionModel instance cannot be created from another model'
+
+    with pytest.raises(ModelErr) as exc:
+        ArithmeticFunctionModel(23)
+
+    assert str(exc.value) == 'attempted to create ArithmeticFunctionModel from non-callable object of type int'
