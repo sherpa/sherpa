@@ -23,7 +23,7 @@ from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.utils.testing import requires_xspec, requires_data
+from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 from sherpa.data import Data1DInt
 from sherpa.models.basic import Box1D, Const1D, PowLaw1D
 from sherpa.models.parameter import Parameter
@@ -553,6 +553,7 @@ def test_xspec_con_ui_registered():
 
 @requires_xspec
 @requires_data
+@requires_fits
 def test_xspec_con_ui_cflux(make_data_path, clean_astro_ui, restore_xspec_settings):
     """Check cflux from the UI layer with a response."""
 
@@ -623,6 +624,7 @@ def test_xspec_con_ui_cflux(make_data_path, clean_astro_ui, restore_xspec_settin
 
 @requires_xspec
 @requires_data
+@requires_fits
 def test_xspec_con_ui_shift(make_data_path, clean_astro_ui, restore_xspec_settings):
     """Check shifted models from the UI layer with a response.
 
@@ -707,6 +709,7 @@ def test_xspec_con_ui_shift(make_data_path, clean_astro_ui, restore_xspec_settin
 
 @requires_xspec
 @requires_data
+@requires_fits
 def test_xspec_con_ui_shift_regrid(make_data_path, clean_astro_ui, restore_xspec_settings):
     """Check shifted models from the UI layer with a response and regrid.
 
