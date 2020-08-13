@@ -600,14 +600,26 @@ class ArithmeticModel(Model):
 
 class RegriddableModel(ArithmeticModel):
     def check_regrid_kwargs(self, **kwargs):
-        valid_keys = ('interp', '_self',)
+        valid_keys = ('interp',)
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
-        return kwargs.get('_self', self)
 
     def regrid(self, *args, **kwargs):
         raise NotImplementedError
+
+    def regrid1D(self, *args, **kwargs):
+        self.check_regrid_kwargs(**kwargs)
+        eval_space = EvaluationSpace1D(*args)
+        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
+        regridder._make_and_validate_grid(args)
+        return regridder.apply_to(self)
+
+    def regrid2D(self, *args, **kwargs):
+        self.check_regrid_kwargs(**kwargs)
+        eval_space = EvaluationSpace2D(*args)
+        regridder = ModelDomainRegridder2D(eval_space)
+        return regridder.apply_to(self)
 
 
 class RegriddableModel1D(RegriddableModel):
@@ -630,11 +642,7 @@ class RegriddableModel1D(RegriddableModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        myself = self.check_regrid_kwargs(**kwargs)
-        eval_space = EvaluationSpace1D(*args)
-        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
-        regridder._make_and_validate_grid(args)
-        return regridder.apply_to(myself)
+        return self.regrid1D(*args, **kwargs)
 
 
 class RegriddableModel2D(RegriddableModel):
@@ -644,11 +652,7 @@ class RegriddableModel2D(RegriddableModel):
     "A two-dimensional model."
 
     def regrid(self, *args, **kwargs):
-        myself = self.check_regrid_kwargs(**kwargs)
-        eval_space = EvaluationSpace2D(*args)
-        regridder = ModelDomainRegridder2D(eval_space)
-        return regridder.apply_to(myself)
-
+        return self.regrid2D(*args, **kwargs)
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
 
@@ -662,7 +666,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
-class BinaryOpModel(CompositeModel, ArithmeticModel):
+class BinaryOpModel(CompositeModel, RegriddableModel):
 
     @staticmethod
     def wrapobj(obj):
@@ -682,9 +686,12 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
 
     def regrid(self, *args, **kwargs):
         for part in self.parts:
-            # The entire model expression must be passed so
-            #  RegridWrappedModel can return the correct model expression
-            return part.regrid(*args, _self=self, **kwargs)
+            if isinstance(part, RegriddableModel1D):
+                return self.regrid1D(*args, **kwargs)
+            elif isinstance(part, RegriddableModel2D):
+                return self.regrid2D(*args, **kwargs)
+            else:
+                raise NotImplementedError('unknown class type')
 
     def startup(self, cache=False):
         self.lhs.startup(cache)
