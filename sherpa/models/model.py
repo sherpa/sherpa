@@ -820,6 +820,8 @@ class NestedModel(CompositeModel, ArithmeticModel):
                                *self.otherargs, **self.otherkwargs)
 
 
+# TODO: can we remove this as it is now unused?
+#
 class MultigridSumModel(CompositeModel, ArithmeticModel):
 
     def __init__(self, models):
