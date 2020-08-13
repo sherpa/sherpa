@@ -239,9 +239,6 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     bmdl = ui.get_bkg_source(id)
     assert bmdl.name == 'powlaw1d.bpl'
 
-    smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl)))))'
-
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
 
@@ -254,6 +251,7 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * polynom1d.bpl2)))'
 
     smdl = ui.get_model(id)
+
     assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
 
     assert ui.list_model_components() == ['bpl', 'bpl2', 'pl']
@@ -637,9 +635,11 @@ def test_pha1_eval(clean_astro_ui):
 @pytest.mark.xfail
 def test_pha1_eval_vector_show(clean_astro_ui):
     """Check we can show the source/bgnd models with vector scaling
+
     test_pha1_eval does most of the work; this test is
     to check when there's a vector, not scalar, for
     scaling the background to match the source.
+
     """
 
     scale = np.ones(19)
@@ -764,9 +764,11 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
 @pytest.mark.xfail
 def test_pha1_eval_vector(clean_astro_ui):
     """Check we can evaluate the source/bgnd values and vector scaling
+
     test_pha1_eval does most of the work; this test is
     to check when there's a vector, not scalar, for
     scaling the background to match the source.
+
     """
 
     scale = np.ones(19)

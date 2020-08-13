@@ -24,7 +24,8 @@
 from sherpa.models.model import CompositeModel, ArithmeticModel
 from sherpa.utils.err import DataErr
 
-__all__ = ('BackgroundSumModel',)
+
+__all__ = ('BackgroundSumModel', 'add_response')
 
 
 class BackgroundSumModel(CompositeModel, ArithmeticModel):
@@ -71,3 +72,38 @@ class BackgroundSumModel(CompositeModel, ArithmeticModel):
         # but the correction factors are defined in channel space.
         #
         return self.srcdata.sum_background_data(eval_bkg_model)
+
+
+def add_response(session, id, data, model):
+    """Create the response model describing the source and model.
+
+    Include any background components and apply the response
+    model for the dataset.
+
+    Parameters
+    ----------
+    session : sherpa.astro.ui.utils.Session instance
+    id : int ot str
+        The identifier for the dataset.
+    data : sherpa.astro.data.DataPHA instance
+        The dataset (may be a background dataset).
+    model : sherpa.models.model.ArithmeticModel instance
+        The model (without response or background components)
+        to match to data.
+
+    Returns
+    -------
+    fullmodel : sherpa.models.model.ArithmeticModel
+        The model including the necessary response models and
+        background components.
+
+    """
+
+    if not data.subtracted:
+        bkg_srcs = session._background_sources.get(id, {})
+        if len(bkg_srcs.keys()) != 0:
+            model = (model +
+                     BackgroundSumModel(data, bkg_srcs))
+
+    resp = session._get_response(id, data)
+    return resp(model)

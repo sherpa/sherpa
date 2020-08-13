@@ -8827,15 +8827,7 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
             return model
 
-        if not data.subtracted:
-            bkg_srcs = self._background_sources.get(id, {})
-            if len(bkg_srcs.keys()) != 0:
-                model = (model +
-                         sherpa.astro.background.BackgroundSumModel
-                         (data, bkg_srcs))
-
-        resp = self._get_response(id, data)
-        return resp(model)
+        return sherpa.astro.background.add_response(self, id, data, model)
 
     def _get_response(self, id, pha):
         """Calculate the response for the dataset.
