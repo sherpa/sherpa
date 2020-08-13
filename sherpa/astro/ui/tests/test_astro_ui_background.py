@@ -139,22 +139,31 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     infile = make_data_path('3c273.pi')
     ui.load_pha(id, infile)
 
+    assert ui.list_model_components() == []
+
     # Check the source models
     #
     ui.set_source(id, ui.powlaw1d.pl)
+    assert ui.list_model_components() == ['pl']
+
     ui.set_bkg_source(id, ui.powlaw1d.bpl)
+    assert ui.list_model_components() == ['bpl', 'pl']
 
     smdl = ui.get_source(id)
     assert smdl.name == 'powlaw1d.pl'
+    assert ui.list_model_components() == ['bpl', 'pl']
 
     bmdl = ui.get_bkg_source(id)
     assert bmdl.name == 'powlaw1d.bpl'
+    assert ui.list_model_components() == ['bpl', 'pl']
 
     smdl = ui.get_model(id)
     assert smdl.name == 'apply_rmf(apply_arf((38564.608926889 * (powlaw1d.pl + 0.134921 * (powlaw1d.bpl)))))'
+    assert ui.list_model_components() == ['bpl', 'pl']
 
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((38564.608926889 * powlaw1d.bpl)))'
+    assert ui.list_model_components() == ['bpl', 'pl']
 
 
 @requires_data
@@ -232,6 +241,8 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
 
     smdl = ui.get_model(id)
     assert smdl.name == 'apply_rmf(apply_arf((100 * (powlaw1d.pl + 0.03 * (powlaw1d.bpl + polynom1d.bpl2)))))'
+
+    assert ui.list_model_components() == ['bpl', 'bpl2', 'pl']
 
 
 @requires_data
@@ -694,11 +705,15 @@ def test_pha1_eval_vector_show(clean_astro_ui):
     ui.set_source(ui.box1d.smdl)
     ui.set_bkg_source(ui.box1d.bmdl1)
 
+    assert ui.list_model_components() == ['bmdl1', 'smdl']
+
     def r(sval, bval):
         return sval / bval
 
     bmdl = ui.get_bkg_model()
     assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+
+    assert ui.list_model_components() == ['bmdl1', 'smdl']
 
     smdl = ui.get_model()
 
@@ -708,6 +723,8 @@ def test_pha1_eval_vector_show(clean_astro_ui):
     src += ' * {}))'.format(array)
 
     assert smdl.name == src
+
+    assert ui.list_model_components() == ['bmdl1', 'smdl']
 
 
 # Fails from ui.get_model_plot raising
