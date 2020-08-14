@@ -16,11 +16,17 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import pytest
+
+from tempfile import NamedTemporaryFile
+import struct
 
 import numpy as np
+
+import pytest
+
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import ui
+from sherpa.models.basic import Box1D, Const1D
 
 from tempfile import NamedTemporaryFile
 
@@ -53,27 +59,27 @@ def test_warnings_are_gone_pha(make_data_path):
 
 
 def assert_staterr(use_errors):
-    assert np.all(ui.get_data("phacounts").counts == 
+    assert np.all(ui.get_data("phacounts").counts ==
                   pytest.approx(ui.get_data("pharate").counts))
-    if use_errors is True: 
-        assert np.all(ui.get_data("phacounts").staterror == 
+    if use_errors is True:
+        assert np.all(ui.get_data("phacounts").staterror ==
                       pytest.approx(ui.get_data("pharate").staterror))
     else:
         assert ui.get_data("phacounts").staterror is None
         assert ui.get_data("pharate").staterror is None
-    
+
     for n in ['phacounts', 'pharate']:
         ui.group_bins(n, 16)
     ui.set_analysis('energy')
     ui.ignore(None, 3.)
     if use_errors is True:
-        assert np.all(ui.get_data("phacounts").get_error() == 
+        assert np.all(ui.get_data("phacounts").get_error() ==
                   pytest.approx(ui.get_data("pharate").get_error()))
     else:
         assert ui.get_data("phacounts").get_error() is None
         assert ui.get_data("pharate").get_error() is None
-    
-        
+
+
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("use_errors", [True, False])
@@ -125,3 +131,182 @@ def test_scaling_staterr_pha2(make_data_path, use_errors):
             ui.load_arf(n, make_data_path("3c120_meg_-1.arf.gz"))
             ui.load_rmf(n, make_data_path("3c120_meg_-1.rmf.gz"))
     assert_staterr(use_errors)
+
+
+def fake_rmf(outfile):
+    """Create a "perfect" RMF with a scalar MATRIX column
+
+    We do this rather than add another file to the test
+    data directory as it is easier.
+    """
+
+    ebins = np.arange(0.15, 0.2, 0.01, dtype=np.float32)
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    nchan = elo.size
+    chans = np.arange(1, nchan + 1, dtype=np.int16)
+
+    def hdr(key, value):
+        if isinstance(value, str):
+            value = "'{}'".format(value)
+        elif isinstance(value, bool):
+            value = 'T' if value else 'F'
+
+        out = "{:8s}= {}".format(key, value)
+        return out.ljust(80)
+
+    hdr_img = [ hdr('SIMPLE', True),
+                hdr('BITPIX', 8),
+                hdr('NAXIS', 0),
+                hdr('EXTEND', True)
+    ]
+
+    hdr_ebounds = [ hdr('XTENSION', 'BINTABLE'),
+                    hdr('BITPIX', 8),
+                    hdr('NAXIS', 2),
+                    hdr('NAXIS1', 10),
+                    hdr('NAXIS2', nchan),
+                    hdr('PCOUNT', 0),
+                    hdr('GCOUNT', 1),
+                    hdr('TFIELDS', 3),
+                    hdr('TTYPE1', 'CHANNEL'),
+                    hdr('TFORM1', 'I'),
+                    hdr('TTYPE2', 'E_MIN'),
+                    hdr('TFORM2', 'E'),
+                    hdr('TTYPE3', 'E_MAX'),
+                    hdr('TFORM3', 'E'),
+                    hdr('EXTNAME', 'EBOUNDS'),
+                    hdr('HDUCLASS', 'OGIP'),
+                    hdr('HDUCLAS1', 'RESPONSE'),
+                    hdr('HDUCLAS2', 'EBOUNDS'),
+                    hdr('HDUVERS', '1.3.0'),
+                    hdr('CHANTYPE', 'PI'),
+                    hdr('DETCHANS', nchan),
+    ]
+
+    hdr_matrix = [ hdr('XTENSION', 'BINTABLE'),
+                   hdr('BITPIX', 8),
+                   hdr('NAXIS', 2),
+                   hdr('NAXIS1', 18),
+                   hdr('NAXIS2', nchan),
+                   hdr('PCOUNT', 0),
+                   hdr('GCOUNT', 1),
+                   hdr('TFIELDS', 6),
+                   hdr('TTYPE1', 'ENERG_LO'),
+                   hdr('TFORM1', 'E'),
+                   hdr('TTYPE2', 'ENERG_HI'),
+                   hdr('TFORM2', 'E'),
+                   hdr('TTYPE3', 'N_GRP'),
+                   hdr('TFORM3', 'I'),
+                   hdr('TTYPE4', 'F_CHAN'),
+                   hdr('TFORM4', 'I'),
+                   hdr('TTYPE5', 'N_CHAN'),
+                   hdr('TFORM5', 'I'),
+                   hdr('TTYPE6', 'MATRIX'),
+                   hdr('TFORM6', 'E'),
+                   hdr('EXTNAME', 'MATRIX'),
+                   hdr('HDUCLASS', 'OGIP'),
+                   hdr('HDUCLAS1', 'RESPONSE'),
+                   hdr('HDUCLAS2', 'RSP_MATRIX'),
+                   hdr('HDUCLAS3', 'REDIST'),
+                   hdr('HDUVERS', '1.3.0'),
+                   hdr('CHANTYPE', 'PI'),
+                   hdr('TLMIN4', 1),
+                   hdr('DETCHANS', nchan),
+                   hdr('NUMGRP', nchan),
+                   hdr('NUMELT', nchan),
+                   hdr('LO_THRES', '1E-06')
+    ]
+
+    ngrps = np.ones(nchan, dtype=np.int16)
+    fchans = np.arange(1, nchan + 1, dtype=np.int16)
+    nchans = ngrps
+    matrix = np.ones(nchan, dtype=np.float32)
+
+    def row1(chan, e1, e2):
+        return struct.pack('>hff', chan, e1, e2)
+
+    def row2(e1, e2, ngrp, fchan, nchan, mat):
+        return struct.pack('>ffhhhf', e1, e2, ngrp, fchan, nchan, mat)
+
+    with open(outfile, 'wb') as fh:
+
+        def extend():
+            """extend to next 2880 block"""
+            p = fh.tell()
+            n = p % 2880
+            if n != 0:
+                fh.write(b' ' * (2880 - n))
+
+        def mkhdr(cards):
+            for card in cards:
+                fh.write(card.encode('ascii'))
+
+            fh.write(b'END' + b' ' * 77)
+            extend()
+
+        mkhdr(hdr_img)
+
+        mkhdr(hdr_ebounds)
+        for row in zip(chans, elo, ehi):
+            fh.write(row1(*row))
+
+        extend()
+
+        mkhdr(hdr_matrix)
+        for row in zip(elo, ehi, ngrps, fchans, nchans, matrix):
+            fh.write(row2(*row))
+
+        extend()
+
+
+@requires_fits
+def test_read_ideal_rmf():
+    """Can a RMF similar to issue #862 be read in?
+
+    The MATRIX column in this file is a scalar rather than array,
+    and let's do EBOUNDS then MATRIX blocks.
+    """
+
+    from sherpa.astro.io import read_rmf
+
+    ebins = np.arange(0.15, 0.2, 0.01)
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+
+    with NamedTemporaryFile() as f:
+        fake_rmf(f.name)
+        r = read_rmf(f.name)
+
+    # Can we read in the data
+    #
+    assert r.detchans == 5
+    assert r.energ_lo == pytest.approx(elo)
+    assert r.energ_hi == pytest.approx(ehi)
+    assert (r.n_grp == [1, 1, 1, 1, 1]).all()
+    assert (r.f_chan == [1, 2, 3, 4, 5]).all()
+    assert (r.n_chan == [1, 1, 1, 1, 1]).all()
+    assert r.offset == 1
+    assert r.e_min == pytest.approx(elo)
+    assert r.e_max == pytest.approx(ehi)
+    assert r.ethresh == 1e-10
+
+    # Can we apply it?
+    #
+    # The cmdl evalutes to a value of 2 * bin width
+    # The bmdl evalates to the bin width * x
+    # where x = [0, 1, 0.5, 0, 0]
+    #
+    cmdl = Const1D()
+    cmdl.c0 = 2
+
+    bmdl = Box1D()
+    bmdl.xlow = 0.16
+    bmdl.xhi = 0.175
+
+    mdl = bmdl + cmdl
+
+    # Multiply by 100 so numbers are close to unity
+    expected = 100 * 0.01 * np.asarray([2, 3, 2.5, 2, 2])
+    y = 100 * r.eval_model(mdl)
+    assert  y == pytest.approx(expected, rel=2e-6)

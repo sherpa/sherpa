@@ -738,13 +738,24 @@ def get_rmf_data(arg, make_copy=False):
             # Need a RMF which ng>1 to test this with.
             if ng == 1:
                 ncs = [ncs]
+
             start = 0
             for nc in ncs:
                 # n_chan can be an unsigned integer. Adding a Python
                 # integer to a NumPy unsigned integer appears to return
                 # a float.
                 end = start + numpy.int(nc)
-                rowdata.append(mrow[start:end])
+
+                # "perfect" RMFs may have mrow as a scalar
+                try:
+                    rdata = mrow[start:end]
+                except IndexError:
+                    if start != 0 or end != 1:
+                        raise IOErr('bad', 'format', 'MATRIX column formatting')
+
+                    rdata = [mrow]
+
+                rowdata.append(rdata)
                 start = end
 
         data['matrix'] = numpy.concatenate(rowdata)
