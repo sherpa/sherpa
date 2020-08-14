@@ -876,6 +876,6 @@ def test_operations_datastack_group(ds_setup, ds_datadir):
     datastack.load_pha("myid", '/'.join((datadir, "3c273.pi")))
     d1 = datastack.get_data('myid')
     datastack.group_counts('myid', 5)
-    assert np.allclose(d1.get_dep(filter=True)[15:20], [5., 5., 6., 6., 10.])
+    assert np.allclose(d1.get_dep(filter=True)[15:20], [5., 5., 6., 7., 10.])
     datastack.ungroup('myid')
     assert np.all(d1.get_dep(filter=True)[15:20] == [3., 7., 1., 6., 4.])
