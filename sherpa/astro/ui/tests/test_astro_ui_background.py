@@ -140,6 +140,19 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     infile = make_data_path('3c273.pi')
     ui.load_pha(id, infile)
 
+    # Using the actual exposure time can make the check below
+    # sensitive to how the value is represented, in particular
+    # with various Python versions. Since the model code doesn't
+    # make any guarantees about the precision, let's use as
+    # (hopefully) easy-to-display value. It's also done for
+    # the BACKSCAL values to pick a nice ratio.
+    #
+    ui.set_exposure(id, 1234.5)
+    ui.set_exposure(id, 5432.1, bkg_id=1)
+
+    ui.set_backscal(id, 0.1)
+    ui.set_backscal(id, 0.2, bkg_id=1)
+
     assert ui.list_model_components() == []
 
     # Check the source models
@@ -159,11 +172,11 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     assert ui.list_model_components() == ['bpl', 'pl']
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((38564.608926889 * (powlaw1d.pl + 0.134921 * (powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf((1234.5 * (powlaw1d.pl + 0.11363 * (powlaw1d.bpl)))))'
     assert ui.list_model_components() == ['bpl', 'pl']
 
     bmdl = ui.get_bkg_model(id)
-    assert bmdl.name == 'apply_rmf(apply_arf((38564.608926889 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf((5432.1 * powlaw1d.bpl)))'
     assert ui.list_model_components() == ['bpl', 'pl']
 
 
