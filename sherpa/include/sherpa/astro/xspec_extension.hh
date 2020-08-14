@@ -72,7 +72,7 @@ typedef float FloatArrayType;
 #else
 #define CONVERTARRAY(orig, out, npts)					\
 	for (int i = 0; i < npts; i++) { \
-          out[i] = (FloatArrayType) orig[i]; \
+          out[i] = static_cast<FloatArrayType>(orig[i]); \
         }
 #endif
 
