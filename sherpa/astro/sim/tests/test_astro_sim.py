@@ -20,6 +20,8 @@
 
 import logging
 
+import numpy as np
+
 import pytest
 
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
@@ -27,6 +29,9 @@ from sherpa.astro import sim
 
 from sherpa.astro.instrument import Response1D
 from sherpa.fit import Fit
+from sherpa.models.parameter import Parameter
+from sherpa.models.model import ArithmeticModel
+from sherpa.sim import inverse2
 from sherpa.stats import CStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
@@ -148,3 +153,106 @@ def test_pragbayes_pcaarf(sampler, setup):
     #     print 'covar: ', str(covar_results.parmaxes)
     #     print 'param: ', str(params.std(1))
     #     raise
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("sampler", ["pragBayes", "fullbayes"])
+def test_pragbayes_pcaarf_limits(sampler, setup, caplog):
+    """Try and trigger limit issues"""
+
+    from sherpa.astro.xspec import XSAdditiveModel, XSMultiplicativeModel, \
+        XSwabs, XSpowerlaw
+
+    class HackAbs(XSwabs):
+        """Restrict hard limits"""
+
+        def __init__(self, name='wabs'):
+            self.nH = Parameter(name, 'nH', 0.1, 0, 1, 0, 1, '10^22 atoms / cm^2')
+            XSMultiplicativeModel.__init__(self, name, (self.nH, ))
+
+    class HackPowerLaw(XSpowerlaw):
+        """Restrict hard limits"""
+        def __init__(self, name='powerlaw'):
+            self.PhoIndex = Parameter(name, 'PhoIndex', 1., 0.95, 1.05, 0.95, 1.05)
+            self.norm = Parameter(name, 'norm', 9.2, 8.8, 9.7, 8.8, 9.7)
+            XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.norm))
+
+    fit = setup['fit']
+
+    mcmc = sim.MCMC()
+    mcmc.set_sampler(sampler)
+    mcmc.set_sampler_opt("simarf", setup['pcaarf'])
+    mcmc.set_sampler_opt("p_M", 0.5)
+    mcmc.set_sampler_opt("nsubiter", 5)
+
+    covar_results = fit.est_errors()
+    cov = covar_results.extra_output
+
+    # Restrict the parameter values to try and trigger some
+    # invalid proposal steps. It's not obvious how the soft,
+    # hard, and prior function values all interact.
+    #
+    myabs = HackAbs()
+    mypl = HackPowerLaw()
+
+    pvals = np.asarray(covar_results.parvals)
+    pmins = np.asarray(covar_results.parmins)
+    pmaxs = np.asarray(covar_results.parmaxes)
+
+    fit.model = myabs * mypl
+
+    fit.model.thawedpars = pvals
+    fit.model.thawedparmins = pvals + 2 * pmins  # pmins are < 0
+    fit.model.thawedparmaxes = pvals + 2 * pmaxs
+
+    # weight values away from the best-fit (does this actually
+    # help?)
+    #
+    for par in fit.model.pars:
+        mcmc.set_prior(par, inverse2)
+
+    niter = setup['niter']
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        # Do nothing with the warning at the moment, which could be
+        # a RuntimeWarning about the covariance matrix not being
+        # positive-semidefinite. This is just needed to make sure
+        # we don't trigger the default warning check.
+        #
+        with pytest.warns(Warning) as record:
+            stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+
+    # This is a lower bound, in case there's any messages from
+    # the sampling (either before or after displaying the
+    # 'Using Priors' message).
+    #
+    nrecords = len(caplog.record_tuples)
+    assert nrecords > 3
+
+    i = 0
+    while caplog.record_tuples[i][2] != 'Using Priors:':
+        i += 1
+        assert i < nrecords
+
+    assert i < (nrecords - 3)
+
+    assert caplog.record_tuples[i + 1][2].startswith('wabs.nH: <function inverse2 at ')
+    assert caplog.record_tuples[i + 2][2].startswith('powerlaw.PhoIndex: <function inverse2 at ')
+    assert caplog.record_tuples[i + 3][2].startswith('powerlaw.norm: <function inverse2 at ')
+
+    # It is not guaranteed what limits/checks we hit
+    #
+    have_hard_limit = False
+    have_reject = False
+    for loc, lvl, msg in caplog.record_tuples[i + 4:]:
+        if msg.startswith('Draw rejected: parameter boundary exception'):
+            have_reject = True
+            assert lvl == logging.INFO
+
+        elif msg.startswith('hard '):
+            have_hard_limit = True
+            assert lvl == logging.WARNING
+
+    assert have_hard_limit
+    assert have_reject
