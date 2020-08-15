@@ -64,6 +64,7 @@ def setup(make_data_path):
 
     yield {'simarf': simarf,
            'pcaarf': pcaarf,
+           'niter': 10,
            'fit': fit}
 
     # Reset the logger
@@ -77,7 +78,7 @@ def test_pragbayes_simarf(setup):
     fit = setup['fit']
 
     mcmc = sim.MCMC()
-    mcmc.set_sampler("PragBayes")
+    mcmc.set_sampler('PragBayes')
     mcmc.set_sampler_opt("simarf", setup['simarf'])
     mcmc.set_sampler_opt("p_M", 0.5)
     mcmc.set_sampler_opt("nsubiter", 7)
@@ -85,8 +86,11 @@ def test_pragbayes_simarf(setup):
     covar_results = fit.est_errors()
     cov = covar_results.extra_output
 
-    niter = 10
+    niter = setup['niter']
     stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+
+    assert params.shape == (3, niter + 1)
+
     # try:
     #     assert (covar_results.parmaxes < params.std(1)).all()
     # except AssertionError:
@@ -98,11 +102,34 @@ def test_pragbayes_simarf(setup):
 @requires_xspec
 @requires_data
 @requires_fits
-def test_pragbayes_pcaarf(setup):
+def test_fullbayes_simarf_fails(setup):
     fit = setup['fit']
 
     mcmc = sim.MCMC()
-    mcmc.set_sampler("pragBayes")
+    mcmc.set_sampler('FullBAYes')
+    mcmc.set_sampler_opt("simarf", setup['simarf'])
+    mcmc.set_sampler_opt("p_M", 0.5)
+    mcmc.set_sampler_opt("nsubiter", 7)
+
+    covar_results = fit.est_errors()
+    cov = covar_results.extra_output
+
+    niter = setup['niter']
+    with pytest.raises(TypeError) as exc:
+        mcmc.get_draws(fit, cov, niter=niter)
+
+    assert str(exc.value) == 'Simulation ARF must be PCA for FullBayes not SIM1DAdd'
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("sampler", ["pragBayes", "fullbayes"])
+def test_pragbayes_pcaarf(sampler, setup):
+    fit = setup['fit']
+
+    mcmc = sim.MCMC()
+    mcmc.set_sampler(sampler)
     mcmc.set_sampler_opt("simarf", setup['pcaarf'])
     mcmc.set_sampler_opt("p_M", 0.5)
     mcmc.set_sampler_opt("nsubiter", 5)
@@ -110,8 +137,11 @@ def test_pragbayes_pcaarf(setup):
     covar_results = fit.est_errors()
     cov = covar_results.extra_output
 
-    niter = 10
+    niter = setup['niter']
     stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+
+    assert params.shape == (3, niter + 1)
+
     # try:
     #     assert (covar_results.parmaxes < params.std(1)).all()
     # except AssertionError:
