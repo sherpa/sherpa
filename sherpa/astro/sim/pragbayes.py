@@ -231,8 +231,8 @@ class WalkWithSubIters(Walk):
                     try:
                         proposed_params = self._sampler.draw(current_params)
                     except CovarError:
-                        info("Draw rejected: covariance matrix failed. " +
-                             str(proposed_params))
+                        info("Draw rejected: covariance matrix failed: " +
+                             "{}".format(current_params))
                         # automatically reject if the covar is malformed
                         self._sampler.reject()
                         continue
