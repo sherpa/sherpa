@@ -112,27 +112,24 @@ class xspec_config(Command):
                 self.announce("Found XSPEC version: {}".format(xspec_raw_version), 2)
                 xspec_version = LooseVersion(xspec_raw_version)
 
-                if xspec_version >= LooseVersion("12.9.0"):
-                    macros += [('XSPEC_12_9_0', None)]
-                else:
+                if xspec_version < LooseVersion("12.9.0"):
                     self.warn("XSPEC Version is less than 12.9.0, which is the minimal supported version for Sherpa")
 
-                if xspec_version >= LooseVersion("12.9.1"):
-                    macros += [('XSPEC_12_9_1', None)]
-
-                if xspec_version >= LooseVersion("12.10.0"):
-                    macros += [('XSPEC_12_10_0', None)]
-
-                if xspec_version >= LooseVersion("12.10.1"):
-                    macros += [('XSPEC_12_10_1', None)]
-
-                if xspec_version >= LooseVersion("12.11.0"):
-                    macros += [('XSPEC_12_11_0', None)]
+                # I am not sure what the naming of the XSPEC components are,
+                # but let's stick with major, minor, and patch.
+                #
+                for major, minor, patch in [(12, 9, 0), (12, 9, 1),
+                                            (12, 10, 0), (12, 10, 1),
+                                            (12, 11, 0), (12, 11, 1)]:
+                    version = '{}.{}.{}'.format(major, minor, patch)
+                    macro = 'XSPEC_{}_{}_{}'.format(major, minor, patch)
+                    if xspec_version >= LooseVersion(version):
+                        macros += [(macro, None)]
 
                 # Since there are patches (e.g. 12.10.0c), look for the
                 # "next highest version.
-                if xspec_version >= LooseVersion("12.11.1"):
-                    self.warn("XSPEC Version is greater than 12.11.0, which is the latest supported version for Sherpa")
+                if xspec_version >= LooseVersion("12.11.2"):
+                    self.warn("XSPEC Version is greater than 12.11.1, which is the latest supported version for Sherpa")
 
             extension = build_ext('xspec', ld, inc, l, define_macros=macros)
 

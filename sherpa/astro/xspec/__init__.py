@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
+Sherpa supports versions 12.11.1, 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
 of XSPEC [1]_, and can be built against the model library or the full
 application.  There is no guarantee of support for older or newer
 versions of XSPEC.
@@ -12679,14 +12679,22 @@ class XSthcomp(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. note:: Parameter renames in XSPEC 12.11.1
+
+       In XSPEC 12.11.1 the parameters are now called ``Gamma_tau`` and
+       ``cov_frac`` rather than ``gamma_tau`` and ``FracSctr``. The case of
+       ``Gamma_tau`` does not matter for Sherpa, but the scattering-fraction
+       parameter has been renamed (with an alias in place for users used to
+       the XSPEC 12.11.0 names).
+
     Attributes
     ----------
-    gamma_tau
+    Gamma_tau
         The low-energy power-law photon index when positive and the Thomson
         optical depth (multiplied by -1) when negative.
     kT_e
         The electron temperature (high energy rollover)
-    FracSctr
+    cov_frac
         The scattering fraction (between 0 and 1). If 1 then all of the
         seed photons will be Comptonized, and if 0 then only the original
         seed photons will be seen.
@@ -12715,19 +12723,22 @@ class XSthcomp(XSConvolutionKernel):
 
     def __init__(self, name='xsthcomp'):
         # TODO: allow negative
-        self.gamma_tau = Parameter(name, 'gamma_tau', 1.7, min=1.001, max=5.0,
+        self.Gamma_tau = Parameter(name, 'Gamma_tau', 1.7, min=1.001, max=5.0,
                                    hard_min=1.001, hard_max=10.0, frozen=False)
         self.kT_e = Parameter(name, 'kT_e', 50.0, min=0.5, max=150.0,
                               hard_min=0.5, hard_max=150.0, units='keV',
                               frozen=False)
-        self.FracStr = Parameter(name, 'FracSctr', 1.0, min=0.0, max=1.0,
-                                  hard_min=0.0, hard_max=1.0, frozen=False)
+        # In XSPEC 12.11.0 the parameter was named FracSctr, and thanks to a typo
+        # it was stored as the parameter FracStr.
+        self.cov_frac = Parameter(name, 'cov_frac', 1.0, min=0.0, max=1.0,
+                                  hard_min=0.0, hard_max=1.0, frozen=False,
+                                  aliases=["FracSctr", "FracStr"])
         self.z = Parameter(name, 'z', 0.0, min=0.0, max=5.0,
                            hard_min=0.0, hard_max=5.0, frozen=True)
 
-        XSConvolutionKernel.__init__(self, name, (self.gamma_tau,
+        XSConvolutionKernel.__init__(self, name, (self.Gamma_tau,
                                                   self.kT_e,
-                                                  self.FracStr,
+                                                  self.cov_frac,
                                                   self.z
                                                   ))
 

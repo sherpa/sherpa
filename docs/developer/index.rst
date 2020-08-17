@@ -123,7 +123,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.11.0 down to 12.9.0. It may build against
+:term:`XSPEC` versions 12.11.1 down to 12.9.0. It may build against
 newer versions, but if it does it will not provide access
 to any new models in the release. The following steps are needed
 to update to a newer version, and assume that you have the new version
@@ -141,18 +141,23 @@ them).
 
    Current version: `helpers/xspec_config.py <https://github.com/sherpa/sherpa/blob/master/helpers/xspec_config.py>`_.
 
-   When adding support for XSPEC 12.11.0, the code in the ``run``
-   method was changed to include::
+   When adding support for XSPEC 12.11.1, the code in the ``run``
+   method was changed to include the triple ``(12, 11, 1)``::
 
-       if xspec_version >= LooseVersion("12.11.0"):
-           macros += [('XSPEC_12_11_0', None)]
+       for major, minor, patch in [(12, 9, 0), (12, 9, 1),
+                                   (12, 10, 0), (12, 10, 1),
+                                   (12, 11, 0), (12, 11, 1)]:
+           version = '{}.{}.{}'.format(major, minor, patch)
+           macro = 'XSPEC_{}_{}_{}'.format(major, minor, patch)
+           if xspec_version >= LooseVersion(version):
+               macros += [(macro, None)]
 
    and the version check to::
 
        # Since there are patches (e.g. 12.10.0c), look for the
        # "next highest version.
-       if xspec_version >= LooseVersion("12.11.1"):
-           self.warn("XSPEC Version is greater than 12.11.0, which is the latest supported version for Sherpa")
+       if xspec_version >= LooseVersion("12.11.2"):
+           self.warn("XSPEC Version is greater than 12.11.1, which is the latest supported version for Sherpa")
 
    The define should be named ``XSPEC_<a>_<b>_<c>`` for XSPEC release
    ``<a>.<b>.<c>`` (the XSPEC patch level is not included). This define
@@ -203,7 +208,8 @@ them).
 
      diff heasoft-6.26.1/spectral/manager/model.dat heasoft-6.27/spectral/manager/model.dat
 
-   will tell you the differences. If you do not have the previous
+   will tell you the differences (this example was for XSPEC 12.11.0,
+   please adjust as appropriate). If you do not have the previous
    version then the release notes will tell you which models to
    look for in the ``model.dat`` file.
 
