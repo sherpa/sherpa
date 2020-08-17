@@ -2231,6 +2231,10 @@ class XSbwcycl(XSAdditiveModel):
     norm
         The normalization of the model (fix it to one).
 
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
     References
     ----------
 
@@ -7175,6 +7179,10 @@ class XSzkerrbb(XSAdditiveModel):
     --------
     XSkerrbb
 
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
     References
     ----------
 
@@ -7377,6 +7385,10 @@ class XSconstant(XSMultiplicativeModel):
     ----------
     factor
         The value of the model.
+
+    See Also
+    --------
+    XSlogconst, XSlog10con
 
     References
     ----------
@@ -11181,6 +11193,10 @@ class XSismdust(XSMultiplicativeModel):
     --------
     XSolivineabs
 
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
     References
     ----------
 
@@ -11211,6 +11227,14 @@ class XSlogconst(XSMultiplicativeModel):
     logfact
         The constant factor in natural log.
 
+    See Also
+    --------
+    XSconstant, XSlog10con
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
+
     References
     ----------
 
@@ -11235,6 +11259,14 @@ class XSlog10con(XSMultiplicativeModel):
     ----------
     log10fac
         The constant factor in base 10 log.
+
+    See Also
+    --------
+    XSconstant, XSlogconst
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
 
     References
     ----------
@@ -11266,6 +11298,10 @@ class XSolivineabs(XSMultiplicativeModel):
     See Also
     --------
     XSismdust
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.11.0 or later.
 
     References
     ----------
@@ -12710,7 +12746,7 @@ class XSthcomp(XSConvolutionKernel):
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
 
-    This model is only available when used with XSPEC 12.10.0 or later.
+    This model is only available when used with XSPEC 12.11.0 or later.
 
     References
     ----------
