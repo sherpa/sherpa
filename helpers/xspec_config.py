@@ -91,19 +91,6 @@ class xspec_config(Command):
             inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
             l = clean(l1 + l2 + l3 + l4 + l5)
 
-            # I do not know if l2/l3 are guaranteed to be indexable
-            # entries with at least one element in them.
-            #
-            try:
-                cfitsio = l2[0]
-            except IndexError:
-                cfitsio = None
-
-            try:
-                ccfits = l3[0]
-            except IndexError:
-                ccfits = None
-
             xspec_raw_version = self.xspec_version
 
             macros = []
