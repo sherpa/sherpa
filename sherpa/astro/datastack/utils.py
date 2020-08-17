@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,10 +16,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import re
+
 from sherpa.utils import public
 from sherpa.utils.logging import config_logger
 import sherpa
-import re
 
 from . import plot_backend as backend
 

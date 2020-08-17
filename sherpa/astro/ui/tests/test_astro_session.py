@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import numpy
+
+from sherpa.astro.data import DataPHA
 from sherpa.astro.ui.utils import Session
+from sherpa.models import Const1D
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -38,3 +43,22 @@ def test_show_bkg_model_with_bkg(make_data_path):
     session.load_data('foo', make_data_path('3c273.pi'))
     session.show_bkg_model()
     session.show_bkg_model('foo')
+
+
+# Fix 476 - this should be in sherpa/ui/tests/test_session.py
+def test_zero_division_calc_stat():
+    ui = Session()
+    x = numpy.arange(100)
+    y = numpy.zeros(100)
+    ui.load_arrays(1, x, y, DataPHA)
+    ui.group_counts(1, 100)
+    ui.set_full_model(1, Const1D("const"))
+
+    # in principle I wouldn't need to call calc_stat_info(), I could just
+    # use _get_stat_info to reproduce the issue, However, _get_stat_info is not a public
+    # method, so I want to double check that calc_stat_info does not throw an exception.
+    # So, first we try to run calc_stat_info and make sure there are no exceptions.
+    # Then, since calc_stat_info only logs something and doesn't return anything, we use
+    # a white box approach to get the result from _get_stat_info.
+    ui.calc_stat_info()
+    assert ui._get_stat_info()[0].rstat is numpy.nan

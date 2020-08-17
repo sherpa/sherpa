@@ -8984,10 +8984,12 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_pileup_model : Delete the pile up model for a data set.
         fit : Fit one or more data sets.
         get_model : Return the model expression for a data set.
         get_source : Return the source model expression for a data set.
         sherpa.astro.models.JDPileup : The ACIS pile up model.
+        list_pileup_model_ids : List of all the data sets with a pile up model.
         set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
 
         Examples
@@ -8999,6 +9001,53 @@ class Session(sherpa.ui.utils.Session):
         """
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
+
+    def delete_pileup_model(self, id=None):
+        """Delete the pile up model for a data set.
+
+        Remove the pile up model applied to a source model.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        See Also
+        --------
+        get_pileup_model : Return the pile up model for a data set.
+        list_pileup_model_ids : List of all the data sets with a pile up model.
+        set_pileup_model : Add a pile up model to a data set.
+
+        Examples
+        --------
+
+        >>> delete_pileup_model()
+
+        >>> delete_pileup_model('core')
+
+        """
+        id = self._fix_id(id)
+        self._pileup_models.pop(id, None)
+
+    def list_pileup_model_ids(self):
+        """List of all the data sets with a pile up model.
+
+        Returns
+        -------
+        ids : list of int or str
+           The identifiers for all the data sets which have a pile up
+           model set by `set_pileup_model`.
+
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
+        set_pileup_model : Add a pile up model to a data set.
+
+        """
+        keys = list(self._pileup_models.keys())
+        return sorted(keys, key=str)
 
     # DOC-NOTE: should this be made a general function, since it
     # presumably does not care about pileup, just adds the
@@ -9022,9 +9071,11 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_pileup_model : Delete the pile up model for a data set.
         fit : Fit one or more data sets.
         get_pileup_model : Return the pile up model for a data set.
         sherpa.models.model.JDPileup : The ACIS pile up model.
+        list_pileup_model_ids : List of all the data sets with a pile up model.
         set_full_model : Define the convolved model expression for a data set.
         set_model : Set the source model expression for a data set.
 

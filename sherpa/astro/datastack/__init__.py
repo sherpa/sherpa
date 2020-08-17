@@ -1,4 +1,4 @@
-# Copyright (c) 2010,2014,2015 Smithsonian Astrophysical Observatory
+# Copyright (c) 2010, 2014, 2015, 2020 Smithsonian Astrophysical Observatory
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -218,14 +218,14 @@ __all__ = ['set_template_id', 'DataStack']
 
 import sys
 import types
+import logging
+
 from sherpa.astro import ui
 from sherpa.utils.logging import config_logger
 from sherpa.utils import public
 from sherpa.astro.datastack.ds import DataStack
-import logging
-from . import plot_backend as backend
-from .utils import model_wrapper, set_template_id, load_wrapper,\
-    load_error_msg, simple_wrapper, fit_wrapper, plot_wrapper
+
+from .utils import set_template_id
 
 logger = config_logger(__name__)
 

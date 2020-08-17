@@ -2772,7 +2772,7 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     to the different cores, the functions should be very time consuming
     to compute (of order 0.1-1s).  This is similar to the ``parallel_map``
     function.
-    
+
     An ordered iterable (i.e. tuple or list) should be used to pass multiple
     values to the multiple functions. The lengths of the iterable funcs and
     datasets must be equal. The corresponding funcs and datasets are passed
@@ -3986,6 +3986,9 @@ def public(f):
     http://groups.google.com/group/comp.lang.python/msg/11cbb03e09611b8a
     * Improved via a suggestion by Dave Angel:
     http://groups.google.com/group/comp.lang.python/msg/3d400fb22d8a42e1
+
+    See also https://bugs.python.org/issue26632
+
     """
     _all = sys.modules[f.__module__].__dict__.setdefault('__all__', [])
     if f.__name__ not in _all:  # Prevent duplicates if run from an IDE.

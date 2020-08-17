@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,17 @@
 There is a copy of this test in sherpa/ui/astro/tests/ that needs
 to be kept up to date.
 """
-import numpy
 
-from sherpa.astro.data import DataPHA
-from sherpa.utils.testing import requires_plotting
+from sherpa.utils.testing import requires_plotting, requires_xspec
 from sherpa.ui.utils import Session
-from sherpa.astro.ui.utils import Session as AstroSession
 from numpy.testing import assert_array_equal
-from sherpa.models import parameter, Const1D
+from sherpa.models import parameter
+import sherpa.models.basic
+from sherpa import estmethods as est
+from sherpa import optmethods as opt
+from sherpa import stats
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
+    IdentifierErr, SessionErr
 
 import pytest
 
@@ -89,11 +92,97 @@ def test_save_restore(tmpdir):
     assert_array_equal(TEST2, session.get_data(1).get_dep())
 
 
-def test_default_models():
+def test_models_models():
     """There are no models available by default"""
 
     s = Session()
     assert s.list_models() == []
+
+
+def test_models_all():
+    """We can get a list of all models"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    models = s.list_models()
+    assert type(models) == list
+    assert len(models) > 1
+    assert all([type(m) == str for m in models])
+
+
+# XSPEC is only needed for the xspec test but easiest to just
+# mark it for all cases
+#
+@requires_xspec
+@pytest.mark.parametrize("mtype", ["1d", "2d", "xspec"])
+def test_models_filtered(mtype):
+    """We can get a list of a subset of models
+
+    Check the fix for issue #749
+    """
+
+    import sherpa.astro.xspec
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.xspec)
+
+    models = s.list_models(mtype)
+    assert type(models) == list
+    assert len(models) > 1
+    assert all([type(m) == str for m in models])
+
+
+@requires_xspec
+def test_models_all():
+    """Check all models are returned"""
+
+    import sherpa.astro.xspec
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.xspec)
+
+    # Actually, it's not guaranteed that these models are disjoint
+    # but they are at the moment.
+    #
+    mall = s.list_models('all')
+    m1d = s.list_models('1d')
+    m2d = s.list_models('2d')
+    mxs = s.list_models('xspec')
+
+    nall = len(mall)
+    assert nall == len(m1d) + len(m2d) + len(mxs)
+
+    mall = set(mall)
+    assert nall == len(mall)
+
+    mcomb = set(m1d).union(set(m2d)).union(set(mxs))
+    assert nall == len(mcomb)
+
+
+def test_get_functions():
+    """Limited check of get_functions"""
+
+    s = Session()
+    fns = s.get_functions()
+    assert type(fns) == list
+    assert len(fns) > 1
+    assert all([type(f) == str for f in fns])
+    assert 'load_data' in fns
+
+
+def test_list_functions():
+    """Limited check of list_functions"""
+
+    s = Session()
+    store = StringIO()
+    s.list_functions(outfile=store)
+    txt = store.getvalue()
+    fns = txt.split('\n')
+    assert len(fns) > 1
+    assert 'calc_stat' in fns
 
 
 def test_paramprompt_function():
@@ -117,9 +206,11 @@ def test_paramprompt():
     assert s.list_model_components() == []
 
     # Add in some models
-    import sherpa.models.basic
     s._add_model_types(sherpa.models.basic)
-    assert s.list_models() != []
+
+    models = s.list_models()
+    assert models != []
+    assert 'const1d' in models
 
     s.create_model_component('const1d', 'm1')
     assert s.list_model_ids() == []
@@ -234,7 +325,6 @@ def test_list_model_ids():
     # This issue was found when developing the paramprompt test.
     s = Session()
 
-    import sherpa.models.basic
     s._add_model_types(sherpa.models.basic)
 
     assert s.list_model_ids() == []
@@ -249,20 +339,243 @@ def test_list_model_ids():
     assert set(s.list_model_ids()) == set([1, 'ma', 'mb'])
 
 
-# Fix 476
-def test_zero_division_calc_stat():
-    ui = AstroSession()
-    x = numpy.arange(100)
-    y = numpy.zeros(100)
-    ui.load_arrays(1, x, y, DataPHA)
-    ui.group_counts(1, 100)
-    ui.set_full_model(1, Const1D("const"))
+def test_list_methods():
+    """we have some methods"""
 
-    # in principle I wouldn't need to call calc_stat_info(), I could just
-    # use _get_stat_info to reproduce the issue, However, _get_stat_info is not a public
-    # method, so I want to double check that calc_stat_info does not throw an exception.
-    # So, first we try to run calc_stat_info and make sure there are no exceptions.
-    # Then, since calc_stat_info only logs something and doesn't return anything, we use
-    # a white box approach to get the result from _get_stat_info.
-    ui.calc_stat_info()
-    assert ui._get_stat_info()[0].rstat is numpy.nan
+    s = Session()
+    methods = s.list_methods()
+    assert type(methods) == list
+    assert len(methods) > 1  # do not check exact number
+    assert 'levmar' in methods
+
+
+def test_list_iter_methods():
+    """we have some iteration methods"""
+
+    s = Session()
+    methods = s.list_iter_methods()
+    assert type(methods) == list
+    assert len(methods) > 1  # do not check exact number
+    assert 'none' in methods
+    assert 'sigmarej' in methods
+    assert 'primini' in methods
+
+
+def test_get_method_default():
+    """get_method returns default instance (LevMar)"""
+
+    s = Session()
+    method = s.get_method()
+    assert isinstance(method, opt.LevMar)
+
+
+@pytest.mark.parametrize("name,req",
+                         [("GridSearch", opt.GridSearch),
+                          ("levmar", opt.LevMar),
+                          ("MONCAR", opt.MonCar),
+                          ("neldermead", opt.NelderMead),
+                          ("simplex", opt.NelderMead)])
+def test_get_method_named(name, req):
+    """get_method returns requested instance"""
+
+    s = Session()
+    method = s.get_method(name)
+    assert isinstance(method, req)
+
+
+def test_get_method_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.get_method(opt.MonCar)
+
+    assert str(exc.value) == "'name' must be a string"
+
+
+@pytest.mark.parametrize("name,req",
+                         [("moncar", opt.MonCar),
+                          (opt.GridSearch(), opt.GridSearch)])
+def test_set_method(name, req):
+    """We can set the method"""
+
+    s = Session()
+    s.set_method(name)
+    ans = s.get_method()
+    assert isinstance(ans, req)
+
+
+def test_set_method_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.set_method(sherpa.models.basic.Const1D)
+
+    assert str(exc.value) == "'meth' must be a method name or object"
+
+
+def test_get_stat_default():
+    """get_stat returns default instance (Chi2Gehrels)"""
+
+    s = Session()
+    stat = s.get_stat()
+    assert isinstance(stat, stats.Chi2Gehrels)
+
+
+@pytest.mark.parametrize("name,req",
+                         [("chi2gehrels", stats.Chi2Gehrels),
+                          ("Chi2DataVar", stats.Chi2DataVar),
+                          ("leastsq", stats.LeastSq),
+                          ("Wstat", stats.WStat)])
+def test_get_stat_named(name, req):
+    """get_stat returns requested instance"""
+
+    s = Session()
+    stat = s.get_stat(name)
+    assert isinstance(stat, req)
+
+
+def test_get_stat_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.get_stat(stats.Cash)
+
+    assert str(exc.value) == "'name' must be a string"
+
+
+@pytest.mark.parametrize("name,req",
+                         [("chi2modvar", stats.Chi2ModVar),
+                          (stats.CStat(), stats.CStat)])
+def test_set_stat(name, req):
+    """We can set the statistic"""
+
+    s = Session()
+    s.set_stat(name)
+    ans = s.get_stat()
+    assert isinstance(ans, req)
+
+
+def test_set_stat_invalid():
+    """Errors out with invalid argument"""
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.set_stat(sherpa.models.basic.Const1D)
+
+    assert str(exc.value) == "'stat' must be a statistic name or object"
+
+
+def test_get_default_id():
+    """Does the default id react correctly?"""
+    s = Session()
+    assert s.get_default_id() == 1
+
+    s.set_default_id('alpha')
+    assert s.get_default_id() == 'alpha'
+
+
+@pytest.mark.parametrize("name,req",
+                         [('covar', est.Covariance),
+                          ('conf', est.Confidence),
+                          ('proj', est.Projection)])
+def test_get_error_estimator(name, req):
+    """Can we get the error estimator?"""
+
+    s = Session()
+    func = getattr(s, 'get_{}'.format(name))
+    ans = func()
+    assert isinstance(ans, req)
+
+
+@pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
+def test_get_error_opt(name):
+    """Can we get an option for an error estimator?
+
+    Fortunately they all have a sigma option.
+    """
+
+    s = Session()
+    func = getattr(s, 'get_{}_opt'.format(name))
+    ans = func('sigma')
+    assert ans == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("name,fullname",
+                         [('covar', 'covariance'),
+                          ('conf', 'confidence'),
+                          ('proj', 'projection')])
+def test_get_error_opt_invalid(name, fullname):
+    """We can not ask for an error option that does not exist"""
+
+    s = Session()
+    func = getattr(s, 'get_{}_opt'.format(name))
+
+    with pytest.raises(ArgumentErr) as exc:
+        func('the-real-sigma')
+
+    assert str(exc.value) == "'the-real-sigma' is not a valid option for method {}".format(fullname)
+
+
+@pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
+def test_set_error_opt(name):
+    """Can we set an option for an error estimator?
+
+    Fortunately they all have a sigma option.
+    """
+
+    s = Session()
+    gfunc = getattr(s, 'get_{}_opt'.format(name))
+    sfunc = getattr(s, 'set_{}_opt'.format(name))
+
+    sfunc('sigma', 1.6)
+    ans = gfunc('sigma')
+    assert ans == pytest.approx(1.6)
+
+
+@pytest.mark.parametrize("name,fullname",
+                         [('covar', 'covariance'),
+                          ('conf', 'confidence'),
+                          ('proj', 'projection')])
+def test_set_error_opt_invalid(name, fullname):
+    """We can not set an error option that does not exist"""
+
+    s = Session()
+    func = getattr(s, 'set_{}_opt'.format(name))
+
+    with pytest.raises(ArgumentErr) as exc:
+        func('the-real-sigma', 2.4)
+
+    assert str(exc.value) == "'the-real-sigma' is not a valid option for method {}".format(fullname)
+
+
+@pytest.mark.parametrize("name,fullname",
+                         [('covar', 'covariance'),
+                          ('conf', 'confidence'),
+                          ('proj', 'projection')])
+def test_error_estimate_not_set(name, fullname):
+    """Error out if the error estimate is not set"""
+
+    s = Session()
+    func = getattr(s, 'get_{}_results'.format(name))
+
+    with pytest.raises(SessionErr) as exc:
+        func()
+
+    assert str(exc.value) == "{} has not been performed".format(fullname)
+
+
+@pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
+def test_error_estimate_not_run(name):
+    """Can not rn the error estimate if data is not set up"""
+
+    s = Session()
+    s.set_default_id('bob')
+    func = getattr(s, name)
+
+    with pytest.raises(IdentifierErr) as exc:
+        func()
+
+    assert str(exc.value) == "data set bob has not been set"

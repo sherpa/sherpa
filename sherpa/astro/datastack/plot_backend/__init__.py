@@ -18,8 +18,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.plot import plotter
 from importlib import import_module
+
+from sherpa.plot import plotter
 from sherpa.utils.logging import config_logger
 
 logger = config_logger(__name__)
