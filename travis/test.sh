@@ -24,7 +24,7 @@ smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 if [ ${TEST} == submodule ]; then
     # pip install pytest-cov codecov;
     conda install -yq pytest-cov codecov;
-    python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
+    pytest -q --cov=sherpa --cov-report=term || exit 1;
     codecov;
 fi
 
