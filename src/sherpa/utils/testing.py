@@ -17,10 +17,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
 import unittest
 import os
 import importlib
+import logging
+import pkg_resources
+
+import numpy
 
 from sherpa.utils._utils import sao_fcmp
 
@@ -31,23 +34,63 @@ except ImportError:
     HAS_PYTEST = False
 
 
+warning = logging.getLogger(__name__).warning
+
+
+# I am not convinced the conversion from __file__ access to
+# pkg_resources is correct here. Using __file__ is frowned upon,
+# hence the change, and as we can not assume Python 3.7 or later
+# at the moment we can not use importlib_resources.
+#
 def _get_datadir():
-    import os
+    """Setup the location of the Sherpa test data, if installed."""
+
     try:
         import sherpatest
-        datadir = os.path.dirname(sherpatest.__file__)
+        datadir = pkg_resources.resource_filename('sherpatest', '')
+
     except ImportError:
         try:
             import sherpa
-            datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir,
+            datadir = pkg_resources.resource_filename('sherpa', '')
+            datadir = os.path.join(datadir, os.pardir,
                                    'sherpa-test-data', 'sherpatest')
-            if not os.path.exists(datadir) or not os.listdir(datadir):
-                # The dir is empty, maybe the submodule was not initialized
-                datadir = None
         except ImportError:
             # neither sherpatest nor sherpa can be found, falling back to None
             datadir = None
+
+    # Check the directory exists
+    if datadir is None or not os.path.exists(datadir) or not os.listdir(datadir):
+        return None
+
     return datadir
+
+
+DATADIR = _get_datadir()
+
+def get_datadir():
+    """Return the location of the Sherpa test data.
+
+    The data directory is determined either by the existance of the
+    sherpatest module, sherpa-test-directory submodule, or
+    by being set manually with set_datadir.
+    """
+
+    return DATADIR
+
+
+def set_datadir(dname):
+    """Set the location of the Sherpa test data.
+
+    """
+
+    global DATADIR
+    if not os.path.exists(dname) or not os.listdir(dname):
+        warning("Unable to set the datadir to {}".format(dname))
+        dname = None
+
+    DATADIR = dname
+    SherpaTestCase.datadir = dname
 
 
 class SherpaTestCase(unittest.TestCase):
@@ -56,7 +99,7 @@ class SherpaTestCase(unittest.TestCase):
     """
 
     # The location of the Sherpa test data (it is optional)
-    datadir = _get_datadir()
+    datadir = get_datadir()
 
     def make_path(self, *segments):
         """Add the segments onto the test data location.
