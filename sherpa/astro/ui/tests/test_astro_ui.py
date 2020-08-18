@@ -772,7 +772,7 @@ def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
     assert len(dplot.y) == 0
 
 
-def test_grouped_pha_all_bad_channel():
+def test_grouped_pha_all_bad_channel(clean_astro_ui):
     """Helpdesk ticket: low-count data had no valid bins after grouping #790
 
     A simple PHA dataset is created, with no response, which has no
@@ -802,7 +802,7 @@ def test_grouped_pha_all_bad_channel():
                           ("energy", 8.0, 0.35, 0.05, 1.0, 0.2, 0.8),
                           ("wave", 0.03871461, 52.59935223, 20, 90, 30, 85)
                          ])
-def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, lo1, hi1, lo2, hi2):
+def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, lo1, hi1, lo2, hi2, clean_astro_ui):
     """Helpdesk ticket: low-count data had no valid bins after grouping #790
 
     A simple PHA dataset is created, which has no "good" grouped data
@@ -847,3 +847,40 @@ def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, 
 
     # Run tests
     check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("elo,ehi,nbins",
+                         [(None, 5, 41), (1, None, 33), (1, 5, 28)])
+@pytest.mark.parametrize("bkg_id", [None, 1])
+def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
+                                                 caplog, make_data_path, clean_astro_ui):
+    """Check we get the warning messages with background filtering"""
+
+    ui.load_pha('check', make_data_path('3c273.pi'))
+
+    ui.set_quality('check', 2 * numpy.ones(1024, dtype=numpy.int16), bkg_id=1)
+    ui.ignore_bad('check', bkg_id=1)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.notice_id('check', elo, ehi, bkg_id=bkg_id)
+
+    # filtering has or hasn't happened
+    nsrc = ui.get_dep('check', filter=True).size
+    nback = ui.get_dep('check', filter=True, bkg_id=1).size
+
+    if bkg_id is None:
+        assert nsrc == nbins
+        assert nback == 0
+    else:
+        assert nsrc == 46  # ie no filter
+        assert nback == 0
+
+    # did we get a warning message from the background?
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.astro.data'
+    assert lvl == logging.INFO
+    assert msg.startswith('Skipping dataset /')
+    assert msg.endswith('/3c273_bg.pi: mask excludes all data')

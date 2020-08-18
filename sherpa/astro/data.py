@@ -2278,12 +2278,10 @@ class DataPHA(Data1D):
             old_bkg_units = bkg.units
             try:
                 bkg.units = self.units
-                try:
-                    bkg.notice(lo, hi, ignore)
-                except DataErr as de:
-                    info("Skipping background {} for {}: {}".format(bid,
-                                                                    self.name,
-                                                                    de))
+                # If the background is all ignored then bkg.notice will
+                # do nothing (other than display an INFO message).
+                #
+                bkg.notice(lo, hi, ignore)
             finally:
                 bkg.units = old_bkg_units
 
