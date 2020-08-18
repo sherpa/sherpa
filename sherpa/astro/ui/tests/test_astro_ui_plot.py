@@ -1422,6 +1422,40 @@ def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic
 @requires_fits
 @requires_data
 @requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_recalc(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+    """Just check we can call recalc on the routine
+
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=True)
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=True, recalc=False)
+
+    # check we can access these results (relying on the fact that the num
+    # and bins arguments have been changed from their default values).
+    #
+    res = getfunc(recalc=False)
+    validate_flux_histogram(res)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
 @pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
                                      ui.get_photon_flux_hist])
 @pytest.mark.parametrize("correlated", [False, True])

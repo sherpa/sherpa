@@ -675,7 +675,9 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
                                                      (ArgumentErr, True, np.ones((3, 3, 3))),
                                                      (ArgumentErr, False, [1, np.inf, 2]),
                                                      (ArgumentErr, False, [1, 2, None]),
-                                                     (ArgumentErr, True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]])
+                                                     (ArgumentErr, True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]]),
+                                                     (ArgumentErr, False, np.ones(3).reshape(1, 3, 1)),
+                                                     (ArgumentErr, True, np.ones(9).reshape(1, 3, 3))
                                               ])
 def test_sample_foo_flux_invalid_scales(method, etype, correlated, scales,
                                         make_data_path, clean_astro_ui):
