@@ -105,8 +105,7 @@ sys.modules['sherpa.astro.xspec._xspec'] = XSPECMock()
 # so that Sherpa can be found.
 #
 if os.path.split(os.getcwd())[1] == 'docs':
-    sys.path.insert(0, os.path.abspath('..'))
-
+    sys.path.insert(0, os.path.abspath('../src'))
 
 import sherpa
 
