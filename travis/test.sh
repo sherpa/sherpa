@@ -34,6 +34,11 @@ sherpa_smoke ${smokevars} || exit 1
 
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ];
-    then cd $HOME
-    sherpa_test || exit 1
+then cd $HOME;
+     # It is not clear why / when pytest can get auto-installed
+     # (changing to the code to the src/ directory has changed to
+     # make this install needed).
+     #
+     pip install pytest;
+     sherpa_test || exit 1
 fi
