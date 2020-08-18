@@ -1153,6 +1153,7 @@ def test_data_dep_masked_numpyarray_nomask_ui(data_for_load_arrays, Session):
     assert new_data.mask is True
     assert len(new_data.get_dep(filter=True)) == len(args[posy].flatten())
 
+
 # https://github.com/sherpa/sherpa/issues/346
 @pytest.mark.parametrize('Session', [Session, AstroSession])
 def test_regression_346(Session):
@@ -1164,3 +1165,33 @@ def test_regression_346(Session):
     session.load_arrays("mydata", x, y, e) 
     filtered_y = session. get_dep("mydata", filter=True)
     assert numpy.allclose(filtered_y, [48.2, 39.2, 39.2, 48.2])
+
+    
+def test_manual_setting_mask():
+    d = Data1D(name='test', x=[1, 2, 3], y=[0, 0, 0])
+    d.mask = True
+    assert len(d.get_dep(filter=True)) == 3
+
+    d.mask = False
+    # This test looks like it does not do anything, but in fact "mask"
+    # is a property with complext logic, so the fact that setting it to
+    # False makes is False is non-trivial.
+    # I don't want to test for
+    # len(d.get_dep(filter=True)) == 0
+    # because the get_dep raises and error when no data is noticed
+    # and I don't want to test get_dep here, but the fact that setting
+    # the mask itself works.
+    assert d.mask is False
+
+    d.mask = [True, False, True]
+    assert len(d.get_dep(filter=True)) == 2
+    arr = numpy.ma.array([3,4,5])
+    d.mask = arr.mask  # aka numpy.ma.nomask, but used in a more
+                       # natural way
+    assert len(d.get_dep(filter=True)) == 3
+
+    with pytest.raises(DataErr) as e:
+        d.mask = None
+    assert 'True, False, or a mask array' in str(e.value)
+
+        
