@@ -13,30 +13,30 @@ include CONTRIBUTING.md
 recursive-include helpers *.py
 
 # Header files
-recursive-include sherpa/include *.hh
+recursive-include src/sherpa/include *.hh
 
 # Test files
-recursive-include sherpa test_*.py
-include sherpa/tests/*
-include sherpa/astro/datastack/tests/*
-include sherpa/astro/datastack/tests/data/*
+recursive-include src/sherpa test_*.py
+include src/sherpa/tests/*
+include src/sherpa/astro/datastack/tests/*
+include src/sherpa/astro/datastack/tests/data/*
 
 # XSPEC module sources
-include sherpa/astro/xspec/src/*.cc
+include src/sherpa/astro/xspec/src/*.cc
 
 # Region module sources
-include sherpa/astro/utils/src/_region.cc
+include src/sherpa/astro/utils/src/_region.cc
 
 # WCS module sources
-include sherpa/astro/utils/src/_wcs.cc
+include src/sherpa/astro/utils/src/_wcs.cc
 
 # Sherpa optmethods test includes
-include sherpa/optmethods/tests/tstoptfct.hh
-include sherpa/optmethods/tests/tstopt.hh
+include src/sherpa/optmethods/tests/tstoptfct.hh
+include src/sherpa/optmethods/tests/tstopt.hh
 
 # Sherpa configuration files
-include sherpa/sherpa.rc
-include sherpa/sherpa-standalone.rc
+include src/sherpa/sherpa.rc
+include src/sherpa/sherpa-standalone.rc
 
 # Sphinx documentation
 recursive-include docs *
@@ -44,7 +44,7 @@ recursive-include docs *
 # Quick Start Tutorial
 include notebooks/SherpaQuickStart.ipynb
 
-include sherpa/_version.py
+include src/sherpa/_version.py
 
 # Tests
 include pytest.ini

@@ -19,13 +19,10 @@
 #
 
 
-import shlex
-import os
-
 from numpy.distutils.core import Extension
 
 # Include directory for Sherpa headers
-sherpa_inc = ['sherpa/include', 'sherpa/utils/src']
+sherpa_inc = ['src/sherpa/include', 'src/sherpa/utils/src']
 
 header_deps = {
     'myArray': (),
@@ -48,10 +45,10 @@ def get_deps(deps):
     alldeps = set()
 
     while deps:
-        next = deps.pop()
-        if next not in alldeps:
-            alldeps.add(next)
-            deps.update(header_deps[next])
+        dep = deps.pop()
+        if dep not in alldeps:
+            alldeps.add(dep)
+            deps.update(header_deps[dep])
 
     return [sherpa_inc[0] + '/sherpa/' + d + '.hh' for d in alldeps]
 
@@ -61,24 +58,24 @@ def get_deps(deps):
 
 def build_psf_ext(library_dirs, include_dirs, libraries):
     return Extension('sherpa.utils._psf',
-             ['sherpa/utils/src/tcd/tcdCastArray.c',
-              'sherpa/utils/src/tcd/tcdError.c',
-              'sherpa/utils/src/tcd/tcdFFTConvolve.c',
-              'sherpa/utils/src/tcd/tcdInitConvolveOut.c',
-              'sherpa/utils/src/tcd/tcdInitTransform.c',
-              'sherpa/utils/src/tcd/tcdPadData.c',
-              'sherpa/utils/src/tcd/tcdPixelArith.c',
-              'sherpa/utils/src/tcd/tcdTransform.c',
-              'sherpa/utils/src/_psf.cc'],
-             sherpa_inc + ['sherpa/utils/src/tcd'] + include_dirs,
+             ['src/sherpa/utils/src/tcd/tcdCastArray.c',
+              'src/sherpa/utils/src/tcd/tcdError.c',
+              'src/sherpa/utils/src/tcd/tcdFFTConvolve.c',
+              'src/sherpa/utils/src/tcd/tcdInitConvolveOut.c',
+              'src/sherpa/utils/src/tcd/tcdInitTransform.c',
+              'src/sherpa/utils/src/tcd/tcdPadData.c',
+              'src/sherpa/utils/src/tcd/tcdPixelArith.c',
+              'src/sherpa/utils/src/tcd/tcdTransform.c',
+              'src/sherpa/utils/src/_psf.cc'],
+             sherpa_inc + ['src/sherpa/utils/src/tcd'] + include_dirs,
              library_dirs=library_dirs,
              libraries=libraries,
              depends=(get_deps(['extension', 'utils'])+
-                      ['sherpa/utils/src/tcd/tcd.h',]))
+                      ['src/sherpa/utils/src/tcd/tcd.h',]))
 
 def build_wcs_ext(library_dirs, include_dirs, libraries):
     return Extension('sherpa.astro.utils._wcs',
-                 ['sherpa/astro/utils/src/_wcs.cc'],
+                 ['src/sherpa/astro/utils/src/_wcs.cc'],
                  sherpa_inc + include_dirs,
                  library_dirs=library_dirs,
                  libraries=libraries,
@@ -86,7 +83,7 @@ def build_wcs_ext(library_dirs, include_dirs, libraries):
 
 def build_region_ext(library_dirs, include_dirs, libraries):
     return Extension('sherpa.astro.utils._region',
-                 ['sherpa/astro/utils/src/_region.cc'],
+                 ['src/sherpa/astro/utils/src/_region.cc'],
                  sherpa_inc + include_dirs,
                  library_dirs=library_dirs,
                  libraries=(libraries),
@@ -94,7 +91,7 @@ def build_region_ext(library_dirs, include_dirs, libraries):
 
 def build_xspec_ext(library_dirs, include_dirs, libraries, define_macros=None):
     return Extension('sherpa.astro.xspec._xspec',
-                  ['sherpa/astro/xspec/src/_xspec.cc'],
+                  ['src/sherpa/astro/xspec/src/_xspec.cc'],
                   sherpa_inc + include_dirs,
                   library_dirs=library_dirs,
                   runtime_library_dirs=library_dirs,
@@ -118,124 +115,124 @@ def build_lib_arrays(command, libname):
 ###
 
 estmethods = Extension('sherpa.estmethods._est_funcs',
-              ['sherpa/estmethods/src/estutils.cc',
-               'sherpa/estmethods/src/info_matrix.cc',
-               'sherpa/estmethods/src/projection.cc',
-               'sherpa/estmethods/src/estwrappers.cc'],
-              (sherpa_inc + ['sherpa/utils/src/gsl']),
+              ['src/sherpa/estmethods/src/estutils.cc',
+               'src/sherpa/estmethods/src/info_matrix.cc',
+               'src/sherpa/estmethods/src/projection.cc',
+               'src/sherpa/estmethods/src/estwrappers.cc'],
+              (sherpa_inc + ['src/sherpa/utils/src/gsl']),
               depends=(get_deps(['extension', 'utils']) +
-                       ['sherpa/estmethods/src/estutils.hh',
-                        'sherpa/estmethods/src/info_matrix.hh',
-                        'sherpa/estmethods/src/projection.hh',
-                        'sherpa/utils/src/gsl/fcmp.h']))
+                       ['src/sherpa/estmethods/src/estutils.hh',
+                        'src/sherpa/estmethods/src/info_matrix.hh',
+                        'src/sherpa/estmethods/src/projection.hh',
+                        'src/sherpa/utils/src/gsl/fcmp.h']))
 
 
 utils = Extension('sherpa.utils._utils',
-              ['sherpa/utils/src/cephes/const.c',
-               'sherpa/utils/src/cephes/fabs.c',
-               'sherpa/utils/src/cephes/isnan.c',
-               'sherpa/utils/src/cephes/mtherr.c',
-               'sherpa/utils/src/cephes/polevl.c',
-               'sherpa/utils/src/cephes/ndtri.c',
-               'sherpa/utils/src/cephes/gamma.c',
-               'sherpa/utils/src/cephes/igam.c',
-               'sherpa/utils/src/cephes/igami.c',
-               'sherpa/utils/src/cephes/incbet.c',
-               'sherpa/utils/src/cephes/incbi.c',
-               'sherpa/utils/src/_utils.cc'],
-              sherpa_inc + ['sherpa/utils/src/cephes',
-                            'sherpa/utils/src/gsl'],
+              ['src/sherpa/utils/src/cephes/const.c',
+               'src/sherpa/utils/src/cephes/fabs.c',
+               'src/sherpa/utils/src/cephes/isnan.c',
+               'src/sherpa/utils/src/cephes/mtherr.c',
+               'src/sherpa/utils/src/cephes/polevl.c',
+               'src/sherpa/utils/src/cephes/ndtri.c',
+               'src/sherpa/utils/src/cephes/gamma.c',
+               'src/sherpa/utils/src/cephes/igam.c',
+               'src/sherpa/utils/src/cephes/igami.c',
+               'src/sherpa/utils/src/cephes/incbet.c',
+               'src/sherpa/utils/src/cephes/incbi.c',
+               'src/sherpa/utils/src/_utils.cc'],
+              sherpa_inc + ['src/sherpa/utils/src/cephes',
+                            'src/sherpa/utils/src/gsl'],
               depends=(get_deps(['extension', 'utils'])+
-                       ['sherpa/utils/src/gsl/fcmp.h',
-                        'sherpa/utils/src/cephes/cephes.h']))
+                       ['src/sherpa/utils/src/gsl/fcmp.h',
+                        'src/sherpa/utils/src/cephes/cephes.h']))
 
 modelfcts = Extension('sherpa.models._modelfcts',
-              ['sherpa/models/src/_modelfcts.cc'],
+              ['src/sherpa/models/src/_modelfcts.cc'],
               sherpa_inc,
               depends=get_deps(['model_extension', 'models']))
 
 saoopt = Extension('sherpa.optmethods._saoopt',
-              ['sherpa/optmethods/src/_saoopt.cc',
-               'sherpa/optmethods/src/Simplex.cc'],
-              sherpa_inc + ['sherpa/utils/src/gsl'],
+              ['src/sherpa/optmethods/src/_saoopt.cc',
+               'src/sherpa/optmethods/src/Simplex.cc'],
+              sherpa_inc + ['src/sherpa/utils/src/gsl'],
               depends=(get_deps(['myArray', 'extension']) +
-                       ['sherpa/include/sherpa/fcmp.hh',
-                        'sherpa/include/sherpa/MersenneTwister.h',
-                        'sherpa/include/sherpa/functor.hh',
-                        'sherpa/optmethods/src/DifEvo.hh',
-                        'sherpa/optmethods/src/DifEvo.cc',
-                        'sherpa/optmethods/src/NelderMead.hh',
-                        'sherpa/optmethods/src/NelderMead.cc',
-                        'sherpa/optmethods/src/Opt.hh',
-                        'sherpa/optmethods/src/PyWrapper.hh',
-                        'sherpa/optmethods/src/RanOpt.hh',
-                        'sherpa/optmethods/src/Simplex.hh',
-                        'sherpa/optmethods/src/Simplex.cc',
-                        'sherpa/optmethods/src/minpack/LevMar.hh',
-                        'sherpa/optmethods/src/minpack/LevMar.cc',
-                        'sherpa/optmethods/src/minim.hh']))
+                       ['src/sherpa/include/sherpa/fcmp.hh',
+                        'src/sherpa/include/sherpa/MersenneTwister.h',
+                        'src/sherpa/include/sherpa/functor.hh',
+                        'src/sherpa/optmethods/src/DifEvo.hh',
+                        'src/sherpa/optmethods/src/DifEvo.cc',
+                        'src/sherpa/optmethods/src/NelderMead.hh',
+                        'src/sherpa/optmethods/src/NelderMead.cc',
+                        'src/sherpa/optmethods/src/Opt.hh',
+                        'src/sherpa/optmethods/src/PyWrapper.hh',
+                        'src/sherpa/optmethods/src/RanOpt.hh',
+                        'src/sherpa/optmethods/src/Simplex.hh',
+                        'src/sherpa/optmethods/src/Simplex.cc',
+                        'src/sherpa/optmethods/src/minpack/LevMar.hh',
+                        'src/sherpa/optmethods/src/minpack/LevMar.cc',
+                        'src/sherpa/optmethods/src/minim.hh']))
 
 tstoptfct = Extension('sherpa.optmethods._tstoptfct',
-              ['sherpa/optmethods/tests/_tstoptfct.cc'],
+              ['src/sherpa/optmethods/tests/_tstoptfct.cc'],
               sherpa_inc,
               depends=(get_deps(['extension']) +
-                       ['sherpa/include/sherpa/fcmp.hh',
-                        'sherpa/include/sherpa/MersenneTwister.h',
-                        'sherpa/include/sherpa/functor.hh',
-                        'sherpa/optmethods/tests/tstopt.hh',
-                        'sherpa/optmethods/tests/tstoptfct.hh',
-                        'sherpa/optmethods/src/DifEvo.hh',
-                        'sherpa/optmethods/src/DifEvo.cc',
-                        'sherpa/optmethods/src/NelderMead.hh',
-                        'sherpa/optmethods/src/NelderMead.cc',
-                        'sherpa/optmethods/src/Opt.hh',
-                        'sherpa/optmethods/src/PyWrapper.hh',
-                        'sherpa/optmethods/src/RanOpt.hh',
-                        'sherpa/optmethods/src/Simplex.hh',
-                        'sherpa/optmethods/src/Simplex.cc',
-                        'sherpa/optmethods/src/minpack/LevMar.hh',
-                        'sherpa/optmethods/src/minpack/LevMar.cc']))
+                       ['src/sherpa/include/sherpa/fcmp.hh',
+                        'src/sherpa/include/sherpa/MersenneTwister.h',
+                        'src/sherpa/include/sherpa/functor.hh',
+                        'src/sherpa/optmethods/tests/tstopt.hh',
+                        'src/sherpa/optmethods/tests/tstoptfct.hh',
+                        'src/sherpa/optmethods/src/DifEvo.hh',
+                        'src/sherpa/optmethods/src/DifEvo.cc',
+                        'src/sherpa/optmethods/src/NelderMead.hh',
+                        'src/sherpa/optmethods/src/NelderMead.cc',
+                        'src/sherpa/optmethods/src/Opt.hh',
+                        'src/sherpa/optmethods/src/PyWrapper.hh',
+                        'src/sherpa/optmethods/src/RanOpt.hh',
+                        'src/sherpa/optmethods/src/Simplex.hh',
+                        'src/sherpa/optmethods/src/Simplex.cc',
+                        'src/sherpa/optmethods/src/minpack/LevMar.hh',
+                        'src/sherpa/optmethods/src/minpack/LevMar.cc']))
 
 statfcts = Extension('sherpa.stats._statfcts',
-              ['sherpa/stats/src/_statfcts.cc'],
+              ['src/sherpa/stats/src/_statfcts.cc'],
               sherpa_inc,
               depends=get_deps(['stat_extension', 'stats']))
 
 integration = Extension('sherpa.utils.integration',
-              ['sherpa/utils/src/gsl/err.c',
-               'sherpa/utils/src/gsl/error.c',
-               'sherpa/utils/src/gsl/stream.c',
-               'sherpa/utils/src/gsl/strerror.c',
-               'sherpa/utils/src/gsl/message.c',
-               'sherpa/utils/src/gsl/qng.c',
-               'sherpa/utils/src/adapt_integrate.c',
-               'sherpa/utils/src/integration.cc'],
-              sherpa_inc + ['sherpa/utils/src',
-                            'sherpa/utils/src/gsl'],
+              ['src/sherpa/utils/src/gsl/err.c',
+               'src/sherpa/utils/src/gsl/error.c',
+               'src/sherpa/utils/src/gsl/stream.c',
+               'src/sherpa/utils/src/gsl/strerror.c',
+               'src/sherpa/utils/src/gsl/message.c',
+               'src/sherpa/utils/src/gsl/qng.c',
+               'src/sherpa/utils/src/adapt_integrate.c',
+               'src/sherpa/utils/src/integration.cc'],
+              sherpa_inc + ['src/sherpa/utils/src',
+                            'src/sherpa/utils/src/gsl'],
               depends=(get_deps(['integration'])+
-                       ['sherpa/utils/src/adapt_integrate.h',
-                        'sherpa/utils/src/gsl/gsl_integration.h']))
+                       ['src/sherpa/utils/src/adapt_integrate.h',
+                        'src/sherpa/utils/src/gsl/gsl_integration.h']))
 
 astro_modelfcts = Extension('sherpa.astro.models._modelfcts',
-              ['sherpa/astro/models/src/_modelfcts.cc'],
+              ['src/sherpa/astro/models/src/_modelfcts.cc'],
               sherpa_inc,
               depends=get_deps(['model_extension', 'astro/models']))
 
 pileup = Extension('sherpa.astro.utils._pileup',
-              ['sherpa/astro/utils/src/fftn.c',
-               'sherpa/astro/utils/src/_pileup.cc',
-               'sherpa/astro/utils/src/pileup.cc'],
-              sherpa_inc + ['sherpa/astro/utils/src'],
+              ['src/sherpa/astro/utils/src/fftn.c',
+               'src/sherpa/astro/utils/src/_pileup.cc',
+               'src/sherpa/astro/utils/src/pileup.cc'],
+              sherpa_inc + ['src/sherpa/astro/utils/src'],
               depends=(get_deps(['extension']) +
-                       ['sherpa/astro/utils/src/pileup.hh',
-                        'sherpa/astro/utils/src/PyWrapper.hh',
-                        'sherpa/astro/utils/src/fftn.inc']))
+                       ['src/sherpa/astro/utils/src/pileup.hh',
+                        'src/sherpa/astro/utils/src/PyWrapper.hh',
+                        'src/sherpa/astro/utils/src/fftn.inc']))
 
 astro_utils = Extension('sherpa.astro.utils._utils',
-              ['sherpa/astro/utils/src/_utils.cc'],
-              (sherpa_inc + ['sherpa/utils/src/gsl']),
+              ['src/sherpa/astro/utils/src/_utils.cc'],
+              (sherpa_inc + ['src/sherpa/utils/src/gsl']),
               depends=(get_deps(['extension', 'utils', 'astro/utils'])+
-                       ['sherpa/utils/src/gsl/fcmp.h']))
+                       ['src/sherpa/utils/src/gsl/fcmp.h']))
 
 
 static_ext_modules = [

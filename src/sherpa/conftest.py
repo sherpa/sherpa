@@ -18,10 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import pytest
 import os
-import sys
 import re
+
+import pytest
 
 from numpy import VisibleDeprecationWarning
 

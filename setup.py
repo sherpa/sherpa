@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019 Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017, 2018, 2019, 2020 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -80,27 +80,10 @@ meta = dict(name='sherpa',
             python_requires='~=3.5',
             install_requires=['numpy'],
             tests_require=['pytest-xvfb', 'pytest>=3.3'],
-            packages=['sherpa',
-                      'sherpa.estmethods',
-                      'sherpa.image',
-                      'sherpa.models',
-                      'sherpa.optmethods',
-                      'sherpa.plot',
-                      'sherpa.sim',
-                      'sherpa.stats',
-                      'sherpa.ui',
-                      'sherpa.utils',
-                      'sherpa.astro',
-                      'sherpa.astro.datastack',
-                      'sherpa.astro.datastack.plot_backend',
-                      'sherpa.astro.io',
-                      'sherpa.astro.models',
-                      'sherpa.astro.optical',
-                      'sherpa.astro.sim',
-                      'sherpa.astro.ui',
-                      'sherpa.astro.utils',
-                      'sherpa.astro.xspec',
-                      ],
+
+            package_dir={"": "src"},
+            packages=setuptools.find_packages(where='src'),
+
             package_data={'sherpa': ['include/sherpa/*.hh',
                                      'include/sherpa/astro/*.hh',
                                      'tests/*'],
@@ -123,8 +106,11 @@ meta = dict(name='sherpa',
                           'sherpa.astro.utils': ['tests/test_*.py'],
                           },
             data_files=[('sherpa',
-                         ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
-            ext_modules=static_ext_modules, cmdclass=versioneer.get_cmdclass(),
+                         ['src/sherpa/sherpa.rc', 'src/sherpa/sherpa-standalone.rc']), ],
+
+            ext_modules=static_ext_modules,
+            cmdclass=versioneer.get_cmdclass(),
+
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
