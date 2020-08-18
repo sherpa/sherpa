@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2014, 2015, 2016, 2019
+#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -41,8 +41,16 @@ import os.path
 import subprocess
 import sys
 
+# I am not convinced the conversion from __file__ access to
+# pkg_resources is correct here. Using __file__ is frowned upon,
+# hence the change, and as we can not assume Python 3.7 or later
+# at the moment we can not use importlib_resources.
+#
+import pkg_resources
+
 
 __all__ = ('get_include',)
+
 
 from ._version import get_versions
 __version__ = get_versions()['version']
@@ -69,25 +77,23 @@ del Formatter, log, handler
 def get_include():
     "Get the root path for installed Sherpa header files"
 
-    return os.path.join(os.path.dirname(__file__), 'include')
+    return pkg_resources.resource_filename('sherpa', 'include')
 
 
 def get_config():
     "Get the path for the installed Sherpa configuration file"
 
     filename = "sherpa-standalone.rc"
-
-    home_dir = None
-    config = None
+    def_config = pkg_resources.resource_filename('sherpa', filename)
 
     # If NOSHERPARC is set, read in system config file
     # ignore any user config file
-    if (('NOSHERPARC' in os.environ) == True):
-        return os.path.join(os.path.dirname(__file__), filename)
+    if 'NOSHERPARC' in os.environ:
+        return def_config
 
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
-    if (('SHERPARC' in os.environ) == True):
+    if 'SHERPARC' in os.environ:
         config = os.environ.get('SHERPARC')
         if os.path.isfile(config):
             return config
@@ -101,7 +107,7 @@ def get_config():
         return config
 
     # If no user config file is set, fall back to system config file
-    return os.path.join(os.path.dirname(__file__), filename)
+    return def_config
 
 
 def smoke(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
@@ -197,9 +203,8 @@ def _install_test_deps():
 
 
 def clitest():
-    plugins = _install_test_deps()
     import pytest
-    import os
-    sherpa_dir = os.path.dirname(__file__)
+    plugins = _install_test_deps()
+    sherpa_dir = pkg_resources.resource_filename('sherpa', '')
     errno = pytest.main([sherpa_dir, '-rs'], plugins=plugins)  # passing the plugins that have been installed "now".
     sys.exit(errno)
