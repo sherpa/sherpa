@@ -79,6 +79,22 @@ def test_calc_flux_pha_invalid_model(func, make_data_path, clean_astro_ui):
         func(0.5, 7, model='pl')
 
 
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("method", [ui.calc_energy_flux,
+                                    ui.calc_photon_flux])
+def test_calc_foo_flux_no_bkg(method, make_data_path, clean_astro_ui):
+    """No background model.
+    """
+
+    setup_sample(1, make_data_path, fit=False)
+    with pytest.raises(ModelErr) as exc:
+         method(lo=0.5, hi=7, bkg_id=1)
+
+    assert str(exc.value) == 'background model 1 for data set 1 has not been set'
+
+
 def test_calc_flux_pha_bin_edges(clean_astro_ui):
     """What happens when filter edges partially overlap bins?
 
@@ -511,7 +527,10 @@ def test_calc_flux_pha_unabsorbed(make_data_path, clean_astro_ui):
 
 @requires_data
 @requires_fits
-def test_calc_flux_bkg(make_data_path, clean_astro_ui):
+@pytest.mark.parametrize("method,sflux,bflux",
+                         [(ui.calc_energy_flux, 8.296745792997814e-13, 1.342566520894761e-13),
+                          (ui.calc_photon_flux, 0.00034801650283229483, 2.9675854718842685e-05)])
+def test_calc_flux_bkg(method, sflux, bflux, make_data_path, clean_astro_ui):
     """Basic test of a background dataset.
 
     This does not test all combinations, as it is expected that
@@ -545,22 +564,22 @@ def test_calc_flux_bkg(make_data_path, clean_astro_ui):
     assert check == pytest.approx(775.6453986960231)
 
     # These should be the same, by construction
-    sflux_all = ui.calc_energy_flux(0.5, 7)
-    sflux_spl = ui.calc_energy_flux(0.5, 7, model=spl)
+    sflux_all = method(0.5, 7)
+    sflux_spl = method(0.5, 7, model=spl)
     assert sflux_all == sflux_spl  # do not use pytest.approx
 
-    bflux_all = ui.calc_energy_flux(0.5, 7, bkg_id=1)
-    bflux_bpl = ui.calc_energy_flux(0.5, 7, bkg_id=1, model=bpl)
+    bflux_all = method(0.5, 7, bkg_id=1)
+    bflux_bpl = method(0.5, 7, bkg_id=1, model=bpl)
     assert bflux_all == bflux_bpl  # do not use pytest.approx
 
     # check expected flux (regression test).
     #
     got = np.log10(sflux_spl)
-    exp = np.log10(8.296745792997814e-13)
+    exp = np.log10(sflux)
     assert got == pytest.approx(exp)
 
     got = np.log10(bflux_bpl)
-    exp = np.log10(1.342566520894761e-13)
+    exp = np.log10(bflux)
     assert got == pytest.approx(exp)
 
 
@@ -631,6 +650,8 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
 @requires_data
 @requires_fits
 @requires_xspec
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
 @pytest.mark.parametrize("etype,correlated,scales", [(ModelErr, False, []),
                                                      (ArgumentErr, False, [[]]),
                                                      (ModelErr, False, [1, 2]),
@@ -656,7 +677,7 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
                                                      (ArgumentErr, False, [1, 2, None]),
                                                      (ArgumentErr, True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]])
                                               ])
-def test_sample_foo_flux_invalid_scales(etype, correlated, scales,
+def test_sample_foo_flux_invalid_scales(method, etype, correlated, scales,
                                         make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when scales is
     the wrong shape, or contains invalid values
@@ -672,14 +693,22 @@ def test_sample_foo_flux_invalid_scales(etype, correlated, scales,
 
     setup_sample('x', make_data_path, fit=False)
     with pytest.raises(etype):
-        ui.sample_energy_flux(lo=0.5, hi=7, id='x', num=10,
-                              correlated=correlated, scales=scales)
+        method(lo=0.5, hi=7, id='x', num=10,
+               correlated=correlated, scales=scales)
 
 
 @requires_data
 @requires_fits
 @requires_xspec
-def test_sample_foo_flux_invalid_scales2(make_data_path, clean_astro_ui):
+@pytest.mark.parametrize("method", [ui.sample_energy_flux,
+                                    ui.sample_photon_flux])
+@pytest.mark.parametrize("correlated,scales", [(False, [0.1]),
+                                               (False, np.ones((4, 4)).diagonal()),
+                                               (False, np.ones((4, 4))),
+                                               (True, np.ones((1, 1))),
+                                               (True, np.ones((4, 4)))])
+def test_sample_foo_flux_invalid_scales2(method, correlated, scales,
+                                         make_data_path, clean_astro_ui):
     """A repeat of test_sample_foo_flux_invalid_scales for explicit model components.
 
     Unlike test_sample_foo_flux_invalid_scales, do not repeat as
@@ -689,8 +718,6 @@ def test_sample_foo_flux_invalid_scales2(make_data_path, clean_astro_ui):
     """
 
     cpts = setup_sample(1, make_data_path, fit=False)
-    cmat1 = np.ones((1, 1))
-    cmat4 = np.ones((4, 4))
 
     # Test correlated=False with 1D and 2D
     #                = True      2D
@@ -699,29 +726,8 @@ def test_sample_foo_flux_invalid_scales2(make_data_path, clean_astro_ui):
     # has 2 free parameters, so try 1 and 4 parameters.
     #
     with pytest.raises(ModelErr):
-        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
-                              model=cpts[1],
-                              correlated=False, scales=[0.1])
-
-    with pytest.raises(ModelErr):
-        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
-                              model=cpts[1],
-                              correlated=False, scales=cmat4.diagonal())
-
-    with pytest.raises(ModelErr):
-        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
-                              model=cpts[1],
-                              correlated=False, scales=cmat4)
-
-    with pytest.raises(ModelErr):
-        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
-                              model=cpts[1],
-                              correlated=True, scales=cmat1)
-
-    with pytest.raises(ModelErr):
-        ui.sample_energy_flux(lo=0.5, hi=7, id=1, num=10,
-                              model=cpts[1],
-                              correlated=True, scales=cmat4)
+        method(lo=0.5, hi=7, id=1, num=10, model=cpts[1],
+               correlated=correlated, scales=scales)
 
 
 @requires_data
@@ -1147,16 +1153,14 @@ def test_sample_foo_flux_component(multi, fac, correlated,
 @requires_data
 @requires_fits
 @requires_xspec
+@pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
 @pytest.mark.parametrize("correlated,scales3",
                          [(False, [0.04, 0.12, 2.5e-5]),
                           (False, COVMAT),
                           (True, COVMAT)])
-def test_sample_foo_flux_component_scales(correlated, scales3,
+def test_sample_foo_flux_component_scales(method, correlated, scales3,
                                           make_data_path, clean_astro_ui):
     """Can we sample just a component and send in errors?
-
-    Based on test_sample_foo_flux_component, but
-    restricted to sample_energy_flux.
 
     Since the full model (gal * pl) has 3 free parameters
     and the power-law 2, do we get the "same" results
@@ -1177,9 +1181,9 @@ def test_sample_foo_flux_component_scales(correlated, scales3,
     gamma0 = pl.gamma.val
     ampl0 = pl.ampl.val
 
-    unabsorbed3 = ui.sample_energy_flux(lo=0.5, hi=2, id=id, num=1000,
-                                        model=pl, correlated=correlated,
-                                        scales=scales3)
+    unabsorbed3 = method(lo=0.5, hi=2, id=id, num=1000,
+                         model=pl, correlated=correlated,
+                         scales=scales3)
 
     assert unabsorbed3.shape == (1000, 4)
 
@@ -1208,7 +1212,6 @@ def test_sample_foo_flux_component_scales(correlated, scales3,
 
     assert np.std(gamma) == pytest.approx(errs3[1], rel=0.1)
     assert np.std(ampl) == pytest.approx(errs3[2], rel=0.1)
-
 
 
 @requires_data
@@ -1298,9 +1301,20 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
 @requires_data
 @requires_fits
 @requires_xspec
+@pytest.mark.parametrize("method,fluxval",
+                         [(ui.sample_energy_flux, 6e-13),
+                          (ui.sample_photon_flux, 1e-4)])
 @pytest.mark.parametrize("id", [None, "foo"])
-def test_sample_foo_flux_bkg(id, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_bkg(method, fluxval, id, make_data_path, clean_astro_ui):
     """Basic test when calculating flux with a background model.
+
+    fluxval is a value used to check that the median values for the
+    source and background runs are "very roughly" correct: for
+    the energy flux, we expect the source and background rates to
+    be ~8e13 and ~1e-13 (with variance larger on the background),
+    so we use 6e-13 as the separation. Ditto for photon flux with
+    ~4e-4 and ~3e-5 fluxes.
+
     """
 
     infile = make_data_path('3c273.pi')
@@ -1348,21 +1362,18 @@ def test_sample_foo_flux_bkg(id, make_data_path, clean_astro_ui):
     #   bflux: bgnd gamma, bgnd ampl
     #
     niter = 10
-    aflux = ui.sample_energy_flux(0.5, 7, id=id, num=niter)
+    aflux = method(0.5, 7, id=id, num=niter)
     assert aflux.shape == (niter, 6)
 
-    bflux = ui.sample_energy_flux(0.5, 7, id=id, bkg_id=1, num=niter)
+    bflux = method(0.5, 7, id=id, bkg_id=1, num=niter)
     assert bflux.shape == (niter, 6)
 
-    # expect source flux to be ~8e-13 and background ~1e-13, but it's
-    # random so how easy is this to check. The errors should be much
-    # smaller on amid than bmid, so chose a value closer to 8e-13
-    # than 1e-13 as the check.
+    # Compare the median values to the input values.
     #
     amid = np.median(aflux[:, 0])
     bmid = np.median(bflux[:, 0])
-    assert amid > 6e-13
-    assert bmid < 6e-13
+    assert amid > fluxval
+    assert bmid < fluxval
 
     # check the gamma values: source~2, bgnd~0.7
     #
