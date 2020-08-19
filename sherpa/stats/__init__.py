@@ -288,7 +288,7 @@ class Stat(NoNewAttributesAfterInit):
 
 
 class Likelihood(Stat):
-    """Maximum likelihood function"""
+    """Likelihood functions"""
 
     def __init__(self, name='likelihood'):
         Stat.__init__(self, name)
@@ -341,7 +341,7 @@ class Likelihood(Stat):
 
 
 class Cash(Likelihood):
-    """Maximum likelihood function.
+    """Poisson Log-likelihood function.
 
     Counts are sampled from the Poisson distribution, and so the best
     way to assess the quality of model fits is to use the product of
@@ -413,7 +413,7 @@ class Cash(Likelihood):
 
 
 class CStat(Likelihood):
-    """Maximum likelihood function (XSPEC style).
+    """Poisson Log-likelihood function (XSPEC style).
 
     This is equivalent to the XSPEC implementation of the
     Cash statistic [1]_ except that it requires a model to be fit
@@ -486,7 +486,17 @@ class CStat(Likelihood):
 
 
 class Chi2(Stat):
-    """Chi Squared statistic.
+    """A Gaussian Log-likelihood function.
+
+    It is assumed that the counts are sampled from the Gaussian 
+    (Normal) distribution and so the best way to assess the quality of 
+    model fit is to use the product of individual Gaussian probabilities 
+    computed in each bin i, or the likelihood:
+
+    L = (prod)_i 1/(\sigma^2 sqrt(2 \pi)) exp[(N(i) - M(i))^2/2 sigma(i)^2]
+
+    where M(i) = S(i) +B(i) is the sum of source and background model amplitudes, 
+    and N(i) is the total number of observed counts in bin i.
 
     The chi-square statistic is:
 
@@ -503,9 +513,13 @@ class Chi2(Stat):
     of source model parameter values pS; and sigma(i) is the error in
     bin i.
 
-    N(i,B) is the total number of observed counts in bin i of the
-    off-source region; A(B) is the off-source "area", which could be
-    the size of the region from which the background is extracted, or
+    Note that there are several weightings of this statistics depending
+    on calculation of sigma(i). N(i,S) contains the background counts and 
+    in a case of background subtraction the number of contributing 
+    background counts needs to be estimated from the background, so an 
+    off-source region. In such case, N(i,B) is the total number of observed 
+    counts in bin i of the off-source region; A(B) is the off-source "area", 
+    which could be the size of the region from which the background is extracted, or
     the length of a background time segment, or a product of the two,
     etc.; and A(S) is the on-source "area". These terms may be defined
     for a particular type of data: for example, PHA data sets A(B) to
@@ -613,6 +627,14 @@ class Chi2Gehrels(Chi2):
 
         sigma(i)^2 = sigma(i,S)^2 + [A(S)/A(B)]^2 sigma(i,B)^2
 
+    A(B) is the off-source "area", which could be
+    the size of the region from which the background is extracted, or
+    the length of a background time segment, or a product of the two,
+    etc.; and A(S) is the on-source "area". These terms may be defined
+    for a particular type of data: for example, PHA data sets A(B) to
+    `BACKSCAL * EXPOSURE` from the background data set and A(S) to
+    `BACKSCAL * EXPOSURE` from the source data set.
+
     See Also
     --------
     Chi2DataVar, Chi2ModVar, Chi2XspecVar
@@ -648,9 +670,9 @@ class Chi2ConstVar(Chi2):
     The variance is the same in each bin, and set to be the mean
     number of counts in the data:
 
-        sigma(i)^2 = (1/N) * (sum)_(j=1)^N N(j,S) + [A(S)/A(B)]^2 N(j,B)
+        sigma(i)^2 = (1/K) * (sum)_(j=1)^K N(j,S) + [A(S)/A(B)]^2 N(j,B)
 
-    where N is the number of on-source (and off-source) bins included
+    where K is the number of on-source (and off-source) bins included
     in the fit. The background term appears only if an estimate of the
     background has been subtracted from the data.
 
@@ -681,6 +703,14 @@ class Chi2DataVar(Chi2):
     in the fit. The background term appears only if an estimate of the
     background has been subtracted from the data.
 
+    A(B) is the off-source "area", which could be
+    the size of the region from which the background is extracted, or
+    the length of a background time segment, or a product of the two,
+    etc.; and A(S) is the on-source "area". These terms may be defined
+    for a particular type of data: for example, PHA data sets A(B) to
+    `BACKSCAL * EXPOSURE` from the background data set and A(S) to
+    `BACKSCAL * EXPOSURE` from the source data set.
+
     See Also
     --------
     Chi2Gehrels, Chi2ModVar, Chi2XspecVar
@@ -707,6 +737,14 @@ class Chi2ModVar(Chi2):
 
     where B(i,off) is the background model amplitude in bin i of the
     off-source region.
+
+    A(B) is the off-source "area", which could be
+    the size of the region from which the background is extracted, or
+    the length of a background time segment, or a product of the two,
+    etc.; and A(S) is the on-source "area". These terms may be defined
+    for a particular type of data: for example, PHA data sets A(B) to
+    `BACKSCAL * EXPOSURE` from the background data set and A(S) to
+    `BACKSCAL * EXPOSURE` from the source data set.
 
     See Also
     --------
@@ -830,7 +868,7 @@ class UserStat(Stat):
 
 
 class WStat(Likelihood):
-    """Maximum likelihood function including background (XSPEC style).
+    """Poisson Log-likelihood function including background (XSPEC style).
 
     This is equivalent to the XSPEC implementation of the
     W statistic for CStat [1]_, and includes the background data in
