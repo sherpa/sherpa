@@ -27,7 +27,7 @@ import pytest
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+from sherpa.testing import SherpaTestCase, requires_data, requires_fits
 
 import logging
 logger = logging.getLogger('sherpa')

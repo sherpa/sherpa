@@ -23,7 +23,7 @@ from numpy.testing import assert_allclose, assert_equal
 
 from sherpa import utils
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.testing import SherpaTestCase
 from sherpa.data import Data1D
 from sherpa.models.basic import Gauss1D
 from sherpa.optmethods import LevMar

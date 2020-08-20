@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 
 import pytest
 
-from sherpa.utils.testing import requires_fits
+from sherpa.testing import requires_fits
 
 @requires_fits
 def test_empty():

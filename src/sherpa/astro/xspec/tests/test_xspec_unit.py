@@ -29,7 +29,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_almost_equal
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.testing import requires_data, requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
 
 from sherpa.models.basic import Const1D

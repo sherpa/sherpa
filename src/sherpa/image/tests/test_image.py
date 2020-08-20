@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,7 @@ import sherpa
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
-from sherpa.utils.testing import requires_ds9
+from sherpa.testing import requires_ds9
 
 # Create a rectangular array for the tests just to ensure that
 # there are no issues with Fortran/C order.

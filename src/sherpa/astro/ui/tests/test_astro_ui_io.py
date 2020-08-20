@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 # may be better placed in tests of the sherpa.astro.io module, once that
 # becomes possible
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+from sherpa.testing import SherpaTestCase, requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D

@@ -22,7 +22,7 @@ import numpy
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, \
+from sherpa.testing import requires_data, \
     requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
 

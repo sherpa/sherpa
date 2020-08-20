@@ -24,7 +24,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
 

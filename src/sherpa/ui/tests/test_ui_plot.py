@@ -27,7 +27,7 @@ from sherpa import ui
 from sherpa.plot import DataPlot, FitPlot, ModelPlot
 
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.testing import requires_plotting
+from sherpa.testing import requires_plotting
 
 import pytest
 

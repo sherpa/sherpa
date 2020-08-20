@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2018, 2020 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,14 +17,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
+import numpy
+
+import pytest
 
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
-from sherpa.utils.testing import SherpaTestCase, requires_data
+from sherpa.testing import SherpaTestCase, requires_data
 from sherpa.utils.err import ModelErr
 from sherpa import ui
-import numpy
-import logging
 
 logger = logging.getLogger("sherpa")
 
@@ -65,14 +68,13 @@ class test_new_templates_ui(SherpaTestCase):
         if pmax < pmin:
             (pmin, pmax) = (pmax, pmin)
 
-        tol = 0.001
-        self.assertEqualWithinTol(2023.46, pmin, tol)
-        self.assertEqualWithinTol(2743.47, pmax, tol)
+        assert pmin == pytest.approx(2023.46, abs=0.005)
+        assert pmax == pytest.approx(2743.47, abs=0.005)
 
     def test_load_template_interpolator(self):
         self.run_thread('load_template_interpolator')
         pval = ui.get_fit_results().parvals[0]
-        self.assertEqualWithinTol(2743.91, pval, 0.001)
+        assert pval == pytest.approx(2743.91, abs=0.005)
 
     # TestCase 2 load_template_model with template_interpolator_name=None
     # disables interpolation

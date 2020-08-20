@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from sherpa.utils.testing import requires_fits, requires_stk
+from sherpa.testing import requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model

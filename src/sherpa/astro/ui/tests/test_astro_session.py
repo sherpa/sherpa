@@ -22,7 +22,7 @@ import numpy
 from sherpa.astro.data import DataPHA
 from sherpa.astro.ui.utils import Session
 from sherpa.models import Const1D
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.testing import requires_data, requires_fits
 
 
 # bug #303

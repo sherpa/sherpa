@@ -27,7 +27,7 @@ import pytest
 import numpy as np
 
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.testing import requires_data, requires_fits
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 import sherpa.astro.utils
 

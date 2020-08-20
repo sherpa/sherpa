@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@ import numpy
 import sys
 from sherpa.utils import demuller, bisection, new_muller, apache_muller, \
     zeroin
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.testing import SherpaTestCase
 
 
 def sqr( x, *args ):

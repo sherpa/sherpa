@@ -25,7 +25,7 @@ from pytest import approx
 import pytest
 
 from sherpa.utils import _ncpus
-from sherpa.utils.testing import SherpaTestCase, requires_data, \
+from sherpa.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
@@ -261,8 +261,7 @@ class test_threads(SherpaTestCase):
     @requires_fits
     def test_spatial(self):
         self.run_thread('spatial')
-        self.assertEqualWithinTol(ui.get_fit_results().statval,
-                                  -59229.749441, 1e-4)
+        assert ui.get_fit_results().statval == approx(-59229.749441, rel=1e-4)
         assert self.locals['g1'].fwhm.val == approx(61.5615, rel=1e-4)
         assert self.locals['g1'].xpos.val == approx(4070.45, rel=1e-4)
         assert self.locals['g1'].ypos.val == approx(4251.35, rel=1e-4)
@@ -724,16 +723,11 @@ class test_threads(SherpaTestCase):
     @requires_fits
     def test_lev3fft(self):
         self.run_thread('lev3fft', scriptname='bar.py')
-        self.assertEqualWithinTol(self.locals['src'].fwhm.val,
-                                  0.0442234, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].xpos.val,
-                                  150.015, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].ypos.val,
-                                  2.66494, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].ampl.val,
-                                  1.56384, 1e-4)
-        self.assertEqualWithinTol(self.locals['bkg'].c0.val,
-                                  -1.51662, 1e-4)
+        assert self.locals['src'].fwhm.val == approx(0.0442234)  # , abs=1e-4)
+        assert self.locals['src'].xpos.val == approx(150.015)  # , abs=1e-4)
+        assert self.locals['src'].ypos.val == approx(2.66494)  # , abs=1e-4)
+        assert self.locals['src'].ampl.val == approx(1.56384, rel=1e-4)  # , abs=1e-4)
+        assert self.locals['bkg'].c0.val == approx(-1.51662, rel=1e-4)  # , abs=1e-4)
 
         fres = ui.get_fit_results()
         assert fres.istatval == approx(19496.3, rel=1e-4)

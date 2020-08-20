@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 
 import numpy
 from sherpa.estmethods import Covariance, Projection
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.testing import SherpaTestCase
 
 
 # Test data arrays -- together this makes a line best fit with a

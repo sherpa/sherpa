@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@ from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
 from sherpa import sim
 
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.testing import SherpaTestCase
 
 
 _max  = numpy.finfo(numpy.float32).max

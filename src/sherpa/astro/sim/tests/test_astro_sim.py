@@ -22,7 +22,7 @@ import logging
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import sim
 
 from sherpa.astro.instrument import Response1D

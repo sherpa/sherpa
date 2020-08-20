@@ -23,7 +23,7 @@ import warnings
 from sherpa.fit import Fit
 from sherpa.data import Data1DAsymmetricErrs
 from sherpa.optmethods import LevMar
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+from sherpa.testing import SherpaTestCase, requires_data, requires_fits
 from sherpa.models import PowLaw1D
 from sherpa.stats import Chi2Gehrels
 from sherpa.estmethods import Covariance

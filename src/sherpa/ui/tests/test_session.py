@@ -22,7 +22,7 @@ There is a copy of this test in sherpa/ui/astro/tests/ that needs
 to be kept up to date.
 """
 
-from sherpa.utils.testing import requires_plotting, requires_xspec
+from sherpa.testing import requires_plotting, requires_xspec
 from sherpa.ui.utils import Session
 from numpy.testing import assert_array_equal
 from sherpa.models import parameter

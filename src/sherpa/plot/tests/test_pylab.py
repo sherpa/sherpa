@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_pylab
+from sherpa.testing import requires_pylab
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D
 from sherpa.stats import Chi2DataVar

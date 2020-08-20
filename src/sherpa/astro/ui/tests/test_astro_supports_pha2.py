@@ -35,7 +35,7 @@ import pytest
 
 import numpy as np
 
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.testing import requires_data, requires_fits
 from sherpa.utils.err import IdentifierErr
 
 from sherpa.astro import ui

@@ -24,7 +24,7 @@ from numpy import arange
 import pytest
 
 from sherpa.utils import SherpaFloat
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.testing import SherpaTestCase
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
     BinaryOpParameter, ConstantParameter, hugeval
 from sherpa.utils.err import ParameterErr

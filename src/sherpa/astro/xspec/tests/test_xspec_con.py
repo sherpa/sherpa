@@ -23,7 +23,7 @@ from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
+from sherpa.testing import requires_xspec, requires_data, requires_fits
 from sherpa.data import Data1DInt
 from sherpa.models.basic import Box1D, Const1D, PowLaw1D
 from sherpa.models.parameter import Parameter

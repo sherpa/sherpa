@@ -20,7 +20,7 @@ import pytest
 import numpy
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box
-from sherpa.utils.testing import requires_data
+from sherpa.testing import requires_data
 from numpy.testing import assert_almost_equal, assert_array_equal, \
     assert_array_almost_equal
 

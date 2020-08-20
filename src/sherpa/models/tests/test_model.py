@@ -21,7 +21,7 @@ import logging
 import operator
 import numpy
 import warnings
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.testing import SherpaTestCase
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     BinaryOpModel, FilterModel, NestedModel, UnaryOpModel

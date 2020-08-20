@@ -21,7 +21,7 @@ import unittest
 from tempfile import NamedTemporaryFile
 
 from sherpa.astro import ui
-from sherpa.utils.testing import has_package_from_list
+from sherpa.testing import has_package_from_list
 from numpy.testing import assert_almost_equal
 import logging
 import sys

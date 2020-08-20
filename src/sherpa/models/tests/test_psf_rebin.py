@@ -1,4 +1,4 @@
-# Copyright 2018 Smithsonian Astrophysical Observatory
+# Copyright 2018, 2020 Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
@@ -25,7 +25,7 @@ from pytest import approx
 
 from sherpa.models import Const2D
 from sherpa.astro.ui.utils import Session
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.testing import requires_data, requires_fits
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@ If we want to do this then some way of factoring out the common
 code and tests is likely needed.
 """
 
-from sherpa.utils.testing import requires_plotting
+from sherpa.testing import requires_plotting
 from sherpa.astro.ui.utils import Session
 from numpy.testing import assert_array_equal
 

@@ -1,6 +1,6 @@
 
 #
-#  Copyright (C) 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 
 import numpy
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits,\
+from sherpa.testing import SherpaTestCase, requires_data, requires_fits,\
     requires_xspec
 
 from sherpa.models import Polynom1D, SimulFitModel

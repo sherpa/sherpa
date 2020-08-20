@@ -30,7 +30,7 @@ import pytest
 import numpy
 from numpy.testing import assert_allclose
 
-from sherpa.utils.testing import requires_data, requires_fits, \
+from sherpa.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
 from sherpa.utils.err import DataErr, IdentifierErr, StatErr
 from sherpa.astro import ui

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,9 +31,9 @@ def test_decorator_exception_when_pytest_is_absent(monkeypatch):
     """
     import sys
     monkeypatch.setitem(sys.modules, 'pytest', None)
-    importlib.reload(sherpa.utils.testing)
+    importlib.reload(sherpa.testing)
 
-    from sherpa.utils import testing
+    from sherpa import testing
 
     @testing.requires_data
     def foo():
@@ -91,4 +91,4 @@ def assert_decorated_function(function):
     with pytest.raises(ImportError) as excinfo:
         function()
 
-    assert sherpa.utils.testing.PYTEST_MISSING_MESSAGE == str(excinfo.value)
+    assert sherpa.testing.PYTEST_MISSING_MESSAGE == str(excinfo.value)

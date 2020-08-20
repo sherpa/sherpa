@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,7 @@ from sherpa.fit import Fit
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
+from sherpa.testing import requires_xspec, requires_data, requires_fits
 
 try:
     from sherpa.astro.xspec import XSconstant

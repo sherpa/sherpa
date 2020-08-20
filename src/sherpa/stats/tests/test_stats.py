@@ -21,7 +21,7 @@
 import numpy
 import pytest
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, \
+from sherpa.testing import SherpaTestCase, requires_data, \
     requires_xspec, requires_fits
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA

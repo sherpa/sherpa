@@ -38,7 +38,7 @@ from sherpa.astro.plot import ARFPlot, BkgDataPlot, ModelHistogram, \
     SourcePlot
 
 from sherpa.utils.err import IdentifierErr
-from sherpa.utils.testing import requires_data, requires_fits, \
+from sherpa.testing import requires_data, requires_fits, \
     requires_plotting, requires_pylab, requires_xspec
 
 import pytest

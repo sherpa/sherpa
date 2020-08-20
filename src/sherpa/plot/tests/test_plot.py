@@ -27,7 +27,7 @@ import sherpa.all as sherpa
 from sherpa.astro.ui.utils import Session
 from sherpa.models import Const1D
 from sherpa.data import Data1DInt
-from sherpa.utils.testing import requires_data, requires_plotting
+from sherpa.testing import requires_data, requires_plotting
 
 _datax = numpy.array(
     [  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,

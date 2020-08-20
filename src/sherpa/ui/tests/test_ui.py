@@ -26,7 +26,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data
+from sherpa.testing import requires_data
 from sherpa.data import Data1D
 from sherpa.fit import Fit
 from sherpa.stats import LeastSq

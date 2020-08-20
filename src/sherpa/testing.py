@@ -17,20 +17,82 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Testing of Sherpa."""
+
+import logging
 import unittest
 import os
 import importlib
 
-import numpy
+import pkg_resources
 
-from sherpa.datadir import get_datadir
-from sherpa.utils._utils import sao_fcmp
+import numpy
 
 try:
     import pytest
     HAS_PYTEST = True
 except ImportError:
     HAS_PYTEST = False
+
+
+warning = logging.getLogger(__name__).warning
+
+
+# I am not convinced the conversion from __file__ access to
+# pkg_resources is correct here. Using __file__ is frowned upon,
+# hence the change, and as we can not assume Python 3.7 or later
+# at the moment we can not use importlib_resources.
+#
+def _get_datadir():
+    """Setup the location of the Sherpa test data, if installed."""
+
+    try:
+        import sherpatest
+        datadir = pkg_resources.resource_filename('sherpatest', '')
+
+    except ImportError:
+        try:
+            import sherpa
+            datadir = pkg_resources.resource_filename('sherpa', '')
+            datadir = os.path.join(datadir, os.pardir,
+                                   'sherpa-test-data', 'sherpatest')
+        except ImportError:
+            # neither sherpatest nor sherpa can be found, falling back to None
+            datadir = None
+
+    # Check the directory exists
+    if datadir is None or not os.path.exists(datadir) or not os.listdir(datadir):
+        return None
+
+    return datadir
+
+
+DATADIR = _get_datadir()
+
+
+def get_datadir():
+    """Return the location of the Sherpa test data.
+
+    The data directory is determined either by the existance of the
+    sherpatest module, sherpa-test-directory submodule, or
+    by being set manually with set_datadir.
+    """
+
+    return DATADIR
+
+
+def set_datadir(dname):
+    """Set the location of the Sherpa test data.
+
+    """
+
+    global DATADIR
+    if not os.path.exists(dname) or not os.listdir(dname):
+        warning("Unable to set the datadir to {}".format(dname))
+        dname = None
+
+    DATADIR = dname
+    SherpaTestCase.datadir = dname
 
 
 class SherpaTestCase(unittest.TestCase):
@@ -81,27 +143,8 @@ class SherpaTestCase(unittest.TestCase):
 
         """
 
-        self.assertFalse(numpy.any(sao_fcmp(first, second, tol)), msg)
-
-    def assertNotEqualWithinTol(self, first, second, tol=1e-7, msg=None):
-        """Check that the values are not equal within an absolute tolerance.
-
-        Parameters
-        ----------
-        first : number or array_like
-           The expected value, or values.
-        second : number or array_like
-           The value, or values, to check. If first is an array, then
-           second must be an array of the same size. If first is
-           a scalar then second can be a scalar or an array.
-        tol : number
-           The absolute tolerance used for comparison.
-        msg : string
-           The message to display if the check fails.
-
-        """
-
-        self.assertTrue(numpy.all(sao_fcmp(first, second, tol)), msg)
+        assert second == pytest.approx(first, abs=tol)
+        # self.assertTrue(check, msg)
 
     # for running regression tests from sherpa-test-data
     def run_thread(self, name, scriptname='fit.py'):

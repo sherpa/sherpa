@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,7 @@ from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.testing import requires_data, requires_fits
 from sherpa.utils.err import IOErr
 from sherpa.astro.data import DataPHA, DataRosatRMF
 

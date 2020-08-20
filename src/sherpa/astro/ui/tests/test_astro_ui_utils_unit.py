@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@ import pytest
 # from numpy.testing import assert_almost_equal
 
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.testing import requires_data, requires_fits, requires_xspec
 
 tmpdir = tempfile.gettempdir()
 

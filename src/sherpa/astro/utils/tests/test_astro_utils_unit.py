@@ -22,7 +22,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.utils import filter_resp, range_overlap_1dint
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.testing import requires_data, requires_fits
 
 
 # See https://github.com/sherpa/sherpa/issues/405
