@@ -25,7 +25,7 @@ from numpy import VisibleDeprecationWarning
 
 import pytest
 
-from sherpa.utils.testing import get_datadir, set_datadir
+from sherpa.datadir import get_datadir, set_datadir
 
 try:
     from astropy.io.fits.verify import VerifyWarning
