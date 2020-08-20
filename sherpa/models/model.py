@@ -122,6 +122,9 @@ class Model(NoNewAttributesAfterInit):
 
     """
 
+    ndim = None
+    "The dimensionality of the model, if defined, or None."
+
     def __init__(self, name, pars=()):
         self.name = name
         self.type = self.__class__.__name__.lower()
@@ -370,7 +373,19 @@ class CompositeModel(Model):
     def __init__(self, name, parts):
         self.parts = tuple(parts)
         allpars = []
+        model_with_dim = None
         for part in self.parts:
+
+            ndim = part.ndim
+            if ndim is not None:
+                if self.ndim is None:
+                    self.ndim = ndim
+                    model_with_dim = part
+                elif self.ndim != ndim:
+                    raise ModelErr('Models do not match: ' +
+                                   '{}D ({}) and '.format(self.ndim, model_with_dim.name) +
+                                   '{}D ({})'.format(ndim, part.name))
+
             for p in part.pars:
                 if p in allpars:
                     # If we already have a reference to this parameter, store
@@ -471,8 +486,29 @@ class ArithmeticConstantModel(Model):
         if name is None:
             name = str(val)
         self.name = name
-        self.val = SherpaFloat(val)
+        self.val = val
+
+        # val has to be a scalar or 1D array, even if used with a 2D
+        # model, due to the way model evaluation works, so as we
+        # can't easily define the dimensionality of this model, we
+        # remove any dimensionality checking for this class.
+        #
+        self.ndim = None
+
         Model.__init__(self, self.name)
+
+    def _get_val(self):
+        return self._val
+
+    def _set_val(self, val):
+        val = SherpaFloat(val)
+        if val.ndim > 1:
+            raise ModelErr('The constant must be a scalar or 1D, not 2D')
+
+        self._val = val
+
+    val = property(_get_val, _set_val,
+                   doc='The constant value (scalar or 1D).')
 
     def startup(self, cache=False):
         pass
@@ -563,6 +599,11 @@ class ArithmeticModel(Model):
 
 
 class RegriddableModel1D(ArithmeticModel):
+    """Allow 1D models to be regridded."""
+
+    ndim = 1
+    "The dimensionality of the model, if defined, or None."
+
     def regrid(self, *arrays, **kwargs):
         """
         The class RegriddableModel1D allows the user to evaluate in the
@@ -588,6 +629,11 @@ class RegriddableModel1D(ArithmeticModel):
 
 
 class RegriddableModel2D(ArithmeticModel):
+    """Allow 2D models to be regridded."""
+
+    ndim = 2
+    "The dimensionality of the model, if defined, or None."
+
     def regrid(self, *arrays):
         eval_space = EvaluationSpace2D(*arrays)
         regridder = ModelDomainRegridder2D(eval_space)
@@ -618,6 +664,7 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
+
         CompositeModel.__init__(self,
                                 ('(%s %s %s)' %
                                  (self.lhs.name, opstr, self.rhs.name)),

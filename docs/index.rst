@@ -3,7 +3,7 @@
 .. raw:: html
 
     <style media="screen" type="text/css">h1 { display: none; }</style>
-   
+
 Welcome to Sherpa's documentation
 =================================
 
@@ -32,7 +32,7 @@ range of statistics and robust optimisers.
    "SHERPA" for hyperparameter tuning of machine learning models
    go here:
    https://parameter-sherpa.readthedocs.io/
-   
+
 
 Sherpa is released under the
 `GNU General Public License v3.0
@@ -41,7 +41,7 @@ and is compatible with Python versions 3.5, 3.6, and 3.7.
 It is expected that it will work with Python 3.8 but testing has been
 limited.
 Information on recent releases and citation information for
-Sherpa is available using the Digital Object Identifier (DOI) 
+Sherpa is available using the Digital Object Identifier (DOI)
 `10.5281/zenodo.593753 <https://doi.org/10.5281/zenodo.593753>`_.
 
 The last version of Sherpa compatible with Python 2.7 was the
@@ -93,8 +93,7 @@ The last version of Sherpa compatible with Python 2.7 was the
    :name: help_docs
 
    bugs
-   development
+   developer/index
    indices
-      
-At present there is no developer mailing list for Sherpa.
 
+At present there is no developer mailing list for Sherpa.

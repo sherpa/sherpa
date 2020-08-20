@@ -26,8 +26,11 @@ import numpy as np
 
 import pytest
 
+from sherpa.astro.ui.utils import Session
 from sherpa.models import basic
-from sherpa.models.model import BinaryOpModel, UnaryOpModel
+from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, UnaryOpModel
+from sherpa.utils.err import ModelErr
+from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
 
 def test_basic_unop_neg_raw():
@@ -37,6 +40,7 @@ def test_basic_unop_neg_raw():
 
     assert mdl.name == '<->(polynom2d)'
     assert mdl.op == np.negative
+    assert mdl.ndim == 2
 
 
 def test_basic_unop_neg():
@@ -46,6 +50,7 @@ def test_basic_unop_neg():
 
     assert mdl.name == '-(polynom2d)'
     assert mdl.op == np.negative
+    assert mdl.ndim == 2
 
 
 def test_basic_unop_abs_raw():
@@ -55,6 +60,7 @@ def test_basic_unop_abs_raw():
 
     assert mdl.name == 'foo(polynom2d)'
     assert mdl.op == np.absolute
+    assert mdl.ndim == 2
 
 
 def test_basic_unop_abs():
@@ -64,6 +70,7 @@ def test_basic_unop_abs():
 
     assert mdl.name == 'abs(polynom2d)'
     assert mdl.op == np.absolute
+    assert mdl.ndim == 2
 
 
 @pytest.mark.parametrize("op", [np.add, np.multiply, np.subtract, np.divide,
@@ -81,6 +88,7 @@ def test_basic_binop_raw(op):
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
+    assert mdl.ndim == 2
 
 
 @pytest.mark.parametrize("op,opstr",
@@ -100,6 +108,7 @@ def test_basic_binop(op, opstr):
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
+    assert mdl.ndim == 2
 
 
 def test_eval_op():
@@ -119,6 +128,7 @@ def test_eval_op():
     m3.xhi = 6
 
     mdl = m1 + 2 * (m2 + (-m3))
+    assert mdl.ndim == 1
 
     expected_m1 = 10 * np.ones(5)
     expected_m2 = 5 + np.asarray(x)
@@ -141,6 +151,7 @@ def test_combine_models1d():
     #
     mdl *= 2
     assert isinstance(mdl, BinaryOpModel)
+    assert mdl.ndim == 1
 
     # Check we can call it as a 1D model; there is minimal checks
     # of the response.
@@ -164,6 +175,7 @@ def test_combine_models2d():
     #
     mdl *= 2
     assert isinstance(mdl, BinaryOpModel)
+    assert mdl.ndim == 2
 
     # Check we can call it as a 2D model; there is minimal checks
     # of the response.
@@ -182,12 +194,69 @@ def test_combine_models_1d_2d():
 
     m1 = basic.Box1D()
     m2 = basic.Box2D()
-    mdl = m1 + m2
 
-    assert isinstance(mdl, BinaryOpModel)
+    with pytest.raises(ModelErr) as exc:
+        m1 + m2
 
-    # You can evaluate this, and has some sense, but it
-    # unlikely to be what anyone wants.
-    #
-    y = mdl([1, 2, 3, 4, 5], [-5, -4, -3, -2, -1])
-    assert y.shape == (5, )
+    assert str(exc.value) == 'Models do not match: 1D (box1d) and 2D (box2d)'
+
+
+@pytest.mark.parametrize("val", [2, [1, 3, 4]])
+def test_arithmeticconstantmodel(val):
+    """Does ArithmeticConstantModel handle ndim?
+
+    With the current design we can not distinguish the model
+    dimensionality from the value to be wrapped, so ndim is
+    set to None for all arguments.
+    """
+
+    mdl = ArithmeticConstantModel(val)
+    assert mdl.ndim is None
+
+
+def test_arithmeticconstantmodel_dimerr():
+
+    x = np.ones(6).reshape(2, 3)
+    with pytest.raises(ModelErr) as exc:
+        ArithmeticConstantModel(x)
+
+    assert str(exc.value) == 'The constant must be a scalar or 1D, not 2D'
+
+
+@requires_xspec
+def test_xspec_expression():
+    """Check we can enforce XSPEC expressions"""
+
+    from sherpa.astro import xspec
+
+    # pick an additive and multiplicative model
+    a1 = xspec.XSpowerlaw()
+    m1 = xspec.XSwabs()
+
+    m = 2 * (a1 + m1)
+
+    assert a1.ndim == 1
+    assert m1.ndim == 1
+    assert m.ndim == 1
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_instrument_model(make_data_path):
+    """Check the full response model"""
+
+    from sherpa.astro import xspec
+
+    s = Session()
+    s.load_pha(make_data_path('3c273.pi'))
+
+    a1 = xspec.XSpowerlaw()
+    m1 = xspec.XSwabs()
+
+    s.set_source(m1 * a1)
+
+    src = s.get_source()
+    mdl = s.get_model()
+    assert src.ndim == 1
+    assert mdl.ndim == 1

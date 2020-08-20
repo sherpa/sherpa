@@ -31,7 +31,7 @@ Install from source in conda
 ============================
 
 Conda can be used to install all the dependencies for Sherpa.
- 
+
 ::
 
     conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ds9 astropy ciao
@@ -393,3 +393,41 @@ them).
       New models should be added to both the ``Classes`` rubric - sorted
       by addtive and then multiplicative models, using an alphabetical
       sorting - and to the appropriate ``inheritance-diagram`` rule.
+
+Notes
+=====
+
+Notes on the design and changes to Sherpa.
+
+.. _model_dimensions:
+
+The dimensionality of models
+----------------------------
+
+Originally the Sherpa model class did not enforce any requirement on
+the models, so it was possible to combine 1D and 2D models, even though
+the results are unlikely to make sense. With the start of the regrid
+support, added in `PR #469 <https://github.com/sherpa/sherpa/pull/469>`_,
+the class hierarchy included 1D- and 2D- specific classes, but there
+was still no check on model expressions. This section describes the
+current way that models are checked:
+
+- the :py:class:`sherpa.models.model.Model` class defines a
+  :py:attr:`sherpa.models.model.Model.ndim` attribute, which is set
+  to ``None`` by default.
+- the :py:class:`sherpa.models.model.RegriddableModel1D` and
+  :py:class:`sherpa.models.model.RegriddableModel2D` classes set
+  this attribute to 1 or 2, respectively (most user-callable classes
+  are derived from one of these two classes).
+- the :py:class:`sherpa.models.model.CompositeModel` class checks
+  the ``ndim`` attribute for the components it is given (the
+  ``parts`` argument) and checks that they all have the same
+  ``ndim`` value (ignoring those models whose dimensionality
+  is set to ``None``). If there is a mis-match then a
+  :py:class:`sherpa.utils.err.ModelErr` is raised.
+
+An alternative approach would have been to introdude 1D and 2D
+specific classes, from which all models derive, and then require the
+parent classes to match. This was not attempted as it would require
+significantly-larger changes to Sherpa (but this change could still be
+made in the future).
