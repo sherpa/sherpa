@@ -602,7 +602,7 @@ class RegriddableModel1D(ArithmeticModel):
     """Allow 1D models to be regridded."""
 
     ndim = 1
-    "The dimensionality of the model, if defined, or None."
+    "A one-dimensional model."
 
     def regrid(self, *arrays, **kwargs):
         """
@@ -632,7 +632,7 @@ class RegriddableModel2D(ArithmeticModel):
     """Allow 2D models to be regridded."""
 
     ndim = 2
-    "The dimensionality of the model, if defined, or None."
+    "A two-dimensional model."
 
     def regrid(self, *arrays):
         eval_space = EvaluationSpace2D(*arrays)

@@ -260,3 +260,18 @@ def test_instrument_model(make_data_path):
     mdl = s.get_model()
     assert src.ndim == 1
     assert mdl.ndim == 1
+
+
+@requires_data
+@requires_fits
+def test_load_table_model(make_data_path):
+    """What does load_table_model do?
+
+    Even though this is not a FITS file, the code appears to
+    need the I/O module to work.
+    """
+
+    s = Session()
+    s.load_table_model('tbl', make_data_path('double.dat'))
+    tbl = s.get_model_component('tbl')
+    assert tbl.ndim is None
