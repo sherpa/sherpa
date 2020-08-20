@@ -572,19 +572,6 @@ class RegriddableModel(ArithmeticModel):
     def regrid(self, *args, **kwargs):
         raise NotImplementedError
 
-    def regrid1D(self, *args, **kwargs):
-        self.check_regrid_kwargs(**kwargs)
-        eval_space = EvaluationSpace1D(*args)
-        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
-        regridder._make_and_validate_grid(args)
-        return regridder.apply_to(self)
-
-    def regrid2D(self, *args, **kwargs):
-        self.check_regrid_kwargs(**kwargs)
-        eval_space = EvaluationSpace2D(*args)
-        regridder = ModelDomainRegridder2D(eval_space)
-        return regridder.apply_to(self)
-
 
 class RegriddableModel1D(RegriddableModel):
     def regrid(self, *args, **kwargs):
@@ -601,12 +588,20 @@ class RegriddableModel1D(RegriddableModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        return self.regrid1D(*args, **kwargs)
+        self.check_regrid_kwargs(**kwargs)
+        eval_space = EvaluationSpace1D(*args)
+        regridder = ModelDomainRegridder1D(eval_space, **kwargs)
+        regridder._make_and_validate_grid(args)
+        return regridder.apply_to(self)
 
 
 class RegriddableModel2D(RegriddableModel):
     def regrid(self, *args, **kwargs):
-        return self.regrid2D(*args, **kwargs)
+        self.check_regrid_kwargs(**kwargs)
+        eval_space = EvaluationSpace2D(*args)
+        regridder = ModelDomainRegridder2D(eval_space)
+        return regridder.apply_to(self)
+
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
 
@@ -639,13 +634,13 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 
     def regrid(self, *args, **kwargs):
         for part in self.parts:
-            if isinstance(part, RegriddableModel1D):
-                return self.regrid1D(*args, **kwargs)
-            elif isinstance(part, RegriddableModel2D):
-                return self.regrid2D(*args, **kwargs)
-            else:
-                raise NotImplementedError('unknown class type')
-
+            # ArithmeticConstantModel does not support regrid by design
+            if not hasattr(part, 'regrid'):
+                continue
+            # The full model expression must be used
+            return part.__class__.regrid(self, *args, **kwargs)
+        raise ModelErr('Neither component supports regrid method')
+    
     def startup(self, cache=False):
         self.lhs.startup(cache)
         self.rhs.startup(cache)
