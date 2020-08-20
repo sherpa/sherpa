@@ -431,3 +431,48 @@ specific classes, from which all models derive, and then require the
 parent classes to match. This was not attempted as it would require
 significantly-larger changes to Sherpa (but this change could still be
 made in the future).
+
+.. _model_combination:
+
+Combining model expressions
+---------------------------
+
+Models can be combined in several ways (for models derived from the
+:py:class:`sherpa.models.model.ArithmeticModel` class):
+
+- a unary operator, taking advantage of the ``__neg__`` and
+  ``__abs__`` special methods of a class;
+- a binary operator, using the ``__add__``, ``__sub__``, ``__mul__``,
+  ``__div__``, ``__floordiv__``, ``__truediv__``, ``__mod__`` and ``__pow__``
+  methods.
+
+This allows models such as::
+
+    sherpa.models.basic.Polynom1D('continuum') + sherpa.models.basic.Gauss1D('line')
+
+to be created, and relies on the :py:class:`sherpa.models.model.UnaryOpModel`
+and :py:class:`sherpa.models.model.BinaryOpModel` classes.
+
+The :py:class:`~sherpa.models.model.BinaryOpModel` class has special-case handling
+for values that are not a model expression (i.e. that do not derive
+from the :py:class:`~sherpa.models.model.ArithmeticModel` class),
+such as::
+
+    32424.43 * sherpa.astro.xspec.XSpowerlaw('pl')
+
+In this case the term ``32424.43`` is converted to an
+:py:class:`~sherpa.models.model.ArithmeticConstantModel` instance and then
+combined with the remaining model instance (``XSpowerlaw``).
+
+For those models that require the
+full set of elements, such as multiplication by a :term:RMF or a convolution
+kernel, requires creating a model that can "wrap" another
+model. The wrapping model will evaluate the wrapped model on
+the requested grid, and then apply any modifications.
+Examples include the
+:py:class:`sherpa.instrument.PSFModel` class,
+which creats :py:class:`sherpa.instrument.ConvolutionModel`
+instances,
+and the :py:class:`sherpa.astro.xspec.XSConvolutionKernel`
+class, which creates :py:class:`sherpa.astro.xspec.XSConvolutionModel`
+instances.
