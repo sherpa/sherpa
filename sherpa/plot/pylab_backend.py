@@ -20,7 +20,10 @@
 # Although this is labelled pylab mode, use the pyplot interface
 # (for the functionlity used here, they are the same).
 #
+import logging
+
 import numpy
+
 from matplotlib import pyplot as plt
 
 from sherpa.utils import get_keyword_defaults
@@ -42,6 +45,8 @@ __all__ = ('clear_window','point','plot','histo','contour','set_subplot','init',
            'get_latex_for_string', 'name')
 
 name = 'pylab'
+
+logger = logging.getLogger(__name__)
 
 
 def init():
@@ -209,13 +214,13 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           xlog=False,
           ylog=False,
           linestyle='solid',
-          linecolor=None,  # THIS IS NOT USED
           drawstyle='default',
           color=None,
           alpha=None,
           marker='None',
           markerfacecolor=None,
-          markersize=None):
+          markersize=None,
+          linecolor=None):
     """Draw histogram data.
 
     The histogram is drawn as horizontal lines connecting the
@@ -235,6 +240,9 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     plot could be relevant here.
 
     """
+
+    if linecolor is not None:
+        logger.warning("The linecolor attribute ({}) is unused.".format(linecolor))
 
     # Draw the data as a histogram, manually creating the lines
     # from the low to high edge of each bin. An alternative
@@ -276,7 +284,6 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
                 ecolor=ecolor, capsize=capsize, barsabove=barsabove,
                 xlog=xlog, ylog=ylog,
                 linestyle=linestyle,
-                linecolor=linecolor,
                 drawstyle=drawstyle,
                 color=color, marker=None, alpha=alpha,
                 xaxis=False, ratioline=False)
@@ -388,7 +395,6 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          xlog=False,
          ylog=False,
          linestyle='solid',
-         linecolor=None,
          drawstyle='default',
          color=None,
          marker='None',
@@ -396,7 +402,16 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          markersize=None,
          alpha=None,
          xaxis=False,
-         ratioline=False):
+         ratioline=False,
+         linecolor=None):
+    """Draw x,y data.
+
+    Note that the linecolor is not used, and is only included
+    to support old code that may have set this option.
+    """
+
+    if linecolor is not None:
+        logger.warning("The linecolor attribute, set to {}, is unused.".format(linecolor))
 
     axes = setup_axes(overplot, clearwindow)
 
@@ -650,7 +665,6 @@ get_component_histo_defaults = get_model_histo_defaults
 
 def get_cdf_plot_defaults():
     d = get_model_plot_defaults()
-    d['linecolor'] = 'red'
     return d
 
 

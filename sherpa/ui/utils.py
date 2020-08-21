@@ -10564,10 +10564,6 @@ class Session(NoNewAttributesAfterInit):
         ``ecolor``
            The color to draw error bars. The default is ``None``.
 
-        ``linecolor``
-           What color to use for the line connecting the data points.
-           The default is ``None``.
-
         ``linestyle``
            How should the line connecting the data points be drawn.
            The default is 'None', which means no line is drawn.

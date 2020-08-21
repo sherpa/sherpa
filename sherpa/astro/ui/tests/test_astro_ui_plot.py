@@ -1056,7 +1056,7 @@ def test_img_contour(clean_astro_ui, basic_img, plotfunc):
 @requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
+def test_pha1_plot_data_options(caplog, clean_astro_ui, basic_pha1):
     """Test that the options have changed things, where easy to do so"""
 
     from matplotlib import pyplot as plt
@@ -1077,6 +1077,8 @@ def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
 
     prefs['color'] = 'orange'
 
+    # linecolor is unused, but check we can set it as existing code
+    # may reference it.
     prefs['linecolor'] = 'brown'
     prefs['linestyle'] = '-.'
 
@@ -1084,7 +1086,18 @@ def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
     prefs['markerfacecolor'] = 'cyan'
     prefs['markersize'] = 10
 
-    ui.plot_data()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.plot_data()
+
+    # check for linecolor warning
+    assert len(caplog.record_tuples) == 1
+    rec = caplog.record_tuples[0]
+    assert len(rec) == 3
+    loc, lvl, msg = rec
+
+    assert loc == 'sherpa.plot.pylab_backend'
+    assert lvl == logging.WARNING
+    assert msg == 'The linecolor attribute, set to brown, is unused.'
 
     ax = plt.gca()
     assert ax.get_xscale() == 'log'
@@ -1185,6 +1198,8 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
 
     prefs['color'] = 'green'
 
+    # linecolor is unused, but check we can set it as existing code
+    # may reference it.
     prefs['linecolor'] = 'red'
     prefs['linestyle'] = 'dashed'
 
