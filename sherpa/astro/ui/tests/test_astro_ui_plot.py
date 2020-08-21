@@ -1209,22 +1209,29 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
     # platform/backend differences. Let's see how pytest.approx works
     #
     xmin, xmax = ax.get_xlim()
-    assert xmin == pytest.approx(0.40770789163447285)
-    assert xmax == pytest.approx(11.477975806572461)
+    assert xmin == pytest.approx(0.4011095556520917)
+    assert xmax == pytest.approx(11.495805328091725)
 
     ymin, ymax = ax.get_ylim()
     assert ymin == pytest.approx(-0.00045772936258082011, rel=0.01)
     assert ymax == pytest.approx(0.009940286575890335, rel=0.01)
 
-    assert len(ax.lines) == 1
-    line = ax.lines[0]
+    assert len(ax.lines) == 2
 
     # Apparently color wins out over linecolor
+    line = ax.lines[0]
     assert line.get_color() == 'green'
     assert line.get_linestyle() == '--'  # note: input was dashed
-    assert line.get_marker() == '*'
-    assert line.get_markerfacecolor() == 'yellow'
-    assert line.get_markersize() == pytest.approx(8.0)
+    assert line.get_marker() == 'None'
+    assert line.get_markerfacecolor() == 'green'
+    assert line.get_markersize() == pytest.approx(6.0)
+
+    pts = ax.lines[1]
+    assert pts.get_color() == 'green'
+    assert pts.get_linestyle() == 'None'
+    assert pts.get_marker() == '*'
+    assert pts.get_markerfacecolor() == 'yellow'
+    assert pts.get_markersize() == pytest.approx(8.0)
 
     assert len(ax.collections) == 0
 
@@ -1287,7 +1294,7 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     assert line.get_markersize() == pytest.approx(10.0)
     assert line.get_alpha() == pytest.approx(0.7)
 
-    # MODEL
+    # MODEL - line
     #
     line = ax.lines[1]
     assert line.get_color() != 'green'  # option over-ridden
@@ -2200,6 +2207,8 @@ def test_data1d_plot_model(cls, plottype, extraargs, title):
     assert ax.get_title() == title
 
     assert len(ax.lines) == 1
+
+    # The line
     line = ax.lines[0]
     assert line.get_xdata().size == 5
 

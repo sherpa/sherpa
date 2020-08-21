@@ -1655,10 +1655,10 @@ def test_plot_pdf_replot_no_data(session):
     x = np.asarray([2, 8, 4, 6])
 
     # check on the error so we know when the code has changed
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(AttributeError) as exc:
         s.plot_pdf(x, replot=True)
 
-    assert str(exc.value) == "unsupported operand type(s) for +: 'NoneType' and 'NoneType'"
+    assert str(exc.value) == "'NoneType' object has no attribute 'size'"
 
 
 @requires_pylab
@@ -1685,14 +1685,22 @@ def test_plot_pdf_replot(session):
 
     assert ax.xaxis.get_label().get_text() == 'fo'
 
-    assert len(ax.lines) == 1
+    assert len(ax.lines) == 2
     line = ax.lines[0]
+
+    x = np.asarray([1, 1.8, 1.8, 2.6, 2.6, 3.4, 3.4, 4.2, 4.2, 5])
+    y = np.repeat([0.3125, 0.3125, 0.3125, 0, 0.3125], 2)
+
+    assert line.get_xdata() == pytest.approx(x)
+    assert line.get_ydata() == pytest.approx(y)
+
+    pts = ax.lines[1]
 
     x = np.asarray([1.4, 2.2, 3, 3.8, 4.6])
     y = np.asarray([0.3125, 0.3125, 0.3125, 0, 0.3125])
 
-    assert line.get_xdata() == pytest.approx(x)
-    assert line.get_ydata() == pytest.approx(y)
+    assert pts.get_xdata() == pytest.approx(x)
+    assert pts.get_ydata() == pytest.approx(y)
 
     plt.close()
 

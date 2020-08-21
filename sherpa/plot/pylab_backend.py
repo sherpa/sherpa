@@ -121,6 +121,71 @@ def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
         axes.set_ylabel(ylabel)
 
 
+def find_zorder(axes):
+    """Try to come up with a good zoder value
+
+    Parameters
+    ----------
+    axes
+        The plot axes
+
+    Returns
+    -------
+    zorder : float or None
+        The estimated zorder value.
+
+    Notes
+    -----
+    The following is from https://github.com/sherpa/sherpa/issues/662
+    which is circa matplotlib 3. The issue is how to ensure that
+    a plot with multiple data values (e.g. a fit plot with
+    data+error bars and model, and one with multiple fits),
+    are drawn "sensibly" so that the user can make out the model.
+    For this we really want the zorder of plot items to be determined
+    by the order they are added. However, this appears to be complicated
+    by the fact that the errorbar command creates multiple objects
+    (for the point, error bars, and I believe caps), and not just
+    a Line2D object. Once all the plot items are concatenated and
+    sorted to ensure a consistent ordering - as discussed in
+    https://github.com/matplotlib/matplotlib/issues/1622#issuecomment-142469866 -
+    we lose a "nice" order in Sherpa (for our cases it does not
+    seem to help that the error bar adds in a zorder Line2D of 2.1
+    as compared to 2, which means that the point for the error bar
+    is drawn on top of the error bar, but also above other lines
+    added to the plot.
+
+    One option would be to evaluate the current plot to find out
+    what the minimum zorder is, and explicitly set larger
+    values. Note that the default zindex values appear to be 2 and
+    2.1 from plot/errorbar. This should work for the case of
+      plot something
+      overplot something
+    but may fall appart as soon as users add their own features
+    to the visualization, but that may be acceptable.
+    """
+
+    # Is this a sufficient set of objects?
+    #
+    objects = axes.lines + axes.collections
+
+    # could do a list comprehension, but want to catch
+    # AtributeErrors
+    zs = []
+    for o in objects:
+        try:
+            zo = o.get_zorder()
+        except AttributeError:
+            continue
+
+        zs.append(zo)
+
+    if len(zs) > 0:
+        # Add a small offset for this set of data
+        return max(zs) + 0.1
+
+    return None
+
+
 def point(x, y, overplot=True, clearwindow=False,
           symbol=None, alpha=None,
           color=None):
@@ -144,26 +209,108 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           xlog=False,
           ylog=False,
           linestyle='solid',
-          linecolor=None,
-          drawstyle='steps-mid',
+          linecolor=None,  # THIS IS NOT USED
+          drawstyle='default',
           color=None,
           alpha=None,
           marker='None',
           markerfacecolor=None,
           markersize=None):
+    """Draw histogram data.
 
+    The histogram is drawn as horizontal lines connecting the
+    start and end points of each bin, with vetical lines connecting
+    consecutive bins. Non-consecutive bins are drawn with a
+    (Nan,NaN) between them so no line is drawn connecting them.
+
+    Points are drawn at the middle of the bin, along with any
+    error values.
+
+    Note that the linecolor is not used, and is only included
+    to support old code that may have set this option.
+
+    Notes
+    -----
+    It is not clear if the same zorder problems that hit
+    plot could be relevant here.
+
+    """
+
+    # Draw the data as a histogram, manually creating the lines
+    # from the low to high edge of each bin. An alternative
+    # would be to create RectanglePatches, one for each bin,
+    # but I don't want each bin to go down to 0. I do not find
+    # the existing drawstyle options to be sufficient.
+    #
+    # See https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays#5347492
+    # for interleaving arrays.
+    #
+    def intersperse(a, b):
+        out = numpy.empty((a.size + b.size, ), dtype=a.dtype)
+        out[0::2] = a
+        out[1::2] = b
+        return out
+
+    x = intersperse(xlo, xhi)
+    y2 = intersperse(y, y)
+
+    # We need to identify non-consecutive bins, as a nan needs
+    # to be added between the segments.
+    #
+    idxs, = numpy.where(xhi[:-1] != xlo[1:])
+    if idxs.size > 0:
+        idxs = 2 * (idxs + 1)
+        nans = [numpy.nan] * idxs.size
+
+        # ensure the arrays are floats so we can add nan values
+        #
+        x = numpy.insert(x.astype(numpy.float64), idxs, nans)
+        y2 = numpy.insert(y2.astype(numpy.float64), idxs, nans)
+
+    # Note: this handles clearing the plot if needed.
+    #
+    objs = plot(x, y2, yerr=None, xerr=None,
+                title=title, xlabel=xlabel, ylabel=ylabel,
+                overplot=overplot, clearwindow=clearwindow,
+                xerrorbars=False, yerrorbars=yerrorbars,
+                ecolor=ecolor, capsize=capsize, barsabove=barsabove,
+                xlog=xlog, ylog=ylog,
+                linestyle=linestyle,
+                linecolor=linecolor,
+                drawstyle=drawstyle,
+                color=color, marker=None, alpha=alpha,
+                xaxis=False, ratioline=False)
+
+    # Draw points and error bars at the mid-point of the bins.
+    # Use the color used for the data plot: should it
+    # also be used for marker[face]color and ecolor?
+    #
     xmid = 0.5 * (xlo + xhi)
-    plot(xmid, y, yerr=yerr, xerr=None,
-         title=title, xlabel=xlabel, ylabel=ylabel,
-         overplot=overplot, clearwindow=clearwindow,
-         xerrorbars=False, yerrorbars=yerrorbars,
-         ecolor=ecolor, capsize=capsize, barsabove=barsabove,
-         xlog=xlog, ylog=ylog,
-         linestyle=linestyle, linecolor=linecolor,
-         drawstyle=drawstyle,
-         color=color, marker=marker, alpha=alpha,
-         markerfacecolor=markerfacecolor, markersize=markersize,
-         xaxis=False, ratioline=False)
+    try:
+        color = objs[0].get_color()
+    except AttributeError:
+        pass
+
+    # How do we want to handle X errors?
+    xerr = None
+
+    axes = plt.gca()
+    zorder = find_zorder(axes)
+
+    # Do not draw a line connecting the points
+    #
+    axes.errorbar(xmid, y, yerr, xerr,
+                  color=color,
+                  alpha=alpha,
+                  linestyle='',
+                  drawstyle=drawstyle,
+                  marker=marker,
+                  markersize=markersize,
+                  markerfacecolor=markerfacecolor,
+                  ecolor=ecolor,
+                  capsize=capsize,
+                  barsabove=barsabove,
+                  zorder=zorder)
 
 
 _linestyle_map = {
@@ -257,54 +404,10 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     if not overplot:
         setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
-    # The following is from https://github.com/sherpa/sherpa/issues/662
-    # which is circa matplotlib 3. The issue is how to ensure that
-    # a plot with multiple data values (e.g. a fit plot with
-    # data+error bars and model, and one with multiple fits),
-    # are drawn "sensibly" so that the user can make out the model.
-    # For this we really want the zorder of plot items to be determined
-    # by the order they are added. However, this appears to be complicated
-    # by the fact that the errorbar command creates multiple objects
-    # (for the point, error bars, and I believe caps), and not just
-    # a Line2D object. Once all the plot items are concatenated and
-    # sorted to ensure a consistent ordering - as discussed in
-    # https://github.com/matplotlib/matplotlib/issues/1622#issuecomment-142469866 -
-    # we lose a "nice" order in Sherpa (for our cases it does not
-    # seem to help that the error bar adds in a zorder Line2D of 2.1
-    # as compared to 2, which means that the point for the error bar
-    # is drawn on top of the error bar, but also above other lines
-    # added to the plot.
-    #
-
-    # One option would be to evaluate the current plot to find out
-    # what the minimum zorder is, and explicitly set larger
-    # values. Note that the default zindex values appear to be 2 and
-    # 2.1 from plot/errorbar. This should work for the case of
-    #   plot something
-    #   overplot something
-    # but may fall appart as soon as users add their own features
-    # to the visualization, but that may be acceptable.
-    #
+    # See the discussion in find_zorder
     zorder = None
     if overplot:
-        # Is this a sufficient set of objects?
-        #
-        objects = axes.lines + axes.collections
-
-        # could do a list comprehension, but want to catch
-        # AtributeErrors
-        zs = []
-        for o in objects:
-            try:
-                zo = o.get_zorder()
-            except AttributeError:
-                continue
-
-            zs.append(zo)
-
-        if len(zs) > 0:
-            # Add a small offset for this set of data
-            zorder = max(zs) + 0.1
+        zorder = find_zorder(axes)
 
     # Rely on color-cycling to work for both the "no errorbar" and
     # "errorbar" case.
@@ -316,29 +419,29 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
             xerr = xerr / 2.
         xerr = xerr if xerrorbars else None
         yerr = yerr if yerrorbars else None
-        axes.errorbar(x, y, yerr, xerr,
-                      color=color,
-                      linestyle=linestyle,
-                      drawstyle=drawstyle,
-                      marker=marker,
-                      markersize=markersize,
-                      markerfacecolor=markerfacecolor,
-                      alpha=alpha,
-                      ecolor=ecolor,
-                      capsize=capsize,
-                      barsabove=barsabove,
-                      zorder=zorder)
+        objs = axes.errorbar(x, y, yerr, xerr,
+                             color=color,
+                             linestyle=linestyle,
+                             drawstyle=drawstyle,
+                             marker=marker,
+                             markersize=markersize,
+                             markerfacecolor=markerfacecolor,
+                             alpha=alpha,
+                             ecolor=ecolor,
+                             capsize=capsize,
+                             barsabove=barsabove,
+                             zorder=zorder)
 
     else:
-        axes.plot(x, y,
-                  color=color,
-                  alpha=alpha,
-                  linestyle=linestyle,
-                  drawstyle=drawstyle,
-                  marker=marker,
-                  markersize=markersize,
-                  markerfacecolor=markerfacecolor,
-                  zorder=zorder)
+        objs = axes.plot(x, y,
+                         color=color,
+                         alpha=alpha,
+                         linestyle=linestyle,
+                         drawstyle=drawstyle,
+                         marker=marker,
+                         markersize=markersize,
+                         markerfacecolor=markerfacecolor,
+                         zorder=zorder)
 
     """
     for var in ('linestyle', 'color', 'marker', 'markerfacecolor',
@@ -366,6 +469,8 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
 
     if ratioline:
         axes.axhline(y=1, xmin=0, xmax=1, color='k', linewidth=lw)
+
+    return objs
 
 
 def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
