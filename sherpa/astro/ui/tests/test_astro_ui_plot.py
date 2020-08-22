@@ -1198,3 +1198,61 @@ def test_pha1_reg_proj(clean_astro_ui, basic_pha1):
     #
     ncontours = len(ax.collections)
     assert ncontours in [2, 3]
+
+
+DATA_PREFS = {'alpha': None,
+              'barsabove': False,
+              'capsize': None,
+              'color': None,
+              'drawstyle': 'default',
+              'ecolor': None,
+              'linecolor': None,
+              'linestyle': 'None',
+              'marker': '.',
+              'markerfacecolor': None,
+              'markersize': None,
+              'ratioline': False,
+              'xaxis': False,
+              'xerrorbars': False,
+              'xlog': False,
+              'yerrorbars': True,
+              'ylog': False}
+
+MODEL_PREFS = {'alpha': None,
+               'barsabove': False,
+               'capsize': None,
+               'color': None,
+               'drawstyle': 'default',
+               'ecolor': None,
+               'linecolor': None,
+               'linestyle': '-',
+               'marker': 'None',
+               'markerfacecolor': None,
+               'markersize': None,
+               'ratioline': False,
+               'xaxis': False,
+               'xerrorbars': False,
+               'xlog': False,
+               'yerrorbars': False,
+               'ylog': False}
+
+
+CONTOUR_PREFS = {'alpha': None,
+                 'colors': None,
+                 'linewidths': None,
+                 'xlog': False,
+                 'ylog': False}
+
+
+@requires_pylab
+@pytest.mark.parametrize("funcname,expected",
+                         [("get_data_plot_prefs", DATA_PREFS),
+                          ("get_model_plot_prefs", MODEL_PREFS),
+                          ("get_data_contour_prefs", CONTOUR_PREFS),
+                          ("get_model_contour_prefs", CONTOUR_PREFS)])
+def test_plot_defaults(funcname, expected):
+    """What are the plot defaults?"""
+
+    prefs = getattr(ui, funcname)()
+    assert isinstance(prefs, dict)
+    assert prefs == expected
