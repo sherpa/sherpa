@@ -527,9 +527,9 @@ def test_plot_model_arbitrary_grid_integrated(session):
         avg_x = 0.5 * (x[0] + x[1])
 
         # should this use ui.get_model_plot()?
-        xexp = (x[0] + x[1]) / 2
-        assert ui._modelplot.x == pytest.approx(xexp)
-        assert ui._modelplot.y == pytest.approx(yy)
+        assert ui._modelhistplot.xlo == pytest.approx(x[0])
+        assert ui._modelhistplot.xhi == pytest.approx(x[1])
+        assert ui._modelhistplot.y == pytest.approx(yy)
 
     tmp = numpy.arange(1, 5, 1)
     x = tmp[:-1], tmp[1:]
@@ -572,9 +572,9 @@ def test_source_component_arbitrary_grid_int(session):
     ui.plot_source_component(regrid_model)
 
     # should this use ui.get_source_component_plot()?
-    xexp = (x[0] + x[1]) / 2
-    assert ui._compsrcplot.x == pytest.approx(xexp)
-    assert ui._compsrcplot.y == pytest.approx([0.0, 0.0, 0.0])
+    assert ui._compsrchistplot.xlo == pytest.approx(x[0])
+    assert ui._compsrchistplot.xhi == pytest.approx(x[1])
+    assert ui._compsrchistplot.y == pytest.approx([0.0, 0.0, 0.0])
 
 
 def test_numpy_histogram_density_vs_normed():

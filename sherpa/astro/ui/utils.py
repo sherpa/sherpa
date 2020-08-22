@@ -10108,12 +10108,16 @@ class Session(sherpa.ui.utils.Session):
     # also in sherpa.utils; it does not seem worthwhile creating a new
     # docstring here
     def get_model_plot(self, id=None, **kwargs):
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._prepare_plotobj(id, self._modelhisto, **kwargs)
-            return self._modelhisto
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._modelhisto
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._modelhistplot
+        else:
+            plotobj = self._modelplot
 
-        self._prepare_plotobj(id, self._modelplot, **kwargs)
-        return self._modelplot
+        self._prepare_plotobj(id, plotobj, **kwargs)
+        return plotobj
 
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
 
@@ -10188,10 +10192,18 @@ class Session(sherpa.ui.utils.Session):
         >>> print(splot)
 
         """
-        # srcplot obj is possibly reinstantiated depending on data type
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            return self._prepare_plotobj(id, self._astrosourceplot, lo=lo, hi=hi)
-        return self._prepare_plotobj(id, self._sourceplot)
+
+        kwargs = {}
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrosourceplot
+            kwargs = {'lo': lo, 'hi': hi}
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._sourcehistplot
+        else:
+            plotobj = self._sourceplot
+
+        return self._prepare_plotobj(id, plotobj, **kwargs)
 
     # copy doc string from sherpa.utils
     def get_model_component_plot(self, id, model=None):
@@ -10201,12 +10213,16 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._prepare_plotobj(id, self._astrocompmdlplot, model=model)
-            return self._astrocompmdlplot
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrocompmdlplot
+        elif isinstance(d, sherpa.astro.data.Data1DInt):
+            plotobj = self._compmdlhistplot
+        else:
+            plotobj = self._compmdlplot
 
-        self._prepare_plotobj(id, self._compmdlplot, model=model)
-        return self._compmdlplot
+        self._prepare_plotobj(id, plotobj, model=model)
+        return plotobj
 
     get_model_component_plot.__doc__ = sherpa.ui.utils.Session.get_model_component_plot.__doc__
 
@@ -10218,14 +10234,18 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._prepare_plotobj(id, self._astrocompsrcplot, model=model)
-            return self._astrocompsrcplot
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrocompsrcplot
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._compsrchistplot
         elif isinstance(model, sherpa.models.TemplateModel):
-            self._prepare_plotobj(id, self._comptmplsrcplot, model=model)
-            return self._comptmplsrcplot
-        self._prepare_plotobj(id, self._compsrcplot, model=model)
-        return self._compsrcplot
+            plotobj = self._comptmplsrcplot
+        else:
+            plotobj = self._compsrcplot
+
+        self._prepare_plotobj(id, plotobj, model=model)
+        return plotobj
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
@@ -11052,16 +11072,22 @@ class Session(sherpa.ui.utils.Session):
                             self._prepare_plotobj(id, self._bkgmodelplot,
                                                   bkg_id=bkg_id))
         elif isinstance(plotobj, sherpa.plot.FitPlot):
+            if isinstance(self.get_data(id), sherpa.data.Data1DInt):
+                modelplot = self._modelhistplot
+            else:
+                modelplot = self._modelplot
             plotobj.prepare(self._prepare_plotobj(id, self._dataplot),
-                            self._prepare_plotobj(id, self._modelplot))
+                            self._prepare_plotobj(id, modelplot))
         elif isinstance(plotobj, sherpa.plot.FitContour):
             plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
                             self._prepare_plotobj(id, self._modelcontour))
         elif isinstance(plotobj, sherpa.astro.plot.ARFPlot):
             plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
                             self._get_pha_data(id))
-        elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
-             isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
+        elif(isinstance(plotobj, (sherpa.plot.ComponentModelPlot,
+                                  sherpa.plot.ComponentModelHistogramPlot,
+                                  sherpa.plot.ComponentSourcePlot,
+                                  sherpa.plot.ComponentSourceHistogramPlot))):
             plotobj.prepare(self.get_data(id), model, self.get_stat())
         elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
             plotobj.prepare(self.get_bkg(id, bkg_id),
@@ -11097,6 +11123,7 @@ class Session(sherpa.ui.utils.Session):
         elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
             plotobj.prepare(self._get_pha_data(id),
                             self.get_model(id), orders)
+
         else:
             # Using _get_fit becomes very complicated using simulfit
             # models and datasets
@@ -11141,8 +11168,11 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_model(self, id=None, replot=False, overplot=False,
                    clearwindow=True, **kwargs):
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._modelhisto
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._modelhistplot
         else:
             plotobj = self._modelplot
 
@@ -11232,11 +11262,15 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        plotobj = self._compsrcplot
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrocompsrcplot
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._compsrchistplot
         elif isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
+        else:
+            plotobj = self._compsrcplot
 
         self._plot(id, plotobj, None, None, None, None, None, model,
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
@@ -11254,12 +11288,16 @@ class Session(sherpa.ui.utils.Session):
             model = self._eval_model_expression(model)
 
         is_source = self._get_model_status(id)[1]
-        model = self._add_convolution_models(id, self.get_data(id),
-                                             model, is_source)
+        d = self.get_data(id)
+        model = self._add_convolution_models(id, d, model,
+                                             is_source)
 
-        plotobj = self._compmdlplot
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+        if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrocompmdlplot
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._compmdlhistplot
+        else:
+            plotobj = self._compmdlplot
 
         self._plot(id, plotobj, None, None, None, None, None, model,
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
@@ -11334,13 +11372,18 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_source()
 
         """
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._plot(id, self._astrosourceplot, None, None, lo, hi,
-                       replot=replot, overplot=overplot,
-                       clearwindow=clearwindow, **kwargs)
+        extra_args = []
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrosourceplot
+            extra_args = [None, None, lo, hi]
+        elif isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._sourcehistplot
         else:
-            self._plot(id, self._sourceplot, replot=replot,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+            plotobj = self._sourceplot
+
+        self._plot(id, plotobj, *extra_args, replot=replot,
+                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-TODO: is orders the same as resp_id?
     def plot_order(self, id=None, orders=None, replot=False, overplot=False,

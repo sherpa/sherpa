@@ -2303,17 +2303,19 @@ def test_data1d_plot_model_template(cls, plottype, extraargs, title):
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title,plotcls",
                          [("model", [], "Model",
-                           sherpa.plot.ModelPlot),
+                           sherpa.plot.ModelHistogramPlot),
                           ("model_component", ['mdl'],
                            "Model component: polynom1d.mdl",
-                           sherpa.plot.ComponentModelPlot),
+                           sherpa.plot.ComponentModelHistogramPlot),
                           ("source", [], "Source",
-                           sherpa.plot.SourcePlot),
+                           sherpa.plot.SourceHistogramPlot),
                           ("source_component", ['mdl'],
                            "Source model component: polynom1d.mdl",
-                           sherpa.plot.ComponentSourcePlot)])
+                           sherpa.plot.ComponentSourceHistogramPlot)])
 def test_data1dint_get_model_plot(cls, plottype, extraargs, title, plotcls):
     """Check we can plot a Data1DInt model.
+
+    This is plotted as a histogram, not as x/y values like Data1D
 
     For the Data1DInt case source and model return the
     same plots apart for the title.
@@ -2341,7 +2343,8 @@ def test_data1dint_get_model_plot(cls, plottype, extraargs, title, plotcls):
 
     assert isinstance(plot, plotcls)
     assert plot.title == title
-    assert plot.x == pytest.approx((xlo + xhi) / 2)
+    assert plot.xlo == pytest.approx(xlo)
+    assert plot.xhi == pytest.approx(xhi)
     assert plot.y == pytest.approx(yexp)
 
 
@@ -2393,13 +2396,37 @@ def test_data1dint_plot_model(cls, plottype, extraargs, title):
     assert ax.get_ylabel() == 'y'
     assert ax.get_title() == title
 
-    assert len(ax.lines) == 1
+    assert len(ax.lines) == 2
+
+    # The line
     line = ax.lines[0]
-    assert line.get_xdata().size == 5
+    assert line.get_xdata().size == 11
 
     xplot = line.get_xdata()
     yplot = line.get_ydata()
 
+    # do it a different way to the plot backend
+    xexp = np.dstack((xlo, xhi)).flatten()
+    yexp = np.asarray([22, 56, 52.5, 42, 96]).repeat(2)
+
+    # Check for nan
+    #
+    good = np.ones(11, dtype=np.bool)
+    good[6] = False
+    assert np.isfinite(xplot) == pytest.approx(good)
+    assert np.isfinite(yplot) == pytest.approx(good)
+
+    assert xplot[good] == pytest.approx(xexp)
+    assert yplot[good] == pytest.approx(yexp)
+
+    # The points
+    pts = ax.lines[1]
+    assert pts.get_xdata().size == 5
+
+    xplot = pts.get_xdata()
+    yplot = pts.get_ydata()
+
+    # do it a different way to the plot backend
     xexp = (xlo + xhi) / 2
     yexp = np.asarray([22, 56, 52.5, 42, 96])
 

@@ -344,13 +344,19 @@ class Session(NoNewAttributesAfterInit):
         self._jointplot = sherpa.plot.JointPlot()
         self._dataplot = sherpa.plot.DataPlot()
         self._modelplot = sherpa.plot.ModelPlot()
+        self._modelhistplot = sherpa.plot.ModelHistogramPlot()
 
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
+        self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
+
         self._compsrcplot = sherpa.plot.ComponentSourcePlot()
+        self._compsrchistplot = sherpa.plot.ComponentSourceHistogramPlot()
+
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
         self._sourceplot = sherpa.plot.SourcePlot()
+        self._sourcehistplot = sherpa.plot.SourceHistogramPlot()
         self._fitplot = sherpa.plot.FitPlot()
         self._residplot = sherpa.plot.ResidPlot()
         self._delchiplot = sherpa.plot.DelchiPlot()
@@ -10646,8 +10652,15 @@ class Session(NoNewAttributesAfterInit):
         >>> print(mplot)
 
         """
-        self._prepare_plotobj(id, self._modelplot)
-        return self._modelplot
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._modelhistplot
+        else:
+            plotobj = self._modelplot
+
+        self._prepare_plotobj(id, plotobj)
+        return plotobj
 
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self, id=None):
@@ -10696,8 +10709,16 @@ class Session(NoNewAttributesAfterInit):
         >>> splot2.overplot()
 
         """
-        self._prepare_plotobj(id, self._sourceplot)
-        return self._sourceplot
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._sourcehistplot
+        else:
+            plotobj = self._sourceplot
+
+        self._prepare_plotobj(id, plotobj)
+        return plotobj
+
 
     # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None):
@@ -10759,8 +10780,13 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        self._prepare_plotobj(id, self._compmdlplot, model=model)
-        return self._compmdlplot
+        if isinstance(self.get_data(id), sherpa.data.Data1DInt):
+            plotobj = self._compmdlhistplot
+        else:
+            plotobj = self._compmdlplot
+
+        self._prepare_plotobj(id, plotobj, model=model)
+        return plotobj
 
     # sherpa.astro.utils version copies this docstring
     def get_source_component_plot(self, id, model=None):
@@ -10823,11 +10849,14 @@ class Session(NoNewAttributesAfterInit):
             model = self._eval_model_expression(model)
 
         if isinstance(model, sherpa.models.TemplateModel):
-            self._prepare_plotobj(id, self._comptmplsrcplot, model=model)
-            return self._comptmplsrcplot
+            plotobj = self._comptmplsrcplot
+        elif isinstance(self.get_data(id), sherpa.data.Data1DInt):
+            plotobj = self._compsrchistplot
+        else:
+            plotobj = self._compsrcplot
 
-        self._prepare_plotobj(id, self._compsrcplot, model=model)
-        return self._compsrcplot
+        self._prepare_plotobj(id, plotobj, model=model)
+        return plotobj
 
     def get_model_plot_prefs(self):
         """Return the preferences for plot_model.
@@ -11648,9 +11677,14 @@ class Session(NoNewAttributesAfterInit):
 
     def _prepare_plotobj(self, id, plotobj, model=None):
         id = self._fix_id(id)
+        d = self.get_data(id)  # do we always require a data object?
         if isinstance(plotobj, sherpa.plot.FitPlot):
+            if isinstance(d, sherpa.data.Data1DInt):
+                modelplot = self._modelhistplot
+            else:
+                modelplot = self._modelplot
             plotobj.prepare(self._prepare_plotobj(id, self._dataplot),
-                            self._prepare_plotobj(id, self._modelplot))
+                            self._prepare_plotobj(id, modelplot))
         elif isinstance(plotobj, sherpa.plot.FitContour):
             plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
                             self._prepare_plotobj(id, self._modelcontour))
@@ -11662,20 +11696,22 @@ class Session(NoNewAttributesAfterInit):
                 plotobj.prepare(self.get_psf(id), self.get_data(id))
             elif(isinstance(plotobj, sherpa.plot.DataPlot) or
                  isinstance(plotobj, sherpa.plot.DataContour)):
-                plotobj.prepare(self.get_data(id), self.get_stat())
-            elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
-                 isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
-                plotobj.prepare(self.get_data(id), model, self.get_stat())
+                plotobj.prepare(d, self.get_stat())
+            elif(isinstance(plotobj, (sherpa.plot.ComponentModelPlot,
+                                      sherpa.plot.ComponentModelHistogramPlot,
+                                      sherpa.plot.ComponentSourcePlot,
+                                      sherpa.plot.ComponentSourceHistogramPlot))):
+                plotobj.prepare(d, model, self.get_stat())
             elif(isinstance(plotobj, sherpa.plot.SourcePlot) or
                  isinstance(plotobj, sherpa.plot.SourceContour)):
-                plotobj.prepare(self.get_data(id), self.get_source(id),
+                plotobj.prepare(d, self.get_source(id),
                                 self.get_stat())
             else:
                 # Using _get_fit becomes very complicated using simulfit
                 # models and datasets
                 #
                 # ids, f = self._get_fit(id)
-                plotobj.prepare(self.get_data(id), self.get_model(id),
+                plotobj.prepare(d, self.get_model(id),
                                 self.get_stat())
 
         return plotobj
@@ -12236,7 +12272,14 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_model(2, overplot=True, alpha=0.7, linestyle='dashed')
 
         """
-        self._plot(id, self._modelplot, replot=replot, overplot=overplot,
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._modelhistplot
+        else:
+            plotobj = self._modelplot
+
+        self._plot(id, plotobj, replot=replot, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
@@ -12307,9 +12350,12 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        plotobj = self._compsrcplot
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
+        elif isinstance(self.get_data(id), sherpa.data.Data1DInt):
+            plotobj = self._compsrchistplot
+        else:
+            plotobj = self._compsrcplot
 
         self._plot(id, plotobj, model, replot=replot, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
@@ -12390,10 +12436,16 @@ class Session(NoNewAttributesAfterInit):
             model = self._eval_model_expression(model)
 
         is_source = self._get_model_status(id)[1]
-        model = self._add_convolution_models(id, self.get_data(id),
-                                             model, is_source)
+        d = self.get_data(id)
+        model = self._add_convolution_models(id, d, model,
+                                             is_source)
 
-        self._plot(id, self._compmdlplot, model, replot=replot,
+        if isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._compmdlhistplot
+        else:
+            plotobj = self._compmdlplot
+
+        self._plot(id, plotobj, model, replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
@@ -12465,7 +12517,14 @@ class Session(NoNewAttributesAfterInit):
         if mdl is not None:
             raise IdentifierErr("Convolved model\n'%s'\n is set for dataset %s. You should use plot_model instead." %
                                 (mdl.name, str(id)))
-        self._plot(id, self._sourceplot, replot=replot,
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.data.Data1DInt):
+            plotobj = self._sourcehistplot
+        else:
+            plotobj = self._sourceplot
+
+        self._plot(id, plotobj, replot=replot,
                    overplot=overplot, clearwindow=clearwindow, **kwargs)
 
     def plot_fit(self, id=None, replot=False, overplot=False,
