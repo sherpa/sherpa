@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2017, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -122,7 +122,7 @@ def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
 
 
 def point(x, y, overplot=True, clearwindow=False,
-          symbol=None,
+          symbol=None, alpha=None,
           color=None):
 
     axes = setup_axes(overplot, clearwindow)
@@ -132,7 +132,7 @@ def point(x, y, overplot=True, clearwindow=False,
     else:
         style = '{}{}'.format(color, symbol)
 
-    axes.plot(numpy.array([x]), numpy.array([y]), style)
+    axes.plot(numpy.array([x]), numpy.array([y]), style, alpha=alpha)
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
@@ -147,6 +147,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           linecolor=None,
           drawstyle='steps-mid',
           color=None,
+          alpha=None,
           marker='None',
           markerfacecolor=None,
           markersize=None):
@@ -160,7 +161,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
          xlog=xlog, ylog=ylog,
          linestyle=linestyle, linecolor=linecolor,
          drawstyle=drawstyle,
-         color=color, marker=marker,
+         color=color, marker=marker, alpha=alpha,
          markerfacecolor=markerfacecolor, markersize=markersize,
          xaxis=False, ratioline=False)
 
@@ -200,6 +201,8 @@ def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
         set('linewidth', linewidth)
 
 
+# There is no support for alpha in the Plot.vline class
+#
 def vline(x, ymin=0, ymax=1,
           linecolor=None,
           linestyle=None,
@@ -213,6 +216,8 @@ def vline(x, ymin=0, ymax=1,
               linewidth=linewidth)
 
 
+# There is no support for alpha in the Plot.hline class
+#
 def hline(y, xmin=0, xmax=1,
           linecolor=None,
           linestyle=None,
@@ -242,6 +247,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          marker='None',
          markerfacecolor=None,
          markersize=None,
+         alpha=None,
          xaxis=False,
          ratioline=False):
 
@@ -317,6 +323,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
                       marker=marker,
                       markersize=markersize,
                       markerfacecolor=markerfacecolor,
+                      alpha=alpha,
                       ecolor=ecolor,
                       capsize=capsize,
                       barsabove=barsabove,
@@ -325,6 +332,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     else:
         axes.plot(x, y,
                   color=color,
+                  alpha=alpha,
                   linestyle=linestyle,
                   drawstyle=drawstyle,
                   marker=marker,
@@ -364,6 +372,7 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
             overcontour=False, clearwindow=True,
             xlog=False,
             ylog=False,
+            alpha=None,
             linewidths=None,
             colors=None):
 
@@ -383,10 +392,11 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
         setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
     if levels is None:
-        axes.contour(x0, x1, y, colors=colors, linewidths=linewidths)
+        axes.contour(x0, x1, y, alpha=alpha,
+                     colors=colors, linewidths=linewidths)
     else:
-        axes.contour(x0, x1, y, levels, colors=colors,
-                     linewidths=linewidths)
+        axes.contour(x0, x1, y, levels, alpha=alpha,
+                     colors=colors, linewidths=linewidths)
 
 
 def set_subplot(row, col, nrows, ncols, clearaxes=True,

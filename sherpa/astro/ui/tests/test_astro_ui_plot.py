@@ -1052,6 +1052,96 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
 @requires_pylab
 @requires_fits
 @requires_data
+def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
+    """Test that the options have changed things, where easy to do so"""
+
+    from matplotlib import pyplot as plt
+
+    dprefs = ui.get_data_plot_prefs()
+    dprefs['xerrorbars'] = True
+    dprefs['yerrorbars'] = False
+    dprefs['xlog'] = True
+    dprefs['ylog'] = True
+    dprefs['color'] = 'orange'
+    dprefs['linestyle'] = '-.'
+    dprefs['marker'] = 's'
+    dprefs['markerfacecolor'] = 'cyan'
+    dprefs['markersize'] = 10
+
+    mprefs = ui.get_model_plot().histo_prefs
+    mprefs['color'] = 'green'
+    mprefs['linestyle'] = 'dashed'
+    mprefs['marker'] = '*'
+    mprefs['markerfacecolor'] = 'yellow'
+    mprefs['markersize'] = 8
+
+    ui.plot_fit(alpha=0.7)
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'log'
+    assert ax.get_yscale() == 'log'
+
+    assert ax.get_xlabel() == 'Energy (keV)'
+    assert ax.get_ylabel() == 'Counts/sec/keV'
+
+    xmin, xmax = ax.get_xlim()
+    assert xmin == pytest.approx(0.40110954270367555)
+    assert xmax == pytest.approx(11.495805054836712)
+
+    ymin, ymax = ax.get_ylim()
+    assert ymin == pytest.approx(7.644069935298475e-05)
+    assert ymax == pytest.approx(0.017031102671151491)
+
+    assert len(ax.lines) == 2
+
+    # DATA
+    #
+    line = ax.lines[0]
+
+    # Apparently color wins out over linecolor
+    assert line.get_color() == 'orange'
+    assert line.get_linestyle() == '-.'
+    assert line.get_marker() == 's'
+    assert line.get_markerfacecolor() == 'cyan'
+    assert line.get_markersize() == pytest.approx(10.0)
+    assert line.get_alpha() == pytest.approx(0.7)
+
+    # MODEL
+    #
+    line = ax.lines[1]
+    assert line.get_color() != 'green'  # option over-ridden
+    assert line.get_linestyle() == '-'  # option over-ridden
+    assert line.get_marker() == 'None'
+    assert line.get_markerfacecolor() == line.get_color()  # option over-ridden
+    assert line.get_markersize() == pytest.approx(6.0)
+    assert line.get_alpha() == pytest.approx(0.7)
+
+    # assume error bars handled by a collection; test a subset
+    # of values
+    #
+    assert len(ax.collections) == 1
+    coll = ax.collections[0]
+
+    assert len(coll.get_segments()) == 42
+
+    assert coll.get_linestyles() == [(None, None)]
+
+    # looks like the color has been converted to individual channels
+    # - e.g. floating-point values for R, G, B, and alpha.
+    #
+    colors = coll.get_color()
+    assert len(colors) == 1
+    assert len(colors[0]) == 4
+    r, g, b, a = colors[0]
+    assert r == pytest.approx(1)
+    assert g == pytest.approx(0.64705882)
+    assert b == pytest.approx(0)
+    assert a == pytest.approx(0.7)
+
+
+@requires_pylab
+@requires_fits
+@requires_data
 @requires_xspec
 def test_pha1_reg_proj(clean_astro_ui, basic_pha1):
     """This is potentially a time-consuming test to run, so simplify

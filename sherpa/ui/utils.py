@@ -12128,12 +12128,13 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_data(linestyle='dotted')
 
         and plotting multiple data sets on the same plot, using
-        a log scale for the Y axis, and explicitly setting the
+        a log scale for the Y axis, setting the alpha transparency
+        for each plot, and explicitly setting the
         colors of the last two datasets:
 
-        >>> plot_data(ylog=True)
-        >>> plot_data(2, overplot=True, color='brown')
-        >>> plot_data(3, overplot=True, color='purple')
+        >>> plot_data(ylog=True, alpha=0.7)
+        >>> plot_data(2, overplot=True, alpha=0.7, color='brown')
+        >>> plot_data(3, overplot=True, alpha=0.7, color='purple')
 
         """
         self._plot(id, self._dataplot, replot=replot, overplot=overplot,
@@ -12203,10 +12204,10 @@ class Session(NoNewAttributesAfterInit):
         of the dictionary returned by `get_model_plot_prefs`. The
         following plots the model using a log scale for both axes,
         and then overplots the model from data set 2 using a dashed
-        line:
+        line and slightly transparent:
 
         >>> plot_model(xlog=True, ylog=True)
-        >>> plot_model(2, overplot=True, linestyle='dashed')
+        >>> plot_model(2, overplot=True, alpha=0.7, linestyle='dashed')
 
         """
         self._plot(id, self._modelplot, replot=replot, overplot=overplot,
@@ -12515,6 +12516,12 @@ class Session(NoNewAttributesAfterInit):
         used):
 
         >>> plot_fit(color='orange')
+
+        Draw the fits for two datasets, setting the second one partially
+        transparent (this assumes Matplotlib is used):
+
+        >>> plot_fit(1)
+        >>> plot_fit(2, alpha=0.7, overplot=True)
 
         """
         self._plot(id, self._fitplot, replot=replot, overplot=overplot,
