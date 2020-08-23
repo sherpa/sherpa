@@ -300,20 +300,20 @@ get_source_plot              X
 
 @pytest.mark.parametrize("idval", [None, 'x'])
 def test_get_arf_plot_no_arf(idval, clean_astro_ui):
-    """What happens when there's no ARF?
+    """Errors out if we are unthoughtful enough to have no ARF
     """
 
     setup_example(idval)
     ui.get_data(idval).set_arf(None)
 
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(DataErr) as exc:
         if idval is None:
             idval = 1
             ap = ui.get_arf_plot()
         else:
             ap = ui.get_arf_plot(idval)
 
-    emsg = "'NoneType' object has no attribute 'energ_lo'"
+    emsg = "data set '{}' does not have an associated ARF".format(idval)
     assert str(exc.value) == emsg
 
 
