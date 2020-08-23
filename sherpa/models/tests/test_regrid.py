@@ -27,7 +27,8 @@ from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt, Data1D
 from sherpa.models.basic import Box1D
-from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel, Gauss2D
+from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, \
+    RegriddableModel2D, ArithmeticModel, Gauss2D, basic, model
 from sherpa.utils.err import ModelErr
 from sherpa.utils import neville, linear_interp
 from sherpa.utils import akima
@@ -391,6 +392,48 @@ def test_regrid_binaryop_2d():
     rmdl = (gmdl + cmdl).regrid(xr1, yr1)
     ans3 = rmdl(x0, y0).reshape(shape)
     assert (ans3 != truth).any() == False
+
+
+def test_regrid_call_behavior():
+    class Wrappable1D(model.RegriddableModel1D):
+
+        def __init__(self, cls, name):
+            self.ncalled = []  # record the number of elements
+            self.baseclass = cls
+            self.baseclass.__init__(self, name)
+
+        def calc(self, pars, xlo, *args, **kwargs):
+            xlo = np.asarray(xlo)
+            self.ncalled.append((xlo[0], xlo[-1], xlo.size))
+            return self.baseclass.calc(self, pars, xlo, *args, **kwargs)
+
+
+    m1 = Wrappable1D(basic.Const1D, 'm1')
+    m2 = Wrappable1D(basic.Gauss1D, 'm2')
+
+    m2.pos = 5
+
+    xregrid = np.arange(0, 20, 0.2)
+    xdata = np.arange(1.5, 12.5, 0.5)
+
+    morig = m1 + m2
+    mwrap = morig.regrid(xregrid)
+
+    y = mwrap(xdata)
+
+    # Check both components were called with the same grid
+    assert m1.ncalled == m2.ncalled
+
+    # Check that m1 was called with the expected grid (ie that
+    # it is larger than xdata).
+    got = m1.ncalled
+    assert len(got) == 1
+    minval, maxval, nbins = m1.ncalled[0]
+    assert minval == pytest.approx(0)
+    assert maxval == pytest.approx(19.8)
+
+    assert nbins > xdata.size
+    assert nbins == 111
 
 
 class MyModel(RegriddableModel1D):
