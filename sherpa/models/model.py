@@ -643,7 +643,6 @@ class RegriddableModel2D(RegriddableModel):
     "A two-dimensional model."
 
     def regrid(self, *args, **kwargs):
-        self.check_regrid_kwargs(**kwargs)
         eval_space = EvaluationSpace2D(*args)
         regridder = ModelDomainRegridder2D(eval_space)
         return regridder.apply_to(self)
