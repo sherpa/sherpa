@@ -10530,6 +10530,10 @@ class Session(NoNewAttributesAfterInit):
         The following preferences are recognized by the matplotlib
         backend:
 
+        ``alpha``
+           The transparency value to drawn the line (0 is fully transparent
+           and 1 is fully opaque).
+
         ``barsabove``
            The barsabove argument for the matplotlib errorbar function.
 
