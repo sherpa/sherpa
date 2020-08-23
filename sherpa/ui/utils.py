@@ -573,7 +573,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             if id in mdl_ids:
                 model_str += 'Model: %s\n' % id
-                model_str += self._get_model(id).__str__() + '\n\n'
+                model_str += self.get_model(id).__str__() + '\n\n'
         return model_str
 
     def _get_show_source(self, id=None):
@@ -585,7 +585,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             if id in src_ids:
                 model_str += 'Model: %s\n' % id
-                model_str += self._get_source(id).__str__() + '\n\n'
+                model_str += self.get_source(id).__str__() + '\n\n'
         return model_str
 
     def _get_show_kernel(self, id=None):
@@ -5465,7 +5465,7 @@ class Session(NoNewAttributesAfterInit):
             model.reset()
         else:
             for id in ids:
-                self._get_source(id).reset()
+                self.get_source(id).reset()
 
     def delete_model_component(self, name):
         """Delete a model component.
@@ -5585,21 +5585,6 @@ class Session(NoNewAttributesAfterInit):
 
         return model
 
-    def _get_model(self, id=None):
-        data = self.get_data(id)
-        model, is_source = self._get_model_status(id)
-        return self._add_convolution_models(id, data, model, is_source)
-
-    def _get_source(self, id=None):
-        id = self._fix_id(id)
-        mdl = self._models.get(id, None)
-        if mdl is not None:
-            raise IdentifierErr("Convolved model\n'%s'\n is set for dataset %s. You should use get_model instead." %
-                                (mdl.name, str(id)))
-        return self._get_item(id, self._sources, 'source',
-                              'has not been set, consider using set_source()' +
-                              ' or set_model()')
-
     def get_source(self, id=None):
         """Return the source model expression for a data set.
 
@@ -5649,7 +5634,15 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source('obs2', const1d.norm * get_source('obs1'))
 
         """
-        return self._get_source(id)
+
+        id = self._fix_id(id)
+        mdl = self._models.get(id, None)
+        if mdl is not None:
+            raise IdentifierErr("Convolved model\n'%s'\n is set for dataset %s. You should use get_model instead." %
+                                (mdl.name, str(id)))
+        return self._get_item(id, self._sources, 'source',
+                              'has not been set, consider using set_source()' +
+                              ' or set_model()')
 
     def get_model(self, id=None):
         """Return the model expression for a data set.
@@ -5694,7 +5687,10 @@ class Session(NoNewAttributesAfterInit):
         5
 
         """
-        return self._get_model(id)
+
+        data = self.get_data(id)
+        model, is_source = self._get_model_status(id)
+        return self._add_convolution_models(id, data, model, is_source)
 
     def _runparamprompt(self, pars):
 
@@ -6120,7 +6116,7 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par('jet')
 
         """
-        return len(self._get_source(id).pars)
+        return len(self.get_source(id).pars)
 
     def get_num_par_thawed(self, id=None):
         """Return the number of thawed parameters in a model expression.
@@ -6167,7 +6163,7 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par_thawed('jet')
 
         """
-        return len(self._get_source(id).thawedpars)
+        return len(self.get_source(id).thawedpars)
 
     def get_num_par_frozen(self, id=None):
         """Return the number of frozen parameters in a model expression.
@@ -6214,7 +6210,7 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par_frozen('jet')
 
         """
-        model = self._get_source(id)
+        model = self.get_source(id)
         return len(model.pars) - len(model.thawedpars)
 
     #
@@ -7616,7 +7612,7 @@ class Session(NoNewAttributesAfterInit):
             ds = self.get_data(i)
             mod = None
             if i in self._models or i in self._sources:
-                mod = self._get_model(i)
+                mod = self.get_model(i)
 
             # The issue with putting a try/catch here is that if an exception
             # is thrown folding a model, it will be swallowed up and the user
@@ -7625,7 +7621,7 @@ class Session(NoNewAttributesAfterInit):
             #
             #
             # try:
-            #    mod = self._get_model(i)
+            #    mod = self.get_model(i)
             # except:
             #    mod = None
             if mod is not None:
@@ -8040,7 +8036,7 @@ class Session(NoNewAttributesAfterInit):
         except NotImplementedError:
             # raise NotImplementedError('No guess found for model %s' %
             info('WARNING: No guess found for %s' %
-                 self._get_model(id).name)
+                 self.get_model(id).name)
 
     def calc_stat(self, id=None, *otherids):
         """Calculate the fit statistic for a data set.
@@ -11651,7 +11647,7 @@ class Session(NoNewAttributesAfterInit):
                 plotobj.prepare(self.get_data(id), model, self.get_stat())
             elif(isinstance(plotobj, sherpa.plot.SourcePlot) or
                  isinstance(plotobj, sherpa.plot.SourceContour)):
-                plotobj.prepare(self.get_data(id), self._get_source(id),
+                plotobj.prepare(self.get_data(id), self.get_source(id),
                                 self.get_stat())
             else:
                 # Using _get_fit becomes very complicated using simulfit
