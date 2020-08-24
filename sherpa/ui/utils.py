@@ -10722,7 +10722,7 @@ class Session(NoNewAttributesAfterInit):
         Return the plot data for the ``pl`` component used in the
         default data set:
 
-        >>> cplot = get_model_component(pl)
+        >>> cplot = get_model_component_plot(pl)
 
         Return the full source model (``fplot``) and then for the
         components ``gal * pl`` and ``gal * gline``, for the data set
@@ -10732,8 +10732,8 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source('jet', fmodel)
         >>> fit('jet')
         >>> fplot = get_model('jet')
-        >>> plot1 = get_model_component('jet', pl*gal)
-        >>> plot2 = get_model_component('jet', gline*gal)
+        >>> plot1 = get_model_component_plot('jet', pl*gal)
+        >>> plot2 = get_model_component_plot('jet', gline*gal)
 
         """
         if model is None:
@@ -10785,7 +10785,7 @@ class Session(NoNewAttributesAfterInit):
         Return the plot data for the ``pl`` component used in the
         default data set:
 
-        >>> cplot = get_source_component(pl)
+        >>> cplot = get_source_component_plot(pl)
 
         Return the full source model (``fplot``) and then for the
         components ``gal * pl`` and ``gal * gline``, for the data set
@@ -10795,8 +10795,8 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source('jet', fmodel)
         >>> fit('jet')
         >>> fplot = get_source('jet')
-        >>> plot1 = get_source_component('jet', pl*gal)
-        >>> plot2 = get_source_component('jet', gline*gal)
+        >>> plot1 = get_source_component_plot('jet', pl*gal)
+        >>> plot2 = get_source_component_plot('jet', gline*gal)
 
         """
         if model is None:
