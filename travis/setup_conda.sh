@@ -16,7 +16,7 @@ else  # osx
     #Unset the Travis compiler variables
     unset CC CFLAGS CXXFLAGS
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
-    
+
     #Download and set the location of the macOS 10.9 SDK for the Conda Compilers to work
     mkdir -p 10.9SDK
     wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -O MacOSX10.9.sdk.tar.xz
@@ -48,7 +48,7 @@ conda config --add channels ${sherpa_channel}
 if [ -n "${XSPECVER}" ]; then conda config --add channels ${xspec_channel}; fi
 
 # Figure out requested dependencies
-if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib${MATPLOTLIBVER}"; fi
+if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 # Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
 if [ -n "${XSPECVER}" ];
