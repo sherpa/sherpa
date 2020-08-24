@@ -399,6 +399,23 @@ class Session(NoNewAttributesAfterInit):
             'compmodel': self._compmdlplot
         }
 
+        self._plot_type_names = {
+            'data': 'data',
+            'model': 'model',
+            'source': 'source',
+            'fit': 'fit',
+            'resid': 'resid',
+            'ratio': 'ratio',
+            'delchi': 'delchi',
+            'chisqr': 'chisqr',
+            'psf': 'psf',
+            'kernel': 'kernel',
+            'source_component': 'source_component',
+            'model_component': 'model_component',
+            'compsource': 'source_component',
+            'compmodel': 'model_component',
+        }
+
         self._contour_types = {
             'data': self._datacontour,
             'model': self._modelcontour,
@@ -408,6 +425,17 @@ class Session(NoNewAttributesAfterInit):
             'ratio': self._ratiocontour,
             'psf': self._psfcontour,
             'kernel': self._kernelcontour
+        }
+
+        self._contour_type_names = {
+            'data': 'data',
+            'model': 'model',
+            'source': 'source',
+            'fit': 'fit',
+            'resid': 'resid',
+            'ratio': 'ratio',
+            'psf': 'psf',
+            'kernel': 'kernel',
         }
 
         self._dataimage = sherpa.image.DataImage()
@@ -11764,8 +11792,11 @@ class Session(NoNewAttributesAfterInit):
         if len(args) == 0:
             raise ArgumentTypeErr('plotargs')
 
+        if plotmeth not in ['plot', 'contour']:
+            raise ArgumentErr("Unsupported plotmeth={}",format(plotmeth))
+
         plots = []
-        type = getattr(self, '_{}_types'.format(plotmeth))
+        allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))
         args = list(args)
 
         # TODO: can we say ('bkg', 1, 1, 'bkg', 1, 2) to allow multiple
@@ -11777,19 +11808,28 @@ class Session(NoNewAttributesAfterInit):
             _check_type(plottype, string_types, 'plottype', 'a string')
             plottype = plottype.lower()
 
-            if plottype not in type:
+            try:
+                plotname = allowed_types[plottype]
+            except KeyError:
                 raise ArgumentErr('badplottype', plottype)
 
-            if args and (args[0] not in type):
+            if args and (args[0] not in allowed_types):
                 id = args.pop(0)
             else:
                 id = None
 
-            plots.append((id, type[plottype]))
+            funcname = 'get_{}_{}'.format(plotname, plotmeth)
+            getfunc = getattr(self, funcname)
+
+            # Need to make sure we have a copy of each plot
+            # object to support plots like
+            #    plot("data", 1, "data", 2)
+            #
+            plots.append(copy.deepcopy(getfunc(id)))
 
         if len(plots) == 1:
-            plotmeth = getattr(self, '_' + plotmeth)
-            plotmeth(*plots[0])
+            plotmeth = getattr(self, '_' + plotmeth + '2')
+            plotmeth(plots[0])
             return
 
         nrows = 2
@@ -11798,15 +11838,10 @@ class Session(NoNewAttributesAfterInit):
         sp.reset(nrows, ncols)
         plotmeth = getattr(sp, 'add' + plotmeth)
 
-        plot_objs = [copy.deepcopy(self._prepare_plotobj(*plot))
-                     for plot in plots]
-
         try:
             sherpa.plot.begin()
-            while plot_objs:
-                plotmeth(plot_objs.pop(0))
-#            while plots:
-#                plotmeth(self._prepare_plotobj(*plots.pop(0)))
+            while plots:
+                plotmeth(plots.pop(0))
 
         except:
             sherpa.plot.exceptions()
