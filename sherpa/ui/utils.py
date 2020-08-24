@@ -6432,7 +6432,7 @@ class Session(NoNewAttributesAfterInit):
         `load_template_model`.
 
         >>> from sherpa.models import KNNInterpolator
-        >>> load_template_intepoator('myint', KNNInterpolator, k=4, order=3)
+        >>> load_template_interpolator('myint', KNNInterpolator, k=4, order=3)
 
         """
         sherpa.models.template.interpolators[
