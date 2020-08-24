@@ -563,12 +563,6 @@ class ArithmeticModel(Model):
 
 
 class RegriddableModel(ArithmeticModel):
-    def check_regrid_kwargs(self, **kwargs):
-        valid_keys = ('interp',)
-        for key in kwargs.keys():
-            if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
-
     def regrid(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -588,7 +582,10 @@ class RegriddableModel1D(RegriddableModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        self.check_regrid_kwargs(**kwargs)
+        valid_keys = ('interp',)
+        for key in kwargs.keys():
+            if key not in valid_keys:
+                raise TypeError("unknown keyword argument: '%s'" % key)
         eval_space = EvaluationSpace1D(*args)
         regridder = ModelDomainRegridder1D(eval_space, **kwargs)
         regridder._make_and_validate_grid(args)
