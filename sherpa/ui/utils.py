@@ -14366,7 +14366,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: I am not convinced that this code is working when recalc=True
     # DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None, id=None, otherids=None, recalc=False,
-                     min=None, max=None, nloop=20, delv=None, fac=1,
+                     fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
                      log=False, numcores=None):
         """Return the interval-projection object.
 
@@ -14391,6 +14391,10 @@ class Session(NoNewAttributesAfterInit):
            last call to `int_proj` (or `get_int_proj`) are returned,
            ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
+        fast : bool, optional
+           If ``True`` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is ``False``.
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
@@ -14458,16 +14462,18 @@ class Session(NoNewAttributesAfterInit):
         ...                      nloop=51, recalc=True)
 
         """
-        if sherpa.utils.bool_cast(recalc):
+
+        plotobj = self._intproj
+        if recalc:
             par = self._check_par(par)
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._intproj.prepare(min=min, max=max, nloop=nloop, delv=delv,
-                                  fac=fac, log=sherpa.utils.bool_cast(log),
-                                  numcores=numcores)
-            self._intproj.calc(fit, par, self._methods)
-        return self._intproj
+            plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                            fac=fac, log=log, numcores=numcores)
+            plotobj.calc(fit, par, self._methods)
+
+        return plotobj
 
     # DOC-NOTE: Check that this works (since get_int_proj may not) when
     # recalc=True
@@ -14564,16 +14570,19 @@ class Session(NoNewAttributesAfterInit):
         ...                    nloop=51, recalc=True)
 
         """
-        if sherpa.utils.bool_cast(recalc):
+
+        plotobj = self._intunc
+        if recalc:
             par = self._check_par(par)
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._intunc.prepare(min=min, max=max, nloop=nloop, delv=delv,
-                                 fac=fac, log=sherpa.utils.bool_cast(log),
-                                 numcores=numcores)
-            self._intunc.calc(fit, par)
-        return self._intunc
+            plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                            fac=fac, log=sherpa.utils.bool_cast(log),
+                            numcores=numcores)
+            plotobj.calc(fit, par)
+
+        return plotobj
 
     def get_reg_proj(self, par0=None, par1=None, id=None, otherids=None,
                      recalc=False, fast=True, min=None, max=None,
@@ -14685,17 +14694,21 @@ class Session(NoNewAttributesAfterInit):
         ...                      recalc=True)
 
         """
-        if sherpa.utils.bool_cast(recalc):
+
+        plotobj = self._regproj
+        if recalc:
             par0 = self._check_par(par0, 'par0')
             par1 = self._check_par(par1, 'par1')
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._regproj.prepare(fast, min, max, nloop, delv, fac,
-                                  sherpa.utils.bool_cast(log), sigma, levels,
-                                  numcores)
-            self._regproj.calc(fit, par0, par1, self._methods)
-        return self._regproj
+            plotobj.prepare(fast=fast, min=min, max=max,
+                            nloop=nloop, delv=delv, fac=fac,
+                            log=log, sigma=sigma, levels=levels,
+                            numcores=numcores)
+            plotobj.calc(fit, par0, par1, self._methods)
+
+        return plotobj
 
     def get_reg_unc(self, par0=None, par1=None, id=None, otherids=None,
                     recalc=False, min=None, max=None, nloop=(10, 10),
@@ -14807,43 +14820,22 @@ class Session(NoNewAttributesAfterInit):
         ...                    recalc=True)
 
         """
-        if sherpa.utils.bool_cast(recalc):
+
+        plotobj = self._regunc
+        if recalc:
             par0 = self._check_par(par0, 'par0')
             par1 = self._check_par(par1, 'par1')
 
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
-            self._regunc.prepare(min, max, nloop, delv, fac,
-                                 sherpa.utils.bool_cast(log), sigma, levels,
-                                 numcores)
-            self._regunc.calc(fit, par0, par1)
-        return self._regunc
+            plotobj.prepare(min=min, max=max,
+                            nloop=nloop, delv=delv, fac=fac,
+                            log=log, sigma=sigma, levels=levels,
+                            numcores=numcores)
+            plotobj.calc(fit, par0, par1)
 
-    # TODO: allow user-specified arguments
-    #
-    def _int_plot(self, plotobj, par, **kwargs):
-        prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
-        plot_dict = sherpa.utils.get_keyword_defaults(plotobj.plot)
-        for key in kwargs.keys():
-            if key in prepare_dict:
-                prepare_dict[key] = kwargs[key]
-            if key in plot_dict:
-                plot_dict[key] = kwargs[key]
-
-        if sherpa.utils.bool_cast(kwargs['replot']):
-            self._plot(id, plotobj, replot=True, **plot_dict)
-            return
-
-        par = self._check_par(par)
-        if kwargs['otherids'] is None:
-            kwargs['otherids'] = ()
-        ids, fit = self._get_fit(kwargs['id'], kwargs['otherids'])
-        prepare_dict['log'] = sherpa.utils.bool_cast(prepare_dict['log'])
-        plotobj.prepare(**prepare_dict)
-        plotobj.calc(fit, par, self._methods)
-        # replot but have calculated already, differing interfaces to prepare
-        self._plot(id, plotobj, replot=True, **plot_dict)
+        return plotobj
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_unc
@@ -14957,10 +14949,12 @@ class Session(NoNewAttributesAfterInit):
         >>> int_proj(mdl.xpos, overplot=True)
 
         """
-        self._int_plot(self._intproj, par, id=id, otherids=otherids,
-                       replot=replot, fast=fast, min=min, max=max, nloop=nloop,
-                       delv=delv, fac=fac, log=log, numcores=numcores,
-                       overplot=overplot)
+
+        plotobj = self.get_int_proj(par=par, id=id, otherids=otherids,
+                                    recalc=not replot, fast=fast,
+                                    min=min, max=max, nloop=nloop,
+                                    delv=delv, fac=fac, log=log, numcores=numcores)
+        self._plot2(plotobj, overplot=overplot)
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_proj
@@ -15072,35 +15066,12 @@ class Session(NoNewAttributesAfterInit):
         >>> int_unc(mdl.xpos, overplot=True)
 
         """
-        self._int_plot(self._intunc, par, id=id, otherids=otherids,
-                       replot=replot, min=min, max=max, nloop=nloop,
-                       delv=delv, fac=fac, log=log, numcores=numcores,
-                       overplot=overplot)
 
-    def _reg_plot(self, plotobj, par0, par1, **kwargs):
-        prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
-        cont_dict = sherpa.utils.get_keyword_defaults(plotobj.contour)
-        for key in kwargs.keys():
-            if key in prepare_dict:
-                prepare_dict[key] = kwargs[key]
-            if key in cont_dict:
-                cont_dict[key] = kwargs[key]
-
-        if sherpa.utils.bool_cast(kwargs['replot']):
-            self._contour(id, plotobj, replot=True, **cont_dict)
-            return
-
-        par0 = self._check_par(par0, 'par0')
-        par1 = self._check_par(par1, 'par1')
-
-        if kwargs['otherids'] is None:
-            kwargs['otherids'] = ()
-        ids, fit = self._get_fit(kwargs['id'], kwargs['otherids'])
-        prepare_dict['log'] = sherpa.utils.bool_cast(prepare_dict['log'])
-        plotobj.prepare(**prepare_dict)
-        plotobj.calc(fit, par0, par1, self._methods)
-        # replot but have calculated already, differing interfaces to prepare
-        self._contour(id, plotobj, replot=True, **cont_dict)
+        plotobj = self.get_int_unc(par=par, id=id, otherids=otherids,
+                                   recalc=not replot, min=min, max=max,
+                                   nloop=nloop, delv=delv, fac=fac,
+                                   log=log, numcores=numcores)
+        self._plot2(plotobj, overplot=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1, id=None, otherids=None, replot=False,
@@ -15225,10 +15196,14 @@ class Session(NoNewAttributesAfterInit):
         ...          nloop=(51, 51), id='core', otherids=['jet'])
 
         """
-        self._reg_plot(self._regproj, par0, par1, id=id, otherids=otherids,
-                       replot=replot, fast=fast, min=min, max=max, nloop=nloop,
-                       delv=delv, fac=fac, log=log, sigma=sigma, levels=levels,
-                       numcores=numcores, overplot=overplot)
+
+        plotobj = self.get_reg_proj(par0, par1, id=id, otherids=otherids,
+                                    recalc=not replot, fast=fast,
+                                    min=min, max=max, nloop=nloop,
+                                    delv=delv, fac=fac, log=log,
+                                    sigma=sigma, levels=levels,
+                                    numcores=numcores)
+        self._contour2(plotobj, overcontour=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1, id=None, otherids=None, replot=False,
@@ -15356,10 +15331,13 @@ class Session(NoNewAttributesAfterInit):
         >>> reg_unc(s1.c0, s2.xpos, overplot=True)
 
         """
-        self._reg_plot(self._regunc, par0, par1, id=id, otherids=otherids,
-                       replot=replot, min=min, max=max, nloop=nloop, delv=delv,
-                       fac=fac, log=log, sigma=sigma, levels=levels,
-                       numcores=numcores, overplot=overplot)
+
+        plotobj = self.get_reg_unc(par0, par1, id=id, otherids=otherids,
+                                   recalc=not replot, min=min, max=max, nloop=nloop,
+                                   delv=delv, fac=fac, log=log,
+                                   sigma=sigma, levels=levels,
+                                   numcores=numcores)
+        self._contour2(plotobj, overcontour=overplot)
 
     # Aliases
     # interval_projection = int_proj
