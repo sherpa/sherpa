@@ -27,7 +27,8 @@ import sherpa.all as sherpa
 from sherpa.ui.utils import Session as BaseSession
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
-from sherpa.data import Data1DInt
+from sherpa import plot as sherpaplot
+from sherpa.data import Data1D, Data1DInt
 from sherpa.utils.testing import requires_data, requires_plotting
 
 _datax = numpy.array(
@@ -593,3 +594,12 @@ def test_numpy_histogram_density_vs_normed():
     assert plot.y == pytest.approx(expected_y)
     assert plot.xlo == pytest.approx(expected_xlo)
     assert plot.xhi == pytest.approx(expected_xhi)
+
+
+def test_errors_with_no_stat():
+    """Check we get no errors when stat is None"""
+
+    d = Data1D('x', numpy.asarray([2, 4, 10]), numpy.asarray([2, 4, 0]))
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d, stat=None)
+    assert dp.yerr is None

@@ -27,7 +27,8 @@ import pytest
 import numpy as np
 
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, requires_plotting, \
+    requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
     ModelErr
 import sherpa.astro.utils
@@ -1540,3 +1541,74 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
 
     y4 = np.std(b4[:, 3])
     assert y4 == pytest.approx(0.23594231624955062)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("getfunc,medflux",
+                         [(ui.get_photon_flux_hist, 1.276591979716474e-4),
+                          (ui.get_energy_flux_hist, 4.550271338687814e-13),
+                         ])
+def test_get_xxx_flux_hist_unabsorbed(getfunc, medflux, make_data_path, clean_astro_ui,
+                                      reset_seed, hide_logging):
+    """Can we get the histogram data for fluxes (for an unabsorbed flux?)"""
+
+    np.random.seed(427247)
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    scale = ui.create_model_component('const1d', 'scale')
+    pl = ui.create_model_component('powlaw1d', 'pl')
+
+    scale.c0 = 0.8
+    scale.integrate = False
+    pl.gamma = 1.5
+    pl.ampl = 1e-4
+
+    ui.set_source(scale * pl)
+
+    # Would like to use model=pl but needs #803 (I think)
+    flux = getfunc(0.7, 7, num=500, bins=10)
+    assert flux.flux.shape == (500, )
+    assert flux.modelvals.shape == (500, 3)
+    assert flux.xlo.size == 11
+    assert flux.xhi.size == 11
+    assert flux.y.size == 11
+
+    assert (flux.xlo[1:] == flux.xhi[:-1]).all()
+
+    assert np.median(flux.flux) == pytest.approx(medflux)
+
+
+@requires_plotting
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("plotfunc",
+                         [ui.plot_photon_flux, ui.plot_energy_flux])
+def test_plot_xxx_flux_unabsorbed(plotfunc, make_data_path, clean_astro_ui,
+                                  reset_seed, hide_logging):
+    """Can we plot the histogram data for fluxes (for an unabsorbed flux?)
+
+    There is essentially no check that we do the right thing
+    """
+
+    np.random.seed(427248)
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+
+    scale = ui.create_model_component('const1d', 'scale')
+    pl = ui.create_model_component('powlaw1d', 'pl')
+
+    scale.c0 = 0.8
+    scale.integrate = False
+    pl.gamma = 1.5
+    pl.ampl = 1e-4
+
+    ui.set_source(scale * pl)
+
+    # Would like to use model=pl but needs #803 (I think)
+    plotfunc(0.7, 7, num=500, bins=10)
+
+    # What do we do to test this?

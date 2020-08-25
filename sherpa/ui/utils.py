@@ -11021,7 +11021,6 @@ class Session(NoNewAttributesAfterInit):
 
         return self._modelplot.plot_prefs
 
-
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.
 

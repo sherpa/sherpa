@@ -165,6 +165,41 @@ def test_plot_fail_with_non_pha(ptype):
 @requires_pylab
 @requires_data
 @requires_fits
+def test_dataphahistogram_prepare_wavelength(make_data_path):
+    """Check we can use wavelength setting"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    # Also check out the type='counts' option
+    pha.set_analysis('wave', type='counts')
+    pha.notice(3, 5)
+
+    plot = aplot.DataPlot()
+    plot.prepare(pha)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'Counts/Angstrom'
+    assert plot.title == 'my-name.pi'
+
+    # data is inverted
+    assert plot.x[0] > plot.x[-1]
+    assert np.all(plot.y > 0)
+
+    # regression test
+    yexp = np.asarray([39.44132393, 68.92072985, 64.39425057,
+                       48.69954162, 41.17454851, 88.87982014,
+                       74.70504415, 79.22094498, 94.57773635])
+    assert plot.y == pytest.approx(yexp)
+
+
+@requires_pylab
+@requires_data
+@requires_fits
 def test_modelphahistogram_prepare_wavelength(make_data_path):
     """Check we can use wavelength setting"""
 

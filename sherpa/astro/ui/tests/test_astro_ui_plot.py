@@ -1058,6 +1058,7 @@ _basic_plotfuncs = [ui.plot_data,
                     ui.plot_fit,
                     ui.plot_fit_delchi,
                     ui.plot_fit_resid,
+                    ui.plot_fit_ratio,
                     ui.plot_arf,
                     ui.plot_chisqr]
 
@@ -1075,6 +1076,26 @@ def test_pha1_plot_function(clean_astro_ui, basic_pha1):
 @requires_data
 @pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
 def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
+    plotfunc()
+
+
+def fail(x):
+    return pytest.param(x, marks=pytest.mark.xfail)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", [fail(ui.plot_bkg_model),
+                                      ui.plot_bkg_source,
+                                      fail(ui.plot_bkg_fit),
+                                      fail(ui.plot_bkg_fit_resid),
+                                      fail(ui.plot_bkg_fit_ratio),
+                                      fail(ui.plot_bkg_fit_delchi)])
+def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1, hide_logging):
+    """These fail because of issue #943"""
+    ui.unsubtract()
+    ui.set_bkg_source(ui.const1d.bmdl + ui.gauss1d.bgmdl)
     plotfunc()
 
 
@@ -2638,6 +2659,17 @@ def test_pha1_data_plot_recalc(clean_astro_ui, basic_pha1):
     assert p.x[-1] == pytest.approx(4.4822)
 
 
+@pytest.mark.parametrize("getfunc", [ui.get_data_plot, ui.get_model_plot])
+@pytest.mark.parametrize("idval", [None, 'x'])
+def test_get_xxx_plot_nodata(getfunc, idval, clean_astro_ui):
+
+    with pytest.raises(IdentifierErr) as exc:
+        getfunc(idval)
+
+    iid = 1 if idval is None else idval
+    assert str(exc.value) == 'data set {} has not been set'.format(iid)
+
+
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("ptype,extraargs,pclass,nbins1,nbins2",
@@ -2726,7 +2758,7 @@ def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
     p = ui.get_bkg_fit_plot(recalc=True)
     assert isinstance(p, FitPlot)
     assert isinstance(p.dataplot, DataPlot)
-    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert isinstance(p.modelplot, BkgModelPHAHistogram)
     assert p.dataplot.x.size == 26
     assert p.modelplot.xlo.size == 26
     assert p.dataplot.title == 'my-name.pi'

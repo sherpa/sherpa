@@ -170,13 +170,14 @@ def test_plot_prefs_xxx(session, ptype, arg):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_prefs_model_data1dint(session):
-    """Data1DInt model class is different to Data1D
+@pytest.mark.parametrize("ptype", ["data", "model"])
+def test_plot_prefs_xxx_data1dint(session, ptype):
+    """Data1DInt is different to Data1D.
     """
 
     s = session()
 
-    get_prefs = getattr(s, 'get_model_plot_prefs')
+    get_prefs = getattr(s, 'get_{}_plot_prefs'.format(ptype))
 
     s.load_arrays(1, [1, 2, 4], [2, 3, 5], [4, 5, 10],
                   Data1DInt)
@@ -190,20 +191,25 @@ def test_plot_prefs_model_data1dint(session):
     assert 'xerrorbars' in prefs
     assert 'xaxis' in prefs
     assert 'ratioline' in prefs
+    assert not prefs['xlog']
+    prefs['xlog'] = True
 
     # It's not easy to check the difference between
     # point and histogram preferences. Some differences
     # are xerrorbars, xaxis, and ratioline.
     #
     prefs = get_prefs()
-    assert 'xerrorbars' not in prefs
-    assert 'xaxis' not in prefs
-    assert 'ratioline' not in prefs
+    assert 'xerrorbars' not in prefs or ptype == 'data'
+    assert 'xaxis' not in prefs or ptype == 'data'
+    assert 'ratioline' not in prefs or ptype == 'data'
+    assert not prefs['xlog'] or ptype == 'data'
 
     prefs = get_prefs(2)
     assert 'xerrorbars' in prefs
     assert 'xaxis' in prefs
     assert 'ratioline' in prefs
+    assert prefs['xlog']
+
 
 def change_example(idval):
     """Change the example y values (created by setup_example)"""
