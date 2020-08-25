@@ -11795,6 +11795,11 @@ class XScflux(XSConvolutionKernel):
     necessity of freezing the amplitude, or normalization, of the
     emission component (or components) at 1.
 
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCflux.html
+
     Examples
     --------
 
@@ -11811,11 +11816,6 @@ class XScflux(XSConvolutionKernel):
     >>> mdl1 = cflux(absmdl * srcmdl)
     >>> mdl2 = absmdl * cflux(srcmdl)
     >>> mdl3 = absmdl * (plmdl + cflux(gmdl))
-
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCflux.html
 
     """
 
@@ -11869,6 +11869,11 @@ class XSclumin(XSConvolutionKernel):
 
     This model is only available when used with XSPEC 12.9.1 or later.
 
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelClumin.html
+
     Examples
     --------
 
@@ -11885,11 +11890,6 @@ class XSclumin(XSConvolutionKernel):
     >>> mdl1 = clumin(absmdl * srcmdl)
     >>> mdl2 = absmdl * clumin(srcmdl)
     >>> mdl3 = absmdl * (plmdl + clumin(gmdl))
-
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelClumin.html
 
     """
 
@@ -12434,14 +12434,14 @@ class XSrdblur(XSConvolutionKernel):
     Incl
         The inclination, in degrees.
 
+    See Also
+    --------
+    XSdiskline
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
-
-    See Also
-    --------
-    XSdiskline
 
     References
     ----------
@@ -12554,6 +12554,10 @@ class XSrfxconv(XSConvolutionKernel):
     log_xi
         The ionization parameter used by the table models.
 
+    See Also
+    --------
+    XSxilconv
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
@@ -12565,10 +12569,6 @@ class XSrfxconv(XSConvolutionKernel):
     (1%).
 
     This model is only available when used with XSPEC 12.9.1 or later.
-
-    See Also
-    --------
-    XSxilconv
 
     References
     ----------
@@ -12743,16 +12743,16 @@ class XSvashift(XSConvolutionKernel):
     Velocity
         The velocity, in km/s.
 
+    See Also
+    --------
+    XSvmshift, XSzashift
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
 
     This model is only available when used with XSPEC 12.9.1 or later.
-
-    See Also
-    --------
-    XSvmshift, XSzashift
 
     References
     ----------
@@ -12782,16 +12782,16 @@ class XSvmshift(XSConvolutionKernel):
     Velocity
         The velocity, in km/s.
 
+    See Also
+    --------
+    XSvashift, XSzmshift
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
 
     This model is only available when used with XSPEC 12.9.1 or later.
-
-    See Also
-    --------
-    XSvashift, XSzmshift
 
     References
     ----------
@@ -12834,6 +12834,10 @@ class XSxilconv(XSConvolutionKernel):
     cutoff
         The exponential cut-off energy, in keV.
 
+    See Also
+    --------
+    XSrfxconv
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
@@ -12845,10 +12849,6 @@ class XSxilconv(XSConvolutionKernel):
     (1%).
 
     This model is only available when used with XSPEC 12.9.1 or later.
-
-    See Also
-    --------
-    XSrfxconv
 
     References
     ----------
@@ -12892,14 +12892,14 @@ class XSzashift(XSConvolutionKernel):
     Redshift
         The redshift.
 
+    See Also
+    --------
+    XSvashift, XSzmshift
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
-
-    See Also
-    --------
-    XSvashift, XSzmshift
 
     References
     ----------
@@ -12926,14 +12926,14 @@ class XSzmshift(XSConvolutionKernel):
     Redshift
         The redshift.
 
+    See Also
+    --------
+    XSvmshift, XSzashift
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
-
-    See Also
-    --------
-    XSvmshift, XSzashift
 
     References
     ----------
