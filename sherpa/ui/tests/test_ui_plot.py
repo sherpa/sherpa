@@ -40,7 +40,8 @@ from sherpa.models import basic
 from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
     DataContour, ModelContour, SourceContour, ResidContour, \
-    RatioContour, FitContour, PSFContour, LRHistogram
+    RatioContour, FitContour, PSFContour, LRHistogram, \
+    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot
 
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr
@@ -827,6 +828,47 @@ def test_plot_psf(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_psf_plot_recalc(session):
+    """get_psf_plot with recalc=False
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.arange(10, 40, 2)
+    y = np.ones(x.size)
+    s.load_arrays(1, x, y)
+
+    psfmdl = s.create_model_component('gauss1d', 'psfmdl')
+    psfmdl.fwhm = 5
+    psfmdl.ampl = 2
+    s.load_psf('psf', psfmdl)
+    s.set_psf('psf')
+
+    yexp = psfmdl(x)
+
+    # ensure the plotobj is set
+    s.get_psf_plot()
+
+    # Change the PSF
+    psfmdl.fwhm = 2
+    psfmdl.ampl = 10
+
+    yexp2 = psfmdl(x)
+
+    # sanity check
+    assert (yexp != yexp2).all()
+
+    plotobj = s.get_psf_plot(recalc=False)
+    assert plotobj.y == pytest.approx(yexp)
+
+    plotobj = s.get_psf_plot()
+    assert plotobj.y == pytest.approx(yexp2)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_plot_kernel(session, caplog):
     """Very basic check we can call plot_kernel/get_kernel_plot
 
@@ -868,6 +910,49 @@ def test_plot_kernel(session, caplog):
     yexp = psfmdl(x)
     yexp /= yexp.sum()
     assert plotobj.y == pytest.approx(yexp)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_kernel_plot_recalc(session):
+    """get_kernel_plot with recalc=False
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.arange(10, 40, 2)
+    y = np.ones(x.size)
+    s.load_arrays(1, x, y)
+
+    psfmdl = s.create_model_component('gauss1d', 'psfmdl')
+    psfmdl.fwhm = 5
+    psfmdl.ampl = 2
+    s.load_psf('psf', psfmdl)
+    s.set_psf('psf')
+
+    yexp = psfmdl(x)
+    yexp /= yexp.sum()
+
+    # ensure the plotobj is set
+    s.get_kernel_plot()
+
+    # Change the PSF
+    psfmdl.fwhm = 2
+    psfmdl.ampl = 10
+
+    yexp2 = psfmdl(x)
+    yexp2 /= yexp2.sum()
+
+    # sanity check
+    assert (yexp != yexp2).all()
+
+    plotobj = s.get_kernel_plot(recalc=False)
+    assert plotobj.y == pytest.approx(yexp)
+
+    plotobj = s.get_kernel_plot()
+    assert plotobj.y == pytest.approx(yexp2)
 
 
 @requires_plotting
@@ -1795,6 +1880,152 @@ def test_show_pdf_plot(session, old_numpy_printing):
     assert toks[4] == 'xlabel = x'
     assert toks[5] == 'ylabel = probability density'
     assert toks[6] == 'title  = PDF: x'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_data_plot_recalc(session):
+    """Basic testing of get_data_plot(recalc=False)"""
+
+    s = session()
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    s.get_data_plot()
+
+    s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
+
+    p = s.get_data_plot(recalc=False)
+    assert isinstance(p, DataPlot)
+    assert p.x == pytest.approx([1, 2])
+    assert p.y == pytest.approx([1, 0])
+
+    p = s.get_data_plot(recalc=True)
+    assert isinstance(p, DataPlot)
+    assert p.x == pytest.approx([22.5, 35, 50])
+    assert p.y == pytest.approx([10, 12, 14])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,extraargs",
+                         [('model', []), ('model_component', ['mdl']),
+                          ('source', []), ('source_component', ['mdl'])])
+def test_model_plot_recalc(ptype, extraargs, session):
+    """Basic testing of get_model_plot(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+
+    # Seed the data for the recalc=False call
+    func(*extraargs)
+
+    s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
+    s.set_source(mdl)
+
+    # What data should be returned here? At the moment it uses the
+    # cuurent dataset to identify the value, but perhaps it should
+    # just use the ModelPlot.
+    #
+    p = func(*extraargs, recalc=False)
+    assert isinstance(p, ModelHistogramPlot)
+    assert p.xlo is None
+    assert p.xhi is None
+    assert p.y is None
+
+    p = func(*extraargs, recalc=True)
+    assert isinstance(p, ModelHistogramPlot)
+    assert p.xlo == pytest.approx([20, 30, 40])
+    assert p.xhi == pytest.approx([25, 40, 60])
+    assert p.y == pytest.approx([162.5, 450, 1200])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,pclass,y1,y2",
+                         [('resid', ResidPlot, [-10, -12], [-20, -28, -36]),
+                          ('ratio', RatioPlot, [1/11, 0], [1/3, 12/40, 14/50]),
+                          ('delchi', DelchiPlot, [-5, -6], [-10, -14, -18]),
+                          ('chisqr', ChisqrPlot, [25, 36], [100, 14*14, 18*18]),
+                          ])
+def test_xxx_plot_recalc(ptype, pclass, y1, y2, session):
+    """Basic testing of get_xxx_plot(recalc=False)
+
+    Unlike data/model this does not try changing the type
+    of the dataset.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    s.set_staterror(1, [2, 2])
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    # Set up the data to check in the recalc=False call below
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+    func()
+
+    s.load_arrays(1, [20, 30, 40], [10, 12, 14])
+    s.set_staterror(1, [2, 2, 2])
+    s.set_source(mdl)
+
+    p = func(recalc=False)
+    assert isinstance(p, pclass)
+
+    assert p.x == pytest.approx([1, 2])
+    assert p.y == pytest.approx(y1)
+
+    p = func(recalc=True)
+    assert isinstance(p, pclass)
+
+    assert p.x == pytest.approx([20, 30, 40])
+    assert p.y == pytest.approx(y2)
+
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_fit_plot_recalc(session):
+    """Basic testing of get_fit_plot(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    s.get_fit_plot()
+
+    s.load_arrays(1, [20, 30, 40], [10, 12, 14])
+    s.set_source(mdl)
+
+    p = s.get_fit_plot(recalc=False)
+    assert isinstance(p, FitPlot)
+
+    assert p.dataplot.x == pytest.approx([1, 2])
+    assert p.dataplot.y == pytest.approx([1, 0])
+
+    assert p.modelplot.x == pytest.approx([1, 2])
+    assert p.modelplot.y == pytest.approx([11, 12])
+
+    p = s.get_fit_plot(recalc=True)
+    assert isinstance(p, FitPlot)
+
+    assert p.dataplot.x == pytest.approx([20, 30, 40])
+    assert p.dataplot.y == pytest.approx([10, 12, 14])
+
+    assert p.modelplot.x == pytest.approx([20, 30, 40])
+    assert p.modelplot.y == pytest.approx([30, 40, 50])
 
 
 def check_pvalue(caplog, plot):

@@ -36,9 +36,12 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
+from sherpa.astro.ui.utils import Session as AstroSession
 
+from sherpa.plot import DataPlot, FitPlot, ModelPlot
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
-    OrderPlot, SourcePlot, BkgSourcePlot
+    OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot
+import sherpa.astro.plot as astroplot
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
@@ -343,6 +346,23 @@ def test_get_arf_plot(idval, clean_astro_ui):
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_arf_plot_recalc(idval, clean_astro_ui):
+    """Check recalc=False handling
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ap = ui.get_arf_plot(recalc=False)
+    else:
+        ap = ui.get_arf_plot(idval, recalc=False)
+
+    assert isinstance(ap, ARFPlot)
+    assert ap.xlo is None
+    assert ap.y is None
+    assert ap.title is None
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_order_plot(idval, clean_astro_ui):
     """Basic testing of get_order_plot: orders=None
     """
@@ -369,6 +389,23 @@ def test_get_order_plot(idval, clean_astro_ui):
     assert op.title == 'Model Orders [1]'
     assert op.xlabel == 'Channel'
     assert op.ylabel == 'Counts/sec/channel'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_order_plot_recalc(idval, clean_astro_ui):
+    """Check recalc=False handling
+    """
+
+    setup_example(idval)
+    if idval is None:
+        op = ui.get_order_plot(recalc=False)
+    else:
+        op = ui.get_order_plot(idval, recalc=False)
+
+    assert isinstance(op, OrderPlot)
+    assert op.xlo is None
+    assert op.y is None
+    assert op.title == 'Model'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -576,6 +613,50 @@ def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
     assert bp.title == 'Model'
     assert bp.xlabel == 'Channel'
     assert bp.ylabel == 'Counts/sec/channel'
+
+
+def test_get_bkg_plot_recalc(clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = ui.get_bkg_plot(recalc=False)
+    assert bp.x is None
+    assert bp.y is None
+    assert bp.title is None
+
+
+@pytest.mark.parametrize("func", [ui.get_bkg_resid_plot,
+                                  ui.get_bkg_ratio_plot,
+                                  ui.get_bkg_delchi_plot,
+                                  ui.get_bkg_chisqr_plot])
+def test_get_bkg_xxx_plot_recalc(func, clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = func(recalc=False)
+    assert bp.x is None
+    assert bp.y is None
+    assert bp.title == 'Model'
+
+
+def test_get_bkg_model_plot_recalc(clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = ui.get_bkg_model_plot(recalc=False)
+    assert bp.xlo is None
+    assert bp.y is None
+    assert bp.title == 'Model'
+
+
+def test_get_bkg_source_plot_recalc(clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = ui.get_bkg_source_plot(recalc=False)
+    assert bp.xlo is None
+    assert bp.y is None
+    assert bp.title == 'Source'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -2434,6 +2515,84 @@ def test_data1dint_plot_model(cls, plottype, extraargs, title):
     assert yplot == pytest.approx(yexp)
 
 
+# Tests from test_ui_plot but now checking out DataPHA
+#
+@requires_fits
+@requires_data
+def test_pha1_data_plot_recalc(clean_astro_ui, basic_pha1):
+    """Basic testing of get_data_plot(recalc=False)"""
+
+    ui.get_data_plot()
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    p = ui.get_data_plot(recalc=False)
+    assert isinstance(p, DataPlot)
+    assert p.x.size == 42
+    assert p.x[0] == pytest.approx(0.5183)
+    assert p.x[-1] == pytest.approx(8.2198)
+
+    p = ui.get_data_plot(recalc=True)
+    assert isinstance(p, DataPlot)
+    assert p.x.size == 26
+    assert p.x[0] == pytest.approx(1.0658)
+    assert p.x[-1] == pytest.approx(4.4822)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("ptype,extraargs,pclass,nbins1,nbins2",
+                         [('model', [], ModelHistogram, 644, 252),
+                          ('model_component', ['pl'], ComponentModelPlot, 644, 252),
+                          ('source', [], SourcePlot, 1090, 1090),
+                          ('source_component', ['pl'], ComponentSourcePlot, 1090, 1090)])
+def test_pha1_model_plot_recalc(ptype, extraargs, pclass, nbins1, nbins2,
+                                clean_astro_ui, basic_pha1):
+    """Basic testing of get_model_plot(recalc=False)"""
+
+    func = getattr(ui, 'get_{}_plot'.format(ptype))
+
+    # Seed the data for the recalc=False call
+    func(*extraargs)
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    p = func(*extraargs, recalc=False)
+    assert isinstance(p, pclass)
+    assert p.xlo.size == nbins1
+
+    p = func(*extraargs, recalc=True)
+    assert isinstance(p, pclass)
+    assert p.xlo.size == nbins2
+
+
+@requires_fits
+@requires_data
+def test_pha1_fit_plot_recalc(clean_astro_ui, basic_pha1):
+    """Basic testing of get_fit_plot(recalc=False)"""
+
+    ui.get_fit_plot('tst')
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    p = ui.get_fit_plot('tst', recalc=False)
+    assert isinstance(p, FitPlot)
+    assert isinstance(p.dataplot, DataPlot)
+    assert isinstance(p.modelplot, ModelPlot)
+    assert p.dataplot.x.size == 42
+    assert p.modelplot.x.size == 42
+
+    p = ui.get_fit_plot('tst', recalc=True)
+    assert isinstance(p, FitPlot)
+    assert isinstance(p.dataplot, DataPlot)
+    assert isinstance(p.modelplot, ModelPlot)
+    assert p.dataplot.x.size == 26
+    assert p.modelplot.x.size == 26
+
+
 @requires_fits
 @requires_data
 def test_pha1_bkg_fit_plot_no_model(clean_astro_ui, basic_pha1):
@@ -2445,3 +2604,32 @@ def test_pha1_bkg_fit_plot_no_model(clean_astro_ui, basic_pha1):
 
     emsg = 'background model tst for data set tst has not been set'
     assert str(exc.value) == emsg
+
+
+@requires_fits
+@requires_data
+def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
+    """Basic testing of get_bkg_fit_plot(recalc=False)"""
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+    ui.get_bkg().name = 'my-name.pi'
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    ui.set_bkg_model(ui.polynom1d.bpl)
+
+    p = ui.get_bkg_fit_plot(recalc=False)
+    assert isinstance(p, FitPlot)
+    assert p.dataplot is None
+    assert p.modelplot is None
+
+    p = ui.get_bkg_fit_plot(recalc=True)
+    assert isinstance(p, FitPlot)
+    assert isinstance(p.dataplot, DataPlot)
+    assert isinstance(p.modelplot, astroplot.BkgModelPlot)
+    assert p.dataplot.x.size == 26
+    assert p.modelplot.x.size == 26
+    assert p.dataplot.title == 'my-name.pi'
+    assert p.modelplot.title == 'Background Model Contribution'

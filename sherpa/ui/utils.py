@@ -10512,7 +10512,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._splitplot
 
-    def get_data_plot(self, id=None):
+    def get_data_plot(self, id=None, recalc=True):
         """Return the data used by plot_data.
 
         Parameters
@@ -10520,6 +10520,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_data` (or `get_data_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10541,7 +10545,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._dataplot
-        plotobj.prepare(self.get_data(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
 
     # DOC-TODO: discussion of preferences needs better handling
@@ -10648,7 +10653,7 @@ class Session(NoNewAttributesAfterInit):
         return self._dataplot.plot_prefs
 
     # also in sherpa.astro.utils (copies this docstring)
-    def get_model_plot(self, id=None):
+    def get_model_plot(self, id=None, recalc=True):
         """Return the data used to create the model plot.
 
         Parameters
@@ -10656,6 +10661,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_model` (or `get_model_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10683,11 +10692,13 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._modelplot
 
-        plotobj.prepare(d, self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(d, self.get_model(id), self.get_stat())
+
         return plotobj
 
     # also in sherpa.astro.utils (does not copy this docstring)
-    def get_source_plot(self, id=None):
+    def get_source_plot(self, id=None, recalc=True):
         """Return the data used to create the source plot.
 
         Parameters
@@ -10695,6 +10706,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_source` (or `get_source_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10747,11 +10762,13 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._sourceplot
 
-        plotobj.prepare(d, self.get_source(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(d, self.get_source(id), self.get_stat())
+
         return plotobj
 
     # sherpa.astro.utils version copies this docstring
-    def get_model_component_plot(self, id, model=None):
+    def get_model_component_plot(self, id, model=None, recalc=True):
         """Return the data used to create the model-component plot.
 
         Parameters
@@ -10761,6 +10778,10 @@ class Session(NoNewAttributesAfterInit):
            default identifier is used, as returned by `get_default_id`.
         model : str or sherpa.models.model.Model instance
            The component to use (the name, if a string).
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_model_component` (or `get_model_component_plot`)
+           are returned, otherwise the data is re-generated.
 
         Returns
         -------
@@ -10816,11 +10837,13 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._compmdlplot
 
-        plotobj.prepare(d, model, self.get_stat())
+        if recalc:
+            plotobj.prepare(d, model, self.get_stat())
+
         return plotobj
 
     # sherpa.astro.utils version copies this docstring
-    def get_source_component_plot(self, id, model=None):
+    def get_source_component_plot(self, id, model=None, recalc=True):
         """Return the data used by plot_source_component.
 
         Parameters
@@ -10830,6 +10853,10 @@ class Session(NoNewAttributesAfterInit):
            default identifier is used, as returned by `get_default_id`.
         model : str or sherpa.models.model.Model instance
            The component to use (the name, if a string).
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_source_component` (or `get_source_component_plot`)
+           are returned, otherwise the data is re-generated.
 
         Returns
         -------
@@ -10887,7 +10914,9 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._compsrcplot
 
-        plotobj.prepare(d, model, self.get_stat())
+        if recalc:
+            plotobj.prepare(d, model, self.get_stat())
+
         return plotobj
 
     def get_model_plot_prefs(self):
@@ -10932,7 +10961,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._modelplot.plot_prefs
 
-    def get_fit_plot(self, id=None):
+    def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.
 
         Parameters
@@ -10940,6 +10969,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_fit` (or `get_fit_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10989,13 +11022,15 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._fitplot
 
-        dataobj = self.get_data_plot(id)
-        modelobj = self.get_model_plot(id)
+        dataobj = self.get_data_plot(id, recalc=recalc)
+        modelobj = self.get_model_plot(id, recalc=recalc)
 
-        plotobj.prepare(dataobj, modelobj)
+        if recalc:
+            plotobj.prepare(dataobj, modelobj)
+
         return plotobj
 
-    def get_resid_plot(self, id=None):
+    def get_resid_plot(self, id=None, recalc=True):
         """Return the data used by plot_resid.
 
         Parameters
@@ -11003,6 +11038,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_resid` (or `get_resid_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -11047,10 +11086,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._residplot
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
-    def get_delchi_plot(self, id=None):
+    def get_delchi_plot(self, id=None, recalc=True):
         """Return the data used by plot_delchi.
 
         Parameters
@@ -11058,6 +11099,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_delchi` (or `get_delchi_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -11103,10 +11148,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._delchiplot
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
-    def get_chisqr_plot(self, id=None):
+    def get_chisqr_plot(self, id=None, recalc=True):
         """Return the data used by plot_chisqr.
 
         Parameters
@@ -11114,6 +11161,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_chisqr` (or `get_chisqr_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -11159,10 +11210,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._chisqrplot
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
-    def get_ratio_plot(self, id=None):
+    def get_ratio_plot(self, id=None, recalc=True):
         """Return the data used by plot_ratio.
 
         Parameters
@@ -11170,10 +11223,14 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_ratio` (or `get_ratio_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
-        resid_data : a `sherpa.plot.RatioPlot` instance
+        ratio_data : a `sherpa.plot.RatioPlot` instance
 
         Raises
         ------
@@ -11215,7 +11272,9 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._ratioplot
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
     def get_data_contour(self, id=None):
@@ -11665,7 +11724,7 @@ class Session(NoNewAttributesAfterInit):
         plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
-    def get_psf_plot(self, id=None):
+    def get_psf_plot(self, id=None, recalc=True):
         """Return the data used by plot_psf.
 
         Parameters
@@ -11673,6 +11732,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_psf` (or `get_psf_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -11700,10 +11763,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._psfplot
-        plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if recalc:
+            plotobj.prepare(self.get_psf(id), self.get_data(id))
+
         return plotobj
 
-    def get_kernel_plot(self, id=None):
+    def get_kernel_plot(self, id=None, recalc=True):
         """Return the data used by plot_kernel.
 
         Parameters
@@ -11711,6 +11776,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_kernel` (or `get_kernel_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -11738,7 +11807,9 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._kernelplot
-        plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if recalc:
+            plotobj.prepare(self.get_psf(id), self.get_data(id))
+
         return plotobj
 
     #
@@ -12225,11 +12296,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_data_plot(id)
-        else:
-            plotobj = self._dataplot
-
+        plotobj = self.get_data_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12313,18 +12380,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        d = self.get_data(id)
-
-        # Having to replicate logic of get_model_plot is not ideal,
-        # so we could move the recalc logic into it.
-        #
-        if not replot:
-            plotobj = self.get_model_plot(id)
-        elif isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._modelhistplot
-        else:
-            plotobj = self._modelplot
-
+        plotobj = self.get_model_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12393,15 +12449,8 @@ class Session(NoNewAttributesAfterInit):
         if model is None:
             id, model = model, id
 
-        d = self.get_data(id)
-        if not replot:
-            plotobj = self.get_source_component_plot(id, model)
-        elif isinstance(model, sherpa.models.TemplateModel):
-            plotobj = self._comptmplsrcplot
-        elif isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._compsrchistplot
-        else:
-            plotobj = self._compsrcplot
+        plotobj = self.get_source_component_plot(id, model,
+                                                 recalc=not replot)
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
@@ -12481,13 +12530,8 @@ class Session(NoNewAttributesAfterInit):
         if model is None:
             id, model = model, id
 
-        d = self.get_data(id)
-        if not replot:
-            plotobj = self.get_model_component_plot(id, model)
-        elif isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._compmdlhistplot
-        else:
-            plotobj = self._compmdlplot
+        plotobj = self.get_model_component_plot(id, model,
+                                                recalc=not replot)
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
@@ -12559,6 +12603,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        # Add a warning here for plot_source, otherwise the error is
+        # about get_source_plot. Perhaps we should just use a single
+        # error message?
+        #
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
@@ -12566,14 +12614,7 @@ class Session(NoNewAttributesAfterInit):
                                 "\n is set for dataset {}.".format(id) +
                                 " You should use plot_model instead.")
 
-        d = self.get_data(id)
-        if not replot:
-            plotobj = self.get_source_plot(id)
-        elif isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._sourcehistplot
-        else:
-            plotobj = self._sourceplot
-
+        plotobj = self.get_source_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12660,11 +12701,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_fit_plot(id)
-        else:
-            plotobj = self._fitplot
-
+        plotobj = self.get_fit_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12746,11 +12783,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_resid_plot(id)
-        else:
-            plotobj = self._residplot
-
+        plotobj = self.get_resid_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12811,11 +12844,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_chisqr_plot(id)
-        else:
-            plotobj = self._chisqrplot
-
+        plotobj = self.get_chisqr_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12893,11 +12922,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_delchi_plot(id)
-        else:
-            plotobj = self._delchiplot
-
+        plotobj = self.get_delchi_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12973,11 +12998,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_ratio_plot(id)
-        else:
-            plotobj = self._ratioplot
-
+        plotobj = self.get_ratio_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -13036,10 +13057,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfplot
-        if not replot:
-            plotobj = self.get_psf_plot(id)
-
+        plotobj = self.get_psf_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -13100,10 +13118,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelplot
-        if not replot:
-            plotobj = self.get_kernel_plot(id)
-
+        plotobj = self.get_kernel_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -13248,13 +13263,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plot1obj = self.get_fit_plot(id)
-            plot2obj = self.get_resid_plot(id)
-        else:
-            plot1obj = self._fitplot
-            plot2obj = self._residplot
-
+        plot1obj = self.get_fit_plot(id, recalc=not replot)
+        plot2obj = self.get_resid_plot(id, recalc=not replot)
         self._jointplot2(plot1obj, plot2obj,
                          overplot=overplot, clearwindow=clearwindow,
                          **kwargs)
@@ -13339,13 +13349,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plot1obj = self.get_fit_plot(id)
-            plot2obj = self.get_ratio_plot(id)
-        else:
-            plot1obj = self._fitplot
-            plot2obj = self._ratioplot
-
+        plot1obj = self.get_fit_plot(id, recalc=not replot)
+        plot2obj = self.get_ratio_plot(id, recalc=not replot)
         self._jointplot2(plot1obj, plot2obj,
                          overplot=overplot, clearwindow=clearwindow,
                          **kwargs)
@@ -13431,13 +13436,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plot1obj = self.get_fit_plot(id)
-            plot2obj = self.get_delchi_plot(id)
-        else:
-            plot1obj = self._fitplot
-            plot2obj = self._delchiplot
-
+        plot1obj = self.get_fit_plot(id, recalc=not replot)
+        plot2obj = self.get_delchi_plot(id, recalc=not replot)
         self._jointplot2(plot1obj, plot2obj,
                          overplot=overplot, clearwindow=clearwindow,
                          **kwargs)
@@ -13564,6 +13564,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        # Unlike most plot_xxx routines, get_cdf_plot isn't very
+        # useful here.
+        #
         plotobj = self._cdfplot
         if not replot:
             plotobj.prepare(points, xlabel, name)
@@ -13639,6 +13642,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        # Unlike most plot_xxx routines, get_trace_plot isn't very
+        # useful here.
+        #
         plotobj = self._traceplot
         if not replot:
             plotobj.prepare(points, xlabel, name)
@@ -13711,6 +13717,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        # Unlike most plot_xxx routines, get_scatter_plot isn't very
+        # useful here.
+        #
         plotobj = self._scatterplot
         if not replot:
             plotobj.prepare(x, y, xlabel, ylabel, name)
