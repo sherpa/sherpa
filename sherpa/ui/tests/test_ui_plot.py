@@ -2307,3 +2307,288 @@ def test_pylab_plot_trace(session):
     assert line.get_linestyle() == ':'
 
     plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_data_contour_recalc(session):
+    """Basic testing of get_data_contour(recalc=False)"""
+
+    s = session()
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.get_data_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    p = s.get_data_contour(recalc=False)
+    assert isinstance(p, DataContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    assert p.y == pytest.approx(y)
+
+    p = s.get_data_contour(recalc=True)
+    assert isinstance(p, DataContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+    assert p.y == pytest.approx(ny)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_model_contour_recalc(session):
+    """Basic testing of get_model_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_model_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_model_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_model_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+    # just check the model is flat
+    assert p.y.min() == p.y.max()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_source_contour_recalc(session):
+    """Basic testing of get_source_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_source_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_source_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_source_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+    # just check the model is flat
+    assert p.y.min() == p.y.max()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_ratio_contour_recalc(session):
+    """Basic testing of get_ratio_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_ratio_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_ratio_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_ratio_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+
+    ygood = np.isfinite(p.y)
+    assert ygood.sum() == ygood.size - 1
+    assert ygood[40] == False
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_resid_contour_recalc(session):
+    """Basic testing of get_resid_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_resid_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_resid_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_resid_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+
+    ygood = np.isfinite(p.y)
+    assert ygood.sum() == ygood.size - 1
+    assert ygood[40] == False
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_fit_contour_recalc(session):
+    """Basic testing of get_fit_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_fit_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_fit_contour(recalc=False)
+    assert isinstance(p, FitContour)
+    pd = p.datacontour
+    pm = p.modelcontour
+    assert isinstance(pd, DataContour)
+    assert isinstance(pm, ModelContour)
+    assert pd.x0 == pytest.approx(x0)
+    assert pd.x1 == pytest.approx(x1)
+    assert pm.x0 == pytest.approx(x0)
+    assert pm.x1 == pytest.approx(x1)
+    assert pd.y== pytest.approx(y)
+    # just check the model isn't flat
+    assert pm.y.min() < pm.y.max()
+
+    p = s.get_fit_contour(recalc=True)
+    assert isinstance(p, FitContour)
+    pd = p.datacontour
+    pm = p.modelcontour
+    assert isinstance(pd, DataContour)
+    assert isinstance(pm, ModelContour)
+    assert pd.x0 == pytest.approx(nx0)
+    assert pd.x1 == pytest.approx(nx1)
+    assert pm.x0 == pytest.approx(nx0)
+    assert pm.x1 == pytest.approx(nx1)
+    assert pd.y== pytest.approx(ny)
+    # just check the model is flat
+    assert pm.y.min() == pm.y.max()

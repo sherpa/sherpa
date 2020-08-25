@@ -11277,7 +11277,7 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_data_contour(self, id=None):
+    def get_data_contour(self, id=None, recalc=True):
         """Return the data used by contour_data.
 
         Parameters
@@ -11285,6 +11285,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_data` (or `get_data_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -11317,7 +11321,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._datacontour
-        plotobj.prepare(self.get_data(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
 
     def get_data_contour_prefs(self):
@@ -11370,7 +11375,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._datacontour.contour_prefs
 
-    def get_model_contour(self, id=None):
+    def get_model_contour(self, id=None, recalc=True):
         """Return the data used by contour_model.
 
         Parameters
@@ -11378,10 +11383,14 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_model` (or `get_model_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
-        resid_data : a `sherpa.plot.ModelContour` instance
+        model_data : a `sherpa.plot.ModelContour` instance
            The ``y`` attribute contains the model values and the ``x0``
            and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
@@ -11410,10 +11419,11 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._modelcontour
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
-    def get_source_contour(self, id=None):
+    def get_source_contour(self, id=None, recalc=True):
         """Return the data used by contour_source.
 
         Parameters
@@ -11421,10 +11431,14 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_source` (or `get_source_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
-        resid_data : a `sherpa.plot.SourceContour` instance
+        source_data : a `sherpa.plot.SourceContour` instance
            The ``y`` attribute contains the model values and the ``x0``
            and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
@@ -11453,7 +11467,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._sourcecontour
-        plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
         return plotobj
 
     def get_model_contour_prefs(self):
@@ -11506,7 +11521,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._modelcontour.contour_prefs
 
-    def get_fit_contour(self, id=None):
+    def get_fit_contour(self, id=None, recalc=True):
         """Return the data used by contour_fit.
 
         Parameters
@@ -11514,6 +11529,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_fit` (or `get_fit_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -11551,13 +11570,14 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._fitcontour
 
-        dataobj = self.get_data_contour(id)
-        modelobj = self.get_model_contour(id)
+        dataobj = self.get_data_contour(id, recalc=recalc)
+        modelobj = self.get_model_contour(id, recalc=recalc)
+        if recalc:
+            plotobj.prepare(dataobj, modelobj)
 
-        plotobj.prepare(dataobj, modelobj)
         return plotobj
 
-    def get_resid_contour(self, id=None):
+    def get_resid_contour(self, id=None, recalc=True):
         """Return the data used by contour_resid.
 
         Parameters
@@ -11565,6 +11585,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_resid` (or `get_resid_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -11598,10 +11622,11 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._residcontour
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
-    def get_ratio_contour(self, id=None):
+    def get_ratio_contour(self, id=None, recalc=True):
         """Return the data used by contour_ratio.
 
         Parameters
@@ -11609,6 +11634,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_ratio` (or `get_ratio_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -11642,10 +11671,11 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._ratiocontour
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if recalc:
+            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
-    def get_psf_contour(self, id=None):
+    def get_psf_contour(self, id=None, recalc=True):
         """Return the data used by contour_psf.
 
         Parameters
@@ -11653,6 +11683,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_psf` (or `get_psf_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -11681,10 +11715,11 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._psfcontour
-        plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if recalc:
+            plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
-    def get_kernel_contour(self, id=None):
+    def get_kernel_contour(self, id=None, recalc=True):
         """Return the data used by contour_kernel.
 
         Parameters
@@ -11692,6 +11727,10 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `contour_kernel` (or `get_kernel_contour`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -11721,7 +11760,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._kernelcontour
-        plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if recalc:
+            plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
     def get_psf_plot(self, id=None, recalc=True):
@@ -13897,11 +13937,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_data_contour(id)
-        else:
-            plotobj = self._datacontour
-
+        plotobj = self.get_data_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_model(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -13948,11 +13984,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_model_contour(id)
-        else:
-            plotobj = self._modelcontour
-
+        plotobj = self.get_model_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_source(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -13998,11 +14030,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_source_contour(id)
-        else:
-            plotobj = self._sourcecontour
-
+        plotobj = self.get_source_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -14047,11 +14075,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_fit_contour(id)
-        else:
-            plotobj = self._fitcontour
-
+        plotobj = self.get_fit_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_resid(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -14095,11 +14119,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_resid_contour(id)
-        else:
-            plotobj = self._residcontour
-
+        plotobj = self.get_resid_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_ratio(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -14143,11 +14163,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_ratio_contour(id)
-        else:
-            plotobj = self._ratiocontour
-
+        plotobj = self.get_ratio_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_psf(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -14179,11 +14195,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plotobj = self.get_psf_contour(id)
-        else:
-            plotobj = self._psfcontour
-
+        plotobj = self.get_psf_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_kernel(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -14214,11 +14226,8 @@ class Session(NoNewAttributesAfterInit):
         set_psf : Add a PSF model to a data set.
 
         """
-        if not replot:
-            plotobj = self.get_kernel_contour(id)
-        else:
-            plotobj = self._kernelcontour
 
+        plotobj = self.get_kernel_contour(id, recalc=not replot)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit_resid(self, id=None, replot=False, overcontour=False, **kwargs):
@@ -14259,12 +14268,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if not replot:
-            plot1obj = self.get_fit_contour(id)
-            plot2obj = self.get_resid_contour(id)
-        else:
-            plot1obj = self._fitcontour
-            plot2obj = self._residcontour
+        plot1obj = self.get_fit_contour(id, recalc=not replot)
+        plot2obj = self.get_resid_contour(id, recalc=not replot)
 
         self._splitplot.reset()
         try:
