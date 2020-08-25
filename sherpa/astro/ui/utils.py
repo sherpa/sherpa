@@ -11221,26 +11221,6 @@ class Session(sherpa.ui.utils.Session):
                                                   sherpa.plot.Plot):
                     plot.plot_prefs[item] = value
 
-    def plot_model(self, id=None, replot=False, overplot=False,
-                   clearwindow=True, **kwargs):
-
-        d = self.get_data(id)
-        if isinstance(d, sherpa.astro.data.DataPHA):
-
-            if not replot:
-                plotobj = self.get_model_plot(id)
-            else:
-                plotobj = self._modelhisto
-
-            self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
-            return
-
-        super().plot_model(id=id, replot=replot, overplot=overplot,
-                           clearwindow=True, **kwargs)
-
-    plot_model.__doc__ = sherpa.ui.utils.Session.plot_model.__doc__
-
     def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
         """Plot the ARF associated with a data set.
@@ -11314,53 +11294,6 @@ class Session(sherpa.ui.utils.Session):
 
         self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
                     **kwargs)
-
-    # DOC-TODO: does this support bkg_id for PHA data sets?
-    def plot_source_component(self, id, model=None, replot=False,
-                              overplot=False, clearwindow=True, **kwargs):
-
-        if model is None:
-            id, model = model, id
-
-        d = self.get_data(id)
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            if not replot:
-                plotobj = self.get_source_component_plot(id, model=model)
-            else:
-                plotobj = self._astrocompsrcplot
-
-            self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
-            return
-
-        super().plot_source_component(id, model=model, replot=replot,
-                                      overplot=overplot, clearwindow=clearwindow,
-                                      **kwargs)
-
-    plot_source_component.__doc__ = sherpa.ui.utils.Session.plot_source_component.__doc__
-
-    def plot_model_component(self, id, model=None, replot=False,
-                             overplot=False, clearwindow=True, **kwargs):
-
-        if model is None:
-            id, model = model, id
-
-        d = self.get_data(id)
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            if not replot:
-                plotobj = self.get_model_component_plot(id, model=model)
-            else:
-                plotobj = self._astrocompmdlplot
-
-            self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
-            return
-
-        super().plot_model_component(id, model=model, replot=replot,
-                                     overplot=overplot, clearwindow=clearwindow,
-                                     **kwargs)
-
-    plot_model_component.__doc__ = sherpa.ui.utils.Session.plot_model_component.__doc__
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self, id=None, lo=None, hi=None, replot=False,
