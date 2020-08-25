@@ -10531,8 +10531,8 @@ class Session(NoNewAttributesAfterInit):
         backend:
 
         ``alpha``
-           The transparency value to drawn the line (0 is fully transparent
-           and 1 is fully opaque).
+           The transparency value used to draw the line or symbol,
+           where 0 is fully transparent and 1 is fully opaque.
 
         ``barsabove``
            The barsabove argument for the matplotlib errorbar function.
