@@ -8489,8 +8489,8 @@ class Session(NoNewAttributesAfterInit):
             lrplot.prepare(results.ratios, bins,
                            num, results.lr, results.ppp)
 
-        self._plot2(lrplot, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(lrplot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id=1, otherids=(), num=500, bins=25, numcores=None,
@@ -11785,7 +11785,7 @@ class Session(NoNewAttributesAfterInit):
             plots.append(copy.deepcopy(getfunc(id)))
 
         if len(plots) == 1:
-            plotmeth = getattr(self, '_' + plotmeth + '2')
+            plotmeth = getattr(self, '_' + plotmeth)
             plotmeth(plots[0])
             return
 
@@ -11806,12 +11806,25 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
-    def _plot2(self, obj, **kwargs):
-        """Display a plot object"""
+    def _plot(self, plotobj, **kwargs):
+        """Display a plot object
+
+        Parameters
+        ----------
+        plotobj
+            The plot to display
+        **kwargs
+            The arguments to the plot method of plotobj.
+
+        See Also
+        --------
+        _contour
+
+        """
 
         try:
             sherpa.plot.begin()
-            obj.plot(**kwargs)
+            plotobj.plot(**kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -12217,8 +12230,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._dataplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils
     #  - we include a description of the DataPHA handling here
@@ -12312,8 +12325,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._modelplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
@@ -12392,8 +12405,8 @@ class Session(NoNewAttributesAfterInit):
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
@@ -12478,8 +12491,8 @@ class Session(NoNewAttributesAfterInit):
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self, id=None, replot=False,
@@ -12561,8 +12574,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._sourceplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_fit(self, id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
@@ -12652,8 +12665,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._fitplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_resid(self, id=None, replot=False, overplot=False,
                    clearwindow=True, **kwargs):
@@ -12738,8 +12751,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._residplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_chisqr(self, id=None, replot=False, overplot=False,
                     clearwindow=True, **kwargs):
@@ -12803,8 +12816,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._chisqrplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_delchi(self, id=None, replot=False, overplot=False,
                     clearwindow=True, **kwargs):
@@ -12885,8 +12898,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._delchiplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_ratio(self, id=None, replot=False, overplot=False,
                    clearwindow=True, **kwargs):
@@ -12965,8 +12978,8 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._ratioplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_psf(self, id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
@@ -13027,8 +13040,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj = self.get_psf_plot(id)
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_kernel(self, id=None, replot=False, overplot=False,
                     clearwindow=True, **kwargs):
@@ -13091,8 +13104,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj = self.get_kernel_plot(id)
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def _jointplot2(self, plot1, plot2,
                     overplot=False, clearwindow=True, **kwargs):
@@ -13487,8 +13500,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(points, bins, normed, xlabel, name)
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def get_pdf_plot(self):
         """Return the data used to plot the last PDF.
@@ -13555,8 +13568,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(points, xlabel, name)
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def get_cdf_plot(self):
         """Return the data used to plot the last CDF.
@@ -13630,8 +13643,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(points, xlabel, name)
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def get_trace_plot(self):
         """Return the data used to plot the last trace.
@@ -13702,8 +13715,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(x, y, xlabel, ylabel, name)
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def get_scatter_plot(self):
         """Return the data used to plot the last scatter plot.
@@ -13726,7 +13739,21 @@ class Session(NoNewAttributesAfterInit):
     # Contours
     #
 
-    def _contour2(self, plotobj, overcontour=False, **kwargs):
+    def _contour(self, plotobj, overcontour=False, **kwargs):
+        """Display a plot object
+
+        Parameters
+        ----------
+        plotobj
+            The contour plot to display
+        **kwargs
+            The arguments to the contour method of plotobj.
+
+        See Also
+        --------
+        _plot
+
+        """
 
         try:
             sherpa.plot.begin()
@@ -13866,7 +13893,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._datacontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_model(self, id=None, replot=False, overcontour=False, **kwargs):
         """Create a contour plot of the model.
@@ -13917,7 +13944,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._modelcontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_source(self, id=None, replot=False, overcontour=False, **kwargs):
         """Create a contour plot of the unconvolved spatial model.
@@ -13967,7 +13994,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._sourcecontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the fit to a data set.
@@ -14016,7 +14043,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._fitcontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_resid(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the residuals of the fit.
@@ -14064,7 +14091,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._residcontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_ratio(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the ratio of data to model.
@@ -14112,7 +14139,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._ratiocontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_psf(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the PSF applied to the model of an image data set.
@@ -14148,7 +14175,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._psfcontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_kernel(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the kernel applied to the model of an image data set.
@@ -14183,7 +14210,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._kernelcontour
 
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
+        self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit_resid(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the fit and the residuals to a data set.
@@ -14838,7 +14865,7 @@ class Session(NoNewAttributesAfterInit):
                                     recalc=not replot, fast=fast,
                                     min=min, max=max, nloop=nloop,
                                     delv=delv, fac=fac, log=log, numcores=numcores)
-        self._plot2(plotobj, overplot=overplot)
+        self._plot(plotobj, overplot=overplot)
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_proj
@@ -14955,7 +14982,7 @@ class Session(NoNewAttributesAfterInit):
                                    recalc=not replot, min=min, max=max,
                                    nloop=nloop, delv=delv, fac=fac,
                                    log=log, numcores=numcores)
-        self._plot2(plotobj, overplot=overplot)
+        self._plot(plotobj, overplot=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1, id=None, otherids=None, replot=False,
@@ -15087,7 +15114,7 @@ class Session(NoNewAttributesAfterInit):
                                     delv=delv, fac=fac, log=log,
                                     sigma=sigma, levels=levels,
                                     numcores=numcores)
-        self._contour2(plotobj, overcontour=overplot)
+        self._contour(plotobj, overcontour=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1, id=None, otherids=None, replot=False,
@@ -15221,7 +15248,7 @@ class Session(NoNewAttributesAfterInit):
                                    delv=delv, fac=fac, log=log,
                                    sigma=sigma, levels=levels,
                                    numcores=numcores)
-        self._contour2(plotobj, overcontour=overplot)
+        self._contour(plotobj, overcontour=overplot)
 
     # Aliases
     # interval_projection = int_proj

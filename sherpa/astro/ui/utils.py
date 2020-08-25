@@ -11258,8 +11258,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._arfplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self, id=None, lo=None, hi=None, replot=False,
@@ -11337,8 +11337,8 @@ class Session(sherpa.ui.utils.Session):
             else:
                 plotobj = self._astrosourceplot
 
-            self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
+            self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                       **kwargs)
             return
 
         super().plot_source(id=id, replot=replot, overplot=overplot,
@@ -11405,8 +11405,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._orderplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg(self, id=None, bkg_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
@@ -11474,8 +11474,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgdataplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_model(self, id=None, bkg_id=None, replot=False,
                        overplot=False, clearwindow=True, **kwargs):
@@ -11535,8 +11535,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgmodelhisto
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_resid(self, id=None, bkg_id=None, replot=False,
                        overplot=False, clearwindow=True, **kwargs):
@@ -11605,8 +11605,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgresidplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_ratio(self, id=None, bkg_id=None, replot=False,
                        overplot=False, clearwindow=True, **kwargs):
@@ -11675,8 +11675,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgratioplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_delchi(self, id=None, bkg_id=None, replot=False,
                         overplot=False, clearwindow=True, **kwargs):
@@ -11745,8 +11745,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgdelchiplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_chisqr(self, id=None, bkg_id=None, replot=False,
                         overplot=False, clearwindow=True, **kwargs):
@@ -11807,8 +11807,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgchisqrplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_fit(self, id=None, bkg_id=None, replot=False,
                      overplot=False, clearwindow=True, **kwargs):
@@ -11868,8 +11868,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgfitplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None,
                         replot=False, overplot=False, clearwindow=True,
@@ -11933,8 +11933,8 @@ class Session(sherpa.ui.utils.Session):
         else:
             plotobj = self._bkgsourceplot
 
-        self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
@@ -12085,8 +12085,8 @@ class Session(sherpa.ui.utils.Session):
                                                     otherids=otherids,
                                                     numcores=numcores, bkg_id=bkg_id)
 
-        self._plot2(efplot, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
@@ -12236,8 +12236,8 @@ class Session(sherpa.ui.utils.Session):
                                                     otherids=otherids,
                                                     numcores=numcores, bkg_id=bkg_id)
 
-        self._plot2(pfplot, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def _bkg_jointplot2(self, plot1, plot2, overplot=False,
                              clearwindow=True, **kwargs):
