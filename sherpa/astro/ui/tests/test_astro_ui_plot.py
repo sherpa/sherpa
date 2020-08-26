@@ -2367,6 +2367,55 @@ def test_data1d_plot_model(cls, plottype, extraargs, title):
 @requires_pylab
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title,plotcls",
+                         [("model", [], "Model",
+                           sherpa.plot.ModelPlot),
+                          ("model_component", ['mdl'],
+                           "Model component: polynom1d.mdl",
+                           sherpa.plot.ComponentModelPlot),
+                          ("source", [], "Source",
+                           sherpa.plot.SourcePlot),
+                          ("source_component", ['mdl'],
+                           "Source model component: polynom1d.mdl",
+                           sherpa.plot.ComponentSourcePlot)])
+def test_data1dint_get_model_plot(cls, plottype, extraargs, title, plotcls):
+    """Check we can plot a Data1DInt model.
+
+    For the Data1DInt case source and model return the
+    same plots apart for the title.
+
+    Note that we test both Session classes here.
+    """
+
+    from matplotlib import pyplot as plt
+
+    xlo = np.asarray([10, 12, 16, 20, 22])
+    xhi = np.asarray([12, 16, 19, 22, 26])
+    y = np.asarray([50, 54, 58, 60, 64])
+    yexp = np.asarray([22, 56, 52.5, 42, 96])
+
+    s = cls()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 0
+    mdl.c1 = 1
+
+    s.set_source(mdl)
+
+    plot = getattr(s, "get_{}_plot".format(plottype))(*extraargs)
+
+    assert isinstance(plot, plotcls)
+    assert plot.title == title
+    assert plot.x == pytest.approx((xlo + xhi) / 2)
+    assert plot.y == pytest.approx(yexp)
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title",
                          [("model", [], "Model"),
                           ("model_component", ['tmdl'],
