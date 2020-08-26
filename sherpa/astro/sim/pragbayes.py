@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -231,8 +231,8 @@ class WalkWithSubIters(Walk):
                     try:
                         proposed_params = self._sampler.draw(current_params)
                     except CovarError:
-                        info("Draw rejected: covariance matrix failed. " +
-                             str(proposed_params))
+                        info("Draw rejected: covariance matrix failed: " +
+                             "{}".format(current_params))
                         # automatically reject if the covar is malformed
                         self._sampler.reject()
                         continue
