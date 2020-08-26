@@ -10304,6 +10304,21 @@ class Session(sherpa.ui.utils.Session):
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
+    def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
+                        id=1, otherids=(), num=500, bins=25, numcores=None,
+                        recalc=False):
+
+        if recalc and conv_model is None and \
+           isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+            conv_model = self.get_response(id)
+
+        return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
+                                       conv_model=conv_model, id=id, otherids=otherids,
+                                       num=num, bins=25, numcores=numcores,
+                                       recalc=recalc)
+
+    get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__
+
     def get_order_plot(self, id=None, orders=None, recalc=True):
         """Return the data used by plot_order.
 

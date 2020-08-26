@@ -8476,19 +8476,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_pvalue(mdl1, mdl2, conv_model=rsp)
 
         """
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA) and \
-           conv_model is None:
-            conv_model = self.get_response(id)
-        if not sherpa.utils.bool_cast(replot) or self._pvalue_results is None:
-            self._run_pvalue(null_model, alt_model, conv_model,
-                             id, otherids, num, bins, numcores)
 
-        results = self._pvalue_results
-        lrplot = self._lrplot
-        if not replot:
-            lrplot.prepare(results.ratios, bins,
-                           num, results.lr, results.ppp)
-
+        lrplot = self.get_pvalue_plot(null_model=null_model, alt_model=alt_model,
+                                      conv_model=conv_model, id=id, otherids=otherids,
+                                      num=num, bins=25, numcores=numcores,
+                                      recalc=not replot)
         self._plot(lrplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -8555,6 +8547,7 @@ class Session(NoNewAttributesAfterInit):
         >>> print(pvals)
 
         """
+
         lrplot = self._lrplot
         if not recalc:
             return lrplot
@@ -8570,7 +8563,6 @@ class Session(NoNewAttributesAfterInit):
         results = self._pvalue_results
         lrplot.prepare(results.ratios, bins,
                        num, results.lr, results.ppp)
-        self._lrplot = lrplot
         return lrplot
 
     #
