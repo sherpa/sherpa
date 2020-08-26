@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,13 +17,19 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import numpy as np
-from sherpa.utils.testing import requires_data, requires_fits
-from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import DataPlot, SourcePlot
-from sherpa.models.basic import Const1D, Gauss1D
-from sherpa import stats
 
 import pytest
+
+from sherpa.utils.testing import requires_data, requires_fits
+
+from sherpa.astro.data import DataPHA
+from sherpa.astro.plot import DataPlot, SourcePlot
+from sherpa.astro import plot as aplot
+from sherpa.data import Data1D
+from sherpa.models.basic import Const1D, Gauss1D
+from sherpa import stats
+from sherpa.utils.err import IOErr
+from sherpa.utils.testing import requires_pylab
 
 
 def test_sourceplot():
@@ -135,3 +141,90 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
     dplot = DataPlot()
     dplot.prepare(pha, stat=stat)
+
+
+@pytest.mark.parametrize("ptype",
+                         [pytest.param(aplot.ModelHistogram, marks=pytest.mark.xfail), aplot.SourcePlot])
+def test_plot_fail_with_non_pha(ptype):
+    """plots don't like Data1D objects"""
+
+    x = np.arange(3)
+    y = np.ones(3)
+    d = Data1D('tst', x, y)
+
+    m = Const1D()
+
+    p = ptype()
+
+    with pytest.raises(IOErr) as exc:
+        p.prepare(d, m)
+
+    assert str(exc.value) == "data set 'tst' does not contain a PHA spectrum"
+
+
+@requires_pylab
+@requires_data
+@requires_fits
+def test_modelphahistogram_prepare_wavelength(make_data_path):
+    """Check we can use wavelength setting"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.notice(3, 5)
+
+    mdl = Const1D()
+
+    # not bothered too much about the model (e.g. setting a response)
+    #
+    plot = aplot.ModelHistogram()
+    plot.prepare(pha, mdl)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'Counts/sec/Angstrom'
+    assert plot.title == 'Model'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+    assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.y > 0)
+    assert plot.y.size == 127  # why is this not 9?
+
+
+@requires_pylab
+@requires_data
+@requires_fits
+def test_sourceplot_prepare_wavelength(make_data_path):
+    """Check we can use wavelength setting"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.notice(3, 5)
+
+    mdl = Const1D()
+
+    # not bothered too much about the model (e.g. setting a response)
+    #
+    plot = aplot.SourcePlot()
+    plot.prepare(pha, mdl)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'f(lambda)  Photons/sec/cm$^2$/Angstrom '
+    assert plot.title == 'Source Model of my-name.pi'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+    assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.y > 0)
+    assert plot.y.size == 1090

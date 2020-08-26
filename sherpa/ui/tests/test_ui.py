@@ -252,6 +252,12 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui):
     emsg = "Convolved model\n.*\n is set for dataset full. You should use plot_model instead."
     assert re.match(emsg, str(exc.value))
 
+    with pytest.raises(IdentifierErr) as exc:
+        ui.get_source_plot('full')
+
+    emsg = "Convolved model\n.*\n is set for dataset full. You should use get_model instead."
+    assert re.match(emsg, str(exc.value))
+
     # Test Case 2
     ui.set_source('full', 'powlaw1d.p2')
     ui.get_source('full')

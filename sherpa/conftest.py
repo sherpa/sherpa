@@ -27,6 +27,7 @@ import pytest
 
 import numpy as np
 from numpy import VisibleDeprecationWarning
+import numpy as np
 
 from sherpa.utils.testing import SherpaTestCase
 
@@ -480,3 +481,21 @@ def hide_logging():
     logger.setLevel(logging.ERROR)
     yield
     logger.setLevel(olvl)
+
+
+@pytest.fixture
+def old_numpy_printing():
+    """Force the old style for NumPy printing.
+
+    This is intended to make it easier to check the
+    string output in tests.
+    """
+
+    oldopts = np.get_printoptions()
+    if 'legacy' in oldopts:
+        np.set_printoptions(legacy='1.13')
+
+    yield
+
+    if 'legacy' in oldopts:
+        np.set_printoptions(legacy=oldopts['legacy'])
