@@ -7357,8 +7357,6 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
-        Notes
-        -----
         The meaning of the grouping column is taken from [1]_, which says
         that +1 indicates the start of a bin, -1 if the channel is part
         of group, and 0 if the data grouping is undefined for all channels.
@@ -7515,8 +7513,6 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
-        Notes
-        -----
         The meaning of the quality column is taken from [1]_, which says
         that 0 indicates a "good" channel, 1 and 2 are for channels that
         are identified as "bad" or "dubious" (respectively) by software,
@@ -12349,8 +12345,8 @@ class Session(sherpa.ui.utils.Session):
         --------
         load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
 
-        Example
-        -------
+        Examples
+        --------
         Account for of asymmetric errors when calculating parameter
         uncertainties:
 
