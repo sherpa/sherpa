@@ -1056,6 +1056,7 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     """Test that the options have changed things, where easy to do so"""
 
     from matplotlib import pyplot as plt
+    import matplotlib
 
     dprefs = ui.get_data_plot_prefs()
     dprefs['xerrorbars'] = True
@@ -1124,7 +1125,15 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
 
     assert len(coll.get_segments()) == 42
 
-    assert coll.get_linestyles() == [(None, None)]
+    # The return value depends on matplotlib version (>= 3.3
+    # returns something). What has changed? Maybe this should
+    # not be tested?
+    #
+    expected = [(None, None)]
+    if matplotlib.__version__ >= '3.3.0':
+        expected = [(0.0, None)]
+
+    assert coll.get_linestyles() == expected
 
     # looks like the color has been converted to individual channels
     # - e.g. floating-point values for R, G, B, and alpha.
