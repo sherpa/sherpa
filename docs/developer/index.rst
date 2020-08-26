@@ -31,7 +31,7 @@ Install from source in conda
 ============================
 
 Conda can be used to install all the dependencies for Sherpa.
- 
+
 ::
 
     conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ds9 astropy ciao
@@ -393,3 +393,86 @@ them).
       New models should be added to both the ``Classes`` rubric - sorted
       by addtive and then multiplicative models, using an alphabetical
       sorting - and to the appropriate ``inheritance-diagram`` rule.
+
+Notes
+=====
+
+Notes on the design and changes to Sherpa.
+
+.. _model_dimensions:
+
+The dimensionality of models
+----------------------------
+
+Originally the Sherpa model class did not enforce any requirement on
+the models, so it was possible to combine 1D and 2D models, even though
+the results are unlikely to make sense. With the start of the regrid
+support, added in `PR #469 <https://github.com/sherpa/sherpa/pull/469>`_,
+the class hierarchy included 1D- and 2D- specific classes, but there
+was still no check on model expressions. This section describes the
+current way that models are checked:
+
+- the :py:class:`sherpa.models.model.Model` class defines a
+  :py:attr:`sherpa.models.model.Model.ndim` attribute, which is set
+  to ``None`` by default.
+- the :py:class:`sherpa.models.model.RegriddableModel1D` and
+  :py:class:`sherpa.models.model.RegriddableModel2D` classes set
+  this attribute to 1 or 2, respectively (most user-callable classes
+  are derived from one of these two classes).
+- the :py:class:`sherpa.models.model.CompositeModel` class checks
+  the ``ndim`` attribute for the components it is given (the
+  ``parts`` argument) and checks that they all have the same
+  ``ndim`` value (ignoring those models whose dimensionality
+  is set to ``None``). If there is a mis-match then a
+  :py:class:`sherpa.utils.err.ModelErr` is raised.
+
+An alternative approach would have been to introdude 1D and 2D
+specific classes, from which all models derive, and then require the
+parent classes to match. This was not attempted as it would require
+significantly-larger changes to Sherpa (but this change could still be
+made in the future).
+
+.. _model_combination:
+
+Combining model expressions
+---------------------------
+
+Models can be combined in several ways (for models derived from the
+:py:class:`sherpa.models.model.ArithmeticModel` class):
+
+- a unary operator, taking advantage of the ``__neg__`` and
+  ``__abs__`` special methods of a class;
+- a binary operator, using the ``__add__``, ``__sub__``, ``__mul__``,
+  ``__div__``, ``__floordiv__``, ``__truediv__``, ``__mod__`` and ``__pow__``
+  methods.
+
+This allows models such as::
+
+    sherpa.models.basic.Polynom1D('continuum') + sherpa.models.basic.Gauss1D('line')
+
+to be created, and relies on the :py:class:`sherpa.models.model.UnaryOpModel`
+and :py:class:`sherpa.models.model.BinaryOpModel` classes.
+
+The :py:class:`~sherpa.models.model.BinaryOpModel` class has special-case handling
+for values that are not a model expression (i.e. that do not derive
+from the :py:class:`~sherpa.models.model.ArithmeticModel` class),
+such as::
+
+    32424.43 * sherpa.astro.xspec.XSpowerlaw('pl')
+
+In this case the term ``32424.43`` is converted to an
+:py:class:`~sherpa.models.model.ArithmeticConstantModel` instance and then
+combined with the remaining model instance (``XSpowerlaw``).
+
+For those models that require the
+full set of elements, such as multiplication by a :term:RMF or a convolution
+kernel, requires creating a model that can "wrap" another
+model. The wrapping model will evaluate the wrapped model on
+the requested grid, and then apply any modifications.
+Examples include the
+:py:class:`sherpa.instrument.PSFModel` class,
+which creats :py:class:`sherpa.instrument.ConvolutionModel`
+instances,
+and the :py:class:`sherpa.astro.xspec.XSConvolutionKernel`
+class, which creates :py:class:`sherpa.astro.xspec.XSConvolutionModel`
+instances.

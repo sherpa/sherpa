@@ -1779,6 +1779,7 @@ class Polynom2D(RegriddableModel2D):
 
 
 class TableModel(ArithmeticModel):
+
     def __init__(self, name='tablemodel'):
         # these attributes should remain somewhat private
         # as not to conflict with user defined parameter names
