@@ -8827,7 +8827,7 @@ class Session(sherpa.ui.utils.Session):
 
         data = self.get_data(id)
         if isinstance(data, sherpa.astro.data.DataPHA):
-            model = self._get_model(id)
+            model = self.get_model(id)
 
             if data._responses:
 
