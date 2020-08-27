@@ -11155,76 +11155,6 @@ class Session(sherpa.ui.utils.Session):
                                            numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
-    def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
-                         hi=None, orders=None, model=None):
-        if isinstance(plotobj, sherpa.astro.plot.BkgFitPlot):
-            plotobj.prepare(self._prepare_plotobj(id, self._bkgdataplot,
-                                                  bkg_id=bkg_id),
-                            self._prepare_plotobj(id, self._bkgmodelplot,
-                                                  bkg_id=bkg_id))
-        elif isinstance(plotobj, sherpa.plot.FitPlot):
-            if isinstance(self.get_data(id), sherpa.data.Data1DInt):
-                modelplot = self._modelhistplot
-            else:
-                modelplot = self._modelplot
-            plotobj.prepare(self._prepare_plotobj(id, self._dataplot),
-                            self._prepare_plotobj(id, modelplot))
-        elif isinstance(plotobj, sherpa.plot.FitContour):
-            plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
-                            self._prepare_plotobj(id, self._modelcontour))
-        elif isinstance(plotobj, sherpa.astro.plot.ARFPlot):
-            plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
-                            self._get_pha_data(id))
-        elif(isinstance(plotobj, (sherpa.plot.ComponentModelPlot,
-                                  sherpa.plot.ComponentModelHistogramPlot,
-                                  sherpa.plot.ComponentSourcePlot,
-                                  sherpa.plot.ComponentSourceHistogramPlot))):
-            plotobj.prepare(self.get_data(id), model, self.get_stat())
-        elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_stat())
-        elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
-                                  sherpa.astro.plot.BkgRatioPlot,
-                                  sherpa.astro.plot.BkgResidPlot,
-                                  sherpa.astro.plot.BkgDelchiPlot,
-                                  sherpa.astro.plot.BkgChisqrPlot,
-                                  sherpa.astro.plot.BkgModelHistogram)):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_bkg_model(id, bkg_id),
-                            self.get_stat())
-        elif isinstance(plotobj, sherpa.astro.plot.BkgSourcePlot):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_bkg_source(id, bkg_id), lo, hi)
-        elif isinstance(plotobj, sherpa.astro.plot.SourcePlot):
-            data = self.get_data(id)
-            src = self.get_source(id)
-            plotobj.prepare(data, src, lo, hi)
-        elif isinstance(plotobj, sherpa.plot.SourcePlot):
-            data = self.get_data(id)
-            src = self.get_source(id)
-            plotobj.prepare(data, src)
-        elif (isinstance(plotobj, (sherpa.plot.PSFPlot,
-                                   sherpa.plot.PSFContour,
-                                   sherpa.plot.PSFKernelPlot,
-                                   sherpa.plot.PSFKernelContour))):
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
-        elif(isinstance(plotobj, (sherpa.plot.DataPlot,
-                                  sherpa.plot.DataContour))):
-            plotobj.prepare(self.get_data(id), self.get_stat())
-        elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
-            plotobj.prepare(self._get_pha_data(id),
-                            self.get_model(id), orders)
-
-        else:
-            # Using _get_fit becomes very complicated using simulfit
-            # models and datasets
-            #
-            # ids, f = self._get_fit(id)
-            plotobj.prepare(self.get_data(id), self.get_model(id),
-                            self.get_stat())
-
-        return plotobj
-
     def _set_plot_item(self, plottype, item, value):
         keys = list(self._plot_types.keys())
 
@@ -12309,24 +12239,16 @@ class Session(sherpa.ui.utils.Session):
         self._plot2(pfplot, overplot=overplot, clearwindow=clearwindow,
                     **kwargs)
 
-    def _plot_bkg_jointplot(self, plot2, id=None, bkg_id=None,
-                            replot=False, overplot=False,
-                            clearwindow=True, **kwargs):
+    def _bkg_jointplot2(self, plot1, plot2, overplot=False,
+                             clearwindow=True, **kwargs):
         """Create a joint plot for bkg, vertically aligned, fit data on the top.
 
         Parameters
         ----------
+        plot1 : sherpa.plot.Plot instance
+           The plot to appear in the top panel.
         plot2 : sherpa.plot.Plot instance
            The plot to appear in the bottom panel.
-        id : int or str, optional
-           The data set. If not given then the default identifier is
-           used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
-           Identify the background component to use, if there are
-           multiple ones associated with the data set.
-        replot : bool, optional
-           Set to ``True`` to use the previous values. The default is
-           ``False``.
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
@@ -12335,20 +12257,6 @@ class Session(sherpa.ui.utils.Session):
            new plot (e.g. for multi-panel plots)?
 
         """
-
-        # See the comments in sherpa/ui/utils.py::_plot_jointplot()
-        #
-        plot1 = self._bkgfitplot
-        if not sherpa.utils.bool_cast(replot):
-            plot1 = self._prepare_plotobj(id, plot1, bkg_id=bkg_id)
-            plot2 = self._prepare_plotobj(id, plot2, bkg_id=bkg_id)
-
-
-        self._bkg_jointplot2(plot1, plot2, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
-
-    def _bkg_jointplot2(self, plot1, plot2, overplot=False,
-                             clearwindow=True, **kwargs):
 
         self._jointplot.reset()
 

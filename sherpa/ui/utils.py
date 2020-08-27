@@ -11745,49 +11745,6 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
 
-    def _prepare_plotobj(self, id, plotobj, model=None):
-        id = self._fix_id(id)
-        # At the moment we always require a data object,
-        # even if not checked here directly.
-        #
-        d = self.get_data(id)
-        if isinstance(plotobj, sherpa.plot.FitPlot):
-            if isinstance(d, sherpa.data.Data1DInt):
-                modelplot = self._modelhistplot
-            else:
-                modelplot = self._modelplot
-            plotobj.prepare(self._prepare_plotobj(id, self._dataplot),
-                            self._prepare_plotobj(id, modelplot))
-        elif isinstance(plotobj, sherpa.plot.FitContour):
-            plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
-                            self._prepare_plotobj(id, self._modelcontour))
-        elif(isinstance(plotobj, (sherpa.plot.PSFPlot,
-                                  sherpa.plot.PSFContour,
-                                  sherpa.plot.PSFKernelPlot,
-                                  sherpa.plot.PSFKernelContour))):
-            plotobj.prepare(self.get_psf(id), d)
-        elif(isinstance(plotobj, (sherpa.plot.DataPlot,
-                                  sherpa.plot.DataContour))):
-            plotobj.prepare(d, self.get_stat())
-        elif(isinstance(plotobj, (sherpa.plot.ComponentModelPlot,
-                                  sherpa.plot.ComponentModelHistogramPlot,
-                                  sherpa.plot.ComponentSourcePlot,
-                                  sherpa.plot.ComponentSourceHistogramPlot))):
-            plotobj.prepare(d, model, self.get_stat())
-        elif(isinstance(plotobj, (sherpa.plot.SourcePlot,
-                                  sherpa.plot.SourceContour))):
-            plotobj.prepare(d, self.get_source(id),
-                            self.get_stat())
-        else:
-            # Using _get_fit becomes very complicated using simulfit
-            # models and datasets
-            #
-            # ids, f = self._get_fit(id)
-            plotobj.prepare(d, self.get_model(id),
-                            self.get_stat())
-
-        return plotobj
-
     def _multi_plot(self, args, plotmeth='plot'):
         if len(args) == 0:
             raise ArgumentTypeErr('plotargs')
@@ -11849,38 +11806,12 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
-    def _plot(self, id, plotobj, *args, **kwargs):
-        # if len(args) > 0:
-        #    raise SherpaError("cannot create plot for multiple data sets")
-        obj = plotobj
-
-        if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
-            obj = self._prepare_plotobj(id, plotobj, *args)
-
-        self._plot2(obj, **kwargs)
-
     def _plot2(self, obj, **kwargs):
-        """Broken out of _plot as trying to rework _prepare_plotobj"""
+        """Display a plot object"""
 
         try:
             sherpa.plot.begin()
             obj.plot(**kwargs)
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
-
-    def _overplot(self, id, plotobj, *args, **kwargs):
-        # if len(args) > 0:
-        #    raise SherpaError("cannot overplot for multiple data sets")
-        obj = plotobj
-
-        if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
-            obj = self._prepare_plotobj(id, plotobj, *args)
-        try:
-            sherpa.plot.begin()
-            obj.overplot(**kwargs)
         except:
             sherpa.plot.exceptions()
             raise
@@ -13163,20 +13094,16 @@ class Session(NoNewAttributesAfterInit):
         self._plot2(plotobj, overplot=overplot, clearwindow=clearwindow,
                     **kwargs)
 
-    def _plot_jointplot(self, plot2, id=None, replot=False,
-                        overplot=False, clearwindow=True, **kwargs):
+    def _jointplot2(self, plot1, plot2,
+                    overplot=False, clearwindow=True, **kwargs):
         """Create a joint plot, vertically aligned, fit data on the top.
 
         Parameters
         ----------
+        plot1 : sherpa.plot.Plot instance
+           The plot to appear in the top panel.
         plot2 : sherpa.plot.Plot instance
            The plot to appear in the bottom panel.
-        id : int or str, optional
-           The data set. If not given then the default identifier is
-           used, as returned by `get_default_id`.
-        replot : bool, optional
-           Set to ``True`` to use the values calculated by the last
-           call to `plot_fit_resid`. The default is ``False``.
         overplot : bool, optional
            If ``True`` then add the data to an exsiting plot, otherwise
            create a new plot. The default is ``False``.
@@ -13185,23 +13112,6 @@ class Session(NoNewAttributesAfterInit):
            new plot (e.g. for multi-panel plots)?
 
         """
-
-        plot1 = self._fitplot
-
-        if not replot:
-            # The assumption is that _prepare_plotobj doesn't actually
-            # create a new object but modifies the input object (so
-            # the re-assignment could be dropped here). If a new instance is
-            # created then plot2 should be returned by this routine
-            #
-            plot1 = self._prepare_plotobj(id, plot1)
-            plot2 = self._prepare_plotobj(id, plot2)
-
-        self._jointplot2(plot1, plot2,
-                         overplot=False, clearwindow=True, **kwargs)
-
-    def _jointplot2(self, plot1, plot2,
-                    overplot=False, clearwindow=True, **kwargs):
 
         self._jointplot.reset()
 
@@ -13816,37 +13726,11 @@ class Session(NoNewAttributesAfterInit):
     # Contours
     #
 
-    def _contour(self, id, plotobj, replot=False, overcontour=False, **kwargs):
-        # if len(args) > 0:
-        # raise SherpaError("cannot create contour plot for multiple data sets")
-        obj = plotobj
-
-        if not replot:
-            obj = self._prepare_plotobj(id, plotobj)
-
-        self._contour2(plotobj, overcontour=overcontour, **kwargs)
-
     def _contour2(self, plotobj, overcontour=False, **kwargs):
 
         try:
             sherpa.plot.begin()
             plotobj.contour(overcontour=overcontour, **kwargs)
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
-
-    def _overcontour(self, id, plotobj, **kwargs):
-        # if len(args) > 0:
-        # raise SherpaError("cannot overplot contours for multiple data sets")
-        obj = plotobj
-
-        if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
-            obj = self._prepare_plotobj(id, plotobj)
-        try:
-            sherpa.plot.begin()
-            obj.overcontour(**kwargs)
         except:
             sherpa.plot.exceptions()
             raise
