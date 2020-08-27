@@ -144,7 +144,7 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
 
 @pytest.mark.parametrize("ptype",
-                         [pytest.param(aplot.ModelHistogram, marks=pytest.mark.xfail), aplot.SourcePlot])
+                         [aplot.ModelPHAHistogram, aplot.SourcePlot])
 def test_plot_fail_with_non_pha(ptype):
     """plots don't like Data1D objects"""
 
@@ -182,7 +182,7 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
 
     # not bothered too much about the model (e.g. setting a response)
     #
-    plot = aplot.ModelHistogram()
+    plot = aplot.ModelPHAHistogram()
     plot.prepare(pha, mdl)
 
     assert plot.xlabel == 'Wavelength (Angstrom)'
@@ -193,7 +193,7 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
     assert np.all(plot.y > 0)
-    assert plot.y.size == 127  # why is this not 9?
+    assert plot.y.size == 9
 
 
 @requires_pylab

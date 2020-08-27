@@ -65,7 +65,7 @@ class Session(sherpa.ui.utils.Session):
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
         self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
-        self._bkgmodelplot = sherpa.astro.plot.BkgModelPlot()
+        self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
         self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
         self._bkgchisqrplot = sherpa.astro.plot.BkgChisqrPlot()
         self._bkgdelchiplot = sherpa.astro.plot.BkgDelchiPlot()
@@ -166,7 +166,7 @@ class Session(sherpa.ui.utils.Session):
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
         self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
-        self._bkgmodelplot = sherpa.astro.plot.BkgModelPlot()
+        self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
         self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
         self._bkgchisqrplot = sherpa.astro.plot.BkgChisqrPlot()
         self._bkgdelchiplot = sherpa.astro.plot.BkgDelchiPlot()
@@ -10252,10 +10252,14 @@ class Session(sherpa.ui.utils.Session):
             dataobj = self.get_data_plot(id, recalc=recalc)
 
             # We don't use get_model_plot as that uses the ungrouped data
-            # modelobj = self.get_model_plot(id)
+            #    modelobj = self.get_model_plot(id)
+            # but we do want to use a histogram plot, not _modelplot.
+            # modelobj = self._modelplot
 
-            modelobj = self._modelplot
-
+            # Should this object be stored in self? There's
+            # no way to get it by API (apart from get_fit_plot).
+            #
+            modelobj = sherpa.astro.plot.ModelPHAHistogram()
             modelobj.prepare(d, self.get_model(id),
                              self.get_stat())
 
@@ -12298,8 +12302,8 @@ class Session(sherpa.ui.utils.Session):
             oldval = plot2.plot_prefs['xlog']
             if (('xlog' in self._bkgdataplot.plot_prefs and
                  self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
+                ('xlog' in self._bkgmodelplot.histo_prefs and
+                 self._bkgmodelplot.histo_prefs['xlog'])):
                 plot2.plot_prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)

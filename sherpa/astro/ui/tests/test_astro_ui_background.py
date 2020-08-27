@@ -573,7 +573,7 @@ def test_pha1_eval(clean_astro_ui):
     bplot1 = ui.get_bkg_model_plot()
 
     assert splot.title == 'Model'
-    assert bplot1.title == 'Model'
+    assert bplot1.title == 'Background Model Contribution'
 
     # check the model evaluates correctly
     # - backgrond is just multiplied by the arf
@@ -601,7 +601,7 @@ def test_pha1_eval(clean_astro_ui):
     assert bplot1.y == pytest.approx(by1)
 
     bplot2 = ui.get_bkg_model_plot(bkg_id=2)
-    assert bplot2.title == 'Model'
+    assert bplot2.title == 'Background Model Contribution'
     assert bplot2.y == pytest.approx(by2)
 
 

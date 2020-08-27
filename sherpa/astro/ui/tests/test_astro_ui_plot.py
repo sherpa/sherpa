@@ -40,8 +40,8 @@ from sherpa.astro.ui.utils import Session as AstroSession
 
 from sherpa.plot import DataPlot, FitPlot, ModelPlot
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
-    OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot
-import sherpa.astro.plot as astroplot
+    OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot, \
+    ModelPHAHistogram, BkgModelHistogram, BkgModelPHAHistogram
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
@@ -52,7 +52,6 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 
 import sherpa.ui.utils
 import sherpa.astro.ui.utils
-
 
 _data_chan = np.linspace(1, 10, 10, dtype=np.int8)
 _data_counts = np.asarray([0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
@@ -610,7 +609,7 @@ def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
     yexp = _arf * BGND_NORM * _energies_width
     assert bp.y == pytest.approx(yexp)
 
-    assert bp.title == 'Model'
+    assert bp.title == 'Background Model Contribution'
     assert bp.xlabel == 'Channel'
     assert bp.ylabel == 'Counts/sec/channel'
 
@@ -646,7 +645,7 @@ def test_get_bkg_model_plot_recalc(clean_astro_ui):
     bp = ui.get_bkg_model_plot(recalc=False)
     assert bp.xlo is None
     assert bp.y is None
-    assert bp.title == 'Model'
+    assert bp.title == 'Background Model Contribution'
 
 
 def test_get_bkg_source_plot_recalc(clean_astro_ui):
@@ -683,7 +682,7 @@ def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
     yexp = _arf * BGND_NORM
     assert bp.y == pytest.approx(yexp)
 
-    assert bp.title == 'Model'
+    assert bp.title == 'Background Model Contribution'
     assert bp.xlabel == 'Energy (keV)'
     assert bp.ylabel == 'Counts/sec/keV'
 
@@ -749,6 +748,7 @@ def test_get_bkg_fit_plot(idval, clean_astro_ui):
 
     dp = fp.dataplot
     mp = fp.modelplot
+    assert isinstance(mp, BkgModelPHAHistogram)
 
     assert dp.title == 'example-bkg'
     assert mp.title == 'Background Model Contribution'
@@ -756,7 +756,9 @@ def test_get_bkg_fit_plot(idval, clean_astro_ui):
     for plot in [dp, mp]:
         assert plot.xlabel == 'Channel'
         assert plot.ylabel == 'Counts/sec/channel'
-        assert plot.x == pytest.approx(_data_chan)
+
+    assert dp.x == pytest.approx(_data_chan)
+    assert mp.xlo == pytest.approx(_data_chan)
 
     yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dp.y == pytest.approx(dp.y)
@@ -780,6 +782,7 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
 
     dp = fp.dataplot
     mp = fp.modelplot
+    assert isinstance(mp, BkgModelPHAHistogram)
 
     assert dp.title == 'example-bkg'
     assert mp.title == 'Background Model Contribution'
@@ -787,7 +790,9 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
     for plot in [dp, mp]:
         assert plot.xlabel == 'Energy (keV)'
         assert plot.ylabel == 'Counts/sec/keV'
-        assert plot.x == pytest.approx(_energies_mid)
+
+    assert dp.x == pytest.approx(_energies_mid)
+    assert mp.xlo == pytest.approx(_energies_lo)
 
     yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dp.y == pytest.approx(dp.y)
@@ -805,6 +810,7 @@ def check_bkg_fit(plotfunc, isfit=True):
 
     dplot = ui._session._bkgdataplot
     mplot = ui._session._bkgmodelplot
+    assert isinstance(mplot, BkgModelPHAHistogram)
 
     # check the "source" plots are not set
     for plot in [ui._session._dataplot, ui._session._modelplot]:
@@ -818,7 +824,8 @@ def check_bkg_fit(plotfunc, isfit=True):
         assert plot.xlabel == xlabel
         assert plot.ylabel == 'Counts/sec/channel'
 
-        assert plot.x == pytest.approx(_data_chan)
+    assert dplot.x == pytest.approx(_data_chan)
+    assert mplot.xlo == pytest.approx(_data_chan)
 
     assert dplot.title == 'example-bkg'
     assert mplot.title == 'Background Model Contribution'
@@ -921,7 +928,7 @@ def check_bkg_chisqr(plotfunc, isfit=True):
 
 
 def check_bkg_model(plotfunc, isfit=True):
-    """Is the background residual displayed?"""
+    """Is the background model displayed?"""
 
     # check the "other" background plots are not set
     for pd in [ui._session._bkgdelchiplot,
@@ -936,17 +943,14 @@ def check_bkg_model(plotfunc, isfit=True):
     assert ui._session._bkgsourceplot.y is None
 
     plot = ui._session._bkgmodelhisto
+    assert isinstance(plot, BkgModelHistogram)
     assert plot.xlo is not None
     assert plot.xhi is not None
     assert plot.y is not None
 
-    # Very limited checks. The y-axis label depends on the
-    # LaTeX emulation of the backend so will need changing
-    # once we have multiple backends.
-    #
     assert plot.xlabel == 'Channel'
     assert plot.ylabel == 'Counts/sec/channel'
-    assert plot.title == 'Model'
+    assert plot.title == 'Background Model Contribution'
 
     assert np.all(plot.y >= 0)
 
@@ -1376,7 +1380,7 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     assert ymin == pytest.approx(7.644069935298475e-05)
     assert ymax == pytest.approx(0.017031102671151491)
 
-    assert len(ax.lines) == 2
+    assert len(ax.lines) == 3
 
     # DATA
     #
@@ -1399,6 +1403,16 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     assert line.get_markerfacecolor() == line.get_color()  # option over-ridden
     assert line.get_markersize() == pytest.approx(6.0)
     assert line.get_alpha() == pytest.approx(0.7)
+
+    # MODEL - points
+    #
+    pts = ax.lines[2]
+    assert pts.get_color() != 'green'  # option over-ridden
+    assert pts.get_linestyle() == 'None'
+    assert pts.get_marker() == 'None'
+    assert pts.get_markerfacecolor() == line.get_color()  # option over-ridden
+    assert pts.get_markersize() == pytest.approx(6.0)
+    assert pts.get_alpha() == pytest.approx(0.7)
 
     # assume error bars handled by a collection; test a subset
     # of values
@@ -2581,16 +2595,16 @@ def test_pha1_fit_plot_recalc(clean_astro_ui, basic_pha1):
     p = ui.get_fit_plot('tst', recalc=False)
     assert isinstance(p, FitPlot)
     assert isinstance(p.dataplot, DataPlot)
-    assert isinstance(p.modelplot, ModelPlot)
+    assert isinstance(p.modelplot, ModelPHAHistogram)
     assert p.dataplot.x.size == 42
-    assert p.modelplot.x.size == 42
+    assert p.modelplot.xlo.size == 42
 
     p = ui.get_fit_plot('tst', recalc=True)
     assert isinstance(p, FitPlot)
     assert isinstance(p.dataplot, DataPlot)
-    assert isinstance(p.modelplot, ModelPlot)
+    assert isinstance(p.modelplot, ModelPHAHistogram)
     assert p.dataplot.x.size == 26
-    assert p.modelplot.x.size == 26
+    assert p.modelplot.xlo.size == 26
 
 
 @requires_fits
@@ -2628,8 +2642,8 @@ def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
     p = ui.get_bkg_fit_plot(recalc=True)
     assert isinstance(p, FitPlot)
     assert isinstance(p.dataplot, DataPlot)
-    assert isinstance(p.modelplot, astroplot.BkgModelPlot)
+    assert isinstance(p.modelplot, ModelPHAHistogram)
     assert p.dataplot.x.size == 26
-    assert p.modelplot.x.size == 26
+    assert p.modelplot.xlo.size == 26
     assert p.dataplot.title == 'my-name.pi'
     assert p.modelplot.title == 'Background Model Contribution'
