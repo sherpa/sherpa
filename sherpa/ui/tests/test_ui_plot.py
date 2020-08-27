@@ -35,7 +35,7 @@ from sherpa import ui
 from sherpa.ui.utils import Session as BaseSession
 from sherpa.astro.ui.utils import Session as AstroSession
 
-from sherpa.data import Data1DInt, Data2D
+from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
 from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
@@ -135,10 +135,10 @@ def test_get_fit_plot(idval):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("get_prefs", [ui.get_data_plot_prefs,
-                                       ui.get_model_plot_prefs])
-def test_plot_prefs_xxx(get_prefs):
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["data", "model"])
+@pytest.mark.parametrize("arg", [None, 1, 'foo'])
+def test_plot_prefs_xxx(session, ptype, arg):
     """Can we change and reset a preference.
 
     Pick the 'xlog' field, since the assumption is that: a) this
@@ -150,19 +150,60 @@ def test_plot_prefs_xxx(get_prefs):
     these tests in this case.
     """
 
-    prefs1 = get_prefs()
+    s = session()
+
+    get_prefs = getattr(s, 'get_{}_plot_prefs'.format(ptype))
+
+    prefs1 = get_prefs(arg)
     assert not prefs1['xlog']
     prefs1['xlog'] = True
 
-    prefs2 = get_prefs()
+    prefs2 = get_prefs(arg)
     assert prefs2['xlog']
 
-    ui.clean()
-    prefs3 = get_prefs()
+    s.clean()
+    prefs3 = get_prefs(arg)
     assert prefs1['xlog']
     assert prefs2['xlog']
     assert not prefs3['xlog']
 
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_prefs_model_data1dint(session):
+    """Data1DInt model class is different to Data1D
+    """
+
+    s = session()
+
+    get_prefs = getattr(s, 'get_model_plot_prefs')
+
+    s.load_arrays(1, [1, 2, 4], [2, 3, 5], [4, 5, 10],
+                  Data1DInt)
+
+    s.load_arrays(2, [1, 2, 4], [4, 5, 10],
+                  Data1D)
+
+    # when there's no dataset it defaults to the plot, not histogram
+    # prefs
+    prefs = get_prefs('bob')
+    assert 'xerrorbars' in prefs
+    assert 'xaxis' in prefs
+    assert 'ratioline' in prefs
+
+    # It's not easy to check the difference between
+    # point and histogram preferences. Some differences
+    # are xerrorbars, xaxis, and ratioline.
+    #
+    prefs = get_prefs()
+    assert 'xerrorbars' not in prefs
+    assert 'xaxis' not in prefs
+    assert 'ratioline' not in prefs
+
+    prefs = get_prefs(2)
+    assert 'xerrorbars' in prefs
+    assert 'xaxis' in prefs
+    assert 'ratioline' in prefs
 
 def change_example(idval):
     """Change the example y values (created by setup_example)"""

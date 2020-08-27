@@ -1177,7 +1177,7 @@ def test_pha1_plot_data_options(caplog, clean_astro_ui, basic_pha1):
     from matplotlib import pyplot as plt
     import matplotlib
 
-    prefs = ui.get_data_plot_prefs()
+    prefs = ui.get_data_plot_prefs('tst')
 
     # check the preference are as expected for the boolean cases
     assert not prefs['xerrorbars']
@@ -1280,7 +1280,7 @@ def test_pha1_plot_data_options(caplog, clean_astro_ui, basic_pha1):
 @requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
+def test_pha1_plot_model_options(caplog, clean_astro_ui, basic_pha1):
     """Test that the options have changed things, where easy to do so
 
     In matplotlib 3.1 the plot_model call causes a MatplotlibDeprecationWarning
@@ -1296,13 +1296,7 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
 
     from matplotlib import pyplot as plt
 
-    # Note that for PHA data sets, the mode is drawn as a histogram,
-    # so get_model_plot_prefs doesn't actually work. We need to change
-    # the histogram prefs instead. See issue
-    # https://github.com/sherpa/sherpa/issues/672
-    #
-    # prefs = ui.get_model_plot_prefs()
-    prefs = ui.get_model_plot().histo_prefs
+    prefs = ui.get_model_plot_prefs('tst')
 
     # check the preference are as expected for the boolean cases
     assert not prefs['xlog']
@@ -1322,7 +1316,18 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
     prefs['markerfacecolor'] = 'yellow'
     prefs['markersize'] = 8
 
-    ui.plot_model()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.plot_model()
+
+    # check for linecolor warning
+    assert len(caplog.record_tuples) == 1
+    rec = caplog.record_tuples[0]
+    assert len(rec) == 3
+    loc, lvl, msg = rec
+
+    assert loc == 'sherpa.plot.pylab_backend'
+    assert lvl == logging.WARNING
+    assert msg == 'The linecolor attribute (red) is unused.'
 
     ax = plt.gca()
     assert ax.get_xscale() == 'log'

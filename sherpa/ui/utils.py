@@ -10544,8 +10544,20 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: discussion of preferences needs better handling
     # of how it interacts with the chosen plot backend.
     #
-    def get_data_plot_prefs(self):
+    def get_data_plot_prefs(self, id=None):
         """Return the preferences for plot_data.
+
+        The plot preferences may depend on the data set,
+        so it is now an optional argument.
+
+        .. versionchanged:: 4.12.2
+           The id argument has been given.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
         Returns
         -------
@@ -10642,6 +10654,8 @@ class Session(NoNewAttributesAfterInit):
         >>> prefs['yerrorbars'] = False
 
         """
+
+        # At the moment id is ignored
         return self._dataplot.plot_prefs
 
     # also in sherpa.astro.utils (copies this docstring)
@@ -10911,8 +10925,20 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_model_plot_prefs(self):
+    def get_model_plot_prefs(self, id=None):
         """Return the preferences for plot_model.
+
+        The plot preferences may depend on the data set,
+        so it is now an optional argument.
+
+        .. versionchanged:: 4.12.2
+           The id argument has been given.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
         Returns
         -------
@@ -10951,7 +10977,17 @@ class Session(NoNewAttributesAfterInit):
         >>> prefs['color'] = 'green'
 
         """
+
+        try:
+            d = self.get_data(id)
+            if isinstance(d, sherpa.data.Data1DInt):
+                return self._modelhistplot.histo_prefs
+
+        except IdentifierErr:
+            pass
+
         return self._modelplot.plot_prefs
+
 
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.

@@ -10141,6 +10141,20 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
+    def get_model_plot_prefs(self, id=None):
+
+        try:
+            d = self.get_data(id)
+            if isinstance(d, sherpa.astro.data.DataPHA):
+                return self._modelhisto.histo_prefs
+
+        except IdentifierErr:
+            pass
+
+        return super().get_model_plot_prefs(id)
+
+    get_model_plot_prefs.__doc__ = sherpa.ui.utils.Session.get_model_plot_prefs.__doc__
+
     # also in sherpa.utils; it does not seem worthwhile creating a new
     # docstring here
     def get_model_plot(self, id=None, recalc=True):
