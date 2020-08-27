@@ -11848,7 +11848,7 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
 
-    def _multi_plot(self, args, plotmeth='plot'):
+    def _multi_plot(self, args, plotmeth='plot', **kwargs):
         if len(args) == 0:
             raise ArgumentTypeErr('plotargs')
 
@@ -11889,7 +11889,7 @@ class Session(NoNewAttributesAfterInit):
 
         if len(plots) == 1:
             plotmeth = getattr(self, '_' + plotmeth)
-            plotmeth(plots[0])
+            plotmeth(plots[0], **kwargs)
             return
 
         nrows = 2
@@ -11901,7 +11901,7 @@ class Session(NoNewAttributesAfterInit):
         try:
             sherpa.plot.begin()
             while plots:
-                plotmeth(plots.pop(0))
+                plotmeth(plots.pop(0), **kwargs)
 
         except:
             sherpa.plot.exceptions()
@@ -12095,7 +12095,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how to list information/examples about the backends?
     # have some introductory text, but prob. need a link
     # to more information
-    def plot(self, *args):
+    def plot(self, *args, **kwargs):
         """Create one or more plot types.
 
         The plot function creates one or more plots, depending on the
@@ -12103,6 +12103,10 @@ class Session(NoNewAttributesAfterInit):
         data set identifier, and this can be repeated. If no data set
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
+
+        .. versionchanged:: 4.12.2
+           Keyword arguments, such as alpha and ylog, can be sent to
+           each plot.
 
         Raises
         ------
@@ -12204,6 +12208,9 @@ class Session(NoNewAttributesAfterInit):
         plots. The choice of back end is made by changing the
         ``options.plot_pkg`` setting in the Sherpa configuration file.
 
+        The keyword arguments are sent to each plot (so care must be
+        taken to ensure they are valid for all plots).
+
         Examples
         --------
 
@@ -12231,8 +12238,13 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("fit", "nucleus", "fit", "jet")
 
+        Draw the data and model plots both with a log-scale for the
+        y axis:
+
+        >>> plot("data", "model", ylog=True)
+
         """
-        self._multi_plot(args)
+        self._multi_plot(args, **kwargs)
 
     def plot_data(self, id=None, replot=False, overplot=False,
                   clearwindow=True, **kwargs):
@@ -13809,7 +13821,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how to list information/examples about the backends?
     # have some introductory text, but prob. need a link
     # to more information
-    def contour(self, *args):
+    def contour(self, *args, **kwargs):
         """Create a contour plot for an image data set.
 
         Create one or more contour plots, depending on the arguments
@@ -13818,6 +13830,10 @@ class Session(NoNewAttributesAfterInit):
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used. This is for
         2D data sets.
+
+        .. versionchanged:: 4.12.2
+           Keyword arguments, such as alpha, can be sent to
+           each plot.
 
         Raises
         ------
@@ -13877,6 +13893,9 @@ class Session(NoNewAttributesAfterInit):
            The source model (without any PSF convolution set by
            `set_psf`).
 
+        The keyword arguments are sent to each plot (so care must be
+        taken to ensure they are valid for all plots).
+
         Examples
         --------
 
@@ -13888,8 +13907,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> contour('data', 'model', 'fit', 'resid')
 
+        >>> contour('data', 'model', alpha=0.7)
+
         """
-        self._multi_plot(args, 'contour')
+        self._multi_plot(args, plotmeth='contour', **kwargs)
 
     def contour_data(self, id=None, replot=False, overcontour=False, **kwargs):
         """Contour the values of an image data set.

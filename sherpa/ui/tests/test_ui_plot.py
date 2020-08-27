@@ -1090,6 +1090,8 @@ def test_plot_single(session):
 def test_plot_multiple(session):
     """Can we call plot() with multiple plot types?
 
+    Also tests out sending in a kwarg.
+
     There's no real way to test this without a backend.
     """
 
@@ -1112,7 +1114,7 @@ def test_plot_multiple(session):
     # pick an odd number to plot
     s.plot("data", "tst", "model", "tst",
            "fit", "tst", "source", "tst",
-           "ratio", "tst")
+           "ratio", "tst", alpha=0.8)
 
     # Note: I wanted to try source_component but it is not
     # clear it works when the id is not the default.
@@ -1131,6 +1133,9 @@ def test_plot_multiple(session):
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x'
         assert ax.yaxis.get_label().get_text() == ylabel
+
+        assert len(ax.lines) > 0
+        assert ax.lines[0].get_alpha() == 0.8
 
     plt.close()
 

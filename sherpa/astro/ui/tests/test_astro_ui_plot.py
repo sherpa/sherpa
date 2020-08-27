@@ -1127,6 +1127,36 @@ def test_img_contour_function(clean_astro_ui, basic_img):
     ui.contour("data", "model", "source", "fit")
 
 
+@requires_pylab
+@requires_fits
+@requires_data
+def test_img_contour_function_kwarg(clean_astro_ui, basic_img):
+    """Check we can change the alpha setting."""
+
+    from matplotlib import pyplot as plt
+
+    ui.contour("data", "model", "source", "fit", alpha=0.2)
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 4
+
+    for i, ax in enumerate(axes, 1):
+
+        assert ax.get_geometry() == (2, 2, i)
+
+        assert ax.get_xscale() == 'linear'
+        assert ax.get_yscale() == 'linear'
+
+        assert len(ax.lines) ==0
+        assert len(ax.collections) > 0
+
+        col = ax.collections[0]
+        assert col.get_alpha() == 0.2
+
+    plt.close()
+
+
 @requires_plotting
 @requires_fits
 @requires_data
