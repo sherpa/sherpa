@@ -11859,10 +11859,6 @@ class Session(NoNewAttributesAfterInit):
         allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))
         args = list(args)
 
-        # TODO: can we say ('bkg', 1, 1, 'bkg', 1, 2) to allow multiple
-        #       arguments - as we have a "fixed" set of allowed tokens for
-        #       the plot type it should be okay.
-        #
         while args:
             plottype = args.pop(0)
             _check_type(plottype, string_types, 'plottype', 'a string')
@@ -11873,10 +11869,16 @@ class Session(NoNewAttributesAfterInit):
             except KeyError:
                 raise ArgumentErr('badplottype', plottype)
 
-            if args and (args[0] not in allowed_types):
-                id = args.pop(0)
-            else:
-                id = None
+            # Collect the arguments for the get_<>_plot/contour
+            # call. Loop through until we hit a supported
+            # plot/contour type.
+            #
+            getargs = []
+            while args:
+                if args[0] in allowed_types:
+                    break
+
+                getargs.append(args.pop(0))
 
             funcname = 'get_{}_{}'.format(plotname, plotmeth)
             getfunc = getattr(self, funcname)
@@ -11885,7 +11887,7 @@ class Session(NoNewAttributesAfterInit):
             # object to support plots like
             #    plot("data", 1, "data", 2)
             #
-            plots.append(copy.deepcopy(getfunc(id)))
+            plots.append(copy.deepcopy(getfunc(*getargs)))
 
         if len(plots) == 1:
             plotmeth = getattr(self, '_' + plotmeth)
@@ -12099,8 +12101,8 @@ class Session(NoNewAttributesAfterInit):
         """Create one or more plot types.
 
         The plot function creates one or more plots, depending on the
-        arguments it is sent: a plot type, followed by an optional
-        data set identifier, and this can be repeated. If no data set
+        arguments it is sent: a plot type, followed by optional
+        identifiers, and this can be repeated. If no data set
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
 
@@ -12242,6 +12244,11 @@ class Session(NoNewAttributesAfterInit):
         y axis:
 
         >>> plot("data", "model", ylog=True)
+
+        Plot the backgrounds for dataset 1 using the 'up' and 'down'
+        components (in this case the background identifier):
+
+        >>> plot('bkg', 1, 'up', 'bkg', 1, 'down')
 
         """
         self._multi_plot(args, **kwargs)

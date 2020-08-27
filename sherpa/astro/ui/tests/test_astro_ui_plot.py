@@ -2677,3 +2677,26 @@ def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
     assert p.modelplot.xlo.size == 26
     assert p.dataplot.title == 'my-name.pi'
     assert p.modelplot.title == 'Background Model Contribution'
+
+
+@requires_pylab
+@requires_fits
+@requires_data
+def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1):
+    """Check plot('bkg', 1, 1, 'bkg', 1, 2)
+
+    The dataid is actually 'tst', and the way we check
+    it has worked is by getting it to check for an unknown
+    background component: if the second argument is
+    recognized then we get an error.
+
+    Of course, just checking ('bkg', 'tst', 1) is in some
+    ways enough.
+
+    """
+
+    with pytest.raises(IdentifierErr) as exc:
+        ui.plot('bkg', 'tst', 1, 'bkg', 'tst', 'up')
+
+    emsg = 'background data set up in PHA data set tst has not been set'
+    assert str(exc.value) == emsg
