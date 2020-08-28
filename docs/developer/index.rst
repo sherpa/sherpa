@@ -482,3 +482,148 @@ instances,
 and the :py:class:`sherpa.astro.xspec.XSConvolutionKernel`
 class, which creates :py:class:`sherpa.astro.xspec.XSConvolutionModel`
 instances.
+
+.. _ui_plotting:
+
+Plotting data using the UI layer
+--------------------------------
+
+The plotting routines, such as
+:py:meth:`~sherpa.ui.utils.Session.plot_data` and
+:py:meth:`~sherpa.ui.utils.Session.plot_fit`,
+follow the same scheme:
+
+- The plot object is retrieved by the appropriate ``get_xxx_plot`` routine,
+  such as :py:meth:`~sherpa.ui.utils.Session.get_data_plot` and
+  :py:meth:`~sherpa.ui.utils.Session.get_fit_plot`.
+
+- These ``get_xxx_plot`` calls retrieve the correct plot object -
+  which is normally a sub-class of :py:class:`~sherpa.plot.Plot`
+  or :py:class:`~sherpa.plot.Histogram` - from the session object.
+
+  .. note::
+
+     The naming of these objects in the
+     :py:class:`~sherpa.ui.utils.Session` object is rather hap-hazard
+     and would benefit from a more-structured approach.
+
+  If the ``recalc`` argument is set then the ``prepare`` method
+  of the plot object is called, along with the needed data,
+  which depends on the plot type - e.g.
+  :py:class:`sherpa.plot.DataPlot.prepare` needs data and
+  statistic objects and :py:class:`sherpa.plot.ModelPlot.prepare`
+  needs data and model objects (and a statistic class too but in
+  this case it isn't used).
+
+  Calls to other access other plot objects may be required,
+  such as the fit plot requiring both data and model objects.
+  It is also the place that specialised logic, such as selecting
+  a histogram-style plot for :py:class:`~sherpa.data.Data1DInt`
+  data rather than the default plot style, is made.
+
+  These plot objects generally do not require a plotting backend,
+  so they can be set and returned even without Matplotlib
+  installed.
+
+- Once the plot object has been retrieved, is is sent to a plotting
+  routine - :py:meth:`sherpa.ui.utils.Session._plot` - which calls
+  the ``plot`` method of the object, passing
+  through the plot options. It is at this point that the plot
+  backend is used to create the visualization (these settings
+  are passed as ``**kwargs`` down to the plot backend routines).
+
+The :py:class:`sherpa.astro.ui.utils.Session` class adds a number
+of plot types and classes, as well as adds support for the
+:py:class:`~sherpa.astro.data.DataPHA` class to relevant
+plot commands, such as :py:meth:`~sherpa.astro.ui.utils.Session.plot_model`
+and :py:meth:`~sherpa.astro.ui.utils.Session.plot_fit`. This
+support complicates the interpretation of the model and fit types,
+as different plot types are used to represent the model when drawn
+directly (``plot_model``) and indirectly (``plot_fit``): these plot
+classes handle binning differently (that is, whether to apply the
+grouping from the source PHA dataset or use the native grid of the
+response).
+
+There are two routines that return the preference settings:
+:py:class:`~sherpa.ui.utils.Session.get_data_plot_prefs` and
+:py:class:`~sherpa.ui.utils.Session.get_model_plot_prefs`.
+The idea for these is that they return the preference dictionary that
+the relevant classes use. However, with the move to per-dataset
+plot types (in particular :py:class:`~sherpa.data.Data1DInt` and
+:py:class:`~sherpa.astro.data.DataPHA`). It is not entirely clear
+how well this scheme works.
+
+The contour routines follow the same scheme, although there is a
+lot less specialization of these methods, which makes the
+implementation easier. For these plot objects the
+:py:meth:`sherpa.ui.utils.Session._contour` method is used
+instead (and rather than have ``overplot`` we have ``overcontour``
+as the argument).
+
+The :py:meth:`sherpa.ui.utils.Session.plot` and
+:py:meth:`sherpa.ui.utils.Session.contour` methods allow multiple
+plots to be created by specifying the plot type as a list of
+argumemts. For example::
+
+    >>> s.plot('data', 'model', 'data', 2, 'model', 2)
+
+will create four plots, in a two-by-two grid, showing the
+data and model values for the default dataset and the
+dataset numbered 2. The implementation builds on top of the
+individual routines, by mapping the command value to the
+necessary ``get_xxx_plot`` or ``get_xxx_contour`` routine.
+
+The image routines are conceptually the same, but the actual
+implementation is different, in that it uses a centralized
+routine to create the image objects rather than have the
+logic encoded in the relavant ``get_xxx_image`` routines. It is
+planned to update the image code to match the plot and contour
+routines. The main difference is that the image display is handled
+via :term:`XPA` calls to an external :term:`DS9` application, rather than with
+direct calls to the plotting library.
+
+As an example, here I plot a "fit" for a :py:class:`~sherpa.data.Data1DInt`
+dataset:
+
+    >>> from sherpa.ui.utils import Session
+    >>> from sherpa.data import Data1DInt
+    >>> from sherpa.models.basic import Const1D
+    >>> s = Session()
+    >>> xlo = [2, 3, 5, 7, 8]
+    >>> xhi = [3, 5, 6, 8, 9]
+    >>> y = [10, 27, 14, 10, 14]
+    >>> s.load_arrays(1, xlo, xhi, y, Data1DInt)
+    >>> mdl = Const1D('mdl')
+    >>> mdl.c0 = 6
+    >>> s.set_source(mdl)
+    >>> s.plot_fit()
+
+.. image:: ../_static/developer/ui_plot_fit_basic.png
+
+We can see how the Matplotlib-specific options are passed
+to the backend, using a combination of direct access,
+such as ``color='black'``, and via the preferences
+(the marker settings):
+
+    >>> s.plot_data(color='black')
+    >>> p = s.get_model_plot_prefs()
+    >>> p['marker'] = '*'
+    >>> p['markerfacecolor'] = 'green'
+    >>> p['markersize'] = 12
+    >>> s.plot_model(linestyle=':', alpha=0.7, overplot=True)
+
+.. image:: ../_static/developer/ui_plot_fit_manual.png
+
+We can view the model plot object::
+
+    >>> plot = s.get_model_plot(recalc=False)
+    >>> print(type(plot))
+    <class 'sherpa.plot.ModelHistogramPlot'>
+    >>> print(plot)
+    xlo    = [2,3,5,7,8]
+    xhi    = [3,5,6,8,9]
+    y      = [ 8.5,20. ,11.5,13.5,14.5]
+    xlabel = x
+    ylabel = y
+    title  = Model
+    histo_prefs = {'yerrorbars': False, 'ecolor': None, ... , 'linecolor': None}
