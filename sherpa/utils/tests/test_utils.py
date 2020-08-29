@@ -590,3 +590,275 @@ def test_parse_expr_no_ordering(instr, expected):
     """There's no requirement that lo <= hi"""
 
     assert utils.parse_expr(instr) == expected
+
+
+def test_create_expr_empty():
+    """Simple test of create_expr with no mask."""
+
+    out = utils.create_expr([])
+    assert out == ""
+
+
+def test_create_expr_empty_mask():
+    """What happens if the mask is all masked out"""
+    mask = numpy.zeros(5, dtype=numpy.bool)
+
+    out = utils.create_expr([], mask)
+    assert out == ""
+
+
+@pytest.mark.parametrize("mask,expected",
+                         [(numpy.zeros(5, dtype=numpy.bool), ""),
+                          (numpy.ones(2, dtype=numpy.bool), "1,4")])
+def test_create_expr_mask_size_error(mask, expected):
+    """What happens when the mask][True] and vals arrays have different sizes?
+
+    This should be an error but currently isn't.
+    """
+
+    out = utils.create_expr([1, 2, 3, 4], mask)
+    assert out == expected
+
+
+@pytest.mark.parametrize("val,expected",
+                         [(numpy.int16(3), "3"),
+                          (numpy.float32(3), "3.0")])
+def test_create_expr_singleton(val, expected):
+    """Simple test of create_expr with no mask."""
+
+    out = utils.create_expr(numpy.asarray([val]))
+    assert out == expected
+
+
+def test_create_expr_nomask():
+    """Simple test of create_expr with no mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    out = utils.create_expr(chans)
+    assert out == "1-9"
+
+
+def test_create_expr_mask():
+    """Simple test of create_expr with an identity mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    mask = numpy.ones(9, dtype=numpy.bool)
+    out = utils.create_expr(chans, mask)
+    assert out == "1-9"
+
+
+def test_create_expr_nomask_delim():
+    """Simple test of create_expr with no mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    out = utils.create_expr(chans, delim='::')
+    assert out == "1::9"
+
+
+def test_create_expr_mask_delim():
+    """Simple test of create_expr with an identity mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    mask = numpy.ones(9, dtype=numpy.bool)
+    out = utils.create_expr(chans, mask, delim='::')
+    assert out == "1::9"
+
+
+def test_create_expr_missing_nomask():
+    """Simple test of create_expr with no mask with missing data"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[(chans < 12) | (chans > 13)]
+    out = utils.create_expr(chans)
+    assert out == "1-11,14-19"
+
+
+def test_create_expr_missing_nomask_nonchannels():
+    """What happens if the input is not in channel units?"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 12) | (chans > 13)
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], format='%4.2f')
+
+    # I am not sure this is the correct output, but it's what
+    # we create.
+    #
+    vs = ['{:4.2f}'.format(v) for v in vals[filt]]
+    expected = ','.join(vs)
+    assert out == expected
+
+
+def test_create_expr_missing_mask():
+    """Simple test of create_expr with an identity with missing data"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 12) | (chans > 13)
+    out = utils.create_expr(chans[filt], filt)
+    assert out == "1-11,14-19"
+
+
+def test_create_expr_missing_mask_nonchannels():
+    """What happens if the input is not in channel units?"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 12) | (chans > 13)
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40-0.50,0.53-0.58"
+
+
+def test_create_expr_missing_start_nomask():
+    """Simple test of create_expr with no mask with missing data
+
+    Have a single bin, then missing data, then the rest
+    """
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[chans != 2]
+    out = utils.create_expr(chans)
+    assert out == "1,3-19"
+
+
+def test_create_expr_missing_start2_nomask():
+    """Simple test of create_expr with no mask with missing data
+
+    Have a single bin, then missing data, then the rest
+    """
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[chans != 3]
+    out = utils.create_expr(chans)
+
+    # Technically this is correct, but we would prefer the range
+    # assert out == "1-2,4-19"
+    assert out == "1,2,4-19"
+
+
+def test_create_expr_missing_start2_mask():
+    """How does this compare to nomask version?"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = chans != 3
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+
+    # Technically this is correct, but we would prefer the range
+    # assert out == "0.40-0.41,0.43-0.58"
+    assert out == "0.40,0.41,0.43-0.58"
+
+
+def test_create_expr_missing_end_nomask():
+    """Simple test of create_expr with no mask with missing data
+
+    Ends with a single bin.
+    """
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[chans != 18]
+    out = utils.create_expr(chans)
+    assert out == "1-17,19"
+
+
+def test_create_expr_missing_multiple1_nomask():
+    """Simple test of create_expr with no mask with missing data"""
+
+    chans = numpy.asarray([1, 2, 4, 6, 7, 10, 18], dtype=numpy.int16)
+    out = utils.create_expr(chans)
+
+    # Technically this is correct, but we would prefer the range
+    # assert out == "1-2,4,6-7,10,18"
+    assert out == "1,2,4,6-7,10,18"
+
+
+def test_create_expr_missing_multiple2_nomask():
+    """Simple test of create_expr with no mask with missing data"""
+
+    chans = numpy.asarray([1, 2, 3, 6, 7, 10, 12, 13, 14, 17, 18], dtype=numpy.int16)
+    out = utils.create_expr(chans)
+    assert out == "1-3,6-7,10,12-14,17-18"
+
+
+def test_create_expr_mask_dropstart():
+    """Start is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = chans > 3
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.43-0.58"
+
+
+def test_create_expr_mask_dropstart2():
+    """Start is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans > 3) & ((chans < 8) | (chans > 10))
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.43-0.46,0.50-0.58"
+
+
+def test_create_expr_mask_dropend():
+    """End is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = chans < 5
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40-0.43"
+
+
+def test_create_expr_mask_dropend2():
+    """End is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 15) & ((chans < 8) | (chans > 11))
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40-0.46,0.51-0.53"
+
+
+def test_create_expr_mask_drop():
+    """mask all the things (but leave some data!)"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans > 5) & (chans < 15) & ((chans < 10) | (chans > 12))
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.45-0.48,0.52-0.53"
+
+
+@pytest.mark.parametrize("idx", [0, 1, 5, 17, 18])
+def test_create_expr_mask_singlebin(idx):
+    """mask all the things (but leave one bin)"""
+
+    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt[idx] = True
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    expected = "{:4.2f}".format(vals[filt][0])
+    assert out == expected
+
+
+def test_create_expr_mask_singlebins():
+    """several single bin"""
+
+    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt[0] = True
+    filt[2] = True
+    filt[16] = True
+    filt[18] = True
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40,0.42,0.56,0.58"
