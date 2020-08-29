@@ -478,3 +478,115 @@ def test_parallel_map_funcs2():
 
     result = tst(2, sg, stat, opt)
     cmp_results(result)
+
+
+@pytest.mark.parametrize("arg", [None, '', '  \t  '])
+def test_parse_expr_empty(arg):
+    assert utils.parse_expr(arg) == [(None, None)]
+
+
+def test_parse_expr_lolim():
+    assert utils.parse_expr("2:") == [(2.0, None)]
+
+
+def test_parse_expr_lolim2():
+    assert utils.parse_expr("1:4, 5:") == [(1.0, 4.0), (5.0, None)]
+
+
+def test_parse_expr_lolim3():
+    assert utils.parse_expr("1:4, 5:6, 9:") == [(1.0, 4.0), (5.0, 6.0), (9.0, None)]
+
+
+def test_parse_expr_hilim():
+    assert utils.parse_expr(":2") == [(None, 2.0)]
+
+
+def test_parse_expr_hilim_2():
+    assert utils.parse_expr(":2, 3:4") == [(None, 2.0), (3.0, 4.0)]
+
+
+def test_parse_expr_hilim_3():
+    assert utils.parse_expr(":2, 3:4, 5:6") == [(None, 2.0), (3.0, 4.0), (5.0, 6.0)]
+
+
+def test_parse_expr_allset2():
+    """All limits are given.
+
+    Would be nice to use something like hypothesis to use
+    property-based testing.
+    """
+    assert utils.parse_expr(" 1:2,4:5  ") == [(1.0, 2.0), (4.0, 5.0)]
+
+
+def test_parse_expr_single():
+    assert utils.parse_expr(":2, 3, 5:6") == [(None, 2.0), (3.0, 3.0), (5.0, 6.0)]
+
+
+
+def test_parse_expr_set2():
+    """Lower and upper limits not given.
+    """
+    assert utils.parse_expr(" :2 ,4:  ") == [(None, 2.0), (4.0, None)]
+
+
+def test_parse_expr_allset3():
+    """All limits are given.
+
+    Would be nice to use something like hypothesis to use
+    property-based testing.
+    """
+    assert utils.parse_expr("1:2 , 4:5, 6:8") == [(1.0, 2.0), (4.0, 5.0), (6.0, 8.0)]
+
+
+def test_parse_expr_set3():
+    """Lower and upper limits not given.
+    """
+    assert utils.parse_expr(" :2 , 4:5, 6: ") == [(None, 2.0), (4.0, 5.0), (6.0, None)]
+
+
+@pytest.mark.parametrize("instr,bound",
+                         [("None:1", "lower"),
+                          ("1:None", "upper"),
+                          ("None:None", "lower"),
+                          (":2,None:4", "lower"),
+                          (":2,3:None", "upper"),
+                          (":2,None:", "lower"),
+                          (":2,None:4,5:6", "lower"),
+                          (":2,3:None,8:", "upper"),
+                          ("1:2,3:5,None:None", "lower"),
+                         ])
+def test_parse_expr_not_num(instr, bound):
+
+    with pytest.raises(TypeError) as exc:
+        utils.parse_expr(instr)
+
+    emsg = "Invalid {} bound 'None'".format(bound)
+    assert  str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("instr,expected",
+                         [("1:2:4", [(1.0, 2.0)]),
+                          ("1:3 , 4:5:0.2", [(1.0, 3.0), (4.0, 5.0)])])
+def test_parse_expr_unexpected_parses(instr, expected):
+    """You can say a:b:c:d:e and still have it parsed"""
+
+    assert utils.parse_expr(instr) == expected
+
+
+@pytest.mark.parametrize("instr,expected",
+                         [("2:4,1:3", [(2.0, 4.0), (1.0, 3.0)]),
+                          (":4, 2:3, 7:", [(None, 4.0), (2.0, 3.0), (7.0, None)])])
+def test_parse_expr_no_range_checking(instr, expected):
+    """Each range is separate, and there is no constraint."""
+
+    assert utils.parse_expr(instr) == expected
+
+
+@pytest.mark.parametrize("instr,expected",
+                         [("4:2", [(4.0, 2.0)]),
+                          ("2:1, :3", [(2.0, 1.0), (None, 3.0)]),
+                          (":10, :12", [(None, 10.0), (None, 12.0)])])
+def test_parse_expr_no_ordering(instr, expected):
+    """There's no requirement that lo <= hi"""
+
+    assert utils.parse_expr(instr) == expected
