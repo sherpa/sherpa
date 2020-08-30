@@ -1369,34 +1369,42 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     '0.1-0.4,0.8'
 
     """
-    expr = []
 
     if len(vals) == 0:
         return ''
     elif len(vals) == 1:
         return format % vals[0]
 
-    diffs = numpy.apply_along_axis(numpy.diff, 0, vals)
-    if mask is not None:
+    if mask is None:
+        diffs = numpy.apply_along_axis(numpy.diff, 0, vals)
+    else:
+        # We only care about the difference between two consecutive
+        # values, so it doesn't matter if index starts at 0 or 1.
+        #
         index = numpy.arange(len(mask))
         diffs = numpy.apply_along_axis(numpy.diff, 0, index[mask])
 
-    for ii, delta in enumerate(diffs):
-        if ii == 0:
-            expr.append(format % vals[ii])
-            if delta != 1 or len(diffs) == 1:
-                expr.append(',')
-            continue
+    # Work around no size check
+    if len(diffs) == 0:
+        return ''
+
+    expr = [format % vals[0]]
+    if diffs[0] != 1 or len(diffs) == 1:
+        expr.append(',')
+
+    for val, delta in zip(vals[1:], diffs[1:]):
+        vstr = format % val
         if delta == 1:
             if expr[-1] == ',':
-                expr.append(format % vals[ii])
+                expr.append(vstr)
             if expr[-1] != delim:
                 expr.append(delim)
         else:
             if not expr[-1] in (',', delim):
                 expr.append(',')
-            expr.append(format % vals[ii])
+            expr.append(vstr)
             expr.append(',')
+
     if len(expr) and expr[-1] in (',', delim):
         expr.append(format % vals[-1])
 
