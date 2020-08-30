@@ -1327,9 +1327,47 @@ def print_fields(names, vals, converters=None):
 
 
 def create_expr(vals, mask=None, format='%s', delim='-'):
-    """
-    collapse a list of channels into an expression using hyphens
-    and commas to indicate filtered intervals.
+    """Create a string representation of a filter.
+
+    Use the mask to convert the input values into a set of
+    comma-separated filters - low value and high value, separated
+    by the delimeter - that represent the data. If the mask is
+    not given then the values must be "channel" values (that is,
+    two values are consecutive if there difference is 1).
+
+    Parameters
+    ----------
+    vals : sequence
+        The values that represent the sequence if mask is not None,
+        otherwise the selected channel numbers (in this case integer
+        values).
+    mask : sequence of bool or None, optional
+        The mask setting for the full dataset, without any filtering
+        applied. A value of True indicates the element is included
+        and False means it is excluded.
+    format : str, optional
+        The format used to display each value.
+    delim : str, optional
+        The separator for a range.
+
+    Examples
+    --------
+
+    >>> create_expr([1, 2, 3, 4])
+    '1-4'
+
+    >>> create_expr([1, 2, 4, 5, 7])
+    '1,2,4-5,7'
+
+    >>> create_expr([1, 2, 3, 4], [True, True, True, True])
+    '1-4'
+
+    >>> create_expr([0.1, 0.2, 0.4, 0.8], [True, True, True, True])
+    '0.1-0.8'
+
+    >>> create_expr([0.1, 0.2, 0.4, 0.8], [True, True, True, False, False, True])
+    '0.1-0.4,0.8'
+
     """
     expr = []
 
@@ -1366,9 +1404,53 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
 
 def parse_expr(expr):
-    """
-    parse a filter expression into numerical components for notice/ignore
-    e.g. ':2,4:5,7:8,10:'
+    """Convert a filter expression into its parts.
+
+    This is intended for parsing a notice or ignore expression
+    given as a string.
+
+    Parameters
+    ----------
+    expr : str
+        The filter expression, of the form 'a:b' or a single number,
+        separated by commas, and white space is ignored. The
+        upper or lower limit of a pair may be ignored (e.g. 'a:' or
+        ':b').
+
+    Returns
+    -------
+    filters : list of pairs
+        Each pair gives the lower- and upper-edge of the filter,
+        using ``None`` to represent no limit.
+
+    Notes
+    -----
+    There is no attempt to validate that the expression contains
+    strictly ordered pairs, or that the pairs do not overlap, or
+    that the lower- and upper-limits are in increasing numerical
+    order. That is, the expression '5:7,:2,4:6,5:3' is allowed.
+
+    Examples
+    --------
+
+    >>> parse_expr('0.5:7')
+    [(0.5, 7.0)]
+
+    >>> parse_expr('0.5:')
+    [(0.5, None)]
+
+    >>> parse_expr(':7')
+    [(None, 7.0)]
+
+    >>> parse_expr(':2, 4 : 5 ,7:8,10:')
+    [(None, 2.0), (4.0, 5.0), (7.0, 8.0), (10.0, None)]
+
+    >>> parse_expr('4')
+    [(4.0, 4.0)]
+
+    >>> parse_expr(' ')
+    [(None, None)]
+
     """
     res = []
     if expr is None or str(expr).strip() == '':
