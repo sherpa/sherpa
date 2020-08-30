@@ -564,13 +564,17 @@ def test_parse_expr_not_num(instr, bound):
     assert  str(exc.value) == emsg
 
 
+# keep the expected output in case we want to revert this change
 @pytest.mark.parametrize("instr,expected",
                          [("1:2:4", [(1.0, 2.0)]),
                           ("1:3 , 4:5:0.2", [(1.0, 3.0), (4.0, 5.0)])])
 def test_parse_expr_unexpected_parses(instr, expected):
-    """You can say a:b:c:d:e and still have it parsed"""
+    """You used to be able to say a:b:c:d:e and still have it parsed"""
 
-    assert utils.parse_expr(instr) == expected
+    with pytest.raises(TypeError) as exc:
+        utils.parse_expr(instr)
+
+    assert str(exc.value) == "interval syntax requires a tuple, 'lo:hi'"
 
 
 @pytest.mark.parametrize("instr,expected",

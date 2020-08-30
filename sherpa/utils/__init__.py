@@ -1452,20 +1452,23 @@ def parse_expr(expr):
     [(None, None)]
 
     """
-    res = []
+
     if expr is None or str(expr).strip() == '':
-        res.append((None, None))
-        return res
+        return [(None, None)]
+
+    res = []
     vals = str(expr).strip().split(',')
     for val in vals:
         lo, hi = None, None
+
         interval = val.strip().split(':')
-        if len(interval) == 1:
+        ninterval = len(interval)
+        if ninterval == 1:
             lo = interval[0]
             if lo == '':
                 lo = None
             hi = lo
-        elif len(interval) > 1:
+        elif ninterval == 2:
             lo = interval[0]
             hi = interval[1]
             if lo == '':
@@ -1473,7 +1476,14 @@ def parse_expr(expr):
             if hi == '':
                 hi = None
         else:
+            # This check exited but was never hit due to the way the
+            # code was written. It now errors out if a used gives
+            # a:b:c, whereas the old version would have just ignored
+            # the ':c' part. Perhaps we should just keep dropping
+            # it, in case there's existing code that assumes this.
+            #
             raise TypeError("interval syntax requires a tuple, 'lo:hi'")
+
         if lo is not None:
             try:
                 lo = float(lo)
@@ -1484,7 +1494,9 @@ def parse_expr(expr):
                 hi = float(hi)
             except ValueError:
                 raise TypeError("Invalid upper bound '%s'" % str(hi))
+
         res.append((lo, hi))
+
     return res
 
 
