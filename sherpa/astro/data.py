@@ -2215,25 +2215,47 @@ class DataPHA(Data1D):
         if self.mask is False:
             return 'No noticed bins'
 
-        x = self.get_noticed_channels()  # ungrouped noticed channels
+        if numpy.iterable(self.mask):
+            mask = self.mask
+        else:
+            mask = None
+
         if group:
             # grouped noticed channels
             x = self.apply_filter(self.channel, self._make_groups)
+        else:
+            # ungrouped noticed channels
+            x = self.get_noticed_channels()
+
+            # We need the "ungrouped" mask array. Need to check
+            # issue #361 since get_noticed_channels notes an
+            # issue that may be relevant here (so far this
+            # doesn't seem to be the case).
+            #
+            mask = self.get_mask()
+
+            # Safety check for users. Warn, but continue.
+            #
+            if mask is not None and mask.sum() != x.size:
+                warning("There is a mis-match in the ungrouped mask " +
+                        "and data ({} vs {})".format(mask.sum(), x.size))
 
         # convert channels to appropriate quantity if necessary.
-        x = self._from_channel(x, group=group)  # knows the units underneath
+        x = self._from_channel(x, group=group)
 
-        if self.units in ('channel',):
-            format = '%i'
+        if mask is None:
+            mask = numpy.ones(len(x), dtype=bool)
 
-        mask = numpy.ones(len(x), dtype=bool)
-        if numpy.iterable(self.mask):
-            mask = self.mask
-
-        if self.units in ('wavelength',):
+        # Ensure the data is in ascending order for create_expr.
+        #
+        if self.units == 'wavelength':
             x = x[::-1]
             mask = mask[::-1]
-        return create_expr(x, mask, format, delim)
+
+        if self.units == 'channel':
+            format = '%i'
+
+        return create_expr(x, mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
         return (self.get_filter(format='%.4f', delim='-') +

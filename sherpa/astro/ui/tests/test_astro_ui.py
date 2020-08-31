@@ -208,26 +208,22 @@ def test_bug38_filtering_grouping(make_data_path):
     pha.ignore(3, 4)
 
     assert pha.get_filter(group=True, format='%.4f') == '1.0147:2.7886,4.1391:6.2342'
-    # Not correct, but it's what the code generates
-    assert pha.get_filter(group=False, format='%.4f') == '1.0001:1.2775,1.2921:6.5627'
+    assert pha.get_filter(group=False, format='%.4f') == '1.0001:2.8543,4.0369:6.5627'
 
     pha.group_width(40)
 
-    # Not correct, but it's what the code generates
-    assert pha.get_filter(group=True, format='%.4f') == '0.8760:6.7160'
-    assert pha.get_filter(group=False, format='%.4f') == '0.5913:7.0007'
+    assert pha.get_filter(group=True, format='%.4f') == '0.8760:2.6280,3.7960:6.7160'
+    assert pha.get_filter(group=False, format='%.4f') == '0.5913:2.9127,3.5113:7.0007'
 
     assert pha.mask.size == 26
-    assert pha.mask.sum() == 11
+    assert pha.mask.sum() == 10
     assert pha.mask[1:5].all()
-    assert pha.mask[5]
     assert pha.mask[6:12].all()
 
     # get the ungrouped mask
     mask = pha.get_mask()
-    assert mask.sum() == 11 * 40
+    assert mask.sum() == 10 * 40
     assert mask[40:200].all()
-    assert mask[200:240].all()
     assert mask[240:480].all()
 
     # check filtered bins

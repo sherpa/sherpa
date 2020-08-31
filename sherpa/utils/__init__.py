@@ -1350,6 +1350,13 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     delim : str, optional
         The separator for a range.
 
+    Raises
+    ------
+    ValueError
+        If the ``vals`` and ``mask`` sequences do not match: the
+        length of ``vals`` must equal the number of True values in
+        ``mask``.
+
     Examples
     --------
 
@@ -1357,7 +1364,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     '1-4'
 
     >>> create_expr([1, 2, 4, 5, 7])
-    '1,2,4-5,7'
+    '1-2,4-5,7'
 
     >>> create_expr([1, 2, 3, 4], [True, True, True, True])
     '1-4'
@@ -1376,39 +1383,75 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         return format % vals[0]
 
     if mask is None:
-        diffs = numpy.apply_along_axis(numpy.diff, 0, vals)
+        seq = vals
     else:
+        # Ensure we have a boolean array to make indexing behave sensibly
+        # (NumPy 1.17 or so changed behavior related to this).
+        #
+        mask = numpy.asarray(mask, dtype=numpy.bool)
+
+        # Ensure that the vals and mask array match: the number of
+        # mask=True elements should equal the number of input values.
+        #
+        if sum(mask) != len(vals):
+            raise ValueError("mask array mis-match with vals")
+
         # We only care about the difference between two consecutive
         # values, so it doesn't matter if index starts at 0 or 1.
         #
         index = numpy.arange(len(mask))
-        diffs = numpy.apply_along_axis(numpy.diff, 0, index[mask])
+
+        seq = index[mask]
+
+    # diffs has 1 less element than vals
+    #
+    diffs = numpy.apply_along_axis(numpy.diff, 0, seq)
+    diffs = diffs == 1
 
     # Work around no size check
     if len(diffs) == 0:
         return ''
 
-    expr = [format % vals[0]]
-    if diffs[0] != 1 or len(diffs) == 1:
-        expr.append(',')
+    def filt(start, end):
+        "What is the filter expression for this range?"
+        vstr = format % start
+        if start != end:
+            vstr += delim + format % end
+        return vstr
 
-    for val, delta in zip(vals[1:], diffs[1:]):
-        vstr = format % val
-        if delta == 1:
-            if expr[-1] == ',':
-                expr.append(vstr)
-            if expr[-1] != delim:
-                expr.append(delim)
-        else:
-            if not expr[-1] in (',', delim):
-                expr.append(',')
-            expr.append(vstr)
-            expr.append(',')
+    # The trick here is that if diffs is True then we just want to
+    # update the end counter, which gives the end-point of the current
+    # range, and move to the next bin. We only output data when diffs
+    # is False, when we report the previous range and start a new
+    # range.
+    #
+    expr = []
+    start = vals[0]
+    end = vals[0]
+    for delta, val in zip(diffs, vals[1:]):
 
-    if len(expr) and expr[-1] in (',', delim):
-        expr.append(format % vals[-1])
+        # If this is part of a contiguous sequence then we update
+        # the end value and move on.
+        #
+        if delta:
+            end = val
+            continue
 
-    return ''.join(expr)
+        # If we have a break then output the range we have just
+        # processed.
+        #
+        expr.append(filt(start, end))
+
+        # Start a new range.
+        #
+        start = val
+        end = val
+
+    # Handle the last range.
+    #
+    expr.append(filt(start, end))
+
+    return ','.join(expr)
 
 
 def parse_expr(expr):

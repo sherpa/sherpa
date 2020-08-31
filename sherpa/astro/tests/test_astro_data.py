@@ -973,7 +973,7 @@ def test_pha_get_filter_filter(infile, expected, make_data_path):
 @requires_fits
 @pytest.mark.parametrize("infile,expected",
                          [("9774.pi", '0.5037:0.6059'),
-                          ("3c273.pi", '0.5183,0.6059')])
+                          ("3c273.pi", '0.5183:0.6059')])
 def test_pha_get_filter_edgecase(infile, expected, make_data_path):
     """Check get_filter with an edge case
 

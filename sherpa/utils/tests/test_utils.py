@@ -611,17 +611,19 @@ def test_create_expr_empty_mask():
     assert out == ""
 
 
-@pytest.mark.parametrize("mask,expected",
-                         [(numpy.zeros(5, dtype=numpy.bool), ""),
-                          (numpy.ones(2, dtype=numpy.bool), "1,4")])
-def test_create_expr_mask_size_error(mask, expected):
+@pytest.mark.parametrize("mask",
+                         [numpy.zeros(5, dtype=numpy.bool),
+                          numpy.ones(2, dtype=numpy.bool)])
+def test_create_expr_mask_size_error(mask):
     """What happens when the mask][True] and vals arrays have different sizes?
 
     This should be an error but currently isn't.
     """
 
-    out = utils.create_expr([1, 2, 3, 4], mask)
-    assert out == expected
+    with pytest.raises(ValueError) as exc:
+        utils.create_expr([1, 2, 3, 4], mask)
+
+    assert str(exc.value) == 'mask array mis-match with vals'
 
 
 @pytest.mark.parametrize("val,expected",
@@ -736,9 +738,7 @@ def test_create_expr_missing_start2_nomask():
     chans = chans[chans != 3]
     out = utils.create_expr(chans)
 
-    # Technically this is correct, but we would prefer the range
-    # assert out == "1-2,4-19"
-    assert out == "1,2,4-19"
+    assert out == "1-2,4-19"
 
 
 def test_create_expr_missing_start2_mask():
@@ -750,9 +750,7 @@ def test_create_expr_missing_start2_mask():
     vals = numpy.arange(19) * 0.01 + 0.4
     out = utils.create_expr(vals[filt], filt, format='%4.2f')
 
-    # Technically this is correct, but we would prefer the range
-    # assert out == "0.40-0.41,0.43-0.58"
-    assert out == "0.40,0.41,0.43-0.58"
+    assert out == "0.40-0.41,0.43-0.58"
 
 
 def test_create_expr_missing_end_nomask():
@@ -773,9 +771,7 @@ def test_create_expr_missing_multiple1_nomask():
     chans = numpy.asarray([1, 2, 4, 6, 7, 10, 18], dtype=numpy.int16)
     out = utils.create_expr(chans)
 
-    # Technically this is correct, but we would prefer the range
-    # assert out == "1-2,4,6-7,10,18"
-    assert out == "1,2,4,6-7,10,18"
+    assert out == "1-2,4,6-7,10,18"
 
 
 def test_create_expr_missing_multiple2_nomask():
