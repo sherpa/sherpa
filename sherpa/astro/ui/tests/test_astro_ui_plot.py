@@ -29,6 +29,7 @@ correct data; it is more a check that the routines can be called.
 
 """
 
+import copy
 import logging
 import numpy as np
 
@@ -1300,3 +1301,60 @@ def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1):
 
     assert mplot.xlo[101] == pytest.approx(3.0806000232696533)
     assert mplot.xhi[101] == pytest.approx(3.0952000617980957)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("units,xlabel,ylabel,xlo,xhi",
+                         [pytest.param("channel", 'Channel', 'Counts/sec/channel',
+                                       33, 677, marks=pytest.mark.xfail),
+                          ("wavelength", 'Wavelength (Angstrom)', 'Counts/sec/Angstrom',
+                           26.537710718511885,  1.2562229845315145),
+                         ])
+def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
+    """plot_model units appear to depend on setting.
+
+    We check a few things, but it's the x axis value that is #920.
+    """
+
+    assert ui.get_analysis() == 'energy'
+    mplot1 = copy.deepcopy(ui.get_model_plot())
+
+    ui.set_analysis(units)
+    assert ui.get_analysis() == units
+
+    # You need to create the model plot to trigger the bug.
+    mplot2 = copy.deepcopy(ui.get_model_plot())
+
+    ui.set_analysis('energy')
+    assert ui.get_analysis() == 'energy'
+
+    mplot3 = copy.deepcopy(ui.get_model_plot())
+
+    assert mplot1.xlabel == 'Energy (keV)'
+    assert mplot2.xlabel == xlabel
+    assert mplot3.xlabel == 'Energy (keV)'
+
+    assert mplot1.ylabel == 'Counts/sec/keV'
+    assert mplot2.ylabel == ylabel
+    assert mplot3.ylabel == 'Counts/sec/keV'
+
+    # mplot3 should be the same as mplot1
+    assert mplot1.xlo[0] == pytest.approx(0.46720001101493835)
+    assert mplot1.xhi[-1] == pytest.approx(9.869600296020508)
+
+    assert mplot2.xlo[0] == pytest.approx(xlo)
+    assert mplot2.xhi[-1] == pytest.approx(xhi)
+
+    assert mplot1.xlo.size == mplot1.y.size
+    assert mplot2.xlo.size == mplot2.y.size
+    assert mplot3.xlo.size == mplot3.y.size
+
+    # The number of bins are the same, it's just the numbers are different
+    assert mplot1.xlo.size == 644
+    assert mplot2.xlo.size == 644
+    assert mplot3.xlo.size == 644
+
+    # This should be equality, but allow small differences
+    assert mplot3.xlo == pytest.approx(mplot1.xlo)
+    assert mplot3.y == pytest.approx(mplot1.y)
