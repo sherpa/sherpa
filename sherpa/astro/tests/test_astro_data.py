@@ -927,3 +927,109 @@ def test_unsubtract():
     # the grouping
     session.unsubtract(1)
     assert not testdata.subtracted
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("infile,expected",
+                         [("9774.pi", '0.0080:14.9431'),
+                          ("3c273.pi", '0.1248:12.4100')])
+def test_pha_get_filter_none(infile, expected, make_data_path):
+    """Check get_filter with no filter
+
+    It would be nice to do this with faked data, but easier this
+    way.
+    """
+
+    import sherpa.astro.io
+
+    pha = sherpa.astro.io.read_pha(make_data_path(infile))
+
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("infile,expected",
+                         [("9774.pi", '0.5037:1.9783,3.0149:7.0007'),
+                          ("3c273.pi", '0.5183:1.9199,3.2339:8.2198')])
+def test_pha_get_filter_filter(infile, expected, make_data_path):
+    """Check get_filter with simple-ish filter
+
+    It would be nice to do this with faked data, but easier this
+    way.
+    """
+
+    import sherpa.astro.io
+
+    pha = sherpa.astro.io.read_pha(make_data_path(infile))
+    pha.notice(0.5, 7)
+    pha.ignore(2, 3)
+
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("infile,expected",
+                         [("9774.pi", '0.5037:0.6059'),
+                          ("3c273.pi", '0.5183,0.6059')])
+def test_pha_get_filter_edgecase(infile, expected, make_data_path):
+    """Check get_filter with an edge case
+
+    Pick something that has caused problems (related to #917).
+    """
+
+    import sherpa.astro.io
+
+    pha = sherpa.astro.io.read_pha(make_data_path(infile))
+    pha.notice(0.501, 0.6)
+
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("infile,expected",
+                         [("9774.pi", '0.5037:7.0007'),
+                          ("3c273.pi", '0.4745:9.8623')])
+def test_pha_get_filter_false(infile, expected, make_data_path):
+    """get_filter(group=False) with no grouping."""
+
+    import sherpa.astro.io
+
+    pha = sherpa.astro.io.read_pha(make_data_path(infile))
+    pha.notice(0.5, 7)
+
+    assert pha.get_filter(group=False, format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("infile", ["9774.pi", "3c273.pi"])
+def test_pha_mask_default(infile, make_data_path):
+    """Make sure we have some tests (these may exist elsewhere)"""
+
+    import sherpa.astro.io
+
+    pha = sherpa.astro.io.read_pha(make_data_path(infile))
+    assert pha.mask
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("infile,size,nset",
+                         [("9774.pi", 1024, 376),
+                          ("3c273.pi", 46, 33)])
+def test_pha_mask_filtered(infile, size, nset, make_data_path):
+    """Make sure we have some tests (these may exist elsewhere)"""
+
+    import sherpa.astro.io
+
+    pha = sherpa.astro.io.read_pha(make_data_path(infile))
+    pha.notice(0.5, 7)
+    pha.ignore(2, 3)
+
+    assert pha.mask.dtype == np.bool
+    assert pha.mask.size == size
+    assert pha.mask.sum() == nset
