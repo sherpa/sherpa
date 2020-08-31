@@ -1400,17 +1400,12 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # values, so it doesn't matter if index starts at 0 or 1.
         #
         index = numpy.arange(len(mask))
-
         seq = index[mask]
 
     # diffs has 1 less element than vals
     #
     diffs = numpy.apply_along_axis(numpy.diff, 0, seq)
     diffs = diffs == 1
-
-    # Work around no size check
-    if len(diffs) == 0:
-        return ''
 
     def filt(start, end):
         "What is the filter expression for this range?"

@@ -485,63 +485,32 @@ def test_parse_expr_empty(arg):
     assert utils.parse_expr(arg) == [(None, None)]
 
 
-def test_parse_expr_lolim():
-    assert utils.parse_expr("2:") == [(2.0, None)]
-
-
-def test_parse_expr_lolim2():
-    assert utils.parse_expr("1:4, 5:") == [(1.0, 4.0), (5.0, None)]
-
-
-def test_parse_expr_lolim3():
-    assert utils.parse_expr("1:4, 5:6, 9:") == [(1.0, 4.0), (5.0, 6.0), (9.0, None)]
-
-
-def test_parse_expr_hilim():
-    assert utils.parse_expr(":2") == [(None, 2.0)]
-
-
-def test_parse_expr_hilim_2():
-    assert utils.parse_expr(":2, 3:4") == [(None, 2.0), (3.0, 4.0)]
-
-
-def test_parse_expr_hilim_3():
-    assert utils.parse_expr(":2, 3:4, 5:6") == [(None, 2.0), (3.0, 4.0), (5.0, 6.0)]
-
-
-def test_parse_expr_allset2():
-    """All limits are given.
+@pytest.mark.parametrize("arg,expected",
+                         [("2:", [(2.0, None)]),
+                          ("1:4, 5:", [(1.0, 4.0), (5.0, None)]),
+                          ("1:4, 5:6, 9:", [(1.0, 4.0), (5.0, 6.0), (9.0, None)]),
+                          (":2", [(None, 2.0)]),
+                          (":2, 3:4", [(None, 2.0), (3.0, 4.0)]),
+                          (":2, 3:4, 5:6", [(None, 2.0), (3.0, 4.0), (5.0, 6.0)]),
+                          (" 1:2,4:5  ", [(1.0, 2.0), (4.0, 5.0)]),
+                          (":2, 3, 5:6", [(None, 2.0), (3.0, 3.0), (5.0, 6.0)]),
+                          (" :2 ,4:  ", [(None, 2.0), (4.0, None)]),
+                          ("1:2 , 4:5, 6:8", [(1.0, 2.0), (4.0, 5.0), (6.0, 8.0)]),
+                          (" :2 , 4:5, 6: ", [(None, 2.0), (4.0, 5.0), (6.0, None)]),
+                          (":", [(None, None)]),
+                          ("2:3,:,4", [(2.0, 3.0), (None, None), (4.0, 4.0)]),
+                          (",2", [(None, None), (2.0, 2.0)]),
+                          ("2,", [(2.0, 2.0), (None, None)]),
+                          ("2,,3:4", [(2.0, 2.0), (None, None), (3.0, 4.0)]),
+                          (" , :", [(None, None), (None, None)]),
+                         ])
+def test_parse_expr(arg, expected):
+    """Check parse_expr with various conditions
 
     Would be nice to use something like hypothesis to use
     property-based testing.
     """
-    assert utils.parse_expr(" 1:2,4:5  ") == [(1.0, 2.0), (4.0, 5.0)]
-
-
-def test_parse_expr_single():
-    assert utils.parse_expr(":2, 3, 5:6") == [(None, 2.0), (3.0, 3.0), (5.0, 6.0)]
-
-
-
-def test_parse_expr_set2():
-    """Lower and upper limits not given.
-    """
-    assert utils.parse_expr(" :2 ,4:  ") == [(None, 2.0), (4.0, None)]
-
-
-def test_parse_expr_allset3():
-    """All limits are given.
-
-    Would be nice to use something like hypothesis to use
-    property-based testing.
-    """
-    assert utils.parse_expr("1:2 , 4:5, 6:8") == [(1.0, 2.0), (4.0, 5.0), (6.0, 8.0)]
-
-
-def test_parse_expr_set3():
-    """Lower and upper limits not given.
-    """
-    assert utils.parse_expr(" :2 , 4:5, 6: ") == [(None, 2.0), (4.0, 5.0), (6.0, None)]
+    assert utils.parse_expr(arg) == expected
 
 
 @pytest.mark.parametrize("instr,bound",
@@ -564,11 +533,9 @@ def test_parse_expr_not_num(instr, bound):
     assert  str(exc.value) == emsg
 
 
-# keep the expected output in case we want to revert this change
-@pytest.mark.parametrize("instr,expected",
-                         [("1:2:4", [(1.0, 2.0)]),
-                          ("1:3 , 4:5:0.2", [(1.0, 3.0), (4.0, 5.0)])])
-def test_parse_expr_unexpected_parses(instr, expected):
+@pytest.mark.parametrize("instr",
+                         ["1:2:4", "1:3 , 4 : 5:0.2"])
+def test_parse_expr_unexpected_parses(instr):
     """You used to be able to say a:b:c:d:e and still have it parsed"""
 
     with pytest.raises(TypeError) as exc:
