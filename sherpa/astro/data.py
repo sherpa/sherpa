@@ -1472,8 +1472,7 @@ class DataPHA(Data1D):
                             tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_bins")):
-                bkg.group_bins(num, tabStops=tabStops)
+            bkg.group_bins(num, tabStops=tabStops)
 
     def group_width(self, val, tabStops=None):
         """Group into a fixed bin width.
@@ -1517,8 +1516,7 @@ class DataPHA(Data1D):
                             tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_width")):
-                bkg.group_width(val, tabStops=tabStops)
+            bkg.group_width(val, tabStops=tabStops)
 
     def group_counts(self, num, maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
@@ -1566,8 +1564,7 @@ class DataPHA(Data1D):
                             maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_counts")):
-                bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
+            bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
@@ -1623,9 +1620,8 @@ class DataPHA(Data1D):
                             errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_snr")):
-                bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
-                              errorCol=errorCol)
+            bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
+                          errorCol=errorCol)
 
     def group_adapt(self, minimum, maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
@@ -1676,9 +1672,8 @@ class DataPHA(Data1D):
                             maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_adapt")):
-                bkg.group_adapt(minimum, maxLength=maxLength,
-                                tabStops=tabStops)
+            bkg.group_adapt(minimum, maxLength=maxLength,
+                            tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
@@ -1738,9 +1733,8 @@ class DataPHA(Data1D):
                             errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_adapt_snr")):
-                bkg.group_adapt_snr(minimum, maxLength=maxLength,
-                                    tabStops=tabStops, errorCol=errorCol)
+            bkg.group_adapt_snr(minimum, maxLength=maxLength,
+                                tabStops=tabStops, errorCol=errorCol)
 
     def eval_model(self, modelfunc):
         return modelfunc(*self.get_indep(filter=False))
