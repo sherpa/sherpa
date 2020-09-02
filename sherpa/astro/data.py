@@ -2279,6 +2279,15 @@ class DataPHA(Data1D):
         return numpy.sqrt(numpy.sum(array * array))
 
     def get_noticed_channels(self):
+        """Return the noticed channels.
+
+        Returns
+        -------
+        channels : ndarray
+            The noticed channels (this is independent of the
+            analysis setting).
+
+        """
         chans = self.channel
         mask = self.get_mask()
         if mask is not None:
@@ -2298,6 +2307,14 @@ class DataPHA(Data1D):
         return chans
 
     def get_mask(self):
+        """Returns the (ungrouped) mask.
+
+        Returns
+        -------
+        mask : ndarray or None
+            The mask, in channels, or None.
+
+        """
         groups = self.grouping
         if self.mask is False:
             return None
