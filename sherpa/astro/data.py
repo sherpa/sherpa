@@ -602,20 +602,21 @@ class DataPHA(Data1D):
     def _set_grouped(self, val):
         val = bool(val)
 
-        if val and (self.grouping is None):
+        if val and self.grouping is None:
             raise DataErr('nogrouping', self.name)
 
-        # If grouping status is being changed, we need to reset the mask
+        if self._grouped == val:
+            return
+
+        # As the grouping status is being changed, we need to reset the mask
         # to be correct size, while still noticing groups within the filter
-        if self._grouped != val:
-            do_notice = numpy.iterable(self.mask)
-            if do_notice:
-                old_filter = self.get_filter(val)
-                self._grouped = val
-                self.ignore()
-                for vals in parse_expr(old_filter):
-                    self.notice(*vals)
-            # self.mask = True
+        #
+        if numpy.iterable(self.mask):
+            old_filter = self.get_filter(group=val)
+            self._grouped = val
+            self.ignore()
+            for vals in parse_expr(old_filter):
+                self.notice(*vals)
 
         self._grouped = val
 
@@ -644,8 +645,10 @@ class DataPHA(Data1D):
             units = 'channel'
 
         if units.startswith('chan'):
-            self._to_channel   = (lambda x, group=True, response_id=None: x)
-            self._from_channel = (lambda x, group=True, response_id=None: x)
+            # Note: the names of these routines appear confusing because of the
+            #       way group values are used
+            self._to_channel   = self._channel_to_group
+            self._from_channel = self._group_to_channel
             units = 'channel'
 
         elif units.startswith('ener'):
@@ -1006,6 +1009,67 @@ class DataPHA(Data1D):
             hi = self._hc / elo
 
         return (lo, hi)
+
+    def _channel_to_group(self, val):
+        """Convert channel number to group number.
+
+        For ungrouped data channel and group numbering are the
+        same.
+        """
+        if not self.grouped:
+            return val
+
+        # The edge channels of each group.
+        #
+        lo = self.apply_grouping(self.channel, self._min)
+        hi = self.apply_grouping(self.channel, self._max)
+
+        val = numpy.asarray(val).astype(numpy.int_)
+        res = []
+        for v in val.flat:
+            # could follow _energy_to_channel but for now go
+            # with something simple
+            if v < self.channel[0]:
+                ans = self.channel[0]
+            elif v > self.channel[-1]:
+                ans = self.channel[-1]
+            else:
+                idx, = numpy.where((v >= lo) & (v <= hi))
+                ans = idx[0] + 1
+
+            res.append(ans)
+
+        res = numpy.asarray(res, SherpaFloat)
+        if val.shape == ():
+            return res[0]
+
+        return res
+
+    def _group_to_channel(self, val, group=True, response_id=None):
+        """Convert group number to channel number.
+
+        For ungrouped data channel and group numbering are the
+        same. The mid-point of each group is used (rounded down
+        if not an integer).
+        """
+
+        if not self.grouped or not group:
+            return val
+
+        # The middle channel of each group.
+        #
+        mid = self.apply_grouping(self.channel, self._middle)
+
+        # Convert to an integer (this keeps the channel within
+        # the group).
+        #
+        mid = numpy.floor(mid)
+
+        val = numpy.asarray(val).astype(numpy.int_) - 1
+        try:
+            return mid[val]
+        except IndexError:
+            raise DataErr('invalid group number: {}'.format(val))
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
@@ -2091,17 +2155,9 @@ class DataPHA(Data1D):
         return syserr
 
     def get_x(self, filter=False, response_id=None):
-        # If we are already in channel space, self._from_channel
-        # is always ungrouped.  In any other space, we must
-        # disable grouping when calling self._from_channel.
-        if self.units != 'channel':
-            elo, ehi = self._get_ebins(group=False)
-            if len(elo) != len(self.channel):
-                raise DataErr("incompleteresp", self.name)
-            return self._from_channel(self.channel, group=False,
-                                      response_id=response_id)
-
-        return self._from_channel(self.channel)
+        # We want the full channel grid with no grouping.
+        #
+        return self._from_channel(self.channel, group=False, response_id=response_id)
 
     def get_xlabel(self):
         xlabel = self.units.capitalize()
@@ -2338,8 +2394,46 @@ class DataPHA(Data1D):
         return create_expr(chans, format='%i')
 
     def get_filter(self, group=True, format='%.12f', delim=':'):
-        """
-        Integrated values returned are measured from center of bin
+        """Return the data filter as a string.
+
+        For grouped data, or when the analysis setting is not
+        channel, filter values refer to the center of the
+        channel or group.
+
+        Parameters
+        ----------
+        group : bool, optional
+            Should the filter reflect the grouped data?
+        format : str, optional
+            The formatting of the numeric values (this is
+            ignored for channel units, as a format of "%i"
+            is used).
+        delim : str, optional
+            The string used to mark the low-to-high range.
+
+        Examples
+        --------
+        For a Chandra non-grating dataset which has been grouped:
+
+        >>> pha.set_analysis('energy')
+        >>> pha.notice(0.5, 7)
+        >>> pha.get_filter(format=%.4f')
+        ''0.5183:8.2198''
+        >>> pha.set_analysis('channel')
+        >>> pha.get_filter()
+        '36:563'
+
+        The default is to show the data range for the grouped
+        dataset, which uses the center of each group. If
+        the grouping is turned off then the center of the
+        start and ending channel of each group is used
+        (and so show a larger data range):
+
+        >>> pha.get_filter(format=%.4f')
+        '0.5183:8.2198'
+        >>> pha.get_filter(group=False, format=%.4f')
+        '0.4745:9.8623'
+
         """
         if self.mask is False:
             return 'No noticed bins'
@@ -2352,33 +2446,7 @@ class DataPHA(Data1D):
         if group:
             # grouped noticed channels
             #
-            # If we have units=channel and self.grouped then
-            # we want to return channel values and *not* group
-            # numbers. This really should be pushed down to
-            # the _to_channel / _from_channel methods, but that
-            # would probably be a significantly larger change,
-            # done as part of the filtering/grouping work.
-            #
-            if self.grouped and self.units == 'channel':
-
-                # I don't like the following, but was easy
-                # to do (the use of the average and then
-                # converting to floor so we keep channels).
-                #
-                # What should it be?
-                lo = self.apply_grouping(self.channel, self._min)
-                hi = self.apply_grouping(self.channel, self._max)
-                x = (lo + hi) / 2
-                x = numpy.floor(x)
-                if mask is not None:
-                    x = x[mask]
-
-            else:
-                # This is in group, not channel, numbering.
-                # The _from_channel call below knows to convert
-                # group number to the correct units.
-                #
-                x = self.apply_filter(self.channel, self._make_groups)
+            x = self.apply_filter(self.channel, self._make_groups)
 
         else:
             # ungrouped noticed channels
@@ -2398,9 +2466,6 @@ class DataPHA(Data1D):
                         "and data ({} vs {})".format(mask.sum(), x.size))
 
         # Convert channels to appropriate quantity if necessary
-        # (if the units are channel then this is the identity
-        # transform).
-        #
         x = self._from_channel(x, group=group)
 
         if mask is None:
@@ -2470,12 +2535,13 @@ class DataPHA(Data1D):
             self.quality_filter = None
             self.notice_response(False)
 
-        elo, ehi = self._get_ebins()
-
         # We do not want a "all data are masked out" error to cause
         # this to fail; it should just do nothing (as trying to set
         # a noticed range to include masked-out ranges would also
         # be ignored).
+        #
+        # Convert to "group number" (which, for ungrouped data,
+        # is just channel number).
         #
         if lo is not None and type(lo) != str:
             try:
@@ -2492,52 +2558,22 @@ class DataPHA(Data1D):
                                                       de))
                 return
 
+        elo, ehi = self._get_ebins()
         if ((self.units == "wavelength" and
              elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
             (self.units == "energy" and
              elo[0] > elo[-1] and ehi[0] > ehi[-1])):
             lo, hi = hi, lo
 
-        # If we are working in channel space, and the data are
-        # grouped, we must correct for the fact that bounds expressed
-        # expressed in channels must be converted to group number.
-        # This is the only set of units for which this must be done;
-        # energy and wavelength conversions above already take care of
-        # the distinction between grouped and ungrouped.
-
-        if self.units == "channel" and self.grouped:
-
-            # We don't always need the group boundaries in
-            # channel units, but it's not an expensive operation
-            # so always create them.
-            #
-            grp_lo = self.apply_grouping(self.channel, self._min)
-            grp_hi = self.apply_grouping(self.channel, self._max)
-
-            # There used to be a lot of logic trying to adjust the
-            # bin boundaries, but it is not at all obvious what
-            # it was trying to do, so just go with the much-simpler
-            # approach of using the existing group number,
-            #
-            if lo is not None and type(lo) != str:
-                idx, = numpy.where((grp_lo <= lo) & (grp_hi >= lo))
-                if len(idx) > 0:
-                    lo = idx[0] + 1
-
-
-            if hi is not None and type(hi) != str:
-                idx, = numpy.where((grp_lo <= hi) & (grp_hi >= hi))
-                if len(idx) > 0:
-                    hi = idx[0] + 1
-
         # Don't use the middle of the channel anymore as the
         # grouping function.  That was just plain dumb.
         # So just get back an array of groups 1-N, if grouped
         # DATA-NOTE: need to clean this up.
+        #
+        groups = self.apply_grouping(self.channel,
+                                     self._make_groups)
         self._data_space.filter.notice((lo,), (hi,),
-                        (self.apply_grouping(self.channel,
-                                             self._make_groups),),
-                        ignore)
+                                       (groups,), ignore)
 
     def to_guess(self):
         elo, ehi = self._get_ebins(group=False)

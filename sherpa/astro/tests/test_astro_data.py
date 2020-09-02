@@ -1410,7 +1410,7 @@ def xfail(*args):
                          [(-5, 2000, '9:850'),
                           (30, 2000, '27:850'),
                           (-5, 350, '9:356'),
-                          (-20, -5, ''),
+                          xfail(-20, -5, ''),
                           (2000, 3000, ''),
                          ])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
@@ -1482,7 +1482,7 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
                          [(-5, 2000, ''),
                           (30, 2000, '9:19'),
                           (-5, 350, '386:850'),
-                          (-20, -5, '9:850'),
+                          xfail(-20, -5, '9:850'),
                           (2000, 3000, '9:850'),
                          ])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):

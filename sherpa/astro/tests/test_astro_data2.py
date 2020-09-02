@@ -99,8 +99,8 @@ def test_error_on_invalid_channel_ungrouped(chan):
 
 
 @pytest.mark.parametrize("chan,exp1,exp2",
-                         [(0, 0, 0),
-                          (-1, -1, -1)])
+                         [(0, 1, 3),
+                          (-1, 1, 1)])
 def test_error_on_invalid_channel_grouped(chan, exp1, exp2):
     """Does channel access fail when outside the bounds?
 
@@ -118,13 +118,19 @@ def test_error_on_invalid_channel_grouped(chan, exp1, exp2):
 @pytest.mark.parametrize("chan", [-2, 4])
 def test_error_on_invalid_channel_grouped2(chan):
     """Does channel access fail when outside the bounds?
+
+    This one does error out in _from_channel.
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
                   grouping=[1, -1, 1])
     assert pha.grouped
+    with pytest.raises(DataErr) as exc:
+        pha._from_channel(chan)
 
-    assert pha._from_channel(chan) == chan
+    # The error message is wrong
+    # assert str(exc.value) == 'invalid group number: {}'.format(chan)
+    assert str(exc.value) == 'invalid group number: {}'.format(chan - 1)
 
 
 def test_288_a():
