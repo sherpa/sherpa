@@ -514,7 +514,7 @@ def get_column_data(*args):
             # vals = arg.get_values()
             vals = arg.values
 
-        elif arg is None or type(arg) in (numpy.ndarray, list, tuple):
+        elif arg is None or isinstance(arg, (numpy.ndarray, list, tuple)):
             vals = arg
         else:
             raise IOErr('badarray', arg)
