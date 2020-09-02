@@ -947,7 +947,7 @@ class DataPHA(Data1D):
         # the energy bins as well.  E.g., if group 1 is
         # channels 1-5, then the energy boundaries for the
         # *group* should be elo[0], ehi[4].
-        if (self.grouped and group):
+        if self.grouped and group:
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 
@@ -1302,9 +1302,10 @@ class DataPHA(Data1D):
         (using groupfunc) and then applying the general filters
 
         """
-        if (data is None):
+        if data is None:
             return data
-        elif len(data) != len(self.counts):
+
+        if len(data) != len(self.counts):
             counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
             mask = self.get_mask()
             if mask is not None:
@@ -1312,8 +1313,8 @@ class DataPHA(Data1D):
                 data = counts
             # else:
             #     raise DataErr('mismatch', "filter", "data array")
-        return Data1D.apply_filter(self,
-                                      self.apply_grouping(data, groupfunc))
+
+        return super().apply_filter(self.apply_grouping(data, groupfunc))
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
         """
@@ -1324,7 +1325,7 @@ class DataPHA(Data1D):
         scheme or the data are ungrouped, data is returned unaltered.
 
         """
-        if (data is None) or (not self.grouped):
+        if data is None or not self.grouped:
             return data
 
         groups = self.grouping
@@ -1332,7 +1333,7 @@ class DataPHA(Data1D):
         if filter is None:
             return do_group(data, groups, groupfunc.__name__)
 
-        if (len(data) != len(filter) or len(groups) != len(filter)):
+        if len(data) != len(filter) or len(groups) != len(filter):
             raise DataErr('mismatch', "quality filter", "data array")
 
         filtered_data = numpy.asarray(data)[filter]
@@ -2099,8 +2100,8 @@ class DataPHA(Data1D):
                 raise DataErr("incompleteresp", self.name)
             return self._from_channel(self.channel, group=False,
                                       response_id=response_id)
-        else:
-            return self._from_channel(self.channel)
+
+        return self._from_channel(self.channel)
 
     def get_xlabel(self):
         xlabel = self.units.capitalize()
@@ -2290,21 +2291,21 @@ class DataPHA(Data1D):
         """
         chans = self.channel
         mask = self.get_mask()
-        if mask is not None:
+        if mask is None:
+            return chans
 
-            # This is added to address issue #361
-            #
-            # If there is a quality filter then the mask may be
-            # smaller than the chans array. It is not clear if this
-            # is the best location for this. If it is, then are there
-            # other locations where this logic is needed?
-            #
-            if self.quality_filter is not None and \
-               self.quality_filter.size != mask.size:
-                chans = chans[self.quality_filter]
+        # This is added to address issue #361
+        #
+        # If there is a quality filter then the mask may be
+        # smaller than the chans array. It is not clear if this
+        # is the best location for this. If it is, then are there
+        # other locations where this logic is needed?
+        #
+        if self.quality_filter is not None and \
+           self.quality_filter.size != mask.size:
+            chans = chans[self.quality_filter]
 
-            chans = chans[mask]
-        return chans
+        return chans[mask]
 
     def get_mask(self):
         """Returns the (ungrouped) mask.
@@ -2406,8 +2407,8 @@ class DataPHA(Data1D):
         # this should be done in high-level UI?)  SMD 10/25/12
 
         filter_background_only = False
-        if (bkg_id is not None):
-            if (not(numpy.iterable(bkg_id))):
+        if bkg_id is not None:
+            if not numpy.iterable(bkg_id):
                 bkg_id = [bkg_id]
             filter_background_only = True
         else:
