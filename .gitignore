@@ -116,3 +116,6 @@ docs/**/api
 
 #generated from python setup.py test
 .pytest_cache
+
+# IDE config
+.vscode
