@@ -2351,7 +2351,35 @@ class DataPHA(Data1D):
 
         if group:
             # grouped noticed channels
-            x = self.apply_filter(self.channel, self._make_groups)
+            #
+            # If we have units=channel and self.grouped then
+            # we want to return channel values and *not* group
+            # numbers. This really should be pushed down to
+            # the _to_channel / _from_channel methods, but that
+            # would probably be a significantly larger change,
+            # done as part of the filtering/grouping work.
+            #
+            if self.grouped and self.units == 'channel':
+
+                # I don't like the following, but was easy
+                # to do (the use of the average and then
+                # converting to floor so we keep channels).
+                #
+                # What should it be?
+                lo = self.apply_grouping(self.channel, self._min)
+                hi = self.apply_grouping(self.channel, self._max)
+                x = (lo + hi) / 2
+                x = numpy.floor(x)
+                if mask is not None:
+                    x = x[mask]
+
+            else:
+                # This is in group, not channel, numbering.
+                # The _from_channel call below knows to convert
+                # group number to the correct units.
+                #
+                x = self.apply_filter(self.channel, self._make_groups)
+
         else:
             # ungrouped noticed channels
             x = self.get_noticed_channels()
@@ -2369,7 +2397,10 @@ class DataPHA(Data1D):
                 warning("There is a mis-match in the ungrouped mask " +
                         "and data ({} vs {})".format(mask.sum(), x.size))
 
-        # convert channels to appropriate quantity if necessary.
+        # Convert channels to appropriate quantity if necessary
+        # (if the units are channel then this is the identity
+        # transform).
+        #
         x = self._from_channel(x, group=group)
 
         if mask is None:

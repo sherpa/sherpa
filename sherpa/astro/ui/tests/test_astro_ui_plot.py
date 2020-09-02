@@ -1306,8 +1306,8 @@ def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1):
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("units,xlabel,ylabel,xlo,xhi",
-                         [pytest.param("channel", 'Channel', 'Counts/sec/channel',
-                                       33, 677, marks=pytest.mark.xfail),
+                         [("channel", 'Channel', 'Counts/sec/channel',
+                           33, 677),
                           ("wavelength", 'Wavelength (Angstrom)', 'Counts/sec/Angstrom',
                            26.537710718511885,  1.2562229845315145),
                          ])

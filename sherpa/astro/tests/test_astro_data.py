@@ -1082,19 +1082,19 @@ def test_get_filter_channel_grouped(make_data_path):
     assert pha.grouped
     pha.set_analysis('channel')
 
-    # This returns "group" number
-    assert pha.get_filter() == '1:46'
+    # This returns channels (now)
+    assert pha.get_filter() == '9:850'
 
     # Reset the grouping to use an easier-to-check scheme: groups
     # have a fixed number of channels, in this case 50.
     #
     pha.group_width(50)
-    assert pha.get_filter() == '1:21'
+    assert pha.get_filter() == '25:1012'
 
     # What units does ignore use? It appears to be channels.
     pha.ignore(151, 300)
 
-    assert pha.get_filter() == '1:3,7:21'
+    assert pha.get_filter() == '25:125,325:1012'
 
 
 @requires_data
@@ -1117,12 +1117,12 @@ def test_get_filter_channel_grouped_prefiltered(make_data_path):
     pha.notice(1.0, 7.0)
 
     pha.set_analysis('channel')
-    assert pha.get_filter() == '2:10'
+    assert pha.get_filter() == '75:475'  # DOES NOT MATCH 69-480
 
     # What units does ignore use? It appears to be channels.
     pha.ignore(150, 300)
 
-    assert pha.get_filter() == '2,7:10'
+    assert pha.get_filter() == '75,325:475'  #  ODD
 
 
 @requires_data
@@ -1392,8 +1392,8 @@ def test_notice_channel_grouping(make_data_path):
 
     assert pha.get_mask() == pytest.approx(mask)
 
-    # Returns the group numbers
-    assert pha.get_filter(format='%.4f') == '14:43'
+    # Returns the channel numbers
+    assert pha.get_filter(format='%.4f') == '70:386'
 
     # Returns the channel numbers (groups 14 to 43
     # is 69 - 404).
@@ -1407,9 +1407,9 @@ def xfail(*args):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, '1:46'),
-                          (30, 2000, '3:46'),
-                          (-5, 350, '1:42'),
+                         [(-5, 2000, '9:850'),
+                          (30, 2000, '27:850'),
+                          (-5, 350, '9:356'),
                           (-20, -5, ''),
                           (2000, 3000, ''),
                          ])
@@ -1480,10 +1480,10 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, ''),
-                          (30, 2000, '1:2'),
-                          (-5, 350, '43:46'),
-                          (-20, -5, '1:46'),
-                          (2000, 3000, '1:46'),
+                          (30, 2000, '9:19'),
+                          (-5, 350, '386:850'),
+                          (-20, -5, '9:850'),
+                          (2000, 3000, '9:850'),
                          ])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1564,7 +1564,7 @@ def test_channel_changing_limits(make_data_path):
     #
     pha.notice(60, 350)
 
-    expected1 = '11:42'
+    expected1 = '60:356'
     expected2 = '60:368'
     assert pha.get_filter() == expected1
     assert pha.get_filter(group=False) == expected2
