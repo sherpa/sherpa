@@ -2464,44 +2464,28 @@ class DataPHA(Data1D):
 
         if self.units == "channel" and self.grouped:
 
-            if lo is not None and type(lo) != str and \
-               not(lo < self.channel[0]):
+            # We don't always need the group boundaries in
+            # channel units, but it's not an expensive operation
+            # so always create them.
+            #
+            grp_lo = self.apply_grouping(self.channel, self._min)
+            grp_hi = self.apply_grouping(self.channel, self._max)
 
-                # Find the location of the first channel greater than
-                # or equal to lo in self.channel
-                # Then find out how many groups there are that contain
-                # the channels less than lo, and convert lo from a
-                # channel number to the first group number that has channels
-                # greater than or equal to lo.
+            # There used to be a lot of logic trying to adjust the
+            # bin boundaries, but it is not at all obvious what
+            # it was trying to do, so just go with the much-simpler
+            # approach of using the existing group number,
+            #
+            if lo is not None and type(lo) != str:
+                idx, = numpy.where((grp_lo <= lo) & (grp_hi >= lo))
+                if len(idx) > 0:
+                    lo = idx[0] + 1
 
-                lo_index = numpy.where(self.channel >= lo)[0][0]
-                lo = len(numpy.where(self.grouping[:lo_index] > -1)[0]) + 1
 
-            if hi is not None and type(hi) != str and \
-               not(hi > self.channel[-1]):
-
-                # Find the location of the first channel greater than
-                # or equal to hi in self.channel
-                # Then find out how many groups there are that contain
-                # the channels less than hi, and convert hi from a
-                # channel number to the first group number that has channels
-                # greater than or equal to hi.
-                hi_index = numpy.where(self.channel >= hi)[0][0]
-                hi = len(numpy.where(self.grouping[:hi_index] > -1)[0])
-
-                # If the original channel hi starts a new group,
-                # increment the group number
-                if (self.grouping[hi_index] > -1):
-                    hi = hi + 1
-
-                # If the original channel hi is in a group such that
-                # the group has channels greater than original hi,
-                # then use the previous group as the highest group included
-                # in the filter. Avoid indexing beyond the end of the
-                # grouping array.
-                if (hi_index + 1 < len(self.grouping)):
-                    if not(self.grouping[hi_index + 1] > -1):
-                        hi = hi - 1
+            if hi is not None and type(hi) != str:
+                idx, = numpy.where((grp_lo <= hi) & (grp_hi >= hi))
+                if len(idx) > 0:
+                    hi = idx[0] + 1
 
         # Don't use the middle of the channel anymore as the
         # grouping function.  That was just plain dumb.

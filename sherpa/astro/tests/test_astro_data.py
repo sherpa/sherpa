@@ -1122,9 +1122,7 @@ def test_get_filter_channel_grouped_prefiltered(make_data_path):
     # What units does ignore use? It appears to be channels.
     pha.ignore(150, 300)
 
-    # It is not obvious why 3 is still included.
-    #
-    assert pha.get_filter() == '2:3,7:10'
+    assert pha.get_filter() == '2,7:10'
 
 
 @requires_data
@@ -1224,8 +1222,7 @@ def test_get_noticed_channels(analysis, make_data_path):
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("analysis", ["energy", "wavelength",
-                                      pytest.param("channel", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_filter(analysis, make_data_path):
     """Can we change grouping with energy units.
 
@@ -1254,41 +1251,7 @@ def test_grouping_filter(analysis, make_data_path):
 
 @requires_data
 @requires_fits
-def test_grouping_filter_bug(make_data_path):
-    """Why is the filtering different here?
-
-    I don't think this is bug#920, but it's related.
-
-    This is to check the failure in
-    test_grouping_filter(analysis=wavelength)
-    and can be removed once we fix things.
-    """
-
-    from sherpa.astro.io import read_pha
-
-    pha = read_pha(make_data_path('3c273.pi'))
-
-    assert pha.get_analysis() == 'energy'
-    pha.ignore(None, 1)
-    pha.ignore(7, None)
-
-    pha.set_analysis('channel')
-
-    dep = np.array([15, 17, 16, 16, 17, 15, 19, 15, 16, 15,
-                    16, 17, 15, 18, 16, 15, 15, 16, 15, 15,
-                    15, 16, 16, 15, 15, 16, 16, 15, 16, 15])
-    assert pha.get_dep(filter=True) == pytest.approx(dep)
-
-    pha.group_width(50)
-    # This is one less than the energy/wavelength results.
-    dep = np.array([136, 79, 47, 47, 29, 27, 18])
-    assert pha.get_dep(filter=True) == pytest.approx(dep)
-
-
-@requires_data
-@requires_fits
-@pytest.mark.parametrize("analysis", ["energy", "wavelength",
-                                      pytest.param("channel", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_filtering_binning(analysis, make_data_path):
     """Low-level testing of test_grouping_filtering.
 
@@ -1422,21 +1385,19 @@ def test_notice_channel_grouping(make_data_path):
     #
     pha.notice(70, 390)
 
-    # Unlike the energy case this does not create the expected
-    # results. It selects groups 15 to 42, not 14-43.
+    # This now creates the expected range.
     #
     mask = np.zeros(1024, dtype=np.bool)
-    # mask[68:404] = True  the expected results
-    mask[71:368] = True
+    mask[68:404] = True
 
     assert pha.get_mask() == pytest.approx(mask)
 
     # Returns the group numbers
-    assert pha.get_filter(format='%.4f') == '15:42'
+    assert pha.get_filter(format='%.4f') == '14:43'
 
     # Returns the channel numbers (groups 14 to 43
     # is 69 - 404).
-    assert pha.get_filter(format='%.4f', group=False) == '72:368'
+    assert pha.get_filter(format='%.4f', group=False) == '69:404'
 
 
 def xfail(*args):
@@ -1447,10 +1408,10 @@ def xfail(*args):
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, '1:46'),
-                          (30, 2000, '4:46'),
-                          (-5, 350, '1:41'),
+                          (30, 2000, '3:46'),
+                          (-5, 350, '1:42'),
                           (-20, -5, ''),
-                          # (2000, 3000, ''),  This errors out
+                          (2000, 3000, ''),
                          ])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results
@@ -1469,26 +1430,6 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
 
     pha.notice(lo, hi)
     assert pha.get_filter() == expected
-
-
-@requires_data
-@requires_fits
-def test_notice_channel_grouping_outofbounds_error(make_data_path):
-    """Found whist testing #920.
-
-    This will be fixed, but leave a test in until it is.
-    """
-
-    from sherpa.astro.io import read_pha
-
-    pha = read_pha(make_data_path('3c273.pi'))
-
-    pha.set_analysis('channel')
-
-    with pytest.raises(IndexError) as exc:
-        pha.notice(2000, 3000)
-
-    assert str(exc.value) == 'index 0 is out of bounds for axis 0 with size 0'
 
 
 @requires_data
@@ -1539,10 +1480,10 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, ''),
-                          (30, 2000, '1:3'),
-                          (-5, 350, '42:46'),
+                          (30, 2000, '1:2'),
+                          (-5, 350, '43:46'),
                           (-20, -5, '1:46'),
-                          # (2000, 3000, '1:46'),  This errors out
+                          (2000, 3000, '1:46'),
                          ])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1555,26 +1496,6 @@ def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
 
     pha.ignore(lo, hi)
     assert pha.get_filter() == expected
-
-
-@requires_data
-@requires_fits
-def test_ignore_channel_grouping_outofbounds_error(make_data_path):
-    """Found whist testing #920.
-
-    This will be fixed, but leave a test in until it is.
-    """
-
-    from sherpa.astro.io import read_pha
-
-    pha = read_pha(make_data_path('3c273.pi'))
-
-    pha.set_analysis('channel')
-
-    with pytest.raises(IndexError) as exc:
-        pha.ignore(2000, 3000)
-
-    assert str(exc.value) == 'index 0 is out of bounds for axis 0 with size 0'
 
 
 @requires_data
@@ -1643,8 +1564,8 @@ def test_channel_changing_limits(make_data_path):
     #
     pha.notice(60, 350)
 
-    expected1 = '11:41'
-    expected2 = '60:344'
+    expected1 = '11:42'
+    expected2 = '60:368'
     assert pha.get_filter() == expected1
     assert pha.get_filter(group=False) == expected2
 

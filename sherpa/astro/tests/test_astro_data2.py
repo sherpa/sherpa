@@ -147,7 +147,7 @@ def test_288_a():
 
 
 def test_288_b():
-    """The issue from #288 which fails"""
+    """The issue from #288 which was failing"""
 
     channels = np.arange(1, 6)
     counts = np.asarray([5, 5, 10, 10, 2])
@@ -157,7 +157,7 @@ def test_288_b():
     assert pha.mask
     pha.ignore(3.1, 4)
 
-    assert pha.mask == pytest.approx([True, True, True])
+    assert pha.mask == pytest.approx([True, False, True])
 
 
 @pytest.mark.xfail
@@ -199,11 +199,11 @@ def test_416_a():
     pha.group_counts(3)
 
     # We have a simplified mask
-    mask = [False, False]
+    mask = [True, True]
     assert pha.mask == pytest.approx(mask)
 
     # the "full" mask can be retrieved with get_mask
-    mask = [False] * 10
+    mask = [True] * 10
     assert pha.get_mask() == pytest.approx(mask)
 
     grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
@@ -213,7 +213,7 @@ def test_416_a():
     assert pha.quality == pytest.approx(quality)
 
     dep = pha.get_dep(filter=True)
-    assert dep == pytest.approx([])
+    assert dep == pytest.approx([3, 1])
 
 
 def test_416_b(caplog):
