@@ -22,6 +22,8 @@ import pytest
 from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, Data2D, Data2DInt, BaseData
 from sherpa.models import Polynom1D, Polynom2D
 from sherpa.utils.err import NotImplementedErr, DataErr
+from sherpa.ui.utils import Session
+from sherpa.astro.ui.utils import Session as AstroSession
 
 NAME = "data_test"
 X_ARRAY = numpy.arange(0, 10, 1)
@@ -41,6 +43,7 @@ MULTIPLIER = 2
 DATA_1D_CLASSES = (Data1D, Data1DInt)
 DATA_2D_CLASSES = (Data2D, Data2DInt)
 ALL_DATA_CLASSES = DATA_1D_CLASSES + DATA_2D_CLASSES
+REALLY_ALL_DATA_CLASSES = (Data, ) + ALL_DATA_CLASSES
 
 DATA1D_ARGS = NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
 DATA_ARGS = NAME, (X_ARRAY,), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
@@ -57,6 +60,40 @@ INSTANCE_ARGS = {
     Data2D: DATA2D_ARGS,
     Data2DInt: DATA2DINT_ARGS
 }
+
+
+POS_X_ARRAY = {
+    Data1D: 1,
+    Data: 1,
+    Data1DInt: 1,
+    Data2D: 1,
+    Data2DInt: 1,
+    }
+
+POS_Y_ARRAY = {
+    Data1D: 2,
+    Data: 2,
+    Data1DInt: 3,
+    Data2D: 3,
+    Data2DInt: 5,
+    }
+
+POS_STATERR_ARRAY = {
+    Data1D: 3,
+    Data: 3,
+    Data1DInt: 4,
+    Data2D: 5,
+    Data2DInt: 7,
+    }
+
+
+POS_SYSERR_ARRAY = {
+    Data1D: 4,
+    Data: 4,
+    Data1DInt: 5,
+    Data2D: 6,
+    Data2DInt: 8,
+    }
 
 
 @pytest.fixture
@@ -977,3 +1014,184 @@ def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
     model2 = Gauss2D()
     fitter = Fit(data2, model2, Chi2(), LevMar())
     fitter.fit()  # Failed in Sherpa 4.11.0
+
+
+# https://github.com/sherpa/sherpa/issues/695
+@pytest.mark.parametrize('arrpos', [POS_X_ARRAY])
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_indep_masked_numpyarray(arrpos, Dataclass):
+    i = arrpos[Dataclass]
+    args = list(INSTANCE_ARGS[Dataclass])
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args[i] = numpy.ma.array(args[i], mask=mask)
+    with pytest.warns(UserWarning, match="for dependent variables only"):
+        data = Dataclass(*args)
+    assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
+
+@pytest.mark.parametrize('arrpos', [POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_err_masked_numpyarray(arrpos, Dataclass):
+    i = arrpos[Dataclass]
+    args = list(INSTANCE_ARGS[Dataclass])
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args[i] = numpy.ma.array(args[i], mask=mask)
+    with pytest.warns(UserWarning, match="differs from the mask of the dependent array"):
+        data = Dataclass(*args)
+    assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
+
+
+@pytest.mark.parametrize('arrpos', [POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_deperr_masked_numpyarray(arrpos, Dataclass):
+    '''Error arrays can be masked as long as that mask is the same as the dependent array'''
+    i = arrpos[Dataclass]
+    j = POS_Y_ARRAY[Dataclass]
+    args = list(INSTANCE_ARGS[Dataclass])
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args[i] = numpy.ma.array(args[i], mask=mask)
+    args[j] = numpy.ma.array(args[j], mask=mask)
+    data = Dataclass(*args)
+    assert len(data.get_dep(filter=True)) == (~mask).sum()    
+    
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_dep_masked_numpyarray(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    posy = POS_Y_ARRAY[Dataclass]
+    mask = numpy.random.rand(*(args[posy].shape)) > 0.5
+    args[posy] = numpy.ma.array(args[posy], mask=mask)
+    data = Dataclass(*args)
+    assert data.mask.shape == mask.shape
+    assert numpy.all(data.mask == ~mask)
+    assert len(data.get_dep(filter=True)) == (~mask).sum()
+
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_dep_masked_numpyarray_nomask(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    posy = POS_Y_ARRAY[Dataclass]
+    # By default, numpy creates a masked array with no mask set
+    args[posy] = numpy.ma.array(args[posy]) 
+    data = Dataclass(*args)
+    # Sherpa's way of saying "mask is not set"
+    assert data.mask is True
+    assert len(data.get_dep(filter=True)) == len(args[posy].flatten())
+
+
+@pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
+def test_data_indep_anyobj_with_mask(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    class DummyMask(list):
+        mask = 'whatisthis'
+    args[1] = DummyMask(args[1])
+    with pytest.warns(UserWarning, match="for dependent variables only"):
+        data = Dataclass(*args)
+    assert data.mask is True
+    assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
+
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_dep_any_obj_with_mask(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    posy = POS_Y_ARRAY[Dataclass]
+    class DummyMask(list):
+        mask = 'whatisthis'
+    args[posy] = DummyMask(args[posy])
+    with pytest.warns(UserWarning, match="Set .mask"):
+        data = Dataclass(*args)
+    assert data.mask is True
+    assert len(data.get_dep(filter=True)) == len(data.get_dep(filter=False))
+
+
+# repeat set of tests except now by using ui
+# Results should be idendical, but tests are fast, so we just test again
+# To make sure that there is no heuristic in load_arrays or similar that
+# interferes with the logic
+@pytest.mark.parametrize('arrpos', [POS_X_ARRAY, POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
+@pytest.mark.parametrize('Session', [Session, AstroSession])
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_indeperr_masked_numpyarray_ui(arrpos, data_for_load_arrays, Session):
+    session, args, data = data_for_load_arrays
+    session = Session()
+    i = arrpos[type(data)]
+    mask = numpy.random.rand(*(args[i].shape)) > 0.5
+    args = list(args)
+    args[1] = numpy.ma.array(args[i], mask=mask)
+    with pytest.warns(UserWarning, match="for dependent variables only"):
+        session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    assert len(new_data.get_dep(filter=True)) == len(args[i])
+
+
+@pytest.mark.parametrize('Session', [Session, AstroSession])
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_dep_masked_numpyarray_ui(data_for_load_arrays, Session):
+    session, args, data = data_for_load_arrays
+    session = Session()
+    posy = POS_Y_ARRAY[type(data)]
+    mask = numpy.random.rand(*(args[posy].shape)) > 0.5
+    args = list(args)
+    args[posy] = numpy.ma.array(args[posy], mask=mask)
+    session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    assert new_data.mask.shape == mask.shape
+    assert numpy.all(new_data.mask == ~mask)
+    assert len(new_data.get_dep(filter=True)) == (~mask).sum()
+
+
+@pytest.mark.parametrize('Session', [Session, AstroSession])
+@pytest.mark.parametrize("data_for_load_arrays", ALL_DATA_CLASSES, indirect=True)
+def test_data_dep_masked_numpyarray_nomask_ui(data_for_load_arrays, Session):
+    session, args, data = data_for_load_arrays
+    session = Session()
+    posy = POS_Y_ARRAY[type(data)]
+    args = list(args)
+    args[posy] = numpy.ma.array(args[posy])
+    session.load_arrays(*args)
+    new_data = session.get_data(data.name)
+    # Sherpa's way of saying "mask is not set"
+    assert new_data.mask is True
+    assert len(new_data.get_dep(filter=True)) == len(args[posy].flatten())
+
+
+# https://github.com/sherpa/sherpa/issues/346
+@pytest.mark.parametrize('Session', [Session, AstroSession])
+def test_regression_346(Session):
+    session = Session()
+    x = numpy.arange(-5, 5.1) 
+    old_y = x*x + 23.2
+    y = numpy.ma.masked_array(old_y,mask=old_y<35) 
+    e = numpy.ones(x.size) 
+    session.load_arrays("mydata", x, y, e) 
+    filtered_y = session. get_dep("mydata", filter=True)
+    assert numpy.allclose(filtered_y, [48.2, 39.2, 39.2, 48.2])
+
+    
+def test_manual_setting_mask():
+    d = Data1D(name='test', x=[1, 2, 3], y=[0, 0, 0])
+    d.mask = True
+    assert len(d.get_dep(filter=True)) == 3
+
+    d.mask = False
+    # This test looks like it does not do anything, but in fact "mask"
+    # is a property with complext logic, so the fact that setting it to
+    # False makes is False is non-trivial.
+    # I don't want to test for
+    # len(d.get_dep(filter=True)) == 0
+    # because the get_dep raises and error when no data is noticed
+    # and I don't want to test get_dep here, but the fact that setting
+    # the mask itself works.
+    assert d.mask is False
+
+    d.mask = [True, False, True]
+    assert len(d.get_dep(filter=True)) == 2
+    arr = numpy.ma.array([3,4,5])
+    d.mask = arr.mask  # aka numpy.ma.nomask, but used in a more
+                       # natural way
+    assert len(d.get_dep(filter=True)) == 3
+
+    with pytest.raises(DataErr) as e:
+        d.mask = None
+    assert 'True, False, or a mask array' in str(e.value)
+
+        

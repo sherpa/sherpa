@@ -514,14 +514,14 @@ def get_column_data(*args):
             # vals = arg.get_values()
             vals = arg.values
 
-        elif arg is None or type(arg) in (numpy.ndarray, list, tuple):
+        elif arg is None or isinstance(arg, (numpy.ndarray, list, tuple)):
             vals = arg
         else:
             raise IOErr('badarray', arg)
 
         if arg is not None:
-            vals = numpy.asarray(vals)
-            for col in numpy.column_stack(vals):
+            vals = numpy.asanyarray(vals)
+            for col in numpy.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(vals)

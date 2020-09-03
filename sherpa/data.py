@@ -44,12 +44,40 @@ def _check(array):
 
     if hasattr(array, "shape"):
         if len(array.shape) != 1:
-            raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {})".format(array))
+            raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {}?)".format(array))
     else:
-        warnings.warn("Converting array {} to numpy array".format(array))
+        warnings.warn("Converting array {} to numpy array.".format(array))
         array = numpy.asanyarray(array)
         return _check(array)
     return array
+
+
+def _check_nomask(array):
+    if hasattr(array, 'mask'):
+        warnings.warn('Input array {} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.'.format(array))
+    return array
+
+
+def _check_dep(array):
+    if not hasattr(array, 'mask'):
+        return _check(array), True
+    else:
+        # We know the mask convention is opposite to sherpa
+        if isinstance(array, numpy.ma.MaskedArray):
+            return _check(array), ~array.mask
+        # We don't know what the mask convention is
+        else:
+            warnings.warn('Format of mask for array {} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.'.format(array))
+            return _check(array), True
+
+
+def _check_err(array, masktemplate):
+    '''Accept array without mask or with a mask that matches the template'''
+    if ((hasattr(array, 'mask') and not hasattr(masktemplate, 'mask')) or
+        (hasattr(array, 'mask') and not numpy.all(array.mask == masktemplate.mask))):
+        warnings.warn('The mask of {} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.'.format(array))
+    return array
+        
 
 
 class DataSpace1D(EvaluationSpace1D):
@@ -68,7 +96,7 @@ class DataSpace1D(EvaluationSpace1D):
             the x axis of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, x)
+        EvaluationSpace1D.__init__(self, _check_nomask(x))
 
     def get(self, filter=False):
         """
@@ -134,7 +162,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
             the higher bounds array of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, xlo, xhi)
+        EvaluationSpace1D.__init__(self, _check_nomask(xlo), _check_nomask(xhi))
 
     def get(self, filter=False):
         """
@@ -201,8 +229,8 @@ class DataSpace2D():
             the second axis of this data space
         """
         self.filter = filter
-        self.x0 = _check(x0)
-        self.x1 = _check(x1)
+        self.x0 = _check(_check_nomask(x0))
+        self.x1 = _check(_check_nomask(x1))
 
     def get(self, filter=False):
         """
@@ -263,10 +291,10 @@ class IntegratedDataSpace2D():
             the higher bounds array of the xhi axis
         """
         self.filter = filter
-        self.x0lo = _check(x0lo)
-        self.x1lo = _check(x1lo)
-        self.x0hi = _check(x0hi)
-        self.x1hi = _check(x1hi)
+        self.x0lo = _check(_check_nomask(x0lo))
+        self.x1lo = _check(_check_nomask(x1lo))
+        self.x0hi = _check(_check_nomask(x0hi))
+        self.x1hi = _check(_check_nomask(x1hi))
 
     def get(self, filter=False):
         """
@@ -321,7 +349,7 @@ class DataSpaceND():
             the tuple of independent axes.
         """
         self.filter = filter
-        self.indep = indep
+        self.indep = _check_nomask(indep)
 
     def get(self, filter=False):
         """
@@ -381,6 +409,13 @@ class Filter():
     def mask(self, val):
         if (val is True) or (val is False):
             self._mask = val
+        # if val is of type np.bool_ and True, it failed the previous test because
+        # "is True" compares with Python "True" singelton.
+        # Yet, we do not want to allow arbitrary values that evaluate as True.
+        elif val is numpy.ma.nomask:
+            self._mask = True
+        elif numpy.isscalar(val) and isinstance(val, numpy.bool_):
+            self._mask = bool(val)
         elif (val is None) or numpy.isscalar(val):
             raise DataErr('ismask')
         else:
@@ -452,31 +487,34 @@ class Data(NoNewAttributesAfterInit, BaseData):
     Data class for generic, N-Dimensional data sets, where N depends on the number of independent axes passed during
     initialization.
 
-    A data class is the collection of a data space and a number of data array for the dependent variable and
+    A data class is the collection of a data space and a number of data arrays for the dependent variable and
     associated errors.
 
     This class can be extended by classes definining data sets of specific dimensionality. Extending classes should
     override the `_init_data_space` method.
 
-    This classe provides most of the infrastructure for extending classes for free.
+    This class provides most of the infrastructure for extending classes for free.
+
+    Data classes contain a ``mask`` attribute, which can be used ignore certain values in the array
+    when fitting or plotting that data. The convention in Sherpa is that ``True`` marks a values as
+    *valid* and ``False`` as *invalid* (note that this is opposite to the numpy convention). When a `Data`
+    instance is initialized with a dependent array that has a ``mask`` attribute (e.g. numpy masked array),
+    it will attempt to convert that mask to the Sherpa convention and raise a warning otherwise. In any case,
+    the user can set ``data.mask`` after initialization if that conversion does not yield the expected result.
     """
     _fields = ("name", "indep", "dep", "staterror", "syserror")
 
     def __init__(self, name, indep, y, staterror=None, syserror=None):
         """
-        Warning: Currently, Data objects ignore any masks on input data. If you have masked data,
-        set ``data.mask`` after initialization - and note that the Sherpa convention for masking
-        is OPPOSITE to numpy, i.e. in Sherpa True marks a valid value and False an invalid,
-        to-be-ignored value.
-
         Parameters
         ----------
         name : basestring
             name of this dataset
         indep: tuple of array_like
-            the tuple of independent arrays
+            the tuple of independent arrays.
         y : array_like
-            the values of the dependent observable
+            The values of the dependent observable. If this is a numpy masked array,
+            the mask will used to initialize a mask.
         staterror : array_like
             the statistical error associated with the data
         syserror : array_like
@@ -484,9 +522,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
-        self.y = _check(y)
-        self.staterror = staterror
-        self.syserror = syserror
+        self.y, self.mask = _check_dep(y)
+        self.staterror = _check_err(staterror, y)
+        self.syserror = _check_err(syserror, y)
         NoNewAttributesAfterInit.__init__(self)
 
     def _init_data_space(self, filter, *data):
