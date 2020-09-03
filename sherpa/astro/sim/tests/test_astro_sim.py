@@ -159,11 +159,21 @@ def test_pragbayes_pcaarf(sampler, setup):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("sampler", ["pragBayes", "fullbayes"])
-def test_pragbayes_pcaarf_limits(sampler, setup, caplog):
-    """Try and trigger limit issues"""
+def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
+    """Try and trigger limit issues.
+
+    """
 
     from sherpa.astro.xspec import XSAdditiveModel, XSMultiplicativeModel, \
         XSwabs, XSpowerlaw
+
+    # Set the seed for the RNG. The seed was adjusted to try and make
+    # sure the coverage was "good" (i.e. hits parts of
+    # sherpa/astro/sim/*bayes.py) whilst still passing the test and
+    # reducing the runtime.  This is not a guarantee that this is the
+    # "fastest" seed, just that it's one of the better ones I've seen.
+    #
+    np.random.seed(0x723c)
 
     class HackAbs(XSwabs):
         """Restrict hard limits"""
