@@ -598,13 +598,18 @@ class ArithmeticModel(Model):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
 
-class RegriddableModel1D(ArithmeticModel):
+class RegriddableModel(ArithmeticModel):
+    def regrid(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+class RegriddableModel1D(RegriddableModel):
     """Allow 1D models to be regridded."""
 
     ndim = 1
     "A one-dimensional model."
 
-    def regrid(self, *arrays, **kwargs):
+    def regrid(self, *args, **kwargs):
         """
         The class RegriddableModel1D allows the user to evaluate in the
         requested space then interpolate onto the data space. An optional
@@ -618,24 +623,24 @@ class RegriddableModel1D(ArithmeticModel):
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
         """
-        valid_keys = ('interp')
+        valid_keys = ('interp',)
         for key in kwargs.keys():
             if key not in valid_keys:
                 raise TypeError("unknown keyword argument: '%s'" % key)
-        eval_space = EvaluationSpace1D(*arrays)
+        eval_space = EvaluationSpace1D(*args)
         regridder = ModelDomainRegridder1D(eval_space, **kwargs)
-        regridder._make_and_validate_grid(arrays)
+        regridder._make_and_validate_grid(args)
         return regridder.apply_to(self)
 
 
-class RegriddableModel2D(ArithmeticModel):
+class RegriddableModel2D(RegriddableModel):
     """Allow 2D models to be regridded."""
 
     ndim = 2
     "A two-dimensional model."
 
-    def regrid(self, *arrays):
-        eval_space = EvaluationSpace2D(*arrays)
+    def regrid(self, *args, **kwargs):
+        eval_space = EvaluationSpace2D(*args)
         regridder = ModelDomainRegridder2D(eval_space)
         return regridder.apply_to(self)
 
@@ -652,7 +657,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
-class BinaryOpModel(CompositeModel, ArithmeticModel):
+class BinaryOpModel(CompositeModel, RegriddableModel):
 
     @staticmethod
     def wrapobj(obj):
@@ -670,6 +675,15 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
                                  (self.lhs.name, opstr, self.rhs.name)),
                                 (self.lhs, self.rhs))
 
+    def regrid(self, *args, **kwargs):
+        for part in self.parts:
+            # ArithmeticConstantModel does not support regrid by design
+            if not hasattr(part, 'regrid'):
+                continue
+            # The full model expression must be used
+            return part.__class__.regrid(self, *args, **kwargs)
+        raise ModelErr('Neither component supports regrid method')
+    
     def startup(self, cache=False):
         self.lhs.startup(cache)
         self.rhs.startup(cache)
