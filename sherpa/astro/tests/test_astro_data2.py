@@ -20,6 +20,8 @@
 
 """Continued testing of sherpa.astro.data."""
 
+import logging
+
 import numpy as np
 
 import pytest
@@ -123,3 +125,174 @@ def test_error_on_invalid_channel_grouped2(chan):
     assert pha.grouped
 
     assert pha._from_channel(chan) == chan
+
+
+def test_288_a():
+    """The issue from #288 which was working"""
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    assert pha.mask
+    pha.ignore(3, 4)
+
+    # I use approx because it gives a nice answer, even though
+    # I want eqiuality not approximation in this test. Fortunately
+    # with bools the use of approx is okay (it can tell the
+    # difference between 0 and 1, aka False and True).
+    #
+    assert pha.mask == pytest.approx([True, False, True])
+
+
+def test_288_b():
+    """The issue from #288 which fails"""
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    assert pha.mask
+    pha.ignore(3.1, 4)
+
+    assert pha.mask == pytest.approx([True, True, True])
+
+
+@pytest.mark.xfail
+def test_grouping_non_numpy():
+    """Historically the group* calls will fail oddly if y is not numpy
+
+    TypeError: grpNumCounts() Could not parse input arguments, please check input for correct type(s)
+    """
+
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    y = [0, 0, 0, 2, 1, 1, 0, 0, 0, 0]
+
+    pha = DataPHA('416', x, y)
+    pha.group_counts(3)
+
+    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    assert pha.grouping == pytest.approx(grouping)
+
+    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    assert pha.quality == pytest.approx(quality)
+
+
+def test_416_a():
+    """The first test case from issue #416"""
+
+    # if y is not a numpy array then group_counts errors out
+    # with a strange error. Another reason why DataPHA needs
+    # to validate input
+    #
+    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
+
+    pha = DataPHA('416', x, y)
+    pha.notice(3.5, 6.5)
+
+    mask = [False, False, False, True, True, True, False, False, False, False]
+    assert pha.mask == pytest.approx(mask)
+
+    pha.group_counts(3)
+
+    # We have a simplified mask
+    mask = [False, False]
+    assert pha.mask == pytest.approx(mask)
+
+    # the "full" mask can be retrieved with get_mask
+    mask = [False] * 10
+    assert pha.get_mask() == pytest.approx(mask)
+
+    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    assert pha.grouping == pytest.approx(grouping)
+
+    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    assert pha.quality == pytest.approx(quality)
+
+    dep = pha.get_dep(filter=True)
+    assert dep == pytest.approx([])
+
+
+def test_416_b(caplog):
+    """The second test case from issue #416
+
+    This is to make sure this hasn't changed.
+    """
+
+    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
+
+    pha = DataPHA('416', x, y)
+    pha.notice(3.5, 6.5)
+    pha.group_counts(3)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.ignore_bad()
+
+    # It's not obvious why this has switched to a boolean
+    assert pha.mask
+
+    # Mask is also interesting (currently just reporting
+    # this behavior)
+    mask = [True] * 5 + [False] * 5
+    assert pha.get_mask() == pytest.approx(mask)
+
+    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    assert pha.grouping == pytest.approx(grouping)
+
+    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    assert pha.quality == pytest.approx(quality)
+
+    dep = pha.get_dep(filter=True)
+    assert dep == pytest.approx([3])
+
+    # check captured log
+    #
+    emsg = 'filtering grouped data with quality flags, previous filters deleted'
+    assert caplog.record_tuples == [
+        ('sherpa.astro.data', logging.WARNING, emsg)
+        ]
+
+
+def test_416_c():
+    """The third test case from issue #416
+    """
+
+    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
+
+    pha = DataPHA('416', x, y)
+    pha.notice(3.5, 6.5)
+
+    # this should be ~pha.mask
+    tabstops = [True] * 3 + [False] * 3 + [True] * 4
+    assert ~pha.mask == pytest.approx(tabstops)
+
+    pha.group_counts(3, tabStops=~pha.mask)
+    pha.ignore_bad()
+
+    grouping = [0] * 3 + [1, -1, 1] + [0] * 4
+    assert pha.grouping == pytest.approx(grouping)
+
+    # the second grouped bin has a quality of 2 as
+    # it only contains 1 count
+    quality = np.zeros(10, dtype=np.int)
+    quality[5] = 2
+    assert pha.quality == pytest.approx(quality)
+
+    dep = pha.get_dep(filter=False)
+    assert dep == pytest.approx(y)
+
+    # It is not at all obvious why we get 8 bins returned
+    # here. The ignore_bad has removed any existing
+    # filters, but why do we get 8, not 10, values?
+    # Well, one bin has been removed (quality=2)
+    # and two bins have merged into 1. Hence the 8.
+    #
+    dep = pha.get_dep(filter=True)
+    exp = np.zeros(8)
+    exp[3] = 3
+    assert dep == pytest.approx(exp)
