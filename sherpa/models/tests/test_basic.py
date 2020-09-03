@@ -23,7 +23,6 @@ from pytest import approx
 
 import sherpa.models.basic as basic
 from sherpa.utils import SherpaFloat, _utils
-from sherpa.utils.testing import SherpaTestCase
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, RegriddableModel2D
 
 
@@ -31,7 +30,7 @@ def userfunc(pars, x, *args, **kwargs):
     return x
 
 
-class test_basic(SherpaTestCase):
+class TestBasic:
     excluded_models = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, basic.Const)
 
     def test_create_and_evaluate(self):
@@ -55,7 +54,7 @@ class test_basic(SherpaTestCase):
                 m.load(x,x)
             if isinstance(m, basic.UserModel):
                 m.calc = userfunc
-            self.assertEqual(type(m).__name__.lower(), m.name)
+            assert type(m).__name__.lower() == m.name
             count += 1
 
             try:
@@ -73,13 +72,18 @@ class test_basic(SherpaTestCase):
                 self.fail("evaluation of model '%s' failed" % cls)
 
             for out in (pt_out, int_out):
-                self.assertTrue(out.dtype.type is SherpaFloat)
-                self.assertEqual(out.shape, x.shape)
+                assert out.dtype.type is SherpaFloat
+                assert out.shape == x.shape
 
-        self.assertEqual(count, 33)
+        assert count == 33
 
 
-class test_Voigt(SherpaTestCase):
+def test_basic():
+    my_test_basic = TestBasic()
+    my_test_basic.test_create_and_evaluate()
+
+
+class TestVoigt:
 
     def test_voigt(self):
         def myVoigt(x, alpha, gamma):
@@ -101,3 +105,7 @@ class test_Voigt(SherpaTestCase):
 
         assert voigt_result == approx(myvoigt_result)
         assert voigt_result == approx(scipy_result)
+
+def test_voigt():
+    my_test_voigt = TestVoigt()
+    my_test_voigt.test_voigt()

@@ -50,16 +50,18 @@ DBL_EPSILON = numpy.finfo(numpy.float).eps
 
 class Voigt(RegriddableModel1D):
     """Voigt Profile
-    https://scipython.com/book/chapter-8-scipy/examples/the-voigt-profile/
+    http://publikationen.badw.de/de/003395768
     """
 
     def __init__(self, name='voigt'):
-        self.alpha = Parameter(name, 'alpha', 0.1)
-        self.gamma = Parameter(name, 'gamma', 0.1)
+        # fwhm_g = 2 * alpha
+        # fwhm_l - 2 * gamma        
+        self.fwhm_g = Parameter(name, 'fwhm_g', 0.05, min=0.0)
+        self.fwhm_l = Parameter(name, 'fwhm_l', 0.05, min=0.0)
         self.pos = Parameter(name, 'pos', 0.0)
         self.ampl  = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
-                                 (self.alpha, self.gamma, self.pos, self.ampl))
+                                 (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
         return
 
     @modelCacher1d
