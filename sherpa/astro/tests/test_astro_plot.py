@@ -179,7 +179,7 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
     pha.set_analysis('wave', type='counts')
     pha.notice(3, 5)
 
-    plot = aplot.DataPlot()
+    plot = aplot.DataPHAPlot()
     plot.prepare(pha)
 
     assert plot.xlabel == 'Wavelength (Angstrom)'
@@ -187,7 +187,11 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
     assert plot.title == 'my-name.pi'
 
     # data is inverted
-    assert plot.x[0] > plot.x[-1]
+    assert plot.xlo[0] > plot.xlo[-1]
+
+    # can we access the "pseudo" x attribute?
+    # assert plot.x[0] > plot.x[-1] Not yet
+
     assert np.all(plot.y > 0)
 
     # regression test

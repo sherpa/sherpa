@@ -145,6 +145,68 @@ def _errorbar_warning(stat):
         "used in fits with {}".format(stat.name)
 
 
+def calculate_errors(data, stat, yerrorbars=True):
+    """Calculate errors from the statistics object."""
+
+    if stat is None:
+        return None
+
+    # Do we warn about adding in error values? The logic here isn't
+    # quite the same as the other times _errorbar_warning is used.
+    # This suggests that the code really should be re-worked to
+    # go through a common code path.
+    #
+    # Do we require that self.yerr is always set, even if the
+    # value is not used in a plot? I am going to assume not
+    # (since the existing code will not change self.yerr if
+    # the stat.name is not in _stats_noerr but an exception is
+    # raised by get_yerr).
+    #
+    # This assumes that the error bars calculated by data.to_plot are
+    # over-ridden once a statistic is given. However, how does this
+    # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
+    # but the user has given explicit errors (i.e. they are not to
+    # be calcualted by the "DataVar" part but used as is). Does
+    # data.get_yerr handle this for us, or are invalid errors
+    # used here? It appears that the correct answers are being
+    # returned, but should we only call data.get_yerr if yerr
+    # is None/empty/whatever is returned by to_plot? This also
+    # holds for the Resid/RatioPlot classes.
+    #
+    # Note that we should probably return a value for yerr if
+    # we can, even if 'yerrorbars' is set to False, so that
+    # downstream users can make use of the value even if the
+    # plot doesn't. This is similar to how labels or xerr
+    # attributes are created even if they don't get used by the
+    # plot.
+    #
+
+    msg = _errorbar_warning(stat)
+    if stat.name in _stats_noerr:
+        if yerrorbars:
+            warning(msg)
+
+        return data.get_yerr(True, Chi2XspecVar.calc_staterror)
+
+    try:
+        return data.get_yerr(True, stat.calc_staterror)
+    except Exception:
+        # TODO: can we report a useful error here?
+        #
+        # It is possible that this is actually an unrelated
+        # error: it's unclear what error class is expected to
+        # be thrown, but likely ValueError as this is raised
+        # by Chi2DataVar when sent values < 0
+        # (note that over time the behavior has changed from
+        #  <= 0 to < 0, but this error message has not been
+        # changed).
+        #
+        if yerrorbars:
+            warning(msg + "\nzeros or negative values found")
+
+        return None
+
+
 def merge_settings(prefs, user):
     """Merge preference and user settings.
 
@@ -544,65 +606,9 @@ class DataHistogramPlot(HistogramPlot):
 
         self.xlo, self.xhi = data.get_indep(True)
 
-        # The following just copies the logic in DataPlot, except that
-        # the prefs are named differently.
-
-        # Do we warn about adding in error values? The logic here isn't
-        # quite the same as the other times _errorbar_warning is used.
-        # This suggests that the code really should be re-worked to
-        # go through a common code path.
-        #
-        # Do we require that self.yerr is always set, even if the
-        # value is not used in a plot? I am going to assume not
-        # (since the existing code will not change self.yerr if
-        # the stat.name is not in _stats_noerr but an exception is
-        # raised by get_yerr).
-        #
-        # This assumes that the error bars calculated by data.to_plot are
-        # over-ridden once a statistic is given. However, how does this
-        # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
-        # but the user has given explicit errors (i.e. they are not to
-        # be calcualted by the "DataVar" part but used as is). Does
-        # data.get_yerr handle this for us, or are invalid errors
-        # used here? It appears that the correct answers are being
-        # returned, but should we only call data.get_yerr if yerr
-        # is None/empty/whatever is returned by to_plot? This also
-        # holds for the Resid/RatioPlot classes.
-        #
-        # Note that we should probably return a value for yerr if
-        # we can, even if 'yerrorbars' is set to False, so that
-        # downstream users can make use of the value even if the
-        # plot doesn't. This is similar to how labels or xerr
-        # attributes are created even if they don't get used by the
-        # plot.
-        #
-        try:
-            yerrorbars = self.histo_prefs['yerrorbars']
-        except KeyError:
-            yerrorbars = True
-
         if stat is not None:
-            msg = _errorbar_warning(stat)
-            if stat.name in _stats_noerr:
-                self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-                if yerrorbars:
-                    warning(msg)
-            else:
-                try:
-                    self.yerr = data.get_yerr(True, stat.calc_staterror)
-                except Exception:
-                    # TODO: can we report a useful error here?
-                    #
-                    # It is possible that this is actually an unrelated
-                    # error: it's unclear what error class is expected to
-                    # be thrown, but likely ValueError as this is raised
-                    # by Chi2DataVar when sent values < 0
-                    # (note that over time the behavior has changed from
-                    #  <= 0 to < 0, but this error message has not been
-                    # changed).
-                    #
-                    if yerrorbars:
-                        warning(msg + "\nzeros or negative values found")
+            yerrorbars = self.histo_prefs.get('yerrorbars', True)
+            self.yerr = calculate_errors(data, stat, yerrorbars)
 
         self.title = data.name
 
@@ -1202,62 +1208,9 @@ class DataPlot(Plot):
         (self.x, self.y, self.yerr, self.xerr, self.xlabel,
          self.ylabel) = data.to_plot()
 
-        # Do we warn about adding in error values? The logic here isn't
-        # quite the same as the other times _errorbar_warning is used.
-        # This suggests that the code really should be re-worked to
-        # go through a common code path.
-        #
-        # Do we require that self.yerr is always set, even if the
-        # value is not used in a plot? I am going to assume not
-        # (since the existing code will not change self.yerr if
-        # the stat.name is not in _stats_noerr but an exception is
-        # raised by get_yerr).
-        #
-        # This assumes that the error bars calculated by data.to_plot are
-        # over-ridden once a statistic is given. However, how does this
-        # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
-        # but the user has given explicit errors (i.e. they are not to
-        # be calcualted by the "DataVar" part but used as is). Does
-        # data.get_yerr handle this for us, or are invalid errors
-        # used here? It appears that the correct answers are being
-        # returned, but should we only call data.get_yerr if yerr
-        # is None/empty/whatever is returned by to_plot? This also
-        # holds for the Resid/RatioPlot classes.
-        #
-        # Note that we should probably return a value for yerr if
-        # we can, even if 'yerrorbars' is set to False, so that
-        # downstream users can make use of the value even if the
-        # plot doesn't. This is similar to how labels or xerr
-        # attributes are created even if they don't get used by the
-        # plot.
-        #
-        try:
-            yerrorbars = self.plot_prefs['yerrorbars']
-        except KeyError:
-            yerrorbars = True
-
         if stat is not None:
-            msg = _errorbar_warning(stat)
-            if stat.name in _stats_noerr:
-                self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-                if yerrorbars:
-                    warning(msg)
-            else:
-                try:
-                    self.yerr = data.get_yerr(True, stat.calc_staterror)
-                except Exception:
-                    # TODO: can we report a useful error here?
-                    #
-                    # It is possible that this is actually an unrelated
-                    # error: it's unclear what error class is expected to
-                    # be thrown, but likely ValueError as this is raised
-                    # by Chi2DataVar when sent values < 0
-                    # (note that over time the behavior has changed from
-                    #  <= 0 to < 0, but this error message has not been
-                    # changed).
-                    #
-                    if yerrorbars:
-                        warning(msg + "\nzeros or negative values found")
+            yerrorbars = self.plot_prefs.get('yerrorbars', True)
+            self.yerr = calculate_errors(data, stat, yerrorbars)
 
         self.title = data.name
 

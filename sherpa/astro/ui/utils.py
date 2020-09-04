@@ -64,12 +64,14 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
+        self._dataphaplot = sherpa.astro.plot.DataPHAPlot()
         self._astrosourceplot = sherpa.astro.plot.SourcePlot()
         self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
         self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
         self._modelhisto = sherpa.astro.plot.ModelHistogram()
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
+        # self._bkgdataplot = sherpa.astro.plot.DataPHAPlot()
         self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
         self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
         self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
@@ -171,6 +173,7 @@ class Session(sherpa.ui.utils.Session):
         self._modelhisto = sherpa.astro.plot.ModelHistogram()
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
+        # self._bkgdataplot = sherpa.astro.plot.DataPHAPlot()
         self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
         self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
         self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
@@ -10222,6 +10225,20 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
+    def get_data_plot_prefs(self, id=None):
+
+        try:
+            d = self.get_data(id)
+            if isinstance(d, sherpa.astro.data.DataPHA):
+                return self._dataphaplot.histo_prefs
+
+        except IdentifierErr:
+            pass
+
+        return super().get_data_plot_prefs(id)
+
+    get_data_plot_prefs.__doc__ = sherpa.ui.utils.Session.get_data_plot_prefs.__doc__
+
     def get_model_plot_prefs(self, id=None):
 
         try:
@@ -10236,10 +10253,28 @@ class Session(sherpa.ui.utils.Session):
 
     get_model_plot_prefs.__doc__ = sherpa.ui.utils.Session.get_model_plot_prefs.__doc__
 
-    # also in sherpa.utils; it does not seem worthwhile creating a new
-    # docstring here
+    def get_data_plot(self, id=None, recalc=True):
+        try:
+            d = self.get_data(id)
+        except IdentifierErr:
+            return super().get_data_plot(id, recalc=recalc)
+
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._dataphaplot
+            if recalc:
+                plotobj.prepare(d, self.get_stat())
+            return plotobj
+
+        return super().get_data_plot(id, recalc=recalc)
+
+    get_data_plot.__doc__ = sherpa.ui.utils.Session.get_data_plot.__doc__
+
     def get_model_plot(self, id=None, recalc=True):
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr:
+            return super().get_model_plot(id, recalc=recalc)
+
         if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._modelhisto
             if recalc:
@@ -12395,8 +12430,8 @@ class Session(sherpa.ui.utils.Session):
                                     clearwindow=clearwindow, **kwargs)
 
             oldval = plot2.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.plot_prefs and
-                 self._bkgdataplot.plot_prefs['xlog']) or
+            if (('xlog' in self._bkgdataplot.histo_prefs and
+                 self._bkgdataplot.histo_prefs['xlog']) or
                 ('xlog' in self._bkgmodelplot.histo_prefs and
                  self._bkgmodelplot.histo_prefs['xlog'])):
                 plot2.plot_prefs['xlog'] = True
