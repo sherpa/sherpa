@@ -343,6 +343,7 @@ class Session(NoNewAttributesAfterInit):
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
         self._dataplot = sherpa.plot.DataPlot()
+        self._datahistplot = sherpa.plot.DataHistogramPlot()
         self._modelplot = sherpa.plot.ModelPlot()
         self._modelhistplot = sherpa.plot.ModelHistogramPlot()
 
@@ -10569,7 +10570,21 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._dataplot
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_data_plot was last called.
+        #
+        try:
+            is_int = isinstance(self.get_data(id), sherpa.data.Data1DInt)
+        except IdentifierErr:
+            is_int = False
+
+        if is_int:
+            plotobj = self._datahistplot
+        else:
+            plotobj = self._dataplot
+
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
@@ -10688,7 +10703,14 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # At the moment id is ignored
+        try:
+            d = self.get_data(id)
+            if isinstance(d, sherpa.data.Data1DInt):
+                return self._datahistplot.histo_prefs
+
+        except IdentifierErr:
+            pass
+
         return self._dataplot.plot_prefs
 
     # also in sherpa.astro.utils (copies this docstring)

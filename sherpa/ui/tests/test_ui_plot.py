@@ -41,7 +41,8 @@ from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
     DataContour, ModelContour, SourceContour, ResidContour, \
     RatioContour, FitContour, PSFContour, LRHistogram, \
-    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot
+    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot, \
+    DataHistogramPlot
 
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr
@@ -196,13 +197,15 @@ def test_plot_prefs_xxx_data1dint(session, ptype):
 
     # It's not easy to check the difference between
     # point and histogram preferences. Some differences
-    # are xerrorbars, xaxis, and ratioline.
+    # are xaxis and ratioline.
+    #
+    # I also check xerrorbars as we want this for histograms.
     #
     prefs = get_prefs()
-    assert 'xerrorbars' not in prefs or ptype == 'data'
-    assert 'xaxis' not in prefs or ptype == 'data'
-    assert 'ratioline' not in prefs or ptype == 'data'
-    assert not prefs['xlog'] or ptype == 'data'
+    assert 'xerrorbars' in prefs
+    assert 'xaxis' not in prefs
+    assert 'ratioline' not in prefs
+    assert not prefs['xlog']
 
     prefs = get_prefs(2)
     assert 'xerrorbars' in prefs
@@ -1946,13 +1949,14 @@ def test_data_plot_recalc(session):
     s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
 
     p = s.get_data_plot(recalc=False)
-    assert isinstance(p, DataPlot)
-    assert p.x == pytest.approx([1, 2])
-    assert p.y == pytest.approx([1, 0])
+    assert isinstance(p, DataHistogramPlot)
+    assert p.xlo is None
+    assert p.y is None
 
     p = s.get_data_plot(recalc=True)
-    assert isinstance(p, DataPlot)
-    assert p.x == pytest.approx([22.5, 35, 50])
+    assert isinstance(p, DataHistogramPlot)
+    assert p.xlo == pytest.approx([20, 30, 40])
+    assert p.xhi == pytest.approx([25, 40, 60])
     assert p.y == pytest.approx([10, 12, 14])
 
 
