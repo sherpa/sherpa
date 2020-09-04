@@ -1062,24 +1062,28 @@ class SplitPlot(Plot, Contour):
         self.contour(row, col, plot, *args, **kwargs)
 
 
+# TODO: move logic from sherpa.ui.utils.Session._plot_jointplot
+#       regarding the X axis here
+#
 class JointPlot(SplitPlot):
-    "Multiple plots that share a common axis"
+    """Multiple plots that share a common axis
+
+    This supports two plots, where the top plot is twice as
+    tall as the bottom plot.
+    """
 
     def __init__(self):
         SplitPlot.__init__(self)
 
-    def _clear_window(self, row, col, erase=True):
-        if not self._cleared_window:
-            if erase:
-                backend.clear_window()
-            backend.set_jointplot(row, col, self.rows, self.cols, False)
-            self._cleared_window = True
-        else:
-            backend.set_jointplot(row, col, self.rows, self.cols)
+    def plottop(self, plot, *args, overplot=False, clearwindow=True,
+                **kwargs):
 
-    def plottop(self, plot, *args, **kwargs):
-        clearaxes = kwargs.get('clearwindow', True)
-        self._clear_window(0, 0, clearaxes)
+        create = clearwindow and not overplot
+        if create:
+            self._clear_window()
+
+        backend.set_jointplot(0, 0, self.rows, self.cols,
+                              create=create)
 
         # The code used to check if the plot was an instance of
         # FitPlot, which has been updated to check for the presence
@@ -1096,15 +1100,17 @@ class JointPlot(SplitPlot):
                 mplot.xlabel = ''
 
         kwargs['clearwindow'] = False
-        plot.plot(*args, **kwargs)
+        plot.plot(*args, overplot=overplot, **kwargs)
 
-    def plotbot(self, plot, *args, **kwargs):
-        self._clear_window(1, 0)
+    def plotbot(self, plot, *args, overplot=False, **kwargs):
+
+        backend.set_jointplot(1, 0, self.rows, self.cols,
+                              create=False)
 
         # FIXME: terrible hack to remove title from bottom
         plot.title = ''
         kwargs['clearwindow'] = False
-        plot.plot(*args, **kwargs)
+        plot.plot(*args, overplot=overplot, **kwargs)
 
 
 class DataPlot(Plot):

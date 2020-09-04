@@ -888,7 +888,7 @@ class Session(NoNewAttributesAfterInit):
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
 
-        This displays the model used to fit the data set, that is, 
+        This displays the model used to fit the data set, that is,
         the expression set by `set_model` or `set_source`
         combined with any instrumental responses, together with the
         parameter values of the model. The `show_source` function

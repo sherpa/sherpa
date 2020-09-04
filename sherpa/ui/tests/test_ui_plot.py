@@ -2648,3 +2648,74 @@ def test_fit_contour_recalc(session):
     assert pd.y== pytest.approx(ny)
     # just check the model is flat
     assert pm.y.min() == pm.y.max()
+
+
+@requires_pylab
+@pytest.mark.parametrize("ptype",
+                         ["resid", "ratio", "delchi"])
+def test_plot_fit_xxx_pylab(ptype):
+    """Just ensure we can create a plot_fit_xxx call."""
+
+    from matplotlib import pyplot as plt
+
+    setup_example(1)
+    pfunc = getattr(ui, 'plot_fit_{}'.format(ptype))
+    pfunc(xlog=True, ylog=True)
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 2
+    assert axes[0].xaxis.get_label().get_text() == ''
+
+    assert axes[0].xaxis.get_scale() == 'log'
+    assert axes[0].yaxis.get_scale() == 'log'
+
+    assert axes[1].xaxis.get_scale() == 'log'
+    assert axes[1].yaxis.get_scale() == 'linear'
+
+    # Check we have the correct data (at least in the
+    # number of data objects). The residual plot has
+    # the data but also the axis line.
+    #
+    assert len(axes[0].lines) == 2
+    assert len(axes[1].lines) == 2
+
+
+@requires_pylab
+@pytest.mark.parametrize("ptype",
+                         ["resid", "ratio", "delchi"])
+def test_plot_fit_xxx_overplot_pylab(ptype, caplog):
+    """Just ensure we can create a plot_fit_xxx(overplot=True) call."""
+
+    from matplotlib import pyplot as plt
+
+    setup_example(1)
+    setup_example(2)
+
+    pfunc = getattr(ui, 'plot_fit_{}'.format(ptype))
+    pfunc(xlog=True, ylog=True)
+    pfunc(2, overplot=True)
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 2
+    assert axes[0].xaxis.get_label().get_text() == ''
+
+    assert axes[0].xaxis.get_scale() == 'log'
+    assert axes[0].yaxis.get_scale() == 'log'
+
+    assert axes[1].xaxis.get_scale() == 'log'
+    assert axes[1].yaxis.get_scale() == 'linear'
+
+    # Check we have the correct data (at least in the
+    # number of data objects). The residual plot has
+    # the data but also the axis line.
+    #
+    assert len(axes[0].lines) == 4
+    assert len(axes[1].lines) == 4
+
+    # data is repeated so can check
+    for idx in [0, 1]:
+        l0 = axes[idx].lines
+        assert l0[0].get_xydata() == pytest.approx(l0[2].get_xydata())
+        assert l0[1].get_xydata() == pytest.approx(l0[3].get_xydata())

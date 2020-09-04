@@ -21,17 +21,12 @@
 import io
 import logging
 
-# Although this is labelled pylab mode, use the pyplot interface
-# (for the functionlity used here, they are the same).
-#
-import logging
-
 import numpy
 
 from matplotlib import pyplot as plt
 
 from sherpa.utils import get_keyword_defaults
-from sherpa.utils.err import NotImplementedErr
+from sherpa.utils.err import ArgumentErr, NotImplementedErr
 from sherpa.utils import formatting
 
 
@@ -48,9 +43,6 @@ __all__ = ('clear_window','point','plot','histo','contour','set_subplot','init',
            'get_component_plot_defaults','get_component_histo_defaults',
            'vline', 'hline', 'get_scatter_plot_defaults', 'get_cdf_plot_defaults',
            'get_latex_for_string', 'name')
-
-
-lgr = logging.getLogger(__name__)
 
 
 # Name of the backend
@@ -557,33 +549,64 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
         plt.cla()
 
 
-def set_jointplot(row, col, nrows, ncols, clearaxes=True,
-                  top=1,
-                  ratio=2):
+def set_jointplot(row, col, nrows, ncols, create=True,
+                  top=0, ratio=2):
+    """Move to the plot, creating them if necessary.
+    Parameters
+    ----------
+    row : int
+        The row number, starting from 0.
+    col : int
+        The column number, starting from 0.
+    nrows : int
+        The number of rows.
+    ncols : int
+        The number of columns.
+    create : bool, optional
+        If True then create the plots
+    top : int
+        The row that is set to the ratio height, numbered from 0.
+    ratio : float
+        The ratio of the height of row number top to the other
+        rows.
+    """
 
-    if clearaxes:
-        # need to set axes[1] as current axes.
-        axes = plt.gca()
-        ax2 = axes.figure.axes[-1]
-        plt.sca(ax2)
+    if (row < 0) or (row >= nrows):
+        emsg = 'Invalid row number {} (nrows={})'.format(row, nrows)
+        raise ArgumentErr(emsg)
 
-    else:
-        # follow the chips backend and set plot number "top" (numbering
-        # from 1) as the plot with a height of ratio, and the rest
-        # with a value of 1. Note that the chips backend created
-        # nrows * ncols plots, but here we only create nrows plots.
-        #
+    if (col < 0) or (col >= ncols):
+        emsg = 'Invalid column number {} (ncols={})'.format(col, ncols)
+        raise ArgumentErr(emsg)
+
+    plotnum = row * ncols + col
+    if create:
+        # We only change the vertical spacing
         ratios = [1] * nrows
-        ratios[top - 1] = ratio
+        ratios[top] = ratio
         gs = {'height_ratios': ratios}
-        f, axarr = plt.subplots(nrows, sharex=True, num=1,
-                                gridspec_kw=gs)
-        f.subplots_adjust(hspace=0.05)
-        plt.setp([a.get_xticklabels() for a in f.axes[:-1]],
+        fig, axes = plt.subplots(nrows, ncols, sharex=True, num=1,
+                                 gridspec_kw=gs)
+        fig.subplots_adjust(hspace=0.05)
+
+        # Change all but the bottom row. By setting sharex
+        # this is probably un-needed as get_xticklabels is empty.
+        #
+        if axes.ndim == 2:
+            axes = axes[:-1, :].flatten()
+        else:
+            axes = axes[:-1]
+
+        plt.setp([a.get_xticklabels() for a in axes[:-1]],
                  visible=False)
 
-        # need to set axes[0] as current axes.
-        plt.sca(axarr[0])
+    try:
+        ax = plt.gcf().axes[plotnum]
+    except IndexError:
+        emsg = "Unable to find a plot with row={} col={}".format(row, col)
+        raise ArgumentErr(emsg) from None
+
+    plt.sca(ax)
 
 
 def get_split_plot_defaults():
@@ -741,14 +764,14 @@ def as_svg(func):
         plt.close(fig)
 
     except Exception as e:
-        lgr.debug("Unable to create SVG plot: {}".format(e))
+        logger.debug("Unable to create SVG plot: {}".format(e))
         return None
 
     # strip out the leading text so this can be used in-line
     svg = svg.getvalue()
     idx = svg.find('<svg ')
     if idx == -1:
-        lgr.debug("SVG output does not contain '<svg ': {}".format(svg))
+        logger.debug("SVG output does not contain '<svg ': {}".format(svg))
         return None
 
     return svg[idx:]
