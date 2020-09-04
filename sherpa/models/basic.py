@@ -40,7 +40,7 @@ warning = logging.getLogger(__name__).warning
 __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Gauss1D', 'Log', 'Log10', 'LogParabola', 'NormGauss1D', 'Poisson',
            'Polynom1D', 'PowLaw1D', 'Scale1D', 'Sin', 'Sqrt', 'StepHi1D',
-           'StepLo1D', 'Tan', 'Voigt',
+           'StepLo1D', 'Tan', 'Voigt1D',
            'Box2D', 'Const2D', 'Delta2D', 'Gauss2D', 'SigmaGauss2D',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
@@ -48,12 +48,12 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
 DBL_EPSILON = numpy.finfo(numpy.float).eps
 
 
-class Voigt(RegriddableModel1D):
-    """Voigt Profile
+class Voigt1D(RegriddableModel1D):
+    """Voigt1D Profile
     http://publikationen.badw.de/de/003395768
     """
 
-    def __init__(self, name='voigt'):
+    def __init__(self, name='voigt1d'):
         # fwhm_g = 2 * alpha
         # fwhm_l - 2 * gamma        
         self.fwhm_g = Parameter(name, 'fwhm_g', 0.05, min=0.0)

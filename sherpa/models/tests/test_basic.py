@@ -83,7 +83,7 @@ def test_basic():
     my_test_basic.test_create_and_evaluate()
 
 
-class TestVoigt:
+class TestVoigt1D:
 
     def test_voigt(self):
         def myVoigt(x, alpha, gamma):
@@ -93,7 +93,7 @@ class TestVoigt:
             return np.real(wofz(arg)) / sigma / np.sqrt( 2 * np.pi )
     
         x = np.linspace(-0.8, 0.8, 10)
-        voigt = basic.Voigt()
+        voigt = basic.Voigt1D()
         voigt_result = voigt(x)
 
         alpha, gamma = 0.1, 0.1
@@ -107,5 +107,5 @@ class TestVoigt:
         assert voigt_result == approx(scipy_result)
 
 def test_voigt():
-    my_test_voigt = TestVoigt()
+    my_test_voigt = TestVoigt1D()
     my_test_voigt.test_voigt()
