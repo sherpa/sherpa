@@ -27,7 +27,9 @@ from sherpa.models.model import ArithmeticModel, RegriddableModel1D, Regriddable
 
 
 class test_models(SherpaTestCase):
-    excluded_model_classes = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D)
+    excluded_model_classes = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, models.AbsorptionVoigt, models.EmissionVoigt)
+    # The Absorption/EmissionVoigt models will be removed at some
+    # point after Sherpa 4.13 is released.
 
     def test_create_and_evaluate(self):
         x = arange(4500.0,5500.0,1,SherpaFloat)

@@ -32,10 +32,13 @@ namespace sherpa { namespace models {
   inline int wofz_point( const ConstArrayType& p, DataType x,
                          DataType& val )
   {
-    const DataType p0 = 2 * p[0];
-    const DataType p1 = 2 * p[1];
-    double sigma = p0 / std::sqrt(2 * log(2));
-    std::complex<double> arg = (x - p[2]) + p1 * std::complex<double>(0,1);
+    // Follow https://en.wikipedia.org/wiki/Voigt_profile after converting
+    // from FWHM.
+    const DataType fwhm_g = p[0];
+    const DataType fwhm_l = p[1];
+    const DataType gamma = fwhm_l / 2;
+    double sigma = fwhm_g / std::sqrt(8 * log(2));
+    std::complex<double> arg = (x - p[2]) + gamma * std::complex<double>(0,1);
     arg /= sigma * std::sqrt(2);
     val = p[3] * Faddeeva::w(arg).real() / (sigma * std::sqrt(2 * PI));
     return EXIT_SUCCESS;

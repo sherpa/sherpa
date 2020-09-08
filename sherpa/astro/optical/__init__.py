@@ -41,6 +41,7 @@ import numpy
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D
 from sherpa.utils import SherpaFloat, sao_fcmp
+from sherpa.utils.err import ModelErr
 
 _tol = numpy.finfo(numpy.float32).eps
 
@@ -57,6 +58,7 @@ _tol = numpy.finfo(numpy.float32).eps
 __all__ = ('AbsorptionEdge', 'AccretionDisk', 'AbsorptionGaussian',
            'AbsorptionLorentz', 'EmissionLorentz', 'OpticalGaussian',
            'EmissionGaussian', 'BlackBody',
+           'AbsorptionVoigt', 'EmissionVoigt',  # Use Voigt1D instead
            'Bremsstrahlung', 'BrokenPowerlaw', 'CCM', 'LogAbsorption',
            'LogEmission', 'Polynomial', 'Powerlaw', 'Recombination',
            'XGal', 'FM', 'LMC', 'SM', 'SMC', 'Seaton')
@@ -94,6 +96,21 @@ def _extinct_interp(xtable, etable, x):
             out[i] = ((e2 - e1) / (x2 - x1)) * (xval - x1) + e1
 
     return out
+
+
+class AbsorptionVoigt(ArithmeticModel):
+    """This model has been replaced by Voigt1D"""
+
+    def __init__(self, *args):
+        raise ModelErr("The AbsorptionVoigt model has been replaced by Voigt1D")
+
+
+class EmissionVoigt(ArithmeticModel):
+    """This model has been replaced by Voigt1D"""
+
+    def __init__(self, *args):
+        raise ModelErr("The EmissionVoigt model has been replaced by Voigt1D")
+
 
 
 # This model sets in edge (in Angstroms) beyond which absorption

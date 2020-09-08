@@ -56,8 +56,8 @@ class Voigt1D(RegriddableModel1D):
     def __init__(self, name='voigt1d'):
         # fwhm_g = 2 * alpha
         # fwhm_l - 2 * gamma        
-        self.fwhm_g = Parameter(name, 'fwhm_g', 0.05, min=0.0)
-        self.fwhm_l = Parameter(name, 'fwhm_l', 0.05, min=0.0)
+        self.fwhm_g = Parameter(name, 'fwhm_g', 10, tinyval, hard_min=tinyval)
+        self.fwhm_l = Parameter(name, 'fwhm_l', 10, 0, hard_min=0)
         self.pos = Parameter(name, 'pos', 0.0)
         self.ampl  = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
