@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -329,7 +329,7 @@ pl.ampl.units   = ""
 pl.ampl.frozen  = False
 
 create_model_component("xsphabs", "gal")
-gal.integrate = True
+gal.integrate = False
 
 gal.nH.default_val = 1.0
 gal.nH.default_min = 0.0
@@ -460,7 +460,7 @@ gpl.ampl.units   = ""
 gpl.ampl.frozen  = False
 
 create_model_component("xsphabs", "ggal")
-ggal.integrate = True
+ggal.integrate = False
 
 ggal.nH.default_val = 2.0
 ggal.nH.default_min = 0.0
@@ -582,7 +582,7 @@ gpl.ampl.units   = ""
 gpl.ampl.frozen  = False
 
 create_model_component("xsphabs", "ggal")
-ggal.integrate = True
+ggal.integrate = False
 
 ggal.nH.default_val = 2.0
 ggal.nH.default_min = 0.0

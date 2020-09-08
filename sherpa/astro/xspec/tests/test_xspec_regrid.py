@@ -135,8 +135,16 @@ def test_regrid_identity(mname, xsmodel):
 
     # scale y values to make them closer to unity
     y1 = 100 * mdl(elo, ehi)
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = 100 * regrid(elo, ehi)
+
+    # WHY HAS THIS CHANGED?
+    if mname == "wabs":
+        with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
+            with pytest.raises(TypeError, match=IntegrateError):
+                y2 = 100 * regrid(elo, ehi)
+
+    else:
+        with pytest.raises(TypeError, match=IntegrateError):
+            y2 = 100 * regrid(elo, ehi)
 
     # assert y2 == pytest.approx(y1)
 
@@ -265,8 +273,9 @@ def test_multiplicative():
     mdl.nh = 0.05
 
     y1 = mdl(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = regrid(egrid[:-1], egrid[1:])
+    with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
+        with pytest.raises(TypeError, match=IntegrateError):
+            y2 = regrid(egrid[:-1], egrid[1:])
 
     # assert y2 == pytest.approx(y1, rel=0.04)
 
@@ -285,8 +294,8 @@ ans2_high = np.asarray([0.7984249, 0.84757835, 0.8698429, 0, 0, 0])
 @requires_xspec
 @pytest.mark.parametrize("egrid,yexp",
                          [(overlap_none, ans_none),
-                          (overlap2_low, ans2_low),
-                          (overlap2_high, ans2_high)
+                          pytest.param(overlap2_low, ans2_low, marks=pytest.mark.xfail),  # XFAIL: raises TypeError
+                          pytest.param(overlap2_high, ans2_high, marks=pytest.mark.xfail)
                          ])
 def test_multiplicative_overlap(egrid, yexp):
     """Simple test of a multiplicative model
@@ -303,11 +312,9 @@ def test_multiplicative_overlap(egrid, yexp):
 
     # will change regrid too
     mdl.nh = 0.05
+    y2 = regrid(egrid[:-1], egrid[1:])
 
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = regrid(egrid[:-1], egrid[1:])
-
-    # assert y2 == pytest.approx(yexp)
+    assert y2 == pytest.approx(yexp)
 
 
 @requires_xspec

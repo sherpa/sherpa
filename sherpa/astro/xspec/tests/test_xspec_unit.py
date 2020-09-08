@@ -902,7 +902,7 @@ def test_create_xspec_multiplicative_model(make_data_path):
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)
     assert not tbl.addmodel
-    assert tbl.integrate
+    assert not tbl.integrate
 
     # Apparently we lose the case of the parameter names;
     # should investigate
@@ -1062,92 +1062,62 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
 
 
 @requires_xspec
-@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_integrate_setting(clsname, xsmodel):
-    """Can we change the integrate setting?
-
-    It's not obvious what the integrate setting is meant to do for
-    XSPEC models, so let's check what we can do with it.
-
-    """
-
-    egrid = np.arange(0.1, 1.0, 0.1)
-    elo = egrid[:-1]
-    ehi = egrid[1:]
+@pytest.mark.parametrize("clsname,iflag",
+                         [("powerlaw", True),
+                          ("wabs", False)])
+def test_integrate_is_fixed(clsname, iflag, xsmodel, caplog):
+    """Check we can not change the integrate setting"""
 
     mdl = xsmodel(clsname)
-    assert mdl.integrate
+    assert mdl.integrate is iflag
 
-    y1 = mdl(elo, ehi)
+    # Check we can set it to itself
+    mdl.integrate = iflag
 
-    mdl.integrate = False
-    assert not mdl.integrate
-
-    y2 = mdl(elo, ehi)
-
-    # Assume the integrate setting is ignored. To ensure we
-    # can test small values use the log of the data, and
-    # as we can have zero values (from xswabs) replace them
-    # with a sentinel value
+    # We can try to change it, but we can not.
     #
-    y1[y1 <= 0] = 1e-10
-    y2[y2 <= 0] = 1e-10
+    mdl.integrate = not iflag
+    assert mdl.integrate is iflag
 
-    y1 = np.log10(y1)
-    y2 = np.log10(y2)
-    assert y2 == pytest.approx(y1)
+    # Do we have any warning about the attempt to change the integrate
+    # flag?
+    #
+    assert len(caplog.records) == 0
 
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_integrate_setting_con(clsname, xsmodel):
-    """Can we change the integrate setting of convolution models.
+def test_integrate_is_fixed_convolution(clsname, xsmodel, caplog):
+    """Convolution models
 
-    This is test_integrate_setting after wrapping the model by a
-    convolution model. At present the convolution model does not have
-    an integrate setting.
-
-    Note that the convolved model doesn't make much sense physically -
-    at least when it's xscflux(xswabs) - but we just care about the
-    evaluation process here.
-
+    We want to check both the kernel and the model. For now
+    we assume the model is always integrated.
     """
-
-    egrid = np.arange(0.1, 1.0, 0.1)
-    elo = egrid[:-1]
-    ehi = egrid[1:]
 
     conv = xsmodel("cflux")
     assert conv.integrate
 
-    omdl = xsmodel(clsname)
-    assert omdl.integrate
+    # Check we can set it to itself
+    conv.integrate = True
 
-    # Convolution models do not have an integrate setting
-    mdl = conv(omdl)
-    with pytest.raises(AttributeError):
-        mdl.integrate
+    conv.integrate = False
 
-    y1 = mdl(elo, ehi)
+    assert conv.integrate
 
-    # as mdl does not have an integrate setting, just change
-    # omdl
-    omdl.integrate = False
-    assert not omdl.integrate
+    mdl = xsmodel(clsname)
+    cmdl = conv(mdl)
+    assert cmdl.integrate
 
-    y2 = mdl(elo, ehi)
+    # Check we can set it to itself
+    cmdl.integrate = True
 
-    # Assume the integrate setting is ignored. To ensure we
-    # can test small values use the log of the data, and
-    # as we can have zero values (from xswabs) replace them
-    # with a sentinel value
+    cmdl.integrate = False
+    assert cmdl.integrate
+
+    # Do we have any warning about the attempt to change the integrate
+    # flag?
     #
-    y1[y1 <= 0] = 1e-10
-    y2[y2 <= 0] = 1e-10
-
-    y1 = np.log10(y1)
-    y2 = np.log10(y2)
-    assert y2 == pytest.approx(y1)
+    assert len(caplog.records) == 0
 
 
 @requires_xspec
