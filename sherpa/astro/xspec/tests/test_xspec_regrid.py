@@ -113,7 +113,7 @@ def test_regrid_table_requires_bins(make_data_path):
 
 
 @requires_xspec
-@pytest.mark.parametrize("mname", ["wabs", "powerlaw"])
+@pytest.mark.parametrize("mname", [pytest.param("wabs", marks=pytest.mark.xfail), "powerlaw"])
 def test_regrid_identity(mname, xsmodel):
     """Check regrid returns the same data when grids are equal"""
 
@@ -263,7 +263,7 @@ ans2_high = np.asarray([0.7984249, 0.84757835, 0.8698429, 0, 0, 0])
 
 @requires_xspec
 @pytest.mark.parametrize("egrid,yexp",
-                         [pytest.param(overlap_none, ans_none, marks=pytest.mark.xfail),
+                         [(overlap_none, ans_none),
                           pytest.param(overlap2_low, ans2_low, marks=pytest.mark.xfail),
                           pytest.param(overlap2_high, ans2_high, marks=pytest.mark.xfail)
                          ])
