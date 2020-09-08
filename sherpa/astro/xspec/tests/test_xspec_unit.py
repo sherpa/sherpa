@@ -30,7 +30,7 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
-from sherpa.utils.err import ParameterErr
+from sherpa.utils.err import ModelErr, ParameterErr
 
 from sherpa.models.basic import Const1D
 
@@ -728,6 +728,9 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     path = make_data_path('xspec-tablemodel-RCS.mod')
     tbl = xspec.read_xstable_model('bar', path)
 
+    assert tbl.addmodel
+    assert tbl.integrate
+
     egrid = np.arange(0.1, 11, 0.01)
     y = tbl(egrid)
 
@@ -760,6 +763,7 @@ def test_create_xspec_multiplicative_model(make_data_path):
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)
     assert not tbl.addmodel
+    assert not tbl.integrate
 
     # Apparently we lose the case of the parameter names;
     # should investigate
@@ -928,3 +932,54 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     emsg = 'parameter bar.tau has a maximum of 10'
     with pytest.raises(ParameterErr, match=emsg):
         tbl(grid)
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname,truth",
+                         [("powerlaw", True),
+                          ("wabs", False)])
+def test_integrate_is_fixed(clsname, truth):
+    """Check we can not change the integrate setting"""
+
+    from sherpa.astro import xspec
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+
+    assert mdl.integrate is truth
+
+    with pytest.raises(ModelErr) as exc:
+        mdl.integrate = not truth
+
+    assert str(exc.value).startswith('Unable to change integrate setting of ')
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_integrate_is_fixed_convolution(clsname):
+    """Convolution models
+
+    We want to check both the kernel and the model. For now
+    we assume the model is always integrated.
+    """
+
+    from sherpa.astro import xspec
+
+    conv = xspec.XScflux()
+    assert conv.integrate
+
+    with pytest.raises(ModelErr) as exc:
+        conv.integrate = False
+
+    emsg = 'Unable to change integrate setting of xscflux'
+    assert str(exc.value) == emsg
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    cmdl = conv(mdl)
+    assert cmdl.integrate
+
+    with pytest.raises(ModelErr) as exc:
+        cmdl.integrate = False
+
+    emsg = 'Unable to change integrate setting of ' + \
+           'xscflux({})'.format(clsname)
+    assert str(exc.value) == emsg
