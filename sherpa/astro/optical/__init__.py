@@ -99,14 +99,24 @@ def _extinct_interp(xtable, etable, x):
 
 
 class AbsorptionVoigt(ArithmeticModel):
-    """This model has been replaced by Voigt1D"""
+    """This model has been replaced by Voigt1D
+
+    .. versionchanged:: 4.12.2
+       The AbsorptionVoigt model has been removed. The Voigt1D
+       model should be used instead.
+    """
 
     def __init__(self, *args):
         raise ModelErr("The AbsorptionVoigt model has been replaced by Voigt1D")
 
 
 class EmissionVoigt(ArithmeticModel):
-    """This model has been replaced by Voigt1D"""
+    """This model has been replaced by Voigt1D
+
+    .. versionchanged:: 4.12.2
+       The EmissionVoigt model has been removed. The Voigt1D
+       model should be used instead.
+    """
 
     def __init__(self, *args):
         raise ModelErr("The EmissionVoigt model has been replaced by Voigt1D")
