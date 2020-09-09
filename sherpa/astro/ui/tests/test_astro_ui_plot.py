@@ -448,7 +448,7 @@ def test_get_bkg_plot_energy(idval, clean_astro_ui):
         bp = ui.get_bkg_plot(idval)
 
     assert bp.xlo == pytest.approx(_energies_lo)
-    # assert bp.x == pytest.approx(_energies_mid)  will be added back in a later PR
+    assert bp.x == pytest.approx(_energies_mid)
 
     # normalise by exposure time and bin width
     #

@@ -190,7 +190,7 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
     assert plot.xlo[0] > plot.xlo[-1]
 
     # can we access the "pseudo" x attribute?
-    # assert plot.x[0] > plot.x[-1] Not yet
+    assert plot.x[0] > plot.x[-1]
 
     assert np.all(plot.y > 0)
 

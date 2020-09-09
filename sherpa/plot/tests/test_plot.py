@@ -31,6 +31,7 @@ from sherpa import plot as sherpaplot
 from sherpa.data import Data1D, Data1DInt
 from sherpa.utils.testing import requires_data, requires_plotting
 
+
 _datax = numpy.array(
     [  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,
        11.,  12.,  13.,  14.,  15.,  16.,  17.,  18.,  19.,  20.,  21.,
@@ -603,3 +604,51 @@ def test_errors_with_no_stat():
     dp = sherpaplot.DataPlot()
     dp.prepare(d, stat=None)
     assert dp.yerr is None
+
+
+def test_histogram_returns_x():
+    """We support x accessor for histogram plots."""
+
+    xlo = [10, 20, 40, 80]
+    xhi = [20, 40, 60, 90]
+    y = [1, 2, 3, 4]
+    d = Data1DInt('xx', xlo, xhi, y)
+
+    dp = sherpaplot.DataHistogramPlot()
+    dp.prepare(d)
+
+    xlo = numpy.asarray(xlo)
+    xhi = numpy.asarray(xhi)
+
+    assert dp.xlo == pytest.approx(xlo)
+    assert dp.xhi == pytest.approx(xhi)
+    assert dp.x == pytest.approx(0.5 * (xlo + xhi))
+
+    # check x is not in the str output
+    #
+    for line in str(dp).split('\n'):
+        toks = line.split()
+        assert len(toks) > 2
+        assert toks[0] != 'x'
+
+
+def test_histogram_can_not_set_x():
+    """We cannot change the x accessor"""
+
+    xlo = [10, 20, 40, 80]
+    xhi = [20, 40, 60, 90]
+    y = [1, 2, 3, 4]
+    d = Data1DInt('xx', xlo, xhi, y)
+
+    dp = sherpaplot.DataHistogramPlot()
+    dp.prepare(d)
+
+    with pytest.raises(AttributeError):
+        dp.x = xlo
+
+
+def test_histogram_empty_x():
+    """x accessor is None if there's no data"""
+
+    dp = sherpaplot.DataHistogramPlot()
+    assert dp.x is None

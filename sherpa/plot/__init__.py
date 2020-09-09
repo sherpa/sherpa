@@ -524,6 +524,23 @@ class HistogramPlot(Histogram):
         """Return a HTML (string) representation of the histogram plot."""
         return backend.as_html_histogram(self)
 
+    @property
+    def x(self):
+        """Return (xlo + xhi) / 2
+
+        This is intended to make it easier to swap between
+        plot- and histogram-style plots by providing access
+        to an X value.
+        """
+
+        if self.xlo is None or self.xhi is None:
+            return  None
+
+        # As we do not (yet) require NumPy arrays, enforce it.
+        xlo = numpy.asarray(self.xlo)
+        xhi = numpy.asarray(self.xhi)
+        return (xlo + xhi) / 2
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
