@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,19 +37,21 @@ corresponding functions in sherpa.astro.ui.utils.
 #    table model
 #
 
-import re
 from io import StringIO
+import logging
+import re
 import tempfile
 
 import numpy
 from numpy.testing import assert_array_equal
+
+import pytest
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, requires_group
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 
-import logging
 logger = logging.getLogger('sherpa')
 
 has_xspec = has_package_from_list("sherpa.astro.xspec")
@@ -823,446 +825,463 @@ _canonical_pha_grouped += _canonical_extra
 _canonical_usermodel += _canonical_extra
 
 
-class test_ui(SherpaTestCase):
-
-    def setUp(self):
-        try:
-            numpy.set_printoptions(legacy='1.13')
-        except TypeError:  # numpy < 1.14
-            pass
-
-        ui.clean()  # I thought the test harness did this anyway
-        self._old_logging_level = logger.level
-        logger.setLevel(logging.ERROR)
-        if has_xspec:
-            from sherpa.astro import xspec
-            self._xspec_state = xspec.get_xsstate()
-            ui.set_xschatter(0)
-            ui.set_xsabund('angr')
-            ui.set_xsxsect('bcmc')
-
-    def tearDown(self):
-        try:
-            numpy.set_printoptions(legacy=False)
-        except TypeError:  # numpy < 1.14
-            pass
-        logger.setLevel(self._old_logging_level)
-        if has_xspec:
-            from sherpa.astro import xspec
-            xspec.set_xsstate(self._xspec_state)
-
-        ui.clean()
-
-    def _add_datadir_path(self, output):
-        """Replace any @@ characters by the value of self.datadir,
-        making sure that the replacement text does not end in a /."""
-
-        dname = self.datadir
-        if dname.endswith('/'):
-            dname = dname[:-1]
-
-        return re.sub('@@', dname, output, count=0)
-
-    def _compile(self, output):
-        # Let it just throw an exception in case of failure.
-        compile(output, "test.py", "exec")
-
-    def _compare_lines(self, expected, got):
-        """Check that each line in got matches that in
-        expected. This is to provide a more-readable
-        set of error messages (may prefer a diff-style
-        analysis).
-        """
-
-        elines = expected.split('\n')
-        glines = got.split('\n')
-
-        # _dump_lines(elines)
-        # _dump_lines(glines)
-
-        for e, g in zip(elines, glines):
-            self.assertEqual(e, g)
-
-        # Do the line length after checking for the file
-        # contents as it is easier to see what the difference
-        # is this way around, since a difference in the
-        # number of lines is often not very informative.
-        self.assertEqual(len(elines), len(glines))
-
-    def _compare(self, expected):
-        """Run save_all and check the output (saved to a
-        StringIO object) to the string value expected.
-        """
-        output = StringIO()
-        ui.save_all(output)
-        output = output.getvalue()
-
-        # check the output is a valid Python program.
-        # this check does not guard against potential issues,
-        # but ensures that the program can compile.
-        self._compile(output)
-
-        self._compare_lines(expected, output)
-
-    def _restore(self):
-        """Run save_all then call clean and try to restore
-        the Sherpa state from the saved file. Will raise
-        a test failure if there was an error when
-        executing the save file.
-        """
-
-        output = StringIO()
-        ui.save_all(output)
-        output = output.getvalue()
-        ui.clean()
-        try:
-            exec(output)
-            success = True
-            e = "no exception"
-        except Exception as e:
-            success = False
-
-        self.assertTrue(success, msg="exception={}".format(e))
-
-    def _setup_pha_basic(self):
-        """Load up a PHA file and make "simple" changes to the
-        Sherpa state. Returns the name of the file that is
-        loaded and the canonical output.
-        """
+# This extends the clean_astro_ui logic but it isn't obvious
+# to me how to chain them together, so it re-implements
+# clean_astro_ui.
+#
+@pytest.fixture(autouse=True)
+def setup(clean_astro_ui):
+
+    # Setup for the test
+    try:
+        numpy.set_printoptions(legacy='1.13')
+    except TypeError:  # numpy < 1.14
+        pass
+
+    old_logging_level = logger.level
+    logger.setLevel(logging.ERROR)
+
+    if has_xspec:
+        from sherpa.astro import xspec
+        old_xspec = xspec.get_xsstate()
+
+        # ensure we have the same settings as the test cases
+        # used (changes to XSPEC may have changed the defaults)
+        xspec.set_xschatter(0)
+        xspec.set_xsabund('angr')
+        xspec.set_xsxsect('bcmc')
+    else:
+        old_xspec = None
+
+    ui.clean()
+
+    # run the test
+    yield
+
+    # Restore the Sherpa/related settings
+    ui.clean()
+
+    if old_xspec is not None:
+        xspec.set_xsstate(old_xspec)
+
+    try:
+        numpy.set_printoptions(legacy=False)
+    except TypeError:  # numpy < 1.14
+        pass
+
+    logger.setLevel(old_logging_level)
+
+
+def add_datadir_path(output):
+    """Replace any @@ characters by the value of self.datadir,
+    making sure that the replacement text does not end in a /."""
+
+    # it would be nice not to use SherpaTestCase
+    dname = SherpaTestCase.datadir
+    if dname.endswith('/'):
+        dname = dname[:-1]
+
+    return re.sub('@@', dname, output, count=0)
+
+def compileit(output):
+    # Let it just throw an exception in case of failure.
+    compile(output, "test.py", "exec")
+
+
+def compare_lines(expected, got):
+    """Check that each line in got matches that in
+    expected. This is to provide a more-readable
+    set of error messages (may prefer a diff-style
+    analysis).
+    """
+
+    elines = expected.split('\n')
+    glines = got.split('\n')
+
+    # _dump_lines(elines)
+    # _dump_lines(glines)
+
+    for e, g in zip(elines, glines):
+        assert e == g
+
+    # Do the line length after checking for the file
+    # contents as it is easier to see what the difference
+    # is this way around, since a difference in the
+    # number of lines is often not very informative.
+    #
+    assert len(elines) == len(glines)
 
-        ui.clean()
-        fname = self.make_path('3c273.pi')
-        ui.load_pha(1, fname)
-        ui.subtract()
-        ui.set_stat('chi2datavar')
-        ui.notice(0.5, 7)
-        ui.set_source(ui.xsphabs.gal * (ui.powlaw1d.pl +
-                                        ui.xsapec.src))
-        return fname, self._add_datadir_path(_canonical_pha_basic)
 
-    def _setup_pha_grouped(self):
-        """Add in grouping and a few different choices.
+def compare(expected):
+    """Run save_all and check the output (saved to a
+    StringIO object) to the string value expected.
+    """
+    output = StringIO()
+    ui.save_all(output)
+    output = output.getvalue()
 
-        Returns the name of the file that is
-        loaded, the new grouping and quality arrays,
-        and the canonical output.
-        """
+    # check the output is a valid Python program.
+    # this check does not guard against potential issues,
+    # but ensures that the program can compile.
+    #
+    compileit(output)
+    compare_lines(expected, output)
 
-        ui.clean()
-        fname = self.make_path('3c273.pi')
-        ui.load_pha('grp', fname)
-        channels = ui.get_data('grp').channel
 
-        exclude = (channels < 20) | (channels > 800)
-        qual = exclude * 1
+def restore():
+    """Run save_all then call clean and try to restore
+    the Sherpa state from the saved file. Will raise
+    a test failure if there was an error when
+    executing the save file.
+    """
 
-        ui.subtract('grp')
-        ui.group_counts('grp', 10, tabStops=exclude)
-        ui.set_quality('grp', exclude)
+    output = StringIO()
+    ui.save_all(output)
+    output = output.getvalue()
+    ui.clean()
+    try:
+        exec(output)
+        success = True
+        e = "no exception"
+    except Exception as e:
+        success = False
 
-        grp = ui.get_data('grp').grouping
+    assert success, "exception={}".format(e)
 
-        ui.set_stat('chi2gehrels')
-        ui.notice_id('grp', 0.5, 6)
-        ui.set_source('grp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
-        ui.powlaw1d.gpl.gamma.max = 5
-        ui.set_par('ggal.nh', val=2.0, frozen=True)
 
-        return fname, (grp, qual), \
-            self._add_datadir_path(_canonical_pha_grouped)
+def setup_pha_basic(make_data_path):
+    """Load up a PHA file and make "simple" changes to the
+    Sherpa state. Returns the name of the file that is
+    loaded and the canonical output.
+    """
 
-    def _setup_pha_back(self):
-        """Fit the background, rather than subtract it.
-        """
+    fname = make_data_path('3c273.pi')
+    ui.load_pha(1, fname)
+    ui.subtract()
+    ui.set_stat('chi2datavar')
+    ui.notice(0.5, 7)
+    ui.set_source(ui.xsphabs.gal * (ui.powlaw1d.pl +
+                                    ui.xsapec.src))
+    return fname, add_datadir_path(_canonical_pha_basic)
 
-        ui.clean()
-        fname = self.make_path('3c273.pi')
-        ui.load_pha('bgrp', fname)
 
-        # Note: do not group the source dataset
+def setup_pha_grouped(make_data_path):
+    """Add in grouping and a few different choices.
 
-        bchannels = ui.get_bkg('bgrp').channel
+    Returns the name of the file that is
+    loaded, the new grouping and quality arrays,
+    and the canonical output.
+    """
 
-        bexclude = (bchannels < 10) | (bchannels > 850)
-        bqual = bexclude * 1
+    fname = make_data_path('3c273.pi')
+    ui.load_pha('grp', fname)
+    channels = ui.get_data('grp').channel
 
-        ui.group_counts('bgrp', 10, tabStops=bexclude, bkg_id=1)
-        ui.set_quality('bgrp', bexclude, bkg_id=1)
+    exclude = (channels < 20) | (channels > 800)
+    qual = exclude * 1
 
-        bgrp = ui.get_bkg('bgrp').grouping
+    ui.subtract('grp')
+    ui.group_counts('grp', 10, tabStops=exclude)
+    ui.set_quality('grp', exclude)
 
-        ui.set_stat('chi2xspecvar')
+    grp = ui.get_data('grp').grouping
 
-        # This call sets the noticed range for both source and
-        # background data sets.
-        ui.notice_id('bgrp', 0.5, 6)
+    ui.set_stat('chi2gehrels')
+    ui.notice_id('grp', 0.5, 6)
+    ui.set_source('grp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
+    ui.powlaw1d.gpl.gamma.max = 5
+    ui.set_par('ggal.nh', val=2.0, frozen=True)
 
-        # Remove the "source" filter
-        ui.notice_id('bgrp', None, None, bkg_id=1)
-        ui.notice_id('bgrp', 2, 7, bkg_id=1)
+    return fname, (grp, qual), \
+        add_datadir_path(_canonical_pha_grouped)
 
-        ui.set_source('bgrp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
-        ui.set_bkg_source('bgrp', ui.steplo1d.bstep + ui.polynom1d.bpoly)
 
-        ui.set_xsabund('lodd')
-        ui.set_xsxsect('vern')
-        ui.set_xscosmo(72, 0.02, 0.71)
+def setup_pha_back(make_data_path):
+    """Fit the background, rather than subtract it.
+    """
 
-        ui.powlaw1d.gpl.gamma.min = -5
-        ui.freeze(ui.polynom1d.bpoly.c0)
+    fname = make_data_path('3c273.pi')
+    ui.load_pha('bgrp', fname)
 
-        ui.set_par('ggal.nh', val=2.0, frozen=True)
+    # Note: do not group the source dataset
 
-        return fname, (bgrp, bqual), \
-            self._add_datadir_path(_canonical_pha_back)
+    bchannels = ui.get_bkg('bgrp').channel
 
-    def _setup_usermodel(self):
-        """Try a user model.
-        """
+    bexclude = (bchannels < 10) | (bchannels > 850)
+    bqual = bexclude * 1
 
-        ui.clean()
-        # Note: array is not sorted on purpose, and float/int
-        # values.
-        ui.load_arrays(3, [1, 12.2, 2, 14], [4, 8, 12, 4])
+    ui.group_counts('bgrp', 10, tabStops=bexclude, bkg_id=1)
+    ui.set_quality('bgrp', bexclude, bkg_id=1)
 
-        def mymodel_func(pars, x, xhi=None):
-            return pars[0] + pars[1] * x
+    bgrp = ui.get_bkg('bgrp').grouping
 
-        ui.load_user_model(mymodel_func, "mymodel")
-        ui.add_user_pars("mymodel",
-                         parnames=["c", "m"],
-                         parvals=[2, 0.5],
-                         parmins=[-10, 0],
-                         parmaxs=[10, 5.5],
-                         parunits=["m", ""],
-                         parfrozen=[False, True])
+    ui.set_stat('chi2xspecvar')
 
-        mymodel = ui.get_model_component("mymodel")
-        ui.set_source(3, ui.sin.sin_model + mymodel)
+    # This call sets the noticed range for both source and
+    # background data sets.
+    ui.notice_id('bgrp', 0.5, 6)
 
-        ui.set_stat('cash')
-        ui.set_method('simplex')
+    # Remove the "source" filter
+    ui.notice_id('bgrp', None, None, bkg_id=1)
+    ui.notice_id('bgrp', 2, 7, bkg_id=1)
 
-    def test_compile_failure(self):
-        try:
-            self._compile("foo bar")
-        except:
-            return
-        self.fail("Compilation should have failed")
+    ui.set_source('bgrp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
+    ui.set_bkg_source('bgrp', ui.steplo1d.bstep + ui.polynom1d.bpoly)
 
-    def test_restore_empty(self):
-        "Can the empty state be evaluated?"
+    ui.set_xsabund('lodd')
+    ui.set_xsxsect('vern')
+    ui.set_xscosmo(72, 0.02, 0.71)
 
-        ui.clean()
+    ui.powlaw1d.gpl.gamma.min = -5
+    ui.freeze(ui.polynom1d.bpoly.c0)
 
-        # At present the only check is that the file can be
-        # loaded.
-        self._restore()
+    ui.set_par('ggal.nh', val=2.0, frozen=True)
 
-    def test_canonical_empty(self):
-        self._compare(_canonical_empty)
+    return fname, (bgrp, bqual), \
+        add_datadir_path(_canonical_pha_back)
 
-    def test_canonical_empty_outfile(self):
-        tfile = tempfile.NamedTemporaryFile(suffix='.sherpa')
-        ui.save_all(tfile.name, clobber=True)
-        with open(tfile.name, 'r') as fh:
-            output = fh.read()
-        self._compare_lines(_canonical_empty, output)
 
-    def test_canonical_empty_stats(self):
+def setup_usermodel():
+    """Try a user model.
+    """
 
-        ui.set_stat('leastsq')
+    # Note: array is not sorted on purpose, and float/int
+    # values.
+    ui.load_arrays(3, [1, 12.2, 2, 14], [4, 8, 12, 4])
 
-        ui.set_method('simplex')
-        ui.set_method_opt('maxfev', 5000)
-        ui.set_method_opt('verbose', 1)
+    def mymodel_func(pars, x, xhi=None):
+        return pars[0] + pars[1] * x
 
-        self._compare(_canonical_empty_stats)
+    ui.load_user_model(mymodel_func, "mymodel")
+    ui.add_user_pars("mymodel",
+                     parnames=["c", "m"],
+                     parvals=[2, 0.5],
+                     parmins=[-10, 0],
+                     parmaxs=[10, 5.5],
+                     parunits=["m", ""],
+                     parfrozen=[False, True])
 
-    @requires_data
-    @requires_xspec
-    @requires_fits
-    def test_canonical_pha_basic(self):
+    mymodel = ui.get_model_component("mymodel")
+    ui.set_source(3, ui.sin.sin_model + mymodel)
 
-        _, canonical = self._setup_pha_basic()
-        self._compare(canonical)
-
-    @requires_data
-    @requires_xspec
-    @requires_fits
-    def test_restore_pha_basic(self):
-        "Can the state be evaluated?"
-
-        fname, _ = self._setup_pha_basic()
-        statval = ui.calc_stat()
-
-        self._restore()
-
-        self.assertEqual([1], ui.list_data_ids())
-        self.assertEqual(fname, ui.get_data(1).name)
-        self.assertTrue(ui.get_data().subtracted,
-                        msg='Data should be subtracted')
-
-        src_expr = ui.get_source()
-        self.assertEqual(src_expr.name,
-                         '(xsphabs.gal * (powlaw1d.pl + xsapec.src))')
-        self.assertEqual(ui.xsphabs.gal.name, 'xsphabs.gal')
-        self.assertEqual(ui.powlaw1d.pl.name, 'powlaw1d.pl')
-        self.assertEqual(ui.xsapec.src.name, 'xsapec.src')
-
-        self.assertAlmostEqual(ui.calc_stat(), statval)
-
-    @requires_data
-    @requires_xspec
-    @requires_fits
-    @requires_group
-    def test_canonical_pha_grouped(self):
-
-        _, _, canonical = self._setup_pha_grouped()
-        self._compare(canonical)
-
-    @requires_data
-    @requires_xspec
-    @requires_fits
-    @requires_group
-    def test_restore_pha_grouped(self):
-        "Can the state be evaluated?"
-
-        fname, (grp, qual), _ = self._setup_pha_grouped()
-        statval = ui.calc_stat('grp')
-
-        self._restore()
-
-        self.assertEqual(['grp'], ui.list_data_ids())
-        self.assertEqual(fname, ui.get_data('grp').name)
-        self.assertTrue(ui.get_data('grp').subtracted,
-                        msg='Data should be subtracted')
-
-        g = ui.get_grouping('grp')
-        q = ui.get_quality('grp')
-        self.assertEqual(g.dtype, numpy.int16)
-        self.assertEqual(q.dtype, numpy.int16)
-
-        assert_array_equal(grp, g, err_msg='grouping column')
-        assert_array_equal(qual, q, err_msg='grouping column')
-
-        src_expr = ui.get_source('grp')
-        self.assertEqual(src_expr.name,
-                         '(xsphabs.ggal * powlaw1d.gpl)')
-        self.assertTrue(ui.xsphabs.ggal.nh.frozen, msg="is ggal.nh frozen?")
-        self.assertEqual(ui.xsphabs.ggal.nh.val, 2.0)
-        self.assertEqual(ui.powlaw1d.gpl.gamma.max, 5.0)
-
-        self.assertAlmostEqual(ui.calc_stat('grp'), statval)
-
-    @requires_data
-    @requires_xspec
-    @requires_fits
-    @requires_group
-    def test_canonical_pha_back(self):
-
-        _, _, canonical = self._setup_pha_back()
-        self._compare(canonical)
-
-    @requires_data
-    @requires_xspec
-    @requires_fits
-    @requires_group
-    def test_restore_pha_back(self):
-        "Can the state be evaluated?"
-
-        fname, (bgrp, bqual), _ = self._setup_pha_back()
-        statval = ui.calc_stat('bgrp')
-
-        # At present the model is not saved correctly for the
-        # background component - it includes apply_arf/rmf
-        # statements - which means that running the saved script
-        # results in an error.
-        self._restore()
-
-        self.assertEqual(['bgrp'], ui.list_data_ids())
-        self.assertEqual(fname, ui.get_data('bgrp').name)
-        self.assertFalse(ui.get_data('bgrp').subtracted,
-                         msg='Data should not be subtracted')
-        self.assertFalse(ui.get_bkg('bgrp').subtracted,
-                         msg='Background should not be subtracted')
-
-        # TODO: at present the source is grouped; is this "correct"?
-        # self.assertFalse(ui.get_data('bgrp').grouped,
-        #                  msg='Data should not be grouped')
-        self.assertTrue(ui.get_data('bgrp').grouped,
-                        msg='Data should be grouped')  # FIXME?
-        self.assertTrue(ui.get_bkg('bgrp').grouped,
-                        msg='Background should be grouped')
-
-        # g = ui.get_grouping('bgrp')
-        # q = ui.get_quality('bgrp')
-        # The data types are '>i2' / int16
-        # self.assertEqual(g.dtype, numpy.int16)
-        # self.assertEqual(q.dtype, numpy.int16)
-
-        # TODO set up correct grouping bins...
-        # nchan = ui.get_data('bgrp').channel.size
-        # assert_array_equal(g, numpy.ones(nchan), err_msg='src grouping')
-        # assert_array_equal(q, numpy.zeros(nchan), err_msg='src quality')
-
-        bg = ui.get_grouping('bgrp', bkg_id=1)
-        bq = ui.get_quality('bgrp', bkg_id=1)
-        self.assertEqual(bg.dtype, numpy.int16)
-        self.assertEqual(bq.dtype, numpy.int16)
-
-        assert_array_equal(bg, bgrp, err_msg='bgnd grouping')
-        assert_array_equal(bq, bqual, err_msg='bgnd quality')
-
-        # TODO: check noticed range
-
-        src_expr = ui.get_source('bgrp')
-        self.assertEqual(src_expr.name,
-                         '(xsphabs.ggal * powlaw1d.gpl)')
-
-        bg_expr = ui.get_bkg_source('bgrp')
-        self.assertEqual(bg_expr.name,
-                         '(steplo1d.bstep + polynom1d.bpoly)')
-
-        self.assertTrue(ui.xsphabs.ggal.nh.frozen, msg="is ggal.nh frozen?")
-        self.assertTrue(ui.polynom1d.bpoly.c0.frozen, msg="is bpoly.c0 frozen?")
-        self.assertEqual(ui.xsphabs.ggal.nh.val, 2.0)
-        self.assertEqual(ui.powlaw1d.gpl.gamma.min, -5.0)
-
-        self.assertEqual(ui.get_xsabund(), 'lodd')
-        self.assertEqual(ui.get_xsxsect(), 'vern')
-        cosmo = ui.get_xscosmo()
-        self.assertAlmostEqual(cosmo[0], 72.0)
-        self.assertAlmostEqual(cosmo[1], 0.02)
-        self.assertAlmostEqual(cosmo[2], 0.71)
-
-        self.assertAlmostEqual(ui.calc_stat('bgrp'), statval)
-
-    def test_canonical_usermodel(self):
-
-        self._setup_usermodel()
-        self._compare(_canonical_usermodel)
-
-    def test_restore_usermodel(self):
-        "Can the state be evaluated?"
-
-        self._setup_usermodel()
-        statval = ui.calc_stat(3)
-        self._restore()
-
-        # TODO: For the moment the source expression is created, in
-        # the serialized form, using set_full_model. This should
-        # be changed so that get_source can be used below.
-        #
-        # src_expr = ui.get_source(3)
-        src_expr = ui.get_model(3)
-        self.assertEqual(src_expr.name,
-                         '(sin.sin_model + usermodel.mymodel)')
-        mymodel = ui.get_model_component("mymodel")
-        self.assertTrue(mymodel.m.frozen, msg="is mymodel.m frozen?")
-        self.assertEqual(mymodel.c.val, 2.0)
-        self.assertEqual(mymodel.c.units, "m")
-        self.assertEqual(mymodel.m.max, 5.5)
-        self.assertEqual(mymodel.m.units, "")
-
-        self.assertEqual(ui.calc_stat(3), statval)
+    ui.set_stat('cash')
+    ui.set_method('simplex')
+
+
+def test_compile_failure():
+    with pytest.raises(Exception):
+        compileit("foo bar")
+
+
+def test_restore_empty():
+    "Can the empty state be evaluated?"
+
+    # At present the only check is that the file can be
+    # loaded.
+    restore()
+
+
+def test_canonical_empty():
+    "Contents of empty state are as expected"
+    compare(_canonical_empty)
+
+
+def test_canonical_empty_outfile():
+    "Can read in a save file"
+    tfile = tempfile.NamedTemporaryFile(suffix='.sherpa')
+    ui.save_all(tfile.name, clobber=True)
+    with open(tfile.name, 'r') as fh:
+        output = fh.read()
+
+    compare_lines(_canonical_empty, output)
+
+
+def test_canonical_empty_stats():
+    "Change several settings but load no data"
+
+    ui.set_stat('leastsq')
+
+    ui.set_method('simplex')
+    ui.set_method_opt('maxfev', 5000)
+    ui.set_method_opt('verbose', 1)
+
+    compare(_canonical_empty_stats)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+def test_canonical_pha_basic(make_data_path):
+
+    _, canonical = setup_pha_basic(make_data_path)
+    compare(canonical)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+def test_restore_pha_basic(make_data_path):
+    "Can the state be evaluated?"
+
+    fname, _ = setup_pha_basic(make_data_path)
+    statval = ui.calc_stat()
+
+    restore()
+
+    assert ui.list_data_ids() == [1]
+    assert ui.get_data(1).name == fname
+    assert ui.get_data().subtracted, 'Data should be subtracted'
+
+    src_expr = ui.get_source()
+    assert src_expr.name == '(xsphabs.gal * (powlaw1d.pl + xsapec.src))'
+    assert ui.xsphabs.gal.name == 'xsphabs.gal'
+    assert ui.powlaw1d.pl.name == 'powlaw1d.pl'
+    assert ui.xsapec.src.name == 'xsapec.src'
+
+    assert ui.calc_stat() == pytest.approx(statval)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+@requires_group
+def test_canonical_pha_grouped(make_data_path):
+
+    _, _, canonical = setup_pha_grouped(make_data_path)
+    compare(canonical)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+@requires_group
+def test_restore_pha_grouped(make_data_path):
+    "Can the state be evaluated?"
+
+    fname, (grp, qual), _ = setup_pha_grouped(make_data_path)
+    statval = ui.calc_stat('grp')
+
+    restore()
+
+    assert ui.list_data_ids() == ['grp']
+    assert ui.get_data('grp').name == fname
+    assert ui.get_data('grp').subtracted, 'Data should be subtracted'
+
+    g = ui.get_grouping('grp')
+    q = ui.get_quality('grp')
+    assert g.dtype == numpy.int16
+    assert q.dtype == numpy.int16
+
+    assert_array_equal(grp, g, err_msg='grouping column')
+    assert_array_equal(qual, q, err_msg='grouping column')
+
+    src_expr = ui.get_source('grp')
+    assert src_expr.name == '(xsphabs.ggal * powlaw1d.gpl)'
+    assert ui.xsphabs.ggal.nh.frozen, "is ggal.nh frozen?"
+    assert ui.xsphabs.ggal.nh.val == 2.0
+    assert ui.powlaw1d.gpl.gamma.max == 5.0
+
+    assert ui.calc_stat('grp') == pytest.approx(statval)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+@requires_group
+def test_canonical_pha_back(make_data_path):
+
+    _, _, canonical = setup_pha_back(make_data_path)
+    compare(canonical)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+@requires_group
+def test_restore_pha_back(make_data_path):
+    "Can the state be evaluated?"
+
+    fname, (bgrp, bqual), _ = setup_pha_back(make_data_path)
+    statval = ui.calc_stat('bgrp')
+
+    restore()
+
+    assert ui.list_data_ids() == ['bgrp']
+    assert ui.get_data('bgrp').name == fname
+    assert not ui.get_data('bgrp').subtracted, 'Data should not be subtracted'
+    assert not ui.get_bkg('bgrp').subtracted, 'Background should not be subtracted'
+
+    # TODO: at present the source is grouped; is this "correct"?
+    assert ui.get_data('bgrp').grouped, 'Data should be grouped'  # FIXME?
+    assert ui.get_bkg('bgrp').grouped, 'Background should be grouped'
+
+    # g = ui.get_grouping('bgrp')
+    # q = ui.get_quality('bgrp')
+    # The data types are '>i2' / int16
+    # assert g.dtype == numpy.int16
+    # assert q.dtype == numpy.int16
+
+    # TODO set up correct grouping bins...
+    # nchan = ui.get_data('bgrp').channel.size
+    # assert_array_equal(g, numpy.ones(nchan), err_msg='src grouping')
+    # assert_array_equal(q, numpy.zeros(nchan), err_msg='src quality')
+
+    bg = ui.get_grouping('bgrp', bkg_id=1)
+    bq = ui.get_quality('bgrp', bkg_id=1)
+    assert bg.dtype == numpy.int16
+    assert bq.dtype == numpy.int16
+
+    assert_array_equal(bg, bgrp, err_msg='bgnd grouping')
+    assert_array_equal(bq, bqual, err_msg='bgnd quality')
+
+    # TODO: check noticed range
+
+    src_expr = ui.get_source('bgrp')
+    assert src_expr.name == '(xsphabs.ggal * powlaw1d.gpl)'
+
+    bg_expr = ui.get_bkg_source('bgrp')
+    assert bg_expr.name == '(steplo1d.bstep + polynom1d.bpoly)'
+
+    assert ui.xsphabs.ggal.nh.frozen, "is ggal.nh frozen?"
+    assert ui.polynom1d.bpoly.c0.frozen, "is bpoly.c0 frozen?"
+    assert ui.xsphabs.ggal.nh.val == 2.0
+    assert ui.powlaw1d.gpl.gamma.min == -5.0
+
+    assert ui.get_xsabund() == 'lodd'
+    assert ui.get_xsxsect() == 'vern'
+    cosmo = ui.get_xscosmo()
+    assert cosmo[0] == pytest.approx(72.0)
+    assert cosmo[1] == pytest.approx(0.02)
+    assert cosmo[2] == pytest.approx(0.71)
+
+    assert ui.calc_stat('bgrp') == pytest.approx(statval)
+
+
+def test_canonical_usermodel():
+    "Can we save a usermodel?"
+    setup_usermodel()
+    compare(_canonical_usermodel)
+
+
+def test_restore_usermodel():
+    "Can the reload a usermodel"
+
+    setup_usermodel()
+    statval = ui.calc_stat(3)
+    restore()
+
+    # TODO: For the moment the source expression is created, in
+    # the serialized form, using set_full_model. This should
+    # be changed so that get_source can be used below.
+    #
+    # src_expr = ui.get_source(3)
+    src_expr = ui.get_model(3)
+    assert src_expr.name == '(sin.sin_model + usermodel.mymodel)'
+    mymodel = ui.get_model_component("mymodel")
+    assert mymodel.m.frozen,"is mymodel.m frozen?"
+    assert mymodel.c.val == 2.0
+    assert mymodel.c.units == "m"
+    assert mymodel.m.max == 5.5
+    assert mymodel.m.units == ""
+
+    assert ui.calc_stat(3) == pytest.approx(statval)

@@ -53,10 +53,18 @@ _data_bkg = np.asarray([1, 0, 0, 1, 0, 0, 2, 0, 0, 1],
 
 _arf = np.asarray([0.8, 0.8, 0.9, 1.0, 1.1, 1.1, 0.7, 0.6, 0.6, 0.6])
 
-# using a "perfect" RMF, in that there's a one-to-one mapping
-# from channel to energy
+# Using a "perfect" RMF, in that there's a one-to-one mapping
+# from channel to energy. I use a non-uniform grid to make
+# it obvious when the bin width is being used: when using a
+# constant bin width like 0.1 keV the factor of 10 is too easy
+# to confuse for other terms.
 #
 _energies = np.linspace(0.5, 1.5, 11)
+_energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1. , 1.1, 1.12, 1.3, 1.4, 1.5])
+_energies_lo = _energies[:-1]
+_energies_hi = _energies[1:]
+_energies_mid = (_energies_lo + _energies_hi) / 2
+_energies_width = _energies_hi - _energies_lo
 
 # How much longer is the background exposure compared to the source
 # exposure; chose a non-integer value to make it more obvious when
@@ -64,6 +72,17 @@ _energies = np.linspace(0.5, 1.5, 11)
 # to the backscal values).
 #
 _bexpscale = 2.5
+
+# Make sure the arrays can't be changed
+for _array in [_data_chan, _data_counts, _data_bkg, _arf, _energies]:
+    _array.flags.writeable = False
+
+del _array
+
+# Normalisation of the models.
+#
+MODEL_NORM = 1.02e2
+BGND_NORM = 0.4
 
 
 def example_pha_data():
@@ -73,17 +92,17 @@ def example_pha_data():
     d = ui.DataPHA('example', _data_chan.copy(),
                    _data_counts.copy(),
                    exposure=etime,
-                   backscal=0.1)
+                   backscal=0.2)
 
-    a = ui.create_arf(_energies[:-1].copy(),
-                      _energies[1:].copy(),
+    a = ui.create_arf(_energies_lo.copy(),
+                      _energies_hi.copy(),
                       specresp=_arf.copy(),
                       exposure=etime)
 
-    r = ui.create_rmf(_energies[:-1].copy(),
-                      _energies[1:].copy(),
-                      e_min=_energies[:-1].copy(),
-                      e_max=_energies[1:].copy(),
+    r = ui.create_rmf(_energies_lo.copy(),
+                      _energies_hi.copy(),
+                      e_min=_energies_lo.copy(),
+                      e_max=_energies_hi.copy(),
                       startchan=1,
                       fname=None)
 
@@ -92,10 +111,19 @@ def example_pha_data():
     return d
 
 
-def example_pha_with_bkg_data():
+def example_pha_with_bkg_data(direct=True):
     """Create an example data set with background
 
     There is no response for the background.
+
+    Parameters
+    ----------
+    direct : bool, optional
+        If True then the background is added to the source
+        and only the source is returned. If False then the
+        return is (source, bgnd) and the background is not
+        associated with the source.
+
     """
 
     d = example_pha_data()
@@ -105,8 +133,11 @@ def example_pha_with_bkg_data():
                    exposure=1201.0 * _bexpscale,
                    backscal=0.4)
 
-    d.set_background(b)
-    return d
+    if direct:
+        d.set_background(b)
+        return d
+
+    return d, b
 
 
 def example_model():
@@ -114,7 +145,7 @@ def example_model():
 
     ui.create_model_component('const1d', 'cpt')
     cpt = ui.get_model_component('cpt')
-    cpt.c0 = 1.02e2
+    cpt.c0 = MODEL_NORM
     return cpt
 
 
@@ -124,7 +155,7 @@ def example_bkg_model():
     ui.create_model_component('powlaw1d', 'bcpt')
     bcpt = ui.get_model_component('bcpt')
     bcpt.gamma = 0.0  # use a flat model to make it easy to evaluate
-    bcpt.ampl = 1e-1
+    bcpt.ampl = BGND_NORM
     return bcpt
 
 
@@ -180,7 +211,7 @@ def setup_example_bkg(idval):
         ui.set_source(idval, m)
 
 
-def setup_example_bkg_model(idval):
+def setup_example_bkg_model(idval, direct=True):
     """Set up a simple dataset + background for use in the tests.
 
     This includes a model for the background, unlike
@@ -196,16 +227,25 @@ def setup_example_bkg_model(idval):
     setup_example_bkg
     """
 
-    d = example_pha_with_bkg_data()
+    d = example_pha_with_bkg_data(direct=direct)
     m = example_model()
     bm = example_bkg_model()
     if idval is None:
-        ui.set_data(d)
+        if direct:
+            ui.set_data(d)
+        else:
+            ui.set_data(d[0])
+            ui.set_bkg(d[1])
+
         ui.set_source(m)
         ui.set_bkg_model(bm)
 
     else:
-        ui.set_data(idval, d)
+        if direct:
+            ui.set_data(idval, d)
+        else:
+            ui.set_data(idval, d[0])
+            ui.set_bkg(idval, d[1])
         ui.set_source(idval, m)
         ui.set_bkg_model(idval, bm)
 
@@ -251,9 +291,8 @@ get_source_plot              X
 """
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_arf_plot(idval):
+def test_get_arf_plot(idval, clean_astro_ui):
     """Basic testing of get_arf_plot
     """
 
@@ -265,8 +304,8 @@ def test_get_arf_plot(idval):
 
     assert isinstance(ap, ARFPlot)
 
-    assert ap.xlo == pytest.approx(_energies[:-1])
-    assert ap.xhi == pytest.approx(_energies[1:])
+    assert ap.xlo == pytest.approx(_energies_lo)
+    assert ap.xhi == pytest.approx(_energies_hi)
 
     assert ap.y == pytest.approx(_arf)
 
@@ -277,9 +316,8 @@ def test_get_arf_plot(idval):
     # assert ap.ylabel == 'cm$^2$'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_plot(idval):
+def test_get_bkg_plot(idval, clean_astro_ui):
     """Basic testing of get_bkg_plot
     """
 
@@ -296,7 +334,7 @@ def test_get_bkg_plot(idval):
     # normalise by exposure time and bin width, but bin width here
     # is 1 (because it is being measured in channels).
     #
-    yexp = _data_bkg / 1201.0 / _bexpscale
+    yexp = _data_bkg / (1201.0 * _bexpscale)
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'example-bkg'
@@ -304,52 +342,37 @@ def test_get_bkg_plot(idval):
     assert bp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_plot_energy(idval):
+def test_get_bkg_plot_energy(idval, clean_astro_ui):
     """Basic testing of get_bkg_plot: energy
     """
 
-    # The way I have set up the data means that set_analysis
-    # doesn't seem to change the setting for the background,
-    # which should be tracked down (Sep 2019) but not just now.
-    #
     setup_example_bkg(idval)
     if idval is None:
         ui.set_analysis('energy')
-        ui.get_bkg().units = 'energy'
         bp = ui.get_bkg_plot()
     else:
         ui.set_analysis(idval, 'energy')
-        ui.get_bkg(idval).units = 'energy'
         bp = ui.get_bkg_plot(idval)
 
-    # TODO: is this a bug in the plotting code, or does it just
-    # indicate that the test hasn't set up the correct invariants
-    # (which may be true as the code above has to change the units
-    # setting of the background object)?
-    #
-    # I was expecting bp.x to return energy and not channel values
-    #
     assert bp.x == pytest.approx(_data_chan)
 
-    # normalise by exposure time and bin width, but bin width here
-    # is 1 (because it is being measured in channels).
+    # normalise by exposure time and bin width,
+    # and since this is incorrectly in channels there's no normalisation
     #
-    yexp = _data_bkg / 1201.0 / _bexpscale
+    yexp = _data_bkg / (1201.0 * _bexpscale)
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'example-bkg'
-    assert bp.xlabel == 'Energy (keV)'
-    assert bp.ylabel == 'Counts/sec/keV'
+    assert bp.xlabel == 'Channel'
+    assert bp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("gfunc", [ui.get_bkg_plot,
                                    ui.get_bkg_model_plot,
                                    ui.get_bkg_fit_plot])
-def test_get_bkg_plot_no_bkg(idval, gfunc):
+def test_get_bkg_plot_no_bkg(idval, gfunc, clean_astro_ui):
     """Basic testing of get_bkg_XXX_plot when there's no background
     """
 
@@ -361,9 +384,8 @@ def test_get_bkg_plot_no_bkg(idval, gfunc):
             gfunc(idval)
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_model_plot(idval):
+def test_get_model_plot(idval, clean_astro_ui):
     """Basic testing of get_model_plot
     """
 
@@ -383,7 +405,7 @@ def test_get_model_plot(idval):
     # right. It should also be divided by the channel width, but in
     # this case each bin has a channel width of 1.
     #
-    yexp = _arf * 1.02e2 * (_energies[1:] - _energies[:-1])
+    yexp = _arf * MODEL_NORM * _energies_width
     assert mp.y == pytest.approx(yexp)
 
     assert mp.title == 'Model'
@@ -391,9 +413,8 @@ def test_get_model_plot(idval):
     assert mp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_model_plot_energy(idval):
+def test_get_model_plot_energy(idval, clean_astro_ui):
     """Basic testing of get_model_plot: energy
     """
 
@@ -405,14 +426,14 @@ def test_get_model_plot_energy(idval):
         ui.set_analysis(idval, 'energy')
         mp = ui.get_model_plot(idval)
 
-    assert mp.xlo == pytest.approx(_energies[:-1])
-    assert mp.xhi == pytest.approx(_energies[1:])
+    assert mp.xlo == pytest.approx(_energies_lo)
+    assert mp.xhi == pytest.approx(_energies_hi)
 
     # This should be normalized by the bin width, but it is cancelled
     # out by the fact that the model normalization has to be multiplied
     # by the bin width (both in energy).
     #
-    yexp = _arf * 1.02e2
+    yexp = _arf * MODEL_NORM
     assert mp.y == pytest.approx(yexp)
 
     assert mp.title == 'Model'
@@ -420,9 +441,8 @@ def test_get_model_plot_energy(idval):
     assert mp.ylabel == 'Counts/sec/keV'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_source_plot_warning(caplog, idval):
+def test_get_source_plot_warning(idval, caplog, clean_astro_ui):
     """Does get_source_plot create a warning about channel space?
 
     This is a logged warning, not a UserWarning.
@@ -447,9 +467,8 @@ def test_get_source_plot_warning(caplog, idval):
     assert msg == emsg
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_source_plot_energy(idval):
+def test_get_source_plot_energy(idval, clean_astro_ui):
     """Basic testing of get_source_plot: energy
     """
 
@@ -463,10 +482,10 @@ def test_get_source_plot_energy(idval):
 
     assert isinstance(sp, SourcePlot)
 
-    assert sp.xlo == pytest.approx(_energies[:-1])
-    assert sp.xhi == pytest.approx(_energies[1:])
+    assert sp.xlo == pytest.approx(_energies_lo)
+    assert sp.xhi == pytest.approx(_energies_hi)
 
-    yexp = 1.02e2 * np.ones(10)
+    yexp = MODEL_NORM * np.ones(10)
     assert sp.y == pytest.approx(yexp)
 
     assert sp.title == 'Source Model of example'
@@ -476,25 +495,31 @@ def test_get_source_plot_energy(idval):
     # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_model_plot(idval):
+@pytest.mark.parametrize("direct", [True, False])
+def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
     """Basic testing of get_bkg_model_plot
+
+    We test ui.set_bkg as well as datapha.set_background to check
+    issue #879.
+
+    The same ARF is used as the source (by construction), which is
+    likely to be a common use case.
     """
 
-    setup_example_bkg_model(idval)
+    setup_example_bkg_model(idval, direct=direct)
     if idval is None:
         bp = ui.get_bkg_model_plot()
     else:
         bp = ui.get_bkg_model_plot(idval)
 
-    print(bp)
     assert bp.xlo == pytest.approx(_data_chan)
     assert bp.xhi == pytest.approx(_data_chan + 1)
 
-    # TODO: this is the same output as test_get_bkg_model_plot_energy,
-    #       which doesn't make sense.
-    yexp = _arf / (_bexpscale * 100)
+    yexp = _arf * BGND_NORM * _energies_width
+    if direct:
+        yexp /= _bexpscale
+
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Model'
@@ -502,49 +527,47 @@ def test_get_bkg_model_plot(idval):
     assert bp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_model_plot_energy(idval):
+@pytest.mark.parametrize("direct", [True, False])
+def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
     """Basic testing of get_bkg_model_plot: energy
+
+    We test ui.set_bkg as well as datapha.set_background,
+    since I have seen subtle differences due to the extra
+    logic that set_bkg can do (issues #879 and #880)
     """
 
-    # The way I have set up the data means that set_analysis
-    # doesn't seem to change the setting for the background,
-    # which should be tracked down (Sep 2019) but not just now.
-    #
-    setup_example_bkg_model(idval)
+    setup_example_bkg_model(idval, direct=direct)
     if idval is None:
         ui.set_analysis('energy')
-        ui.get_bkg().units = 'energy'
         bp = ui.get_bkg_model_plot()
     else:
         ui.set_analysis(idval, 'energy')
-        ui.get_bkg(idval).units = 'energy'
         bp = ui.get_bkg_model_plot(idval)
 
-    # TODO: is this a bug in the plotting code, or does it just
-    # indicate that the test hasn't set up the correct invariants
-    # (which may be true as the code above has to change the units
-    # setting of the background object)?
-    #
-    # I was expecting bp.x to return energy and not channel values
-    #
-    assert bp.xlo == pytest.approx(_data_chan - 0.5)
-    assert bp.xhi == pytest.approx(_data_chan + 0.5)
+    if direct:
+        assert bp.xlo == pytest.approx(_data_chan)
+        assert bp.xhi == pytest.approx(_data_chan + 1)
+    else:
+        assert bp.xlo == pytest.approx(_energies_lo)
+        assert bp.xhi == pytest.approx(_energies_hi)
 
-    # TODO: The factor of 100 comes from the bin width (0.1 keV), but
-    # why is there a scaling by _bexpscale?
-    yexp = _arf / (_bexpscale * 100)
+    yexp = _arf * BGND_NORM
+    if direct:
+        yexp *= (_energies_width / _bexpscale)
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Model'
-    assert bp.xlabel == 'Energy (keV)'
-    assert bp.ylabel == 'Counts/sec/keV'
+    if direct:
+        assert bp.xlabel == 'Channel'
+        assert bp.ylabel == 'Counts/sec/channel'
+    else:
+        assert bp.xlabel == 'Energy (keV)'
+        assert bp.ylabel == 'Counts/sec/keV'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_resid_plot(idval):
+def test_get_bkg_resid_plot(idval, clean_astro_ui):
     """Basic testing of get_bkg_resid_plot
     """
 
@@ -558,7 +581,7 @@ def test_get_bkg_resid_plot(idval):
 
     # correct the counts by the bin width and exposure time
     #
-    yexp = (_data_bkg * 100.0 / 1201.0 - _arf) / (_bexpscale * 100)
+    yexp = _data_bkg / (1201.0 * _bexpscale) - _arf * BGND_NORM * _energies_width / _bexpscale
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Residuals of example-bkg - Bkg Model'
@@ -566,37 +589,33 @@ def test_get_bkg_resid_plot(idval):
     assert bp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_resid_plot_energy(idval):
+def test_get_bkg_resid_plot_energy(idval, clean_astro_ui):
     """Basic testing of get_bkg_resid_plot: energy
     """
 
     setup_example_bkg_model(idval)
     if idval is None:
         ui.set_analysis('energy')
-        ui.get_bkg().units = 'energy'
         bp = ui.get_bkg_resid_plot()
     else:
         ui.set_analysis(idval, 'energy')
-        ui.get_bkg(idval).units = 'energy'
         bp = ui.get_bkg_resid_plot(idval)
 
     assert bp.x == pytest.approx(_data_chan)
 
-    # correct the counts by the bin width and exposure time
+    # correct the counts by the bin width (which is 1) and exposure time
     #
-    yexp = (_data_bkg * 100.0 / 1201.0 - _arf) / (_bexpscale * 100)
+    yexp = _data_bkg / (1201.0 * _bexpscale) - _arf * BGND_NORM * _energies_width / _bexpscale
     assert bp.y == pytest.approx(yexp)
 
     assert bp.title == 'Residuals of example-bkg - Bkg Model'
-    assert bp.xlabel == 'Energy (keV)'
-    assert bp.ylabel == 'Counts/sec/keV'
+    assert bp.xlabel == 'Channel'
+    assert bp.ylabel == 'Counts/sec/channel'
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_fit_plot(idval):
+def test_get_bkg_fit_plot(idval, clean_astro_ui):
     """Basic testing of get_bkg_fit_plot
     """
 
@@ -617,27 +636,24 @@ def test_get_bkg_fit_plot(idval):
         assert plot.ylabel == 'Counts/sec/channel'
         assert plot.x == pytest.approx(_data_chan)
 
-    yexp = _data_bkg / 1201.0 / _bexpscale
+    yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dp.y == pytest.approx(dp.y)
 
-    yexp = _arf / 100.0 / _bexpscale
+    yexp = _arf * BGND_NORM * _energies_width / _bexpscale
     assert mp.y == pytest.approx(yexp)
 
 
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_bkg_fit_plot_energy(idval):
+def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
     """Basic testing of get_bkg_fit_plot: energy
     """
 
     setup_example_bkg_model(idval)
     if idval is None:
         ui.set_analysis('energy')
-        ui.get_bkg().units = 'energy'
         fp = ui.get_bkg_fit_plot()
     else:
         ui.set_analysis(idval, 'energy')
-        ui.get_bkg(idval).units = 'energy'
         fp = ui.get_bkg_fit_plot(idval)
 
     dp = fp.dataplot
@@ -647,14 +663,14 @@ def test_get_bkg_fit_plot_energy(idval):
     assert mp.title == 'Background Model Contribution'
 
     for plot in [dp, mp]:
-        assert plot.xlabel == 'Energy (keV)'
-        assert plot.ylabel == 'Counts/sec/keV'
+        assert plot.xlabel == 'Channel'
+        assert plot.ylabel == 'Counts/sec/channel'
         assert plot.x == pytest.approx(_data_chan)
 
-    yexp = _data_bkg / 1201.0 / _bexpscale
+    yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dp.y == pytest.approx(dp.y)
 
-    yexp = _arf / 100.0 / _bexpscale
+    yexp = _arf * BGND_NORM * _energies_width / _bexpscale
     assert mp.y == pytest.approx(yexp)
 
 
@@ -685,10 +701,10 @@ def check_bkg_fit(plotfunc):
     assert dplot.title == 'example-bkg'
     assert mplot.title == 'Background Model Contribution'
 
-    yexp = _data_bkg / 1201.0 / _bexpscale
+    yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dplot.y == pytest.approx(yexp)
 
-    yexp = _arf / (_bexpscale * 100)
+    yexp = _arf * BGND_NORM * _energies_width / _bexpscale
     assert mplot.y == pytest.approx(yexp)
 
 
