@@ -18,12 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 import numpy
 
-from sherpa.models import Parameter, ArithmeticModel
-from .parameter import Parameter, tinyval
-from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
-    ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
 from sherpa.utils.err import ModelErr
 from sherpa.utils import bool_cast, get_position, guess_amplitude, \
     guess_amplitude_at_ref, \
@@ -31,9 +29,11 @@ from sherpa.utils import bool_cast, get_position, guess_amplitude, \
     guess_reference, interpolate, linear_interp, param_apply_limits, \
     sao_fcmp
 
+from .parameter import Parameter, tinyval
+from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
+    ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
 from . import _modelfcts
 
-import logging
 warning = logging.getLogger(__name__).warning
 
 
