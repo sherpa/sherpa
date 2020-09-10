@@ -20,10 +20,9 @@ jobs:
     - env: XSPECVER="12.10.1n" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER="2" TRAVIS_PYTHON_VERSION="3.6"
     # As above, python 3.7, numpy 1.15, matplotlib 3
     - env: XSPECVER="12.10.1n" NUMPYVER="1.15" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER="3" TRAVIS_PYTHON_VERSION="3.7"
-    # Experimental support for using Sphinx to build the documentation
-    # should we not run tests with this build (to save time); i.e. have
-    # a specific build just for the documentation and nothing else?
-    - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.7"
+    # We now buid all PRs on RTD thanks to their hook, so we
+    # do not need to run a separate test here.
+    # - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.7"
     # Install sherpatest package rather than relying on relative location of the submodule
     # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER="2" TRAVIS_PYTHON_VERSION="3.6"
