@@ -851,3 +851,31 @@ def test_show_stack4(ds_setup, ds_datadir, capsys):
         del d.header['MJD_OBS']
 
     validate_show_stack(capsys, ds_datadir, None, None)
+
+
+@requires_fits
+@requires_stk
+def test_operations_datastack_subtract(ds_setup, ds_datadir):
+
+    datadir = ds_datadir
+    datastack.load_pha("myid", '/'.join((datadir, "3c273.pi")))
+    d1 = datastack.get_data('myid')
+    assert np.all(d1.get_dep()[15:20] == [3., 7., 1., 6., 4.])
+    datastack.subtract('myid')
+    assert np.allclose(d1.get_dep()[15:20], [2.86507936, 6.86507936, 1. ,
+                                      6. , 4.])
+    datastack.unsubtract('myid')
+    assert np.all(d1.get_dep()[15:20] == [3., 7., 1., 6., 4.])
+
+    
+@requires_fits
+@requires_stk
+def test_operations_datastack_group(ds_setup, ds_datadir):
+    '''We are testing one of several grouping schemes here.'''
+    datadir = ds_datadir
+    datastack.load_pha("myid", '/'.join((datadir, "3c273.pi")))
+    d1 = datastack.get_data('myid')
+    datastack.group_counts('myid', 5)
+    assert np.allclose(d1.get_dep(filter=True)[15:20], [5., 5., 6., 7., 10.])
+    datastack.ungroup('myid')
+    assert np.all(d1.get_dep(filter=True)[15:20] == [3., 7., 1., 6., 4.])
