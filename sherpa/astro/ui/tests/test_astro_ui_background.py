@@ -25,6 +25,7 @@ overlap in the WSTAT tests, for one.
 """
 
 from io import StringIO
+import logging
 
 import numpy as np
 
@@ -812,6 +813,106 @@ def test_pha1_eval_vector(clean_astro_ui):
 
     assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1)
+
+
+@pytest.mark.parametrize('dofilter',
+                         [False, True])
+def test_pha1_eval_vector_stat(dofilter, clean_astro_ui):
+    """Compare statistic, with and without filtering.
+
+    """
+
+    scale = np.ones(19)
+    scale[9:15] = 0.8
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.05 * scale)
+    ascales = (0.8, 0.4)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    # change counts to reduce the statistic difference
+    #
+    y = np.zeros(19, dtype=np.int16)
+    y[1] = 4
+    y[2] = 10
+    y[3] = 507
+    y[4:9] = 1007
+    y[9] = 910
+    y[10] = 11
+    y[11] = 2
+    ui.set_dep(y * 8)
+
+    y = np.zeros(19, dtype=np.int16)
+    y[1] = 110
+    y[2:11] = 181
+    y[11] = 17
+    ui.set_dep(y * 40, bkg_id=1)
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+
+    smdl.ampl.max = 10
+    smdl.ampl = 10
+    smdl.xlow = 0.95
+    smdl.xhi = 1.59
+
+    bmdl1.ampl.max = 2
+    bmdl1.ampl = 2
+    bmdl1.xlow = 0.74
+    bmdl1.xhi = 1.71
+
+    ui.set_stat('chi2datavar')
+
+    if dofilter:
+        ui.ignore(None, 0.79)
+        ui.ignore(1.38, None)
+
+    with pytest.raises(TypeError) as exc:
+        ui.calc_stat()
+
+    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+
+
+def test_jdpileup_no_warning(caplog, clean_astro_ui):
+    """jdpileup model has no warning when scalar scaling"""
+
+    exps = (100.0, 1000.0)
+    bscales = (0.01, 0.05)
+    ascales = (0.8, 0.4)
+    ui.set_data('x', setup_pha1(exps, bscales, ascales))
+
+    ui.set_source('x', ui.box1d.smdl)
+    ui.set_bkg_source('x', ui.box1d.bmdl1)
+
+    ui.set_pileup_model('x', ui.jdpileup.jdp)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.get_model('x')
+
+    assert len(caplog.records) == 0
+
+
+def test_jdpileup_warning(caplog, clean_astro_ui):
+    """jdpileup model has error when vector scaling"""
+
+    exps = (100.0, 1000.0, 200)
+    bscales = (0.01, 0.02, 0.05)
+    ascales = (0.8, 0.8, 0.4 * np.ones(19))
+    ui.set_data('x', setup_pha1(exps, bscales, ascales))
+
+    ui.set_source('x', ui.box1d.smdl)
+    ui.set_bkg_source('x', ui.box1d.bmdl1)
+    ui.set_bkg_source('x', bmdl1, bkg_id=2)
+
+    ui.set_pileup_model('x', ui.jdpileup.jdp)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        with pytest.raises(TypeError) as exc:
+            ui.get_model('x')
+
+        assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+
+    assert len(caplog.records) == 0
 
 
 @requires_data
