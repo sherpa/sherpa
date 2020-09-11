@@ -1509,7 +1509,9 @@ def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
 @pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
                                      ui.get_photon_flux_hist])
 @pytest.mark.parametrize("scale", [None, 1.0, 2.0])
-def test_pha1_get_foo_flux_hist_scales(getfunc, scale, clean_astro_ui, basic_pha1):
+def test_pha1_get_foo_flux_hist_scales(getfunc, scale,
+                                       clean_astro_ui, basic_pha1,
+                                       hide_logging, reset_seed):
     """Can we call get_energy/photon_flux_hist with the scales argument.
 
     Run with the covar-calculated errors and then manually-specified
@@ -1520,6 +1522,8 @@ def test_pha1_get_foo_flux_hist_scales(getfunc, scale, clean_astro_ui, basic_pha
 
     This is issue #801.
     """
+
+    np.random.seed(42873)
 
     orig_mdl = ui.get_source('tst')
     gal = ui.create_model_component('xswabs', 'gal')
@@ -1542,27 +1546,23 @@ def test_pha1_get_foo_flux_hist_scales(getfunc, scale, clean_astro_ui, basic_pha
     res = getfunc(lo=0.5, hi=2, num=1000, bins=20, correlated=False,
                   scales=scales)
 
-    # compare the widths of the distributions to the input errors;
-    # the nh values are more uncertain than the others (close
-    # to the hard minimum of 0), so use a bigger tolerance for this
-    # than the other parameters: see
-    # test_astro_ui_fluxes.py::test_sample_foo_flux_params
-    #
-    # Since the nh test is known to be "less sensitive", re-order
-    # the tests to do gamma, ampl, and then nH, to make it clearer
-    # that the scales is being used.
-    #
-    # The nh tolerance is really quite large (but still less than
-    # the scale factor); perhaps we should drop this check? I have
-    # decided to do this since it occasionally fails even at a
-    # relative tolerance of 0.3, and the other two parameter
-    # checks are sufficient to show that the input scales array
-    # is being used correctly.
-    #
     pvals = res.modelvals
-    assert np.std(pvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(pvals[:, 2]) == pytest.approx(errs[2], rel=0.1)
-    # assert np.std(pvals[:, 0]) == pytest.approx(errs[0], rel=0.3)
+
+    if scale is None:
+        scale = 1.0
+
+    # rely on the fixed seed, but we still get a range of values
+    # for the first parameter. Why is that?
+    #
+    std0 = np.std(pvals[:, 0]) / scale
+    assert std0 > 0.032
+    assert std0 < 0.040
+
+    std1 = np.std(pvals[:, 1]) / scale
+    assert std1 == pytest.approx(0.1328676086353561, rel=1e-3)
+
+    std2 = np.log10(np.std(pvals[:, 2])) - np.log10(scale)
+    assert std2 == pytest.approx(-4.520334184088533, rel=1e-3)
 
 
 @requires_plotting
@@ -1574,13 +1574,16 @@ def test_pha1_get_foo_flux_hist_scales(getfunc, scale, clean_astro_ui, basic_pha
                           (ui.plot_photon_flux, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("scale", [1.0, 2.0])
 def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
-                                   clean_astro_ui, basic_pha1):
+                                   clean_astro_ui, basic_pha1,
+                                   hide_logging, reset_seed):
     """Can we call plot_energy/photon_flux with the scales argument.
 
     Based on test_pha1_get_foo_flux_hist_scales. By using some
     non-standard arguments we can use the get routine (recalc=False)
     to check that the plot did use the scales.
     """
+
+    np.random.seed(38259)
 
     # unlike test_pha1_get-foo_flux_hist_scales, only use a power-law
     # component
@@ -1604,8 +1607,11 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
     assert res.xhi.shape == (21,)
     assert res.y.shape == (21,)
 
-    assert np.std(pvals[:, 0]) == pytest.approx(errs[0], rel=0.1)
-    assert np.std(pvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
+    std0 = np.std(pvals[:, 0]) / scale
+    std1 = np.log10(np.std(pvals[:, 1])) - np.log10(scale)
+
+    assert std0 == pytest.approx(0.06927323647207109)
+    assert std1 == pytest.approx(-4.951357667423949)
 
 
 @requires_plotting
@@ -1613,16 +1619,20 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
 @requires_data
 @requires_xspec
 @pytest.mark.parametrize("plotfunc,getfunc,ratio",
-                         [(ui.plot_energy_flux, ui.get_energy_flux_hist, 1.13),
-                          (ui.plot_photon_flux, ui.get_photon_flux_hist, 1.17)])
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist, 1.141794001904922),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist, 1.1892431836751618)])
 def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
-                                  clean_astro_ui, basic_pha1):
+                                  clean_astro_ui, basic_pha1,
+                                  hide_logging, reset_seed):
     """Can we call plot_energy/photon_flux with the model argument.
 
     Based on test_pha1_get_foo_flux_hist_scales. By using some
     non-standard arguments we can use the get routine (recalc=False)
     to check that the plot did use the scales.
+
     """
+
+    np.random.seed(286728)
 
     # This time we want the absorbing component to make a difference
     # between the two plots.
@@ -1660,8 +1670,11 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
 
     avals = res.modelvals
     assert avals.shape == (1000, 3)
-    assert np.std(avals[:, 1]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(avals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+
+    std1 = np.std(avals[:, 1])
+    std2 = np.log10(np.std(avals[:, 2]))
+    assert std1 == pytest.approx(0.1330728846451271, rel=1e-3)
+    assert std2 == pytest.approx(-4.54079387550295, rel=1e-3)
 
     assert res.y.shape == (20,)
 
@@ -1674,8 +1687,11 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
 
     uvals = res.modelvals
     assert uvals.shape == (1000, 3)
-    assert np.std(uvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(uvals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+
+    std1 = np.std(uvals[:, 1])
+    std2 = np.log10(np.std(uvals[:, 2]))
+    assert std1 == pytest.approx(0.13648119989822335, rel=1e-3)
+    assert std2 == pytest.approx(-4.550978251403581, rel=1e-3)
 
     assert res.y.shape == (22,)
 
@@ -1686,7 +1702,7 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     # rather than calculated here to act as a regression test).
     #
     got = uflux / aflux
-    assert got == pytest.approx(ratio, rel=0.1)
+    assert got == pytest.approx(ratio, rel=1e-3)
 
 
 @requires_plotting
@@ -1697,9 +1713,12 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
                          [(ui.plot_energy_flux, ui.get_energy_flux_hist),
                           (ui.plot_photon_flux, ui.get_photon_flux_hist)])
 def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
-                                  make_data_path, clean_astro_ui):
+                                  make_data_path, clean_astro_ui,
+                                  hide_logging, reset_seed):
     """Can we call plot_energy/photon_flux with multiple datasets.
     """
+
+    np.random.seed(7267239)
 
     ui.load_pha(1, make_data_path('obs1.pi'))
     ui.load_pha(3, make_data_path('obs1.pi'))
@@ -1751,14 +1770,13 @@ def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
     # Let's just check the standard deviation of the gamma parameter,
     # which should be similar for avals and bvals, and larger for cvals.
     #
-    # This is a probabilistic test.
-    #
     s1 = np.std(avals[:, 0])
     s2 = np.std(bvals[:, 0])
     s3 = np.std(cvals[:, 0])
-    assert s1 < 0.2
-    assert s2 < 0.2
-    assert s3 > 0.2
+
+    assert s1 == pytest.approx(0.1774218722298197)
+    assert s2 == pytest.approx(0.1688597911809269)
+    assert s3 == pytest.approx(0.22703663059917598)
 
 
 @requires_plotting
@@ -1766,14 +1784,17 @@ def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
 @requires_data
 @requires_xspec
 @pytest.mark.parametrize("getfunc,ratio",
-                         [(ui.get_energy_flux_hist, 1.13),
-                          (ui.get_photon_flux_hist, 1.17)])
+                         [(ui.get_energy_flux_hist, 1.149863517748443),
+                          (ui.get_photon_flux_hist, 1.1880213994341908)])
 def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
-                                      clean_astro_ui, basic_pha1):
+                                      clean_astro_ui, basic_pha1,
+                                      hide_logging, reset_seed):
     """Can we call get_energy/photon_flux_hist with the model argument.
 
     Very similar to test_pha1_plot_foo_flux_model.
     """
+
+    np.random.seed(2731)
 
     # This time we want the absorbing component to make a difference
     # between the two plots.
@@ -1798,8 +1819,11 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
 
     avals = res.modelvals
     assert avals.shape == (1000, 3)
-    assert np.std(avals[:, 1]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(avals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+
+    std1 = np.std(avals[:, 1])
+    std2 = np.log10(np.std(avals[:, 2]))
+    assert std1 == pytest.approx(0.13478302893162564, rel=1e-3)
+    assert std2 == pytest.approx(-4.518960679037794, rel=1e-3)
 
     assert res.y.shape == (20,)
 
@@ -1811,8 +1835,11 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
 
     uvals = res.modelvals
     assert uvals.shape == (1000, 3)
-    assert np.std(uvals[:, 1]) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(uvals[:, 2]) == pytest.approx(errs[2], rel=0.1)
+
+    std1 = np.std(uvals[:, 1])
+    std2 = np.log10(np.std(uvals[:, 2]))
+    assert std1 == pytest.approx(0.13896034019912706, rel=1e-3)
+    assert std2 == pytest.approx(-4.534244395838702, rel=1e-3)
 
     assert res.y.shape == (22,)
 
@@ -1823,4 +1850,4 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
     # rather than calculated here to act as a regression test).
     #
     got = uflux / aflux
-    assert got == pytest.approx(ratio, rel=0.1)
+    assert got == pytest.approx(ratio, rel=1e-3)

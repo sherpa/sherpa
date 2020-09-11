@@ -832,13 +832,25 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
 @requires_xspec
 @pytest.mark.parametrize("multi", [ui.sample_energy_flux,
                                    ui.sample_photon_flux])
-@pytest.mark.parametrize("correlated", [False, True])
-def test_sample_foo_flux_params(multi, correlated,
-                                make_data_path, clean_astro_ui):
+@pytest.mark.parametrize("correlated,lnh0,gamma0,lampl0,slnh0,sgamma0,slampl0",
+                         [(False,
+                           -1.4327586455259567, 2.023901305737941, -3.708831467739439,
+                           -1.5187931648736508, 0.10547355541516636, -4.643460099308331),
+                          (True, -1.412181958091415, 2.0328696702831586, -3.7063310517413326,
+                           -1.4914185211470155, 0.10389408045222855, -4.637303782755868)])
+def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
+                                slnh0, sgamma0, slampl0,
+                                make_data_path, clean_astro_ui,
+                                hide_logging, reset_seed):
     """Is the parameter sampling in sample_energy/photon_flux sensible?
 
     Do the parameter values used in the sampling make sense?
+
+    It is not obvious why we need a relatively high tolerance
+    (~1e-3) to test the numbers, given the seed is fixed.
     """
+
+    np.random.seed(4276)
 
     # Rather than loop over ids, like earlier tests, just pick a non-default
     # one.
@@ -847,10 +859,6 @@ def test_sample_foo_flux_params(multi, correlated,
     gal, pl = setup_sample(id, make_data_path)
     ui.covar(id)
     errs = ui.get_covar_results()
-
-    nh0 = gal.nh.val
-    gamma0 = pl.gamma.val
-    ampl0 = pl.ampl.val
 
     # The parameter sampling uses the hard-limit boundaries,
     # not the soft-limit boundaries. This can be seen by
@@ -888,13 +896,13 @@ def test_sample_foo_flux_params(multi, correlated,
     # The nH value, as it bumps against the lower bound of 0, has
     # been seen to require a larger tolerance than the other parameters.
     #
-    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
-    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
-    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+    assert np.log10(np.median(nh)) ==  pytest.approx(lnh0, rel=1e-3)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=1e-3)
+    assert np.log10(np.median(ampl)) == pytest.approx(lampl0, rel=1e-3)
 
-    assert np.std(nh) == pytest.approx(errs.parmaxes[0], rel=0.2)
-    assert np.std(gamma) == pytest.approx(errs.parmaxes[1], rel=0.1)
-    assert np.std(ampl) == pytest.approx(errs.parmaxes[2], rel=0.1)
+    assert np.log10(np.std(nh)) == pytest.approx(slnh0, rel=1e-3)
+    assert np.std(gamma) == pytest.approx(sgamma0, rel=1e-3)
+    assert np.log10(np.std(ampl)) == pytest.approx(slampl0, rel=1e-3)
 
     # Check against the hard limits, although this is not particularly
     # informative since the hard limits for these parameters are
@@ -912,11 +920,13 @@ def test_sample_foo_flux_params(multi, correlated,
     # A probabilistic check that the gamma range lies outside
     # the soft limits. It is possible for this check to fail
     # because of the RNG, but with ~45 expected values outside
-    # the limits this is unlikely.
+    # the limits this is unlikely. Now we have a set seed we can
+    # check both are triggered.
     #
     gmin = gamma.min() < pl.gamma.min
     gmax = gamma.max() > pl.gamma.max
-    assert gmin or gmax
+    assert gmin
+    assert gmax
 
     # a simple check on the flux, it should be > 0
     #
@@ -940,11 +950,23 @@ COVMAT = np.asarray([[1.28e-3, 3.09e-3, 7.41e-7],
 @requires_xspec
 @pytest.mark.parametrize("multi", [ui.sample_energy_flux,
                                    ui.sample_photon_flux])
-@pytest.mark.parametrize("correlated,scales", [(False, COVMAT),
-                                               (False, np.sqrt(COVMAT.diagonal())),
-                                               (True, COVMAT)])
+@pytest.mark.parametrize("correlated,scales,lnh0,gamma0,lampl0,slnh0,sgamma0,slampl0",
+                         [(False, COVMAT,
+                           -1.3910107005746297, 2.02960216422235, -3.7055883565005048,
+                           -1.5045463684643257, 0.10508987949127284, -4.63785707737552),
+                          # since np.sqrt(COVMAT.diagonal()) should == COVMAT
+                          # this is a bit pointess
+                          (False, np.sqrt(COVMAT.diagonal()),
+                           -1.3910107005746297, 2.02960216422235, -3.7055883565005048,
+                           -1.5045463684643257, 0.10508987949127284, -4.63785707737552),
+                          (True, COVMAT,
+                           -1.4143474006245673, 2.0232833551455367, -3.707730785910153,
+                           -1.5014997538936377, 0.10428938426161602, -4.6312159319100346)])
 def test_sample_foo_flux_scales(multi, correlated, scales,
-                                make_data_path, clean_astro_ui):
+                                lnh0, gamma0, lampl0,
+                                slnh0, sgamma0, slampl0,
+                                make_data_path, clean_astro_ui,
+                                hide_logging, reset_seed):
     """What happens when we specify the scale parameters?
 
     Test out sending in the errors to the sample_*_flux routines.
@@ -953,12 +975,10 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     The tests are based on those in test_sample_foo_flux_params
     """
 
+    np.random.seed(888)
+
     id = 2
     gal, pl = setup_sample(id, make_data_path)
-
-    nh0 = gal.nh.val
-    gamma0 = pl.gamma.val
-    ampl0 = pl.ampl.val
 
     pl.gamma.min = 1.81
     pl.gamma.max = 2.25
@@ -972,18 +992,22 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     gamma = ans[:, 2]
     ampl = ans[:, 3]
 
-    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
-    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
-    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+    assert np.log10(np.median(nh)) == pytest.approx(lnh0, rel=1e-3)
+    assert np.median(gamma) == pytest.approx(gamma0, rel=1e-3)
+    assert np.log10(np.median(ampl)) == pytest.approx(lampl0, rel=1e-3)
 
     if scales.ndim == 2:
         errs = np.sqrt(scales.diagonal())
     else:
         errs = scales
 
-    assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
-    assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
+    snh = np.std(nh)
+    sgamma = np.std(gamma)
+    sampl = np.std(ampl)
+
+    assert np.log10(snh) == pytest.approx(slnh0, rel=1e-3)
+    assert sgamma == pytest.approx(sgamma0, rel=1e-3)
+    assert np.log10(sampl) == pytest.approx(slampl0, rel=1e-3)
 
     assert nh.min() >= gal.nh.hard_min
     assert nh.max() <= gal.nh.hard_max
@@ -996,7 +1020,9 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
 
     gmin = gamma.min() < pl.gamma.min
     gmax = gamma.max() > pl.gamma.max
-    assert gmin or gmax
+    # assert gmin or gmax
+    assert gmin
+    assert gmax
 
     assert ans[:, 0].min() > 0
 
@@ -1006,7 +1032,8 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
 @requires_xspec
 @pytest.mark.parametrize("multi", [ui.sample_energy_flux,
                                    ui.sample_photon_flux])
-def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui,
+                                        hide_logging, reset_seed):
     """Ensure that one of the examples works as expected.
 
     It is a simplified version of test_sample_foo_flux_scales
@@ -1014,12 +1041,10 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
     of the covariance output.
     """
 
+    np.random.seed(3975529)
+
     id = None
     gal, pl = setup_sample(id, make_data_path)
-
-    nh0 = gal.nh.val
-    gamma0 = pl.gamma.val
-    ampl0 = pl.ampl.val
 
     ui.covar()
     scales = ui.get_covar_results().parmaxes
@@ -1033,15 +1058,13 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
     gamma = ans[:, 2]
     ampl = ans[:, 3]
 
-    assert np.median(nh) == pytest.approx(nh0, rel=0.2)
-    assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
-    assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
+    assert np.log10(np.median(nh)) == pytest.approx(-1.434730948849745, rel=1e-3)
+    assert np.median(gamma) == pytest.approx(2.032662859390957, rel=1e-3)
+    assert np.log10(np.median(ampl)) == pytest.approx(-3.707907209935886, rel=1e-3)
 
-    errs = scales
-
-    assert np.std(nh) == pytest.approx(errs[0], rel=0.2)
-    assert np.std(gamma) == pytest.approx(errs[1], rel=0.1)
-    assert np.std(ampl) == pytest.approx(errs[2], rel=0.1)
+    assert np.log10(np.std(nh)) == pytest.approx(-1.5118443869902682, rel=1e-3)
+    assert np.std(gamma) == pytest.approx(0.10622782336666241, rel=1e-3)
+    assert np.log10(np.std(ampl)) == pytest.approx(-4.620006818656268, rel=1e-3)
 
     assert ans[:, 0].min() > 0
 
@@ -1049,11 +1072,12 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui):
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("multi,fac", [(ui.sample_energy_flux, 1.1307),
-                                       (ui.sample_photon_flux, 1.1751)])
+@pytest.mark.parametrize("multi,fac", [(ui.sample_energy_flux, 1.1435100396354445),
+                                       (ui.sample_photon_flux, 1.1901038918815168)])
 @pytest.mark.parametrize("correlated", [False, True])
 def test_sample_foo_flux_component(multi, fac, correlated,
-                                   make_data_path, clean_astro_ui):
+                                   make_data_path, clean_astro_ui,
+                                   hide_logging, reset_seed):
     """Can we sample just a component?
 
     The idea is to check that the flux for the unabsorbed
@@ -1072,6 +1096,8 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     so the same scale factor can be used (this is based on the
     best-fit location, so shouldn't depend on the errors).
     """
+
+    np.random.seed(39401)
 
     id = 'xx'
     gal, pl = setup_sample(id, make_data_path)
@@ -1122,7 +1148,7 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     # calculated at the best-fit location)
     #
     ratio = np.median(flux_unabsorbed) / flux_abs
-    assert ratio == pytest.approx(fac, rel=0.1)
+    assert ratio == pytest.approx(fac, rel=0.004)
 
     # The distributions of the two sets of parameters should be
     # similar, since they are drawn from the same distributions.
@@ -1134,6 +1160,9 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     gamma = absorbed[:, 2]
     ampl = absorbed[:, 3]
 
+    # We could convert this to a specific check now we have
+    # a fixed seed.
+    #
     assert np.median(nh) == pytest.approx(nh0, rel=0.2)
     assert np.median(gamma) == pytest.approx(gamma0, rel=0.1)
     assert np.median(ampl) == pytest.approx(ampl0, rel=0.1)
@@ -1161,7 +1190,8 @@ def test_sample_foo_flux_component(multi, fac, correlated,
                           (False, COVMAT),
                           (True, COVMAT)])
 def test_sample_foo_flux_component_scales(method, correlated, scales3,
-                                          make_data_path, clean_astro_ui):
+                                          make_data_path, clean_astro_ui,
+                                          hide_logging, reset_seed):
     """Can we sample just a component and send in errors?
 
     Since the full model (gal * pl) has 3 free parameters
@@ -1175,6 +1205,8 @@ def test_sample_foo_flux_component_scales(method, correlated, scales3,
        - correlated=True   scales=2D covmat
 
     """
+
+    np.random.seed(283491)
 
     id = 2
     cpts = setup_sample(id, make_data_path)
@@ -1199,6 +1231,8 @@ def test_sample_foo_flux_component_scales(method, correlated, scales3,
     #
     # Compare the medians to the best-fit values and the
     # standard deviations to the covariance estimates.
+    #
+    # Now we have a fixed seed we could check the actual values
     #
     ans = np.asarray(scales3)
     if ans.ndim == 2:
@@ -1303,11 +1337,15 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize("method,fluxval",
-                         [(ui.sample_energy_flux, 6e-13),
-                          (ui.sample_photon_flux, 1e-4)])
+@pytest.mark.parametrize("method,fluxval1,fluxval2",
+                         [(ui.sample_energy_flux,
+                           8.416796789450763e-13, 1.5474830654516002e-13),
+                          (ui.sample_photon_flux,
+                           0.00034170234129722176, 3.3578827014096626e-05)])
 @pytest.mark.parametrize("id", [None, "foo"])
-def test_sample_foo_flux_bkg(method, fluxval, id, make_data_path, clean_astro_ui):
+def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
+                             id, make_data_path, clean_astro_ui,
+                             hide_logging, reset_seed):
     """Basic test when calculating flux with a background model.
 
     fluxval is a value used to check that the median values for the
@@ -1318,6 +1356,8 @@ def test_sample_foo_flux_bkg(method, fluxval, id, make_data_path, clean_astro_ui
     ~4e-4 and ~3e-5 fluxes.
 
     """
+
+    np.random.seed(22843)
 
     infile = make_data_path('3c273.pi')
     if id is None:
@@ -1372,26 +1412,25 @@ def test_sample_foo_flux_bkg(method, fluxval, id, make_data_path, clean_astro_ui
 
     # Compare the median values to the input values.
     #
-    amid = np.median(aflux[:, 0])
-    bmid = np.median(bflux[:, 0])
-    assert amid > fluxval
-    assert bmid < fluxval
+    assert np.log10(np.median(aflux[:, 0])) == pytest.approx(np.log10(fluxval1), rel=1e-4)
+    assert np.log10(np.median(bflux[:, 0])) == pytest.approx(np.log10(fluxval2), rel=1e-4)
 
     # check the gamma values: source~2, bgnd~0.7
     #
-    amid = np.median(aflux[:, 2])
-    bmid = np.median(bflux[:, 4])
-    assert amid > 1.5
-    assert bmid < 1.5
+    assert np.median(aflux[:, 2]) == pytest.approx(1.9575001493165511, rel=1e-4)
+    assert np.median(bflux[:, 4]) == pytest.approx(0.6022031224500035, rel=1e-4)
 
 
 @requires_data
 @requires_fits
 @requires_xspec
-def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
+def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
+                               hide_logging, reset_seed):
     """Basic test when calculating flux with multiple datasets
     and, for completeness, fitting the background.
     """
+
+    np.random.seed(8290573)
 
     # use xswabs as it is simple and unlikely to change
     # (rather than one of the newwe absorption models)
@@ -1462,26 +1501,27 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
 
     # Compare the median and std dev of the gamma parameter (as of order 1)
     # for both the source and background measurements, as they should be
-    # similar. The tolerance for the check is quite large, which reduces
-    # the use of this test.
+    # similar.
     #
     y1 = np.median(s1[:, 1])
     y3 = np.median(s3[:, 1])
-    assert y1 == pytest.approx(y3, rel=0.1), 'source gamma: median'
-    assert y3 == pytest.approx(res.parvals[0], rel=0.1)
+    assert y1 == pytest.approx(1.7798978430394854), 'source gamma: median'
+    assert y3 == pytest.approx(1.83540454021743)
 
     y1 = np.median(b1[:, 3])
     y3 = np.median(b3[:, 3])
-    assert y1 == pytest.approx(y3, rel=0.1), 'background gamma: median'
-    assert y3 == pytest.approx(res.parvals[2], rel=0.1)
+    assert y1 == pytest.approx(1.388683605319035), 'background gamma: median'
+    assert y3 == pytest.approx(1.3891467682303402)
 
     y1 = np.std(s1[:, 1])
     y3 = np.std(s3[:, 1])
-    assert y1 == pytest.approx(y3, rel=0.2), 'source gamma: std'
+    assert y1 == pytest.approx(0.35157485056777504), 'source gamma: std'
+    assert y3 == pytest.approx(0.370558381331603)
 
     y1 = np.std(b1[:, 3])
     y3 = np.std(b3[:, 3])
-    assert y1 == pytest.approx(y3, rel=0.2), 'background gamma: std'
+    assert y1 == pytest.approx(0.1402803370971452), 'background gamma: std'
+    assert y3 == pytest.approx(0.14460146969815185)
 
     # If we compare to a single run we should see larger errors
     # for the single-run case.
@@ -1494,11 +1534,9 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui):
     assert s4.shape == (niter, 5)
     assert b4.shape == (niter, 5)
 
-    # These checks are not very informative
+    # The point is that y4 > y3 in both these (compare to previously)
     y4 = np.std(s4[:, 1])
-    y3 = np.std(s3[:, 1])
-    assert y4 > y3, 'source gamma: multi to one'
+    assert y4 == pytest.approx(0.5597874155740422)
 
     y4 = np.std(b4[:, 3])
-    y3 = np.std(b3[:, 3])
-    assert y4 > y3, 'background gamma: multi to one'
+    assert y4 == pytest.approx(0.23594231624955062)
