@@ -642,9 +642,6 @@ def test_pha1_eval_vector_show(clean_astro_ui):
 
     assert ui.list_model_components() == ['bmdl1', 'smdl']
 
-    def r(sval, bval):
-        return sval / bval
-
     bmdl = ui.get_bkg_model()
     assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
 
@@ -652,14 +649,100 @@ def test_pha1_eval_vector_show(clean_astro_ui):
 
     smdl = ui.get_model()
 
-    array = r(*exps) * r(*bscales) * r(*ascales)
     src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (apply_arf((100.0 * box1d.bmdl1))'
-    src += ' * {}))'.format(array)
+    src += ' + (apply_arf((100.0 * box1d.bmdl1)) * float64[19]))'
 
     assert smdl.name == src
 
     assert ui.list_model_components() == ['bmdl1', 'smdl']
+
+    # deconstruct the model to extract the components of the scale factor
+    #
+    scale = smdl.parts[1].parts[1]
+    assert isinstance(scale, ArithmeticConstantModel)
+
+    def r(sval, bval):
+        return sval / bval
+
+    expected = r(*exps) * r(*bscales) * r(*ascales)
+    # expected = r(*bscales)
+    assert scale.val == pytest.approx(expected)
+
+
+def test_pha1_eval_vector_show_two(clean_astro_ui):
+    """Check we can show the source/bgnd models with vector scaling
+
+    test_pha1_eval_vector_show but with two background
+    components with differents scaling (but the same model).
+
+    """
+
+    scale1 = np.ones(19)
+    scale2 = np.ones(19)
+    scale1[9:15] = 0.8
+    scale2[3:12] = 0.7
+
+    exps = (100.0, 1000.0, 750.0)
+    bscales = (0.01, 0.05 * scale1, 0.02 * scale2)
+    ascales = (0.8, 0.4, 0.2)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+    ui.set_bkg_source(bmdl1, bkg_id=2)
+
+    assert ui.list_model_components() == ['bmdl1', 'smdl']
+
+    bmdl = ui.get_bkg_model()
+    assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+
+    bmdl = ui.get_bkg_model(bkg_id=2)
+    assert bmdl.name == 'apply_arf((750.0 * box1d.bmdl1))'
+
+    assert ui.list_model_components() == ['bmdl1', 'smdl']
+
+    with pytest.raises(TypeError) as exc:
+        smdl = ui.get_model()
+
+    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+
+
+def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
+    """Check we can show the source/bgnd models with vector scaling
+
+    test_pha1_eval_vector_show_two with different background
+    models.
+
+    """
+
+    scale1 = np.ones(19)
+    scale2 = np.ones(19)
+    scale1[9:15] = 0.8
+    scale2[3:12] = 0.7
+
+    exps = (100.0, 1000.0, 750.0)
+    bscales = (0.01, 0.05 * scale1, 0.02 * scale2)
+    ascales = (0.8, 0.4, 0.2)
+    ui.set_data('foo', setup_pha1(exps, bscales, ascales))
+
+    ui.set_source('foo', ui.box1d.smdl)
+    ui.set_bkg_source('foo', ui.box1d.bmdl1)
+    ui.set_bkg_source('foo', ui.const1d.bmdl2, bkg_id=2)
+
+    assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
+
+    bmdl = ui.get_bkg_model('foo')
+    assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+
+    bmdl = ui.get_bkg_model('foo', bkg_id=2)
+    assert bmdl.name == 'apply_arf((750.0 * const1d.bmdl2))'
+
+    assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
+
+    with pytest.raises(TypeError) as exc:
+        smdl = ui.get_model('foo')
+
+    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
 
 
 # Fails from ui.get_model_plot raising
@@ -720,7 +803,7 @@ def test_pha1_eval_vector(clean_astro_ui):
     assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1)
 
-    # Check the evaluation of the source (no instrument)
+    # Check the evaluation of the source (with instrument)
     #
     splot = ui.get_model_plot()
     bplot1 = ui.get_bkg_model_plot()
@@ -745,26 +828,149 @@ def test_pha1_eval_vector(clean_astro_ui):
 
     sy += r(*exps) * r(*bscales) * r(*ascales) * (100 / 90) * by1
 
+    # Just check a problem I encountered during development
+    ndim = splot.y.ndim
+    assert ndim == 1
+
     assert splot.y == pytest.approx(sy)
     assert bplot1.y == pytest.approx(by1)
 
 
-@pytest.mark.parametrize('dofilter',
-                         [False, True])
-def test_pha1_eval_vector_stat(dofilter, clean_astro_ui):
+def test_pha1_eval_vector_two(clean_astro_ui):
+    """Check we can evaluate the source/bgnd values and vector scaling
+
+    test_pha1_eval_vector but with two background components.
+
+    """
+
+    scale1 = np.ones(19)
+    scale2 = np.ones(19)
+    scale1[9:15] = 0.8
+    scale2[3:12] = 0.7
+
+    exps = (100.0, 1000.0, 750.0)
+    bscales = (0.01, 0.05 * scale1, 0.02 * scale2)
+    ascales = (0.8, 0.4, 0.2)
+    ui.set_data(setup_pha1(exps, bscales, ascales))
+
+    ui.set_source(ui.box1d.smdl)
+    ui.set_bkg_source(ui.box1d.bmdl1)
+    ui.set_bkg_source(bmdl1, bkg_id=2)
+
+    smdl.ampl.max = 10
+    smdl.ampl = 10
+    smdl.xlow = 0.95
+    smdl.xhi = 1.59
+
+    bmdl1.ampl.max = 2
+    bmdl1.ampl = 2
+    bmdl1.xlow = 0.74
+    bmdl1.xhi = 1.71
+
+    # Check the evaluation of the source (no instrument)
+    #
+    splot = ui.get_source_plot()
+    bplot1 = ui.get_bkg_source_plot()
+
+    assert splot.title == 'Source Model of tst0'
+    assert bplot1.title == 'Source Model of tst1'
+
+    # check the model evaluates correctly
+    #
+    # source: bins 3-9
+    # bgnd 1:      1-11
+    #
+    sy = np.zeros(19)
+    sy[3] = 5
+    sy[4:9] = 10
+    sy[9] = 9
+
+    by1 = np.zeros(19)
+    by1[1] = 1.2
+    by1[2:11] = 2
+    by1[11] = 0.2
+
+    assert splot.y == pytest.approx(sy)
+    assert bplot1.y == pytest.approx(by1)
+
+    # check the second background component
+    # (have to do after the first since the same object is returned)
+    #
+    bplot2 = ui.get_bkg_source_plot(bkg_id=2)
+
+    assert bplot2.title == 'Source Model of tst2'
+
+    # As the model is plotted as a rate it has the same values as
+    # bkg_id=1.
+    #
+    assert bplot2.y == pytest.approx(by1)
+
+    # Check the evaluation of the source (with instrument)
+    #
+    with pytest.raises(TypeError) as exc:
+        splot = ui.get_model_plot()
+
+    assert str(exc.value) == 'only size-1 arrays can be converted to Python scalars'
+
+    bplot1 = ui.get_bkg_model_plot()
+
+    # assert splot.title == 'Model'
+    assert bplot1.title == 'Model'
+
+    # check the model evaluates correctly
+    # - backgrond is just multiplied by the arf
+    # - source needs to include the scaled background
+    #
+    sy *= 100
+
+    # need to correct by exposure time, backscal,
+    # area scaling, and to correct for the ARF used to
+    # calculate by, and then divide by the number of
+    # backgrounds.
+    #
+    def r1(sval, bval1, bval2):
+        return sval / bval1
+
+    def r2(sval, bval1, bval2):
+        return sval / bval2
+
+    sy += r1(*exps) * r1(*bscales) * r1(*ascales) * 100 * by1 / 2
+    sy += r2(*exps) * r2(*bscales) * r2(*ascales) * 100 * by1 / 2
+
+    # sy += r1(*bscales) * 100 * by1 / 2
+    # sy += r2(*bscales) * 100 * by1 / 2
+
+    # assert splot.y == pytest.approx(sy)
+    assert bplot1.y == pytest.approx(by1 * 90)
+
+    bplot2 = ui.get_bkg_model_plot(bkg_id=2)
+
+    assert bplot2.title == 'Model'
+
+    assert bplot2.y == pytest.approx(by1 * 80)
+
+
+SCALING2 = np.ones(19)
+SCALING2[9:15] = 0.8
+
+
+@pytest.mark.parametrize('exps,bscales,ascales,dofilter',
+                         [((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), False),
+                          ((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), True),
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), False),
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True)
+                         ])
+def test_pha1_eval_vector_stat(exps, bscales, ascales,
+                               dofilter, clean_astro_ui):
     """Compare statistic, with and without filtering.
 
     """
 
-    scale = np.ones(19)
-    scale[9:15] = 0.8
-
-    exps = (100.0, 1000.0)
-    bscales = (0.01, 0.05 * scale)
-    ascales = (0.8, 0.4)
     ui.set_data(setup_pha1(exps, bscales, ascales))
 
-    # change counts to reduce the statistic difference
+    # change counts to reduce the statistic difference (but doesn't
+    # make much difference with some cases, thanks to the made-up
+    # nature of the test data).
     #
     y = np.zeros(19, dtype=np.int16)
     y[1] = 4
@@ -783,7 +989,10 @@ def test_pha1_eval_vector_stat(dofilter, clean_astro_ui):
     ui.set_dep(y * 40, bkg_id=1)
 
     ui.set_source(ui.box1d.smdl)
-    ui.set_bkg_source(ui.box1d.bmdl1)
+
+    bmdl1 = ui.create_model_component('box1d', 'bmdl1')
+    for i, _ in enumerate(exps[1:], 1):
+        ui.set_bkg_source(bmdl1, bkg_id=i)
 
     smdl.ampl.max = 10
     smdl.ampl = 10
