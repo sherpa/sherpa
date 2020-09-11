@@ -725,7 +725,21 @@ def test_pileup_model(make_data_path, clean_astro_ui):
     # Check pileup is not in get_model
     #
     mlines = str(ui.get_model('pileup')).split('\n')
-    assert mlines[0] == 'apply_rmf(apply_arf((38564.608926889 * (xswabs.amdl * powlaw1d.pl))))'
+
+    # Numeric display depends on Python and/or NumPy
+    # for the exposure time. I should have set the exposure
+    # time to an integer value.
+    #
+    # assert mlines[0] == 'apply_rmf(apply_arf((38564.608926889 * (xswabs.amdl * powlaw1d.pl))))'
+
+    toks = mlines[0].split()
+    assert len(toks) == 5
+    assert toks[0].startswith('apply_rmf(apply_arf((38564.608')
+    assert toks[1] == '*'
+    assert toks[2] == '(xswabs.amdl'
+    assert toks[3] == '*'
+    assert toks[4] == 'powlaw1d.pl))))'
+
     assert mlines[4].strip() == 'pl.gamma     thawed         1.97          -10           10'
 
     stat2 = ui.calc_stat('pileup')
