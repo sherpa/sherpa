@@ -1580,3 +1580,45 @@ def test_channel_changing_limits(make_data_path):
     pha.group()
     assert pha.get_filter() == expected1
     assert pha.get_filter(group=False) == expected2
+
+
+def test_get_background_scale_is_none():
+    """We get None when there's no background"""
+
+    d = DataPHA('tmp', np.arange(3), np.arange(3))
+    assert d.get_background_scale() is None
+
+
+@pytest.mark.parametrize("is_bkg,option,expected",
+                         [(True, 'exposure', 80.0),
+                          (False, 'exposure', 0.002),
+                          (True, 'backscal', 0.04),
+                          (False, 'backscal', 2.0),
+                          (True, 'areascal', 0.1),
+                          (False, 'areascal', 0.25)
+                          ])
+def test_get_background_scale_missing_option(is_bkg, option, expected):
+    """Check we can calculate the scaling when an option isn't present.
+
+    We calculate ratio(EXPOSURE) * ratio(BACKSCAL) * ratio(AREASCAL)
+    and allow values to not be present (the default to 1).
+
+    """
+
+    d = DataPHA('tmp', np.arange(3), np.arange(3))
+    b = DataPHA('tmp', np.arange(3), np.arange(3))
+    d.set_background(b)
+
+    d.exposure = 100.0
+    d.backscal = 0.1
+    d.areascal = 0.8
+
+    b.exposure = 400.0
+    b.backscal = 0.2
+    b.areascal = 0.5
+
+    obj = b if is_bkg else d
+    setattr(obj, option, None)
+
+    scale = d.get_background_scale()
+    assert scale == pytest.approx(expected)
