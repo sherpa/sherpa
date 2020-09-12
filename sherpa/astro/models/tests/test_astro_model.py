@@ -69,7 +69,7 @@ def test_create_and_evaluate():
             assert out.dtype.type is SherpaFloat
             assert out.shape == (4, )
 
-    assert count == 19
+    assert count == 20
 
 
 @pytest.mark.parametrize("test_input, expected", [
@@ -91,7 +91,38 @@ def test_voigt():
     voigt.fwhm_l = 0.3
     voigt_result = voigt(x)
 
+    # it's a symmetric model with this grid
     expected = np.asarray([0.07779156, 0.13213921, 0.27123415, 0.67357158, 1.35326402])
     expected = np.hstack((expected, expected[::-1]))
 
     assert voigt_result == pytest.approx(expected)
+
+
+def test_pseudovoigt():
+    """Regression test"""
+
+    x = np.linspace(-0.8, 0.8, 10)
+    pvoigt = models.PseudoVoigt1D()
+    pvoigt.fwhm = 0.3
+    pvoigt_result = pvoigt(x)
+
+    expected = np.asarray([0.03603509, 0.05828602, 0.11206344, 0.43013659, 2.0127256])
+    expected = np.hstack((expected, expected[::-1]))
+
+    assert pvoigt_result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('cls', [models.Voigt1D, models.PseudoVoigt1D])
+def test_get_center(cls):
+
+    model = cls()
+    model.pos = 12.1
+    assert model.get_center() == (12.1, )
+
+
+@pytest.mark.parametrize('cls', [models.Voigt1D, models.PseudoVoigt1D])
+def test_set_center(cls):
+
+    model = cls()
+    model.set_center(12.1)
+    assert model.pos.val == 12.1

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,10 +22,16 @@ Should these tests be moved to test_astro_session.py?
 
 This is almost a copy of sherpa/ui/tests/test_ui_unit.py, but
 some of the answers are different. Is there a better way than
-this duplication?
+this duplication? Yes, we can parametrize by Session class
+and run on both, to avoid duplication.
 """
 
+import numpy as np
+
+import pytest
+
 from sherpa.astro import ui
+from sherpa.utils import poisson_noise
 
 
 # This is part of #397
@@ -65,3 +71,51 @@ def test_all_has_no_repeated_elements():
     n1 = len(ui.__all__)
     n2 = len(set(ui.__all__))
     assert n1 == n2
+
+
+def setup_data1d_fit():
+    """Create a 1D dataset for fitting a gaussian-like profile.
+
+    This sets the random seed to a fixed value, so use the
+    reset_seed fixture.
+    """
+
+    x = np.linspace(2300, 2400, 51)
+
+    cpt = ui.voigt1d('cpt')
+    cpt.pos = 2345
+    cpt.fwhm_g = 20
+    cpt.fwhm_l = 15
+    cpt.ampl = 480
+
+    np.random.seed(72383)
+    y = poisson_noise(cpt(x))
+
+    ui.load_arrays(1, x, y, ui.Data1D)
+    ui.set_stat('leastsq')
+    ui.set_method('simplex')
+    ui.delete_model_component('cpt')
+
+
+@pytest.mark.parametrize("model,stat,pars",
+                         [(ui.gauss1d, 168.05369410194248,
+                           [33.39014224934166, 2343.993186258643, 10.837604379839043]),
+                          (ui.normgauss1d, 168.05369410194248,
+                           [33.39014225250392, 2343.9931862492167, 385.19777742500384]),
+                          (ui.lorentz1d, 175.07991080617057,
+                           [27.355631135552674, 2342.94368338116, 504.57588886948827]),
+                          (ui.pseudovoigt1d, 163.17653966109435,
+                           [0.5253350907054826, 31.35910472670331, 2343.6786455810307, 440.7219934649222]),
+                          (ui.voigt1d, 162.4321009471359,
+                           [24.290859063445527, 12.35931466539915, 2343.751436403753, 437.0342780289447])
+                         ])
+def test_fit_profile(model, stat, pars, reset_seed, clean_astro_ui):
+    """Regression test simple 1D fits"""
+
+    setup_data1d_fit()
+    ui.set_source(model('mdl'))
+    ui.guess()
+    ui.fit()
+
+    assert ui.calc_stat() == pytest.approx(stat)
+    assert np.asarray(mdl.thawedpars) == pytest.approx(np.asarray(pars))

@@ -29,10 +29,11 @@ from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
     guess_amplitude_at_ref, guess_fwhm, guess_position, \
     guess_radius, guess_reference, lgam, param_apply_limits
 
+import sherpa.models._modelfcts
 from . import _modelfcts
 
 __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
-           'LineBroad', 'Lorentz1D', 'Voigt1D', 'NormBeta1D', 'Schechter',
+           'LineBroad', 'Lorentz1D', 'Voigt1D', 'PseudoVoigt1D', 'NormBeta1D', 'Schechter',
            'Beta2D', 'DeVaucouleurs2D', 'HubbleReynolds', 'Lorentz2D',
            'JDPileup', 'MultiResponseSumModel', 'Sersic2D', 'Disk2D',
            'Shell2D')
@@ -727,6 +728,100 @@ class Voigt1D(RegriddableModel1D):
     def calc(self, *args, **kwargs):
         kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.wofz(*args, **kwargs)
+
+
+class PseudoVoigt1D(RegriddableModel1D):
+    """A weighted sum of a Gaussian and Lorentzian distribution.
+
+    Unlike the Voigt1D model, which is a convolution between a
+    Gaussian and Lorentz distribution, this approximates the
+    Voigt profile with a linear combination of the two profiles [1]_.
+    It is often used in spectroscopy.
+
+    .. versionadded:: 4.12.2
+
+    Attributes
+    ----------
+    frac
+        The fraction of the model composed of the Gaussian profile
+        (0 to 1).
+    fwhm
+        The full-width half-maximum (FWHM) of each component.
+    pos
+        The center of the profile.
+    ampl
+        The amplitude of the profile.
+
+    See Also
+    --------
+    NormGauss1D, Lorentz1D, Voigt1D
+
+    Notes
+    -----
+    The model can be written as::
+
+       f(x) = frac * g(x) + (1 - frac) * l(x)
+
+    where g(x) and l(x) are NormGauss1D and Lorentz1D models with
+    the fwhm, pos, and ampl values taken from this model.
+
+    References
+    ----------
+
+    .. [1] https://en.wikipedia.org/wiki/Voigt_profile#Pseudo-Voigt_approximation
+
+    """
+
+    def __init__(self, name='pseudovoigt1d'):
+        self.frac = Parameter(name, 'frac', 0.5, 0, 1, hard_min=0, hard_max=1)
+        self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
+        self.pos = Parameter(name, 'pos', 0.0)
+        self.ampl  = Parameter(name, 'ampl', 1.0)
+        ArithmeticModel.__init__(self, name,
+                                 (self.frac, self.fwhm, self.pos, self.ampl))
+        return
+
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
+
+    def guess(self, dep, *args, **kwargs):
+        """Guess the parameter values.
+
+        The frac parameter is set to 0.5.
+        """
+
+        self.frac.set(0.5, min=0, max=1)
+
+        pos = get_position(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
+        param_apply_limits(pos, self.pos, **kwargs)
+        param_apply_limits(fwhm, self.fwhm, **kwargs)
+
+        # See Voigt1D for the amplitude guess
+        # amplitude from guess_amplitude. although I've
+        # added another factor of 1/2
+        #
+        norm = guess_amplitude(dep, *args)
+        aprime = norm['val'] * fwhm['val'] * numpy.pi / 4.
+        ampl = {'val': aprime,
+                'min': aprime / _guess_ampl_scale,
+                'max': aprime * _guess_ampl_scale}
+        param_apply_limits(ampl, self.ampl, **kwargs)
+
+    @modelCacher1d
+    def calc(self, *args, **kwargs):
+        kwargs['integrate'] = bool_cast(self.integrate)
+
+        pars = args[0]
+        xargs = args[1:]
+
+        frac = pars[0]
+        gmdl = sherpa.models._modelfcts.ngauss1d(pars[1:], *xargs, **kwargs)
+        lmdl = _modelfcts.lorentz1d(pars[1:], *xargs, **kwargs)
+        return frac * gmdl + (1 - frac) * lmdl
 
 
 class NormBeta1D(RegriddableModel1D):
