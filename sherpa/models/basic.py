@@ -40,89 +40,12 @@ warning = logging.getLogger(__name__).warning
 __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Gauss1D', 'Log', 'Log10', 'LogParabola', 'NormGauss1D', 'Poisson',
            'Polynom1D', 'PowLaw1D', 'Scale1D', 'Sin', 'Sqrt', 'StepHi1D',
-           'StepLo1D', 'Tan', 'Voigt1D',
+           'StepLo1D', 'Tan',
            'Box2D', 'Const2D', 'Delta2D', 'Gauss2D', 'SigmaGauss2D',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
 
 DBL_EPSILON = numpy.finfo(numpy.float).eps
-
-
-class Voigt1D(RegriddableModel1D):
-    """One dimensional Voigt profile.
-
-    The Voigt profile is a convolution between a Gaussian distribution
-    a Cauchy-Lorentz distribution [1]_, [2]_.
-
-    .. versionadded:: 4.12.2
-
-    Attributes
-    ----------
-    fwhm_g
-        The full-width half-maximum (FWHM) of the Gaussian distribution.
-    fwhm_l
-        The full-width half-maximum of the Lorentzian distribution.
-    pos
-        The center of the profile.
-    ampl
-        The amplitude of the profile.
-
-    See Also
-    --------
-    Gauss1D
-
-    Notes
-    -----
-    Following [2]_, the Voigt profile can be written as::
-
-        f(x) = ampl * Re[w(z)] / (sqrt(2 * PI) * sigma)
-
-    where Re[w(z)] is the real part of the Faddeeva function [3]_
-    and sigma and gamma are parameters of the Gaussian and
-    Lorentzian model respectively::
-
-        z = (x - pos + i * gamma) / (sqrt(2) * sigma)
-        sigma = fhwm_g / sqrt(8 * log(2))
-        gamma = fwhm_l / 2
-
-    One common simplification is to tie the sigma and gamma
-    parameters together, which can be achieved by linking the
-    fwhm_l parameter to fwhm_g with the following equation::
-
-        fwhm_l = fwhm_g / sqrt(2 * log(2))
-
-    References
-    ----------
-
-    .. [1] http://publikationen.badw.de/de/003395768
-
-    .. [2] https://en.wikipedia.org/wiki/Voigt_profile
-
-    .. [3] https://en.wikipedia.org/wiki/Faddeeva_function
-
-    Examples
-    --------
-    Force the widths of the Gaussian and Lorentzian components
-    to be the same:
-
-    >>> mdl = Voigt1D()
-    >>> mdl.fwhm_l = mdl.fwhm_g / np.sqrt(2 * np.log(2))
-
-    """
-
-    def __init__(self, name='voigt1d'):
-        self.fwhm_g = Parameter(name, 'fwhm_g', 10, tinyval, hard_min=tinyval)
-        self.fwhm_l = Parameter(name, 'fwhm_l', 10, 0, hard_min=0)
-        self.pos = Parameter(name, 'pos', 0.0)
-        self.ampl  = Parameter(name, 'ampl', 1.0)
-        ArithmeticModel.__init__(self, name,
-                                 (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
-        return
-
-    @modelCacher1d
-    def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
-        return _modelfcts.wofz(*args, **kwargs)
 
 
 class Box1D(RegriddableModel1D):

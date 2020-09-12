@@ -1,4 +1,4 @@
-// 
+//
 //  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
 //
 //
@@ -24,27 +24,7 @@
 #include <sherpa/utils.hh>
 #include <sherpa/constants.hh>
 
-#include "Faddeeva.hh"
-
 namespace sherpa { namespace models {
-
-  template <typename DataType, typename ConstArrayType>
-  inline int wofz_point( const ConstArrayType& p, DataType x,
-                         DataType& val )
-  {
-    // Follow https://en.wikipedia.org/wiki/Voigt_profile after converting
-    // from FWHM.
-    const DataType fwhm_g = p[0];
-    const DataType fwhm_l = p[1];
-    const DataType gamma = fwhm_l / 2;
-    double sigma = fwhm_g / std::sqrt(8 * log(2));
-    std::complex<double> arg = (x - p[2]) + gamma * std::complex<double>(0,1);
-    arg /= sigma * std::sqrt(2);
-    val = p[3] * Faddeeva::w(arg).real() / (sigma * std::sqrt(2 * PI));
-    return EXIT_SUCCESS;
-    
-  }
-    
 
   template <typename DataType, typename ConstDataType>
   inline int lfactorial( ConstDataType arg, DataType& answer )
@@ -65,7 +45,7 @@ namespace sherpa { namespace models {
   inline int box1d_point( const ConstArrayType& p, DataType x, DataType& val )
   {
 
-    if ( x < p[0] || x > p[1] ) 
+    if ( x < p[0] || x > p[1] )
       val = 0.0;
     else
       val = p[2];
@@ -76,11 +56,11 @@ namespace sherpa { namespace models {
 
 
   template <typename DataType, typename ConstArrayType>
-  inline int box1d_integrated( const ConstArrayType& p, 
+  inline int box1d_integrated( const ConstArrayType& p,
 			       DataType xlo, DataType xhi, DataType& val )
   {
 
-    if ( p[1] <= xlo || p[0] >= xhi ) 
+    if ( p[1] <= xlo || p[0] >= xhi )
       val = 0.0;
     else {
       val = p[2] * ( std::min(xhi,p[1]) - std::max(xlo,p[0]) );
@@ -141,7 +121,7 @@ namespace sherpa { namespace models {
     register DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
     val = p[2]*p[0]*(SIN(tmp2)-SIN(tmp1))/TWOPI;
     return EXIT_SUCCESS;
-  
+
   }
 
 
@@ -198,7 +178,7 @@ namespace sherpa { namespace models {
     }
 
     val *= p[0];
-  
+
     return EXIT_SUCCESS;
 
   }
@@ -346,7 +326,7 @@ namespace sherpa { namespace models {
   inline int exp_integrated( const ConstArrayType& p,
 			     DataType xlo, DataType xhi, DataType& val )
   {
-  
+
     if ( p[1] != 0.0 ) {
       register DataType y2 = p[1]*(xhi-p[0]);
       register DataType y1 = p[1]*(xlo-p[0]);
@@ -375,7 +355,7 @@ namespace sherpa { namespace models {
   inline int exp10_integrated( const ConstArrayType& p,
 			       DataType xlo, DataType xhi, DataType& val )
   {
-  
+
     if ( p[1] != 0.0 ) {
       register DataType y2 = LOGTEN*p[1]*(xhi-p[0]);
       register DataType y1 = LOGTEN*p[1]*(xlo-p[0]);
@@ -394,7 +374,7 @@ namespace sherpa { namespace models {
   //                         p[2] exp(- -------------------)
   //                                               2
   //                                           p[0]
-  // 
+  //
   template <typename DataType, typename ConstArrayType>
   inline int gauss1d_point( const ConstArrayType& p, DataType x,
 			    DataType& val )
@@ -404,7 +384,7 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-  
+
     // the compiler will take care of optimization.
     val = p[2] * EXP( - GFACTOR * ( x - p[1] ) * ( x - p[1] ) / p[0] / p[0] );
 
@@ -437,7 +417,7 @@ namespace sherpa { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline int log_point( const ConstArrayType& p, DataType x, DataType& val )
   {
-  
+
     if ( (p[1] * (x - p[0])) > 0.0  ) {
       val = p[2] * LOG( p[1] * (x - p[0]));
       return EXIT_SUCCESS;
@@ -508,7 +488,7 @@ namespace sherpa { namespace models {
     else {
       // val = NAN;
       return EXIT_FAILURE;
-    }  
+    }
 
   }
 
@@ -517,7 +497,7 @@ namespace sherpa { namespace models {
   inline int ngauss1d_point( const ConstArrayType& p, DataType x,
 			     DataType& val )
   {
-  
+
     if( p[0] == 0.0 ) {
       // val = NAN;
       return EXIT_FAILURE;
@@ -559,7 +539,7 @@ namespace sherpa { namespace models {
     if( EXIT_SUCCESS != lfactorial(p[0], p_zero_fact)) {
       return EXIT_FAILURE;
     }
-  
+
     if( EXIT_SUCCESS != lfactorial(x, x_fact)) {
       return EXIT_FAILURE;
     }
@@ -616,7 +596,7 @@ namespace sherpa { namespace models {
   //                                    /  x \(- p[0])
   //                               p[2] |----|
   //                                    \p[1]/
-  // 
+  //
   template <typename DataType, typename ConstArrayType>
   inline int powlaw_point( const ConstArrayType& p, DataType x, DataType& val )
   {
@@ -627,7 +607,7 @@ namespace sherpa { namespace models {
       val = p[2] * POW( x / p[ 1 ], - p[ 0 ] );
       return EXIT_SUCCESS;
     }
-    
+
     val = 0.0;
     return EXIT_FAILURE;
 
@@ -650,7 +630,7 @@ namespace sherpa { namespace models {
 	  // Stub in Sherpa minimum value for xlo,
 	  // so we can take its log
 	  xlo = SMP_MIN;
-	}	
+	}
 	val = p[2] * p[1] * ( LOG(xhi) - LOG(xlo) );
 	return EXIT_SUCCESS;
       } else {
@@ -671,23 +651,23 @@ namespace sherpa { namespace models {
   //                                    /  x \ - p[1] - p[2] * log10(x/p[0])
   //                               p[3] |----|
   //                                    \p[0]/
-  // 
+  //
   template <typename DataType, typename ConstArrayType>
   inline int logparabola_point( const ConstArrayType& p, DataType x,
 			      DataType& val )
   {
 
     if ( p[0] != 0 ) {
-      
+
       register DataType frac = (x / p[0]);
-      
+
       if ( frac > 0.0 ) {
 	val = p[3] * POW( frac, - p[1] - p[2] * LOG10( frac ) );
 	return EXIT_SUCCESS;
       }
 
     }
-    
+
     val = 0.0;
     return EXIT_FAILURE;
   }
@@ -721,7 +701,7 @@ namespace sherpa { namespace models {
     register DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
     val = -1.0*p[2]*p[0]*(COS(tmp2)-COS(tmp1))/TWOPI;
     return EXIT_SUCCESS;
-  
+
   }
 
 
@@ -733,12 +713,12 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-  
+
     else {
       val = p[1]*SQRT(x-p[0]);
       return EXIT_SUCCESS;
     }
-  
+
   }
 
 
@@ -814,7 +794,7 @@ namespace sherpa { namespace models {
 
   }
 
-  
+
   template <typename DataType, typename ConstArrayType>
   inline int steplo1d_integrated( const ConstArrayType& p,
 				  DataType xlo, DataType xhi, DataType& val )
@@ -864,7 +844,7 @@ namespace sherpa { namespace models {
     register DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
     val = -1.0*p[2]*p[0]*(LOG(COS(tmp2))-LOG(COS(tmp1)))/TWOPI;
     return EXIT_SUCCESS;
-  
+
   }
 
 
@@ -875,7 +855,7 @@ namespace sherpa { namespace models {
   inline int box2d_point( const ConstArrayType& p,
 			  DataType x0, DataType x1, DataType& val )
   {
-  
+
     if ( p[1] <= x0 || p[0] >= x0 || p[3] <= x1 || p[2] >= x1 )
       val = 0.0;
     else
@@ -890,7 +870,7 @@ namespace sherpa { namespace models {
 			       DataType x0lo, DataType x0hi,
 			       DataType x1lo, DataType x1hi, DataType& val )
   {
- 
+
     if ( p[1] <= x0lo || p[0] >= x0hi || p[3] <= x1lo || p[2] >= x1hi ) {
       val = 0.0;
       return EXIT_SUCCESS;
@@ -910,7 +890,7 @@ namespace sherpa { namespace models {
   {
 
     (void)x0;
-    (void)x1; 
+    (void)x1;
     val = p[0];
     return EXIT_SUCCESS;
 
@@ -922,7 +902,7 @@ namespace sherpa { namespace models {
 				 DataType x0lo, DataType x0hi,
 				 DataType x1lo, DataType x1hi, DataType& val )
   {
-  
+
     val = p[0]*(x1hi-x1lo)*(x0hi-x0lo);
     return EXIT_SUCCESS;
 
@@ -933,7 +913,7 @@ namespace sherpa { namespace models {
   inline int delta2d_point( const ConstArrayType& p,
 			    DataType x0, DataType x1, DataType& val )
   {
-  
+
     if ( p[0] == x0 && p[1] == x1 ) {
       val = p[2];
       return EXIT_SUCCESS;
@@ -964,9 +944,9 @@ namespace sherpa { namespace models {
   inline int gauss2d_point( const ConstArrayType& p,
 			    DataType x0, DataType x1, DataType& val )
   {
-  
+
     register DataType r = 0.0;
-  
+
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
     }
@@ -982,12 +962,12 @@ namespace sherpa { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline int sigmagauss2d_point( const ConstArrayType& p,
 				 DataType x0, DataType x1, DataType& val ) {
-  
+
     register DataType r = 0.0;
-    
+
     if ( 0 == p[0] || 0 == p[1] )
       return EXIT_FAILURE;
-  
+
     if( EXIT_SUCCESS != sherpa::utils::sigmaradius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
     }
@@ -1026,15 +1006,15 @@ namespace sherpa { namespace models {
       if( EXIT_SUCCESS != gauss2d_point(p,x0lo,x1lo, lolft)) {
 	return EXIT_FAILURE;
       }
-    
+
       if( EXIT_SUCCESS != gauss2d_point(p,x0hi,x1lo, lorgt)) {
 	return EXIT_FAILURE;
       }
-    
+
       if( EXIT_SUCCESS != gauss2d_point(p,x0lo,x1hi, hilft)) {
 	return EXIT_FAILURE;
       }
-    
+
       if( EXIT_SUCCESS != gauss2d_point(p,x0hi,x1hi, hirgt)) {
 	return EXIT_FAILURE;
       }
@@ -1060,9 +1040,9 @@ namespace sherpa { namespace models {
   inline int ngauss2d_point( const ConstArrayType& p,
 			     DataType x0, DataType x1, DataType& val )
   {
-  
+
     register DataType r = 0.0;
-  
+
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
     }
@@ -1081,7 +1061,7 @@ namespace sherpa { namespace models {
   inline int poly2d_point( const ConstArrayType& p,
 			   DataType x0, DataType x1, DataType& val )
   {
-  
+
     register int ix;
     register int iy;
     register DataType retval = 0.0;
@@ -1101,7 +1081,7 @@ namespace sherpa { namespace models {
 				DataType x0lo, DataType x0hi,
 				DataType x1lo, DataType x1hi, DataType& val )
   {
-  
+
     register int ix;
     register int iy;
     register DataType retval = 0.0;
