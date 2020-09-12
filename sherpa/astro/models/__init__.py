@@ -18,8 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 import numpy
+
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
 from sherpa.astro.utils import apply_pileup
@@ -562,7 +562,7 @@ class Lorentz1D(RegriddableModel1D):
 
     See Also
     --------
-    Beta1D, NormBeta1D, Voigt1D
+    Beta1D, NormBeta1D, NormGauss1D, Voigt1D
 
     Notes
     -----
@@ -617,7 +617,8 @@ class Voigt1D(RegriddableModel1D):
     """One dimensional Voigt profile.
 
     The Voigt profile is a convolution between a Gaussian distribution
-    a Cauchy-Lorentz distribution [1]_, [2]_.
+    a Cauchy-Lorentz distribution [1]_, [2]_. It is often used in
+    analyzing spectroscopy data.
 
     .. versionadded:: 4.12.2
 
@@ -634,7 +635,7 @@ class Voigt1D(RegriddableModel1D):
 
     See Also
     --------
-    Gauss1D, Lorentz1D
+    NormGauss1D, Lorentz1D, PseudoVoigt1D
 
     Notes
     -----
@@ -655,6 +656,11 @@ class Voigt1D(RegriddableModel1D):
     fwhm_l parameter to fwhm_g with the following equation::
 
         fwhm_l = fwhm_g / sqrt(2 * log(2))
+
+    An approximation for the FWHM of the profile, taken from [2]_,
+    is
+
+        0.5346 fwhm_l + sqrt(0.2166 fwhm_l^2 + fwhm_g^2)
 
     References
     ----------
@@ -683,6 +689,39 @@ class Voigt1D(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
         return
+
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
+
+    def guess(self, dep, *args, **kwargs):
+        """Guess the parameter values.
+
+        The fwhm_g and fwhm_l parameters are set to the
+        same value.
+        """
+
+        pos = get_position(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
+        param_apply_limits(pos, self.pos, **kwargs)
+        param_apply_limits(fwhm, self.fwhm_g, **kwargs)
+        param_apply_limits(fwhm, self.fwhm_l, **kwargs)
+
+        # I am using an approximate conversion to get the
+        # amplitude from guess_amplitude. The conversion
+        # between height (as returned - roughly - by guess_amplitude)
+        # and amplitude is, from lmfit
+        # amplitude = height * (max(2.220446049250313e-16, sigma*sqrt(2*pi))))*wofz((1j*gamma)/(max(2.220446049250313e-16, sigma*sqrt(2))).real'
+        # but I'm just going to use the lorentz1d amplitude guess
+        #
+        norm = guess_amplitude(dep, *args)
+        aprime = norm['val'] * fwhm['val'] * numpy.pi / 2.
+        ampl = {'val': aprime,
+                'min': aprime / _guess_ampl_scale,
+                'max': aprime * _guess_ampl_scale}
+        param_apply_limits(ampl, self.ampl, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
