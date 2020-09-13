@@ -78,6 +78,7 @@ The last version of Sherpa compatible with Python 2.7 was the
    :name: worked_examples
 
    examples/simple_interpolation
+   examples/fit_peaked_data
    examples/simple_user_model
 
 .. toctree::

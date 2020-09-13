@@ -6,7 +6,7 @@ Utility routines
 .. todo::
 
    This section needs looking at.
-   
+
 There are a number of utility routines provided by Sherpa that may
 be useful. Should they be documented here or elsewhere?
 
@@ -20,6 +20,7 @@ Reference/API
    :maxdepth: 2
 
    err
-   utils   
+   utils
    testing
+   io
    astro_io
