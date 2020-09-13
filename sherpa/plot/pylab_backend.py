@@ -193,7 +193,7 @@ def find_zorder(axes):
 
 def point(x, y, overplot=True, clearwindow=False,
           symbol=None, alpha=None,
-          color=None):
+          color=None, label=None):
 
     axes = setup_axes(overplot, clearwindow)
 
@@ -202,7 +202,8 @@ def point(x, y, overplot=True, clearwindow=False,
     else:
         style = '{}{}'.format(color, symbol)
 
-    axes.plot(numpy.array([x]), numpy.array([y]), style, alpha=alpha)
+    axes.plot(numpy.array([x]), numpy.array([y]), style,
+              alpha=alpha, label=label)
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
@@ -213,6 +214,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           barsabove=_errorbar_defaults['barsabove'],
           xlog=False,
           ylog=False,
+          label=None,
           linestyle='solid',
           drawstyle='default',
           color=None,
@@ -308,6 +310,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     #
     axes.errorbar(xmid, y, yerr, xerr,
                   color=color,
+                  label=label,
                   alpha=alpha,
                   linestyle='',
                   drawstyle=drawstyle,
@@ -394,6 +397,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          barsabove=_errorbar_defaults['barsabove'],
          xlog=False,
          ylog=False,
+         label=None,
          linestyle='solid',
          drawstyle='default',
          color=None,
@@ -436,6 +440,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         yerr = yerr if yerrorbars else None
         objs = axes.errorbar(x, y, yerr, xerr,
                              color=color,
+                             label=label,
                              linestyle=linestyle,
                              drawstyle=drawstyle,
                              marker=marker,
@@ -450,6 +455,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     else:
         objs = axes.plot(x, y,
                          color=color,
+                         label=label,
                          alpha=alpha,
                          linestyle=linestyle,
                          drawstyle=drawstyle,

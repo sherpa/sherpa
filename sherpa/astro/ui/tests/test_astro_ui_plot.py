@@ -31,12 +31,12 @@ correct data; it is more a check that the routines can be called.
 
 import copy
 import logging
+
 import numpy as np
 
 import pytest
 
 from sherpa.astro import ui
-from sherpa.astro.ui.utils import Session as AstroSession
 
 from sherpa.plot import DataPlot, FitPlot, ModelPlot
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
@@ -1547,6 +1547,7 @@ DATA_PREFS = {'alpha': None,
               'color': None,
               'drawstyle': 'default',
               'ecolor': None,
+              'label': None,
               'linecolor': None,
               'linestyle': 'None',
               'marker': '.',
@@ -1565,6 +1566,7 @@ MODEL_PREFS = {'alpha': None,
                'color': None,
                'drawstyle': 'default',
                'ecolor': None,
+               'label': None,
                'linecolor': None,
                'linestyle': '-',
                'marker': 'None',
