@@ -11435,6 +11435,8 @@ class Session(sherpa.ui.utils.Session):
         """
 
         plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'ARF: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -11507,6 +11509,8 @@ class Session(sherpa.ui.utils.Session):
         """
 
         d = self.get_data(id)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Source: {}'.format(self._fix_id(id))
         if isinstance(d, sherpa.astro.data.DataPHA):
             # Note: lo/hi arguments mean we can not just rely on superclass
             plotobj = self.get_source_plot(id, lo=lo, hi=hi, recalc=not replot)
@@ -11639,6 +11643,8 @@ class Session(sherpa.ui.utils.Session):
         """
 
         plotobj = self.get_bkg_plot(id, bkg_id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Background: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 

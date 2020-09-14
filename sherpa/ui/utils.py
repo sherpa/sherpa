@@ -887,7 +887,7 @@ class Session(NoNewAttributesAfterInit):
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
 
-        This displays the model used to fit the data set, that is, 
+        This displays the model used to fit the data set, that is,
         the expression set by `set_model` or `set_source`
         combined with any instrumental responses, together with the
         parameter values of the model. The `show_source` function
@@ -12417,6 +12417,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_data_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Data: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12501,6 +12503,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_model_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Model: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12571,6 +12575,9 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self.get_source_component_plot(id, model,
                                                  recalc=not replot)
+
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Source: {}'.format(model.name)
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
@@ -12652,6 +12659,9 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self.get_model_component_plot(id, model,
                                                 recalc=not replot)
+
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Model: {}'.format(model.name)
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
@@ -12735,6 +12745,8 @@ class Session(NoNewAttributesAfterInit):
                                 " You should use plot_model instead.")
 
         plotobj = self.get_source_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Source: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12822,6 +12834,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_fit_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Fit: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12904,6 +12918,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_resid_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Residuals: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12965,6 +12981,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_chisqr_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Chisqr: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -13043,6 +13061,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_delchi_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Delchi: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -13119,6 +13139,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_ratio_plot(id, recalc=not replot)
+        if 'label' not in kwargs:
+            kwargs['label'] = 'Ratio: {}'.format(self._fix_id(id))
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
