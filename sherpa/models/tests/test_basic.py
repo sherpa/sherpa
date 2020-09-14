@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from numpy import arange
+import numpy as np
+
 import sherpa.models.basic as basic
-from sherpa.utils import SherpaFloat
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.utils import SherpaFloat, _utils
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, RegriddableModel2D
 
 
@@ -28,49 +29,49 @@ def userfunc(pars, x, *args, **kwargs):
     return x
 
 
-class test_basic(SherpaTestCase):
-    excluded_models = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, basic.Const)
+EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, basic.Const)
 
-    def test_create_and_evaluate(self):
-        x = arange(1.0, 5.0)
-        count = 0
+def test_create_and_evaluate():
 
-        for cls in dir(basic):
-            clsobj = getattr(basic, cls)
+    x = np.arange(1.0, 5.0)
+    count = 0
 
-            if not isinstance(clsobj, type) \
-                or not issubclass(clsobj, ArithmeticModel) \
-                or clsobj in self.excluded_models:
-                continue
+    for cls in dir(basic):
+        clsobj = getattr(basic, cls)
 
-            # These have very different interfaces than the others
-            if cls == 'Integrator1D' or cls == 'Integrate1D':
-                continue
+        if not isinstance(clsobj, type) \
+            or not issubclass(clsobj, ArithmeticModel) \
+            or clsobj in EXCLUDED_MODELS:
+            continue
 
-            m = clsobj()
-            if isinstance(m, basic.TableModel):
-                m.load(x,x)
-            if isinstance(m, basic.UserModel):
-                m.calc = userfunc
-            self.assertEqual(type(m).__name__.lower(), m.name)
-            count += 1
+        # These have very different interfaces than the others
+        if cls == 'Integrator1D' or cls == 'Integrate1D':
+            continue
 
-            try:
-                if m.name.count('2d'):
-                    pt_out  = m(x, x)
-                    int_out = m(x, x, x, x)
+        m = clsobj()
+        if isinstance(m, basic.TableModel):
+            m.load(x,x)
+        if isinstance(m, basic.UserModel):
+            m.calc = userfunc
+        assert type(m).__name__.lower() == m.name
+        count += 1
+
+        try:
+            if m.name.count('2d'):
+                pt_out  = m(x, x)
+                int_out = m(x, x, x, x)
+            else:
+                if m.name in ('log', 'log10'):
+                    xx = -x
                 else:
-                    if m.name in ('log', 'log10'):
-                        xx = -x
-                    else:
-                        xx = x
-                    pt_out  = m(xx)
-                    int_out = m(xx, xx)
-            except ValueError:
-                self.fail("evaluation of model '%s' failed" % cls)
+                    xx = x
+                pt_out  = m(xx)
+                int_out = m(xx, xx)
+        except ValueError:
+            assert False, "evaluation of model '{}' failed".format(cls)
 
-            for out in (pt_out, int_out):
-                self.assertTrue(out.dtype.type is SherpaFloat)
-                self.assertEqual(out.shape, x.shape)
+        for out in (pt_out, int_out):
+            assert out.dtype.type is SherpaFloat
+            assert out.shape == x.shape
 
-        self.assertEqual(count, 32)
+    assert count == 32

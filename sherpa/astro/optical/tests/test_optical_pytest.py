@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,10 @@ This adds additional tests to test_optical but uses pytest.
 import numpy as np
 from numpy.testing import assert_allclose
 
+import pytest
+
 import sherpa.astro.optical as models
+from sherpa.utils.err import ModelErr
 
 
 def test_emissiongaussian_skew1():
@@ -113,3 +116,13 @@ def test_emissiongaussian_skew025():
     lsum = y[x < 5000].sum()
     hsum = y[x > 5000].sum()
     assert lsum > hsum
+
+
+@pytest.mark.parametrize("cls", [models.AbsorptionVoigt, models.EmissionVoigt])
+def test_voigt_errors_out(cls):
+
+    with pytest.raises(ModelErr) as exc:
+        cls('temp')
+
+    emsg = 'The {} model has been replaced by Voigt1D'.format(cls.__name__)
+    assert str(exc.value) == emsg

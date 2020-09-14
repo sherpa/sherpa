@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2014, 2016, 2017, 2018, 2020
-#     Smithsonian Astrophysical Observatory
+#       Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,9 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-import shlex
-import os
 
 from numpy.distutils.core import Extension
 
@@ -48,10 +45,10 @@ def get_deps(deps):
     alldeps = set()
 
     while deps:
-        next = deps.pop()
-        if next not in alldeps:
-            alldeps.add(next)
-            deps.update(header_deps[next])
+        dep = deps.pop()
+        if dep not in alldeps:
+            alldeps.add(dep)
+            deps.update(header_deps[dep])
 
     return [sherpa_inc[0] + '/sherpa/' + d + '.hh' for d in alldeps]
 
@@ -142,17 +139,20 @@ utils = Extension('sherpa.utils._utils',
                'sherpa/utils/src/cephes/igami.c',
                'sherpa/utils/src/cephes/incbet.c',
                'sherpa/utils/src/cephes/incbi.c',
+               'sherpa/utils/src/sjohnson/Faddeeva.cc',
                'sherpa/utils/src/_utils.cc'],
               sherpa_inc + ['sherpa/utils/src/cephes',
-                            'sherpa/utils/src/gsl'],
+                            'sherpa/utils/src/gsl',
+                            'sherpa/utils/src/sjohnson'],
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h',
-                        'sherpa/utils/src/cephes/cephes.h']))
+                        'sherpa/utils/src/cephes/cephes.h',
+                        'sherpa/utils/src/sjohnson/Faddeeva.hh']))
 
 modelfcts = Extension('sherpa.models._modelfcts',
-              ['sherpa/models/src/_modelfcts.cc'],
-              sherpa_inc,
-              depends=get_deps(['model_extension', 'models']))
+                      ['sherpa/models/src/_modelfcts.cc'],
+                      sherpa_inc,
+                      depends=get_deps(['model_extension', 'models']))
 
 saoopt = Extension('sherpa.optmethods._saoopt',
               ['sherpa/optmethods/src/_saoopt.cc',
@@ -208,18 +208,21 @@ integration = Extension('sherpa.utils.integration',
                'sherpa/utils/src/gsl/strerror.c',
                'sherpa/utils/src/gsl/message.c',
                'sherpa/utils/src/gsl/qng.c',
-               'sherpa/utils/src/adapt_integrate.c',
+               'sherpa/utils/src/sjohnson/adapt_integrate.c',
                'sherpa/utils/src/integration.cc'],
-              sherpa_inc + ['sherpa/utils/src',
+              sherpa_inc +[ 'sherpa/utils/src',
+                            'sherpa/utils/src/sjohnson',
                             'sherpa/utils/src/gsl'],
               depends=(get_deps(['integration'])+
-                       ['sherpa/utils/src/adapt_integrate.h',
+                       ['sherpa/utils/src/sjohnson/adapt_integrate.h',
                         'sherpa/utils/src/gsl/gsl_integration.h']))
 
 astro_modelfcts = Extension('sherpa.astro.models._modelfcts',
-              ['sherpa/astro/models/src/_modelfcts.cc'],
-              sherpa_inc,
-              depends=get_deps(['model_extension', 'astro/models']))
+                            ['sherpa/astro/models/src/_modelfcts.cc',
+                             'sherpa/utils/src/sjohnson/Faddeeva.cc'],
+                            sherpa_inc + ['sherpa/utils/src/sjohnson'],
+                            depends=get_deps(['model_extension', 'astro/models']) + \
+                                    ['sherpa/utils/src/sjohnson/Faddeeva.hh'])
 
 pileup = Extension('sherpa.astro.utils._pileup',
               ['sherpa/astro/utils/src/fftn.c',

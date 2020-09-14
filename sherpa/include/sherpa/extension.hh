@@ -20,6 +20,8 @@
 #ifndef __sherpa_extension_hh__
 #define __sherpa_extension_hh__
 
+#include <complex>
+
 #include <sherpa/array.hh>
 
 typedef unsigned int SherpaUInt;
@@ -30,6 +32,7 @@ typedef sherpa::Array< double, NPY_DOUBLE > DoubleArray;
 typedef DoubleArray SherpaFloatArray;
 
 typedef sherpa::Array< int, NPY_INT > IntArray;
+typedef sherpa::Array< std::complex<double>, NPY_COMPLEX128 > ComplexArray;
 
 typedef int (*converter)( PyObject*, void* );
 

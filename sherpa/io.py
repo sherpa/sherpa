@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,11 +17,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
+
 import numpy
+
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.data import Data1D, BaseData
-import os
 
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
@@ -125,7 +127,7 @@ def get_column_data(*args):
 
 def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
                    comment='#', require_floats=True):
-    """Read in columns from an ASCII file.
+    r"""Read in columns from an ASCII file.
 
     Parameters
     ----------
@@ -169,7 +171,6 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
 
     Notes
     -----
-
     The file is processed by reading in each line, stripping out any
     unsupported characters (replacing them by the ``sep`` argument),
     skipping empty lines, and then identifying comment and data lines.

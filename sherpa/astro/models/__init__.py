@@ -18,8 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 import numpy
+
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
 from sherpa.astro.utils import apply_pileup
@@ -29,10 +29,11 @@ from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
     guess_amplitude_at_ref, guess_fwhm, guess_position, \
     guess_radius, guess_reference, lgam, param_apply_limits
 
+import sherpa.models._modelfcts
 from . import _modelfcts
 
 __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
-           'LineBroad', 'Lorentz1D', 'NormBeta1D', 'Schechter',
+           'LineBroad', 'Lorentz1D', 'Voigt1D', 'PseudoVoigt1D', 'NormBeta1D', 'Schechter',
            'Beta2D', 'DeVaucouleurs2D', 'HubbleReynolds', 'Lorentz2D',
            'JDPileup', 'MultiResponseSumModel', 'Sersic2D', 'Disk2D',
            'Shell2D')
@@ -562,7 +563,7 @@ class Lorentz1D(RegriddableModel1D):
 
     See Also
     --------
-    Beta1D, NormBeta1D
+    Beta1D, NormBeta1D, NormGauss1D, Voigt1D
 
     Notes
     -----
@@ -611,6 +612,216 @@ class Lorentz1D(RegriddableModel1D):
     def calc(self, *args, **kwargs):
         kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.lorentz1d(*args, **kwargs)
+
+
+class Voigt1D(RegriddableModel1D):
+    """One dimensional Voigt profile.
+
+    The Voigt profile is a convolution between a Gaussian distribution
+    a Cauchy-Lorentz distribution [1]_, [2]_. It is often used in
+    analyzing spectroscopy data.
+
+    .. versionadded:: 4.12.2
+
+    Attributes
+    ----------
+    fwhm_g
+        The full-width half-maximum (FWHM) of the Gaussian distribution.
+    fwhm_l
+        The full-width half-maximum of the Lorentzian distribution.
+    pos
+        The center of the profile.
+    ampl
+        The amplitude of the profile.
+
+    See Also
+    --------
+    NormGauss1D, Lorentz1D, PseudoVoigt1D
+
+    Notes
+    -----
+    Following [2]_, the Voigt profile can be written as::
+
+        f(x) = ampl * Re[w(z)] / (sqrt(2 * PI) * sigma)
+
+    where Re[w(z)] is the real part of the Faddeeva function [3]_
+    and sigma and gamma are parameters of the Gaussian and
+    Lorentzian model respectively::
+
+        z = (x - pos + i * gamma) / (sqrt(2) * sigma)
+        sigma = fhwm_g / sqrt(8 * log(2))
+        gamma = fwhm_l / 2
+
+    One common simplification is to tie the sigma and gamma
+    parameters together, which can be achieved by linking the
+    fwhm_l parameter to fwhm_g with the following equation::
+
+        fwhm_l = fwhm_g / sqrt(2 * log(2))
+
+    An approximation for the FWHM of the profile, taken from [2]_,
+    is
+
+        0.5346 fwhm_l + sqrt(0.2166 fwhm_l^2 + fwhm_g^2)
+
+    References
+    ----------
+
+    .. [1] http://publikationen.badw.de/de/003395768
+
+    .. [2] https://en.wikipedia.org/wiki/Voigt_profile
+
+    .. [3] https://en.wikipedia.org/wiki/Faddeeva_function
+
+    Examples
+    --------
+    Force the widths of the Gaussian and Lorentzian components
+    to be the same:
+
+    >>> mdl = Voigt1D()
+    >>> mdl.fwhm_l = mdl.fwhm_g / np.sqrt(2 * np.log(2))
+
+    """
+
+    def __init__(self, name='voigt1d'):
+        self.fwhm_g = Parameter(name, 'fwhm_g', 10, tinyval, hard_min=tinyval)
+        self.fwhm_l = Parameter(name, 'fwhm_l', 10, 0, hard_min=0)
+        self.pos = Parameter(name, 'pos', 0.0)
+        self.ampl  = Parameter(name, 'ampl', 1.0)
+        ArithmeticModel.__init__(self, name,
+                                 (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
+        return
+
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
+
+    def guess(self, dep, *args, **kwargs):
+        """Guess the parameter values.
+
+        The fwhm_g and fwhm_l parameters are set to the
+        same value.
+        """
+
+        pos = get_position(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
+        param_apply_limits(pos, self.pos, **kwargs)
+        param_apply_limits(fwhm, self.fwhm_g, **kwargs)
+        param_apply_limits(fwhm, self.fwhm_l, **kwargs)
+
+        # I am using an approximate conversion to get the
+        # amplitude from guess_amplitude. The conversion
+        # between height (as returned - roughly - by guess_amplitude)
+        # and amplitude is, from lmfit
+        # amplitude = height * (max(2.220446049250313e-16, sigma*sqrt(2*pi))))*wofz((1j*gamma)/(max(2.220446049250313e-16, sigma*sqrt(2))).real'
+        # but I'm just going to use the lorentz1d amplitude guess
+        #
+        norm = guess_amplitude(dep, *args)
+        aprime = norm['val'] * fwhm['val'] * numpy.pi / 2.
+        ampl = {'val': aprime,
+                'min': aprime / _guess_ampl_scale,
+                'max': aprime * _guess_ampl_scale}
+        param_apply_limits(ampl, self.ampl, **kwargs)
+
+    @modelCacher1d
+    def calc(self, *args, **kwargs):
+        kwargs['integrate'] = bool_cast(self.integrate)
+        return _modelfcts.wofz(*args, **kwargs)
+
+
+class PseudoVoigt1D(RegriddableModel1D):
+    """A weighted sum of a Gaussian and Lorentzian distribution.
+
+    Unlike the Voigt1D model, which is a convolution between a
+    Gaussian and Lorentz distribution, this approximates the
+    Voigt profile with a linear combination of the two profiles [1]_.
+    It is often used in spectroscopy.
+
+    .. versionadded:: 4.12.2
+
+    Attributes
+    ----------
+    frac
+        The fraction of the model composed of the Gaussian profile
+        (0 to 1).
+    fwhm
+        The full-width half-maximum (FWHM) of each component.
+    pos
+        The center of the profile.
+    ampl
+        The amplitude of the profile.
+
+    See Also
+    --------
+    NormGauss1D, Lorentz1D, Voigt1D
+
+    Notes
+    -----
+    The model can be written as::
+
+       f(x) = frac * g(x) + (1 - frac) * l(x)
+
+    where g(x) and l(x) are NormGauss1D and Lorentz1D models with
+    the fwhm, pos, and ampl values taken from this model.
+
+    References
+    ----------
+
+    .. [1] https://en.wikipedia.org/wiki/Voigt_profile#Pseudo-Voigt_approximation
+
+    """
+
+    def __init__(self, name='pseudovoigt1d'):
+        self.frac = Parameter(name, 'frac', 0.5, 0, 1, hard_min=0, hard_max=1)
+        self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
+        self.pos = Parameter(name, 'pos', 0.0)
+        self.ampl  = Parameter(name, 'ampl', 1.0)
+        ArithmeticModel.__init__(self, name,
+                                 (self.frac, self.fwhm, self.pos, self.ampl))
+        return
+
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
+
+    def guess(self, dep, *args, **kwargs):
+        """Guess the parameter values.
+
+        The frac parameter is set to 0.5.
+        """
+
+        self.frac.set(0.5, min=0, max=1)
+
+        pos = get_position(dep, *args)
+        fwhm = guess_fwhm(dep, *args)
+        param_apply_limits(pos, self.pos, **kwargs)
+        param_apply_limits(fwhm, self.fwhm, **kwargs)
+
+        # See Voigt1D for the amplitude guess
+        # amplitude from guess_amplitude. although I've
+        # added another factor of 1/2
+        #
+        norm = guess_amplitude(dep, *args)
+        aprime = norm['val'] * fwhm['val'] * numpy.pi / 4.
+        ampl = {'val': aprime,
+                'min': aprime / _guess_ampl_scale,
+                'max': aprime * _guess_ampl_scale}
+        param_apply_limits(ampl, self.ampl, **kwargs)
+
+    @modelCacher1d
+    def calc(self, *args, **kwargs):
+        kwargs['integrate'] = bool_cast(self.integrate)
+
+        pars = args[0]
+        xargs = args[1:]
+
+        frac = pars[0]
+        gmdl = sherpa.models._modelfcts.ngauss1d(pars[1:], *xargs, **kwargs)
+        lmdl = _modelfcts.lorentz1d(pars[1:], *xargs, **kwargs)
+        return frac * gmdl + (1 - frac) * lmdl
 
 
 class NormBeta1D(RegriddableModel1D):

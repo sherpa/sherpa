@@ -17,14 +17,16 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-#include "sherpa/extension.hh"
-#include "sherpa/utils.hh"
-#include "sherpa/fcmp.hh"
 #include <cmath>
 #include <vector>
 #include <limits>
 #include <iostream>
 #include <sstream>
+
+#include "sherpa/extension.hh"
+#include "sherpa/utils.hh"
+#include "sherpa/fcmp.hh"
+#include "Faddeeva.hh"
 
 extern "C" {
 
@@ -32,6 +34,26 @@ extern "C" {
   //#include "fcmp.h"
 
   void init_utils();
+
+}
+
+static PyObject* wofz( PyObject* self, PyObject* args )
+{
+  
+  ComplexArray xxx;
+  if( !PyArg_ParseTuple( args, (char*)"O&",
+                         CONVERTME(ComplexArray), &xxx) )
+    return NULL;
+
+  ComplexArray result;
+  if ( EXIT_SUCCESS != result.create( xxx.get_ndim(), xxx.get_dims() ) )
+    return NULL;
+
+  npy_intp nelem = xxx.get_size();
+  for (npy_intp ii = 0; ii < nelem; ++ii)
+    result[ii] = Faddeeva::w(xxx[ii]);
+
+  return result.return_new_ref();
 
 }
 
@@ -735,6 +757,9 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
 }
 
 static PyMethodDef UtilsFcts[] = {
+
+  // wofz
+  FCTSPEC(calc_wofz, wofz),
 
   // F-Test
   FCTSPEC(calc_ftest, ftest),

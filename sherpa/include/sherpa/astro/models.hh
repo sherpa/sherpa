@@ -1,5 +1,5 @@
-// 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,27 @@
 #include <sherpa/utils.hh>
 #include <sherpa/constants.hh>
 
+#include "Faddeeva.hh"
 
 namespace sherpa { namespace astro { namespace models {
+
+
+  template <typename DataType, typename ConstArrayType>
+  inline int wofz_point( const ConstArrayType& p, DataType x,
+                         DataType& val )
+  {
+    // Follow https://en.wikipedia.org/wiki/Voigt_profile after converting
+    // from FWHM.
+    const DataType fwhm_g = p[0];
+    const DataType fwhm_l = p[1];
+    const DataType gamma = fwhm_l / 2;
+    double sigma = fwhm_g / std::sqrt(8 * log(2));
+    std::complex<double> arg = (x - p[2]) + gamma * std::complex<double>(0,1);
+    arg /= sigma * std::sqrt(2);
+    val = p[3] * Faddeeva::w(arg).real() / (sigma * std::sqrt(2 * PI));
+    return EXIT_SUCCESS;
+
+  }
 
 
   //      DataType fano( q, nu, gamma,lambda) returns a Fano line
@@ -124,7 +143,7 @@ namespace sherpa { namespace astro { namespace models {
       return EXIT_FAILURE;
     }
 
-    DataType sigma = wav * ( mc2[i] + wav * ( mc1[i] + wav * mc0[i] ) ) * 
+    DataType sigma = wav * ( mc2[i] + wav * ( mc1[i] + wav * mc0[i] ) ) *
       1.0e-24;
 
     val = sigma - sigmahe / 10.0;
@@ -173,7 +192,7 @@ namespace sherpa { namespace astro { namespace models {
   }
 
 
-  // 
+  //
   //      Atomic Data and Nuclear Data Tables, 18, 497
   //      Code based on fortran code from (Frits Paerels 12/90)
   //      I got the code from Stefan Vennes (4/1992)
@@ -189,7 +208,7 @@ namespace sherpa { namespace astro { namespace models {
     //      From experimental data compiled by Marr & West (1976)
     //      Atomic Data and Nuclear Data Tables, 18, 497
     //      (from Frits Paerels 12/90) (then from Stefan Vennes 4/92)
-  
+
     //      polynomial coeffients for He I cross section to use for wavelengths
     //      greater than or equal to 46 A.
     const DataType c1[] = {-2.953607e+01, 7.083061e+00, 8.678646e-01,
@@ -300,7 +319,7 @@ namespace sherpa { namespace astro { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline int atten_point( const ConstArrayType& p, DataType x, DataType& val )
   {
-  
+
     return atten( x, p[0], p[0] * p[1], p[0] * p[2], val );
   }
 
@@ -356,12 +375,12 @@ namespace sherpa { namespace astro { namespace models {
       //val = NAN;
       return EXIT_FAILURE;
     }
-  
+
     register DataType hcoverlamkTlo = H_KEV*C_ANG/wlo/t;
     register DataType hcoverlamkThi = H_KEV*C_ANG/whi/t;
     register DataType ylo = 0.0;
     register DataType yhi = 0.0;
-  
+
     if(integrate && hcoverlamkTlo <= 1.0e-4) {
       ylo = t/POW(wlo,3.0)/H_KEV/C_ANG;
       yhi = t/POW(whi,3.0)/H_KEV/C_ANG;
@@ -394,7 +413,7 @@ namespace sherpa { namespace astro { namespace models {
     if( EXIT_SUCCESS != bbody_wave(x, 0.0, p[1], false, wave)) {
       return EXIT_FAILURE;
     }
-  
+
     if( EXIT_SUCCESS != bbody_energy(x, 0.0, p[1], false, energy)) {
       return EXIT_FAILURE;
     }
@@ -413,7 +432,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int bbodyfreq_point( const ConstArrayType& p, DataType x,
 			      DataType& val )
   {
-  
+
     if(p[0] == 0.0)
       // val = NAN;
       return EXIT_FAILURE;
@@ -613,7 +632,7 @@ namespace sherpa { namespace astro { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline int edge_point( const ConstArrayType& p, DataType x, DataType& val )
   {
-  
+
     register int u = (int)((floor)(p[0] + 0.5));
     if( u == 0 && x < p[1] ) {
       val = 1.0;
@@ -648,7 +667,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int edge_integrated( const ConstArrayType& p,
 			      DataType xlo, DataType xhi, DataType& val )
   {
-  
+
     int u = (int)((floor)(p[0] + 0.5));
     if( u == 0 && xhi <= p[1] ) {
       val = (xhi - xlo);
@@ -657,7 +676,7 @@ namespace sherpa { namespace astro { namespace models {
       val = (xhi - xlo);
       return EXIT_SUCCESS;
     } else if ( u == 0 && xlo >= p[1] ) {
-      if( p[1] == 0.0 ) 
+      if( p[1] == 0.0 )
 	return EXIT_FAILURE;
       else {
 	DataType lo = EXP(-p[2] * POW(xlo / p[1], -3));
@@ -724,12 +743,12 @@ namespace sherpa { namespace astro { namespace models {
   inline int linebroad_point( const ConstArrayType& p, DataType x,
 			      DataType& val )
   {
-  
+
     if( 0.0 == p[1] || 0.0 == p[2] ) {
       // val = NAN;
       return EXIT_FAILURE;
     }
-  
+
     register DataType prefix = 2.0*C_KM*p[0]/(PI*p[2]*p[1]);
     register DataType inside = POW(C_KM,2.0)/(POW(p[2],2.0)*POW(p[1],2.0));
     register DataType z = 1.0 - POW((x-p[1]),2.0)*inside;
@@ -748,7 +767,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int linebroad_integrated( const ConstArrayType& p,
 				   DataType xlo, DataType xhi, DataType& val )
   {
-  
+
     register DataType prefix = 2.0*C_KM*p[0]/(PI*p[2]*p[1]);
     register DataType inside = POW(C_KM,2.0)/(POW(p[2],2.0)*POW(p[1],2.0));
 
@@ -756,7 +775,7 @@ namespace sherpa { namespace astro { namespace models {
       //val = NAN;
       return EXIT_FAILURE;
     }
-  
+
     register DataType sub0 = xlo - p[1];
     register DataType sub1 = xhi - p[1];
     register DataType frac0 = 1 - inside*sub0*sub0;
@@ -778,12 +797,12 @@ namespace sherpa { namespace astro { namespace models {
       //val = NAN;
       return EXIT_FAILURE;
     }
-  
+
     register DataType val0 = SQRT(frac0) * sub0 + ASIN(theta0)/SQRT(inside);
     register DataType val1 = SQRT(frac1) * sub1 + ASIN(theta1)/SQRT(inside);
     val = 0.5*prefix*(val1 - val0);
     return EXIT_SUCCESS;
-  
+
   }
     /*
       > beta:=2*c*A/Pi/rest/vsini;
@@ -813,7 +832,7 @@ namespace sherpa { namespace astro { namespace models {
       \     rest  vsini  /
       f := 2 ---------------------------
       Pi rest vsini
-				     
+
       > int(beta*(1-c0*(x-c1)^2)^(1/2),x);
 
 
@@ -888,12 +907,12 @@ namespace sherpa { namespace astro { namespace models {
 
 
   template <typename DataType, typename ConstArrayType>
-  inline int schechter_point( const ConstArrayType& p, DataType x, 
+  inline int schechter_point( const ConstArrayType& p, DataType x,
 			      DataType& val )
   {
 
     (void)p;
-    (void)x; 
+    (void)x;
     val = 0.0;
     return EXIT_SUCCESS;
 
@@ -927,7 +946,7 @@ namespace sherpa { namespace astro { namespace models {
   {
 
     register DataType r;
-  
+
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
     }
@@ -947,7 +966,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int devau_point( const ConstArrayType& p,
 			  DataType x0, DataType x1, DataType& val )
   {
-  
+
     register DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius(p,x0,x1,r)) {
@@ -969,7 +988,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int hr_point( const ConstArrayType& p,
 		       DataType x0, DataType x1, DataType& val )
   {
-  
+
     register DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
@@ -990,9 +1009,9 @@ namespace sherpa { namespace astro { namespace models {
   inline int lorentz2d_point( const ConstArrayType& p,
 			      DataType x0, DataType x1, DataType& val )
   {
-  
+
     register DataType r;
-  
+
     if( EXIT_SUCCESS != sherpa::utils::radius2(p,x0,x1, r)) {
       return EXIT_FAILURE;
     }
@@ -1010,7 +1029,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int sersic_point( const ConstArrayType& p,
 			   DataType x0, DataType x1, DataType& val )
   {
-  
+
     register DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius(p,x0,x1,r)) {
