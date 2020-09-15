@@ -706,3 +706,181 @@ def test_list_pileup_ids_multi(clean_astro_ui):
 
     ans = ui.list_pileup_model_ids()
     assert ans == [1, "2"]
+
+
+def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
+    """Common tests from test_grouped_pha_all_badXXX
+
+    Sending in two ranges is a bit excessive but easiest
+    thing to implement
+    """
+
+    cts = ui.get_counts()
+    assert cts == pytest.approx([exp_counts])
+
+    dplot = ui.get_data_plot()
+    assert dplot.x == pytest.approx([exp_xmid])
+    assert dplot.y == pytest.approx([exp_counts])
+
+    # ignore all the data
+    ui.ignore(lo1, hi1)
+
+    # can still plot
+    cts = ui.get_counts()
+    assert cts == pytest.approx([exp_counts])
+
+    cts = ui.get_counts(filter=True)
+    assert len(cts) == 0
+
+    dplot = ui.get_data_plot()
+    assert len(dplot.x) == 0
+    assert len(dplot.y) == 0
+
+    # ignore does not fail
+    #
+    ui.ignore(lo2, hi2)
+
+    # we can restore the data
+    ui.notice(None, None)
+
+    cts = ui.get_counts()
+    assert cts == pytest.approx([exp_counts])
+
+    dplot = ui.get_data_plot()
+    assert dplot.x == pytest.approx([exp_xmid])
+    assert dplot.y == pytest.approx([exp_counts])
+
+    # now ignore the bad channels (ie everything)
+    #
+    ui.ignore_bad()
+
+    cts = ui.get_counts()
+    assert len(cts) == 0
+
+    dplot = ui.get_data_plot()
+    assert len(dplot.x) == 0
+    assert len(dplot.y) == 0
+
+    # there's nothing to notice (this line is an example of #790)
+    ui.notice(lo1, hi1)
+
+    cts = ui.get_counts()
+    assert len(cts) == 0
+
+    dplot = ui.get_data_plot()
+    assert len(dplot.x) == 0
+    assert len(dplot.y) == 0
+
+
+def test_grouped_pha_all_bad_channel(clean_astro_ui):
+    """Helpdesk ticket: low-count data had no valid bins after grouping #790
+
+    A simple PHA dataset is created, with no response, which has no
+    "good" grouped data (1 group, but with a quality of 2). Several
+    checks are made to ensure we can filter/notice/plot the data even
+    when it is empty.  This is in channel space.
+
+    See also test_grouped_pha_all_bad_response which is essentially the
+    same test but with a response model.
+
+    """
+    chans = numpy.arange(1, 6, dtype=numpy.int16)
+    counts = numpy.asarray([0, 1, 2, 0, 1], dtype=numpy.int16)
+    grouping = numpy.asarray([1, -1, -1, -1, -1], dtype=numpy.int16)
+    quality = numpy.asarray([2, 2, 2, 2, 2], dtype=numpy.int16)
+
+    dset = ui.DataPHA('low', chans, counts, grouping=grouping, quality=quality)
+    ui.set_data(dset)
+
+    # Run tests
+    check_bad_grouping(3, 0.8, 0, 6, 2, 10)
+
+
+@pytest.mark.parametrize("arf,rmf", [(True, False), (False, True), (True, True)])
+@pytest.mark.parametrize("chantype,exp_counts,exp_xmid,lo1,hi1,lo2,hi2",
+                         [("channel", 0.8, 3, 0, 7, 2, 6),
+                          ("energy", 8.0, 0.35, 0.05, 1.0, 0.2, 0.8),
+                          ("wave", 0.03871461, 52.59935223, 20, 90, 30, 85)
+                         ])
+def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, lo1, hi1, lo2, hi2, clean_astro_ui):
+    """Helpdesk ticket: low-count data had no valid bins after grouping #790
+
+    A simple PHA dataset is created, which has no "good" grouped data
+    (1 group, but with a quality of 2). Several checks are made to
+    ensure we can filter/notice/plot the data even when it is empty.
+
+    Checks are done for
+      - arf-only
+      - rmf-only
+      - arf+rmf
+    analysis in case there's a difference in the code paths
+
+    """
+
+    chans = numpy.arange(1, 6, dtype=numpy.int16)
+    counts = numpy.asarray([0, 1, 2, 0, 1], dtype=numpy.int16)
+    grouping = numpy.asarray([1, -1, -1, -1, -1], dtype=numpy.int16)
+    quality = numpy.asarray([2, 2, 2, 2, 2], dtype=numpy.int16)
+
+    dset = ui.DataPHA('low', chans, counts, grouping=grouping, quality=quality)
+    ui.set_data(dset)
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    # it is required that at least one of arf or rmf is set but this
+    # is not enforced
+    #
+    if arf:
+        ui.set_arf(ui.create_arf(elo, ehi))
+
+    if rmf:
+        # NOTE: need to set e_min/max otherwise get a 'noenergybins'
+        #       error from sherpa.astro.data.DataPHA._get_ebins
+        #
+        ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    # plot units depend on analysis type;
+    #
+    ui.set_analysis(chantype)
+
+    # Run tests
+    check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("elo,ehi,nbins",
+                         [(None, 5, 41), (1, None, 33), (1, 5, 28)])
+@pytest.mark.parametrize("bkg_id", [None, 1])
+def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
+                                                 caplog, make_data_path, clean_astro_ui):
+    """Check we get the warning messages with background filtering"""
+
+    ui.load_pha('check', make_data_path('3c273.pi'))
+
+    ui.set_quality('check', 2 * numpy.ones(1024, dtype=numpy.int16), bkg_id=1)
+    ui.ignore_bad('check', bkg_id=1)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.notice_id('check', elo, ehi, bkg_id=bkg_id)
+
+    # filtering has or hasn't happened
+    nsrc = ui.get_dep('check', filter=True).size
+    nback = ui.get_dep('check', filter=True, bkg_id=1).size
+
+    if bkg_id is None:
+        assert nsrc == nbins
+        assert nback == 0
+    else:
+        assert nsrc == 46  # ie no filter
+        assert nback == 0
+
+    # did we get a warning message from the background?
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.astro.data'
+    assert lvl == logging.INFO
+    assert msg.startswith('Skipping dataset /')
+    assert msg.endswith('/3c273_bg.pi: mask excludes all data')

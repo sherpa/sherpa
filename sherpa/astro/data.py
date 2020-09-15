@@ -48,6 +48,7 @@ except ImportError:
     # no need to create one here
     pass
 
+info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 groupstatus = False
@@ -1016,6 +1017,12 @@ class DataPHA(Data1D):
 
     def _energy_to_channel(self, val):
         elo, ehi = self._get_ebins()
+
+        # special case handling no noticed data (e.g. ignore_bad
+        # removes all bins); assume if elo is empty then so is ehi.
+        #
+        if len(elo) == 0:
+            raise DataErr('notmask')
 
         val = numpy.asarray(val)
         res = []
@@ -2269,9 +2276,14 @@ class DataPHA(Data1D):
         for bid in bkg_id:
             bkg = self.get_background(bid)
             old_bkg_units = bkg.units
-            bkg.units = self.units
-            bkg.notice(lo, hi, ignore)
-            bkg.units = old_bkg_units
+            try:
+                bkg.units = self.units
+                # If the background is all ignored then bkg.notice will
+                # do nothing (other than display an INFO message).
+                #
+                bkg.notice(lo, hi, ignore)
+            finally:
+                bkg.units = old_bkg_units
 
         # If we're only supposed to filter backgrounds, return
         if filter_background_only:
@@ -2284,10 +2296,26 @@ class DataPHA(Data1D):
             self.notice_response(False)
 
         elo, ehi = self._get_ebins()
+
+        # We do not want a "all data are masked out" error to cause
+        # this to fail; it should just do nothing (as trying to set
+        # a noticed range to include masked-out ranges would also
+        # be ignored).
+        #
         if lo is not None and type(lo) != str:
-            lo = self._to_channel(lo)
+            try:
+                lo = self._to_channel(lo)
+            except DataErr as de:
+                info("Skipping dataset {}: {}".format(self.name,
+                                                      de))
+                return
         if hi is not None and type(hi) != str:
-            hi = self._to_channel(hi)
+            try:
+                hi = self._to_channel(hi)
+            except DataErr as de:
+                info("Skipping dataset {}: {}".format(self.name,
+                                                      de))
+                return
 
         if ((self.units == "wavelength" and
              elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
