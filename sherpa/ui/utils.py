@@ -11180,15 +11180,15 @@ class Session(NoNewAttributesAfterInit):
         A value of ``None`` (or not set) means to use the default value
         for that attribute, unless indicated otherwise.
 
-        ``color``
-           The color to draw the contours. The default is ``None``.
+        ``alpha``
+           The transparency value used to draw the contours,
+           where 0 is fully transparent and 1 is fully opaque.
 
-        ``style``
-           How to draw the contours. The default is ``None``.
+        ``colors``
+           The colors to draw the contours.
 
-        ``thickness``
-           What thickness of line to draw the contours. The default is
-           ``None``.
+        ``linewidths``
+           What thickness of line to draw the contours.
 
         ``xlog``
            Should the X axis be drawn with a logarithmic scale? The
@@ -11312,15 +11312,15 @@ class Session(NoNewAttributesAfterInit):
         A value of ``None`` (or not set) means to use the default value
         for that attribute, unless indicated otherwise.
 
-        ``color``
-           The color to draw the contours. The default is ``red``.
+        ``alpha``
+           The transparency value used to draw the contours,
+           where 0 is fully transparent and 1 is fully opaque.
 
-        ``style``
-           How to draw the contours. The default is ``None``.
+        ``colors``
+           The colors to draw the contours.
 
-        ``thickness``
-           What thickness of line to draw the contours. The default is
-           ``3``.
+        ``linewidths``
+           What thickness of line to draw the contours.
 
         ``xlog``
            Should the X axis be drawn with a logarithmic scale? The
