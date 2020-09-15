@@ -248,7 +248,6 @@ def test_delete_bkg_model(clean_astro_ui):
     assert set(mdls) == set(['bmdl', 'gmdl'])
 
 
-@pytest.mark.xfail
 def test_default_background_issue(clean_astro_ui):
     """Test issue #943"""
 
@@ -272,7 +271,6 @@ def test_default_background_issue(clean_astro_ui):
     assert mdl2.c0.val == pytest.approx(2 / 3 / 0.1)
 
 
-@pytest.mark.xfail
 def test_show_bkg_model_issue943(clean_astro_ui):
     """Test issue #943
 
@@ -294,7 +292,6 @@ def test_show_bkg_model_issue943(clean_astro_ui):
     ui.show_bkg_model()
 
 
-@pytest.mark.xfail
 def test_default_background_issue_fit(clean_astro_ui):
     """Test issue #943 with fit
 
@@ -342,7 +339,7 @@ def test_bkg_id_get_bkg_source(clean_astro_ui):
     with pytest.raises(ModelErr) as exc:
         ui.get_bkg_source()
 
-    assert str(exc.value) == 'background model x for data set x has not been set'
+    assert str(exc.value) == 'background model 1 for data set x has not been set'
 
 
 def test_fix_background_id_error_checks1():

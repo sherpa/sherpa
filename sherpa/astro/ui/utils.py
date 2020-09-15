@@ -137,6 +137,32 @@ class Session(sherpa.ui.utils.Session):
     # High-level utilities
     ###########################################################################
 
+    def _fix_background_id(self, id, bkg_id):
+        """Check the background id
+
+        Notes
+        -----
+        Since there is currently no way to set the default
+        background id of the DataPHA class (e.g. in unpack_pha)
+        we do not use the _default_id setting here.
+        """
+
+        if bkg_id is None:
+            # The assumption here is that if we are asking about a
+            # background identifier then there must already be a
+            # loaded PHA dataset.
+            data = self._get_pha_data(id)
+            return data.default_background_id
+
+            # return self._default_id
+
+        if not self._valid_id(bkg_id):
+            raise ArgumentTypeErr('intstr')
+        if bkg_id in self._plot_types.keys() or bkg_id in self._contour_types.keys():
+            raise IdentifierErr('badid', bkg_id)
+
+        return bkg_id
+
     def __setstate__(self, state):
         if '_background_sources' not in state:
             self.__dict__['_background_sources'] = state.pop(
@@ -9243,7 +9269,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         id = self._fix_id(id)
-        bkg_id = self._fix_id(bkg_id)
+        bkg_id = self._fix_background_id(id, bkg_id)
 
         model = self._background_sources.get(id, {}).get(bkg_id)
         if model is None:
@@ -9294,7 +9320,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         id = self._fix_id(id)
-        bkg_id = self._fix_id(bkg_id)
+        bkg_id = self._fix_background_id(id, bkg_id)
 
         mdl = self._background_models.get(id, {}).get(bkg_id)
 
@@ -9390,7 +9416,7 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
 
         id = self._fix_id(id)
-        bkg_id = self._fix_id(bkg_id)
+        bkg_id = self._fix_background_id(id, bkg_id)
 
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
@@ -9512,7 +9538,7 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
 
         id = self._fix_id(id)
-        bkg_id = self._fix_id(bkg_id)
+        bkg_id = self._fix_background_id(id, bkg_id)
 
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
@@ -9572,10 +9598,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         id = self._fix_id(id)
-        bkg_id = self._fix_id(bkg_id)
+        bkg_id = self._fix_background_id(id, bkg_id)
+
         # remove dependency of having a loaded PHA dataset at the time
         # of bkg model init.
-#        bkg_id = self._get_pha_data(id)._fix_background_id(bkg_id)
+        #  bkg_id = self._get_pha_data(id)._fix_background_id(bkg_id)
         self._background_models.get(id, {}).pop(bkg_id, None)
         self._background_sources.get(id, {}).pop(bkg_id, None)
 
