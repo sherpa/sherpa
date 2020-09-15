@@ -6962,7 +6962,7 @@ class XSzbbody(XSAdditiveModel):
 
 @version_at_least("12.10.1")
 class XSzbknpower(XSAdditiveModel):
-    """The XSPEC bknpower model: broken power law.
+    """The XSPEC zbknpower model: broken power law.
 
     The model is described at [1]_.
 
@@ -12635,7 +12635,7 @@ class XSrfxconv(XSConvolutionKernel):
 
 
 class XSrgsxsrc(XSConvolutionKernel):
-    """The XSPEC rgxsrc convolution model: convolve an RGS spectrum for extended emission.
+    """The XSPEC rgsxsrc convolution model: convolve an RGS spectrum for extended emission.
 
     The model is described at [1]_.
 
