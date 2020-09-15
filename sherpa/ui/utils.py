@@ -9284,6 +9284,7 @@ class Session(NoNewAttributesAfterInit):
            order as ``parnames``.
 
         ``nfits``
+           The number of model evaluations.
 
         There is also an ``extra_output`` field which is used to return
         the covariance matrix.
@@ -9318,7 +9319,6 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._covariance_results
 
-    # DOC_TODO: what is the best description for nfits?
     def get_conf_results(self):
         """Return the results of the last `conf` run.
 
@@ -9380,7 +9380,7 @@ class Session(NoNewAttributesAfterInit):
            order as ``parnames``.
 
         ``nfits``
-
+           The number of model evaluations.
 
         Examples
         --------
@@ -9481,6 +9481,7 @@ class Session(NoNewAttributesAfterInit):
            order as ``parnames``.
 
         ``nfits``
+           The number of model evaluations.
 
         Examples
         --------
