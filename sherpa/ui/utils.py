@@ -12135,6 +12135,9 @@ class Session(NoNewAttributesAfterInit):
                    clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils
+    #  - we include a description of the DataPHA handling here
+    #    even though its only relevant to sherpa.astro.ui
+    #
     def plot_model(self, id=None, replot=False, overplot=False,
                    clearwindow=True, **kwargs):
         """Plot the model for a data set.
@@ -12175,6 +12178,12 @@ class Session(NoNewAttributesAfterInit):
         -----
         The additional arguments supported by `plot_model` are the same
         as the keywords of the dictionary returned by `get_model_plot_prefs`.
+
+        For PHA data sets the model plot created by `plot_model` differs to
+        the model plot created by `plot_fit`: the fit version uses the grouping
+        of the data set whereas the `plot_model` version shows the ungrouped
+        data (that is, it uses the instrumental grid). The filters used are the
+        same in both cases.
 
         Examples
         --------
