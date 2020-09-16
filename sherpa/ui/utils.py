@@ -4598,6 +4598,10 @@ class Session(NoNewAttributesAfterInit):
         for vals in sherpa.utils.parse_expr(expr):
             self.notice_id(ids, *vals, **kwargs)
 
+    # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
+    # should only be in the sherpa.astro.ui version, but it is not
+    # worth creating a copy of the routine just for this.
+    #
     def notice(self, lo=None, hi=None, **kwargs):
         """Include data in the fit.
 
@@ -4616,6 +4620,12 @@ class Session(NoNewAttributesAfterInit):
            higher than, or equal to, ``a``.
         hi : number, optional
            The upper bound of the filter when ``lo`` is not a string.
+        bkg_id : int or str, optional
+           The filter will be applied to the associated background
+           component of the data set if ``bkg_id`` is set. Only PHA
+           data sets support this option; if not given, then the
+           filter is applied to all background components as well
+           as the source data.
 
         See Also
         --------
@@ -4685,6 +4695,10 @@ class Session(NoNewAttributesAfterInit):
         for d in self._data.values():
             d.notice(lo, hi, **kwargs)
 
+    # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
+    # should only be in the sherpa.astro.ui version, but it is not
+    # worth creating a copy of the routine just for this.
+    #
     def ignore(self, lo=None, hi=None, **kwargs):
         """Exclude data from the fit.
 
@@ -4703,6 +4717,12 @@ class Session(NoNewAttributesAfterInit):
            higher than, or equal to, ``a``.
         hi : number, optional
            The upper bound of the filter when ``lo`` is not a string.
+        bkg_id : int or str, optional
+           The filter will be applied to the associated background
+           component of the data set if ``bkg_id`` is set. Only PHA
+           data sets support this option; if not given, then the
+           filter is applied to all background components as well
+           as the source data.
 
         See Also
         --------
@@ -4759,6 +4779,10 @@ class Session(NoNewAttributesAfterInit):
             return self._notice_expr(lo, **kwargs)
         self.notice(lo, hi, **kwargs)
 
+    # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
+    # should only be in the sherpa.astro.ui version, but it is not
+    # worth creating a copy of the routine just for this.
+    #
     def notice_id(self, ids, lo=None, hi=None, **kwargs):
         """Include data from the fit for a data set.
 
@@ -4821,7 +4845,10 @@ class Session(NoNewAttributesAfterInit):
         >>> notice_id(["core","jet"], "0.5:2, 2.2:7")
 
         """
-        if self._valid_id(ids):
+        if ids is None:
+            _argument_type_error('ids',
+                                 'an identifier or list of identifiers')
+        elif self._valid_id(ids):
             ids = (ids,)
         else:
             try:
@@ -4835,6 +4862,10 @@ class Session(NoNewAttributesAfterInit):
         for i in ids:
             self.get_data(i).notice(lo, hi, **kwargs)
 
+    # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
+    # should only be in the sherpa.astro.ui version, but it is not
+    # worth creating a copy of the routine just for this.
+    #
     def ignore_id(self, ids, lo=None, hi=None, **kwargs):
         """Exclude data from the fit for a data set.
 

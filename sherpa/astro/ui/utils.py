@@ -1503,8 +1503,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_data(id, data)
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def unpack_image(self, arg, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
         """Create an image data structure.
@@ -1617,8 +1615,6 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     # DOC-TODO: what does this return when given a PHA2 file?
     def unpack_pha(self, arg, use_errors=False):
         """Create a PHA data structure.
@@ -1671,8 +1667,6 @@ class Session(sherpa.ui.utils.Session):
         use_errors = sherpa.utils.bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors)
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     # DOC-TODO: what does this return when given a PHA2 file?
     def unpack_bkg(self, arg, use_errors=False):
         """Create a PHA data structure for a background data set.
@@ -1901,12 +1895,14 @@ class Session(sherpa.ui.utils.Session):
             info("One data set has been input: {}".format(ids[0]))
 
     def _get_pha_data(self, id):
+        """Ensure the dataset is a PHA"""
         data = self.get_data(id)
         if not isinstance(data, sherpa.astro.data.DataPHA):
             raise ArgumentErr('nopha', self._fix_id(id))
         return data
 
     def _get_img_data(self, id):
+        """Ensure the dataset is an image"""
         data = self.get_data(id)
         if not isinstance(data, sherpa.astro.data.DataIMG):
             raise ArgumentErr('noimg', self._fix_id(id))
@@ -1932,8 +1928,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_filter(self, id, filename=None, bkg_id=None, ignore=False,
                     ncols=2, *args, **kwargs):
         """Load the filter array from a file and add to a data set.
@@ -2012,8 +2006,6 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id, ignore=ignore)
 
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     # DOC-TODO: prob. needs a review as the existing ahelp documentation
     # talks about 2 cols, but experimentation suggests 1 col.
     def load_grouping(self, id, filename=None, bkg_id=None, *args, **kwargs):
@@ -2102,8 +2094,6 @@ class Session(sherpa.ui.utils.Session):
         self.set_grouping(id,
                           self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
         """Load the quality array from a file and add to a PHA data set.
 
@@ -2241,8 +2231,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     d.mask &= ~filter
             else:
-                raise sherpa.utils.err.DataErr('mismatch',
-                                               len(d.mask), len(filter))
+                raise DataErr('mismatch', len(d.mask), len(filter))
         else:
             if len(d.get_y(False)) == len(filter):
                 if not ignore:
@@ -2250,8 +2239,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     d.mask = ~filter
             else:
-                raise sherpa.utils.err.DataErr('mismatch',
-                                               len(d.get_y(False)), len(filter))
+                raise DataErr('mismatch', len(d.get_y(False)), len(filter))
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
@@ -2968,7 +2956,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         err = d.get_syserror(filter)
         if err is None or not numpy.iterable(err):
-            raise sherpa.utils.err.DataErr('nosyserr', id)
+            raise DataErr('nosyserr', id)
         return err
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
@@ -4243,9 +4231,9 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
         if d.mask is False:
-            raise sherpa.utils.err.DataErr('notmask')
+            raise DataErr('notmask')
         if not numpy.iterable(d.mask):
-            raise sherpa.utils.err.DataErr('nomask', id)
+            raise DataErr('nomask', id)
 
         x = d.get_indep(filter=False)[0]
         mask = numpy.asarray(d.mask, numpy.int)
@@ -4605,8 +4593,6 @@ class Session(sherpa.ui.utils.Session):
 
         sherpa.astro.io.write_pha(filename, d, ascii, clobber)
 
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the grouping scheme to a file.
 
@@ -4685,13 +4671,11 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
 
         if d.grouping is None or not numpy.iterable(d.grouping):
-            raise sherpa.utils.err.DataErr('nogrouping', id)
+            raise DataErr('nogrouping', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the quality array to a file.
 
@@ -4770,7 +4754,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
 
         if d.quality is None or not numpy.iterable(d.quality):
-            raise sherpa.utils.err.DataErr('noquality', id)
+            raise DataErr('noquality', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
                                      ['CHANNEL', 'QUALITY'], ascii, clobber)
@@ -5007,8 +4991,6 @@ class Session(sherpa.ui.utils.Session):
                     except:
                         raise
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def pack_pha(self, id=None):
         """Convert a PHA data set into a file structure.
 
@@ -5037,8 +5019,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def pack_image(self, id=None):
         """Convert a data set into an image structure.
 
@@ -5062,8 +5042,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def pack_table(self, id=None):
         """Convert a data set into a table structure.
 
@@ -5366,8 +5344,6 @@ class Session(sherpa.ui.utils.Session):
         if data.units == 'channel':
             data._set_initial_quantity()
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def unpack_arf(self, arg):
         """Create an ARF data structure.
 
@@ -5422,8 +5398,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_arf(self, id, arg=None, resp_id=None, bkg_id=None):
         """Load an ARF from a file and add it to a PHA data set.
 
@@ -5553,8 +5527,6 @@ class Session(sherpa.ui.utils.Session):
         return self.get_arf(id, resp_id, bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_bkg_arf(self, id, arg=None):
         """Load an ARF from a file and add it to the background of a
         PHA data set.
@@ -5843,8 +5815,6 @@ class Session(sherpa.ui.utils.Session):
         if data.units == 'channel':
             data._set_initial_quantity()
 
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def unpack_rmf(self, arg):
         """Create a RMF data structure.
 
@@ -5899,8 +5869,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_rmf(self, id, arg=None, resp_id=None, bkg_id=None):
         """Load a RMF from a file and add it to a PHA data set.
 
@@ -6025,8 +5993,6 @@ class Session(sherpa.ui.utils.Session):
         return self.get_rmf(id, resp_id, bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_bkg_rmf(self, id, arg=None):
         """Load a RMF from a file and add it to the background of a
         PHA data set.
@@ -6249,6 +6215,11 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        If the background has no grouping of quality arrays then they
+        are copied from the source region. If the background has no
+        response information (ARF or RMF) then the response is copied
+        from the source region.
+
         Examples
         --------
 
@@ -6269,20 +6240,6 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_pha_data(id)
         _check_type(bkg, sherpa.astro.data.DataPHA, 'bkg', 'a PHA data set')
         data.set_background(bkg, bkg_id)
-        if bkg.grouping is None:
-            bkg.grouping = data.grouping
-            bkg.grouped = (bkg.grouping is not None)
-        if bkg.quality is None:
-            bkg.quality = data.quality
-
-        if bkg.get_response() == (None, None):
-            bkg.set_response(*data.get_response())
-
-        if bkg.get_response() != (None, None):
-            bkg.units = data.units
-
-        bkg.rate = data.rate
-        bkg.plot_fac = data.plot_fac
 
     def list_bkg_ids(self, id=None):
         """List all the background identifiers for a data set.
@@ -8858,34 +8815,55 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
     def _add_convolution_models(self, id, data, model, is_source):
+
+        id = self._fix_id(id)
+
+        # Add any convolution components from the sherpa.ui layer
         model = \
             sherpa.ui.utils.Session._add_convolution_models(self, id, data,
                                                             model, is_source)
-        id = self._fix_id(id)
-        if (isinstance(data, sherpa.astro.data.DataPHA) and is_source):
-            if not data.subtracted:
-                bkg_srcs = self._background_sources.get(self._fix_id(id), {})
-                if len(bkg_srcs.keys()) != 0:
-                    model = (model +
-                             sherpa.astro.background.BackgroundSumModel
-                             (data, bkg_srcs))
 
-            pileup_model = self._pileup_models.get(self._fix_id(id))
-            if pileup_model is not None:
-                resp = \
-                    sherpa.astro.instrument.PileupResponse1D(
-                        data, pileup_model)
-                model = resp(model)
+        # If we don't need to deal with DataPHA issues we can return
+        if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
+            return model
 
-            elif len(data._responses) > 1:
-                resp = sherpa.astro.instrument.MultipleResponse1D(data)
-                model = resp(model)
+        if not data.subtracted:
+            bkg_srcs = self._background_sources.get(id, {})
+            if len(bkg_srcs.keys()) != 0:
+                model = (model +
+                         sherpa.astro.background.BackgroundSumModel
+                         (data, bkg_srcs))
 
-            else:
-                resp = sherpa.astro.instrument.Response1D(data)
-                model = resp(model)
+        resp = self._get_response(id, data)
+        return resp(model)
 
-        return model
+    def _get_response(self, id, pha):
+        """Calculate the response for the dataset.
+
+        Parameter
+        ---------
+        id : int or str
+            The identifier (this is required to be valid).
+        pha : sherpa.astro.data.DataPHA
+            The dataset
+
+        Returns
+        -------
+        response
+           The return value depends on whether an ARF, RMF, or pile up
+           model has been associated with the data set.
+
+        """
+
+        pileup_model = self._pileup_models.get(id)
+        if pileup_model is not None:
+            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
+        elif len(pha._responses) > 1:
+            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
+        else:
+            resp = sherpa.astro.instrument.Response1D(pha)
+
+        return resp
 
     def get_response(self, id=None, bkg_id=None):
         """Return the response information applied to a PHA data set.
@@ -8942,20 +8920,13 @@ class Session(sherpa.ui.utils.Session):
         >>> set_full_model(rsp(powlaw1d.pl) + const1d.bgnd)
 
         """
-        pha = self._get_pha_data(id)
+        id = self._fix_id(id)
         if bkg_id is not None:
             pha = self.get_bkg(id, bkg_id)
-        resp = None
-
-        pileup_model = self._pileup_models.get(self._fix_id(id))
-        if pileup_model is not None:
-            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
-        elif len(pha._responses) > 1:
-            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
         else:
-            resp = sherpa.astro.instrument.Response1D(pha)
+            pha = self._get_pha_data(id)
 
-        return resp
+        return self._get_response(id, pha)
 
     def get_pileup_model(self, id=None):
         """Return the pile up model for a data set.
@@ -9109,22 +9080,6 @@ class Session(sherpa.ui.utils.Session):
         self._set_item(id, model, self._pileup_models, sherpa.models.Model,
                        'model', 'a model object or model expression string')
 
-    def _get_bkg_model_status(self, id=None, bkg_id=None):
-        src = self._background_sources.get(id, {}).get(bkg_id)
-        mdl = self._background_models.get(id, {}).get(bkg_id)
-
-        if src is None and mdl is None:
-            IdentifierErr('getitem', 'model', id, 'has not been set')
-
-        model = mdl
-        is_source = False
-
-        if mdl is None and src is not None:
-            is_source = True
-            model = src
-
-        return (model, is_source)
-
     def get_bkg_source(self, id=None, bkg_id=None):
         """Return the model expression for the background of a PHA data set.
 
@@ -9220,23 +9175,34 @@ class Session(sherpa.ui.utils.Session):
         """
         id = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
-        src, is_source = self._get_bkg_model_status(id, bkg_id)
+
+        mdl = self._background_models.get(id, {}).get(bkg_id)
+
+        if mdl is None:
+            is_source = True
+            src = self._background_sources.get(id, {}).get(bkg_id)
+        else:
+            is_source = False
+            src = mdl
 
         if src is None:
             raise ModelErr('nobkg', bkg_id, id)
 
-        data = self._get_pha_data(id)
-        bkg = self.get_bkg(id, bkg_id)
+        if not is_source:
+            return src
 
-        model = src
-        if is_source:
-            if len(bkg.response_ids) != 0:
-                resp = sherpa.astro.instrument.Response1D(bkg)
-                model = resp(src)
-            else:
-                resp = sherpa.astro.instrument.Response1D(data)
-                model = resp(src)
-        return model
+        # The background response is set bu the DataPHA.set_background
+        # method (copying one over, if it does not exist), which means
+        # that the only way to get to this point is if the user has
+        # explicitly deleted the background response. In this case
+        # we error out.
+        #
+        bkg = self.get_bkg(id, bkg_id)
+        if len(bkg.response_ids) == 0:
+            raise DataErr('nobrsp', str(id), str(bkg_id))
+
+        resp = sherpa.astro.instrument.Response1D(bkg)
+        return resp(src)
 
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
         """Define the convolved background model expression for a PHA data set.

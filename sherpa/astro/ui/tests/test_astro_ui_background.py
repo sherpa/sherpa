@@ -267,8 +267,6 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     ui.set_bkg_source(id, ui.powlaw1d.bpl)
     ui.set_bkg_source(id, ui.powlaw1d.bpl, bkg_id=2)
 
-    iid = 1 if id is None else id
-
     bmdl = ui.get_bkg_model(id, bkg_id=1)
     assert bmdl.name == 'apply_rmf(apply_arf((1000 * powlaw1d.bpl)))'
 
@@ -398,9 +396,20 @@ def test_pha1_instruments(clean_astro_ui):
     # We don't check the scaling here
     scales = (1, 1, 1)
     ui.set_data(1, setup_pha1(scales, scales, scales))
-    ui.set_source(1, ui.stephi1d.smdl)
-    ui.set_bkg_source(1, ui.steplo1d.bmdl)
-    ui.set_bkg_source(1, bmdl, bkg_id=2)
+
+    s = ui.stephi1d.s
+    b = ui.steplo1d.b
+    ui.set_source(1, s)
+    ui.set_bkg_source(1, b)
+    ui.set_bkg_source(1, b, bkg_id=2)
+
+    ssrc = ui.get_source()
+    bsrc1 = ui.get_bkg_source(bkg_id=1)
+    bsrc2 = ui.get_bkg_source(bkg_id=2)
+
+    assert ssrc == s
+    assert bsrc1 == b
+    assert bsrc2 == b
 
     smdl = ui.get_model()
     bmdl1 = ui.get_bkg_model(bkg_id=1)
@@ -431,9 +440,10 @@ def test_pha1_instruments_missing(bid, clean_astro_ui):
     bkg = ui.get_bkg(1, bkg_id=bid)
     bkg.delete_response()
 
-    # Where is this response coming from?
-    ans = ui.get_bkg_model(bkg_id=bid)
-    assert isinstance(ans, ARFModelPHA)
+    with pytest.raises(DataErr) as exc:
+        ui.get_bkg_model(bkg_id=bid)
+
+    assert str(exc.value) == 'No instrument response found for dataset 1 background {}'.format(bid)
 
     oid = 1 if bid == 2 else 2
     bmdl = ui.get_bkg_model(bkg_id=oid)
@@ -1084,7 +1094,7 @@ def test_response_source_data(make_data_path, clean_astro_ui, hide_logging):
     assert eterm.val == pytest.approx(bexpval)
 
 
-def validate_response_source_data_manual(direct=True):
+def validate_response_source_data_manual():
     """Tests for test_response_source_data_manual[_datapha]
 
     It checks out issue #880.
@@ -1104,10 +1114,7 @@ def validate_response_source_data_manual(direct=True):
     # adapt to the current behavior.
     #
     pname = mdl.pha.name.split('/')[-1]
-    if direct:
-        assert pname == 'fake'
-    else:
-        assert pname == '12845.pi'
+    assert pname == 'fake'
 
     aname = mdl.arf.name.split('/')[-1]
     assert aname == '12845.warf'
@@ -1117,10 +1124,7 @@ def validate_response_source_data_manual(direct=True):
 
     eterm = mdl.parts[0].parts[0]
     assert isinstance(eterm, ArithmeticConstantModel)
-    if direct:
-        assert eterm.val == pytest.approx(bexpval)
-    else:
-        assert eterm.val == pytest.approx(expval)
+    assert eterm.val == pytest.approx(bexpval)
 
     # Source response
     #
@@ -1204,7 +1208,7 @@ def test_response_source_data_manual_datapha(make_data_path, clean_astro_ui, hid
     ui.set_source(ui.powlaw1d.smdl)
     ui.set_bkg_source(ui.const1d.bmdl)
 
-    validate_response_source_data_manual(direct=False)
+    validate_response_source_data_manual()
 
 
 @requires_data
@@ -1348,7 +1352,7 @@ def test_bkg_analysis_setting_no_response(idval, direct, clean_astro_ui):
         with pytest.raises(DataErr) as exc:
             ui.set_analysis(idval, 'energy')
 
-    assert str(exc.value) == 'No instrument model found for dataset ex'
+    assert str(exc.value) == 'No instrument response found for dataset ex'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one"])
@@ -1389,16 +1393,6 @@ def test_bkg_analysis_setting_changed(idval, direct, analysis, clean_astro_ui):
 
     src = ui.get_data(idval)
     bkg = ui.get_bkg(idval)
-
-    # Want to be able to mark some tests as XFAIL, but as it
-    # involves a parameter setting, how best to do this and
-    # get to see a XPASS when the code is fixed?
-    #
-    if direct and analysis != 'channel':
-        if bkg.units == analysis:
-            assert False, "Test was expected to fail, but can not mark XPASS"
-
-        pytest.xfail("Using set_background does not set units")
 
     assert src.units == analysis
     assert bkg.units == analysis

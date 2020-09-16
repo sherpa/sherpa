@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019
+#  Copyright (C) 2010, 2016, 2017, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -228,10 +228,10 @@ class DataErr(SherpaErr):
             'nocoord': "data set '%s' does not contain a %s coordinate system",
             'bkgmodel': 'background %r has no associated model',
             'plottype': "unknown plot type '%s', choose %s",
-            'noinstr': "No instrument model found for dataset %s",
             'normffake': 'An RMF has not been found or supplied for data set %s',
             'noenerg': 'no energy grid found in PHA response',
             'norsp': 'No instrument response found for dataset %s',
+            'nobrsp': 'No instrument response found for dataset %s background %s',
             'ogip-error': "The %s '%s' %s"
             }
 
@@ -318,7 +318,6 @@ class ModelErr(SherpaErr):
             'filterarray': "filter '%s' is not an array",
             'filtermismatch': "Mismatch between %s and %s",
             'nobkg': 'background model %s for data set %s has not been set',
-            'norsp': 'No background response found for background %s in data set %s',
             'nogrid': 'There is no grid on which to evaluate the model',
             'needspoint': 'A non-integrated grid is required for model evaluation',
             }

@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import warnings
 
 import numpy as np
@@ -29,7 +30,6 @@ from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
 
-import logging
 logger = logging.getLogger('sherpa')
 
 
@@ -1033,3 +1033,13 @@ def test_pha_mask_filtered(infile, size, nset, make_data_path):
     assert pha.mask.dtype == np.bool
     assert pha.mask.size == size
     assert pha.mask.sum() == nset
+
+
+def test_sum_background_data_missing():
+    """Check we error out if there's no background data"""
+
+    d = DataPHA('tmp', np.arange(3), np.arange(3))
+    with pytest.raises(DataErr) as exc:
+        d.sum_background_data()
+
+    assert str(exc.value) == "data set 'tmp' does not have any associated backgrounds"

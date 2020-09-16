@@ -62,4 +62,12 @@ class BackgroundSumModel(CompositeModel, ArithmeticModel):
             # of p)
             return bmodel(*args, **kwargs)
 
+        # Evaluate the background model for each dataset using the same
+        # grid and apply the background-to-source correction factors.
+        #
+        # This will only work if the scaling factors are scalars,
+        # since if there are any array elements then the models
+        # have been evaluated on the energy/wavelength grid,
+        # but the correction factors are defined in channel space.
+        #
         return self.srcdata.sum_background_data(eval_bkg_model)
