@@ -1523,10 +1523,10 @@ def parse_expr(expr):
                 hi = None
         else:
             # This check exited but was never hit due to the way the
-            # code was written. It now errors out if a used gives
+            # code was written. It now errors out if a user gives
             # a:b:c, whereas the old version would have just ignored
             # the ':c' part. Perhaps we should just keep dropping
-            # it, in case there's existing code that assumes this.
+            # it, in case there's existing code that assumes this?
             #
             raise TypeError("interval syntax requires a tuple, 'lo:hi'")
 
