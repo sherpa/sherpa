@@ -1281,3 +1281,36 @@ def test_plot_defaults(funcname, expected):
     prefs = getattr(ui, funcname)()
     assert isinstance(prefs, dict)
     assert prefs == expected
+
+
+@requires_fits
+@requires_data
+def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1):
+    """Does get_model_plot register filters correctly?
+
+    If there is an ignored range within a model, is it ignored?
+    This also holds for plot_model and the model_component
+    variants, but this is untested
+    """
+
+    # Ignore the 2-3 keV range
+    ui.ignore(2, 3)
+
+    mplot = ui.get_model_plot()
+
+    assert mplot.xlo.size == mplot.xhi.size
+    assert mplot.xlo.size == mplot.y.size
+
+    assert mplot.y.size == 566
+
+    assert mplot.xlo[0] == pytest.approx(0.46720001101493835)
+    assert mplot.xhi[0] == pytest.approx(0.48179998993873596)
+
+    assert mplot.xlo[-1] == pytest.approx(9.854999542236328)
+    assert mplot.xhi[-1] == pytest.approx(9.869600296020508)
+
+    assert mplot.xlo[100] == pytest.approx(1.9271999597549438)
+    assert mplot.xhi[100] == pytest.approx(1.9417999982833862)
+
+    assert mplot.xlo[101] == pytest.approx(3.0806000232696533)
+    assert mplot.xhi[101] == pytest.approx(3.0952000617980957)

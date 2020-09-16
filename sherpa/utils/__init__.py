@@ -1327,63 +1327,194 @@ def print_fields(names, vals, converters=None):
 
 
 def create_expr(vals, mask=None, format='%s', delim='-'):
+    """Create a string representation of a filter.
+
+    Use the mask to convert the input values into a set of
+    comma-separated filters - low value and high value, separated
+    by the delimeter - that represent the data. If the mask is
+    not given then the values must be "channel" values (that is,
+    two values are consecutive if there difference is 1).
+
+    Parameters
+    ----------
+    vals : sequence
+        The values that represent the sequence if mask is not None,
+        otherwise the selected channel numbers (in this case integer
+        values).
+    mask : sequence of bool or None, optional
+        The mask setting for the full dataset, without any filtering
+        applied. A value of True indicates the element is included
+        and False means it is excluded.
+    format : str, optional
+        The format used to display each value.
+    delim : str, optional
+        The separator for a range.
+
+    Raises
+    ------
+    ValueError
+        If the ``vals`` and ``mask`` sequences do not match: the
+        length of ``vals`` must equal the number of True values in
+        ``mask``.
+
+    Examples
+    --------
+
+    >>> create_expr([1, 2, 3, 4])
+    '1-4'
+
+    >>> create_expr([1, 2, 4, 5, 7])
+    '1-2,4-5,7'
+
+    >>> create_expr([1, 2, 3, 4], [True, True, True, True])
+    '1-4'
+
+    >>> create_expr([0.1, 0.2, 0.4, 0.8], [True, True, True, True])
+    '0.1-0.8'
+
+    >>> create_expr([0.1, 0.2, 0.4, 0.8], [True, True, True, False, False, True])
+    '0.1-0.4,0.8'
+
     """
-    collapse a list of channels into an expression using hyphens
-    and commas to indicate filtered intervals.
-    """
-    expr = []
 
     if len(vals) == 0:
         return ''
     elif len(vals) == 1:
         return format % vals[0]
 
-    diffs = numpy.apply_along_axis(numpy.diff, 0, vals)
-    if mask is not None:
+    if mask is None:
+        seq = vals
+    else:
+        # Ensure we have a boolean array to make indexing behave sensibly
+        # (NumPy 1.17 or so changed behavior related to this).
+        #
+        mask = numpy.asarray(mask, dtype=numpy.bool)
+
+        # Ensure that the vals and mask array match: the number of
+        # mask=True elements should equal the number of input values.
+        #
+        if sum(mask) != len(vals):
+            raise ValueError("mask array mis-match with vals")
+
+        # We only care about the difference between two consecutive
+        # values, so it doesn't matter if index starts at 0 or 1.
+        #
         index = numpy.arange(len(mask))
-        diffs = numpy.apply_along_axis(numpy.diff, 0, index[mask])
+        seq = index[mask]
 
-    for ii, delta in enumerate(diffs):
-        if ii == 0:
-            expr.append(format % vals[ii])
-            if delta != 1 or len(diffs) == 1:
-                expr.append(',')
+    # diffs has 1 less element than vals
+    #
+    diffs = numpy.apply_along_axis(numpy.diff, 0, seq)
+    diffs = diffs == 1
+
+    def filt(start, end):
+        "What is the filter expression for this range?"
+        vstr = format % start
+        if start != end:
+            vstr += delim + format % end
+        return vstr
+
+    # The trick here is that if diffs is True then we just want to
+    # update the end counter, which gives the end-point of the current
+    # range, and move to the next bin. We only output data when diffs
+    # is False, when we report the previous range and start a new
+    # range.
+    #
+    expr = []
+    start = vals[0]
+    end = vals[0]
+    for delta, val in zip(diffs, vals[1:]):
+
+        # If this is part of a contiguous sequence then we update
+        # the end value and move on.
+        #
+        if delta:
+            end = val
             continue
-        if delta == 1:
-            if expr[-1] == ',':
-                expr.append(format % vals[ii])
-            if expr[-1] != delim:
-                expr.append(delim)
-        else:
-            if not expr[-1] in (',', delim):
-                expr.append(',')
-            expr.append(format % vals[ii])
-            expr.append(',')
-    if len(expr) and expr[-1] in (',', delim):
-        expr.append(format % vals[-1])
 
-    return ''.join(expr)
+        # If we have a break then output the range we have just
+        # processed.
+        #
+        expr.append(filt(start, end))
+
+        # Start a new range.
+        #
+        start = val
+        end = val
+
+    # Handle the last range.
+    #
+    expr.append(filt(start, end))
+
+    return ','.join(expr)
 
 
 def parse_expr(expr):
+    """Convert a filter expression into its parts.
+
+    This is intended for parsing a notice or ignore expression
+    given as a string.
+
+    Parameters
+    ----------
+    expr : str
+        The filter expression, of the form 'a:b' or a single number,
+        separated by commas, and white space is ignored. The
+        upper or lower limit of a pair may be ignored (e.g. 'a:' or
+        ':b').
+
+    Returns
+    -------
+    filters : list of pairs
+        Each pair gives the lower- and upper-edge of the filter,
+        using ``None`` to represent no limit.
+
+    Notes
+    -----
+    There is no attempt to validate that the expression contains
+    strictly ordered pairs, or that the pairs do not overlap, or
+    that the lower- and upper-limits are in increasing numerical
+    order. That is, the expression '5:7,:2,4:6,5:3' is allowed.
+
+    Examples
+    --------
+
+    >>> parse_expr('0.5:7')
+    [(0.5, 7.0)]
+
+    >>> parse_expr('0.5:')
+    [(0.5, None)]
+
+    >>> parse_expr(':7')
+    [(None, 7.0)]
+
+    >>> parse_expr(':2, 4 : 5 ,7:8,10:')
+    [(None, 2.0), (4.0, 5.0), (7.0, 8.0), (10.0, None)]
+
+    >>> parse_expr('4')
+    [(4.0, 4.0)]
+
+    >>> parse_expr(' ')
+    [(None, None)]
+
     """
-    parse a filter expression into numerical components for notice/ignore
-    e.g. ':2,4:5,7:8,10:'
-    """
-    res = []
+
     if expr is None or str(expr).strip() == '':
-        res.append((None, None))
-        return res
+        return [(None, None)]
+
+    res = []
     vals = str(expr).strip().split(',')
     for val in vals:
         lo, hi = None, None
+
         interval = val.strip().split(':')
-        if len(interval) == 1:
+        ninterval = len(interval)
+        if ninterval == 1:
             lo = interval[0]
             if lo == '':
                 lo = None
             hi = lo
-        elif len(interval) > 1:
+        elif ninterval == 2:
             lo = interval[0]
             hi = interval[1]
             if lo == '':
@@ -1391,7 +1522,14 @@ def parse_expr(expr):
             if hi == '':
                 hi = None
         else:
+            # This check exited but was never hit due to the way the
+            # code was written. It now errors out if a user gives
+            # a:b:c, whereas the old version would have just ignored
+            # the ':c' part. Perhaps we should just keep dropping
+            # it, in case there's existing code that assumes this?
+            #
             raise TypeError("interval syntax requires a tuple, 'lo:hi'")
+
         if lo is not None:
             try:
                 lo = float(lo)
@@ -1402,7 +1540,9 @@ def parse_expr(expr):
                 hi = float(hi)
             except ValueError:
                 raise TypeError("Invalid upper bound '%s'" % str(hi))
+
         res.append((lo, hi))
+
     return res
 
 

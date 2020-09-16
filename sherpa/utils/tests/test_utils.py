@@ -17,13 +17,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import pytest
 import numpy
-from numpy.testing import assert_allclose, assert_equal
+
+import pytest
 
 from sherpa import utils
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
-from sherpa.utils.testing import SherpaTestCase
 from sherpa.data import Data1D
 from sherpa.models.basic import Gauss1D
 from sherpa.optmethods import LevMar
@@ -31,240 +30,278 @@ from sherpa.stats import LeastSq
 from sherpa.fit import Fit, DataSimulFit, SimulFitModel
 
 
-class test_utils(SherpaTestCase):
+def f1(a, b, c):
+    pass
 
-    def setUp(self):
-        def f1(a, b, c):
-            pass
-        self.f1 = f1
+def f2(a, b=1, c=2, d=3, e=4):
+    pass
 
-        def f2(a, b=1, c=2, d=3, e=4):
-            pass
-        self.f2 = f2
+def f3(a=None, b=1, c=2, d=3, e=4):
+    pass
 
-        def f3(a=None, b=1, c=2, d=3, e=4):
-            pass
-        self.f3 = f3
 
-    def test_NoNewAttributesAfterInit(self):
-        class C(NoNewAttributesAfterInit):
-            def __init__(self):
-                self.x = 1
-                self.y = 2
-                self.z = 3
-                del self.z
-                NoNewAttributesAfterInit.__init__(self)
+def test_NoNewAttributesAfterInit():
+    class C(NoNewAttributesAfterInit):
+        def __init__(self):
+            self.x = 1
+            self.y = 2
+            self.z = 3
+            del self.z
+            NoNewAttributesAfterInit.__init__(self)
 
-        c = C()
-        self.assertEqual(c.x, 1)
-        self.assertEqual(c.y, 2)
-        self.assertFalse(hasattr(c, 'z'))
-        self.assertRaises(AttributeError, delattr, c, 'x')
-        self.assertRaises(AttributeError, delattr, c, 'z')
-        self.assertRaises(AttributeError, setattr, c, 'z', 5)
-        c.x = 4
-        self.assertEqual(c.x, 4)
+    c = C()
 
-    def test_export_method(self):
-        class C():
-            def m(self, x, y=2):
-                'Instance method m()'
-                return x * y
+    assert c.x == 1
+    c.x = 4
+    assert c.x == 4
 
-            def margs(self, x, y=2, *args):
-                'Instance method margs() with *args'
-                return x * y + len(args)
+    assert c.y == 2
+    assert not hasattr(c, 'z')
 
-            def kwargs(self, x, y=2, **kwargs):
-                'Instance method kwargs() with **kwargs'
-                return x * y + 2 * len(kwargs)
+    # attribute that exists
+    with pytest.raises(AttributeError):
+        del c.x
 
-            def bargs(self, x, y=2, *args, **kwargs):
-                'Instance method bargs() with *args and **kwargs'
-                return x * y + len(args) + 2 * len(kwargs)
+    # attribute that not exist
+    with pytest.raises(AttributeError):
+        del c.z
 
-            @classmethod
-            def cm(klass, x, y=2):
-                'Class method cm()'
-                return x * y
+    with pytest.raises(AttributeError):
+        c.z = 5
 
-            @staticmethod
-            def sm(x, y=2):
-                'Static method sm()'
-                return x * y
 
-        c = C()
+def test_export_method():
+    class C():
 
-        # Basic usage
-        for meth in (c.m, c.margs, c.kwargs, c.bargs, c.cm, c.sm):
-            m = utils.export_method(meth)
-            self.assertEqual(m.__name__, meth.__name__)
-            self.assertTrue(m.__doc__ is not None)
-            self.assertEqual(m.__doc__, meth.__doc__)
-            self.assertEqual(m(3), 6)
-            self.assertEqual(m(3, 7), 21)
-            e = None
-            try:
-                m()
-            except TypeError as e:
-                emsg2 = "{}() ".format(meth.__name__) + \
-                        "takes at least 1 argument (0 given)"
-                emsg3 = "{}() ".format(meth.__name__) + \
-                        "missing 1 required positional argument: 'x'"
-                self.assertIn(str(e), [emsg2, emsg3])
+        def m(self, x, y=2):
+            'Instance method m()'
+            return x * y
 
-        # Check that *args/**kwargs are handled correctly for methods;
-        # should perhaps be included above to avoid repeated calls
-        # to export_method?
-        #
-        meth = utils.export_method(c.margs)
-        self.assertTrue(meth(3, 7, "a", "b"), 23)
-        try:
-            meth(12, dummy=None)
-        except TypeError as e:
-            emsg = "margs() got an unexpected keyword argument 'dummy'"
-            self.assertEqual(str(e), emsg)
+        def margs(self, x, y=2, *args):
+            'Instance method margs() with *args'
+            return x * y + len(args)
 
-        meth = utils.export_method(c.kwargs)
-        self.assertTrue(meth(3, 7, foo="a", bar="b"), 25)
-        try:
-            meth(12, 14, 15)
-        except TypeError as e:
-            emsg2 = "kwargs() takes at most 2 arguments (3 given)"
-            emsg3 = "kwargs() takes from 1 to 2 positional arguments " + \
-                    "but 3 were given"
-            self.assertIn(str(e), [emsg2, emsg3])
+        def kwargs(self, x, y=2, **kwargs):
+            'Instance method kwargs() with **kwargs'
+            return x * y + 2 * len(kwargs)
 
-        meth = utils.export_method(c.bargs)
-        self.assertTrue(meth(3, 7, 14, 15, foo=None), 25)
+        def bargs(self, x, y=2, *args, **kwargs):
+            'Instance method bargs() with *args and **kwargs'
+            return x * y + len(args) + 2 * len(kwargs)
 
-        # Non-method argument
-        def f(x):
-            return 2 * x
-        self.assertTrue(utils.export_method(f) is f)
+        @classmethod
+        def cm(klass, x, y=2):
+            'Class method cm()'
+            return x * y
 
-        # Name and module name
-        m = utils.export_method(c.m, 'foo', 'bar')
-        self.assertEqual(m.__name__, 'foo')
-        self.assertEqual(m.__module__, 'bar')
-        self.assertEqual(m(3), 6)
-        self.assertEqual(m(3, 7), 21)
+        @staticmethod
+        def sm(x, y=2):
+            'Static method sm()'
+            return x * y
 
-    def test_get_num_args(self):
-        self.assertEqual(utils.get_num_args(self.f1), (3, 3, 0))
-        self.assertEqual(utils.get_num_args(self.f2), (5, 1, 4))
-        self.assertEqual(utils.get_num_args(self.f3), (5, 0, 5))
+    c = C()
 
-    def test_get_keyword_names(self):
-        self.assertEqual(utils.get_keyword_names(self.f1), [])
-        l = ['b', 'c', 'd', 'e']
-        self.assertEqual(utils.get_keyword_names(self.f2), l)
-        self.assertEqual(utils.get_keyword_names(self.f2, 2), l[2:])
-        self.assertEqual(utils.get_keyword_names(self.f2, 7), [])
-        l = ['a', 'b', 'c', 'd', 'e']
-        self.assertEqual(utils.get_keyword_names(self.f3), l)
-        self.assertEqual(utils.get_keyword_names(self.f3, 1), l[1:])
-        self.assertEqual(utils.get_keyword_names(self.f3, 7), [])
+    # Basic usage
+    for meth in (c.m, c.margs, c.kwargs, c.bargs, c.cm, c.sm):
+        m = utils.export_method(meth)
 
-    def test_get_keyword_defaults(self):
-        self.assertEqual(utils.get_keyword_defaults(self.f1), {})
-        d = {'b': 1, 'c': 2, 'd': 3, 'e': 4}
-        self.assertEqual(utils.get_keyword_defaults(self.f2), d)
-        del d['b']
-        del d['c']
-        self.assertEqual(utils.get_keyword_defaults(self.f2, 2), d)
-        self.assertEqual(utils.get_keyword_defaults(self.f2, 7), {})
-        d = {'a': None, 'b': 1, 'c': 2, 'd': 3, 'e': 4}
-        self.assertEqual(utils.get_keyword_defaults(self.f3), d)
-        del d['a']
-        self.assertEqual(utils.get_keyword_defaults(self.f3, 1), d)
-        self.assertEqual(utils.get_keyword_defaults(self.f3, 7), {})
+        assert m.__name__ == meth.__name__
+        assert m.__doc__ is not None
+        assert m.__doc__ == meth.__doc__
 
-    def test_print_fields(self):
-        names = ['a', 'bb', 'ccc']
-        vals = {'a': 3, 'bb': 'Ham', 'ccc': numpy.array([1.0, 2.0, 3.0])}
-        self.assertEqual(utils.print_fields(names, vals),
-                         'a   = 3\nbb  = Ham\nccc = Float64[3]')
+        assert m(3) == 6
+        assert m(3, 7) == 21
 
-    def test_calc_total_error(self):
-        stat = numpy.array([1, 2])
-        sys = numpy.array([3, 4])
+        with pytest.raises(TypeError) as exc:
+            m()
 
-        self.assertEqual(utils.calc_total_error(None, None), None)
-        assert_equal(utils.calc_total_error(stat, None), stat)
-        assert_equal(utils.calc_total_error(None, sys), sys)
+        emsg = "{}() ".format(meth.__name__) + \
+                "missing 1 required positional argument: 'x'"
+        assert str(exc.value) == emsg
 
-        # Unlike the above tests, only look for equivalence within
-        # a tolerance, since the numbers are manipulated rather than
-        # copied in this case (although the equation should be the same
-        # so the old approach of using equality should actually be okay
-        # here).
-        ans = numpy.sqrt(stat * stat + sys * sys)
-        assert_allclose(utils.calc_total_error(stat, sys), ans)
+    # Check that *args/**kwargs are handled correctly for methods;
+    # should perhaps be included above to avoid repeated calls
+    # to export_method?
+    #
+    meth = utils.export_method(c.margs)
+    assert meth(3, 7, "a", "b") == 23
 
-    def test_poisson_noise(self):
-        out = utils.poisson_noise(1000)
-        self.assertEqual(type(out), SherpaFloat)
-        self.assertGreater(out, 0.0)
+    with pytest.raises(TypeError) as exc:
+        meth(12, dummy=None)
 
-        for x in (-1000, 0):
-            out = utils.poisson_noise(x)
-            self.assertEqual(type(out), SherpaFloat)
-            self.assertEqual(out, 0.0)
+    emsg = "margs() got an unexpected keyword argument 'dummy'"
+    assert str(exc.value) == emsg
 
-        out = utils.poisson_noise([1001, 1002, 0.0, 1003, -1004])
-        self.assertEqual(type(out), numpy.ndarray)
-        self.assertEqual(out.dtype.type, SherpaFloat)
-        ans = numpy.flatnonzero(out > 0.0)
-        assert_equal(ans, numpy.array([0, 1, 3]))
+    meth = utils.export_method(c.kwargs)
+    assert meth(3, 7, foo="a", bar="b" == 25)
 
-        self.assertRaises(ValueError, utils.poisson_noise, 'ham')
-        self.assertRaises(TypeError, utils.poisson_noise, [1, 2, 'ham'])
+    with pytest.raises(TypeError) as exc:
+        meth(12, 14, 15)
 
-    def test_neville(self):
-        func = numpy.exp
-        tol = 1.0e-6
-        num = 10
-        # TODO: can we not just use vectorized code here?
-        x = []
-        y = []
-        for ii in range(num):
-            x.append(ii / float(num))
-            y.append(func(x[ii]))
-        xx = numpy.array(x)
-        yy = numpy.array(y)
-        for ii in range(num):
-            tmp = 1.01 * (ii / float(num))
-            answer = func(tmp)
-            val = utils.neville(tmp, xx, yy)
-            self.assertTrue(utils.Knuth_close(answer, val, tol))
+    emsg = "kwargs() takes from 1 to 2 positional arguments " + \
+            "but 3 were given"
+    assert str(exc.value) in emsg
 
-    def test_neville2d(self):
-        funcx = numpy.sin
-        funcy = numpy.exp
-        nrow = 10
-        ncol = 10
-        tol = 1.0e-4
-        # TODO: As with test_neville; can this not be simplified with
-        # vectorized code
-        x = numpy.zeros((nrow, ))
-        y = numpy.zeros((ncol, ))
-        fval = numpy.empty((nrow, ncol))
-        row_tmp = numpy.pi / nrow
-        # col_tmp = 1.0 / float(ncol)
-        for row in range(nrow):
-            x[row] = (row + 1.0) * row_tmp
-            for col in range(ncol):
-                y[col] = (col + 1.0) / float(ncol)
-                fval[row][col] = funcx(x[row]) * funcy(y[col])
+    meth = utils.export_method(c.bargs)
+    assert meth(3, 7, 14, 15, foo=None) == 25
 
-        for row in range(ncol):
-            xx = (-0.1 + (row + 1.0) / float(nrow)) * numpy.pi
-            for col in range(4):
-                yy = -0.1 + (col + 1.0) / float(ncol)
-                answer = funcx(xx) * funcy(yy)
-                val = utils.neville2d(xx, yy, x, y, fval)
-                self.assertTrue(utils.Knuth_close(answer, val, tol))
+    # Non-method argument
+    def f(x):
+        return 2 * x
+
+    assert utils.export_method(f) is f
+
+    # Name and module name
+    m = utils.export_method(c.m, 'foo', 'bar')
+    assert m.__name__ == 'foo'
+    assert m.__module__ == 'bar'
+    assert m(3) == 6
+    assert m(3, 7) == 21
+
+
+@pytest.mark.parametrize("func,expected",
+                         [(f1, (3, 3, 0)),
+                          (f2, (5, 1, 4)),
+                          (f3, (5, 0, 5))])
+def test_get_num_args(func, expected):
+    assert utils.get_num_args(func) == expected
+
+
+def test_get_keyword_names_f1():
+    assert utils.get_keyword_names(f1) == []
+
+
+def test_get_keyword_names_f2():
+    l = ['b', 'c', 'd', 'e']
+    assert utils.get_keyword_names(f2) == l
+    assert utils.get_keyword_names(f2, 2) == l[2:]
+    assert utils.get_keyword_names(f2, 7) == []
+
+
+def test_get_keyword_names_f3():
+    l = ['a', 'b', 'c', 'd', 'e']
+    assert utils.get_keyword_names(f3) == l
+    assert utils.get_keyword_names(f3, 1) == l[1:]
+    assert utils.get_keyword_names(f3, 7) == []
+
+
+def test_get_keyword_defaults_f1():
+    assert utils.get_keyword_defaults(f1) == {}
+
+
+def test_get_keyword_defaults_f2():
+    d = {'b': 1, 'c': 2, 'd': 3, 'e': 4}
+    assert utils.get_keyword_defaults(f2) == d
+
+    del d['b']
+    del d['c']
+    assert utils.get_keyword_defaults(f2, 2) == d
+    assert utils.get_keyword_defaults(f2, 7) == {}
+
+
+def test_get_keyword_defaults_f3():
+    d = {'a': None, 'b': 1, 'c': 2, 'd': 3, 'e': 4}
+    assert utils.get_keyword_defaults(f3) == d
+
+    del d['a']
+    assert utils.get_keyword_defaults(f3, 1) == d
+    assert utils.get_keyword_defaults(f3, 7) == {}
+
+
+def test_print_fields():
+    names = ['a', 'bb', 'ccc']
+    vals = {'a': 3, 'bb': 'Ham', 'ccc': numpy.array([1.0, 2.0, 3.0])}
+
+    out = 'a   = 3\nbb  = Ham\nccc = Float64[3]'
+    assert utils.print_fields(names, vals) == out
+
+
+def test_calc_total_error():
+    stat = numpy.array([1, 2])
+    sys = numpy.array([3, 4])
+
+    assert utils.calc_total_error(None, None) is None
+    assert (utils.calc_total_error(stat, None) == stat).all()
+    assert (utils.calc_total_error(None, sys) == sys).all()
+
+    # Unlike the above tests, only look for equivalence within
+    # a tolerance, since the numbers are manipulated rather than
+    # copied in this case (although the equation should be the same
+    # so the old approach of using equality should actually be okay
+    # here).
+    ans = numpy.sqrt(stat * stat + sys * sys)
+    assert utils.calc_total_error(stat, sys) == pytest.approx(ans)
+
+
+def test_poisson_noise():
+    out = utils.poisson_noise(1000)
+    assert type(out) == SherpaFloat
+    assert out > 0.0
+
+    for x in (-1000, 0):
+        out = utils.poisson_noise(x)
+        assert type(out) == SherpaFloat
+        assert out == 0.0
+
+    out = utils.poisson_noise([1001, 1002, 0.0, 1003, -1004])
+    assert type(out) == numpy.ndarray
+    assert out.dtype.type == SherpaFloat
+
+    ans = numpy.flatnonzero(out > 0.0)
+    assert (ans == numpy.array([0, 1, 3])).all()
+
+    with pytest.raises(ValueError):
+        utils.poisson_noise('ham')
+
+    with pytest.raises(TypeError):
+        utils.poisson_noise(1, 2, 'ham')
+
+
+def test_neville():
+    func = numpy.exp
+    tol = 1.0e-6
+    num = 10
+    # TODO: can we not just use vectorized code here?
+    x = []
+    y = []
+    for ii in range(num):
+        x.append(ii / float(num))
+        y.append(func(x[ii]))
+    xx = numpy.array(x)
+    yy = numpy.array(y)
+    for ii in range(num):
+        tmp = 1.01 * (ii / float(num))
+        answer = func(tmp)
+        val = utils.neville(tmp, xx, yy)
+        assert utils.Knuth_close(answer, val, tol)
+
+
+def test_neville2d():
+    funcx = numpy.sin
+    funcy = numpy.exp
+    nrow = 10
+    ncol = 10
+    tol = 1.0e-4
+    # TODO: As with test_neville; can this not be simplified with
+    # vectorized code
+    x = numpy.zeros((nrow, ))
+    y = numpy.zeros((ncol, ))
+    fval = numpy.empty((nrow, ncol))
+    row_tmp = numpy.pi / nrow
+    # col_tmp = 1.0 / float(ncol)
+    for row in range(nrow):
+        x[row] = (row + 1.0) * row_tmp
+        for col in range(ncol):
+            y[col] = (col + 1.0) / float(ncol)
+            fval[row][col] = funcx(x[row]) * funcy(y[col])
+
+    for row in range(ncol):
+        xx = (-0.1 + (row + 1.0) / float(nrow)) * numpy.pi
+        for col in range(4):
+            yy = -0.1 + (col + 1.0) / float(ncol)
+            answer = funcx(xx) * funcy(yy)
+            val = utils.neville2d(xx, yy, x, y, fval)
+            assert utils.Knuth_close(answer, val, tol)
 
 
 @pytest.mark.parametrize("num_tasks, num_segments",
@@ -285,7 +322,7 @@ def test_parallel_map(num_tasks, num_segments):
 
         pararesult = utils.parallel_map(f, iterable, num_tasks)
 
-        assert_equal(result, numpy.asarray(pararesult))
+        assert numpy.asarray(pararesult) == pytest.approx(result)
 
 
 @pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
@@ -394,6 +431,7 @@ def test_filter_bins_unordered():
     for got, exp in zip(flags, expected):
         assert got == exp
 
+
 def test_parallel_map_funcs1():
     for arg in range(1, 5):
         func = [numpy.sum]
@@ -402,7 +440,9 @@ def test_parallel_map_funcs1():
         result = []
         for func, data in zip(funcs, datas):
             result.extend(numpy.asarray(list(map(func, data))))
-        assert_equal(result, utils.parallel_map_funcs(funcs, datas, arg))
+
+        assert utils.parallel_map_funcs(funcs, datas, arg) == pytest.approx(result)
+
 
 def test_parallel_map_funcs2():
     def tst(ncores, sg, stat, opt):
@@ -410,12 +450,15 @@ def test_parallel_map_funcs2():
         f = Fit(sd, sg, stat, opt)
         result = f.fit()
         return result
+
     def cmp_results(result, tol=1.0e-3):
         assert(result.succeeded == True)
         parvals = (1.7555670572301785, 1.5092728216164186, 4.893136872267538)
         assert result.numpoints == 200
-        assert_allclose(result.parvals, parvals, rtol=tol, atol=tol)
-        
+
+        # use tol in approx?
+        assert result.parvals == pytest.approx(parvals)
+
     numpy.random.seed(0)
     x = numpy.linspace(-5., 5., 100)
     ampl = 5
@@ -432,5 +475,357 @@ def test_parallel_map_funcs2():
 
     result = tst(1, sg, stat, opt)
     cmp_results(result)
+
     result = tst(2, sg, stat, opt)
     cmp_results(result)
+
+
+@pytest.mark.parametrize("arg", [None, '', '  \t  '])
+def test_parse_expr_empty(arg):
+    assert utils.parse_expr(arg) == [(None, None)]
+
+
+@pytest.mark.parametrize("arg,expected",
+                         [("2:", [(2.0, None)]),
+                          ("1:4, 5:", [(1.0, 4.0), (5.0, None)]),
+                          ("1:4, 5:6, 9:", [(1.0, 4.0), (5.0, 6.0), (9.0, None)]),
+                          (":2", [(None, 2.0)]),
+                          (":2, 3:4", [(None, 2.0), (3.0, 4.0)]),
+                          (":2, 3:4, 5:6", [(None, 2.0), (3.0, 4.0), (5.0, 6.0)]),
+                          (" 1:2,4:5  ", [(1.0, 2.0), (4.0, 5.0)]),
+                          (":2, 3, 5:6", [(None, 2.0), (3.0, 3.0), (5.0, 6.0)]),
+                          (" :2 ,4:  ", [(None, 2.0), (4.0, None)]),
+                          ("1:2 , 4:5, 6:8", [(1.0, 2.0), (4.0, 5.0), (6.0, 8.0)]),
+                          (" :2 , 4:5, 6: ", [(None, 2.0), (4.0, 5.0), (6.0, None)]),
+                          (":", [(None, None)]),
+                          ("2:3,:,4", [(2.0, 3.0), (None, None), (4.0, 4.0)]),
+                          (",2", [(None, None), (2.0, 2.0)]),
+                          ("2,", [(2.0, 2.0), (None, None)]),
+                          ("2,,3:4", [(2.0, 2.0), (None, None), (3.0, 4.0)]),
+                          (" , :", [(None, None), (None, None)]),
+                         ])
+def test_parse_expr(arg, expected):
+    """Check parse_expr with various conditions
+
+    Would be nice to use something like hypothesis to use
+    property-based testing.
+    """
+    assert utils.parse_expr(arg) == expected
+
+
+@pytest.mark.parametrize("instr,bound",
+                         [("None:1", "lower"),
+                          ("1:None", "upper"),
+                          ("None:None", "lower"),
+                          (":2,None:4", "lower"),
+                          (":2,3:None", "upper"),
+                          (":2,None:", "lower"),
+                          (":2,None:4,5:6", "lower"),
+                          (":2,3:None,8:", "upper"),
+                          ("1:2,3:5,None:None", "lower"),
+                         ])
+def test_parse_expr_not_num(instr, bound):
+
+    with pytest.raises(TypeError) as exc:
+        utils.parse_expr(instr)
+
+    emsg = "Invalid {} bound 'None'".format(bound)
+    assert  str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("instr",
+                         ["1:2:4", "1:3 , 4 : 5:0.2"])
+def test_parse_expr_unexpected_parses(instr):
+    """You used to be able to say a:b:c:d:e and still have it parsed"""
+
+    with pytest.raises(TypeError) as exc:
+        utils.parse_expr(instr)
+
+    assert str(exc.value) == "interval syntax requires a tuple, 'lo:hi'"
+
+
+@pytest.mark.parametrize("instr,expected",
+                         [("2:4,1:3", [(2.0, 4.0), (1.0, 3.0)]),
+                          (":4, 2:3, 7:", [(None, 4.0), (2.0, 3.0), (7.0, None)])])
+def test_parse_expr_no_range_checking(instr, expected):
+    """Each range is separate, and there is no constraint."""
+
+    assert utils.parse_expr(instr) == expected
+
+
+@pytest.mark.parametrize("instr,expected",
+                         [("4:2", [(4.0, 2.0)]),
+                          ("2:1, :3", [(2.0, 1.0), (None, 3.0)]),
+                          (":10, :12", [(None, 10.0), (None, 12.0)])])
+def test_parse_expr_no_ordering(instr, expected):
+    """There's no requirement that lo <= hi"""
+
+    assert utils.parse_expr(instr) == expected
+
+
+def test_create_expr_empty():
+    """Simple test of create_expr with no mask."""
+
+    out = utils.create_expr([])
+    assert out == ""
+
+
+def test_create_expr_empty_mask():
+    """What happens if the mask is all masked out"""
+    mask = numpy.zeros(5, dtype=numpy.bool)
+
+    out = utils.create_expr([], mask)
+    assert out == ""
+
+
+@pytest.mark.parametrize("mask",
+                         [numpy.zeros(5, dtype=numpy.bool),
+                          numpy.ones(2, dtype=numpy.bool)])
+def test_create_expr_mask_size_error(mask):
+    """What happens when the mask][True] and vals arrays have different sizes?
+
+    This should be an error but currently isn't.
+    """
+
+    with pytest.raises(ValueError) as exc:
+        utils.create_expr([1, 2, 3, 4], mask)
+
+    assert str(exc.value) == 'mask array mis-match with vals'
+
+
+@pytest.mark.parametrize("val,expected",
+                         [(numpy.int16(3), "3"),
+                          (numpy.float32(3), "3.0")])
+def test_create_expr_singleton(val, expected):
+    """Simple test of create_expr with no mask."""
+
+    out = utils.create_expr(numpy.asarray([val]))
+    assert out == expected
+
+
+def test_create_expr_nomask():
+    """Simple test of create_expr with no mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    out = utils.create_expr(chans)
+    assert out == "1-9"
+
+
+def test_create_expr_mask():
+    """Simple test of create_expr with an identity mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    mask = numpy.ones(9, dtype=numpy.bool)
+    out = utils.create_expr(chans, mask)
+    assert out == "1-9"
+
+
+def test_create_expr_nomask_delim():
+    """Simple test of create_expr with no mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    out = utils.create_expr(chans, delim='::')
+    assert out == "1::9"
+
+
+def test_create_expr_mask_delim():
+    """Simple test of create_expr with an identity mask."""
+
+    chans = numpy.arange(1, 10, dtype=numpy.int16)
+    mask = numpy.ones(9, dtype=numpy.bool)
+    out = utils.create_expr(chans, mask, delim='::')
+    assert out == "1::9"
+
+
+def test_create_expr_missing_nomask():
+    """Simple test of create_expr with no mask with missing data"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[(chans < 12) | (chans > 13)]
+    out = utils.create_expr(chans)
+    assert out == "1-11,14-19"
+
+
+def test_create_expr_missing_nomask_nonchannels():
+    """What happens if the input is not in channel units?"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 12) | (chans > 13)
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], format='%4.2f')
+
+    # I am not sure this is the correct output, but it's what
+    # we create.
+    #
+    vs = ['{:4.2f}'.format(v) for v in vals[filt]]
+    expected = ','.join(vs)
+    assert out == expected
+
+
+def test_create_expr_missing_mask():
+    """Simple test of create_expr with an identity with missing data"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 12) | (chans > 13)
+    out = utils.create_expr(chans[filt], filt)
+    assert out == "1-11,14-19"
+
+
+def test_create_expr_missing_mask_nonchannels():
+    """What happens if the input is not in channel units?"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 12) | (chans > 13)
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40-0.50,0.53-0.58"
+
+
+def test_create_expr_missing_start_nomask():
+    """Simple test of create_expr with no mask with missing data
+
+    Have a single bin, then missing data, then the rest
+    """
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[chans != 2]
+    out = utils.create_expr(chans)
+    assert out == "1,3-19"
+
+
+def test_create_expr_missing_start2_nomask():
+    """Simple test of create_expr with no mask with missing data
+
+    Have a single bin, then missing data, then the rest
+    """
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[chans != 3]
+    out = utils.create_expr(chans)
+
+    assert out == "1-2,4-19"
+
+
+def test_create_expr_missing_start2_mask():
+    """How does this compare to nomask version?"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = chans != 3
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+
+    assert out == "0.40-0.41,0.43-0.58"
+
+
+def test_create_expr_missing_end_nomask():
+    """Simple test of create_expr with no mask with missing data
+
+    Ends with a single bin.
+    """
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    chans = chans[chans != 18]
+    out = utils.create_expr(chans)
+    assert out == "1-17,19"
+
+
+def test_create_expr_missing_multiple1_nomask():
+    """Simple test of create_expr with no mask with missing data"""
+
+    chans = numpy.asarray([1, 2, 4, 6, 7, 10, 18], dtype=numpy.int16)
+    out = utils.create_expr(chans)
+
+    assert out == "1-2,4,6-7,10,18"
+
+
+def test_create_expr_missing_multiple2_nomask():
+    """Simple test of create_expr with no mask with missing data"""
+
+    chans = numpy.asarray([1, 2, 3, 6, 7, 10, 12, 13, 14, 17, 18], dtype=numpy.int16)
+    out = utils.create_expr(chans)
+    assert out == "1-3,6-7,10,12-14,17-18"
+
+
+def test_create_expr_mask_dropstart():
+    """Start is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = chans > 3
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.43-0.58"
+
+
+def test_create_expr_mask_dropstart2():
+    """Start is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans > 3) & ((chans < 8) | (chans > 10))
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.43-0.46,0.50-0.58"
+
+
+def test_create_expr_mask_dropend():
+    """End is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = chans < 5
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40-0.43"
+
+
+def test_create_expr_mask_dropend2():
+    """End is masked out"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans < 15) & ((chans < 8) | (chans > 11))
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40-0.46,0.51-0.53"
+
+
+def test_create_expr_mask_drop():
+    """mask all the things (but leave some data!)"""
+
+    chans = numpy.arange(1, 20, dtype=numpy.int16)
+    filt = (chans > 5) & (chans < 15) & ((chans < 10) | (chans > 12))
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.45-0.48,0.52-0.53"
+
+
+@pytest.mark.parametrize("idx", [0, 1, 5, 17, 18])
+def test_create_expr_mask_singlebin(idx):
+    """mask all the things (but leave one bin)"""
+
+    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt[idx] = True
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    expected = "{:4.2f}".format(vals[filt][0])
+    assert out == expected
+
+
+def test_create_expr_mask_singlebins():
+    """several single bin"""
+
+    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt[0] = True
+    filt[2] = True
+    filt[16] = True
+    filt[18] = True
+
+    vals = numpy.arange(19) * 0.01 + 0.4
+    out = utils.create_expr(vals[filt], filt, format='%4.2f')
+    assert out == "0.40,0.42,0.56,0.58"
