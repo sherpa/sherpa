@@ -31,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.11.0'
+   '12.11.1'
 
 Initializing XSPEC
 ------------------
@@ -1036,6 +1036,8 @@ class XSConvolutionKernel(XSModel):
 
     The XSPEC convolution models are listed at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Notes
     -----
 
@@ -1167,6 +1169,8 @@ class XSConvolutionModel(CompositeModel, XSModel):
 
     Calculate the convolved data - that is evaluate the model and then
     pass it to the wrapper model which applies the convolution model.
+
+    .. versionadded:: 4.12.2
 
     Parameters
     ----------
@@ -11809,6 +11813,8 @@ class XScflux(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     Emin
@@ -11878,6 +11884,8 @@ class XSclumin(XSConvolutionKernel):
     """The XSPEC clumin convolution model: calculate luminosity
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -11955,6 +11963,8 @@ class XScpflux(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     Emin
@@ -12007,6 +12017,8 @@ class XSgsmooth(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     SigAt6keV
@@ -12045,6 +12057,8 @@ class XSireflect(XSConvolutionKernel):
     """The XSPEC ireflect convolution model: reflection from ionized material
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12118,6 +12132,8 @@ class XSkdblur(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     Index
@@ -12169,6 +12185,8 @@ class XSkdblur2(XSConvolutionKernel):
     """The XSPEC kdblur2 convolution model: convolve with the laor2 model
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12230,6 +12248,8 @@ class XSkerrconv(XSConvolutionKernel):
     """The XSPEC kerrconv convolution model: accretion disk line shape with BH spin as free parameter
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12302,6 +12322,8 @@ class XSkyconv(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     a
@@ -12339,6 +12361,8 @@ class XSkyconv(XSConvolutionKernel):
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather then using the multiplication symbol.
+
+    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -12391,6 +12415,8 @@ class XSlsmooth(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     SigAt6keV
@@ -12430,6 +12456,8 @@ class XSpartcov(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     CvrFract
@@ -12458,6 +12486,8 @@ class XSrdblur(XSConvolutionKernel):
     """The XSPEC rdblur convolution model: convolve with the diskline model shape
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12509,6 +12539,8 @@ class XSreflect(XSConvolutionKernel):
     """The XSPEC reflect convolution model: reflection from neutral material
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12573,6 +12605,8 @@ class XSrfxconv(XSConvolutionKernel):
     """The XSPEC rfxconv convolution model: angle-dependent reflection from an ionized disk
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12639,6 +12673,8 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     order
@@ -12671,6 +12707,8 @@ class XSsimpl(XSConvolutionKernel):
     """The XSPEC simpl convolution model: comptonization of a seed spectrum.
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12714,6 +12752,8 @@ class XSthcomp(XSConvolutionKernel):
     """The XSPEC thcomp convolution model: Thermally comptonized continuum.
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     .. note:: Parameter renames in XSPEC 12.11.1
 
@@ -12785,6 +12825,8 @@ class XSvashift(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     Velocity
@@ -12824,6 +12866,8 @@ class XSvmshift(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     Velocity
@@ -12862,6 +12906,8 @@ class XSxilconv(XSConvolutionKernel):
     """The XSPEC xilconv convolution model: angle-dependent reflection from an ionized disk
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
@@ -12934,6 +12980,8 @@ class XSzashift(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionadded:: 4.12.2
+
     Attributes
     ----------
     Redshift
@@ -12967,6 +13015,8 @@ class XSzmshift(XSConvolutionKernel):
     """The XSPEC zmshift convolution model: redshift a multiplicative model.
 
     The model is described at [1]_.
+
+    .. versionadded:: 4.12.2
 
     Attributes
     ----------
