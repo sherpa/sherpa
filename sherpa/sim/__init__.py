@@ -196,6 +196,10 @@ parameter::
 
 """
 
+import logging
+
+import numpy
+
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
 # it looks like the following modules are being re-exported by this
@@ -212,13 +216,10 @@ from sherpa.fit import Fit
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.optmethods import LevMar
 
-import numpy
-import logging
 info = logging.getLogger("sherpa").info
 _log = logging.getLogger("sherpa")
 
 _tol = numpy.finfo(numpy.float).eps
-
 
 string_types = (str, )
 
@@ -766,20 +767,26 @@ class MCMC(NoNewAttributesAfterInit):
 
 
 class ReSampleData(NoNewAttributesAfterInit):
-    """
-    The underlying low-level for the resample_data
+    """Re-sample a 1D dataset using asymmtric errors.
+
+    For each iteration, each data point is resampled using normal
+    distributions for the lower and upper sides based on the
+    asymmetric errors, and then the data is fit (starting at the model
+    "best-fit" location). The parameter values, statistic value, and
+    re-sampled data for each iteration are returned.
 
     Parameters
     ----------
-    data
-       The data class Data1DAsymmetricErrs
-    model
-       The model to fit the data
+    data : sherpa.data.Data1DAsymmetricErrs instance
+       The data.
+    model : sherpa.models.model.ArithmeticModel instance
+       The model to fit the data. The model parameters are taken
+       to be the best-fit location.
 
     Returns
     -------
     The class returns the best fit parameters for each realization.
-    
+
     See Also
     --------
     resample_data
@@ -787,17 +794,30 @@ class ReSampleData(NoNewAttributesAfterInit):
     Example
     -------
 
-    >>> load_ascii_with_errors(1, 'gro.txt', delta=False)
-    >>> data = get_data(1)
-    >>> method = LevMar()
+    >>> from sherpa.astro import ui
+    >>> from sherpa.models.basic import PowLaw1D
+    >>> from sherpa.fit import Fit
+    >>> ui.load_ascii_with_errors(1, 'gro.txt', delta=False)
+    >>> data = ui.get_data(1)
     >>> model = PowLaw1D('p1')
-    >>> set_model(1, model)
-    >>> fit = Fit(data, model, Chi2Gehrels(), method, Covariance())
+    >>> fit = Fit(data, model)
     >>> results = fit.fit()
     >>> rd = ReSampleData(data, model)
-    >>> rd_results = rd(niter=10)
-    >>> print(rd_results)
-    rd_results = {'p1.gamma': [-0.2944764463053398, -0.48025660808404, -0.45290026618472473, -0.5238444562856396, -0.3549169211965681, -0.29119982744489403, -0.5136099861402832, -0.49899714779391674, -0.5308025556771122, -0.5645228923615183], 'p1.ampl': [60.757254200932465, 172.7375230511183, 149.6714174684889, 222.60620753447844, 87.33459341889869, 59.257672491708, 212.86125707286197, 194.83475286439503, 233.33238676025326, 275.75315162410527]}
+    p1.gamma : avg = -0.45420248162153376 , std = 0.1263323500098545
+    p1.ampl : avg = 178.84238884771565 , std = 78.40441241963649
+    >>> rd_results = rd(niter=10, seed=47)
+    >>> print(rd_results['p1.gamma'])
+    [-0.32872302 -0.12877417 -0.52554761 -0.57215054 -0.56462214 -0.45767851
+     -0.50537904 -0.49456541 -0.46087699 -0.50370738]
+    >>> print(rd_results['p1.ampl'])
+    [ 76.77797067  23.71375218 219.70853134 289.93482138 282.85054769
+     151.11542405 203.62594591 184.68814605 158.73489704 197.27385216]
+    >>> print(rd_results['statistic'])
+    [ 3181.39803175 15640.64148543   526.3225861    269.42556572
+       255.21395223   631.70392914   271.34923174   349.71959439
+      1896.22993898   579.80520809]
+    >>> print(rd_results['samples'].shape)
+    (10, 61)
 
     """
     def __init__(self, data, model):
@@ -805,34 +825,54 @@ class ReSampleData(NoNewAttributesAfterInit):
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
         return
-    
+
     def __call__(self, niter=1000, seed=None):
+        return self.call(niter, seed)
+
+    def call(self, niter, seed=None):
+        """Resample the data and fit the model to each iteration.
+
+        .. versionadded: 4.12.2
+           The samples and statistic keys were added to the return
+           value, the parameter values are returned as NumPy arrays
+           rather than as lists, and the seed parameter was made
+           optional.
+
+        Parameters
+        ----------
+        niter : int
+            The number of iterations.
+        seed : int or None, optional
+            The seed value.
+
+        Returns
+        -------
+        sampled : dict
+           The keys are samples, which contains the resampled data
+           used in the fits as a niter by ndata array, and the free
+           parameters in the fit, containing a NumPy array containing
+           the fit parameter for each iteration (of size niter).
+
+        Notes
+        -----
+        The fit for each iteration uses the input values of the
+        model parameters as the starting point. The parameters of
+        the model are not changed by this method.
+
+        """
+
+        # Each fit is reset to this set of values as the starting point
         orig_pars = self.model.thawedpars
-        _level = _log.getEffectiveLevel()
-        result = None
-        try:
-            result = self.call(niter, seed)
-        except:
-            raise
-        finally:
-            # set the model back to original state
-            self.model.thawedpars = orig_pars
-            
-            # set the logger back to previous level
-            _log.setLevel(_level)
-        return result
-            
-    def call(self, niter, seed):
 
         pars = {}
-        pars_index = {}
-        index = 0
+        pars_index = []
         for par in self.model.pars:
-            if par.frozen is False:
-                name = '%s.%s' % (par.modelname, par.name)
-                pars_index[index] = name
-                pars[name] = []
-                index += 1
+            if par.frozen:
+                continue
+
+            name = par.fullname
+            pars_index.append(name)
+            pars[name] = numpy.zeros(niter)
 
         data = self.data
         y = data.y
@@ -847,39 +887,77 @@ class ReSampleData(NoNewAttributesAfterInit):
             msg ="{0} {1}".format(ReSampleData.__name__, type(data))
             raise NotImplementedError(msg)
 
+        ny = len(y)
+
+        fake_data = Data1D('tmp', x, numpy.zeros(ny))
+
         numpy.random.seed(seed)
+        ry_all = numpy.zeros((niter, ny), dtype=y_l.dtype)
+        stats = numpy.zeros(niter)
         for j in range(niter):
-            ry = []
-            for i in range(len(y_l)): 
+            ry = ry_all[j]
+            for i in range(ny):
                 a = y_l[i]
                 b = y_h[i]
-                r = -1
-                while r < a or r > b:
-                    sigma = b - y[i]
+                r = None
+
+                while r is None:
+
+                    # Flip between low or hi
+                    #  u = 0  pick low
+                    #  u = 1  pick high
+                    #
+                    # Switching to randint rather than random_sample
+                    # leads to different answers, so the tests fail,
+                    # so leave as is.
+                    #
+                    # u = numpy.random.randint(low=0, high=2)
+                    #
                     u = numpy.random.random_sample()
-                    if u < 0.5:
-                        sigma=y[i]-a
-                    r = numpy.random.normal(loc=y[i],scale=sigma,size=None)
-                    if u < 0.5 and r > y[i]:
-                        r = -1
-                    if u > 0.5 and r < y[i]:
-                        r = -1
-                ry.append(r)
+                    u = 0 if u < 0.5 else 1
 
-            ry = numpy.asarray(ry)
-            # fit is performed for each simulated data point
-            fit = Fit(Data1D('tmp', x, ry), self.model, LeastSq( ), LevMar())
-            fit_result = fit.fit()
+                    # Rather than dropping this value, we could
+                    # reflect it (ie multiply it by -1 if the sign
+                    # is wrong). Would this affect the statistical
+                    # properties?
+                    #
+                    dr = numpy.random.normal(loc=0, scale=1, size=None)
+                    if u == 0:
+                        if dr > 0:
+                            continue
 
-            for index, val in enumerate(fit_result.parvals):
-                name = pars_index[index]
-                pars[name].append(val)
+                        sigma = y[i] - a
 
-        result = {}
-        for index, name in pars_index.items():
+                    else:
+                        if dr < 0:
+                            continue
+
+                        sigma = b - y[i]
+
+                    r = y[i] + dr * sigma
+
+                ry[i] = r
+
+            # fit is performed for each simulated data point, and we
+            # always start at the original best-fit location to
+            # start the fit (by making sure we always reset after a fit).
+            #
+            fake_data.y = ry
+            fit = Fit(fake_data, self.model, LeastSq(), LevMar())
+            try:
+                fit_result = fit.fit()
+            finally:
+                self.model.thawedpars = orig_pars
+
+            stats[j] = fit_result.statval
+            for name, val in zip(fit_result.parnames, fit_result.parvals):
+                pars[name][j] = val
+
+        result = {'samples': ry_all, 'statistic': stats}
+        for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])
-            print(name, ': avg =', avg, ', std =', std)
+            info('{} : avg = {} , std = {}'.format(name, avg, std, std))
             result[name] = pars[name]
 
         return result

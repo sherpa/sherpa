@@ -12291,12 +12291,18 @@ class Session(sherpa.ui.utils.Session):
         """Resample data with asymmetric error bars.
 
         The function performs a parametric bootstrap assuming a skewed
-        normal distribution centered on the observed data point with the
-        variance given by the low and high measurement errors. The function
-        simulates niter realizations of the data and fits each realization
-        with the assumed model to obtain the best fit parameters. The function
-        returns the best fit parameters for each realization, and average and
-        standard deviation for the total number of realizations.
+        normal distribution centered on the observed data point with
+        the variance given by the low and high measurement errors. The
+        function simulates niter realizations of the data and fits
+        each realization with the assumed model to obtain the best fit
+        parameters. The function returns the best fit parameters for
+        each realization, and displays the average and standard
+        deviation for each parameter.
+
+        .. versionadded: 4.12.2
+           The samples and statistic keys were added to the return
+           value and the parameter values are returned as NumPy arrays
+           rather than as lists.
 
         Parameters
         ----------
@@ -12306,6 +12312,16 @@ class Session(sherpa.ui.utils.Session):
            The number of iterations to use. The default is ``1000``.
         seed : int, optional
            The seed for the random number generator. The default is ```None```.
+
+        Returns
+        -------
+        sampled : dict
+           The keys are statistic, which contains the best-fit
+           statistic value for each iteration, samples, which contains
+           the resampled data used in the fits as a niter by ndata
+           array, and the free parameters in the fit, containing a
+           NumPy array containing the fit parameter for each iteration
+           (of size niter).
 
         See Also
         --------
@@ -12317,7 +12333,7 @@ class Session(sherpa.ui.utils.Session):
         uncertainties:
 
         >>> load_ascii_with_errors(1, 'test.dat')
-        >>> set_model('polynom1d.p0')
+        >>> set_model(polynom1d.p0)
         >>> thaw(p0.c1)
         >>> fit()
         Dataset               = 1
@@ -12333,36 +12349,29 @@ class Session(sherpa.ui.utils.Session):
         >>> result = resample_data(1, niter=10)
         p0.c0 : avg = 4.159973865314249 , std = 1.0575403309799554
         p0.c1 : avg = 1943.5489865678633 , std = 268.64478808013547
-        >>> print(result)
-        {'p0.c0': [5.856479033432613,
-        3.8252624107243465,
-        4.2049348991011755,
-        3.3561534201274403,
-        5.322970544450817,
-        5.86486160415201,
-        3.4260665826046868,
-        3.5730735695326947,
-        3.2995095277181736,
-        2.8704270612985345],
-        'p0.c1': [1510.049972062868,
-        1995.4742750432902,
-        1929.9678368288805,
-        2145.6409294683394,
-        1685.1157640896092,
-        1487.6241980402608,
-        2159.9157439562578,
-        2100.3068897110925,
-        2185.418945147045,
-        2235.9753113309894]}
+        >>> print(result['p0.c0'])
+        [5.856479033432613, 3.8252624107243465, ... 2.8704270612985345]
+        >>> print(result['p0.c1'])
+        [1510.049972062868, 1995.4742750432902, ... 2235.9753113309894]
 
-        For a large number of realizations the output can be stored in
-        the dictionary and accessed, for example, to visualize the
-        distributions.
+        Display the PDF of the parameter values of the p0.c0 component
+        from a run with 5000 iterations:
 
         >>> sample = resample_data(1, 5000)
         p0.c0 : avg = 3.966543284267264 , std = 0.9104639711036427
         p0.c1 : avg = 1988.8417667057342 , std = 220.21903089622705
         >>> plot_pdf(sample['p0.c0'], bins=40)
+
+        The samples used for the analysis are returned as the samples
+        key (as a 2D NumPy array of size number of iterations by
+        number of data points), that can be used if further analysis
+        is desired. In this case, the distribution of the first bin
+        is shown as a CDF:
+
+        >>> sample = resample_data(1, 5000)
+        >>> samples = sample['samples']
+        >>> plot_cdf(samples[:, 0])
+
         """
         data = self.get_data(id)
         model = self.get_model(id)
