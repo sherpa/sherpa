@@ -299,8 +299,8 @@ def test_multiplicative_overlap(egrid, yexp):
 
 @requires_xspec
 @pytest.mark.parametrize("name1,par1,val1,name2,par2,val2",
-                         [pytest.param('wabs', 'nh', 0.05,
-                                       'powerlaw', 'norm', 100, marks=pytest.mark.xfail),
+                         [('wabs', 'nh', 0.05,
+                           'powerlaw', 'norm', 100),
                           ('powerlaw', 'norm', 100,
                            'wabs', 'nh', 0.05)])
 def test_combined(name1, par1, val1, name2, par2, val2, xsmodel):
@@ -370,7 +370,6 @@ def test_combined_arithmetic_right(name, par, val, xsmodel):
     assert y1 == pytest.approx(yexp, rel=0.04)
 
 
-@pytest.mark.xfail
 @requires_xspec
 def test_multi_combined_additive():
     """Can we handle a "deep" binop tree?
@@ -391,7 +390,6 @@ def test_multi_combined_additive():
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
 
-@pytest.mark.xfail
 @requires_xspec
 def test_multi_combined_multiplicative():
     """Can we handle a "deep" binop tree?
@@ -447,7 +445,7 @@ def test_sherpa_mul_xspec_add(sherpa_first):
 
 
 @requires_xspec
-@pytest.mark.parametrize('sherpa_first', [True, pytest.param(False, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize('sherpa_first', [True, False])
 def test_sherpa_add_xspec_mul(sherpa_first):
     """Check sherpa (additive) * xspec (multiplicative)"""
 

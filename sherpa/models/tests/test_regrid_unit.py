@@ -1233,10 +1233,9 @@ def test_regrid_binop_arithmeticconstantmodel():
     grid = np.linspace(20, 30, 21)
     orig = BinaryOpModel(4, 6, np.add, '+')
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match=re.escape("No regrid support for (4.0 + 6.0)")):
         orig.regrid(grid)
-
-    assert str(exc.value) == 'Neither component supports regrid method in (4.0 + 6.0)'
 
 
 def test_box1d_point():
@@ -1329,7 +1328,6 @@ def test_constant_box1d_bin():
     assert rmdl(xg1, xg2) == pytest.approx(exp2)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("integrate", [True, False])
 def test_deep_binop_points(integrate):
     """Can we handle a "deep" binop tree?
@@ -1365,7 +1363,6 @@ def test_deep_binop_points(integrate):
     assert yr == pytest.approx(ym)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("integrate,yexp,yexp2",
                          [(True,
                            [16/3, 26/4, 26/16, 26/16, 6/16, 0, 0],
