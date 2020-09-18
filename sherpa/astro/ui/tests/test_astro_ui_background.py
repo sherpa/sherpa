@@ -92,12 +92,11 @@ def test_setup_pha1_file_group(id, make_data_path, clean_astro_ui, hide_logging)
     sdata = ui.get_data(id)
     bdata = ui.get_bkg(id)
 
-    dtype = np.dtype('>i2')  # why not np.dtype(np.int16)?
-    assert sdata.grouping.dtype == dtype
-    assert bdata.grouping.dtype == dtype
+    assert sdata.grouping.dtype.type == np.int16
+    assert bdata.grouping.dtype.type == np.int16
 
-    assert sdata.quality.dtype == dtype
-    assert bdata.quality.dtype == dtype
+    assert sdata.quality.dtype.type == np.int16
+    assert bdata.quality.dtype.type == np.int16
 
     assert sdata.grouped
     assert bdata.grouped
