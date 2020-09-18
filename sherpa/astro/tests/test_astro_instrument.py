@@ -32,6 +32,7 @@ TODO:
 
 """
 
+import logging
 import warnings
 
 import numpy as np
@@ -673,12 +674,15 @@ def test_arfmodelpha_call(ignore):
 
 
 @pytest.mark.parametrize("analysis", ["energy", "wave"])
-def test_rmfmodelpha_delta_no_ebounds(analysis):
+def test_rmfmodelpha_delta_no_ebounds(analysis, caplog):
     """What happens calling an rmf with a pha and no EBOUNDS is set
 
     Ensure we can't filter on energy or wavelength since there's no
     EBOUNDS information. This behavior was seen when writing
     test_rmfmodelpha_call, so a test was written for it.
+
+    The code used to raise a DataErr but now just displays a
+    logged warning.
     """
 
     estep = 0.01
@@ -691,10 +695,14 @@ def test_rmfmodelpha_delta_no_ebounds(analysis):
     pha.set_rmf(rdata)
 
     pha.set_analysis(analysis)
-    with pytest.raises(DataErr) as exc:
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         pha.notice(0.025, 0.045, ignore=False)
 
-    assert str(exc.value) == 'RMF does not specify energy bins'
+    assert len(caplog.records) == 1
+    log_name, log_level, message = caplog.record_tuples[0]
+    assert log_name == 'sherpa.astro.data'
+    assert log_level == logging.INFO
+    assert message == 'Skipping dataset test-pha: RMF does not specify energy bins'
 
 
 @pytest.mark.parametrize("analysis", ["energy", "wave"])

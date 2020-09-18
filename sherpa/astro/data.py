@@ -602,20 +602,21 @@ class DataPHA(Data1D):
     def _set_grouped(self, val):
         val = bool(val)
 
-        if val and (self.grouping is None):
+        if val and self.grouping is None:
             raise DataErr('nogrouping', self.name)
 
-        # If grouping status is being changed, we need to reset the mask
+        if self._grouped == val:
+            return
+
+        # As the grouping status is being changed, we need to reset the mask
         # to be correct size, while still noticing groups within the filter
-        if self._grouped != val:
-            do_notice = numpy.iterable(self.mask)
-            if do_notice:
-                old_filter = self.get_filter(val)
-                self._grouped = val
-                self.ignore()
-                for vals in parse_expr(old_filter):
-                    self.notice(*vals)
-            # self.mask = True
+        #
+        if numpy.iterable(self.mask):
+            old_filter = self.get_filter(group=val)
+            self._grouped = val
+            self.ignore()
+            for vals in parse_expr(old_filter):
+                self.notice(*vals)
 
         self._grouped = val
 
@@ -644,8 +645,10 @@ class DataPHA(Data1D):
             units = 'channel'
 
         if units.startswith('chan'):
-            self._to_channel   = (lambda x, group=True, response_id=None: x)
-            self._from_channel = (lambda x, group=True, response_id=None: x)
+            # Note: the names of these routines appear confusing because of the
+            #       way group values are used
+            self._to_channel   = self._channel_to_group
+            self._from_channel = self._group_to_channel
             units = 'channel'
 
         elif units.startswith('ener'):
@@ -947,7 +950,7 @@ class DataPHA(Data1D):
         # the energy bins as well.  E.g., if group 1 is
         # channels 1-5, then the energy boundaries for the
         # *group* should be elo[0], ehi[4].
-        if (self.grouped and group):
+        if self.grouped and group:
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 
@@ -1006,6 +1009,67 @@ class DataPHA(Data1D):
             hi = self._hc / elo
 
         return (lo, hi)
+
+    def _channel_to_group(self, val):
+        """Convert channel number to group number.
+
+        For ungrouped data channel and group numbering are the
+        same.
+        """
+        if not self.grouped:
+            return val
+
+        # The edge channels of each group.
+        #
+        lo = self.apply_grouping(self.channel, self._min)
+        hi = self.apply_grouping(self.channel, self._max)
+
+        val = numpy.asarray(val).astype(numpy.int_)
+        res = []
+        for v in val.flat:
+            # could follow _energy_to_channel but for now go
+            # with something simple
+            if v < self.channel[0]:
+                ans = self.channel[0]
+            elif v > self.channel[-1]:
+                ans = self.channel[-1]
+            else:
+                idx, = numpy.where((v >= lo) & (v <= hi))
+                ans = idx[0] + 1
+
+            res.append(ans)
+
+        res = numpy.asarray(res, SherpaFloat)
+        if val.shape == ():
+            return res[0]
+
+        return res
+
+    def _group_to_channel(self, val, group=True, response_id=None):
+        """Convert group number to channel number.
+
+        For ungrouped data channel and group numbering are the
+        same. The mid-point of each group is used (rounded down
+        if not an integer).
+        """
+
+        if not self.grouped or not group:
+            return val
+
+        # The middle channel of each group.
+        #
+        mid = self.apply_grouping(self.channel, self._middle)
+
+        # Convert to an integer (this keeps the channel within
+        # the group).
+        #
+        mid = numpy.floor(mid)
+
+        val = numpy.asarray(val).astype(numpy.int_) - 1
+        try:
+            return mid[val]
+        except IndexError:
+            raise DataErr('invalid group number: {}'.format(val))
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
@@ -1302,9 +1366,10 @@ class DataPHA(Data1D):
         (using groupfunc) and then applying the general filters
 
         """
-        if (data is None):
+        if data is None:
             return data
-        elif len(data) != len(self.counts):
+
+        if len(data) != len(self.counts):
             counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
             mask = self.get_mask()
             if mask is not None:
@@ -1312,8 +1377,8 @@ class DataPHA(Data1D):
                 data = counts
             # else:
             #     raise DataErr('mismatch', "filter", "data array")
-        return Data1D.apply_filter(self,
-                                      self.apply_grouping(data, groupfunc))
+
+        return super().apply_filter(self.apply_grouping(data, groupfunc))
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
         """
@@ -1324,7 +1389,7 @@ class DataPHA(Data1D):
         scheme or the data are ungrouped, data is returned unaltered.
 
         """
-        if (data is None) or (not self.grouped):
+        if data is None or not self.grouped:
             return data
 
         groups = self.grouping
@@ -1332,7 +1397,7 @@ class DataPHA(Data1D):
         if filter is None:
             return do_group(data, groups, groupfunc.__name__)
 
-        if (len(data) != len(filter) or len(groups) != len(filter)):
+        if len(data) != len(filter) or len(groups) != len(filter):
             raise DataErr('mismatch', "quality filter", "data array")
 
         filtered_data = numpy.asarray(data)[filter]
@@ -1472,8 +1537,7 @@ class DataPHA(Data1D):
                             tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_bins")):
-                bkg.group_bins(num, tabStops=tabStops)
+            bkg.group_bins(num, tabStops=tabStops)
 
     def group_width(self, val, tabStops=None):
         """Group into a fixed bin width.
@@ -1517,8 +1581,7 @@ class DataPHA(Data1D):
                             tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_width")):
-                bkg.group_width(val, tabStops=tabStops)
+            bkg.group_width(val, tabStops=tabStops)
 
     def group_counts(self, num, maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
@@ -1566,8 +1629,7 @@ class DataPHA(Data1D):
                             maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_counts")):
-                bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
+            bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
@@ -1623,9 +1685,8 @@ class DataPHA(Data1D):
                             errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_snr")):
-                bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
-                              errorCol=errorCol)
+            bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
+                          errorCol=errorCol)
 
     def group_adapt(self, minimum, maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
@@ -1676,9 +1737,8 @@ class DataPHA(Data1D):
                             maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_adapt")):
-                bkg.group_adapt(minimum, maxLength=maxLength,
-                                tabStops=tabStops)
+            bkg.group_adapt(minimum, maxLength=maxLength,
+                            tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
@@ -1738,9 +1798,8 @@ class DataPHA(Data1D):
                             errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_adapt_snr")):
-                bkg.group_adapt_snr(minimum, maxLength=maxLength,
-                                    tabStops=tabStops, errorCol=errorCol)
+            bkg.group_adapt_snr(minimum, maxLength=maxLength,
+                                tabStops=tabStops, errorCol=errorCol)
 
     def eval_model(self, modelfunc):
         return modelfunc(*self.get_indep(filter=False))
@@ -2096,17 +2155,9 @@ class DataPHA(Data1D):
         return syserr
 
     def get_x(self, filter=False, response_id=None):
-        # If we are already in channel space, self._from_channel
-        # is always ungrouped.  In any other space, we must
-        # disable grouping when calling self._from_channel.
-        if self.units != 'channel':
-            elo, ehi = self._get_ebins(group=False)
-            if len(elo) != len(self.channel):
-                raise DataErr("incompleteresp", self.name)
-            return self._from_channel(self.channel, group=False,
-                                      response_id=response_id)
-        else:
-            return self._from_channel(self.channel)
+        # We want the full channel grid with no grouping.
+        #
+        return self._from_channel(self.channel, group=False, response_id=response_id)
 
     def get_xlabel(self):
         xlabel = self.units.capitalize()
@@ -2285,25 +2336,42 @@ class DataPHA(Data1D):
         return numpy.sqrt(numpy.sum(array * array))
 
     def get_noticed_channels(self):
+        """Return the noticed channels.
+
+        Returns
+        -------
+        channels : ndarray
+            The noticed channels (this is independent of the
+            analysis setting).
+
+        """
         chans = self.channel
         mask = self.get_mask()
-        if mask is not None:
+        if mask is None:
+            return chans
 
-            # This is added to address issue #361
-            #
-            # If there is a quality filter then the mask may be
-            # smaller than the chans array. It is not clear if this
-            # is the best location for this. If it is, then are there
-            # other locations where this logic is needed?
-            #
-            if self.quality_filter is not None and \
-               self.quality_filter.size != mask.size:
-                chans = chans[self.quality_filter]
+        # This is added to address issue #361
+        #
+        # If there is a quality filter then the mask may be
+        # smaller than the chans array. It is not clear if this
+        # is the best location for this. If it is, then are there
+        # other locations where this logic is needed?
+        #
+        if self.quality_filter is not None and \
+           self.quality_filter.size != mask.size:
+            chans = chans[self.quality_filter]
 
-            chans = chans[mask]
-        return chans
+        return chans[mask]
 
     def get_mask(self):
+        """Returns the (ungrouped) mask.
+
+        Returns
+        -------
+        mask : ndarray or None
+            The mask, in channels, or None.
+
+        """
         groups = self.grouping
         if self.mask is False:
             return None
@@ -2326,8 +2394,46 @@ class DataPHA(Data1D):
         return create_expr(chans, format='%i')
 
     def get_filter(self, group=True, format='%.12f', delim=':'):
-        """
-        Integrated values returned are measured from center of bin
+        """Return the data filter as a string.
+
+        For grouped data, or when the analysis setting is not
+        channel, filter values refer to the center of the
+        channel or group.
+
+        Parameters
+        ----------
+        group : bool, optional
+            Should the filter reflect the grouped data?
+        format : str, optional
+            The formatting of the numeric values (this is
+            ignored for channel units, as a format of "%i"
+            is used).
+        delim : str, optional
+            The string used to mark the low-to-high range.
+
+        Examples
+        --------
+        For a Chandra non-grating dataset which has been grouped:
+
+        >>> pha.set_analysis('energy')
+        >>> pha.notice(0.5, 7)
+        >>> pha.get_filter(format=%.4f')
+        ''0.5183:8.2198''
+        >>> pha.set_analysis('channel')
+        >>> pha.get_filter()
+        '36:563'
+
+        The default is to show the data range for the grouped
+        dataset, which uses the center of each group. If
+        the grouping is turned off then the center of the
+        start and ending channel of each group is used
+        (and so show a larger data range):
+
+        >>> pha.get_filter(format=%.4f')
+        '0.5183:8.2198'
+        >>> pha.get_filter(group=False, format=%.4f')
+        '0.4745:9.8623'
+
         """
         if self.mask is False:
             return 'No noticed bins'
@@ -2339,7 +2445,9 @@ class DataPHA(Data1D):
 
         if group:
             # grouped noticed channels
+            #
             x = self.apply_filter(self.channel, self._make_groups)
+
         else:
             # ungrouped noticed channels
             x = self.get_noticed_channels()
@@ -2357,7 +2465,7 @@ class DataPHA(Data1D):
                 warning("There is a mis-match in the ungrouped mask " +
                         "and data ({} vs {})".format(mask.sum(), x.size))
 
-        # convert channels to appropriate quantity if necessary.
+        # Convert channels to appropriate quantity if necessary
         x = self._from_channel(x, group=group)
 
         if mask is None:
@@ -2395,8 +2503,8 @@ class DataPHA(Data1D):
         # this should be done in high-level UI?)  SMD 10/25/12
 
         filter_background_only = False
-        if (bkg_id is not None):
-            if (not(numpy.iterable(bkg_id))):
+        if bkg_id is not None:
+            if not numpy.iterable(bkg_id):
                 bkg_id = [bkg_id]
             filter_background_only = True
         else:
@@ -2427,12 +2535,13 @@ class DataPHA(Data1D):
             self.quality_filter = None
             self.notice_response(False)
 
-        elo, ehi = self._get_ebins()
-
         # We do not want a "all data are masked out" error to cause
         # this to fail; it should just do nothing (as trying to set
         # a noticed range to include masked-out ranges would also
         # be ignored).
+        #
+        # Convert to "group number" (which, for ungrouped data,
+        # is just channel number).
         #
         if lo is not None and type(lo) != str:
             try:
@@ -2449,68 +2558,22 @@ class DataPHA(Data1D):
                                                       de))
                 return
 
+        elo, ehi = self._get_ebins()
         if ((self.units == "wavelength" and
              elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
             (self.units == "energy" and
              elo[0] > elo[-1] and ehi[0] > ehi[-1])):
             lo, hi = hi, lo
 
-        # If we are working in channel space, and the data are
-        # grouped, we must correct for the fact that bounds expressed
-        # expressed in channels must be converted to group number.
-        # This is the only set of units for which this must be done;
-        # energy and wavelength conversions above already take care of
-        # the distinction between grouped and ungrouped.
-
-        if self.units == "channel" and self.grouped:
-
-            if lo is not None and type(lo) != str and \
-               not(lo < self.channel[0]):
-
-                # Find the location of the first channel greater than
-                # or equal to lo in self.channel
-                # Then find out how many groups there are that contain
-                # the channels less than lo, and convert lo from a
-                # channel number to the first group number that has channels
-                # greater than or equal to lo.
-
-                lo_index = numpy.where(self.channel >= lo)[0][0]
-                lo = len(numpy.where(self.grouping[:lo_index] > -1)[0]) + 1
-
-            if hi is not None and type(hi) != str and \
-               not(hi > self.channel[-1]):
-
-                # Find the location of the first channel greater than
-                # or equal to hi in self.channel
-                # Then find out how many groups there are that contain
-                # the channels less than hi, and convert hi from a
-                # channel number to the first group number that has channels
-                # greater than or equal to hi.
-                hi_index = numpy.where(self.channel >= hi)[0][0]
-                hi = len(numpy.where(self.grouping[:hi_index] > -1)[0])
-
-                # If the original channel hi starts a new group,
-                # increment the group number
-                if (self.grouping[hi_index] > -1):
-                    hi = hi + 1
-
-                # If the original channel hi is in a group such that
-                # the group has channels greater than original hi,
-                # then use the previous group as the highest group included
-                # in the filter. Avoid indexing beyond the end of the
-                # grouping array.
-                if (hi_index + 1 < len(self.grouping)):
-                    if not(self.grouping[hi_index + 1] > -1):
-                        hi = hi - 1
-
         # Don't use the middle of the channel anymore as the
         # grouping function.  That was just plain dumb.
         # So just get back an array of groups 1-N, if grouped
         # DATA-NOTE: need to clean this up.
+        #
+        groups = self.apply_grouping(self.channel,
+                                     self._make_groups)
         self._data_space.filter.notice((lo,), (hi,),
-                        (self.apply_grouping(self.channel,
-                                             self._make_groups),),
-                        ignore)
+                                       (groups,), ignore)
 
     def to_guess(self):
         elo, ehi = self._get_ebins(group=False)
