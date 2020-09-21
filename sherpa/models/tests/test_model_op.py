@@ -292,8 +292,7 @@ def test_unop_integrate(flag):
     mdl.integrate = flag
 
     umdl = -mdl
-    with pytest.raises(AttributeError):
-        assert umdl.integrate == flag
+    assert umdl.integrate == flag
 
 
 def test_aconstant_integrate():
@@ -313,15 +312,14 @@ def test_aconstant_integrate():
 
 
 def test_unop_integrate_unset():
-    """Is the integrate flag not set for an unary op model"""
+    """Is the integrate flag set for an unary op model"""
 
     # UnaryOpModel converts the constant to an
     # ArithmeticConstantModel.
     #
     mdl = UnaryOpModel(4, np.negative, "-")
 
-    with pytest.raises(AttributeError):
-        mdl.integrate
+    assert not mdl.integrate
 
 
 @pytest.mark.parametrize("flag", [True, False])
@@ -335,13 +333,12 @@ def test_binop_integrate_same(flag):
     mdl2.integrate = flag
 
     mdl = mdl1 + mdl2
-    with pytest.raises(AttributeError):
-        assert mdl.integrate == flag
+    assert mdl.integrate == flag
 
 
 @pytest.mark.parametrize("flag", [True, False])
 def test_binop_integrate_different(flag):
-    """Is the integrate flag not carried over when different"""
+    """Is the integrate flag carried over when different"""
 
     mdl1 = basic.Const1D()
     mdl1.integrate = flag
@@ -350,50 +347,48 @@ def test_binop_integrate_different(flag):
     mdl2.integrate = not flag
 
     mdl = mdl1 + mdl2
-    with pytest.raises(AttributeError):
-        mdl.integrate
+    assert mdl.integrate  # NOTE: this is always True
 
 
 def test_binop_integrate_unset():
-    """Is the integrate flag not set for a binary op model"""
+    """Is the integrate flag set for a binary op model"""
 
     # The ArithmeticConstantModel, which the binary-op model casts
     # the constant terms, has integrate=False
     #
     mdl = BinaryOpModel(4, 4, np.add, '+')
-    with pytest.raises(AttributeError):
-        mdl.integrate
+    assert not mdl.integrate
 
 
-@pytest.mark.parametrize("m1,m2", [(1, basic.Const1D()),
-                                   (basic.Const1D(), 1),
-                                   (1, basic.Scale1D()),
-                                   (basic.Scale1D(), 1)])
-def test_binop_arithmeticmodel_integrate(m1, m2):
+@pytest.mark.parametrize("m1,m2,iflag", [(1, basic.Const1D(), True),
+                                         (basic.Const1D(), 1, True),
+                                         (1, basic.Scale1D(), False),
+                                         (basic.Scale1D(), 1, False)])
+def test_binop_arithmeticmodel_integrate(m1, m2, iflag):
     """Do we have an integrate setting?
 
     This is a regression test.
     """
 
     mdl = m1 + m2
-    assert not hasattr(mdl, "integrate")
+    assert mdl.integrate is iflag
 
 
 AMODEL = ArithmeticFunctionModel(np.sin)
 
 
-@pytest.mark.parametrize("m1,m2", [(AMODEL, basic.Const1D()),
-                                   (basic.Const1D(), AMODEL),
-                                   (AMODEL, basic.Scale1D()),
-                                   (basic.Scale1D(), AMODEL)])
-def test_binop_arithmeticfunction_integrate(m1, m2):
+@pytest.mark.parametrize("m1,m2,iflag", [(AMODEL, basic.Const1D(), True),
+                                         (basic.Const1D(), AMODEL, True),
+                                         (AMODEL, basic.Scale1D(), False),
+                                         (basic.Scale1D(), AMODEL, False)])
+def test_binop_arithmeticfunction_integrate(m1, m2, iflag):
     """What's the integrate setting when ArithmeticFunctionModel is present?
 
     This is a regression test.
     """
 
     mdl = m1 + m2
-    assert not hasattr(mdl, "integrate")
+    assert mdl.integrate is iflag
 
 
 @pytest.mark.parametrize("m1,m2", [(AMODEL, 2),

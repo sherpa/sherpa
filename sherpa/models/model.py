@@ -1140,9 +1140,17 @@ class ArithmeticModel(Model):
     cache = 5
     """The maximum size of the cache."""
 
-    def __init__(self, name, pars=()):
-        self.integrate = True
+    integrate = True
+    """Is the model integrated across the independent axis?
 
+    If True and the model supports it, the model will be integrated
+    across the low and high edges of the bins when evaluated with low
+    and high bin edges. This setting is ignored if the model is
+    evaluated on a set of points.
+
+    """
+
+    def __init__(self, name, pars=()):
         # Model caching ability
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
@@ -1327,6 +1335,14 @@ class UnaryOpModel(CompositeModel, RegriddableModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
+
+        # Can we set the integrate flag?
+        #
+        try:
+            self.integrate = self.arg.integrate
+        except AttributeError:
+            pass
+
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
 
@@ -1411,8 +1427,34 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
+        # Can we set the integrate flag?
+        #
+        try:
+            lintegrate = self.lhs.integrate
+        except AttributeError:
+            lintegrate = None
+
+        try:
+            rintegrate = self.rhs.integrate
+        except AttributeError:
+            rintegrate = None
+
+        # If neither side has an integrate setting then the result
+        # will end up being True, as this is the default value for
+        # ArithmeticModel, which is a superclass of BinaryOpModel.
+        # This is not ideal, but is not likely to happen often.
+        #
+        if lintegrate is not None and rintegrate is not None:
+            # Set to True unless both False
+            self.integrate = lintegrate or rintegrate
+        elif lintegrate is not None:
+            # Copy the left side
+            self.integrate = lintegrate
+        elif rintegrate is not None:
+            # Copy the left side
+            self.integrate = rintegrate
+
+        CompositeModel.__init__(self, f"({self.lhs.name} {opstr} {self.rhs.name})",
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):

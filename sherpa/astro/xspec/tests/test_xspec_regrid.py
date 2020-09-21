@@ -367,8 +367,16 @@ def test_combined_arithmetic_left(name, par, val, xsmodel):
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     yexp = 4 * com(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
-        y1 = regrid(egrid[:-1], egrid[1:])
+
+    # WHY HAS THIS CHANGED?
+    if name == 'wabs':
+        with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
+            with pytest.raises(TypeError, match=IntegrateError):
+                y1 = regrid(egrid[:-1], egrid[1:])
+
+    else:
+        with pytest.raises(TypeError, match=IntegrateError):
+            y1 = regrid(egrid[:-1], egrid[1:])
 
     # assert y1 == pytest.approx(yexp, rel=0.04)
 
@@ -390,8 +398,16 @@ def test_combined_arithmetic_right(name, par, val, xsmodel):
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     yexp = 4 * com(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
-        y1 = regrid(egrid[:-1], egrid[1:])
+
+    # WHY HAS THIS CHANGED?
+    if name == 'wabs':
+        with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
+            with pytest.raises(TypeError, match=IntegrateError):
+                y1 = regrid(egrid[:-1], egrid[1:])
+
+    else:
+        with pytest.raises(TypeError, match=IntegrateError):
+            y1 = regrid(egrid[:-1], egrid[1:])
 
     # assert y1 == pytest.approx(yexp, rel=0.04)
 
@@ -446,8 +462,9 @@ def test_multi_combined_multiplicative():
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     expected = mdl(elo, ehi)
-    with pytest.raises(TypeError, match=IntegrateError):
-        got = regrid(elo, ehi)
+    with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
+        with pytest.raises(TypeError, match=IntegrateError):
+            got = regrid(elo, ehi)
 
     # assert got == pytest.approx(expected)
 
