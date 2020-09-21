@@ -1088,6 +1088,16 @@ class ArithmeticModel(Model):
     cache = 5
     """The maximum size of the cache."""
 
+    integrate = True
+    """Is the model integrated across the independent axis?
+
+    If True and the model supports it, the model will be integrated
+    across the low and high edges of the bins when evaluated with low
+    and high bin edges. This setting is ignored if the model is
+    evaluated on a set of points.
+
+    """
+
     def __init__(self, name, pars=()):
         self.integrate = True
 
@@ -1259,6 +1269,16 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
+
+        # Copy the integrate setting, if available. Note that if not
+        # set by arg then it will default to True from the
+        # ArithmeticModel parent class.
+        #
+        try:
+            self.integrate = arg.integrate
+        except AttributeError:
+            pass
+
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
 
@@ -1314,8 +1334,17 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
+        # Copy the integrate setting, if meaningful. Note that if not
+        # set by arg then it will default to True from the
+        # ArithmeticModel parent class.
+        #
+        try:
+            if lhs.integrate == rhs.integrate:
+                self.integrate = lhs.integrate
+        except AttributeError:
+            pass
+
+        CompositeModel.__init__(self, f"({self.lhs.name} {opstr} {self.rhs.name})",
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
