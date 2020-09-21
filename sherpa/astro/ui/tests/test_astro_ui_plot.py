@@ -1098,7 +1098,8 @@ def fail(x):
                                       fail(ui.plot_bkg_fit_ratio),
                                       fail(ui.plot_bkg_fit_delchi)])
 def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1, hide_logging):
-    """These fail because of issue #943"""
+    """Test issue #943 and general check of plot_bkg_xxx"""
+
     ui.unsubtract()
     ui.set_bkg_source(ui.const1d.bmdl + ui.gauss1d.bgmdl)
     plotfunc()
