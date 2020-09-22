@@ -242,9 +242,8 @@ class MyChiNoBkg(UserStat):
 
 
 @pytest.fixture
-def setup(make_data_path):
+def reset_xspec():
 
-    from sherpa.astro.io import read_pha
     from sherpa.astro import xspec
 
     # Ensure we have a known set of XSPEC settings.
@@ -252,18 +251,57 @@ def setup(make_data_path):
     # since the cosmology settings do not affect any of the
     # models used here.
     #
-    xspec_settings = {'abund': xspec.get_xsabund(),
-                      'xsect': xspec.get_xsxsect()}
+    abund = xspec.get_xsabund()
+    xsect = xspec.get_xsxsect()
 
     xspec.set_xsabund('angr')
     xspec.set_xsxsect('bcmc')
+
+    yield
+
+    xspec.set_xsabund(abund)
+    xspec.set_xsxsect(xsect)
+
+
+@pytest.fixture
+def setup(make_data_path):
+
+    from sherpa.astro.io import read_pha
+    from sherpa.astro import xspec
 
     pha_fname = make_data_path("9774.pi")
     data = read_pha(pha_fname)
     data.notice(0.5, 7.0)
 
+    abs1 = xspec.XSphabs('abs1')
+    p1 = PowLaw1D('p1')
+    model = abs1 + p1
+
+    return {'data': data, 'model': model}
+
+
+@pytest.fixture
+def setup_bkg(make_data_path):
+
+    from sherpa.astro.io import read_pha
+    from sherpa.astro import xspec
+
     bkg_fname = make_data_path("9774_bg.pi")
+    # bkg.notice(0.5, 7.0)
     bkg = read_pha(bkg_fname)
+
+    abs1 = xspec.XSphabs('abs1')
+    p1 = PowLaw1D('p1')
+    model = abs1 + p1
+
+    return {'bkg': bkg, 'model': model}
+
+
+@pytest.fixture
+def setup_two(make_data_path):
+
+    from sherpa.astro.io import read_pha
+    from sherpa.astro import xspec
 
     abs1 = xspec.XSphabs('abs1')
     p1 = PowLaw1D('p1')
@@ -276,12 +314,8 @@ def setup(make_data_path):
     data_pi2278 = read_pha(pi2278)
     data_pi2286 = read_pha(pi2286)
 
-    yield {'data': data, 'bkg': bkg,
-           'data_pi2278': data_pi2278, 'data_pi2286': data_pi2286,
-           'model': model, 'model_mult': model_mult}
-
-    xspec.set_xsabund(xspec_settings['abund'])
-    xspec.set_xsxsect(xspec_settings['xsect'])
+    return {'data_pi2278': data_pi2278, 'data_pi2286': data_pi2286,
+            'model_mult': model_mult}
 
 
 def compare_results(arg1, arg2, tol=1e-6):
@@ -300,7 +334,7 @@ def compare_results(arg1, arg2, tol=1e-6):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_chi2xspecvar_stat(hide_logging, setup):
+def test_chi2xspecvar_stat(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], Chi2XspecVar(), NelderMead())
     results = fit.fit()
 
@@ -321,7 +355,7 @@ def test_chi2xspecvar_stat(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_chi2modvar_stat(hide_logging, setup):
+def test_chi2modvar_stat(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], Chi2ModVar(), NelderMead())
     results = fit.fit()
 
@@ -342,7 +376,7 @@ def test_chi2modvar_stat(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_chi2constvar_stat(hide_logging, setup):
+def test_chi2constvar_stat(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], Chi2ConstVar(), LevMar())
     results = fit.fit()
 
@@ -363,7 +397,7 @@ def test_chi2constvar_stat(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_chi2gehrels_stat(hide_logging, setup):
+def test_chi2gehrels_stat(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], Chi2Gehrels(), NelderMead())
     results = fit.fit()
 
@@ -384,7 +418,7 @@ def test_chi2gehrels_stat(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_leastsq_stat(hide_logging, setup):
+def test_leastsq_stat(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], LeastSq(), LevMar())
     results = fit.fit()
 
@@ -405,7 +439,7 @@ def test_leastsq_stat(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_cstat_stat(hide_logging, setup):
+def test_cstat_stat(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], CStat(), NelderMead())
     results = fit.fit()
 
@@ -423,34 +457,24 @@ def test_cstat_stat(hide_logging, setup):
     compare_results(_fit_cstat_results_bench, results)
 
 
-_fit_mycash_results_bench = {
-    'succeeded': 1,
-    'numpoints': 446,
-    'dof': 443,
-    'istatval': 796.401435754,
-    'statval': -14889.3202844,
-    'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
-    'parvals': numpy.array(
-        [5886.0660236942495, 1.6556198746259132, 30098.968589487202])
+@requires_fits
+@requires_xspec
+@requires_data
+@pytest.mark.parametrize('stat', [Cash, MyCashWithBkg, MyCashNoBkg])
+def test_cash_stat(stat, hide_logging, reset_xspec, setup):
+    fit = Fit(setup['data'], setup['model'], stat(), NelderMead())
+    results = fit.fit()
+
+    _fit_mycash_results_bench = {
+        'succeeded': 1,
+        'numpoints': 446,
+        'dof': 443,
+        'istatval': 796.401435754,
+        'statval': -14889.3202844,
+        'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
+        'parvals': numpy.array(
+            [5886.0660236942495, 1.6556198746259132, 30098.968589487202])
     }
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_cash_stat(hide_logging, setup):
-    fit = Fit(setup['data'], setup['model'], Cash(), NelderMead())
-    results = fit.fit()
-
-    compare_results(_fit_mycash_results_bench, results)
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_mycash_data_and_model_have_bkg(hide_logging, setup):
-    fit = Fit(setup['data'], setup['model'], MyCashWithBkg(), NelderMead())
-    results = fit.fit()
 
     compare_results(_fit_mycash_results_bench, results)
 
@@ -470,66 +494,54 @@ _fit_mychi_results_bench = {
 @requires_fits
 @requires_xspec
 @requires_data
-def test_mychi_data_and_model_have_bkg(hide_logging, setup):
+def test_mychi_data_and_model_have_bkg(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], MyChiWithBkg(), LevMar())
     results = fit.fit()
 
     compare_results(_fit_mychi_results_bench, results)
 
 
-# for some reason we have this twice
-_fit_mycashnobkg_results_bench = {
-    'succeeded': 1,
-    'numpoints': 446,
-    'dof': 443,
-    'istatval': 796.401435754,
-    'statval': -14889.3202844,
-    'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
-    'parvals': numpy.array(
-        [5886.0660236942495, 1.6556198746259132, 30098.968589487202])
-    }
-
-_fit_mycashnobkg_results_bench = {
-    'succeeded': 1,
-    'numpoints': 1024,
-    'dof': 1021,
-    'istatval': 2198.3631781,
-    'statval': 1716.74869273,
-    'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
-    'parvals': numpy.array(
-        [295.11120384933781, 0.69990055680397523, 20.998971817852862])
-    }
-
-
 @requires_fits
 @requires_xspec
 @requires_data
-def test_mycash_data_and_model_donothave_bkg(hide_logging, setup):
-    fit = Fit(setup['bkg'], setup['model'], MyCashNoBkg(), NelderMead())
+@pytest.mark.parametrize('stat', [MyCashNoBkg, MyCashWithBkg])
+def test_mycash_data_and_model_donothave_bkg(stat, hide_logging, reset_xspec, setup_bkg):
+    fit = Fit(setup_bkg['bkg'], setup_bkg['model'], stat(), NelderMead())
     results = fit.fit()
+
+    _fit_mycashnobkg_results_bench = {
+        'succeeded': 1,
+        'numpoints': 1024,
+        'dof': 1021,
+        'istatval': 2198.3631781,
+        'statval': 1716.74869273,
+        'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
+        'parvals': numpy.array(
+            [295.11120384933781, 0.69990055680397523, 20.998971817852862])
+    }
 
     compare_results(_fit_mycashnobkg_results_bench, results,
                     tol=1.0e-3)
 
 
-_fit_mychinobkg_results_bench = {
-    'succeeded': 1,
-    'numpoints': 1024,
-    'dof': 1021,
-    'istatval': 5664.2486547,
-    'statval': 7928.05674899,
-    'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
-    'parvals': numpy.array(
-        [346.51084808235697, 0.24721168701021015, 7.9993714921823997])
-    }
-
-
 @requires_fits
 @requires_xspec
 @requires_data
-def test_mychi_data_and_model_donothave_bkg(hide_logging, setup):
-    fit = Fit(setup['bkg'], setup['model'], MyChiNoBkg(), LevMar())
+@pytest.mark.parametrize('stat', [MyChiNoBkg, MyChiWithBkg])
+def test_mychi_data_and_model_donothave_bkg(stat, hide_logging, reset_xspec, setup_bkg):
+    fit = Fit(setup_bkg['bkg'], setup_bkg['model'], stat(), LevMar())
     results = fit.fit()
+
+    _fit_mychinobkg_results_bench = {
+        'succeeded': 1,
+        'numpoints': 1024,
+        'dof': 1021,
+        'istatval': 5664.2486547,
+        'statval': 7928.05674899,
+        'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
+        'parvals': numpy.array(
+            [346.51084808235697, 0.24721168701021015, 7.9993714921823997])
+    }
 
     compare_results(_fit_mychinobkg_results_bench, results, 1e-5)
 
@@ -537,28 +549,7 @@ def test_mychi_data_and_model_donothave_bkg(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_mycash_datahasbkg_modelhasnobkg(hide_logging, setup):
-    fit = Fit(setup['data'], setup['model'], MyCashNoBkg(), NelderMead())
-    results = fit.fit()
-
-    compare_results(_fit_mycash_results_bench, results)
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_mycash_nobkgdata_modelhasbkg(hide_logging, setup):
-    fit = Fit(setup['bkg'], setup['model'], MyCashWithBkg(), NelderMead())
-    results = fit.fit()
-
-    compare_results(_fit_mycashnobkg_results_bench, results,
-                    tol=1.0e-3)
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_mychi_datahasbkg_modelhasnobkg(hide_logging, setup):
+def test_mychi_datahasbkg_modelhasnobkg(hide_logging, reset_xspec, setup):
     fit = Fit(setup['data'], setup['model'], MyChiNoBkg(), LevMar())
     results = fit.fit()
 
@@ -568,17 +559,7 @@ def test_mychi_datahasbkg_modelhasnobkg(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_mychi_nobkgdata_modelhasbkg(hide_logging, setup):
-    fit = Fit(setup['bkg'], setup['model'], MyChiWithBkg(), LevMar())
-    results = fit.fit()
-
-    compare_results(_fit_mychinobkg_results_bench, results, 1e-5)
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_wstat(hide_logging, setup):
+def test_wstat(hide_logging, reset_xspec, setup):
 
     fit = Fit(setup['data'], setup['model'], WStat(), LevMar())
     results = fit.fit()
@@ -625,8 +606,8 @@ def test_wstat(hide_logging, setup):
 @requires_fits
 @requires_xspec
 @requires_data
-def test_wstat_error(hide_logging, setup):
-    fit = Fit(setup['bkg'], setup['model'], WStat(), NelderMead())
+def test_wstat_error(hide_logging, reset_xspec, setup_bkg):
+    fit = Fit(setup_bkg['bkg'], setup_bkg['model'], WStat(), NelderMead())
 
     with pytest.raises(StatErr):
         fit.fit()
@@ -656,49 +637,31 @@ def test_get_stat_info(hide_logging, make_data_path):
     assert stat_info.numpoints == 46
 
 
-_fit_simul_datavarstat_results_bench = {
-    'succeeded': 1,
-    'numpoints': 18,
-    'dof': 15,
-    'istatval': 1218.11457171,
-    'statval': 204.883073969,
-    'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
-    'parvals': numpy.array(
-        [65647.539439194588, 2.1440354994101929, 13955.023665227312])
+@requires_fits
+@requires_xspec
+@requires_data
+@pytest.mark.parametrize('stat', [MySimulStat, MyChiNoBkg])
+def test_simul_stat_fit(stat, hide_logging, reset_xspec, setup_two):
+    data1 = setup_two['data_pi2278']
+    data2 = setup_two['data_pi2286']
+    model1 = setup_two['model_mult']
+    model2 = setup_two['model_mult']
+    data = DataSimulFit(name='data1data2', datasets=[data1, data2])
+    model = SimulFitModel(name='model1model2', parts=[model1, model2])
+    fit = Fit(data=data, model=model, stat=stat(),
+              method=NelderMead())
+    result = fit.fit()
+
+    _fit_simul_datavarstat_results_bench = {
+        'succeeded': 1,
+        'numpoints': 18,
+        'dof': 15,
+        'istatval': 1218.11457171,
+        'statval': 204.883073969,
+        'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
+        'parvals': numpy.array(
+            [65647.539439194588, 2.1440354994101929, 13955.023665227312])
     }
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_mysimul_stat_fit(hide_logging, setup):
-    data1 = setup['data_pi2278']
-    data2 = setup['data_pi2286']
-    model1 = setup['model_mult']
-    model2 = setup['model_mult']
-    data = DataSimulFit(name='data1data2', datasets=[data1, data2])
-    model = SimulFitModel(name='model1model2', parts=[model1, model2])
-    fit = Fit(data=data, model=model, stat=MySimulStat(),
-              method=NelderMead())
-    result = fit.fit()
-
-    compare_results(_fit_simul_datavarstat_results_bench,
-                    result)
-
-
-@requires_fits
-@requires_xspec
-@requires_data
-def test_simul_stat_fit(hide_logging, setup):
-    data1 = setup['data_pi2278']
-    data2 = setup['data_pi2286']
-    model1 = setup['model_mult']
-    model2 = setup['model_mult']
-    data = DataSimulFit(name='data1data2', datasets=[data1, data2])
-    model = SimulFitModel(name='model1model2', parts=[model1, model2])
-    fit = Fit(data=data, model=model, stat=MyChiNoBkg(),
-              method=NelderMead())
-    result = fit.fit()
 
     compare_results(_fit_simul_datavarstat_results_bench,
                     result)
