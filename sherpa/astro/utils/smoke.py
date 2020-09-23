@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,15 +17,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
-from tempfile import NamedTemporaryFile
-
-from sherpa.astro import ui
-from sherpa.utils.testing import has_package_from_list
-from numpy.testing import assert_almost_equal
 import logging
 import sys
 import os
+import unittest
+from tempfile import NamedTemporaryFile
+
+import numpy as np
+from numpy.testing import assert_almost_equal
+
+from sherpa.astro import ui
+from sherpa.utils.testing import has_package_from_list
 
 logger = logging.getLogger("sherpa")
 
@@ -126,8 +128,9 @@ class SmokeTest(unittest.TestCase):
         folder = os.path.dirname(datastack.__file__)
         self.fits = os.path.join(folder, "tests", "data", "acisf07867_000N001_r0002_pha3.fits")
 
-        self.x = [1, 2, 3]
-        self.y = [1, 2, 3]
+        self.x = np.asarray([1, 2, 3])
+        self.x2 = self.x + 1
+        self.y = np.asarray([1, 2, 3])
 
     def tearDown(self):
         if hasattr(self, "old_level"):
@@ -171,13 +174,13 @@ class SmokeTest(unittest.TestCase):
         This test proves that the xspec extension properly works, and that there are no obvious building, linking, or
         environment issues that would prevent the xspec model from running.
         """
-        ui.load_arrays(1, self.x, self.y)
+        ui.load_arrays(1, self.x, self.x2, self.y, ui.Data1DInt)
         ui.set_source("xspowerlaw.p")
         ui.set_method("moncar")
         ui.set_stat("chi2xspecvar")
         ui.fit()
         model = ui.get_model_component("p")
-        expected = [-1.3686404, 0.5687635]
+        expected = [-1.2940997851602858, 0.5969328003146177]
         observed = [model.PhoIndex.val, model.norm.val]
         assert_almost_equal(observed, expected)
 
