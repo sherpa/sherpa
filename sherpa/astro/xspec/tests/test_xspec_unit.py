@@ -709,6 +709,22 @@ def test_read_xstable_model(make_data_path):
         assert not(p.frozen)
 
 
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_xspec_model_requires_bins(clsname):
+    """Ensure you can not call with a single grid for the energies."""
+
+    from sherpa.astro import xspec
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+
+    with pytest.raises(TypeError) as exc:
+        mdl([0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
 @requires_data
 @requires_fits
 @requires_xspec
@@ -947,6 +963,10 @@ def test_integrate_is_fixed(clsname, truth):
 
     assert mdl.integrate is truth
 
+    # Check we can set it to itself
+    mdl.integrate = truth
+
+    # Check we can not change it
     with pytest.raises(ModelErr) as exc:
         mdl.integrate = not truth
 

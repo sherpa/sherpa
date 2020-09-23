@@ -378,8 +378,9 @@ def test_cflux_nbins():
 
     The test_cflux_calc_xxx routines do include a test of the number
     of bins, but that is just for a Data1DInt dataset, so the model
-    only ever gets called with explicit lo and hi edges. This test
-    calls the model directly to check both 1 and 2 argument variants.
+    only ever gets called with explicit lo and hi edges. Now that
+    we no-longer support evaluating the model with a single grid
+    this test may not add much power, but leave in for now.
 
     Notes
     -----
@@ -401,11 +402,8 @@ def test_cflux_nbins():
     nbins = elo.size
 
     def check_bins(lbl, mdl):
-        y1 = mdl(egrid)
-        y2 = mdl(elo, ehi)
-
-        assert y1.size == nbins + 1, '{}: egrid'.format(lbl)
-        assert y2.size == nbins, '{}: elo/ehi'.format(lbl)
+        y = mdl(elo, ehi)
+        assert y.size == nbins, '{}: elo/ehi'.format(lbl)
 
     # verify assumptions
     #

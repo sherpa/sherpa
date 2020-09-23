@@ -115,9 +115,8 @@ def get_xspec_models():
 def make_grid():
     """Return the 'standard' contiguous grid used in these tests.
 
-    Returns egrid, elo, ehi, wgrid, wlo, whi where the e-xxx values
-    are in keV and the w-xxx values in Angstrom, *grid are a
-    single grid of values (i.e. one array) and the *lo/*hi values
+    Returns elo, ehi, wlo, whi where the e-xxx values
+    are in keV and the w-xxx values in Angstrom. The *lo/*hi values
     are this grid separated out into bin edges.
 
     The following condition holds: *hi[i] > *lo[i], and the
@@ -143,7 +142,7 @@ def make_grid():
     whi = wgrid[:-1]
     wlo = wgrid[1:]
 
-    return egrid, elo, ehi, wgrid, wlo, whi
+    return elo, ehi, wlo, whi
 
 
 def make_grid_noncontig2():
@@ -153,7 +152,7 @@ def make_grid_noncontig2():
     The grid from make_grid is modified to make one gap.
     """
 
-    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+    elo, ehi, wlo, whi = make_grid()
 
     # remove two sections
     idx1 = (elo <= 1.1) | (elo >= 1.4)
@@ -233,7 +232,7 @@ def test_create_model_instances(clean_astro_ui):
 
 
 @requires_xspec
-def test_norm_works(clean_astro_ui):
+def test_norm_works():
     # Check that the norm parameter for additive models
     # works, as it is handled separately from the other
     # parameters.
@@ -242,14 +241,15 @@ def test_norm_works(clean_astro_ui):
     # need an additive model
     mdl = xs.XSpowerlaw()
     mdl.PhoIndex = 2
-    egrid = [0.1, 0.2, 0.3, 0.4]
+    egrid1 = [0.1, 0.2, 0.3, 0.4]
+    egrid2 = [0.2, 0.3, 0.4, 0.5]
 
     mdl.norm = 1.2
-    y1 = mdl(egrid)
+    y1 = mdl(egrid1, egrid2)
 
     mfactor = 2.1
     mdl.norm = mdl.norm.val * mfactor
-    y2 = mdl(egrid)
+    y2 = mdl(egrid1, egrid2)
 
     # check that the sum is not 0 and that it
     # scales as expected.
@@ -264,14 +264,49 @@ def test_norm_works(clean_astro_ui):
 def test_evaluate_model(clean_astro_ui):
     import sherpa.astro.xspec as xs
     mdl = xs.XSbbody()
-    out = mdl([1, 2, 3, 4])
+    out = mdl([1, 2, 3, 4], [2, 3, 4, 5])
     if mdl.calc.__name__.startswith('C_'):
         otype = numpy.float64
     else:
         otype = numpy.float32
 
     assert out.dtype.type == otype
-    assert int(numpy.flatnonzero(out == 0.0)) == 3
+    # check all values are > 0
+    assert (out > 0).all()
+
+
+@requires_xspec
+@pytest.mark.parametrize('model', ['powerlaw', 'gaussian',
+                                   'vapec',  # pick this as scientifically "useful"
+                                   'constant', 'wabs'])
+def test_lowlevel(model):
+    """The XSPEC class interface requires lo,hi but the low-level allows just x
+
+    Pick a few additive and multiplicative models.
+    """
+
+    import sherpa.astro.xspec as xs
+
+    cls = getattr(xs, 'XS{}'.format(model))
+    mdl = cls()
+
+    pars = [p.val for p in mdl.pars]
+
+    # grid chosen to match XSgaussian's default parameter setting
+    # (to make sure evaluates to > 0).
+    #
+    egrid = numpy.arange(6, 7, 0.1)
+    e1 = egrid[:-1]
+    e2 = egrid[1:]
+
+    y1 = mdl._calc(pars, egrid)
+    y2 = mdl._calc(pars, e1, e2)
+
+    # should be able to use equality rather than approx, but
+    # this is easier to use
+    assert y1[:-1] == pytest.approx(y2)
+    assert y1[-1] == 0.0
+    assert (y2 > 0).all()
 
 
 @requires_xspec
@@ -281,10 +316,9 @@ def test_checks_input_length(clean_astro_ui):
 
     # Check when input array is too small (< 2 elements)
     with pytest.raises(TypeError):
-        mdl([0.1])
+        mdl([0.1], [0.2])
 
-    # Check when input arrays are not the same size (when the
-    # low and high bin edges are given)
+    # Check when input arrays are not the same size.
     with pytest.raises(TypeError):
         mdl([0.1, 0.2, 0.3], [0.2, 0.3])
 
@@ -303,10 +337,9 @@ def test_xstablemodel_checks_input_length(loadfunc, clean_astro_ui, make_data_pa
 
     # Check when input array is too small (< 2 elements)
     with pytest.raises(TypeError):
-        mdl([0.1])
+        mdl([0.1], [0.2])
 
-    # Check when input arrays are not the same size (when the
-    # low and high bin edges are given)
+    # Check when input arrays are not the same size.
     with pytest.raises(TypeError):
         mdl([0.1, 0.2, 0.3], [0.2, 0.3])
 
@@ -334,25 +367,15 @@ def test_xspec_xstablemodel(loadfunc, clean_astro_ui, make_data_path):
 
     assert tmod.name == 'xstablemodel.tmod'
 
-    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+    elo, ehi, wlo, whi = make_grid()
 
-    evals1 = tmod(egrid)
-    evals2 = tmod(elo, ehi)
+    evals = tmod(elo, ehi)
+    wvals = tmod(wlo, whi)
 
-    wvals1 = tmod(wgrid)
-    wvals2 = tmod(wlo, whi)
+    assert_is_finite(evals, tmod, "energy")
+    assert_is_finite(wvals, tmod, "wavelength")
 
-    assert_is_finite(evals1, tmod, "energy")
-    assert_is_finite(wvals1, tmod, "wavelength")
-
-    emsg = "table model evaluation failed: "
-    assert_array_equal(evals1[:-1], evals2,
-                       err_msg=emsg + "energy comparison")
-
-    assert_allclose(evals1, wvals1,
-                    err_msg=emsg + "single arg")
-    assert_allclose(evals2, wvals2,
-                    err_msg=emsg + "two args")
+    assert wvals == pytest.approx(evals)
 
 
 @requires_xspec
@@ -365,33 +388,31 @@ def test_xspec_xstablemodel_noncontiguous2(loadfunc, clean_astro_ui, make_data_p
 
     elo, ehi, wlo, whi = make_grid_noncontig2()
 
-    evals2 = tmod(elo, ehi)
-    wvals2 = tmod(wlo, whi)
+    evals = tmod(elo, ehi)
+    wvals = tmod(wlo, whi)
 
-    assert_is_finite(evals2, tmod, "energy")
-    assert_is_finite(wvals2, tmod, "wavelength")
+    assert_is_finite(evals, tmod, "energy")
+    assert_is_finite(wvals, tmod, "wavelength")
 
-    emsg = "table model non-contiguous evaluation failed: "
-    rtol = 1e-3
-    assert_allclose(evals2, wvals2, rtol=rtol,
-                    err_msg=emsg + "energy to wavelength")
+    assert wvals == pytest.approx(evals)
+    assert (wvals > 0).any()
 
 
 @requires_xspec
 @requires_data
 @requires_fits
-def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
+def test_xspec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     ui.load_xstable_model('tmod', make_data_path('xspec-tablemodel-RCS.mod'))
     # when used in the test suite it appears that the tmod
     # global symbol is not created, so need to access the component
     tmod = ui.get_model_component('tmod')
     with pytest.raises(ParameterErr) as e:
-        tmod.calc([0., .2, 1., 1.], numpy.arange(1, 5))
+        tmod.calc([0., .2, 1., 1.], numpy.arange(1, 5), numpy.arange(2, 6))
     assert 'minimum' in str(e)
 
 
 @requires_xspec
-def test_convolution_model_cflux(clean_astro_ui):
+def test_convolution_model_cflux():
     # Use the cflux convolution model, since this gives
     # an easily-checked result. At present the only
     # interface to these models is via direct access
@@ -410,6 +431,8 @@ def test_convolution_model_cflux(clean_astro_ui):
     elo = 0.55
     ehi = 1.45
     egrid = numpy.linspace(0.5, 1.5, 101)
+    eg1 = egrid[:-1]
+    eg2 = egrid[1:]
 
     mdl1 = xs.XSpowerlaw()
     mdl1.PhoIndex = 2
@@ -417,7 +440,8 @@ def test_convolution_model_cflux(clean_astro_ui):
     # flux of mdl1 over the energy range of interest; converting
     # from a flux in photon/cm^2/s to erg/cm^2/s, when the
     # energy grid is in keV.
-    y1 = mdl1(egrid)
+    y1 = mdl1(eg1, eg2)
+
     idx, = numpy.where((egrid >= elo) & (egrid < ehi))
 
     # To match XSpec, need to multiply by (Ehi^2-Elo^2)/(Ehi-Elo)
@@ -434,9 +458,10 @@ def test_convolution_model_cflux(clean_astro_ui):
     # flux in erg/cm^2/s). The parameters chosen for the
     # powerlaw, and energy range, should have f1 ~ 1.5e-9
     # (log 10 of this is -8.8).
+    #
     lflux = -5.0
     pars = [elo, ehi, lflux]
-    y2 = xs._xspec.C_cflux(pars, y1, egrid)
+    y2 = xs._xspec.C_cflux(pars, y1, eg1, eg2)
 
     assert_is_finite(y2, "cflux", "energy")
 
@@ -447,16 +472,7 @@ def test_convolution_model_cflux(clean_astro_ui):
     wlo = wgrid[1:]
 
     expected = y1 * 10**lflux / f1
-    numpy.testing.assert_allclose(expected, y2,
-                                  err_msg='energy, single grid')
-
-    y1 = mdl1(wgrid)
-    y2 = xs._xspec.C_cflux(pars, y1, wgrid)
-    assert_is_finite(y2, "cflux", "wavelength")
-    numpy.testing.assert_allclose(expected, y2,
-                                  err_msg='wavelength, single grid')
-
-    expected = expected[:-1]
+    assert y2 == pytest.approx(expected)
 
     y1 = mdl1(elo, ehi)
     y2 = xs._xspec.C_cflux(pars, y1, elo, ehi)
@@ -470,7 +486,7 @@ def test_convolution_model_cflux(clean_astro_ui):
 
 
 @requires_xspec
-def test_convolution_model_cpflux_noncontiguous(clean_astro_ui):
+def test_convolution_model_cpflux_noncontiguous():
     # The models should raise an error if given a non-contiguous
     # grid.
     import sherpa.astro.xspec as xs
@@ -543,7 +559,7 @@ def test_nonexistent_model():
     m = XSbtapec()
 
     with pytest.raises(AttributeError) as exc:
-        m([])
+        m([], [])
 
     assert include_if.DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
 
@@ -569,7 +585,7 @@ def test_not_compiled_model():
     m = XSfoo()
 
     with pytest.raises(AttributeError) as exc:
-        m([])
+        m([], [])
 
     assert ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE == str(exc.value)
 
@@ -594,11 +610,11 @@ def test_old_style_xspec_class():
 
     m = XSfoo()
 
-    actual = m([1, 2, 3])
+    actual = m([1, 2, 3], [2, 3, 4])
 
-    expected = XSzbabs()([1, 2, 3])
+    expected = XSzbabs()([1, 2, 3], [2, 3, 4])
 
-    assert_array_equal(expected, actual)
+    assert actual == pytest.approx(actual)
 
 
 @requires_xspec
@@ -626,7 +642,7 @@ def test_evaluate_xspec_model(modelcls):
     if isinstance(mdl, xspec.XSConvolutionKernel):
         return
 
-    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+    elo, ehi, wlo, whi = make_grid()
 
     # The model checks that the values are all finite,
     # so there is no need to check that the output of
@@ -634,34 +650,13 @@ def test_evaluate_xspec_model(modelcls):
     # NOTE: this is no-longer the case, so include an
     #       explicit check for the single-argument forms
     #
-    evals1 = mdl(egrid)
-    evals2 = mdl(elo, ehi)
+    evals = mdl(elo, ehi)
+    wvals = mdl(wlo, whi)
 
-    wvals1 = mdl(wgrid)
-    wvals2 = mdl(wlo, whi)
+    assert_is_finite(evals, modelcls, "energy")
+    assert_is_finite(wvals, modelcls, "wavelength")
 
-    assert_is_finite(evals1, modelcls, "energy")
-    assert_is_finite(wvals1, modelcls, "wavelength")
-
-    emsg = "{} model evaluation failed: ".format(modelcls)
-
-    # It might be expected that the test should be
-    #   assert_allclose(evals1[:-1], evals2)
-    # to ensure there's no floating-point issues,
-    # but in this case the grid and parameter
-    # values *should* be exactly the same, so the
-    # results *should* be exactly equal, hence
-    # the use of assert_array_equal
-    assert_array_equal(evals1[:-1], evals2,
-                       err_msg=emsg + "energy comparison")
-    assert_array_equal(wvals1[:-1], wvals2,
-                       err_msg=emsg + "wavelength comparison")
-
-    # When comparing wavelength to energy values, have
-    # to use allclose since the bins are not identically
-    # equal.
-    assert_allclose(evals1, wvals1,
-                    err_msg=emsg + "energy to wavelength")
+    assert wvals == pytest.approx(evals)
 
 
 @requires_xspec

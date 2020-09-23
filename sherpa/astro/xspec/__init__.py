@@ -873,6 +873,25 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
+        """Calculate the model given the parameters and grid.
+
+        Notes
+        -----
+        XSPEC models must always be evaluated with low and high
+        bin edges. Although supported by the XSPEC model interface
+        the ability to evaluate using an XSPEC-style grid (n+1
+        values for n bins which we pad with a 0), we do not
+        allow this here since it complicates the handling of
+        the regrid method.
+
+        Keyword arguments are ignored.
+        """
+
+        nargs = len(args)
+        if nargs != 3:
+            emsg = "calc() requires pars,lo,hi arguments, sent {} arguments".format(nargs)
+            raise TypeError(emsg)
+
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
         # rather than in the C++ interface since:
