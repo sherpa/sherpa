@@ -1020,6 +1020,14 @@ class XSTableModel(XSModel):
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
+
+        # Note the kwargs is ignored
+
+        nargs = 1 + len(args)
+        if nargs != 3:
+            emsg = "calc() requires pars,lo,hi arguments, sent {} arguments".format(nargs)
+            raise TypeError(emsg)
+
         # The function used depends on XSPEC version and, prior
         # to XSPEC 12.10.1, the type of table.
         #
@@ -1036,16 +1044,15 @@ class XSTableModel(XSModel):
 
         if hasattr(_xspec, 'tabint'):
             tabtype = 'add' if self.addmodel else 'mul'
-            return _xspec.tabint(p,
-                                 filename=self.filename, tabtype=tabtype,
-                                 *args, **kwargs)
+            return _xspec.tabint(p, *args,
+                                 filename=self.filename, tabtype=tabtype)
 
         if self.addmodel:
             func = _xspec.xsatbl
         else:
             func = _xspec.xsmtbl
 
-        return func(p, filename=self.filename, *args, **kwargs)
+        return func(p, *args, filename=self.filename)
 
 
 class XSAdditiveModel(XSModel):

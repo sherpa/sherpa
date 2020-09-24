@@ -728,6 +728,24 @@ def test_xspec_model_requires_bins(clsname):
 @requires_data
 @requires_fits
 @requires_xspec
+def test_xspec_table_model_requires_bins(make_data_path):
+    """Ensure you can not call with a single grid for the energies."""
+
+    from sherpa.astro import xspec
+
+    path = make_data_path('xspec-tablemodel-RCS.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    with pytest.raises(TypeError) as exc:
+        tbl([0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
+@requires_data
+@requires_fits
+@requires_xspec
 def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     """Can we extend an additive table model beyond its grid?
 
@@ -748,7 +766,9 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     assert tbl.integrate
 
     egrid = np.arange(0.1, 11, 0.01)
-    y = tbl(egrid)
+    eg1 = egrid[:-1]
+    eg2 = egrid[1:]
+    y = tbl(eg1, eg2)
 
     # Several simple regression tests.
     assert y[0] == pytest.approx(0.27216572)
@@ -761,7 +781,7 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     assert y[967] == pytest.approx(minval)
 
     zeros = np.where(y <= 0)
-    assert (zeros[0] == np.arange(968, 1090)).all()
+    assert (zeros[0] == np.arange(968, 1089)).all()
 
 
 @requires_data
@@ -822,6 +842,8 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
 
     # This extends beyond the range of the model grid
     egrid = np.arange(0.1, 17, 1.0)
+    eg1 = egrid[:-1]
+    eg2 = egrid[1:]
 
     # The expected values, evaluated with XSPEC 12.10.1b using
     # C++ code (i.e. not the Sherpa interface).
@@ -843,16 +865,15 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
                        0.997616,
                        0.998104,
                        0.998454,
-                       -1,
-                       0])
+                       -1])
 
     # Note, xspec 12.10.0 should not be seen here as explicitly
     # excluded above.
     xver = xspec.get_xsversion()
     if xver.startswith('12.9.'):
-        yexp[-2] = 1.0
+        yexp[-1] = 1.0
 
-    y = tbl(egrid)
+    y = tbl(eg1, eg2)
 
     assert_almost_equal(y, yexp, decimal=6)
 
@@ -933,6 +954,7 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     lmdl = Const1D()
 
     grid = np.arange(1, 5)
+    grid2 = grid + 1
 
     tbl.tau = lmdl.c0
     lmdl.c0 = 2
@@ -940,14 +962,14 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     # just a safety check that we can change the parameter via
     # a link and run the model
     assert tbl.tau.val == pytest.approx(2)
-    y2 = tbl(grid)
-    assert (y2[:-1] > 0).all()
+    y2 = tbl(grid, grid2)
+    assert (y2 > 0).all()
 
     # Test the fix for #742
     lmdl.c0 = 20
     emsg = 'parameter bar.tau has a maximum of 10'
     with pytest.raises(ParameterErr, match=emsg):
-        tbl(grid)
+        tbl(grid, grid2)
 
 
 @requires_xspec
