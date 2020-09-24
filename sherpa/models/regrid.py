@@ -486,8 +486,9 @@ class ModelDomainRegridder1D():
     def calc(self, pars, modelfunc, *args, **kwargs):
         """Evaluate and regrid a model
 
-        Evaluate the model on the internal grid and then interpolate
-        onto the desired grid.
+        Evaluate the model on the internal grid and then convert it
+        onto the desired grid either preserving flux (rebinning) or
+        via interpolation.
 
         Parameters
         ----------
@@ -554,67 +555,134 @@ class ModelDomainRegridder1D():
 
         return requested_eval_space
 
-    def eval_non_integrated(self, pars, modelfunc, data_space, eval_space,
+    def eval_non_integrated(self, pars, modelfunc, data_grid, eval_grid,
                             **kwargs):
+        """Interpolate the model.
 
-        # eval_space is out of data_space range
-        if eval_space[-1] < data_space[0] or eval_space[0] > data_space[-1]:
-            return np.zeros(data_space.size)
+        Parameters
+        ----------
+        pars : list of numbers
+            The parameters for the model.
+        modelfunc : callable
+            The model to evaluate. It is called as
+            modelfunc(pars, x, **kwargs)
+        data_grid : sequence of numbers
+            The grid on which to return the values.
+        eval_grid : sequence of numbers
+            The grid on which to evaluate the model.
+        kwargs
+            Any arguments to be sent to modelfunc.
+
+        Returns
+        -------
+        model : ndarray
+            The model values matching the data_grid bins.
+
+        """
+
+        # eval_grid is out of data_grid range
+        if eval_grid[-1] < data_grid[0] or eval_grid[0] > data_grid[-1]:
+            return np.zeros(data_grid.size)
 
         #
-        # join all elements of data_space within
+        # join all elements of data_grid within
         # eval_spaee to minimize interpolation
         #
-        indices = np.where((data_space > eval_space[0]) &
-                           (data_space < eval_space[-1]))
-        my_eval_space = np.unique(np.append(eval_space, data_space[indices]))
+        indices = np.where((data_grid > eval_grid[0]) &
+                           (data_grid < eval_grid[-1]))
+        my_eval_grid = np.unique(np.append(eval_grid, data_grid[indices]))
 
-        y_tmp = modelfunc(pars, my_eval_space, **kwargs)
-        y_interpolate = self.method(data_space, my_eval_space, y_tmp)
+        y_tmp = modelfunc(pars, my_eval_grid, **kwargs)
+        y_interpolate = self.method(data_grid, my_eval_grid, y_tmp)
 
-        if y_interpolate.size == data_space.size and \
-           eval_space[0] < data_space[0] and eval_space[-1] > data_space[-1]:
-            # data space all within eval_space
+        if y_interpolate.size == data_grid.size and \
+           eval_grid[0] < data_grid[0] and eval_grid[-1] > data_grid[-1]:
+            # data space all within eval_grid
             return y_interpolate
 
-        # find indices within data_space
-        indices = np.unique(data_space.searchsorted(my_eval_space))
-        indices = indices[np.where(indices < data_space.size)]
+        # find indices within data_grid
+        indices = np.unique(data_grid.searchsorted(my_eval_grid))
+        indices = indices[np.where(indices < data_grid.size)]
 
-        y = np.zeros(data_space.size)
+        y = np.zeros(data_grid.size)
         y[indices] = y_interpolate[indices]
 
         return y
 
-    def _evaluate(self, data_space, pars, modelfunc, **kwargs):
+    def eval_integrated(self, pars, modelfunc, data_grid, eval_grid,
+                        **kwargs):
+        """Rebin the model onto a grid with low and high bins.
+
+        Parameters
+        ----------
+        pars : list of numbers
+            The parameters for the model.
+        modelfunc : callable
+            The model to evaluate. It is called as
+            modelfunc(pars, lo, hi, **kwargs)
+        data_grid : (sequence of numbers, sequence of numbers)
+            The grid on which to return the values, as low and
+            high edges.
+        eval_grid : (sequence of numbers, sequence of numbers)
+            The grid on which to evaluate the model, as low and
+            high edges.
+        kwargs
+            Any arguments to be sent to modelfunc.
+
+        Returns
+        -------
+        model : ndarray
+            The model values matching the data_grid bins.
+
         """
-        Evaluate the model on the user-defined grid and then interpolate/rebin
-        onto the desired grid. This is based on sherpa.models.TableModel
-        but is simplified as we do not provide a fold method.
+
+        y = modelfunc(pars, eval_grid[0], eval_grid[1],
+                      **kwargs)
+        return rebin(y, eval_grid[0], eval_grid[1],
+                     data_grid[0], data_grid[1])
+
+    def _evaluate(self, data_space, pars, modelfunc, **kwargs):
+        """Evaluate the model and then convert to the requested grid.
+
+        The model is evaluated using the evaluation_space attribute and
+        then converted to match the data_space argument. If the data_space
+        is integrated and the integrate attribute is set then the conversion
+        is done by rebinning the data (and so preserving the signal)
+        otherwise the method attribute is used to interpolate the data.
+
+        Parameters
+        ----------
+        data_space : EvaluationSpace1D instance
+            The output grid for the model.
+        pars : list of numbers
+            The parameters for the model.
+        modelfunc : callable
+            The model to evaluate. It is called as
+            modelfunc(pars, *args, **kwargs) where args is
+            either one or two arguments.
+        kwargs
+            Any arguments to be sent to modelfunc.
+
+        Notes
+        -----
+        This is based on sherpa.models.TableModel but is simplified as
+        we do not provide a fold method.
+
         """
         # Not really sure I need this, but let's be safe
         kwargs['integrate'] = self.integrate
 
         eval_space = self.evaluation_space
-        if data_space.is_integrated:
-            if self.integrate:
-                # This should be the most common case
-                y = modelfunc(pars, eval_space.grid[0], eval_space.grid[1],
-                              **kwargs)
-                return rebin(y, eval_space.grid[0], eval_space.grid[1],
-                             data_space.grid[0], data_space.grid[1])
-            else:
-                # The integrate flag is set to false, so just evaluate the model
-                # and then interpolate using the grids midpoints.
-                return self.eval_non_integrated(pars, modelfunc,
-                                                data_space.midpoint_grid,
-                                                eval_space.midpoint_grid,
-                                                **kwargs)
-        else:
-            return self.eval_non_integrated(pars, modelfunc,
-                                            data_space.midpoint_grid,
-                                            eval_space.midpoint_grid,
-                                            **kwargs)
+        if data_space.is_integrated and self.integrate:
+            return self.eval_integrated(pars, modelfunc,
+                                        data_space.grid, eval_space.grid,
+                                        **kwargs)
+
+        # We either have integrate=False or a non-integrated bin is given.
+        return self.eval_non_integrated(pars, modelfunc,
+                                        data_space.midpoint_grid,
+                                        eval_space.midpoint_grid,
+                                        **kwargs)
 
 
 class ModelDomainRegridder2D():
