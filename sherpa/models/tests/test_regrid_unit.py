@@ -1203,8 +1203,8 @@ def test_regrid_unop_no_regrid():
     umdl = UnaryOpModel(mdl, np.negative, '-')
 
     x = np.linspace(1.1, 1.9, 8)
-    with pytest.raises(AttributeError,
-                       match="'UnaryOpModel' object has no attribute 'regrid'"):
+    with pytest.raises(ModelErr,
+                       match=re.escape("No regrid support for -(4.0)")):
         umdl.regrid(x)
 
 
@@ -1221,9 +1221,10 @@ def test_regrid_unop():
     x = np.linspace(23, 27, 7)
     grid = np.linspace(20, 30, 21)
 
-    with pytest.raises(AttributeError,
-                       match="'UnaryOpModel' object has no attribute 'regrid'"):
-        umdl.regrid(grid)
+    exp = -1 * mdl(x)
+
+    rmdl = umdl.regrid(grid)
+    assert rmdl(x) == pytest.approx(exp)
 
 
 def test_regrid_binop_arithmeticconstantmodel():
@@ -1235,7 +1236,7 @@ def test_regrid_binop_arithmeticconstantmodel():
     with pytest.raises(ModelErr) as exc:
         orig.regrid(grid)
 
-    assert str(exc.value) == 'Neither component supports regrid method'
+    assert str(exc.value) == 'Neither component supports regrid method in (4.0 + 6.0)'
 
 
 def test_box1d_point():

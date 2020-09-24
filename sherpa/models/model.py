@@ -1228,7 +1228,7 @@ class RegriddableModel2D(RegriddableModel):
         return regridder.apply_to(self)
 
 
-class UnaryOpModel(CompositeModel, ArithmeticModel):
+class UnaryOpModel(CompositeModel, RegriddableModel):
     """Apply an operator to a model expression.
 
     Parameters
@@ -1281,6 +1281,14 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
 
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
+
+    def regrid(self, *args, **kwargs):
+        try:
+            regrid = self.arg.__class__.regrid
+        except AttributeError:
+            raise ModelErr(f"No regrid support for {self.name}") from None
+
+        return regrid(self, *args, **kwargs)
 
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
@@ -1354,7 +1362,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                 continue
             # The full model expression must be used
             return part.__class__.regrid(self, *args, **kwargs)
-        raise ModelErr('Neither component supports regrid method')
+
+        raise ModelErr(f"Neither component supports regrid method in {self.name}")
 
     def startup(self, cache=False):
         self.lhs.startup(cache)
