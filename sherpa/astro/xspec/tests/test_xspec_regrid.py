@@ -98,14 +98,9 @@ def test_regrid_table_requires_bins(make_data_path):
 
     ebase = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
 
-    regrid = tbl.regrid(ebase)
-
-    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
-    with pytest.warns(FutureWarning, match=emsg):
-        y = regrid([0.52, 0.57, 0.62])
-
-    # Answer calculated with XSPEC 12.12.1
-    assert y == pytest.approx([0.50037217, 0.50017911, 0.50086778])
+    with pytest.raises(ModelErr,
+                       match="^A non-overlapping integrated grid is required for model evaluation"):
+        tbl.regrid(ebase)
 
 
 @requires_xspec
@@ -482,14 +477,15 @@ def test_sherpa_add_xspec_mul(sherpa_first):
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize('name,iflag,tol,warn',
-                         [('xspec-tablemodel-RCS.mod', True, 1e-6, False),
-                          ('testpcfabs.mod', False, 9e-3, True)])
-def test_regrid_table(name, iflag, tol, warn, make_data_path):
+@pytest.mark.parametrize('name,iflag,tol',
+                         [('xspec-tablemodel-RCS.mod', True, 1e-6),
+                          ('testpcfabs.mod', False, 1e-3)])
+def test_regrid_table(name, iflag, tol, make_data_path):
     """Can we regrid a table model?
 
     We test out both additive and multiplicative models. The tolerance
-    for the multiplicative case is quite large.
+    for the multiplicative case is significantly-larger than for the
+    additive case.
 
     """
 
@@ -511,21 +507,7 @@ def test_regrid_table(name, iflag, tol, warn, make_data_path):
     ebase = np.arange(0.45, 1.55, 0.05)
     rtbl = tbl.regrid(ebase[:-1], ebase[1:])
 
-    # I do not know why we get the warning about using a single grid
-    # here (only for the multiplicative case).
-    #
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-
-        y = rtbl(eg1, eg2)
-
-    if warn:
-        assert len(ws) == 1
-        assert ws[0].category == FutureWarning
-        assert str(ws[0].message) == "calc() requires pars,lo,hi arguments, sent 2 arguments"
-    else:
-        assert len(ws) == 0
-
+    y = rtbl(eg1, eg2)
     assert y == pytest.approx(exp, rel=tol)
 
 

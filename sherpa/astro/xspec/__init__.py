@@ -1369,6 +1369,23 @@ class XSTableModel(XSModel):
         return _xspec.tabint(p, *args,
                              filename=self.filename, tabtype=tabtype)
 
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC table models.
+
+        Ensure that the grids have low and high bins.
+        """
+
+        # Note that we pass the behavior off to the XSPEC class,
+        # even when we know, for the additive case, we could
+        # pass it to a super class. This way we get the check for
+        # grid size.
+        #
+        if self.addmodel:
+            return XSAdditiveModel.regrid(self, *arrays, **kwargs)
+
+        return XSMultiplicativeModel.regrid(self, *arrays, **kwargs)
+
+
 
 # TODO: we should add the norm parameter in the __init__ call, unless
 # the object contains a norm attribute, to avoid having to repeat this
