@@ -382,19 +382,19 @@ def sample_flux(fit, data, src,
     hi : number or None, optional
         The upper edge of the dataspace range for the flux calculation.
         If None then the upper edge of the data grid is used.
-    numcores : int or None, optonal
+    numcores : int or None, optional
         Should the analysis be split across multiple CPU cores?
         When set to None all available cores are used.
     samples : 1D or 2D array, optional
         What are the errors on the parameters? If set to None then
         the covariance method is used to estimate the parameter errors.
-        If given and correlated is True then samples must be a
-        2D array, and contain the covariance matrix for the free
-        parameters in fit.model. If correlated is False then samples
-        can either be sent the covariance matrix or a 1D array
-        of the error values (i.e. the sigma of the normal distribution).
-        If there are n free parameters then the 1D array has to have
-        n elements and the 2D array n by n elements.
+        If given and correlated is True then samples must be a 2D array,
+        and contain the covariance matrix for the free parameters in
+        fit.model, and the matrix must be positive definite. If correlated
+        is False then samples can either be sent the covariance matrix or a
+        1D array of the error values (i.e. the sigma of the normal
+        distribution). If there are n free parameters then the 1D array has
+        to have n elements and the 2D array n by n elements.
 
     Returns
     -------
