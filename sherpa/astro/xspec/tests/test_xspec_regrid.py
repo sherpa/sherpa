@@ -511,7 +511,6 @@ def test_regrid_table(name, iflag, tol, make_data_path):
     assert y == pytest.approx(exp, rel=tol)
 
 
-@pytest.mark.xfail
 @requires_xspec
 @pytest.mark.parametrize("mname", ["wabs", "powerlaw"])
 def test_regrid_convolution_requires_bins(mname, xsmodel):

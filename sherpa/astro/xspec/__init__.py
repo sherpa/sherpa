@@ -1674,6 +1674,27 @@ class XSConvolutionModel(CompositeModel, XSModel):
         CompositeModel.__init__(self, f"{self.wrapper.name}({self.model.name})",
                                 (self.wrapper, self.model))
 
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC table models.
+
+        Ensure that the grids have low and high bins.
+        """
+
+        # We base the decision on the integrate setting of
+        # the model, falling over to integrate=True if not known.
+        # Perhaps we should the same approach as the regrid
+        # code for BinOp?
+        #
+        try:
+            integrate = self.model.integrate
+        except AttributeError:
+            integrate = True
+
+        if integrate:
+            return XSAdditiveModel.regrid(self, *arrays, **kwargs)
+
+        return XSMultiplicativeModel.regrid(self, *arrays, **kwargs)
+
     # for now this is not cached
     def calc(self, p, *args, **kwargs):
         """Evaluate the convolved model on a grid.
