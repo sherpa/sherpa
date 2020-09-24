@@ -1198,13 +1198,16 @@ class XSConvolutionKernel(XSModel):
         *args
             The model grid. There should be two arrays (the low and
             high edges of the bin) to make sure the wrapped model is
-            evaluated correctly. One array can be used but this should
-            only be used when the wrapped model only contains XSPEC
-            models.
+            evaluated correctly.
         **kwargs
             At present all additional keyword arguments are dropped.
 
         """
+
+        nargs = 2 + len(args)
+        if nargs != 4:
+            emsg = "calc() requires pars,rhs,lo,hi arguments, sent {} arguments".format(nargs)
+            raise TypeError(emsg)
 
         npars = len(self.pars)
         lpars = pars[:npars]
@@ -1328,13 +1331,16 @@ class XSConvolutionModel(CompositeModel, XSModel):
         *args
             The model grid. There should be two arrays (the low and
             high edges of the bin) to make sure the wrapped model is
-            evaluated correctly. One array can be used but this should
-            only be used when the wrapped model only contains XSPEC
-            models.
+            evaluated correctly.
         **kwargs
             Additional keyword arguments.
 
         """
+
+        nargs = 1 + len(args)
+        if nargs != 3:
+            emsg = "calc() requires pars,lo,hi arguments, sent {} arguments".format(nargs)
+            raise TypeError(emsg)
 
         return self.wrapper.calc(p, self.model.calc,
                                  *args, **kwargs)

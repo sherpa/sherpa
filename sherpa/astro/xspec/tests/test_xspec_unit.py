@@ -1025,3 +1025,42 @@ def test_integrate_is_fixed_convolution(clsname):
     emsg = 'Unable to change integrate setting of ' + \
            'xscflux({})'.format(clsname)
     assert str(exc.value) == emsg
+
+
+@requires_xspec
+def test_xspec_convolution_model_requires_bins():
+    """Ensure you can not call with a single grid for the energies."""
+
+    from sherpa.astro import xspec
+
+    conv = xspec.XScflux()
+    mdl = xspec.XSpowerlaw()
+    cmdl = conv(mdl)
+
+    with pytest.raises(TypeError) as exc:
+        cmdl([0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
+@requires_xspec
+def test_xspec_convolution_kernel_requires_bins():
+    """Ensure you can not call with a single grid for the energies.
+
+    This is a low-level interface check for completeness.
+    """
+
+    from sherpa.astro import xspec
+
+    conv = xspec.XScflux()
+    mdl = xspec.XSpowerlaw()
+
+    cmdl = conv(mdl)
+    cpars = [p.val for p in cmdl.pars]
+
+    with pytest.raises(TypeError) as exc:
+        conv.calc(cpars, cmdl.calc, [0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,rhs,lo,hi arguments, sent 3 arguments'
+    assert str(exc.value) == emsg
