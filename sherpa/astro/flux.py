@@ -105,7 +105,7 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
         Should the analysis be split across multiple CPU cores?
         When set to None all available cores are used.
     subset : list of ints or None, optional
-        This is only used when the sapmles array has more parameters
+        This is only used when the samples array has more parameters
         in it than are free in src. In this case the subset array lists
         the column number of the free parameters in src. So, if the
         samples represented 'nh', 'gamma', and 'ampl' values for each
