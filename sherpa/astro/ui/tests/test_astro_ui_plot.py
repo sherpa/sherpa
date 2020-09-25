@@ -35,7 +35,7 @@ import numpy as np
 
 from sherpa.astro import ui
 
-from sherpa.astro.plot import ARFPlot, BkgDataPlot, ModelHistogram, \
+from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
     SourcePlot
 
 from sherpa.utils.err import IdentifierErr
@@ -1358,3 +1358,496 @@ def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     # This should be equality, but allow small differences
     assert mplot3.xlo == pytest.approx(mplot1.xlo)
     assert mplot3.y == pytest.approx(mplot1.y)
+
+
+def validate_flux_histogram(fhist):
+    """Limited checks for test_pha1_plot_foo_flux/test_pha1_get_foo_flux_hist"""
+
+    assert fhist is not None
+    assert isinstance(fhist, FluxHistogram)
+
+    # Very minimal checks.
+    #
+    assert fhist.flux.shape == (200,)
+    assert fhist.modelvals.shape == (200, 3)
+    assert fhist.xlo.shape == (21,)
+    assert fhist.xhi.shape == (21,)
+    assert fhist.y.shape == (21,)
+
+    # Do the fluxes and the histogram agree?
+    #
+    fmin = fhist.flux.min()
+    fmax = fhist.flux.max()
+    assert fmin == pytest.approx(fhist.xlo[0])
+    assert fmax == pytest.approx(fhist.xhi[-1])
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+@pytest.mark.parametrize("correlated", [False, True])
+def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic_pha1):
+    """Can we call plot_energy/photon_flux and then the get_ func (recalc=False)
+
+    We extend the basic_pha1 test by including an XSPEC
+    absorption model.
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
+
+    # check we can access these results (relying on the fact that the num
+    # and bins arguments have been changed from their default values).
+    #
+    res = getfunc(recalc=False)
+    validate_flux_histogram(res)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_recalc(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+    """Just check we can call recalc on the routine
+
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=True)
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=True, recalc=False)
+
+    # check we can access these results (relying on the fact that the num
+    # and bins arguments have been changed from their default values).
+    #
+    res = getfunc(recalc=False)
+    validate_flux_histogram(res)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+@pytest.mark.parametrize("correlated", [False, True])
+def test_pha1_get_foo_flux_hist(getfunc, correlated, clean_astro_ui, basic_pha1):
+    """Can we call get_energy/photon_flux_hist?
+
+    See test_pha1_plot_foo_flux.
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
+    validate_flux_histogram(res)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
+    """What happens when there's no data?
+
+    This is a regression test to check if this behavior gets
+    changed: for example maybe an error gets raised.
+    """
+
+    empty = getfunc(recalc=False)
+    assert empty is not None
+    assert isinstance(empty, FluxHistogram)
+
+    for field in ["modelvals", "flux", "xlo", "xhi", "y"]:
+        assert getattr(empty, field) is None
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+@pytest.mark.parametrize("scale", [None, 1.0, 2.0])
+def test_pha1_get_foo_flux_hist_scales(getfunc, scale,
+                                       clean_astro_ui, basic_pha1,
+                                       hide_logging, reset_seed):
+    """Can we call get_energy/photon_flux_hist with the scales argument.
+
+    Run with the covar-calculated errors and then manually-specified
+    errors and check that the parameter distributions change in the
+    expected manner. The test is run for the covariance errors
+    multiplied by scale. If scale is None then scales is not
+    given.
+
+    This is issue #801.
+    """
+
+    np.random.seed(42873)
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = np.sqrt(covmat.diagonal())
+
+    if scale is None:
+        scales = None
+    else:
+        errs = scale * errs
+        scales = errs
+
+    # Run enough times that we can get a reasonable distribution
+    res = getfunc(lo=0.5, hi=2, num=1000, bins=20, correlated=False,
+                  scales=scales)
+
+    pvals = res.modelvals
+
+    if scale is None:
+        scale = 1.0
+
+    # rely on the fixed seed, but we still get a range of values
+    # for the first parameter. Why is that?
+    #
+    std0 = np.std(pvals[:, 0]) / scale
+    assert std0 > 0.032
+    assert std0 < 0.040
+
+    std1 = np.std(pvals[:, 1]) / scale
+    assert std1 == pytest.approx(0.1328676086353561, rel=1e-3)
+
+    std2 = np.log10(np.std(pvals[:, 2])) - np.log10(scale)
+    assert std2 == pytest.approx(-4.520334184088533, rel=1e-3)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+@pytest.mark.parametrize("scale", [1.0, 2.0])
+def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
+                                   clean_astro_ui, basic_pha1,
+                                   hide_logging, reset_seed):
+    """Can we call plot_energy/photon_flux with the scales argument.
+
+    Based on test_pha1_get_foo_flux_hist_scales. By using some
+    non-standard arguments we can use the get routine (recalc=False)
+    to check that the plot did use the scales.
+    """
+
+    np.random.seed(38259)
+
+    # unlike test_pha1_get-foo_flux_hist_scales, only use a power-law
+    # component
+    #
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = scale * np.sqrt(covmat.diagonal())
+
+    # Run enough times that we can get a reasonable distribution
+    plotfunc(lo=0.5, hi=2, num=1000, bins=20, correlated=False,
+             scales=errs)
+
+    res = getfunc(recalc=False)
+    pvals = res.modelvals
+
+    assert res.flux.shape == (1000,)
+    assert res.modelvals.shape == (1000, 2)
+    assert res.xlo.shape == (21,)
+    assert res.xhi.shape == (21,)
+    assert res.y.shape == (21,)
+
+    std0 = np.std(pvals[:, 0]) / scale
+    std1 = np.log10(np.std(pvals[:, 1])) - np.log10(scale)
+
+    assert std0 == pytest.approx(0.06927323647207109)
+    assert std1 == pytest.approx(-4.951357667423949)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc,ratio",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist, 1.141794001904922),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist, 1.1892431836751618)])
+def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
+                                  clean_astro_ui, basic_pha1,
+                                  hide_logging, reset_seed):
+    """Can we call plot_energy/photon_flux with the model argument.
+
+    Based on test_pha1_get_foo_flux_hist_scales. By using some
+    non-standard arguments we can use the get routine (recalc=False)
+    to check that the plot did use the scales.
+
+    """
+
+    np.random.seed(286728)
+
+    # This time we want the absorbing component to make a difference
+    # between the two plots.
+    #
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = np.sqrt(covmat.diagonal())
+
+    # Due to the way the get* routines work in the sherpa.astro.ui module,
+    # the following will return the same object, so x1 and x2 will be
+    # identical (and hence only contain values from the second plotfunc).
+    #
+    #   plotfunc()
+    #   x1 = getfunc(recalc=False)
+    #   plotfunc()
+    #   x2 = getunc(recalc=False)
+    #
+    # This means that the tests below check the values from getfunc
+    # before calling the new plotfunc.
+    #
+    # It is probably true that x1 would change contents as soon as
+    # the second plotfunc() call is made above (unsure).
+    #
+
+    # Absorbed flux
+    plotfunc(lo=0.5, hi=2, num=1000, bins=19, correlated=False)
+    res = getfunc(recalc=False)
+
+    avals = res.modelvals
+    assert avals.shape == (1000, 3)
+
+    std1 = np.std(avals[:, 1])
+    std2 = np.log10(np.std(avals[:, 2]))
+    assert std1 == pytest.approx(0.1330728846451271, rel=1e-3)
+    assert std2 == pytest.approx(-4.54079387550295, rel=1e-3)
+
+    assert res.y.shape == (20,)
+
+    aflux = np.median(res.flux)
+
+    # Unabsorbed flux
+    plotfunc(lo=0.5, hi=2, model=orig_mdl, num=1000, bins=21,
+             correlated=False)
+    res = getfunc(recalc=False)
+
+    uvals = res.modelvals
+    assert uvals.shape == (1000, 3)
+
+    std1 = np.std(uvals[:, 1])
+    std2 = np.log10(np.std(uvals[:, 2]))
+    assert std1 == pytest.approx(0.13648119989822335, rel=1e-3)
+    assert std2 == pytest.approx(-4.550978251403581, rel=1e-3)
+
+    assert res.y.shape == (22,)
+
+    uflux = np.median(res.flux)
+
+    # Is the unabsorbed to absorbed median flux close to the value
+    # calculated from the best-fit solutions (specified as a number
+    # rather than calculated here to act as a regression test).
+    #
+    got = uflux / aflux
+    assert got == pytest.approx(ratio, rel=1e-3)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
+                                  make_data_path, clean_astro_ui,
+                                  hide_logging, reset_seed):
+    """Can we call plot_energy/photon_flux with multiple datasets.
+    """
+
+    np.random.seed(7267239)
+
+    ui.load_pha(1, make_data_path('obs1.pi'))
+    ui.load_pha(3, make_data_path('obs1.pi'))
+
+    ui.notice(0.5, 7)
+
+    mdl = ui.xswabs.gal * ui.powlaw1d.pl
+    gal = ui.get_model_component('gal')
+    pl = ui.get_model_component('pl')
+    gal.nh = 0.04
+    gal.nh.freeze()
+    pl.gamma = 1.93
+    pl.ampl = 1.74e-4
+
+    ui.set_source(1, mdl)
+    ui.set_source(3, mdl)
+
+    ui.set_stat('cstat')
+
+    # Ensure near the minimum
+    ui.fit()
+
+    n = 200
+
+    # Use all datasets since id=None
+    plotfunc(lo=0.5, hi=7, num=n, bins=19, correlated=False)
+    res = getfunc(recalc=False)
+    assert res.y.shape == (20,)
+    avals = res.modelvals.copy()
+
+    # Use all datasets as explicit
+    plotfunc(lo=0.5, hi=7, num=n, bins=19, correlated=False,
+             id=1, otherids=(3,))
+    res = getfunc(recalc=False)
+    assert res.y.shape == (20,)
+    bvals = res.modelvals.copy()
+
+    # Use only dataset 1 (the shorter dataset)
+    plotfunc(lo=0.5, hi=7, num=n, bins=19, correlated=False,
+             id=1)
+    res = getfunc(recalc=False)
+    assert res.y.shape == (20,)
+    cvals = res.modelvals.copy()
+
+    assert avals.shape == (n, 2)
+    assert bvals.shape == (n, 2)
+    assert cvals.shape == (n, 2)
+
+    # Let's just check the standard deviation of the gamma parameter,
+    # which should be similar for avals and bvals, and larger for cvals.
+    #
+    s1 = np.std(avals[:, 0])
+    s2 = np.std(bvals[:, 0])
+    s3 = np.std(cvals[:, 0])
+
+    assert s1 == pytest.approx(0.1774218722298197)
+    assert s2 == pytest.approx(0.1688597911809269)
+    assert s3 == pytest.approx(0.22703663059917598)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc,ratio",
+                         [(ui.get_energy_flux_hist, 1.149863517748443),
+                          (ui.get_photon_flux_hist, 1.1880213994341908)])
+def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
+                                      clean_astro_ui, basic_pha1,
+                                      hide_logging, reset_seed):
+    """Can we call get_energy/photon_flux_hist with the model argument.
+
+    Very similar to test_pha1_plot_foo_flux_model.
+    """
+
+    np.random.seed(2731)
+
+    # This time we want the absorbing component to make a difference
+    # between the two plots.
+    #
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+    ui.covar()
+    covmat = ui.get_covar_results().extra_output
+    errs = np.sqrt(covmat.diagonal())
+
+    # See commentary in test_pha1_plot_foo_flux_model about the
+    # potentially-surprising behavior of the return value of the
+    # get routines
+
+    # Absorbed flux
+    res = getfunc(lo=0.5, hi=2, num=1000, bins=19, correlated=False)
+
+    avals = res.modelvals
+    assert avals.shape == (1000, 3)
+
+    std1 = np.std(avals[:, 1])
+    std2 = np.log10(np.std(avals[:, 2]))
+    assert std1 == pytest.approx(0.13478302893162564, rel=1e-3)
+    assert std2 == pytest.approx(-4.518960679037794, rel=1e-3)
+
+    assert res.y.shape == (20,)
+
+    aflux = np.median(res.flux)
+
+    # Unabsorbed flux
+    res = getfunc(lo=0.5, hi=2, model=orig_mdl, num=1000, bins=21,
+                  correlated=False)
+
+    uvals = res.modelvals
+    assert uvals.shape == (1000, 3)
+
+    std1 = np.std(uvals[:, 1])
+    std2 = np.log10(np.std(uvals[:, 2]))
+    assert std1 == pytest.approx(0.13896034019912706, rel=1e-3)
+    assert std2 == pytest.approx(-4.534244395838702, rel=1e-3)
+
+    assert res.y.shape == (22,)
+
+    uflux = np.median(res.flux)
+
+    # Is the unabsorbed to absorbed median flux close to the value
+    # calculated from the best-fit solutions (specified as a number
+    # rather than calculated here to act as a regression test).
+    #
+    got = uflux / aflux
+    assert got == pytest.approx(ratio, rel=1e-3)

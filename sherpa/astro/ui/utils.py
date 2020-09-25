@@ -10770,27 +10770,37 @@ class Session(sherpa.ui.utils.Session):
         self._prepare_plotobj(id, self._bkgchisqrplot, bkg_id=bkg_id)
         return self._bkgchisqrplot
 
-    def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
-        dist = self.sample_energy_flux(
-            lo, hi, id, num, None, correlated, numcores, bkg_id)
+    def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
+                                  correlated, numcores, bkg_id,
+                                  scales=None, model=None, otherids=()):
+        dist = self.sample_energy_flux(lo, hi, id=id, otherids=otherids,
+                                       num=num, scales=scales, model=model,
+                                       correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
-    def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
-        dist = self.sample_photon_flux(
-            lo, hi, id, num, None, correlated, numcores, bkg_id)
+    def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
+                                  correlated, numcores, bkg_id,
+                                  scales=None, model=None, otherids=()):
+        dist = self.sample_photon_flux(lo, hi, id=id, otherids=otherids,
+                                       num=num, scales=scales, model=model,
+                                       correlated=correlated, numcores=numcores, bkg_id=bkg_id)
         plot.prepare(dist, bins)
         return plot
 
-    # DOC-TODO: See comments about plot_energy_flux.
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                             correlated=False, numcores=None, bkg_id=None, **kwargs):
+                             correlated=False, numcores=None, bkg_id=None,
+                             scales=None, model=None, otherids=(), recalc=True):
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
         simulated energy flux values representing the energy flux probability
         distribution for a model component, accounting for the errors on the
         model parameters.
+
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set and the
+           model and otherids parameters have been added.
 
         Parameters
         ----------
@@ -10799,11 +10809,12 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -10822,10 +10833,27 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
+        otherids : sequence of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -10861,21 +10889,46 @@ class Session(sherpa.ui.utils.Session):
         >>> ehist1 = get_energy_flux_hist(0.5, 2, id='jet', num=1000)
         >>> ehist2 = get_energy_flux_hist(0.5, 2, id='core', num=1000)
 
+        Compare the flux distribution for the full source expression
+        (aflux) to that for just the pl component (uflux); this can be
+        useful to calculate the unabsorbed flux distribution if the
+        full source model contains an absorption component:
+
+        >>> aflux = get_energy_flux_hist(0.5, 2, num=1000, bins=20)
+        >>> uflux = get_energy_flux_hist(0.5, 2, model=pl, num=1000, bins=20)
+
+        When there are multiple datasets loaded,
+        `get_energy_flux_hist` uses all datasets to evaluate the
+        errors when the `id` parameter is left at its default value of
+        `None`. The `otherids` parameter is used, along with `id`, to
+        specify exactly what datasets are used:
+
+        >>> x = get_energy_flux_hist(2, 10, num=1000, bins=20, model=src)
+        >>> y = get_energy_flux_hist(2, 10, num=1000, bins=20, model=src,
+        ...                          id=1, otherids=(2, 3, 4))
+
         """
-        if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
-            self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id, num,
-                                           bins, correlated, numcores, bkg_id)
+        if sherpa.utils.bool_cast(recalc):
+            self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
+                                           num=num, bins=bins, correlated=correlated,
+                                           scales=scales, model=model,
+                                           otherids=otherids,
+                                           numcores=numcores, bkg_id=bkg_id)
         return self._energyfluxplot
 
-    # DOC-TODO: See comments about plot_photon_flux.
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                             correlated=False, numcores=None, bkg_id=None, **kwargs):
+                             correlated=False, numcores=None, bkg_id=None,
+                             scales=None, model=None, otherids=(), recalc=True):
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
         simulated photon flux values representing the photon flux probability
         distribution for a model component, accounting for the errors on the
         model parameters.
+
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set and the
+           model and otherids parameters have been added.
 
         Parameters
         ----------
@@ -10884,11 +10937,12 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -10907,10 +10961,27 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
+        otherids : sequence of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -10946,10 +11017,31 @@ class Session(sherpa.ui.utils.Session):
         >>> phist1 = get_photon_flux_hist(0.5, 2, id='jet', num=1000)
         >>> phist2 = get_photon_flux_hist(0.5, 2, id='core', num=1000)
 
+        Compare the flux distribution for the full source expression
+        (aflux) to that for just the pl component (uflux); this can be
+        useful to calculate the unabsorbed flux distribution if the
+        full source model contains an absorption component:
+
+        >>> aflux = get_photon_flux_hist(0.5, 2, num=1000, bins=20)
+        >>> uflux = get_photon_flux_hist(0.5, 2, model=pl, num=1000, bins=20)
+
+        When there are multiple datasets loaded,
+        `get_photon_flux_hist` uses all datasets to evaluate the
+        errors when the `id` parameter is left at its default value of
+        `None`. The `otherids` parameter is used, along with `id`, to
+        specify exactly what datasets are used:
+
+        >>> x = get_photon_flux_hist(2, 10, num=1000, bins=20, model=src)
+        >>> y = get_photon_flux_hist(2, 10, num=1000, bins=20, model=src,
+        ...                          id=1, otherids=(2, 3, 4))
+
         """
-        if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
-            self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id, num,
-                                           bins, correlated, numcores, bkg_id)
+        if sherpa.utils.bool_cast(recalc):
+            self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
+                                           num=num, bins=bins, correlated=correlated,
+                                           scales=scales, model=model,
+                                           otherids=otherids,
+                                           numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
     def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
@@ -11798,9 +11890,9 @@ class Session(sherpa.ui.utils.Session):
                    replot=replot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    # DOC-TODO: I am assuming it accepts a scales parameter
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
+                         scales=None, model=None, otherids=(),
                          recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the energy flux distribution.
@@ -11813,6 +11905,10 @@ class Session(sherpa.ui.utils.Session):
         `get_energy_flux_hist` functions return the data used to
         create this plot.
 
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set and the
+           model and otherids parameters have been added.
+
         Parameters
         ----------
         lo : number, optional
@@ -11820,11 +11916,12 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -11843,10 +11940,27 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
+        otherids : sequence of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11887,12 +12001,43 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_energy_flux(0.5, 2, id="jet", num=1000)
         >>> plot_energy_flux(0.5, 2, id="core", num=1000, overplot=True)
 
+        Overplot the flux distribution for just the pl component (which
+        must be part of the source expression) on top of the full model.
+        If the full model was xsphabs.gal * powlaw1d.pl then this will
+        compare the unabsorbed to absorbed flux distributions:
+
+        >>> plot_energy_flux(0.5, 2, num=1000, bins=20)
+        >>> plot_energy_flux(0.5, 2, model=pl, num=1000, bins=20)
+
+        If you have multiple datasets loaded, each with a model, then
+        all datasets will be used to calculate the errors when the
+        id parameter is not set. A single dataset can be used by
+        specifying a dataset (in this example the overplot is just with
+        dataset 1):
+
+        >>> mdl = xsphabs.gal * xsapec.src
+        >>> set_source(1, mdl)
+        >>> set_source(2, mdl)
+        ...
+        >>> plot_energy_flux(0.5, 2, model=src num=1000, bins=20)
+        >>> plot_energy_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, overplot=True)
+
+        If you have multiple datasets then you can use the otherids
+        argument to specify exactly what set of data is used:
+
+        >>> plot_energy_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, otherids=(2, 3, 4))
+
         """
+
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(recalc):
-            efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id, num,
-                                                    bins, correlated,
-                                                    numcores, bkg_id)
+            efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
+                                                    num=num, bins=bins, scales=scales,
+                                                    correlated=correlated, model=model,
+                                                    otherids=otherids,
+                                                    numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
             efplot.plot(overplot=overplot, clearwindow=clearwindow,
@@ -11903,11 +12048,9 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
-    # DOC-TODO: I am assuming it accepts a scales parameter, but
-    # changing it doesn't seem to do anything (see next)
-    # DOC-NOTE: I got a TypeError about the scales option
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
+                         scales=None, model=None, otherids=(),
                          recalc=True, overplot=False, clearwindow=True,
                          **kwargs):
         """Display the photon flux distribution.
@@ -11920,6 +12063,10 @@ class Session(sherpa.ui.utils.Session):
         `get_photon_flux_hist` functions return the data used to
         create this plot.
 
+        .. versionchanged:: 4.12.2
+           The scales parameter is no longer ignored when set and the
+           model and otherids parameters have been added.
+
         Parameters
         ----------
         lo : number, optional
@@ -11927,11 +12074,12 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 7500.
         bins : int, optional
@@ -11950,10 +12098,27 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
+        otherids : sequence of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from.
         recalc : bool, optional
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
@@ -11994,12 +12159,42 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_photon_flux(0.5, 2, id="jet", num=1000)
         >>> plot_photon_flux(0.5, 2, id="core", num=1000, overplot=True)
 
+        Overplot the flux distribution for just the pl component (which
+        must be part of the source expression) on top of the full model.
+        If the full model was xsphabs.gal * powlaw1d.pl then this will
+        compare the unabsorbed to absorbed flux distributions:
+
+        >>> plot_photon_flux(0.5, 2, num=1000, bins=20)
+        >>> plot_photon_flux(0.5, 2, model=pl, num=1000, bins=20)
+
+        If you have multiple datasets loaded, each with a model, then
+        all datasets will be used to calculate the errors when the
+        id parameter is not set. A single dataset can be used by
+        specifying a dataset (in this example the overplot is just with
+        dataset 1):
+
+        >>> mdl = xsphabs.gal * xsapec.src
+        >>> set_source(1, mdl)
+        >>> set_source(2, mdl)
+        ...
+        >>> plot_photon_flux(0.5, 2, model=src num=1000, bins=20)
+        >>> plot_photon_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, overplot=True)
+
+        If you have multiple datasets then you can use the otherids
+        argument to specify exactly what set of data is used:
+
+        >>> plot_photon_flux(0.5, 2, model=src num=1000, bins=20,
+        ...                  id=1, otherids=(2, 3, 4))
+
         """
         pfplot = self._photonfluxplot
         if sherpa.utils.bool_cast(recalc):
-            pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id, num,
-                                                    bins, correlated,
-                                                    numcores, bkg_id)
+            pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id=id,
+                                                    num=num, bins=bins, scales=scales,
+                                                    correlated=correlated, model=model,
+                                                    otherids=otherids,
+                                                    numcores=numcores, bkg_id=bkg_id)
         try:
             sherpa.plot.begin()
             pfplot.plot(overplot=overplot, clearwindow=clearwindow,
@@ -12378,9 +12573,10 @@ class Session(sherpa.ui.utils.Session):
         resampledata = sherpa.sim.ReSampleData(data, model)
         return resampledata(niter=niter, seed=seed)
 
-    # DOC-TODO: should this accept the confidence parameter?
-    def sample_photon_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
-                           correlated=False, numcores=None, bkg_id=None):
+    def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
+                           scales=None, correlated=False,
+                           numcores=None, bkg_id=None, model=None,
+                           otherids=()):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12389,6 +12585,9 @@ class Session(sherpa.ui.utils.Session):
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_photon_flux`.
 
+        .. versionchanged:: 4.12.2
+           The model and otherids parameters were added.
+
         Parameters
         ----------
         lo : number, optional
@@ -12396,24 +12595,34 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
         correlated : bool, optional
-           If ``True`` (the default is ``False``) then ``scales`` is the
-           full covariance matrix, otherwise it is just a 1D array
-           containing the variances of the parameters (the diagonal
-           elements of the covariance matrix).
+           Should the correlation between the parameters be included
+           when sampling the parameters? If not, then each parameter
+           is sampled from independent distributions. In both cases
+           a normal distribution is used.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -12421,17 +12630,25 @@ class Session(sherpa.ui.utils.Session):
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
+        otherids : sequence of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from.
 
         Returns
         -------
         vals
-           The return array has the shape ``(num, N+1)``, where ``N`` is the
-           number of free parameters and num is the `num` parameter.
-           The rows of this array contain the flux value, as
-           calculated by `calc_photon_flux`, followed by the values of
-           the thawed parameters used for that iteration. The order of
-           the parameters matches the data returned by
-           `get_fit_results`.
+           The return array has the shape ``(num, N+1)``, where ``N``
+           is the number of free parameters in the fit and num is the
+           `num` parameter.  The rows of this array contain the flux
+           value, as calculated by `calc_photon_flux`, followed by the
+           values of the thawed parameters used for that
+           iteration. The order of the parameters matches the data
+           returned by `get_fit_results`.
 
         See Also
         --------
@@ -12446,6 +12663,19 @@ class Session(sherpa.ui.utils.Session):
         sample_energy_flux : Return the energy flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
 
+        Notes
+        -----
+        There are two ways to use this function to calculate fluxes
+        from multiple sources. The first is to leave the `id` argument
+        as `None`, in which case all available datasets will be used.
+        Alternatively, the `id` and `otherids` arguments can be set to
+        list the exact datasets to use, such as `id=1,
+        otherids=(2,3,4)`.
+
+        The returned value contains all free parameters in the fit,
+        even if they are not included in the model argument (e.g.
+        when calculating an unabsorbed flux).
+
         Examples
         --------
 
@@ -12454,35 +12684,105 @@ class Session(sherpa.ui.utils.Session):
         distribution):
 
         >>> vals = sample_photon_flux(0.5, 7, num=1000)
-        >>> plot_cdf(vals[:,0], name='flux')
+        >>> plot_cdf(vals[:, 0], name='flux')
 
         Repeat the above, but allowing the parameters to be
         correlated, and then calculate the 5, 50, and 95 percent
         quantiles of the photon flux distribution:
 
-        >>> cvals = sample_photon_flux(.5, 7, num=1000, correlated=True)
-        >>> np.percentile(cvals[:,0], [5,50,95])
+        >>> cvals = sample_photon_flux(0.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:, 0], [5, 50, 95])
+
+        The photon flux of a component (or sub-set of components) can be
+        calculated using the model argument. For the following case,
+        an absorbed power-law was used to fit the data -
+        `xsphabs.gal * powerlaw.pl` - and then the flux of just the
+        power-law component is calculated. Note that the returned
+        array has columns 'flux', 'gal.nh', 'pl.gamma', and 'pl.ampl'
+        (that is flux and then the free parameters in the full model).
+
+        >>> vals = sample_photon_flux(0.5, 7, model=pl, num=1000, correlated=True)
+
+        Calculate the 2-10 keV flux for the pl model using a joint fit
+        to the datasets 1, 2, 3, and 4:
+
+        >>> vals = sample_photon_flux(2, 10, model=pl, id=1, otherids=(2,3,4),
+        ...                           num=1000)
+
+        Use the given parameter errors for sampling the parameter distribution.
+        The fit must have three free parameters, and each parameter is
+        sampled independently (in this case parerrs gives the sigma
+        values for each parameter):
+
+        >>> parerrs = [0.25, 1.22, 1.04e-4]
+        >>> vals = sample_photon_flux(2, 10, num=5000, scales=parerrs)
+
+        In this case the parameter errors are taken from the covariance
+        analysis, using the `parmaxes` field since these are positive.
+
+        >>> covar()
+        >>> parerrs = get_covar_results().parmaxes
+        >>> vals = sample_photon_flux(0.5, 2, num=1000, scales=parerrs)
+
+        Run covariance to estimate the parameter errors and then
+        extract the covariance matrix from the results (as the `cmat`
+        variable).  This matrix is then used to define the parameter
+        widths - including correlated terms - in the flux sampling,
+        after being increased by ten percent. This is used to
+        calculate both the absorbed (`vals1`) and unabsorbed (`vals2`)
+        fluxes. Both arrays have columns: flux, gal.nh, pl.gamma, and
+        pl.ampl.
+
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> fit()
+        >>> covar()
+        >>> cmat = get_covar_results().extra_output
+        >>> vals1 = sample_photon_flux(2, 10, num=5000, correlated=True,
+        ...                            scales=1.1 * cmat)
+        >>> vals2 = sample_photon_flux(2, 10, num=5000, correlated=True,
+        ...                            model=pl, scales=1.1 * cmat)
+
+        Calculate the flux and error distribution using fits
+        to all datasets:
+
+        >>> set_source(xsphabs.gal * xsapec.clus)
+        >>> set_source(2, gal * clus)
+        >>> set_source(3, gal * clus)
+        ... fit the data
+        >>> vals = sample_photon_flux(0.5, 10, model=clus, num=10000)
+
+        Calculate the flux and error distribution using fits
+        to an explicit set of datasets (in this case datasets
+        1 and 2):
+
+        >>> vals = sample_photon_flux(0.5, 10, id=1, otherids=[2],
+        ...                           model=clus, num=10000)
 
         """
-        ids, fit = self._get_fit(id)
-        data = self.get_data(id)
-        src = None
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            src = self.get_bkg_source(id, bkg_id)
+        ids, fit = self._get_fit(id, otherids=otherids)
+
+        if bkg_id is None:
+            data = self.get_data(id)
+            if model is None:
+                model = self.get_source(id)
         else:
-            src = self.get_source(id)
+            data = self.get_bkg(id, bkg_id)
+            if model is None:
+                model = self.get_bkg_source(id, bkg_id)
 
         correlated = sherpa.utils.bool_cast(correlated)
 
-        return sherpa.astro.flux.sample_flux(fit, data, src,
-                                             sherpa.astro.utils.calc_photon_flux,
-                                             correlated, num, lo, hi, numcores,
-                                             scales)
+        return sherpa.astro.flux.sample_flux(fit, data, model,
+                                             method=sherpa.astro.utils.calc_photon_flux,
+                                             correlated=correlated,
+                                             num=num, lo=lo, hi=hi,
+                                             numcores=numcores,
+                                             samples=scales)
 
-    # DOC-TODO: should this accept the confidence parameter?
-    def sample_energy_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
-                           correlated=False, numcores=None, bkg_id=None):
+    def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
+                           scales=None, correlated=False,
+                           numcores=None, bkg_id=None, model=None,
+                           otherids=()):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12491,6 +12791,9 @@ class Session(sherpa.ui.utils.Session):
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_energy_flux`.
 
+        .. versionchanged:: 4.12.2
+           The model and otherids parameters were added.
+
         Parameters
         ----------
         lo : number, optional
@@ -12498,24 +12801,34 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The identifier of the data set to use. If `None`, the
+           default value, then all datasets with associated models are
+           used to calculate the errors and the model evaluation is
+           done using the default dataset.
         num : int, optional
            The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
-           parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
-           of length N, where N is the number of free parameters.
+           parameters. The size and shape of the array depends on the
+           number of free parameters in the fit (n) and the value of
+           the `correlated` parameter. When the parameter is `True`,
+           scales must be given the covariance matrix for the free
+           parameters (a n by n matrix that matches the parameter
+           ordering used by Sherpa). For un-correlated parameters
+           the covariance matrix can be used, or a one-dimensional
+           array of n elements can be used, giving the width (specified
+           as the sigma value of a normal distribution) for each
+           parameter (e.g. the square root of the diagonal elements
+           of the covariance matrix). If the scales parameter is not
+           given then the covariance matrix is evaluated for the
+           current model and best-fit parameters.
         correlated : bool, optional
-           If ``True`` (the default is ``False``) then ``scales`` is the
-           full covariance matrix, otherwise it is just a 1D array
-           containing the variances of the parameters (the diagonal
-           elements of the covariance matrix).
+           Should the correlation between the parameters be included
+           when sampling the parameters? If not, then each parameter
+           is sampled from independent distributions. In both cases
+           a normal distribution is used.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
@@ -12523,17 +12836,25 @@ class Session(sherpa.ui.utils.Session):
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
+        model : model, optional
+           The model to integrate. If left as `None` then the source
+           model for the dataset will be used. This can be used to
+           calculate the unabsorbed flux, as shown in the examples.
+           The model must be part of the source expression.
+        otherids : sequence of integer and string ids, optional
+           The list of other datasets that should be included when
+           calculating the errors to draw values from.
 
         Returns
         -------
         vals
-           The return array has the shape ``(num, N+1)``, where ``N`` is the
-           number of free parameters and num is the `num` parameter.
-           The rows of this array contain the flux value, as
-           calculated by `calc_energy_flux`, followed by the values of
-           the thawed parameters used for that iteration. The order of
-           the parameters matches the data returned by
-           `get_fit_results`.
+           The return array has the shape ``(num, N+1)``, where ``N``
+           is the number of free parameters in the fit and num is the
+           `num` parameter.  The rows of this array contain the flux
+           value, as calculated by `calc_energy_flux`, followed by the
+           values of the thawed parameters used for that
+           iteration. The order of the parameters matches the data
+           returned by `get_fit_results`.
 
         See Also
         --------
@@ -12548,6 +12869,19 @@ class Session(sherpa.ui.utils.Session):
         sample_photon_flux : Return the flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
 
+        Notes
+        -----
+        There are two ways to use this function to calculate fluxes
+        from multiple sources. The first is to leave the `id` argument
+        as `None`, in which case all available datasets will be used.
+        Alternatively, the `id` and `otherids` arguments can be set to
+        list the exact datasets to use, such as `id=1,
+        otherids=(2,3,4)`.
+
+        The returned value contains all free parameters in the fit,
+        even if they are not included in the model argument (e.g.
+        when calculating an unabsorbed flux).
+
         Examples
         --------
 
@@ -12556,31 +12890,102 @@ class Session(sherpa.ui.utils.Session):
         distribution):
 
         >>> vals = sample_energy_flux(0.5, 7, num=1000)
-        >>> plot_cdf(vals[:,0], name='flux')
+        >>> plot_cdf(vals[:, 0], name='flux')
 
         Repeat the above, but allowing the parameters to be
         correlated, and then calculate the 5, 50, and 95 percent
         quantiles of the energy flux distribution:
 
-        >>> cvals = sample_energy_flux(.5, 7, num=1000, correlated=True)
-        >>> np.percentile(cvals[:,0], [5,50,95])
+        >>> cvals = sample_energy_flux(0.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:, 0], [5, 50, 95])
+
+        The energy flux of a component (or sub-set of components) can be
+        calculated using the model argument. For the following case,
+        an absorbed power-law was used to fit the data -
+        `xsphabs.gal * powerlaw.pl` - and then the flux of just the
+        power-law component is calculated. Note that the returned
+        array has columns 'flux', 'gal.nh', 'pl.gamma', and 'pl.ampl'
+        (that is flux and then the free parameters in the full model).
+
+        >>> vals = sample_energy_flux(0.5, 7, model=pl, num=1000, correlated=True)
+
+        Calculate the 2-10 keV flux for the pl model using a joint fit
+        to the datasets 1, 2, 3, and 4:
+
+        >>> vals = sample_energy_flux(2, 10, model=pl, id=1, otherids=(2,3,4),
+        ...                           num=1000)
+
+        Use the given parameter errors for sampling the parameter distribution.
+        The fit must have three free parameters, and each parameter is
+        sampled independently (in this case parerrs gives the sigma
+        values for each parameter):
+
+        >>> parerrs = [0.25, 1.22, 1.04e-4]
+        >>> vals = sample_energy_flux(2, 10, num=5000, scales=parerrs)
+
+        In this case the parameter errors are taken from the covariance
+        analysis, using the `parmaxes` field since these are positive.
+
+        >>> covar()
+        >>> parerrs = get_covar_results().parmaxes
+        >>> vals = sample_energy_flux(0.5, 2, num=1000, scales=parerrs)
+
+        Run covariance to estimate the parameter errors and then
+        extract the covariance matrix from the results (as the `cmat`
+        variable).  This matrix is then used to define the parameter
+        widths - including correlated terms - in the flux sampling,
+        after being increased by ten percent. This is used to
+        calculate both the absorbed (`vals1`) and unabsorbed (`vals2`)
+        fluxes. Both arrays have columns: flux, gal.nh, pl.gamma, and
+        pl.ampl.
+
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> fit()
+        >>> covar()
+        >>> cmat = get_covar_results().extra_output
+        >>> vals1 = sample_energy_flux(2, 10, num=5000, correlated=True,
+        ...                            scales=1.1 * cmat)
+        >>> vals2 = sample_energy_flux(2, 10, num=5000, correlated=True,
+        ...                            model=pl, scales=1.1 * cmat)
+
+        Calculate the flux and error distribution using fits
+        to all datasets:
+
+        >>> set_source(xsphabs.gal * xsapec.clus)
+        >>> set_source(2, gal * clus)
+        >>> set_source(3, gal * clus)
+        ... fit the data
+        >>> vals = sample_energy_flux(0.5, 10, model=clus, num=10000)
+
+        Calculate the flux and error distribution using fits
+        to an explicit set of datasets (in this case datasets
+        1 and 2):
+
+        >>> vals = sample_energy_flux(0.5, 10, id=1, otherids=[2],
+        ...                           model=clus, num=10000)
+
 
         """
-        ids, fit = self._get_fit(id)
-        data = self.get_data(id)
-        src = None
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            src = self.get_bkg_source(id, bkg_id)
+        ids, fit = self._get_fit(id, otherids=otherids)
+
+        if bkg_id is None:
+            data = self.get_data(id)
+            if model is None:
+                model = self.get_source(id)
         else:
-            src = self.get_source(id)
+            data = self.get_bkg(id, bkg_id)
+            if model is None:
+                model = self.get_bkg_source(id, bkg_id)
 
         correlated = sherpa.utils.bool_cast(correlated)
 
-        return sherpa.astro.flux.sample_flux(fit, data, src,
-                                             sherpa.astro.utils.calc_energy_flux,
-                                             correlated, num, lo, hi, numcores,
-                                             scales)
+        return sherpa.astro.flux.sample_flux(fit, data, model,
+                                             method=sherpa.astro.utils.calc_energy_flux,
+                                             correlated=correlated,
+                                             num=num, lo=lo, hi=hi,
+                                             numcores=numcores,
+                                             samples=scales)
+
 
     # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
@@ -12605,7 +13010,7 @@ class Session(sherpa.ui.utils.Session):
            given then the lower value of the data grid is used.
         hi : optional
            The upper limit to use when summing up the signal. If not
-           guven then the upper value of the data grid is used.
+           given then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
@@ -12753,9 +13158,8 @@ class Session(sherpa.ui.utils.Session):
            `set_analysis` for the data set). The default value (``None``)
            means that the upper range of the data set is used.
         id : int or string, optional
-           The identifier of the data set to use. The default value
-           (``None``) means that the default identifier, as returned by
-           `get_default_id`, is used.
+           The data set that provides the data. If not given then
+           all data sets with an associated model are used simultaneously.
         bkg_id : int or string, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
@@ -12767,10 +13171,8 @@ class Session(sherpa.ui.utils.Session):
            The default is None, in which case get_draws shall be called.
            The user can input the parameter array (e.g. from running
            `sample_flux`).
-        otherids: list of integer ids, optional
-           The default value is (). However, if get_draws is called
-           internally which may require otherids to be set if more then
-           one data set is to be used then otherids must be set.
+        otherids : sequence of integer or strings, optional
+           Other data sets to use in the calculation.
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
@@ -13027,14 +13429,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
+        if bkg_id is None:
+            data = self.get_data(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
 
         if model is None:
-            if bkg_id is not None:
-                data = self.get_bkg(id, bkg_id)
-                model = self.get_bkg_source(id, bkg_id)
-            else:
+            if bkg_id is None:
                 model = self.get_source(id)
+            else:
+                model = self.get_bkg_source(id, bkg_id)
         else:
             _check_type(model, sherpa.models.Model, 'model',
                         'a model object')
@@ -13145,14 +13549,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
+        if bkg_id is None:
+            data = self.get_data(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
 
         if model is None:
-            if bkg_id is not None:
-                data = self.get_bkg(id, bkg_id)
-                model = self.get_bkg_source(id, bkg_id)
-            else:
+            if bkg_id is None:
                 model = self.get_source(id)
+            else:
+                model = self.get_bkg_source(id, bkg_id)
         else:
             _check_type(model, sherpa.models.Model, 'model',
                         'a model object')

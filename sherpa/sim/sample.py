@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 import numpy
 import numpy.random
 
@@ -24,12 +26,10 @@ from sherpa.estmethods import Covariance, Confidence
 from sherpa.utils.err import EstErr
 from sherpa.utils import parallel_map, NoNewAttributesAfterInit
 
-
-import logging
 warning = logging.getLogger("sherpa").warning
 
 
-__all__ = ['multivariate_t', 'multivariate_cauchy',
+__all__ = ('multivariate_t', 'multivariate_cauchy',
            'normal_sample', 'uniform_sample', 't_sample',
            'ParameterScaleVector', 'ParameterScaleMatrix',
            'UniformParameterSampleFromScaleVector',
@@ -38,7 +38,7 @@ __all__ = ['multivariate_t', 'multivariate_cauchy',
            'StudentTParameterSampleFromScaleMatrix',
            'NormalSampleFromScaleMatrix', 'NormalSampleFromScaleVector',
            'UniformSampleFromScaleVector', 'StudentTSampleFromScaleMatrix',
-           ]
+           )
 
 
 def multivariate_t(mean, cov, df, size=None):
@@ -113,7 +113,7 @@ class ParameterScaleVector(ParameterScale):
         scales = []
         thawedpars = [par for par in fit.model.pars if not par.frozen]
 
-        if None == myscales:
+        if myscales is None:
 
             oldestmethod = fit.estmethod
 
