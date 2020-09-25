@@ -26,7 +26,7 @@ import pytest
 import sherpa.all as sherpa
 from sherpa.astro.ui.utils import Session
 from sherpa.models import Const1D
-from sherpa.data import Data1DInt
+from sherpa.data import Data1D, Data1DInt
 from sherpa.utils.testing import requires_data, requires_plotting
 
 _datax = numpy.array(
@@ -476,28 +476,29 @@ def test_source_component_arbitrary_grid():
     model = Const1D('c')
     model.c0 = 10
 
-    def tst(x, y, re_x, yy):
+    def tst(x, y, re_x):
         ui.load_arrays(1, x, y)
         regrid_model = model.regrid(re_x)
         ui.plot_source_component(regrid_model)
-        numpy.testing.assert_array_equal(ui._compsrcplot.x, x)
-        numpy.testing.assert_array_almost_equal(ui._compsrcplot.y, yy)
+        numpy.testing.assert_array_equal(ui._compsrcplot.x, re_x)
+        numpy.testing.assert_array_almost_equal(ui._compsrcplot.y,
+                                                regrid_model(re_x))
 
     x = [1, 2, 3]
     y = [1, 2, 3]
     re_x = [10, 20, 30]
-    tst(x, y, re_x, [0, 0, 0])
+    tst(x, y, re_x)
 
     x = numpy.linspace(1, 10, 10)
     y = x
     re_x = numpy.linspace(5, 15, 15)
-    tst(x, y, re_x, [0, 0, 0, 0, 10, 10, 10, 10, 10, 10])
+    tst(x, y, re_x)
 
     re_x = numpy.linspace(1, 5, 15)
-    tst(x, y, re_x, [10, 10, 10, 10, 10,  0,  0,  0,  0,  0])
+    tst(x, y, re_x)
 
     re_x = numpy.linspace(3, 5, 15)
-    tst(x, y, re_x, [ 0,  0, 10, 10, 10,  0,  0,  0,  0,  0])
+    tst(x, y, re_x)
 
 @requires_plotting
 def test_plot_model_arbitrary_grid_integrated():
@@ -553,9 +554,9 @@ def test_source_component_arbitrary_grid_int():
     regrid_model = model.regrid(*re_x)
     ui.plot_source_component(regrid_model)
 
-    x_points = (x[0] + x[1]) / 2.0
+    x_points = (re_x[0] + re_x[1]) * 0.5
     numpy.testing.assert_array_equal(ui._compsrcplot.x, x_points)
-    numpy.testing.assert_array_equal(ui._compsrcplot.y, [0., 0., 0.])
+    numpy.testing.assert_array_equal(ui._compsrcplot.y, regrid_model(*re_x))
 
 
 def test_numpy_histogram_density_vs_normed():
@@ -574,3 +575,42 @@ def test_numpy_histogram_density_vs_normed():
     assert plot.y == pytest.approx(expected_y)
     assert plot.xlo == pytest.approx(expected_xlo)
     assert plot.xhi == pytest.approx(expected_xhi)
+
+
+def test_issue_822():
+
+    def cmp(a, b):
+        assert a == pytest.approx(b)
+
+    ui = Session()
+    ui.dataspace1d(1,100,2,dstype=Data1D)
+    g0 = sherpa.Gauss1D('g0')
+    ui.set_model(g0)
+    grid = numpy.arange(100)
+    one = numpy.ones(100)
+    grid0 = grid + one
+    r0 = g0.regrid(grid0)
+    ui.set_model(r0)
+    xtmp = ui.get_source_component_plot(r0).x
+    cmp(xtmp, grid0)
+    ytmp = ui.get_source_component_plot(r0).y
+    cmp(ytmp, r0(grid0))
+
+    g1 = sherpa.Gauss1D('g1')
+    grid1 = grid + one
+    r1 = g1.regrid(grid1)
+    ui.set_model(r0 + r1)
+    xtmp = ui.get_source_component_plot(r0 + r1).x
+    cmp(xtmp, grid1)
+    ytmp = ui.get_source_component_plot(r0 + r1).y
+    cmp(ytmp, (r0 + r1)(xtmp))
+
+    grid1 = grid + 2 * one
+    r1 = g1.regrid(grid1)
+    ui.set_model(r0 + r1)
+    with pytest.raises(ValueError) as excinfo:
+        xtmp = ui.get_source_component_plot(r0 + r1).x
+    msg = 'src models must have same high resolution grid size'
+    assert msg in str(excinfo.value)
+
+    

@@ -26,6 +26,7 @@ from abc import ABCMeta
 
 import numpy
 
+from sherpa.models.model import BinaryOpModel, RegridWrappedModel
 from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
@@ -1105,10 +1106,20 @@ class Data1D(Data):
                 self.get_xlabel(),
                 self.get_ylabel())
 
-    def get_evaluation_indep(self, filter=False, model=None, use_evaluation_space=False):
+    def get_evaluation_indep(self, filter=False, model=None,
+                             use_evaluation_space=False):
         data_space = self._data_space.get(filter)
         if use_evaluation_space:
-            return data_space.for_model(model).grid
+            if isinstance(model, RegridWrappedModel):
+                return model.wrapper.grid
+            elif isinstance(model, BinaryOpModel):
+                if numpy.any(model.lhs.grid[0] != model.rhs.grid[0]):
+                    msg = "src models must have same high resolution grid size"
+                    raise ValueError(msg)
+                else:
+                    return model.lhs.grid
+            else:
+                return data_space.for_model(model).grid
         else:
             return data_space.grid
 
