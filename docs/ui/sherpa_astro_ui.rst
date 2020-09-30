@@ -10,9 +10,9 @@ Since some of these are re-exports of the
 :py:mod:`sherpa.ui` version, should
 we only document the new/different ones here? That would be a maintenance
 burden...
-                
+
    .. rubric:: Functions
-               
+
    .. autosummary::
       :toctree: api
 
@@ -55,6 +55,7 @@ burden...
       delete_data
       delete_model
       delete_model_component
+      delete_pileup_model
       delete_psf
       eqwidth
       fake
@@ -228,7 +229,9 @@ burden...
       list_model_components
       list_model_ids
       list_models
+      list_pileup_model_ids
       list_priors
+      list_psf_ids
       list_response_ids
       list_samplers
       list_stats

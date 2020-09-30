@@ -8974,6 +8974,8 @@ class Session(sherpa.ui.utils.Session):
 
         Remove the pile up model applied to a source model.
 
+        .. versionadded:: 4.12.2
+
         Parameters
         ----------
         id : int or str, optional
@@ -8999,6 +9001,8 @@ class Session(sherpa.ui.utils.Session):
 
     def list_pileup_model_ids(self):
         """List of all the data sets with a pile up model.
+
+        .. versionadded:: 4.12.2
 
         Returns
         -------
