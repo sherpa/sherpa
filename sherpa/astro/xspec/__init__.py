@@ -11901,7 +11901,7 @@ class XSclumin(XSConvolutionKernel):
 
     See Also
     --------
-    XSclumin, XScpflux
+    XScflux, XScpflux
 
     Notes
     -----
