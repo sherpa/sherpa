@@ -767,7 +767,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
 class ReSampleData(NoNewAttributesAfterInit):
-    """Re-sample a 1D dataset using asymmtric errors.
+    """Re-sample a 1D dataset using asymmetric errors.
 
     For each iteration, each data point is resampled using normal
     distributions for the lower and upper sides based on the
