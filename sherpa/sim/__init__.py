@@ -787,9 +787,10 @@ class ReSampleData(NoNewAttributesAfterInit):
     -------
     sampled : dict
        The keys are samples, which contains the resampled data
-       used in the fits as a niter by ndata array, and the free
-       parameters in the fit, containing a NumPy array containing
-       the fit parameter for each iteration (of size niter).
+       used in the fits as a niter by ndata array, and the
+       free parameters from the fit, each as a NumPy array
+       containing the best-fit parameter value from each iteration
+       (of size niter).
 
     See Also
     --------
