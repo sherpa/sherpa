@@ -17,10 +17,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
 import logging
 import os
 import sys
 import warnings
+import operator
+
+from collections import defaultdict
+from functools import reduce
 
 import numpy
 
@@ -36,6 +41,7 @@ import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
+from sherpa.models.basic import TableModel
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -299,9 +305,27 @@ class Session(sherpa.ui.utils.Session):
             data_str += 'Filter: %s\n' % data.get_filter_expr()
             if isinstance(data, sherpa.astro.data.DataPHA):
 
-                scale = data.get_background_scale()
-                if scale is not None and numpy.isscalar(scale):
-                    data_str += 'Bkg Scale: %g\n' % float(scale)
+                nbkg = len(data.background_ids)
+                for bkg_id in data.background_ids:
+                    # Apply grouping/filtering if set
+                    scale = data.get_background_scale(bkg_id)
+                    if scale is None:
+                        continue
+
+                    data_str += 'Bkg Scale'
+                    if nbkg > 1 or bkg_id != 1:
+                        data_str += ' {}'.format(bkg_id)
+
+                    data_str += ': '
+                    if numpy.isscalar(scale):
+                        data_str += '{:g}'.format(float(scale))
+                    else:
+                        # would like to use sherpa.utils/print_fields style output
+                        # but not available and I don't feel like it's
+                        # worth it
+                        data_str += '{}[{}]'.format(scale.dtype, scale.size)
+
+                    data_str += '\n'
 
                 data_str += 'Noticed Channels: %s\n' % data.get_noticed_expr()
 
@@ -3537,7 +3561,7 @@ class Session(sherpa.ui.utils.Session):
         return self._get_pha_data(id).exposure
 
     def get_backscal(self, id=None, bkg_id=None):
-        """Return the area scaling of a PHA data set.
+        """Return the BACKSCAL scaling of a PHA data set.
 
         Return the BACKSCAL setting [1]_ for the source or background
         component of a PHA data set.
@@ -3594,12 +3618,20 @@ class Session(sherpa.ui.utils.Session):
             return self.get_bkg(id, bkg_id).backscal
         return self._get_pha_data(id).backscal
 
-    def get_bkg_scale(self, id=None):
-        """Return the background scaling factor for a PHA data set.
+    def get_bkg_scale(self, id=None, bkg_id=1, units='counts',
+                      group=True, filter=False):
+        """Return the background scaling factor for a background data set.
 
         Return the factor applied to the background component to scale
-        it to match it to the source (either when subtracting the
-        background, or fitting it simultaneously).
+        it to match it to the source, either when subtracting the
+        background (units='counts'), or fitting it simultaneously
+        (units='rate').
+
+        .. versionchanged:: 4.12.2
+           The bkg_id, counts, group, and filter parameters have been
+           added and the routine no-longer calculates the average
+           scaling for all the background components but just for the
+           given component.
 
         Parameters
         ----------
@@ -3607,6 +3639,18 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value is 1.
+        units : {'counts', 'rate'}, optional
+           The correction is applied to a model defined as counts, the
+           default, or a rate. The latter should be used when
+           calculating the correction factor for adding the background
+           data to the source aperture.
+        group : bool, optional
+            Should the values be grouped to match the data?
+        filter : bool, optional
+            Should the values be filtered to match the data?
 
         Returns
         -------
@@ -3624,23 +3668,47 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The scale factor::
+        The scale factor when units='counts' is::
 
-          exp_src * bscale_src / (exp_bgnd * bscale_bgnd)
+          exp_src * bscale_src * areascal_src /
+          (exp_bgnd * bscale_bgnd * areascal_ngnd) /
+          nbkg
 
-        where ``exp_x`` and ``bscale_x`` are the exposure and BACKSCAL
-        values for the source (``x=src``) and background (``x=bgnd``)
-        regions, respectively.
+        where ``exp_x``, ``bscale_x``. and ``areascal_x`` are the
+        exposure, BACKSCAL, and AREASCAL values for the source
+        (``x=src``) and background (``x=bgnd``) regions, respectively,
+        and ``nbkg`` is the number of background datasets associated
+        with the source aperture. When units='rate', the exposure and
+        areascal corrections are not included.
 
         Examples
         --------
 
+        Return the background-scaling factor for the default dataset (this
+        assumes there's only one background component).
+
+        >>> get_bkg_scale()
+        0.034514770047217924
+
+        Return the factor for dataset "pi":
+
         >>> get_bkg_scale('pi')
         0.034514770047217924
 
+        Calculate the factors for the first two background components
+        of the default dataset, valid for combining the source
+        and background models to fit the source aperture:
+
+        >>> scale1 = get_bkg_scale(units='rate')
+        >>> scale2 = get_bkg_scale(units='rate', bkg_id=2)
+
         """
-        scale = self._get_pha_data(id).get_background_scale()
+
+        dset = self._get_pha_data(id)
+        scale = dset.get_background_scale(bkg_id, units=units,
+                                          group=group, filter=filter)
         if scale is None:
+            # TODO: need to add bkg_id?
             raise DataErr('nobkg', self._fix_id(id))
 
         return scale
@@ -8670,10 +8738,11 @@ class Session(sherpa.ui.utils.Session):
             nbkg = len(d.background_ids)
             b = 0
             for bkg_id in d.background_ids:
-                b = b + d.get_background_scale() * \
+                # we do (probably) want to filter and group the scale array
+                b += d.get_background_scale(bkg_id) * \
                     d.get_background(bkg_id).counts
 
-            if (nbkg > 0):
+            if nbkg > 0:
                 b = b / nbkg
                 b_poisson = sherpa.utils.poisson_noise(b)
                 d.counts = d.counts + b_poisson
@@ -8815,6 +8884,22 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
     def _add_convolution_models(self, id, data, model, is_source):
+        """Add in "hidden" components to the model expression.
+
+        This includes PSF and pileup models and, for PHA data sets,
+        it adds in any background terms and the response function.
+
+        Notes
+        -----
+        If a background is added to a PHA data set using a vector,
+        rather than scalar, value, the code has to convert from
+        the model evaluation grid (e.g. keV or Angstroms) to the
+        scale array, which will be in channels. The only way to do
+        this is to apply the instrument response to the background
+        model separately from the source model, which will fail if
+        the instrument model is not linear, such as the jdpileup
+        model.
+        """
 
         id = self._fix_id(id)
 
@@ -8827,15 +8912,7 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
             return model
 
-        if not data.subtracted:
-            bkg_srcs = self._background_sources.get(id, {})
-            if len(bkg_srcs.keys()) != 0:
-                model = (model +
-                         sherpa.astro.background.BackgroundSumModel
-                         (data, bkg_srcs))
-
-        resp = self._get_response(id, data)
-        return resp(model)
+        return sherpa.astro.background.add_response(self, id, data, model)
 
     def _get_response(self, id, pha):
         """Calculate the response for the dataset.
@@ -9637,7 +9714,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-        tablemodel = sherpa.models.TableModel(modelname)
+        tablemodel = TableModel(modelname)
         # interpolation method
         tablemodel.method = method
         tablemodel.filename = filename

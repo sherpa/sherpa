@@ -6,14 +6,9 @@ The sherpa.astro.background module
 
 .. automodule:: sherpa.astro.background
 
-   .. rubric:: Classes
+   .. rubric:: Functions
 
    .. autosummary::
       :toctree: api
 
-      BackgroundSumModel
-
-Class Inheritance Diagram
-=========================
-
-.. inheritance-diagram:: BackgroundSumModel
+      add_response
