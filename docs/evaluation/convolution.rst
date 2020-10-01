@@ -30,7 +30,7 @@ X-ray spectra.
    In the following documentation we are going to use the term
    "convolution" to refer to any model that requires the data
    from another model, such as a model that reprocesses emission
-   into another pass band or that renormalises the data, even if
+   into another passband or that renormalises the data, even if
    it does not match the meaning of
    `convolution <https://en.wikipedia.org/wiki/Convolution>`_.
 
