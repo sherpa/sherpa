@@ -584,7 +584,7 @@ def _make_binop(op, opstr):
 
 
 class ArithmeticModel(Model):
-    """Support combining model expressions and cacheing results."""
+    """Support combining model expressions and caching results."""
 
     def __init__(self, name, pars=()):
         self.integrate = True
