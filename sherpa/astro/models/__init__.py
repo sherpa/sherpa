@@ -897,7 +897,7 @@ class NormBeta1D(RegriddableModel1D):
 
 
 class Schechter(RegriddableModel1D):
-    """One-dimensional Schecter model function.
+    """One-dimensional Schechter model function.
 
     This model is for integrated data grids only.
 

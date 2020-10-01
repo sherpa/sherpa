@@ -853,8 +853,8 @@ class Session(NoNewAttributesAfterInit):
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
 
-        This displays the model used to fit the data set, that is
-        that is, the expression set by `set_model` or `set_source`
+        This displays the model used to fit the data set, that is, 
+        the expression set by `set_model` or `set_source`
         combined with any instrumental responses, together with the
         parameter values of the model. The `show_source` function
         displays just the source expression, without the instrumental
@@ -1803,7 +1803,7 @@ class Session(NoNewAttributesAfterInit):
         from model amplitudes derived in the previous iteration of the
         fit. This 'Iterative Weighting' ([1]_) attempts to remove
         biased estimates of model parameters which is inherent in
-        chi-square2 statistics ([2]_).
+        chi-square statistics ([2]_).
 
         The variance in bin i is estimated to be::
 
@@ -1848,7 +1848,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         Switch to the 'sigmarej' scheme for iterative fitting and
-        change the low and hige rejection limits to 4 and 3
+        change the low and high rejection limits to 4 and 3
         respectively:
 
         >>> set_iter_method('sigmarej')
@@ -2910,7 +2910,7 @@ class Session(NoNewAttributesAfterInit):
 
         The function returns the total errors (a quadrature addition
         of the statistical and systematic errors) on the values
-        (dependent acis) of a data set. The individual components
+        (dependent axis) of a data set. The individual components
         can be retrieved with the `get_staterror` and `get_syserror`
         functions.
 
@@ -4662,7 +4662,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         Since the `notice` call is applied to an un-filtered
-        data set, the filter choses only those points that lie
+        data set, the filter chooses only those points that lie
         within the range 12 <= X <= 18.
 
         >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
@@ -5921,7 +5921,7 @@ class Session(NoNewAttributesAfterInit):
         non-zero value for this attribute means that the results of
         evaluating the model will be cached if all the parameters are
         frozen, which may lead to a reduction in the time taken to
-        evaluate a fit. A zero value turns off the cacheing.  The
+        evaluate a fit. A zero value turns off the caching.  The
         default setting for X-Spec and 1D analytic models is that
         ``cache`` is ``5``, but ``0`` for the 2D analytic models.
 
@@ -11193,7 +11193,7 @@ class Session(NoNewAttributesAfterInit):
         -------
         resid_data : a `sherpa.plot.DataContour` instance
            The ``y`` attribute contains the residual values and the ``x0``
-           and ``x1`` arrays the corresponsing coordinate values, as
+           and ``x1`` arrays contain the corresponding coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -11284,7 +11284,7 @@ class Session(NoNewAttributesAfterInit):
         -------
         resid_data : a `sherpa.plot.ModelContour` instance
            The ``y`` attribute contains the model values and the ``x0``
-           and ``x1`` arrays the corresponsing coordinate values, as
+           and ``x1`` arrays contain the corresponding coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -11325,7 +11325,7 @@ class Session(NoNewAttributesAfterInit):
         -------
         resid_data : a `sherpa.plot.SourceContour` instance
            The ``y`` attribute contains the model values and the ``x0``
-           and ``x1`` arrays the corresponsing coordinate values, as
+           and ``x1`` arrays contain the corresponding coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -11461,7 +11461,7 @@ class Session(NoNewAttributesAfterInit):
         -------
         resid_data : a `sherpa.plot.ResidContour` instance
            The ``y`` attribute contains the residual values and the ``x0``
-           and ``x1`` arrays the corresponsing coordinate values, as
+           and ``x1`` arrays contain the corresponding coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -11503,7 +11503,7 @@ class Session(NoNewAttributesAfterInit):
         -------
         ratio_data : a `sherpa.plot.RatioContour` instance
            The ``y`` attribute contains the ratio values and the ``x0``
-           and ``x1`` arrays the corresponsing coordinate values, as
+           and ``x1`` arrays contain the corresponding coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -12111,7 +12111,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_data`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12215,7 +12215,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_model`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12297,7 +12297,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_source_component`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12372,7 +12372,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_model_component`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12451,7 +12451,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_source`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12521,7 +12521,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_fit`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12609,7 +12609,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_resid`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12686,7 +12686,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_chisqr`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12748,7 +12748,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_delchi`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12823,7 +12823,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_ratio`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12895,7 +12895,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_psf`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12952,7 +12952,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_kernel`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13010,7 +13010,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_fit_resid`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13087,7 +13087,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the previous values. The default is
            ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13171,7 +13171,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_fit_ratio`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13257,7 +13257,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_fit_delchi`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13349,7 +13349,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_pdf`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13422,7 +13422,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_cdf`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13498,7 +13498,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_trace`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13578,7 +13578,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `plot_scatter`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -13769,7 +13769,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_data`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -13812,7 +13812,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_model`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -13857,7 +13857,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_source`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -13902,7 +13902,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_fit`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -13945,7 +13945,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_resid`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -13987,7 +13987,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_ratio`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -14027,7 +14027,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_psf`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -14057,7 +14057,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_kernel`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -14089,7 +14089,7 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `contour_fit_resid`. The default is ``False``.
         overcontour : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new contour plot. The default is ``False``.
 
         See Also
@@ -14160,11 +14160,11 @@ class Session(NoNewAttributesAfterInit):
            ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : int, optional
@@ -14266,11 +14266,11 @@ class Session(NoNewAttributesAfterInit):
            ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : int, optional
@@ -14375,11 +14375,11 @@ class Session(NoNewAttributesAfterInit):
            the current setting (only for the error analysis) to use
            a faster optimization method. The default is ``False``.
         min : pair of numbers, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : pair of number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : pair of int, optional
@@ -14497,11 +14497,11 @@ class Session(NoNewAttributesAfterInit):
            the current setting (only for the error analysis) to use
            a faster optimization method. The default is ``False``.
         min : pair of numbers, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : pair of number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : pair of int, optional
@@ -14645,11 +14645,11 @@ class Session(NoNewAttributesAfterInit):
            the current setting (only for the error analysis) to use
            a faster optimization method. The default is ``False``.
         min : number, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : int, optional
@@ -14670,7 +14670,7 @@ class Session(NoNewAttributesAfterInit):
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
 
         See Also
@@ -14758,11 +14758,11 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `int_proj`. The default is ``False``.
         min : number, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : int, optional
@@ -14783,7 +14783,7 @@ class Session(NoNewAttributesAfterInit):
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
 
         See Also
@@ -14902,11 +14902,11 @@ class Session(NoNewAttributesAfterInit):
            the current setting (only for the error analysis) to use
            a faster optimization method. The default is ``False``.
         min : pair of numbers, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : pair of number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : pair of int, optional
@@ -14935,7 +14935,7 @@ class Session(NoNewAttributesAfterInit):
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
 
         See Also
@@ -15026,11 +15026,11 @@ class Session(NoNewAttributesAfterInit):
            Set to ``True`` to use the values calculated by the last
            call to `int_proj`. The default is ``False``.
         min : pair of numbers, optional
-           The minimum parameter value for the calcutation. The
+           The minimum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         max : pair of number, optional
-           The maximum parameter value for the calcutation. The
+           The maximum parameter value for the calculation. The
            default value of ``None`` means that the limit is calculated
            from the covariance, using the `fac` value.
         nloop : pair of int, optional
@@ -15059,7 +15059,7 @@ class Session(NoNewAttributesAfterInit):
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
 
         See Also

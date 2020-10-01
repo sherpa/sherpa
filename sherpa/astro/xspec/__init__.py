@@ -1721,7 +1721,7 @@ class XSbexrav(XSAdditiveModel):
     cosIncl
         The cosine of the inclination angle.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -1792,7 +1792,7 @@ class XSbexriv(XSAdditiveModel):
     redshift
         The redshift of the source.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -2328,7 +2328,7 @@ class XSc6pmekl(XSAdditiveModel):
     """The XSPEC c6pmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
 
     The model is described at [1]_. It differs from ``XSc6mekl`` by
-    by using the exponential of the 6th order Chebyshev polynomial.
+    using the exponential of the 6th order Chebyshev polynomial.
 
     Attributes
     ----------
@@ -2383,7 +2383,7 @@ class XSc6pvmkl(XSAdditiveModel):
     """The XSPEC c6pvmkl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
 
     The model is described at [1]_. It differs from ``XSc6vmekl`` by
-    by using the exponential of the 6th order Chebyshev polynomial.
+    using the exponential of the 6th order Chebyshev polynomial.
 
     Attributes
     ----------
@@ -2526,7 +2526,7 @@ class XScemekl(XSAdditiveModel):
     alpha
         The power-law index of the emissivity function.
     Tmax
-        The maxmimum temperature, in keV.
+        The maximum temperature, in keV.
     nH
         H density, in cm^-3.
     abundanc
@@ -2577,7 +2577,7 @@ class XScevmkl(XSAdditiveModel):
     alpha
         The power-law index of the emissivity function.
     Tmax
-        The maxmimum temperature, in keV.
+        The maximum temperature, in keV.
     nH
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
@@ -2645,7 +2645,7 @@ class XScflow(XSAdditiveModel):
     lowT
         The minimum temperature, in keV.
     highT
-        The maxmimum temperature, in keV.
+        The maximum temperature, in keV.
     Abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
@@ -4347,7 +4347,7 @@ class XSmkcflow(XSAdditiveModel):
     lowT
         The minimum temperature, in keV.
     highT
-        The maxmimum temperature, in keV.
+        The maximum temperature, in keV.
     Abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
@@ -4787,7 +4787,7 @@ class XSnsatmos(XSAdditiveModel):
 class XSnsmax(XSAdditiveModel):
     """The XSPEC nsmax model: Neutron Star Magnetic Atmosphere.
 
-    The model is described at [1]_. It has been superceeded by
+    The model is described at [1]_. It has been superseded by
     ``XSnsmaxg``.
 
     Attributes
@@ -5092,7 +5092,7 @@ class XSpexrav(XSAdditiveModel):
     redshift
         The redshift of the source.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -5153,7 +5153,7 @@ class XSpexriv(XSAdditiveModel):
     redshift
         The redshift of the source.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -5521,7 +5521,7 @@ class XSrefsch(XSAdditiveModel):
     redshift
         The redshift of the source.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -5737,7 +5737,7 @@ class XSsresc(XSAdditiveModel):
         flux has dropped by a factor of 6 from a straight power law.
         See [1]_ for more details.
     norm
-        The 1 Ghz flux in Jy.
+        The 1 GHz flux in Jy.
 
     See Also
     --------
@@ -6261,7 +6261,7 @@ class XSvmcflow(XSAdditiveModel):
     lowT
         The minimum temperature, in keV.
     highT
-        The maxmimum temperature, in keV.
+        The maximum temperature, in keV.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
     redshift
@@ -7884,7 +7884,7 @@ class XSredden(XSMultiplicativeModel):
     Attributes
     ----------
     E_BmV
-        The value of E(B-v) for the line of sight to the source.
+        The value of E(B-V) for the line of sight to the source.
 
     See Also
     --------
@@ -8260,7 +8260,7 @@ class XSuvred(XSMultiplicativeModel):
     Attributes
     ----------
     E_BmV
-        The value of E(B-v) for the line of sight to the source.
+        The value of E(B-V) for the line of sight to the source.
 
     References
     ----------
@@ -8464,7 +8464,7 @@ class XSxion(XSMultiplicativeModel):
     inner
         The inner radius of the disk (in Schwarzschild radii).
     outer
-        The er radius of the disk (in Schwarzschild radii).
+        The outer radius of the disk (in Schwarzschild radii).
     index
         The photon index of the source.
     redshift
@@ -8745,7 +8745,7 @@ class XSzredden(XSMultiplicativeModel):
     Attributes
     ----------
     E_BmV
-        The value of E(B-v) for the line of sight to the source.
+        The value of E(B-V) for the line of sight to the source.
     redshift
         The redshift of the absorber.
 
@@ -8783,7 +8783,7 @@ class XSzsmdust(XSMultiplicativeModel):
     Attributes
     ----------
     E_BmV
-        The value of E(B-v) for the line of sight to the source.
+        The value of E(B-V) for the line of sight to the source.
     ExtIndex
         The spectral index of the extinction curve.
     Rv
@@ -10114,7 +10114,7 @@ class XSpexmon(XSAdditiveModel):
     redshift
         The redshift of the source.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -11354,7 +11354,7 @@ class XSslimbh(XSAdditiveModel):
         zero then the disk emission is limb-darkened, otherwise it is assumed
         to be isotropic.
     vflag
-        A flag to contorl the surface profile. If greater than zero,
+        A flag to control the surface profile. If greater than zero,
         raytracing is done from the actual photosphere, otherwise the
         spectrum is raytraced from the equatorial plane ignoring the
         height profile of the disk.
@@ -11414,11 +11414,11 @@ class XSsnapec(XSAdditiveModel):
     N_SNe
         The number of SNe (in units of 10^9).
     R
-        The percentage of SN1a.
+        The percentage of SNIa.
     SNIModelIndex
         SNIa yield model: see [1]_ for more details.
     SNIIModelIndex
-        SNIIa yield model: see [1]_ for more details.
+        SNII yield model: see [1]_ for more details.
     redshift
         The redshift of the plasma.
     norm
@@ -11799,7 +11799,7 @@ class XSxscat(XSMultiplicativeModel):
         self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.99, 0, 0.999)
         self.Rext = Parameter(name, 'Rext', 10.0, 0, 235.0, 0, 240.0, 'arcsec',
                               frozen=True)
-        # The maxmimum number of models depends on the data file, so pick
+        # The maximum number of models depends on the data file, so pick
         # a value that is unlikely to be exceeded (the max at the time
         # of writing was 3).
         self.DustModel = Parameter(name, 'DustModel', 1, 1, 100, 1, 100,
@@ -11832,7 +11832,7 @@ class XScflux(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
@@ -11906,7 +11906,7 @@ class XSclumin(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
@@ -11982,7 +11982,7 @@ class XScpflux(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
@@ -12034,7 +12034,7 @@ class XSgsmooth(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12068,7 +12068,7 @@ class XSireflect(XSConvolutionKernel):
     Redshift
         The redshift of the source.
     abund
-        The abundance of elements heaver than He relative to their solar
+        The abundance of elements heavier than He relative to their solar
         abundances.
     Fe_abund
         The iron abundance relative to the above.
@@ -12086,7 +12086,7 @@ class XSireflect(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     The precision of the numerical integration can be changed by using
     the ``set_xsxset`` function to set the value of the IREFLECT_PRECISION
@@ -12154,7 +12154,7 @@ class XSkdblur(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12212,7 +12212,7 @@ class XSkdblur2(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12280,7 +12280,7 @@ class XSkerrconv(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12330,7 +12330,7 @@ class XSkyconv(XSConvolutionKernel):
     a
         a/M, the black-hole angular momentum in (GM/c).
     theta_o
-        The observer inclinitation in degrees (0 is pole on).
+        The observer inclination in degrees (0 is pole on).
     rin
         The inner radius, in GM/c^2.
     ms
@@ -12361,7 +12361,7 @@ class XSkyconv(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     This model is only available when used with XSPEC 12.10.1 or later.
 
@@ -12432,7 +12432,7 @@ class XSlsmooth(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12467,7 +12467,7 @@ class XSpartcov(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12508,7 +12508,7 @@ class XSrdblur(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12552,7 +12552,7 @@ class XSreflect(XSConvolutionKernel):
     Redshift
         The redshift of the source.
     abund
-        The abundance of the elements heaver than He relative to their
+        The abundance of the elements heavier than He relative to their
         solar abundance, as set by the ``set_xsabund`` function.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
@@ -12567,7 +12567,7 @@ class XSreflect(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     The precision of the numerical integration can be changed by using
     the ``set_xsxset`` function to set the value of the REFLECT_PRECISION
@@ -12618,7 +12618,7 @@ class XSrfxconv(XSConvolutionKernel):
         The redshift of the source.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
-        the ``set_xsabund`` function. ALl other elements are assumed to
+        the ``set_xsabund`` function. All other elements are assumed to
         have Solar abundances.
     cosIncl
         The cosine of the inclination angle in degrees.
@@ -12632,7 +12632,7 @@ class XSrfxconv(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     The precision of the numerical integration can be changed by using
     the ``set_xsxset`` function to set the value of the RFXCONV_PRECISION
@@ -12684,7 +12684,7 @@ class XSrgsxsrc(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     The ``set_xsxset`` function must be used to set the RGS_XSOURCE_FILE
     value to point to a file as described in [1]_.
@@ -12724,7 +12724,7 @@ class XSsimpl(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -12785,7 +12785,7 @@ class XSthcomp(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     This model is only available when used with XSPEC 12.11.0 or later.
 
@@ -12840,7 +12840,7 @@ class XSvashift(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     This model is only available when used with XSPEC 12.9.1 or later.
 
@@ -12881,7 +12881,7 @@ class XSvmshift(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     This model is only available when used with XSPEC 12.9.1 or later.
 
@@ -12919,7 +12919,7 @@ class XSxilconv(XSConvolutionKernel):
         The redshift of the source.
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
-        the ``set_xsabund`` function. ALl other elements are assumed to
+        the ``set_xsabund`` function. All other elements are assumed to
         have Solar abundances.
     cosIncl
         The cosine of the inclination angle in degrees.
@@ -12935,7 +12935,7 @@ class XSxilconv(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     The precision of the numerical integration can be changed by using
     the ``set_xsxset`` function to set the value of the XILCONV_PRECISION
@@ -12995,7 +12995,7 @@ class XSzashift(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
@@ -13031,7 +13031,7 @@ class XSzmshift(XSConvolutionKernel):
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
-    models, rather then using the multiplication symbol.
+    models, rather than using the multiplication symbol.
 
     References
     ----------
