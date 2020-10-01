@@ -767,7 +767,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
 class ReSampleData(NoNewAttributesAfterInit):
-    """Re-sample a 1D dataset using asymmtric errors.
+    """Re-sample a 1D dataset using asymmetric errors.
 
     For each iteration, each data point is resampled using normal
     distributions for the lower and upper sides based on the
@@ -785,11 +785,22 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     Returns
     -------
-    The class returns the best fit parameters for each realization.
+    sampled : dict
+       The keys are samples, which contains the resampled data
+       used in the fits as a niter by ndata array, and the
+       free parameters from the fit, each as a NumPy array
+       containing the best-fit parameter value from each iteration
+       (of size niter).
 
     See Also
     --------
-    resample_data
+    sherpa.astro.ui.resample_data
+
+    Notes
+    -----
+    When called with no arguments the number of iterations is set
+    to 1000 and the seed is set to `None`. The `call` method should
+    be used instead if the values need changing.
 
     Example
     -------
@@ -832,7 +843,7 @@ class ReSampleData(NoNewAttributesAfterInit):
     def call(self, niter, seed=None):
         """Resample the data and fit the model to each iteration.
 
-        .. versionadded: 4.12.2
+        .. versionadded:: 4.12.2
            The samples and statistic keys were added to the return
            value, the parameter values are returned as NumPy arrays
            rather than as lists, and the seed parameter was made

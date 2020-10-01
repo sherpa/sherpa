@@ -5177,6 +5177,22 @@ class Session(NoNewAttributesAfterInit):
          'absorptionvoigt',
          'accretiondisk']
 
+        >>> list_models('2d')
+        ['beta2d',
+         'box2d',
+         'const2d',
+         'delta2d',
+         'devaucouleurs2d',
+         'disk2d',
+         'gauss2d',
+         'lorentz2d',
+         'normgauss2d',
+         'polynom2d',
+         'scale2d',
+         'sersic2d',
+         'shell2d',
+         'sigmagauss2d']
+
         """
         keys = list(self._model_types.keys())
         keys.sort()
@@ -7215,6 +7231,8 @@ class Session(NoNewAttributesAfterInit):
 
     def list_psf_ids(self):
         """List of all the data sets with a PSF.
+
+        .. versionadded:: 4.12.2
 
         Returns
         -------

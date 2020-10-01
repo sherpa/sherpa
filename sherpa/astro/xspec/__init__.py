@@ -261,6 +261,7 @@ def set_xsabund(abundance):
     Notes
     -----
     The pre-defined abundance tables are:
+
      - 'angr', from [2]_
      - 'aspl', from [3]_
      - 'feld', from [4]_, except for elements not listed which
@@ -11900,7 +11901,7 @@ class XSclumin(XSConvolutionKernel):
 
     See Also
     --------
-    XSclumin, XScpflux
+    XScflux, XScpflux
 
     Notes
     -----

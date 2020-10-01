@@ -12,6 +12,7 @@ The sherpa.sim module
       :toctree: api
 
       MCMC
+      ReSampleData
 
    .. rubric:: Functions
 
