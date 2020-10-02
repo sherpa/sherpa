@@ -1847,7 +1847,7 @@ class Session(sherpa.ui.utils.Session):
         >>> list_data_ids()
         [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
 
-        If the id is a string then the identtifier is formed by adding
+        If the id is a string then the identifier is formed by adding
         the number of the dataset (starting at 1) to the end of
         id. Note that the `list_data_ids` routine does not guarantee
         an ordering to the output (as shown below):
@@ -2991,7 +2991,7 @@ class Session(sherpa.ui.utils.Session):
 
         The function returns the total errors (a quadrature addition
         of the statistical and systematic errors) on the values
-        (dependent acis) of a data set or its background. The individual
+        (dependent axis) of a data set or its background. The individual
         components can be retrieved with the `get_staterror` and
         `get_syserror` functions.
 
@@ -5373,7 +5373,7 @@ class Session(sherpa.ui.utils.Session):
 
         If a PHA data set has an associated ARF - either from when the
         data was loaded or explicitly with the `set_arf` function -
-        then the model fit to the data will include the efect of the
+        then the model fit to the data will include the effect of the
         ARF when the model is created with `set_model` or
         `set_source`. In this case the `get_source` function returns
         the user model, and `get_model` the model that is fit to the
@@ -5513,7 +5513,7 @@ class Session(sherpa.ui.utils.Session):
 
         If a PHA data set has an associated ARF - either from when the
         data was loaded or explicitly with the `set_arf` function -
-        then the model fit to the data will include the efect of the
+        then the model fit to the data will include the effect of the
         ARF when the model is created with `set_model` or
         `set_source`. In this case the `get_source` function returns
         the user model, and `get_model` the model that is fit to the
@@ -5844,7 +5844,7 @@ class Session(sherpa.ui.utils.Session):
 
         If a PHA data set has an associated RMF - either from when the
         data was loaded or explicitly with the `set_rmf` function -
-        then the model fit to the data will include the efect of the
+        then the model fit to the data will include the effect of the
         RMF when the model is created with `set_model` or
         `set_source`. In this case the `get_source` function returns
         the user model, and `get_model` the model that is fit to the
@@ -5984,7 +5984,7 @@ class Session(sherpa.ui.utils.Session):
 
         If a PHA data set has an associated RMF - either from when the
         data was loaded or explicitly with the `set_rmf` function -
-        then the model fit to the data will include the efect of the
+        then the model fit to the data will include the effect of the
         RMF when the model is created with `set_model` or
         `set_source`. In this case the `get_source` function returns
         the user model, and `get_model` the model that is fit to the
@@ -7447,7 +7447,7 @@ class Session(sherpa.ui.utils.Session):
            indicates that the bin is part of the group. This array is
            not filtered - that is, there is one element for each channel
            in the PHA data set.  Changes to the elements of this array will
-           change the values in the dataset (is is a reference to the values
+           change the values in the dataset (it is a reference to the values
            used to define the quality, not a copy).
 
         Raises
@@ -10243,7 +10243,7 @@ class Session(sherpa.ui.utils.Session):
         >>> s2 = get_source_plot(2)
         >>> s2.plot()
 
-        Retrive the source plots for the 0.5 to 7 range of the
+        Retrieve the source plots for the 0.5 to 7 range of the
         'jet' and 'core' data sets and display them on the same plot:
 
         >>> splot1 = get_source_plot(id='jet', lo=0.5, hi=7)
@@ -10635,7 +10635,7 @@ class Session(sherpa.ui.utils.Session):
         >>> b1.plot()
         >>> b2.overplot()
 
-        Retrive the background source plots for the 0.5 to 7 range of the
+        Retrieve the background source plots for the 0.5 to 7 range of the
         'jet' and 'core' data sets and display them on the same plot:
 
         >>> splot1 = get_bkg_source_plot(id='jet', lo=0.5, hi=7)
@@ -11252,7 +11252,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_data`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11371,7 +11371,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_source`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11446,7 +11446,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_model`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11498,7 +11498,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11566,7 +11566,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_model`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11624,7 +11624,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_resid`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11690,7 +11690,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_ratio`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11755,7 +11755,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_ratio`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11817,7 +11817,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_chisqr`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11870,7 +11870,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_fit`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -11935,7 +11935,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_model`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12047,7 +12047,7 @@ class Session(sherpa.ui.utils.Session):
            than use the values from the last time the function was
            run.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12205,7 +12205,7 @@ class Session(sherpa.ui.utils.Session):
            than use the values from the last time the function was
            run.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12305,7 +12305,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the previous values. The default is
            ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12363,7 +12363,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_fit_ratio`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12437,7 +12437,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_fit_resid`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -12510,7 +12510,7 @@ class Session(sherpa.ui.utils.Session):
            Set to ``True`` to use the values calculated by the last
            call to `plot_bkg_fit_delchi`. The default is ``False``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
