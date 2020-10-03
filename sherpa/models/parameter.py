@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,8 @@ import logging
 import numpy
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ParameterErr
+from sherpa.utils import formatting
+
 
 warning = logging.getLogger(__name__).warning
 
@@ -236,7 +238,6 @@ class Parameter(NoNewAttributesAfterInit):
         return self._default_max
     default_max = property(_get_default_max, _make_set_limit('_default_max'))
 
-
     #
     # 'frozen' property
     #
@@ -353,6 +354,57 @@ class Parameter(NoNewAttributesAfterInit):
                 (str(self.val), str(self.min), str(self.max), self.units,
                  self.frozen, linkstr, str(self.default_val),
                  str(self.default_min), str(self.default_max)))
+
+    # Support 'rich display' representations
+    #
+    def _val_to_html(self, v):
+        """Convert a value to a string for use by the HTML output.
+
+        The conversion to a string uses the Python defaults for most
+        cases. The units field is currently used to determine whether
+        to convert angles to factors of pi (this probably should be
+        done by a subclass or mixture).
+        """
+
+        # The use of equality rather than some form of tolerance
+        # should be okay here.
+        #
+        if v == hugeval:
+            return 'MAX'
+        elif v == -hugeval:
+            return '-MAX'
+        elif v == tinyval:
+            return 'TINY'
+        elif v == -tinyval:
+            return '-TINY'
+
+        if self.units in ['radian', 'radians']:
+            tau = 2 * numpy.pi
+
+            if v == tau:
+                return '2&#960;'
+            elif v == -tau:
+                return '-2&#960;'
+            elif v == numpy.pi:
+                return '&#960;'
+            elif v == -numpy.pi:
+                return '-&#960;'
+
+        return str(v)
+
+    def _units_to_html(self):
+        """Convert the unit to HTML.
+
+        This is provided for future expansion/experimentation,
+        and is not guaranteed to remain.
+        """
+
+        return self.units
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the parameter
+        """
+        return html_parameter(self)
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
@@ -502,3 +554,57 @@ class BinaryOpParameter(CompositeParameter):
 
     def eval(self):
         return self.op(self.lhs.val, self.rhs.val)
+
+
+# Notebook representation
+#
+def html_parameter(par):
+    """Construct the HTML to display the parameter."""
+
+    # Note that as this is a specialized table we do not use
+    # formatting.html_table but create everything directly.
+    #
+    def addtd(val):
+        "Use the parameter to convert to HTML"
+        return '<td>{}</td>'.format(par._val_to_html(val))
+
+    out = '<table class="model">'
+    out += '<thead><tr>'
+    cols = ['Component', 'Parameter', 'Thawed', 'Value',
+            'Min', 'Max', 'Units']
+    for col in cols:
+        out += '<th>{}</th>'.format(col)
+
+    out += '</tr></thead><tbody><tr>'
+
+    out += '<th class="model-odd">{}</th>'.format(par.modelname)
+    out += '<td>{}</td>'.format(par.name)
+
+    linked = par.link is not None
+    if linked:
+        out += "<td>linked</td>"
+    else:
+        out += '<td><input disabled type="checkbox"'
+        if not par.frozen:
+            out += ' checked'
+        out += '></input></td>'
+
+    out += addtd(par.val)
+    if linked:
+        # 8592 is single left arrow
+        # 8656 is double left arrow
+        #
+        val = formatting.clean_bracket(par.link.fullname)
+        out += '<td colspan="2">&#8656; {}</td>'.format(val)
+
+    else:
+        out += addtd(par.min)
+        out += addtd(par.max)
+
+    out += '<td>{}</td>'.format(par._units_to_html())
+    out += '</tr>'
+
+    out += '</tbody></table>'
+
+    ls = ['<details open><summary>Parameter</summary>' + out + '</details>']
+    return formatting.html_from_sections(par, ls)
