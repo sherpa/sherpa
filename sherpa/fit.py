@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -29,6 +29,7 @@ from numpy import arange, array, abs, iterable, sqrt, where, \
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
+from sherpa.utils import formatting
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
@@ -116,6 +117,10 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
     def __str__(self):
         return print_fields(self._fields, vars(self))
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the statistics."""
+        return html_statinfo(self)
 
     def format(self):
         """Return a string representation of the statistic.
@@ -296,6 +301,10 @@ class FitResults(NoNewAttributesAfterInit):
     def __str__(self):
         return print_fields(self._fields, vars(self))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the fit results."""
+        return html_fitresults(self)
+
     def format(self):
         """Return a string representation of the fit results.
 
@@ -443,6 +452,10 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
     def __str__(self):
         return print_fields(self._fields, vars(self))
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the error estimates."""
+        return html_errresults(self)
 
     def format(self):
         """Return a string representation of the error estimates.
@@ -1048,7 +1061,7 @@ class Fit(NoNewAttributesAfterInit):
         self.thaw_indices = \
             tuple([i for i, par in enumerate(self.model.pars) if not \
                    par.frozen])
-        
+
     def __setstate__(self, state):
         self.__dict__.update(state)
 
@@ -1588,3 +1601,208 @@ class Fit(NoNewAttributesAfterInit):
             self.estmethod.remin = oldremin
 
         return results
+
+
+# Notebook representation
+#
+def html_fitresults(fit):
+    """Construct the HTML to display the FitResults object."""
+
+    has_covar = fit.covar is not None
+
+    ls = []
+
+    if not fit.succeeded:
+        out = '<p class="failed">'
+        out += '<strong>The fit failed:</strong> '
+        out += fit.message
+        out += '.</p>'
+        ls.append(out)
+
+    # The parameter values
+    #
+    header = ['Parameter', 'Best-fit value']
+    if has_covar:
+        header.append('Approximate error')
+
+    rows = []
+    if has_covar:
+        for pname, pval, perr in zip(fit.parnames, fit.parvals,
+                                     sqrt(fit.covar.diagonal())):
+            rows.append((pname, '{:12g}'.format(pval),
+                         '&#177; {:12g}'.format(perr)))
+    else:
+        for pname, pval in zip(fit.parnames, fit.parvals):
+            rows.append((pname, '{:12g}'.format(pval)))
+
+    out = formatting.html_table(header, rows, classname='fit',
+                                rowcount=False,
+                                summary='Fit parameters')
+    ls.append(out)
+
+    # Metadata/summary
+    #
+    meta = []
+
+    if fit.datasets is not None:
+        key = 'Dataset'
+        if len(fit.datasets) > 1:
+            key += 's'
+
+        meta.append((key,
+                     ','.join([str(d) for d in fit.datasets])))
+
+    rows = [('Method', 'methodname', False),
+            ('Statistic', 'statname', False)]
+
+    if fit.itermethodname != 'none':
+        # TODO: what label
+        rows.append(('Iteration method', 'itermethodname', False))
+
+    rows.append(('Final statistic', 'statval', True))
+    if fit.nfev is not None:
+        rows.append(('Number of evaluations', 'nfev', False))
+
+    if fit.rstat is not None:
+        rows.append(('Reduced statistic', 'rstat', True))
+    if fit.qval is not None:
+        rows.append(('Probability (Q-value)', 'qval', True))
+
+    rows.extend([('Initial statistic', 'istatval', True),
+                 ('&#916; statistic', 'dstatval', True),
+                 ('Number of data points', 'numpoints', False),
+                 ('Degrees of freedom', 'dof', False)])
+
+    for lbl, field, is_float in rows:
+        val = getattr(fit, field)
+        if is_float:
+            val = '{:g}'.format(val)
+
+        meta.append((lbl, val))
+
+    ls.append(formatting.html_section(meta, summary='Summary'))
+
+    return formatting.html_from_sections(fit, ls)
+
+
+def html_errresults(errs):
+    """Construct the HTML to display the FitResults object."""
+
+    ls = []
+
+    # The error estimates
+    #
+    header = ['Parameter', 'Best-fit value', 'Lower Bound',
+              'Upper Bound']
+
+    rows = []
+
+    def display(limit):
+        """Display the limit
+
+        Should we try to HTML-ify the open interval?
+        """
+
+        if limit is None:
+            return '-----'
+        elif is_iterable(limit):
+            return list_to_open_interval(limit)
+        else:
+            return '{:12g}'.format(limit)
+
+    for pname, pval, pmin, pmax in zip(errs.parnames, errs.parvals, errs.parmins, errs.parmaxes):
+        rows.append((pname, '{:12g}'.format(pval),
+                     display(pmin), display(pmax)))
+
+    summary = '{} {:g}&#963; ({:2g}%)'.format(errs.methodname,
+                                              errs.sigma,
+                                              errs.percent)
+    summary += ' bounds'
+
+    out = formatting.html_table(header, rows,
+                                rowcount=False,
+                                summary=summary)
+    ls.append(out)
+
+    # Metadata/summary
+    #
+    meta = []
+
+    if errs.datasets is not None:
+        key = 'Dataset'
+        if len(errs.datasets) > 1:
+            key += 's'
+
+        meta.append((key,
+                     ','.join([str(d) for d in errs.datasets])))
+
+    rows = []
+    if errs.iterfitname is not None and errs.iterfitname != 'none':
+        rows.append(('Iteration method', 'iterfitname'))
+
+    rows.extend([('Fitting Method', 'fitname'),
+                 ('Statistic', 'statname')])
+
+    for lbl, field in rows:
+        meta.append((lbl, getattr(errs, field)))
+
+    ls.append(formatting.html_section(meta, summary='Summary'))
+    return formatting.html_from_sections(errs, ls)
+
+
+def html_statinfo(stats):
+
+    meta = []
+
+    # This differs from the format method, both because of how the
+    # information is presented (a row for background separate from
+    # the data, which makes it easier to handle), but also because
+    # it doesn't assume singular source and background values (if
+    # both are set). It is not clear what combinations are supported.
+    #
+    if stats.ids is not None:
+
+        key = 'Dataset'
+        if len(stats.ids) > 1:
+            key += 's'
+            val = str(stats.ids).strip("()")
+        else:
+            val = stats.ids[0]
+
+        meta.append((key, val))
+
+        if stats.bkg_ids is not None:
+            # If there are multiple source datasets then the
+            # background ids would need to be mapped to the
+            # source dataset, but leave that for a later revision,
+            # as it isn't clear it is supported.
+            #
+            key = 'Background'
+            if len(stats.bkg_ids) > 1:
+                key += 's'
+                val = str(stats.bkg_ids).strip("()")
+            else:
+                val = stats.bkg_ids[0]
+
+            meta.append((key, val))
+
+    rows = [('Statistic', 'statname', False),
+            ('Value', 'statval', True),
+            ('Number of points', 'numpoints', False),
+            ('Degrees of freedom', 'dof', False)]
+
+    if stats.rstat is not None:
+        rows.append(('Reduced statistic', 'rstat', True))
+    if stats.qval is not None:
+        rows.append(('Probability (Q-value)', 'qval', True))
+
+    for lbl, field, is_float in rows:
+        val = getattr(stats, field)
+        if is_float:
+            val = '{:g}'.format(val)
+
+        meta.append((lbl, val))
+
+    ls = [formatting.html_section(meta, open_block=True,
+                                  summary='Statistics summary')]
+    return formatting.html_from_sections(stats, ls)
