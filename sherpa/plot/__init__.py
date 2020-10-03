@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -22,10 +22,11 @@
 A visualization interface to Sherpa
 """
 
-import numpy
 import logging
 import importlib
 import sys
+
+import numpy
 
 from sherpa.utils import NoNewAttributesAfterInit, erf, SherpaFloat, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
@@ -36,7 +37,8 @@ from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
 from sherpa import get_config
 from configparser import ConfigParser
 
-warning = logging.getLogger(__name__).warning
+lgr = logging.getLogger(__name__)
+warning = lgr.warning
 
 # TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
@@ -456,6 +458,10 @@ class HistogramPlot(Histogram):
                  self.title,
                  self.histo_prefs))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the histogram plot."""
+        return backend.as_html_histogram(self)
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
@@ -532,6 +538,10 @@ class PDFPlot(HistogramPlot):
                                         suppress_small=False)
 
         return ('points = %s\n' % (points) + HistogramPlot.__str__(self))
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the PDF plot."""
+        return backend.as_html_pdf(self)
 
     def prepare(self, points, bins=12, normed=True, xlabel="x", name="x"):
         """Create the data to plot.
@@ -623,6 +633,10 @@ class CDFPlot(Plot):
                  self.title,
                  self.plot_prefs))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the CDF plot."""
+        return backend.as_html_cdf(self)
+
     def prepare(self, points, xlabel="x", name="x"):
         """Create the data to plot.
 
@@ -706,6 +720,10 @@ class LRHistogram(HistogramPlot):
         return '\n'.join(['ratios = %s' % ratios,
                           'lr = %s' % str(self.lr),
                           HistogramPlot.__str__(self)])
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the LRHistogram plot."""
+        return backend.as_html_lr(self)
 
     def prepare(self, ratios, bins, niter, lr, ppp):
         "Create the data to plot"
@@ -1015,6 +1033,10 @@ class DataPlot(Plot):
                  self.title,
                  self.plot_prefs))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the data plot."""
+        return backend.as_html_data(self)
+
     def prepare(self, data, stat=None):
         """Create the data to plot
 
@@ -1268,6 +1290,10 @@ class DataContour(Contour):
                  self.levels,
                  self.contour_prefs))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the contour plot."""
+        return backend.as_html_datacontour(self)
+
     def prepare(self, data, stat=None):
         (self.x0, self.x1, self.y, self.xlabel,
          self.ylabel) = data.to_contour()
@@ -1386,6 +1412,10 @@ class ModelPlot(Plot):
                  self.ylabel,
                  self.title,
                  self.plot_prefs))
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the model plot."""
+        return backend.as_html_model(self)
 
     def prepare(self, data, model, stat=None):
         """Create the data to plot
@@ -1612,6 +1642,10 @@ class ModelContour(Contour):
                  self.levels,
                  self.contour_prefs))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the model contour plot."""
+        return backend.as_html_modelcontour(self)
+
     def prepare(self, data, model, stat):
         (self.x0, self.x1, self.y, self.xlabel,
          self.ylabel) = data.to_contour(yfunc=model)
@@ -1697,6 +1731,10 @@ class FitPlot(Plot):
                  model_title,
                  self.modelplot))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the fit plot."""
+        return backend.as_html_fit(self)
+
     def prepare(self, dataplot, modelplot):
         """Create the data to plot
 
@@ -1773,6 +1811,10 @@ class FitContour(Contour):
                  self.datacontour,
                  model_title,
                  self.modelcontour))
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the fit contour plot."""
+        return backend.as_html_fitcontour(self)
 
     def prepare(self, datacontour, modelcontour):
         self.datacontour = datacontour
@@ -2128,6 +2170,10 @@ class Confidence1D(DataPlot):
                  self.fac,
                  self.log))
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the confidence 1D plot."""
+        return backend.as_html_contour1d(self)
+
     def prepare(self, min=None, max=None, nloop=20,
                 delv=None, fac=1, log=False, numcores=None):
         """Set the data to plot.
@@ -2327,6 +2373,10 @@ class Confidence2D(DataContour, Point):
                  self.parval0,
                  self.parval1,
                  self.levels))
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the confidence 2D plot."""
+        return backend.as_html_contour2d(self)
 
     def prepare(self, min=None, max=None, nloop=(10, 10),
                 delv=None, fac=4, log=(False, False),
