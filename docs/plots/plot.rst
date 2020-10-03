@@ -7,7 +7,7 @@ The sherpa.plot module
 .. automodule:: sherpa.plot
 
    .. rubric:: Classes
-   
+
    .. autosummary::
       :toctree: api
 
@@ -38,6 +38,10 @@ The sherpa.plot module
       ResidPlot
       SourcePlot
       ComponentSourcePlot
+      ModelHistogramPlot
+      SourceHistogramPlot
+      ComponentModelHistogramPlot
+      ComponentSourceHistogramPlot
       SplitPlot
       JointPlot
       Point
@@ -45,6 +49,5 @@ The sherpa.plot module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::   Confidence1D IntervalProjection IntervalUncertainty Confidence2D RegionProjection RegionUncertainty Contour DataContour PSFContour FitContour ModelContour RatioContour ResidContour SourceContour Histogram Plot DataPlot PSFPlot FitPlot ModelPlot ChisqrPlot ComponentModelPlot DelchiPlot RatioPlot ResidPlot SourcePlot ComponentSourcePlot SplitPlot JointPlot Point
+.. inheritance-diagram::   Confidence1D IntervalProjection IntervalUncertainty Confidence2D RegionProjection RegionUncertainty Contour DataContour PSFContour FitContour ModelContour RatioContour ResidContour SourceContour Histogram Plot DataPlot PSFPlot FitPlot ModelPlot ChisqrPlot ComponentModelPlot DelchiPlot RatioPlot ResidPlot SourcePlot ComponentSourcePlot ModelHistogramPlot SourceHistogramPlot ComponentModelHistogramPlot ComponentSourceHistogramPlot SplitPlot JointPlot Point
    :parts: 1
-   

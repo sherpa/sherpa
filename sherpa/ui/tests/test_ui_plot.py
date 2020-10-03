@@ -20,16 +20,32 @@
 """
 Basic tests of the plot functionality in sherpa.ui. The idea is that
 these - or most of them - can be run even when there is no plot backend.
+
+There is a start to make these tests run on both Session classes,
+but there's much to do.
 """
 
-from sherpa import ui
+import logging
 
-from sherpa.plot import DataPlot, FitPlot, ModelPlot
-
-from sherpa.stats import Chi2Gehrels
-from sherpa.utils.testing import requires_plotting
+import numpy as np
 
 import pytest
+
+from sherpa import ui
+from sherpa.ui.utils import Session as BaseSession
+from sherpa.astro.ui.utils import Session as AstroSession
+
+from sherpa.data import Data1D, Data1DInt, Data2D
+from sherpa.models import basic
+from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
+    PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
+    DataContour, ModelContour, SourceContour, ResidContour, \
+    RatioContour, FitContour, PSFContour, LRHistogram, \
+    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot
+
+from sherpa.stats import Chi2Gehrels
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr
+from sherpa.utils.testing import requires_plotting, requires_pylab
 
 
 _data_x = [10, 20, 40, 90]
@@ -119,10 +135,10 @@ def test_get_fit_plot(idval):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-@pytest.mark.parametrize("get_prefs", [ui.get_data_plot_prefs,
-                                       ui.get_model_plot_prefs])
-def test_plot_prefs_xxx(get_prefs):
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["data", "model"])
+@pytest.mark.parametrize("arg", [None, 1, 'foo'])
+def test_plot_prefs_xxx(session, ptype, arg):
     """Can we change and reset a preference.
 
     Pick the 'xlog' field, since the assumption is that: a) this
@@ -134,19 +150,60 @@ def test_plot_prefs_xxx(get_prefs):
     these tests in this case.
     """
 
-    prefs1 = get_prefs()
+    s = session()
+
+    get_prefs = getattr(s, 'get_{}_plot_prefs'.format(ptype))
+
+    prefs1 = get_prefs(arg)
     assert not prefs1['xlog']
     prefs1['xlog'] = True
 
-    prefs2 = get_prefs()
+    prefs2 = get_prefs(arg)
     assert prefs2['xlog']
 
-    ui.clean()
-    prefs3 = get_prefs()
+    s.clean()
+    prefs3 = get_prefs(arg)
     assert prefs1['xlog']
     assert prefs2['xlog']
     assert not prefs3['xlog']
 
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_prefs_model_data1dint(session):
+    """Data1DInt model class is different to Data1D
+    """
+
+    s = session()
+
+    get_prefs = getattr(s, 'get_model_plot_prefs')
+
+    s.load_arrays(1, [1, 2, 4], [2, 3, 5], [4, 5, 10],
+                  Data1DInt)
+
+    s.load_arrays(2, [1, 2, 4], [4, 5, 10],
+                  Data1D)
+
+    # when there's no dataset it defaults to the plot, not histogram
+    # prefs
+    prefs = get_prefs('bob')
+    assert 'xerrorbars' in prefs
+    assert 'xaxis' in prefs
+    assert 'ratioline' in prefs
+
+    # It's not easy to check the difference between
+    # point and histogram preferences. Some differences
+    # are xerrorbars, xaxis, and ratioline.
+    #
+    prefs = get_prefs()
+    assert 'xerrorbars' not in prefs
+    assert 'xaxis' not in prefs
+    assert 'ratioline' not in prefs
+
+    prefs = get_prefs(2)
+    assert 'xerrorbars' in prefs
+    assert 'xaxis' in prefs
+    assert 'ratioline' in prefs
 
 def change_example(idval):
     """Change the example y values (created by setup_example)"""
@@ -765,7 +822,6 @@ def test_prefs_change_session_objects_fit():
     assert plotobj.modelplot is ui._session._modelplot
 
 
-
 @pytest.mark.parametrize("plotfunc", [ui.plot_cdf, ui.plot_pdf])
 def test_plot_xdf(plotfunc):
     """Very basic check we can call plot_cdf/pdf
@@ -775,6 +831,169 @@ def test_plot_xdf(plotfunc):
 
     pvals = [0.1, 0.2, 0.1, 0.4, 0.3, 0.2, 0.1, 0.6]
     plotfunc(pvals)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_psf(session):
+    """Very basic check we can call plot_psf/get_psf_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.arange(10, 40, 2)
+    y = np.ones(x.size)
+    s.load_arrays(1, x, y)
+
+    psfmdl = s.create_model_component('gauss1d', 'psfmdl')
+    psfmdl.fwhm = 5
+    psfmdl.ampl = 2
+    s.load_psf('psf', psfmdl)
+    s.set_psf('psf')
+
+    s.plot_psf()
+
+    plotobj = s.get_psf_plot()
+    assert isinstance(plotobj, PSFPlot)
+    assert plotobj.title == 'gauss1d.psfmdl'
+    assert plotobj.xlabel == 'x'
+    assert plotobj.ylabel == 'y'
+    assert plotobj.xerr is None
+    assert plotobj.yerr is None
+    assert plotobj.x == pytest.approx(x)
+
+    yexp = psfmdl(x)
+    assert plotobj.y == pytest.approx(yexp)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_psf_plot_recalc(session):
+    """get_psf_plot with recalc=False
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.arange(10, 40, 2)
+    y = np.ones(x.size)
+    s.load_arrays(1, x, y)
+
+    psfmdl = s.create_model_component('gauss1d', 'psfmdl')
+    psfmdl.fwhm = 5
+    psfmdl.ampl = 2
+    s.load_psf('psf', psfmdl)
+    s.set_psf('psf')
+
+    yexp = psfmdl(x)
+
+    # ensure the plotobj is set
+    s.get_psf_plot()
+
+    # Change the PSF
+    psfmdl.fwhm = 2
+    psfmdl.ampl = 10
+
+    yexp2 = psfmdl(x)
+
+    # sanity check
+    assert (yexp != yexp2).all()
+
+    plotobj = s.get_psf_plot(recalc=False)
+    assert plotobj.y == pytest.approx(yexp)
+
+    plotobj = s.get_psf_plot()
+    assert plotobj.y == pytest.approx(yexp2)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_kernel(session, caplog):
+    """Very basic check we can call plot_kernel/get_kernel_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.arange(10, 40, 2)
+    y = np.ones(x.size)
+    s.load_arrays(1, x, y)
+
+    psfmdl = s.create_model_component('gauss1d', 'psfmdl')
+    psfmdl.fwhm = 5
+    psfmdl.ampl = 2
+    s.load_psf('psf', psfmdl)
+    s.set_psf('psf')
+
+    # TODO: check screen putput
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        s.plot_kernel()
+
+    assert len(caplog.records) == 1
+    logname, loglvl, logmsg = caplog.record_tuples[0]
+    assert logname == 'sherpa.instrument'
+    assert loglvl == logging.INFO
+    assert logmsg == 'PSF frac: 1.0'
+
+    plotobj = s.get_kernel_plot()
+    assert isinstance(plotobj, PSFKernelPlot)
+    assert plotobj.title == 'PSF Kernel'
+    assert plotobj.xlabel == 'x'
+    assert plotobj.ylabel == 'y'
+    assert plotobj.xerr is None
+    assert plotobj.yerr is None
+    assert plotobj.x == pytest.approx(x)
+
+    yexp = psfmdl(x)
+    yexp /= yexp.sum()
+    assert plotobj.y == pytest.approx(yexp)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_kernel_plot_recalc(session):
+    """get_kernel_plot with recalc=False
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.arange(10, 40, 2)
+    y = np.ones(x.size)
+    s.load_arrays(1, x, y)
+
+    psfmdl = s.create_model_component('gauss1d', 'psfmdl')
+    psfmdl.fwhm = 5
+    psfmdl.ampl = 2
+    s.load_psf('psf', psfmdl)
+    s.set_psf('psf')
+
+    yexp = psfmdl(x)
+    yexp /= yexp.sum()
+
+    # ensure the plotobj is set
+    s.get_kernel_plot()
+
+    # Change the PSF
+    psfmdl.fwhm = 2
+    psfmdl.ampl = 10
+
+    yexp2 = psfmdl(x)
+    yexp2 /= yexp2.sum()
+
+    # sanity check
+    assert (yexp != yexp2).all()
+
+    plotobj = s.get_kernel_plot(recalc=False)
+    assert plotobj.y == pytest.approx(yexp)
+
+    plotobj = s.get_kernel_plot()
+    assert plotobj.y == pytest.approx(yexp2)
 
 
 @requires_plotting
@@ -840,3 +1059,1582 @@ def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc):
     #
     assert not rprefs['ylog']
     assert dprefs['ylog']
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("plottype", ["plot", "contour"])
+def test_plot_contour_error_out_invalid(plottype, session):
+    """plot()/contour() error out if argument name is invalid
+
+    When it's not the first argument it will cause an error
+    because of an invaid identifier.
+    """
+
+    s = session()
+    func = getattr(s, plottype)
+    with pytest.raises(ArgumentErr) as exc:
+        func("fooflan flim flam")
+
+    emsg = "'fooflan flim flam' is not a valid plot type"
+    assert str(exc.value) == emsg
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_single(session):
+    """Can we call plot() with a single plot type?
+
+    There's no real way to test this without a backend.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+
+    x = np.asarray([10, 20, 30, 45, 55, 70])
+    y = np.asarray([5, 20, 15, 2, 17, 16])
+
+    s.load_arrays(1, x, y)
+    s.set_source(basic.Const1D())
+
+    s.plot("data")
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_title() == ''
+    assert ax.xaxis.get_label().get_text() == 'x'
+    assert ax.yaxis.get_label().get_text() == 'y'
+
+    plt.close()
+
+    s.plot("model", 1)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_title() == 'Model'
+    assert ax.xaxis.get_label().get_text() == 'x'
+    assert ax.yaxis.get_label().get_text() == 'y'
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_multiple(session):
+    """Can we call plot() with multiple plot types?
+
+    Also tests out sending in a kwarg.
+
+    There's no real way to test this without a backend.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    xlo = np.asarray([10, 20, 30, 50, 55])
+    xhi = np.asarray([20, 30, 45, 55, 70])
+    y = np.asarray([20, 15, 2, 17, 16])
+
+    # use Data1DInt as test_plot_single used Data1D
+    #
+    s.load_arrays('tst', xlo, xhi, y, Data1DInt)
+
+    mdl = s.create_model_component('const1d', 'mdl')
+    s.set_source('tst', mdl)
+
+    # pick an odd number to plot
+    s.plot("data", "tst", "model", "tst",
+           "fit", "tst", "source", "tst",
+           "ratio", "tst", alpha=0.8)
+
+    # Note: I wanted to try source_component but it is not
+    # clear it works when the id is not the default.
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 5
+
+    for i, (ax, title, ylabel) in enumerate(zip(fig.axes,
+                                                ['', 'Model', '', 'Source',
+                                                 'Ratio of Data to Model'],
+                                                ['y', 'y', 'y', 'y',
+                                                 'Data / Model']),
+                                    1):
+
+        assert ax.get_geometry() == (2, 3, i)
+        assert ax.get_title() == title
+        assert ax.xaxis.get_label().get_text() == 'x'
+        assert ax.yaxis.get_label().get_text() == ylabel
+
+        assert len(ax.lines) > 0
+        assert ax.lines[0].get_alpha() == 0.8
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_contour_single(session):
+    """Can we call contour() with a single plot type?
+
+    There's no real way to test this without a backend.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    mdl = s.create_model_component('gauss2d', 'mdl')
+    mdl.xpos = 10
+    mdl.ypos = 0
+    mdl.fwhm = 3
+    mdl.ampl = 100
+
+    s.set_source(mdl)
+
+    s.contour("data")
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_title() == ''
+    assert ax.xaxis.get_label().get_text() == 'x0'
+    assert ax.yaxis.get_label().get_text() == 'x1'
+
+    plt.close()
+
+    s.contour("model", 1)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_title() == 'Model'
+    assert ax.xaxis.get_label().get_text() == 'x0'
+    assert ax.yaxis.get_label().get_text() == 'x1'
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_contour_multiple(session):
+    """Can we call contour() with multiple plot types?
+
+    There's no real way to test this without a backend.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    mdl = s.create_model_component('gauss2d', 'mdl')
+    mdl.xpos = 10
+    mdl.ypos = 0
+    mdl.fwhm = 3
+    mdl.ampl = 100
+
+    s.set_source(mdl)
+
+    s.contour("data", "model", "source", "fit", "ratio")
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 5
+
+    for i, (ax, title) in enumerate(zip(fig.axes,
+                                        ['', 'Model', 'Source', '',
+                                         'Ratio of Data to Model']),
+                                    1):
+
+        assert ax.get_geometry() == (2, 3, i)
+        assert ax.get_title() == title
+        assert ax.xaxis.get_label().get_text() == 'x0'
+        assert ax.yaxis.get_label().get_text() == 'x1'
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("plotfunc,title,pcls",
+                         [("data", "", DataContour),
+                          ("model", "Model", ModelContour),
+                          ("source", "Source", SourceContour),
+                          ("resid", "Residuals", ResidContour),
+                          ("ratio", "Ratio of Data to Model", RatioContour),
+                          ("fit", "", FitContour),
+                          ("fit_resid", None, None)])
+def test_contour_xxx(plotfunc, title, pcls, session):
+    """Check we can call contour_xxx()/get_xxx_contour().
+
+    There's no real way to test this without a backend.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    mdl = s.create_model_component('gauss2d', 'mdl')
+    mdl.xpos = 10
+    mdl.ypos = 0
+    mdl.fwhm = 3
+    mdl.ampl = 100
+
+    s.set_source(mdl)
+
+    getattr(s, "contour_" + plotfunc)()
+
+    fig = plt.gcf()
+
+    if plotfunc == 'fit_resid':
+        assert len(fig.axes) == 2
+
+        for i, (ax, title) in enumerate(zip(fig.axes,
+                                            ['', 'Residuals']),
+                                        1):
+
+            assert ax.get_geometry() == (2, 1, i)
+            assert ax.get_title() == title
+            assert ax.xaxis.get_label().get_text() == 'x0'
+            assert ax.yaxis.get_label().get_text() == 'x1'
+
+    else:
+        assert len(fig.axes) == 1
+
+        ax = fig.axes[0]
+        assert ax.get_geometry() == (1, 1, 1)
+        assert ax.get_title() == title
+        assert ax.xaxis.get_label().get_text() == 'x0'
+        assert ax.yaxis.get_label().get_text() == 'x1'
+
+        plot = getattr(s, "get_{}_contour".format(plotfunc))()
+        assert isinstance(plot, pcls)
+
+        if plotfunc == 'fit':
+            assert plot.datacontour.title == ''
+            assert plot.modelcontour.title == 'Model'
+        else:
+            assert plot.title == title
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["data", "model"])
+def test_get_xxx_contour_prefs_pylab(ptype, session):
+
+    s = session()
+    p = getattr(s, "get_{}_contour_prefs".format(ptype))()
+    assert isinstance(p, dict)
+    assert p == {'xlog': False, 'ylog': False,
+                 'alpha': None, 'linewidths': None, 'colors': None}
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_scatter_plot_empty(session):
+    """Very basic check we can call get_scatter_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    p = s.get_scatter_plot()
+    assert isinstance(p, ScatterPlot)
+    for f in ['x', 'y', 'xerr', 'yerr', 'xlabel', 'ylabel', 'title']:
+        assert getattr(p, f) is None
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_scatter_plot(session):
+    """Very basic check we can call plot_scatter/get_scatter_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+
+    x = [1, 5, 10]
+    y = [-5, 2, -3]
+    s.plot_scatter(x, y)
+
+    p = s.get_scatter_plot()
+    assert isinstance(p, ScatterPlot)
+
+    assert p.x == pytest.approx(x)
+    assert p.y == pytest.approx(y)
+    assert p.xerr is None
+    assert p.yerr is None
+    assert p.xlabel == 'x'
+    assert p.ylabel == 'y'
+    assert p.title == 'Scatter: (x,y)'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_scatter_plot_labels_noname(session):
+    """Very basic check we can call plot_scatter/get_scatter_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+
+    x = [1, 5, 10]
+    y = [-5, 2, -3]
+    s.plot_scatter(x, y, xlabel='a x', ylabel='43')
+
+    p = s.get_scatter_plot()
+    assert isinstance(p, ScatterPlot)
+
+    assert p.x == pytest.approx(x)
+    assert p.y == pytest.approx(y)
+    assert p.xerr is None
+    assert p.yerr is None
+    assert p.xlabel == 'a x'
+    assert p.ylabel == '43'
+    assert p.title == 'Scatter: (x,y)'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_scatter_plot_labels(session):
+    """Very basic check we can call plot_scatter/get_scatter_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+
+    x = [1, 5, 10]
+    y = [-5, 2, -3]
+    s.plot_scatter(x, y, xlabel='a x', ylabel='43', name='Fred Fred')
+
+    p = s.get_scatter_plot()
+    assert isinstance(p, ScatterPlot)
+
+    assert p.x == pytest.approx(x)
+    assert p.y == pytest.approx(y)
+    assert p.xerr is None
+    assert p.yerr is None
+    assert p.xlabel == 'a x'
+    assert p.ylabel == '43'
+    assert p.title == 'Scatter: Fred Fred'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_trace_plot_empty(session):
+    """Very basic check we can call get_trace_plot
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+    p = s.get_trace_plot()
+    assert isinstance(p, TracePlot)
+    for f in ['x', 'y', 'xerr', 'yerr', 'xlabel', 'ylabel', 'title']:
+        assert getattr(p, f) is None
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_trace_plot(session):
+    """Very basic check we can call get_trace_plot/plot_trace
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+
+    y = [-5, 2, -3]
+    s.plot_trace(y)
+
+    p = s.get_trace_plot()
+    assert isinstance(p, TracePlot)
+
+    assert p.x == pytest.approx([0, 1, 2])
+    assert p.y == pytest.approx(y)
+    assert p.xerr is None
+    assert p.yerr is None
+    assert p.xlabel == 'iteration'
+    assert p.ylabel == 'x'
+    assert p.title == 'Trace: x'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_trace_plot_labels_noname(session):
+    """Very basic check we can call get_trace_plot/plot_trace
+
+    Note that the xlabel setting doesn't seem to do anything.
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+
+    y = [-5, 2, -3]
+    s.plot_trace(y, xlabel='stats')
+
+    p = s.get_trace_plot()
+    assert isinstance(p, TracePlot)
+
+    assert p.x == pytest.approx([0, 1, 2])
+    assert p.y == pytest.approx(y)
+    assert p.xerr is None
+    assert p.yerr is None
+    assert p.xlabel == 'iteration'
+    assert p.ylabel == 'x'
+    assert p.title == 'Trace: x'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_trace_plot_labels(session):
+    """Very basic check we can call get_trace_plot/plot_trace
+
+    Note that the xlabel setting doesn't seem to do anything
+    and the name is used interestingly.
+
+    This can be run even without a plotting backend available.
+    """
+
+    s = session()
+
+    y = [-5, 2, -3]
+    s.plot_trace(y, xlabel='stats', name='Awesome sauce')
+
+    p = s.get_trace_plot()
+    assert isinstance(p, TracePlot)
+
+    assert p.x == pytest.approx([0, 1, 2])
+    assert p.y == pytest.approx(y)
+    assert p.xerr is None
+    assert p.yerr is None
+    assert p.xlabel == 'iteration'
+    assert p.ylabel == 'Awesome sauce'
+    assert p.title == 'Trace: Awesome sauce'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_cdf_plot_empty(session):
+
+    s = session()
+    p = s.get_cdf_plot()
+    assert isinstance (p, CDFPlot)
+    for f in ["points", "x", "y", "median", "lower", "upper", "xlabel", "ylabel", "title"]:
+        assert getattr(p, f) is None
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_cdf_replot_no_data(session):
+    """what does replot=True do for plot_cdf?
+
+    The code doesn't check for this evantuality,
+    so errors out (depends on the backend).
+    """
+
+    s = session()
+
+    x = np.asarray([2, 8, 4, 6])
+
+    # error can depend on matplotlib version
+    with pytest.raises(ValueError):
+        s.plot_cdf(x, replot=True)
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_cdf_replot(session):
+    """what does replot=True do for plot_cdf?
+
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+
+    z = np.asarray([1, 2, 3, 5])
+    s.plot_cdf(z, xlabel='fo')
+
+    s.plot_cdf(np.asarray([-10, -5, 0]), xlabel='ba', replot=True)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.xaxis.get_label().get_text() == 'fo'
+
+    assert len(ax.lines) == 4
+    line = ax.lines[0]
+
+    assert line.get_xdata() == pytest.approx(z)
+    assert line.get_ydata() == pytest.approx([0.25, 0.5, 0.75, 1])
+
+    plt.close()
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_cdf(session):
+
+    s = session()
+
+    x = np.asarray([20, 10, 14, 15, 12, 16, 17])
+    s.plot_cdf(x)
+
+    p = s.get_cdf_plot()
+    assert isinstance (p, CDFPlot)
+
+    xsort = np.sort(x)
+    assert p.points == pytest.approx(x)
+    assert p.x == pytest.approx(xsort)
+    assert p.y == pytest.approx(np.arange(1, 8) / 7)
+    assert p.median == pytest.approx(15.0)
+    assert p.lower == pytest.approx(11.903866)
+    assert p.upper == pytest.approx(17.144201)
+    assert p.xlabel == 'x'
+    assert p.ylabel == 'p(<=x)'
+    assert p.title == 'CDF: x'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_cdf_labels_noname(session):
+
+    s = session()
+
+    x = np.asarray([20, 10, 14, 15, 12, 16, 17])
+    s.plot_cdf(x, xlabel='a b')
+
+    p = s.get_cdf_plot()
+    assert isinstance (p, CDFPlot)
+
+    assert p.xlabel == 'a b'
+    assert p.ylabel == 'p(<=a b)'
+    assert p.title == 'CDF: x'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_cdf_labels(session):
+
+    s = session()
+
+    x = np.asarray([20, 10, 14, 15, 12, 16, 17])
+    s.plot_cdf(x, xlabel='a b', name='b a')
+
+    p = s.get_cdf_plot()
+    assert isinstance (p, CDFPlot)
+
+    assert p.xlabel == 'a b'
+    assert p.ylabel == 'p(<=a b)'
+    assert p.title == 'CDF: b a'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_show_cdf_plot_empty(session):
+
+    s = session()
+
+    p = s.get_cdf_plot()
+    assert isinstance (p, CDFPlot)
+
+    toks = str(p).split('\n')
+    assert len(toks) == 10
+
+    assert toks[0] == 'points = None'
+    assert toks[1] == 'x      = None'
+    assert toks[2] == 'y      = None'
+    assert toks[3] == 'median = None'
+    assert toks[4] == 'lower  = None'
+    assert toks[5] == 'upper  = None'
+    assert toks[6] == 'xlabel = None'
+    assert toks[7] == 'ylabel = None'
+    assert toks[8] == 'title  = None'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_show_cdf_plot(session, old_numpy_printing):
+    """This is issue #912
+
+    The display of the numeric values can depend on the
+    NumPy version, so force the legacy output.
+    """
+
+    s = session()
+
+    x = np.asarray([20, 15, 25, 10])
+    s.plot_cdf(x)
+
+    p = s.get_cdf_plot()
+    assert isinstance (p, CDFPlot)
+
+    toks = str(p).split('\n')
+    assert len(toks) == 10
+
+    assert toks[0] == 'points = [10,15,20,25]'
+    assert toks[1] == 'x      = [ 0.25, 0.5 , 0.75, 1.  ]'
+    assert toks[2] == 'y      = [20,15,25,10]'
+    assert toks[3] == 'median = 17.5'
+    assert toks[4].startswith('lower  = 12.37')
+    assert toks[5].startswith('upper  = 22.62')
+    assert toks[6] == 'xlabel = x'
+    assert toks[7] == 'ylabel = p(<=x)'
+    assert toks[8] == 'title  = CDF: x'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_pdf_plot_empty(session):
+
+    s = session()
+    p = s.get_pdf_plot()
+    assert isinstance (p, PDFPlot)
+    for f in ["points", "xlo", "xhi", "y", "xlabel", "ylabel", "title"]:
+        assert getattr(p, f) is None
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pdf(session):
+
+    s = session()
+
+    x = np.asarray([2, 8, 4, 6])
+    s.plot_pdf(x)
+
+    p = s.get_pdf_plot()
+    assert isinstance (p, PDFPlot)
+
+    xgrid = np.arange(2, 8.5, 0.5)
+
+    assert p.points == pytest.approx(x)
+    assert p.xlo == pytest.approx(xgrid[:-1])
+    assert p.xhi == pytest.approx(xgrid[1:])
+
+    y = np.zeros(12)
+    y[0] = 0.5
+    y[4] = 0.5
+    y[8] = 0.5
+    y[11] = 0.5
+
+    assert p.y == pytest.approx(y)
+
+    assert p.xlabel == 'x'
+    assert p.ylabel == 'probability density'
+    assert p.title == 'PDF: x'
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pdf_replot_no_data(session):
+    """what does replot=True do for plot_pdf?
+
+    The code doesn't check for this evantuality,
+    so errors out (depends on the backend).
+    """
+
+    s = session()
+
+    x = np.asarray([2, 8, 4, 6])
+
+    # check on the error so we know when the code has changed
+    with pytest.raises(AttributeError) as exc:
+        s.plot_pdf(x, replot=True)
+
+    assert str(exc.value) == "'NoneType' object has no attribute 'size'"
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pdf_replot(session):
+    """what does replot=True do for plot_pdf?
+
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+
+    z = np.asarray([1, 2, 3, 5])
+    s.plot_pdf(z, xlabel='fo', bins=5)
+
+    s.plot_pdf(np.asarray([-10, -5, 0]), xlabel='ba', replot=True)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.xaxis.get_label().get_text() == 'fo'
+
+    assert len(ax.lines) == 2
+    line = ax.lines[0]
+
+    x = np.asarray([1, 1.8, 1.8, 2.6, 2.6, 3.4, 3.4, 4.2, 4.2, 5])
+    y = np.repeat([0.3125, 0.3125, 0.3125, 0, 0.3125], 2)
+
+    assert line.get_xdata() == pytest.approx(x)
+    assert line.get_ydata() == pytest.approx(y)
+
+    pts = ax.lines[1]
+
+    x = np.asarray([1.4, 2.2, 3, 3.8, 4.6])
+    y = np.asarray([0.3125, 0.3125, 0.3125, 0, 0.3125])
+
+    assert pts.get_xdata() == pytest.approx(x)
+    assert pts.get_ydata() == pytest.approx(y)
+
+    plt.close()
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pdf_labels_noname(session):
+
+    s = session()
+
+    x = np.asarray([2, 8, 4, 6])
+    s.plot_pdf(x, xlabel='x^2 x', bins=4)
+
+    p = s.get_pdf_plot()
+    assert isinstance (p, PDFPlot)
+
+    assert p.xlo.size == 4
+    assert p.xhi.size == 4
+    assert p.y.size == 4
+
+    assert p.xlabel == 'x^2 x'
+    assert p.ylabel == 'probability density'
+    assert p.title == 'PDF: x'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pdf_labels(session):
+
+    s = session()
+
+    x = np.asarray([2, 8, 4, 6])
+    s.plot_pdf(x, xlabel='x^2 x', name='no name', bins=4)
+
+    p = s.get_pdf_plot()
+    assert isinstance (p, PDFPlot)
+
+    assert p.xlo.size == 4
+    assert p.xhi.size == 4
+    assert p.y.size == 4
+
+    assert p.xlabel == 'x^2 x'
+    assert p.ylabel == 'probability density'
+    assert p.title == 'PDF: no name'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_show_pdf_plot_empty(session):
+
+    s = session()
+
+    p = s.get_pdf_plot()
+    assert isinstance (p, PDFPlot)
+
+    toks = str(p).split('\n')
+    assert len(toks) == 8
+
+    assert toks[0] == 'points = None'
+    assert toks[1] == 'xlo    = None'
+    assert toks[2] == 'xhi    = None'
+    assert toks[3] == 'y      = None'
+    assert toks[4] == 'xlabel = None'
+    assert toks[5] == 'ylabel = None'
+    assert toks[6] == 'title  = None'
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_show_pdf_plot(session, old_numpy_printing):
+    """This is important as it also checks normed=False
+
+    The display of the numeric values can depend on the
+    NumPy version, so force the legacy output.
+    """
+
+    s = session()
+
+    x = np.asarray([20, 15, 25, 10])
+    s.plot_pdf(x, bins=3, normed=False)
+
+    p = s.get_pdf_plot()
+    assert isinstance (p, PDFPlot)
+
+    toks = str(p).split('\n')
+    assert len(toks) == 8
+
+    assert toks[0] == 'points = [20,15,25,10]'
+    assert toks[1] == 'xlo    = [ 10., 15., 20.]'
+    assert toks[2] == 'xhi    = [ 15., 20., 25.]'
+    assert toks[3] == 'y      = [1,1,2]'
+    assert toks[4] == 'xlabel = x'
+    assert toks[5] == 'ylabel = probability density'
+    assert toks[6] == 'title  = PDF: x'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_data_plot_recalc(session):
+    """Basic testing of get_data_plot(recalc=False)"""
+
+    s = session()
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    s.get_data_plot()
+
+    s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
+
+    p = s.get_data_plot(recalc=False)
+    assert isinstance(p, DataPlot)
+    assert p.x == pytest.approx([1, 2])
+    assert p.y == pytest.approx([1, 0])
+
+    p = s.get_data_plot(recalc=True)
+    assert isinstance(p, DataPlot)
+    assert p.x == pytest.approx([22.5, 35, 50])
+    assert p.y == pytest.approx([10, 12, 14])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,extraargs",
+                         [('model', []), ('model_component', ['mdl']),
+                          ('source', []), ('source_component', ['mdl'])])
+def test_model_plot_recalc(ptype, extraargs, session):
+    """Basic testing of get_model_plot(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+
+    # Seed the data for the recalc=False call
+    func(*extraargs)
+
+    s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
+    s.set_source(mdl)
+
+    # What data should be returned here? At the moment it uses the
+    # cuurent dataset to identify the value, but perhaps it should
+    # just use the ModelPlot.
+    #
+    p = func(*extraargs, recalc=False)
+    assert isinstance(p, ModelHistogramPlot)
+    assert p.xlo is None
+    assert p.xhi is None
+    assert p.y is None
+
+    p = func(*extraargs, recalc=True)
+    assert isinstance(p, ModelHistogramPlot)
+    assert p.xlo == pytest.approx([20, 30, 40])
+    assert p.xhi == pytest.approx([25, 40, 60])
+    assert p.y == pytest.approx([162.5, 450, 1200])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,pclass,y1,y2",
+                         [('resid', ResidPlot, [-10, -12], [-20, -28, -36]),
+                          ('ratio', RatioPlot, [1/11, 0], [1/3, 12/40, 14/50]),
+                          ('delchi', DelchiPlot, [-5, -6], [-10, -14, -18]),
+                          ('chisqr', ChisqrPlot, [25, 36], [100, 14*14, 18*18]),
+                          ])
+def test_xxx_plot_recalc(ptype, pclass, y1, y2, session):
+    """Basic testing of get_xxx_plot(recalc=False)
+
+    Unlike data/model this does not try changing the type
+    of the dataset.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    s.set_staterror(1, [2, 2])
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    # Set up the data to check in the recalc=False call below
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+    func()
+
+    s.load_arrays(1, [20, 30, 40], [10, 12, 14])
+    s.set_staterror(1, [2, 2, 2])
+    s.set_source(mdl)
+
+    p = func(recalc=False)
+    assert isinstance(p, pclass)
+
+    assert p.x == pytest.approx([1, 2])
+    assert p.y == pytest.approx(y1)
+
+    p = func(recalc=True)
+    assert isinstance(p, pclass)
+
+    assert p.x == pytest.approx([20, 30, 40])
+    assert p.y == pytest.approx(y2)
+
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_fit_plot_recalc(session):
+    """Basic testing of get_fit_plot(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 2], [1, 0])
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    s.get_fit_plot()
+
+    s.load_arrays(1, [20, 30, 40], [10, 12, 14])
+    s.set_source(mdl)
+
+    p = s.get_fit_plot(recalc=False)
+    assert isinstance(p, FitPlot)
+
+    assert p.dataplot.x == pytest.approx([1, 2])
+    assert p.dataplot.y == pytest.approx([1, 0])
+
+    assert p.modelplot.x == pytest.approx([1, 2])
+    assert p.modelplot.y == pytest.approx([11, 12])
+
+    p = s.get_fit_plot(recalc=True)
+    assert isinstance(p, FitPlot)
+
+    assert p.dataplot.x == pytest.approx([20, 30, 40])
+    assert p.dataplot.y == pytest.approx([10, 12, 14])
+
+    assert p.modelplot.x == pytest.approx([20, 30, 40])
+    assert p.modelplot.y == pytest.approx([30, 40, 50])
+
+
+def check_pvalue(caplog, plot):
+    """Is the output as expected?"""
+
+    assert len(caplog.records) == 1
+    logname, loglvl, logmsg = caplog.record_tuples[0]
+    assert logname == 'sherpa.ui.utils'
+    assert loglvl == logging.INFO
+
+    toks = logmsg.split('\n')
+    assert len(toks) == 5
+    assert toks[0] == 'Likelihood Ratio Test'
+    assert toks[1].startswith('null statistic   =  -52.56')
+    assert toks[2].startswith('alt statistic    =  -54.93')
+    assert toks[3].startswith('likelihood ratio =  2.36')
+
+    # The p-value is very sensitive so not really a useful check,
+    # and can sometimes get a < 1/nruns answer (and nruns=100).
+    #
+    assert toks[4].startswith('p-value          =  0.') or \
+        toks[4].startswith('p-value          <  0.01')
+
+    assert isinstance(plot, LRHistogram)
+    assert plot.xlabel == 'Likelihood Ratio'
+    assert plot.ylabel == 'Frequency'
+    assert plot.title == 'Likelihood Ratio Distribution'
+
+    assert plot.lr == pytest.approx(2.3637744995453147)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_pvalue_plot(session, caplog):
+    """Basic testing of get_pvalue_plot
+
+    This is a made-up test, and I have no idea whether it's
+    sensible.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_stat('cash')
+    s.set_method('simplex')
+
+    x = np.asarray([5, 7, 9, 11, 13, 20, 22])
+    y = np.asarray([5, 4, 7, 9, 2, 6, 5])
+
+    s.load_arrays(1, x, y)
+    bgnd = s.create_model_component('const1d', 'bgnd')
+    line = s.create_model_component('gauss1d', 'line')
+
+    bgnd.c0 = 5
+    line.pos.set(10.5, frozen=True)
+    line.fwhm.set(0.2, frozen=True)
+    line.ampl = 2.5
+
+    s.set_source(bgnd)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        p = s.get_pvalue_plot(bgnd, bgnd+line, num=100, recalc=True)
+
+    check_pvalue(caplog, p)
+
+
+@requires_plotting
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pvalue(session, caplog):
+    """Basic testing of plot_pvalue
+
+    This is a made-up test, and I have no idea whether it's
+    sensible.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_stat('cash')
+    s.set_method('simplex')
+
+    x = np.asarray([5, 7, 9, 11, 13, 20, 22])
+    y = np.asarray([5, 4, 7, 9, 2, 6, 5])
+
+    s.load_arrays(1, x, y)
+    bgnd = s.create_model_component('const1d', 'bgnd')
+    line = s.create_model_component('gauss1d', 'line')
+
+    bgnd.c0 = 5
+    line.pos.set(10.5, frozen=True)
+    line.fwhm.set(0.2, frozen=True)
+    line.ampl = 2.5
+
+    s.set_source(bgnd)
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        s.plot_pvalue(bgnd, bgnd+line, num=100)
+
+    p = s.get_pvalue_plot(recalc=False)
+    check_pvalue(caplog, p)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_model_component_plot_invalid(session):
+    """invalid model argument for get_model_component_plot"""
+
+    # Fortunately we don't need to set up a dataset (this
+    # could change)
+    #
+    s = session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.get_model_component_plot(id=1, model=3)
+
+    emsg = "'model' must be a model object or model expression string"
+    assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_model_component_plot_string(session):
+    """Check we can call get_model_component_plot with string model"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.asarray([3, 7, 12])
+    y = np.asarray([4, 5, 8])
+    s.load_arrays(1, x, y)
+
+    s.create_model_component('const1d', 'gmdl')
+    gmdl.c0 = 14
+
+    plot = s.get_model_component_plot(id=1, model='gmdl')
+    assert plot.x == pytest.approx(x)
+    assert plot.y == pytest.approx([14, 14, 14])
+    assert plot.title == 'Model component: const1d.gmdl'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_model_component_plot_model(session):
+    """Check we can call get_model_component_plot with a model"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x = np.asarray([3, 7, 12])
+    y = np.asarray([4, 5, 8])
+    s.load_arrays(1, x, y)
+
+    s.create_model_component('const1d', 'gmdl')
+    gmdl.c0 = 14
+
+    plot = s.get_model_component_plot(id=1, model=gmdl)
+    assert plot.x == pytest.approx(x)
+    assert plot.y == pytest.approx([14, 14, 14])
+    assert plot.title == 'Model component: const1d.gmdl'
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_pylab_plot_scatter_empty_replot(session):
+    """plot_scatter with replot=False and no data
+
+    Just check the current behavior
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+
+    x = np.arange(3)
+    y = x + 5
+    s.plot_scatter(x, y, replot=True)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.xaxis.get_label().get_text() == ''
+    assert ax.yaxis.get_label().get_text() == ''
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+
+    assert line.get_xdata() == [None]
+    assert line.get_ydata() == [None]
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_pylab_plot_scatter(session):
+    """Simple test of plot_scatter"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+
+    x = np.arange(3)
+    y = x + 5
+    s.plot_scatter(x, y, marker='*', linestyle=':',
+                   color='r', markerfacecolor='k')
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.xaxis.get_label().get_text() == 'x'
+    assert ax.yaxis.get_label().get_text() == 'y'
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+
+    assert line.get_xdata() == pytest.approx(x)
+    assert line.get_ydata() == pytest.approx(y)
+
+    assert line.get_color() == 'r'
+    assert line.get_markerfacecolor() == 'k'
+    assert line.get_marker() == '*'
+    assert line.get_linestyle() == ':'
+
+    plt.close()
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_pylab_plot_trace_empty_replot(session):
+    """plot_trace with replot=False and no data
+
+    Just check the current behavior
+    """
+
+    s = session()
+
+    y = np.arange(100, 104)
+
+    # error can depend on matplotlib version
+    with pytest.raises(ValueError):
+        s.plot_trace(y, replot=True)
+
+
+
+@requires_pylab
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_pylab_plot_trace(session):
+    """Simple test of plot_trace"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+
+    y = np.asarray([100, 101, 99, 100])
+    s.plot_trace(y, xlabel='stat', name='bob',
+                 marker='*', linestyle=':',
+                 color='r', markerfacecolor='k')
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 1
+
+    ax = fig.axes[0]
+
+    assert ax.xaxis.get_label().get_text() == 'iteration'
+    assert ax.yaxis.get_label().get_text() == 'bob'
+    assert ax.get_title() == 'Trace: bob'
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+
+    assert line.get_xdata() == pytest.approx(np.arange(4))
+    assert line.get_ydata() == pytest.approx(y)
+
+    assert line.get_color() == 'r'
+    assert line.get_markerfacecolor() == 'k'
+    assert line.get_marker() == '*'
+    assert line.get_linestyle() == ':'
+
+    plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_data_contour_recalc(session):
+    """Basic testing of get_data_contour(recalc=False)"""
+
+    s = session()
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.get_data_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    p = s.get_data_contour(recalc=False)
+    assert isinstance(p, DataContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    assert p.y == pytest.approx(y)
+
+    p = s.get_data_contour(recalc=True)
+    assert isinstance(p, DataContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+    assert p.y == pytest.approx(ny)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_model_contour_recalc(session):
+    """Basic testing of get_model_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_model_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_model_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_model_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+    # just check the model is flat
+    assert p.y.min() == p.y.max()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_source_contour_recalc(session):
+    """Basic testing of get_source_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_source_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_source_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_source_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+    # just check the model is flat
+    assert p.y.min() == p.y.max()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_ratio_contour_recalc(session):
+    """Basic testing of get_ratio_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_ratio_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_ratio_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_ratio_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+
+    ygood = np.isfinite(p.y)
+    assert ygood.sum() == ygood.size - 1
+    assert ygood[40] == False
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_resid_contour_recalc(session):
+    """Basic testing of get_resid_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_resid_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_resid_contour(recalc=False)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(x0)
+    assert p.x1 == pytest.approx(x1)
+    # just check the model isn't flat
+    assert p.y.min() < p.y.max()
+
+    p = s.get_resid_contour(recalc=True)
+    assert isinstance(p, ModelContour)
+    assert p.x0 == pytest.approx(nx0)
+    assert p.x1 == pytest.approx(nx1)
+
+    ygood = np.isfinite(p.y)
+    assert ygood.sum() == ygood.size - 1
+    assert ygood[40] == False
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_fit_contour_recalc(session):
+    """Basic testing of get_fit_contour(recalc=False)"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    x1, x0 = np.mgrid[-4:5, 6:15]
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, x0, x1, y, Data2D)
+
+    s.create_model_component('gauss2d', 'gmdl')
+    s.set_source('gmdl')
+
+    s.get_fit_contour()
+
+    nx1, nx0 = np.mgrid[2:5, 12:15]
+
+    nx0 = x0.flatten()
+    nx1 = x1.flatten()
+    ny = 100 / np.sqrt((x0 - 10)**2 + x1**2)
+
+    s.load_arrays(1, nx0, nx1, ny, Data2D)
+
+    s.create_model_component('const2d', 'cmdl')
+    s.set_source('cmdl')
+
+    p = s.get_fit_contour(recalc=False)
+    assert isinstance(p, FitContour)
+    pd = p.datacontour
+    pm = p.modelcontour
+    assert isinstance(pd, DataContour)
+    assert isinstance(pm, ModelContour)
+    assert pd.x0 == pytest.approx(x0)
+    assert pd.x1 == pytest.approx(x1)
+    assert pm.x0 == pytest.approx(x0)
+    assert pm.x1 == pytest.approx(x1)
+    assert pd.y== pytest.approx(y)
+    # just check the model isn't flat
+    assert pm.y.min() < pm.y.max()
+
+    p = s.get_fit_contour(recalc=True)
+    assert isinstance(p, FitContour)
+    pd = p.datacontour
+    pm = p.modelcontour
+    assert isinstance(pd, DataContour)
+    assert isinstance(pm, ModelContour)
+    assert pd.x0 == pytest.approx(nx0)
+    assert pd.x1 == pytest.approx(nx1)
+    assert pm.x0 == pytest.approx(nx0)
+    assert pm.x1 == pytest.approx(nx1)
+    assert pd.y== pytest.approx(ny)
+    # just check the model is flat
+    assert pm.y.min() == pm.y.max()

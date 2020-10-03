@@ -71,7 +71,7 @@ class Session(sherpa.ui.utils.Session):
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
         self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
-        self._bkgmodelplot = sherpa.astro.plot.BkgModelPlot()
+        self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
         self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
         self._bkgchisqrplot = sherpa.astro.plot.BkgChisqrPlot()
         self._bkgdelchiplot = sherpa.astro.plot.BkgDelchiPlot()
@@ -112,6 +112,24 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['bkgresid'] = self._bkgresidplot
         self._plot_types['bkgdelchi'] = self._bkgdelchiplot
         self._plot_types['bkgchisqr'] = self._bkgchisqrplot
+
+        self._plot_type_names['order'] = 'order'
+        # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
+        # self._plot_type_names['photon'] = 'photon'
+        self._plot_type_names['astrocompsource'] = 'source_component'
+        self._plot_type_names['astrocompmodel'] = 'model_componentl'
+
+        self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
+        self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
+        self._plot_type_names['arf'] = 'arf'
+        self._plot_type_names['bkg'] = 'bkg'
+        self._plot_type_names['bkgmodel'] = 'bkg_model'
+        self._plot_type_names['bkgfit'] = 'bkg_fit'
+        self._plot_type_names['bkgsource'] = 'bkg_source'
+        self._plot_type_names['bkgratio'] = 'bkg_ratio'
+        self._plot_type_names['bkgresid'] = 'bkg_resid'
+        self._plot_type_names['bkgdelchi'] = 'bkg_delchi'
+        self._plot_type_names['bkgchisqr'] = 'bkg_chisqr'
 
     ###########################################################################
     # High-level utilities
@@ -154,7 +172,7 @@ class Session(sherpa.ui.utils.Session):
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
         self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
-        self._bkgmodelplot = sherpa.astro.plot.BkgModelPlot()
+        self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
         self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
         self._bkgchisqrplot = sherpa.astro.plot.BkgChisqrPlot()
         self._bkgdelchiplot = sherpa.astro.plot.BkgDelchiPlot()
@@ -189,6 +207,24 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['bkgresid'] = self._bkgresidplot
         self._plot_types['bkgdelchi'] = self._bkgdelchiplot
         self._plot_types['bkgchisqr'] = self._bkgchisqrplot
+
+        self._plot_type_names['order'] = 'order'
+        # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
+        # self._plot_type_names['photon'] = 'photon'
+        self._plot_type_names['astrocompsource'] = 'source_component'
+        self._plot_type_names['astrocompmodel'] = 'model_componentl'
+
+        self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
+        self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
+        self._plot_type_names['arf'] = 'arf'
+        self._plot_type_names['bkg'] = 'bkg'
+        self._plot_type_names['bkgmodel'] = 'bkg_model'
+        self._plot_type_names['bkgfit'] = 'bkg_fit'
+        self._plot_type_names['bkgsource'] = 'bkg_source'
+        self._plot_type_names['bkgratio'] = 'bkg_ratio'
+        self._plot_type_names['bkgresid'] = 'bkg_resid'
+        self._plot_type_names['bkgdelchi'] = 'bkg_delchi'
+        self._plot_type_names['bkgchisqr'] = 'bkg_chisqr'
 
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
@@ -10186,20 +10222,36 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
+    def get_model_plot_prefs(self, id=None):
+
+        try:
+            d = self.get_data(id)
+            if isinstance(d, sherpa.astro.data.DataPHA):
+                return self._modelhisto.histo_prefs
+
+        except IdentifierErr:
+            pass
+
+        return super().get_model_plot_prefs(id)
+
+    get_model_plot_prefs.__doc__ = sherpa.ui.utils.Session.get_model_plot_prefs.__doc__
+
     # also in sherpa.utils; it does not seem worthwhile creating a new
     # docstring here
-    def get_model_plot(self, id=None, **kwargs):
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._prepare_plotobj(id, self._modelhisto, **kwargs)
-            return self._modelhisto
+    def get_model_plot(self, id=None, recalc=True):
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._modelhisto
+            if recalc:
+                plotobj.prepare(d, self.get_model(id), self.get_stat())
+            return plotobj
 
-        self._prepare_plotobj(id, self._modelplot, **kwargs)
-        return self._modelplot
+        return super().get_model_plot(id, recalc=recalc)
 
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
 
     # also in sherpa.utils, but without the lo/hi arguments
-    def get_source_plot(self, id=None, lo=None, hi=None):
+    def get_source_plot(self, id=None, lo=None, hi=None, recalc=True):
         """Return the data used by plot_source.
 
         Parameters
@@ -10211,6 +10263,10 @@ class Session(sherpa.ui.utils.Session):
            The low value to plot (only used for PHA data sets).
         hi : number, optional
            The high value to plot (only use for PHA data sets).
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_source` (or `get_source_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -10269,48 +10325,100 @@ class Session(sherpa.ui.utils.Session):
         >>> print(splot)
 
         """
-        # srcplot obj is possibly reinstantiated depending on data type
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            return self._prepare_plotobj(id, self._astrosourceplot, lo=lo, hi=hi)
-        return self._prepare_plotobj(id, self._sourceplot)
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrosourceplot
+            if recalc:
+                plotobj.prepare(d, self.get_source(id), lo=lo, hi=hi)
+            return plotobj
+
+        return super().get_source_plot(id, recalc=recalc)
+
+    def get_fit_plot(self, id=None, recalc=True):
+
+        plotobj = self._fitplot
+        if not recalc:
+            return plotobj
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+
+            dataobj = self.get_data_plot(id, recalc=recalc)
+
+            # We don't use get_model_plot as that uses the ungrouped data
+            #    modelobj = self.get_model_plot(id)
+            # but we do want to use a histogram plot, not _modelplot.
+            # modelobj = self._modelplot
+
+            # Should this object be stored in self? There's
+            # no way to get it by API (apart from get_fit_plot).
+            #
+            modelobj = sherpa.astro.plot.ModelPHAHistogram()
+            modelobj.prepare(d, self.get_model(id),
+                             self.get_stat())
+
+            plotobj.prepare(dataobj, modelobj)
+            return plotobj
+
+        return super().get_fit_plot(id, recalc=recalc)
+
+    get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
 
     # copy doc string from sherpa.utils
-    def get_model_component_plot(self, id, model=None):
+    def get_model_component_plot(self, id, model=None, recalc=True):
         if model is None:
             id, model = model, id
         self._check_model(model)
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._prepare_plotobj(id, self._astrocompmdlplot, model=model)
-            return self._astrocompmdlplot
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrocompmdlplot
+            if recalc:
+                plotobj.prepare(d, model, self.get_stat())
+            return plotobj
 
-        self._prepare_plotobj(id, self._compmdlplot, model=model)
-        return self._compmdlplot
+        return super().get_model_component_plot(id, model=model, recalc=recalc)
 
     get_model_component_plot.__doc__ = sherpa.ui.utils.Session.get_model_component_plot.__doc__
 
     # copy doc string from sherpa.utils
-    def get_source_component_plot(self, id, model=None):
+    def get_source_component_plot(self, id, model=None, recalc=True):
         if model is None:
             id, model = model, id
         self._check_model(model)
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._prepare_plotobj(id, self._astrocompsrcplot, model=model)
-            return self._astrocompsrcplot
-        elif isinstance(model, sherpa.models.TemplateModel):
-            self._prepare_plotobj(id, self._comptmplsrcplot, model=model)
-            return self._comptmplsrcplot
-        self._prepare_plotobj(id, self._compsrcplot, model=model)
-        return self._compsrcplot
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            plotobj = self._astrocompsrcplot
+            if recalc:
+                plotobj.prepare(d, model, self.get_stat())
+            return plotobj
+
+        return super().get_source_component_plot(id, model=model, recalc=recalc)
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
-    def get_order_plot(self, id=None, orders=None):
+    def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
+                        id=1, otherids=(), num=500, bins=25, numcores=None,
+                        recalc=False):
+
+        if recalc and conv_model is None and \
+           isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+            conv_model = self.get_response(id)
+
+        return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
+                                       conv_model=conv_model, id=id, otherids=otherids,
+                                       num=num, bins=25, numcores=numcores,
+                                       recalc=recalc)
+
+    get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__
+
+    def get_order_plot(self, id=None, orders=None, recalc=True):
         """Return the data used by plot_order.
 
         Parameters
@@ -10322,6 +10430,10 @@ class Session(sherpa.ui.utils.Session):
            Which response to use. The argument can be a scalar or
            array, in which case multiple curves will be displayed.
            The default is to use all orders.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_order` (or `get_order_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10351,10 +10463,14 @@ class Session(sherpa.ui.utils.Session):
         >>> plots[1].overplot()
 
         """
-        self._prepare_plotobj(id, self._orderplot, orders=orders)
-        return self._orderplot
 
-    def get_arf_plot(self, id=None, resp_id=None):
+        plotobj = self._orderplot
+        if recalc:
+            plotobj.prepare(self._get_pha_data(id),
+                            self.get_model(id), orders=orders)
+        return plotobj
+
+    def get_arf_plot(self, id=None, resp_id=None, recalc=True):
         """Return the data used by plot_arf.
 
         Parameters
@@ -10366,6 +10482,10 @@ class Session(sherpa.ui.utils.Session):
            Which ARF to use in the case that multiple ARFs are
            associated with a data set. The default is ``None``,
            which means the first one.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_arf` (or `get_arf_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10397,10 +10517,20 @@ class Session(sherpa.ui.utils.Session):
         >>> aplot.plot()
 
         """
-        self._prepare_plotobj(id, self._arfplot, resp_id)
-        return self._arfplot
 
-    def get_bkg_fit_plot(self, id=None, bkg_id=None):
+        plotobj = self._arfplot
+        if not recalc:
+            return plotobj
+
+        id = self._fix_id(id)
+        arf = self._get_pha_data(id).get_arf(resp_id)
+        if arf is None:
+            raise DataErr('noarf', id)
+
+        plotobj.prepare(arf, self._get_pha_data(id))
+        return plotobj
+
+    def get_bkg_fit_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_fit.
 
         Parameters
@@ -10411,6 +10541,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_fit` (or `get_bkg_fit_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -10468,10 +10602,25 @@ class Session(sherpa.ui.utils.Session):
         >>> bplot = get_bkg_fit_plot('jet', bkg_id=2)
 
         """
-        self._prepare_plotobj(id, self._bkgfitplot, bkg_id=bkg_id)
-        return self._bkgfitplot
 
-    def get_bkg_model_plot(self, id=None, bkg_id=None):
+        plotobj = self._bkgfitplot
+        if not recalc:
+            return plotobj
+
+        dataobj = self.get_bkg_plot(id, bkg_id, recalc=recalc)
+
+        # We don't use get_bkg_model_plot as that uses the ungrouped data
+        # modelobj = self.get_bkg_model_plot(id, bkg_id, recalc=recalc)
+
+        modelobj = self._bkgmodelplot
+        modelobj.prepare(self.get_bkg(id, bkg_id),
+                         self.get_bkg_model(id, bkg_id),
+                         self.get_stat())
+
+        plotobj.prepare(dataobj, modelobj)
+        return plotobj
+
+    def get_bkg_model_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_model.
 
         Parameters
@@ -10482,6 +10631,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_model` (or `get_bkg_model_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -10515,10 +10668,15 @@ class Session(sherpa.ui.utils.Session):
         >>> get_bkg_model_plot('jet', bkg_id=2).overplot()
 
         """
-        self._prepare_plotobj(id, self._bkgmodelhisto, bkg_id=bkg_id)
-        return self._bkgmodelhisto
 
-    def get_bkg_plot(self, id=None, bkg_id=None):
+        plotobj = self._bkgmodelhisto
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        return plotobj
+
+    def get_bkg_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg.
 
         Parameters
@@ -10529,6 +10687,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg` (or `get_bkg_plot`) are returned, otherwise
+           the data is re-generated.
 
         Returns
         -------
@@ -10571,10 +10733,15 @@ class Session(sherpa.ui.utils.Session):
         >>> bplot = get_bkg_plot('jet', bkg_id=2)
 
         """
-        self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id)
-        return self._bkgdataplot
 
-    def get_bkg_source_plot(self, id=None, lo=None, hi=None, bkg_id=None):
+        plotobj = self._bkgdataplot
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_stat())
+        return plotobj
+
+    def get_bkg_source_plot(self, id=None, lo=None, hi=None,
+                            bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_source.
 
         Parameters
@@ -10589,6 +10756,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_source` (or `get_bkg_source_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
@@ -10653,11 +10824,15 @@ class Session(sherpa.ui.utils.Session):
         >>> print(splot)
 
         """
-        self._prepare_plotobj(id, self._bkgsourceplot, bkg_id=bkg_id,
-                              lo=lo, hi=hi)
-        return self._bkgsourceplot
 
-    def get_bkg_resid_plot(self, id=None, bkg_id=None):
+        plotobj = self._bkgsourceplot
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_source(id, bkg_id),
+                            lo=lo, hi=hi)
+        return plotobj
+
+    def get_bkg_resid_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_resid.
 
         Parameters
@@ -10668,10 +10843,14 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_resid` (or `get_bkg_resid_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
-        source : a `sherpa.astro.plot.BkgResidPlot` instance
+        resid : a `sherpa.astro.plot.BkgResidPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_resid`.
 
@@ -10702,10 +10881,15 @@ class Session(sherpa.ui.utils.Session):
         >>> get_bkg_resid_plot('jet', bkg_id=2).overplot()
 
         """
-        self._prepare_plotobj(id, self._bkgresidplot, bkg_id=bkg_id)
-        return self._bkgresidplot
 
-    def get_bkg_ratio_plot(self, id=None, bkg_id=None):
+        plotobj = self._bkgresidplot
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        return plotobj
+
+    def get_bkg_ratio_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_ratio.
 
         Parameters
@@ -10716,10 +10900,14 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_ratio` (or `get_bkg_ratio_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
-        source : a `sherpa.astro.plot.BkgRatioPlot` instance
+        ratio : a `sherpa.astro.plot.BkgRatioPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_ratio`.
 
@@ -10750,10 +10938,15 @@ class Session(sherpa.ui.utils.Session):
         >>> get_bkg_ratio_plot('jet', bkg_id=2).overplot()
 
         """
-        self._prepare_plotobj(id, self._bkgratioplot, bkg_id=bkg_id)
-        return self._bkgratioplot
 
-    def get_bkg_delchi_plot(self, id=None, bkg_id=None):
+        plotobj = self._bkgratioplot
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        return plotobj
+
+    def get_bkg_delchi_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_delchi.
 
         Parameters
@@ -10764,10 +10957,14 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_delchi` (or `get_bkg_delchi_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
-        source : a `sherpa.astro.plot.BkgDelchiPlot` instance
+        delchi : a `sherpa.astro.plot.BkgDelchiPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_delchi`.
 
@@ -10799,10 +10996,15 @@ class Session(sherpa.ui.utils.Session):
 
 
         """
-        self._prepare_plotobj(id, self._bkgdelchiplot, bkg_id=bkg_id)
-        return self._bkgdelchiplot
 
-    def get_bkg_chisqr_plot(self, id=None, bkg_id=None):
+        plotobj = self._bkgdelchiplot
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        return plotobj
+
+    def get_bkg_chisqr_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_chisqr.
 
         Parameters
@@ -10813,10 +11015,14 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_bkg_chisqr` (or `get_bkg_chisqr_plot`) are returned,
+           otherwise the data is re-generated.
 
         Returns
         -------
-        source : a `sherpa.astro.plot.BkgChisqrPlot` instance
+        chisqr : a `sherpa.astro.plot.BkgChisqrPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_chisqr`.
 
@@ -10848,8 +11054,13 @@ class Session(sherpa.ui.utils.Session):
 
 
         """
-        self._prepare_plotobj(id, self._bkgchisqrplot, bkg_id=bkg_id)
-        return self._bkgchisqrplot
+
+        plotobj = self._bkgchisqrplot
+        if recalc:
+            plotobj.prepare(self.get_bkg(id, bkg_id),
+                            self.get_bkg_model(id, bkg_id),
+                            self.get_stat())
+        return plotobj
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores, bkg_id,
@@ -10989,7 +11200,7 @@ class Session(sherpa.ui.utils.Session):
         ...                          id=1, otherids=(2, 3, 4))
 
         """
-        if sherpa.utils.bool_cast(recalc):
+        if recalc:
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
@@ -11117,76 +11328,13 @@ class Session(sherpa.ui.utils.Session):
         ...                          id=1, otherids=(2, 3, 4))
 
         """
-        if sherpa.utils.bool_cast(recalc):
+        if recalc:
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
                                            otherids=otherids,
                                            numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
-
-    def _prepare_plotobj(self, id, plotobj, resp_id=None, bkg_id=None, lo=None,
-                         hi=None, orders=None, model=None):
-        if isinstance(plotobj, sherpa.astro.plot.BkgFitPlot):
-            plotobj.prepare(self._prepare_plotobj(id, self._bkgdataplot,
-                                                  bkg_id=bkg_id),
-                            self._prepare_plotobj(id, self._bkgmodelplot,
-                                                  bkg_id=bkg_id))
-        elif isinstance(plotobj, sherpa.plot.FitPlot):
-            plotobj.prepare(self._prepare_plotobj(id, self._dataplot),
-                            self._prepare_plotobj(id, self._modelplot))
-        elif isinstance(plotobj, sherpa.plot.FitContour):
-            plotobj.prepare(self._prepare_plotobj(id, self._datacontour),
-                            self._prepare_plotobj(id, self._modelcontour))
-        elif isinstance(plotobj, sherpa.astro.plot.ARFPlot):
-            plotobj.prepare(self._get_pha_data(id).get_arf(resp_id),
-                            self._get_pha_data(id))
-        elif(isinstance(plotobj, sherpa.plot.ComponentModelPlot) or
-             isinstance(plotobj, sherpa.plot.ComponentSourcePlot)):
-            plotobj.prepare(self.get_data(id), model, self.get_stat())
-        elif isinstance(plotobj, sherpa.astro.plot.BkgDataPlot):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_stat())
-        elif isinstance(plotobj, (sherpa.astro.plot.BkgModelPlot,
-                                  sherpa.astro.plot.BkgRatioPlot,
-                                  sherpa.astro.plot.BkgResidPlot,
-                                  sherpa.astro.plot.BkgDelchiPlot,
-                                  sherpa.astro.plot.BkgChisqrPlot,
-                                  sherpa.astro.plot.BkgModelHistogram)):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_bkg_model(id, bkg_id),
-                            self.get_stat())
-        elif isinstance(plotobj, sherpa.astro.plot.BkgSourcePlot):
-            plotobj.prepare(self.get_bkg(id, bkg_id),
-                            self.get_bkg_source(id, bkg_id), lo, hi)
-        elif isinstance(plotobj, sherpa.astro.plot.SourcePlot):
-            data = self.get_data(id)
-            src = self.get_source(id)
-            plotobj.prepare(data, src, lo, hi)
-        elif isinstance(plotobj, sherpa.plot.SourcePlot):
-            data = self.get_data(id)
-            src = self.get_source(id)
-            plotobj.prepare(data, src)
-        elif (isinstance(plotobj, sherpa.plot.PSFPlot) or
-              isinstance(plotobj, sherpa.plot.PSFContour) or
-              isinstance(plotobj, sherpa.plot.PSFKernelPlot) or
-              isinstance(plotobj, sherpa.plot.PSFKernelContour)):
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
-        elif(isinstance(plotobj, sherpa.plot.DataPlot) or
-             isinstance(plotobj, sherpa.plot.DataContour)):
-            plotobj.prepare(self.get_data(id), self.get_stat())
-        elif isinstance(plotobj, sherpa.astro.plot.OrderPlot):
-            plotobj.prepare(self._get_pha_data(id),
-                            self.get_model(id), orders)
-        else:
-            # Using _get_fit becomes very complicated using simulfit
-            # models and datasets
-            #
-            # ids, f = self._get_fit(id)
-            plotobj.prepare(self.get_data(id), self.get_model(id),
-                            self.get_stat())
-
-        return plotobj
 
     def _set_plot_item(self, plottype, item, value):
         keys = list(self._plot_types.keys())
@@ -11219,18 +11367,6 @@ class Session(sherpa.ui.utils.Session):
                 elif sherpa.ui.utils._is_subclass(plot.__class__,
                                                   sherpa.plot.Plot):
                     plot.plot_prefs[item] = value
-
-    def plot_model(self, id=None, replot=False, overplot=False,
-                   clearwindow=True, **kwargs):
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            plotobj = self._modelhisto
-        else:
-            plotobj = self._modelplot
-
-        self._plot(id, plotobj, replot=replot, overplot=overplot,
-                   clearwindow=clearwindow, **kwargs)
-
-    plot_model.__doc__ = sherpa.ui.utils.Session.plot_model.__doc__
 
     def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
@@ -11297,56 +11433,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_arf(2, overplot=True, linestyle='dashed')
 
         """
-        arf = self._get_pha_data(id).get_arf(resp_id)
-        if arf is None:
-            raise DataErr('noarf', self._fix_id(id))
-        self._plot(id, self._arfplot, resp_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
-    # DOC-TODO: does this support bkg_id for PHA data sets?
-    def plot_source_component(self, id, model=None, replot=False,
-                              overplot=False, clearwindow=True, **kwargs):
-
-        if model is None:
-            id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
-
-        plotobj = self._compsrcplot
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            plotobj = self._astrocompsrcplot
-        elif isinstance(model, sherpa.models.TemplateModel):
-            plotobj = self._comptmplsrcplot
-
-        self._plot(id, plotobj, None, None, None, None, None, model,
-                   replot=replot, overplot=overplot, clearwindow=clearwindow,
+        plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
-
-    plot_source_component.__doc__ = sherpa.ui.utils.Session.plot_source_component.__doc__
-
-    def plot_model_component(self, id, model=None, replot=False,
-                             overplot=False, clearwindow=True, **kwargs):
-
-        if model is None:
-            id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
-
-        is_source = self._get_model_status(id)[1]
-        model = self._add_convolution_models(id, self.get_data(id),
-                                             model, is_source)
-
-        plotobj = self._compmdlplot
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            plotobj = self._astrocompmdlplot
-
-        self._plot(id, plotobj, None, None, None, None, None, model,
-                   replot=replot, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
-
-    plot_model_component.__doc__ = sherpa.ui.utils.Session.plot_model_component.__doc__
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self, id=None, lo=None, hi=None, replot=False,
@@ -11415,13 +11505,17 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_source()
 
         """
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
-            self._plot(id, self._astrosourceplot, None, None, lo, hi,
-                       replot=replot, overplot=overplot,
-                       clearwindow=clearwindow, **kwargs)
-        else:
-            self._plot(id, self._sourceplot, replot=replot,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        d = self.get_data(id)
+        if isinstance(d, sherpa.astro.data.DataPHA):
+            # Note: lo/hi arguments mean we can not just rely on superclass
+            plotobj = self.get_source_plot(id, lo=lo, hi=hi, recalc=not replot)
+            self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                       **kwargs)
+            return
+
+        super().plot_source(id=id, replot=replot, overplot=overplot,
+                           clearwindow=True, **kwargs)
 
     # DOC-TODO: is orders the same as resp_id?
     def plot_order(self, id=None, orders=None, replot=False, overplot=False,
@@ -11478,9 +11572,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_order(orders=[2, 3], overplot=True)
 
         """
-        self._plot(id, self._orderplot, None, None, None, None,
-                   orders, replot=replot, overplot=overplot,
-                   clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_order_plot(id, orders=orders, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg(self, id=None, bkg_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
@@ -11542,9 +11637,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg(1, 2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgdataplot, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_model(self, id=None, bkg_id=None, replot=False,
                        overplot=False, clearwindow=True, **kwargs):
@@ -11598,9 +11694,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_model('jet', bkg_id=2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgmodelhisto, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_model_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_resid(self, id=None, bkg_id=None, replot=False,
                        overplot=False, clearwindow=True, **kwargs):
@@ -11663,9 +11760,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_resid('jet', bkg_id=2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgresidplot, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_resid_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_ratio(self, id=None, bkg_id=None, replot=False,
                        overplot=False, clearwindow=True, **kwargs):
@@ -11728,9 +11826,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_ratio('jet', bkg_id=2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgratioplot, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_ratio_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_delchi(self, id=None, bkg_id=None, replot=False,
                         overplot=False, clearwindow=True, **kwargs):
@@ -11793,9 +11892,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_delchi('jet', bkg_id=2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgdelchiplot, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_delchi_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_chisqr(self, id=None, bkg_id=None, replot=False,
                         overplot=False, clearwindow=True, **kwargs):
@@ -11850,9 +11950,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_chisqr('jet', bkg_id=2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgchisqrplot, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_chisqr_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_fit(self, id=None, bkg_id=None, replot=False,
                      overplot=False, clearwindow=True, **kwargs):
@@ -11906,9 +12007,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit()
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgfitplot, None, bkg_id, replot=replot,
-                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        plotobj = self.get_bkg_fit_plot(id, bkg_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None,
                         replot=False, overplot=False, clearwindow=True,
@@ -11966,9 +12068,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_source('jet', bkg_id=2, overplot=True)
 
         """
-        _ = self.get_bkg(id, bkg_id)
-        self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi,
-                   replot=replot, overplot=overplot, clearwindow=clearwindow,
+
+        plotobj = self.get_bkg_source_plot(id, bkg_id=bkg_id, lo=lo, hi=hi,
+                                           recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
@@ -12111,23 +12214,12 @@ class Session(sherpa.ui.utils.Session):
         ...                  id=1, otherids=(2, 3, 4))
 
         """
-
-        efplot = self._energyfluxplot
-        if sherpa.utils.bool_cast(recalc):
-            efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id=id,
-                                                    num=num, bins=bins, scales=scales,
-                                                    correlated=correlated, model=model,
-                                                    otherids=otherids,
-                                                    numcores=numcores, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            efplot.plot(overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        efplot = self.get_energy_flux_hist(lo=lo, hi=hi, id=id, num=num, bins=bins,
+                                           correlated=correlated, numcores=numcores,
+                                           bkg_id=bkg_id, scales=scales, model=model,
+                                           otherids=otherids, recalc=recalc)
+        self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
@@ -12269,41 +12361,23 @@ class Session(sherpa.ui.utils.Session):
         ...                  id=1, otherids=(2, 3, 4))
 
         """
-        pfplot = self._photonfluxplot
-        if sherpa.utils.bool_cast(recalc):
-            pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id=id,
-                                                    num=num, bins=bins, scales=scales,
-                                                    correlated=correlated, model=model,
-                                                    otherids=otherids,
-                                                    numcores=numcores, bkg_id=bkg_id)
-        try:
-            sherpa.plot.begin()
-            pfplot.plot(overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
-        except:
-            sherpa.plot.exceptions()
-            raise
-        else:
-            sherpa.plot.end()
+        pfplot = self.get_photon_flux_hist(lo=lo, hi=hi, id=id, num=num, bins=bins,
+                                           correlated=correlated, numcores=numcores,
+                                           bkg_id=bkg_id, scales=scales, model=model,
+                                           otherids=otherids, recalc=recalc)
+        self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
-    def _plot_bkg_jointplot(self, plot2, id=None, bkg_id=None,
-                            replot=False, overplot=False,
-                            clearwindow=True, **kwargs):
+    def _bkg_jointplot2(self, plot1, plot2, overplot=False,
+                        clearwindow=True, **kwargs):
         """Create a joint plot for bkg, vertically aligned, fit data on the top.
 
         Parameters
         ----------
+        plot1 : sherpa.plot.Plot instance
+           The plot to appear in the top panel.
         plot2 : sherpa.plot.Plot instance
            The plot to appear in the bottom panel.
-        id : int or str, optional
-           The data set. If not given then the default identifier is
-           used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
-           Identify the background component to use, if there are
-           multiple ones associated with the data set.
-        replot : bool, optional
-           Set to ``True`` to use the previous values. The default is
-           ``False``.
         overplot : bool, optional
            If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
@@ -12313,13 +12387,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        # See the comments in sherpa/ui/utils.py::_plot_jointplot()
-        #
-        plot1 = self._bkgfitplot
         self._jointplot.reset()
-        if not sherpa.utils.bool_cast(replot):
-            plot1 = self._prepare_plotobj(id, plot1, bkg_id=bkg_id)
-            plot2 = self._prepare_plotobj(id, plot2, bkg_id=bkg_id)
+
         try:
             sherpa.plot.begin()
             self._jointplot.plottop(plot1, overplot=overplot,
@@ -12328,8 +12397,8 @@ class Session(sherpa.ui.utils.Session):
             oldval = plot2.plot_prefs['xlog']
             if (('xlog' in self._bkgdataplot.plot_prefs and
                  self._bkgdataplot.plot_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.plot_prefs and
-                 self._bkgmodelplot.plot_prefs['xlog'])):
+                ('xlog' in self._bkgmodelplot.histo_prefs and
+                 self._bkgmodelplot.histo_prefs['xlog'])):
                 plot2.plot_prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
@@ -12408,10 +12477,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        self._plot_bkg_jointplot(self._bkgratioplot,
-                                 id=id, bkg_id=bkg_id,
-                                 replot=replot, overplot=overplot,
-                                 clearwindow=clearwindow, **kwargs)
+        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=not replot)
+        plot2obj = self.get_bkg_ratio_plot(id, bkg_id, recalc=not replot)
+        self._bkg_jointplot2(plot1obj, plot2obj,
+                             overplot=overplot, clearwindow=clearwindow,
+                             **kwargs)
 
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True, **kwargs):
@@ -12481,10 +12551,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        self._plot_bkg_jointplot(self._bkgresidplot,
-                                 id=id, bkg_id=bkg_id,
-                                 replot=replot, overplot=overplot,
-                                 clearwindow=clearwindow, **kwargs)
+        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=not replot)
+        plot2obj = self.get_bkg_resid_plot(id, bkg_id, recalc=not replot)
+        self._bkg_jointplot2(plot1obj, plot2obj,
+                             overplot=overplot, clearwindow=clearwindow,
+                             **kwargs)
 
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True, **kwargs):
@@ -12554,10 +12625,12 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit_delchi()
 
         """
-        self._plot_bkg_jointplot(self._bkgdelchiplot,
-                                 id=id, bkg_id=bkg_id,
-                                 replot=replot, overplot=overplot,
-                                 clearwindow=clearwindow, **kwargs)
+
+        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=not replot)
+        plot2obj = self.get_bkg_delchi_plot(id, bkg_id, recalc=not replot)
+        self._bkg_jointplot2(plot1obj, plot2obj,
+                             overplot=overplot, clearwindow=clearwindow,
+                             **kwargs)
 
     ###########################################################################
     # Analysis Functions

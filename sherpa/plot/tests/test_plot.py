@@ -24,8 +24,9 @@ import numpy
 import pytest
 
 import sherpa.all as sherpa
-from sherpa.astro.ui.utils import Session
-from sherpa.models import Const1D
+from sherpa.ui.utils import Session as BaseSession
+from sherpa.astro.ui.utils import Session as AstroSession
+from sherpa.models import basic
 from sherpa.data import Data1DInt
 from sherpa.utils.testing import requires_data, requires_plotting
 
@@ -471,17 +472,28 @@ def test_region_uncertainty(setup_confidence):
 
 
 @requires_plotting
-def test_source_component_arbitrary_grid():
-    ui = Session()
-    model = Const1D('c')
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_source_component_arbitrary_grid(session):
+    ui = session()
+
+    # depending on how the test is used we need to have
+    # registered a model with the Session.
+    #
+    ui._add_model_types(basic)
+
+    model = ui.create_model_component('const1d', 'c')
     model.c0 = 10
 
     def tst(x, y, re_x, yy):
         ui.load_arrays(1, x, y)
         regrid_model = model.regrid(re_x)
+
+        # could set the model to regrid to show can send in any source model
+        ui.set_source(regrid_model)
+
         ui.plot_source_component(regrid_model)
-        numpy.testing.assert_array_equal(ui._compsrcplot.x, x)
-        numpy.testing.assert_array_almost_equal(ui._compsrcplot.y, yy)
+        assert (ui._compsrcplot.x == x).all()
+        assert ui._compsrcplot.y == pytest.approx(yy)
 
     x = [1, 2, 3]
     y = [1, 2, 3]
@@ -499,10 +511,12 @@ def test_source_component_arbitrary_grid():
     re_x = numpy.linspace(3, 5, 15)
     tst(x, y, re_x, [ 0,  0, 10, 10, 10,  0,  0,  0,  0,  0])
 
+
 @requires_plotting
-def test_plot_model_arbitrary_grid_integrated():
-    ui = Session()
-    model = Const1D('c')
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_model_arbitrary_grid_integrated(session):
+    ui = session()
+    model = basic.Const1D('c')
     model.c0 = 10
 
     def tst(x, y, re_x, yy):
@@ -511,9 +525,11 @@ def test_plot_model_arbitrary_grid_integrated():
         ui.set_model(regrid_model)
         ui.plot_model()
         avg_x = 0.5 * (x[0] + x[1])
-        numpy.testing.assert_array_equal(ui._modelplot.x, avg_x)
-        numpy.testing.assert_array_almost_equal(ui._modelplot.y, yy)
 
+        # should this use ui.get_model_plot()?
+        assert ui._modelhistplot.xlo == pytest.approx(x[0])
+        assert ui._modelhistplot.xhi == pytest.approx(x[1])
+        assert ui._modelhistplot.y == pytest.approx(yy)
 
     tmp = numpy.arange(1, 5, 1)
     x = tmp[:-1], tmp[1:]
@@ -538,24 +554,27 @@ def test_plot_model_arbitrary_grid_integrated():
     yy = numpy.append(n * [0.], n * [10.])
     tst(x, y, re_x, yy)
 
+
 @requires_plotting
-def test_source_component_arbitrary_grid_int():
-    ui = Session()
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_source_component_arbitrary_grid_int(session):
+    ui = session()
 
     x = numpy.array([1, 2, 3]), numpy.array([2, 3, 4])
     y = [1.5, 2.5, 3.5]
     re_x = numpy.array([10, 20, 30]), numpy.array([20, 30, 40])
 
     ui.load_arrays(1, x[0], x[1], y, Data1DInt)
-    model = Const1D('c')
+    model = basic.Const1D('c')
     model.c0 = 10
 
     regrid_model = model.regrid(*re_x)
     ui.plot_source_component(regrid_model)
 
-    x_points = (x[0] + x[1]) / 2.0
-    numpy.testing.assert_array_equal(ui._compsrcplot.x, x_points)
-    numpy.testing.assert_array_equal(ui._compsrcplot.y, [0., 0., 0.])
+    # should this use ui.get_source_component_plot()?
+    assert ui._compsrchistplot.xlo == pytest.approx(x[0])
+    assert ui._compsrchistplot.xhi == pytest.approx(x[1])
+    assert ui._compsrchistplot.y == pytest.approx([0.0, 0.0, 0.0])
 
 
 def test_numpy_histogram_density_vs_normed():

@@ -88,7 +88,9 @@ __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'IntervalProjection', 'IntervalUncertainty', 'ChisqrPlot',
            'RegionProjection', 'RegionUncertainty', 'ComponentSourcePlot',
            'PSFPlot', 'PSFContour', 'begin', 'end', 'exceptions', 'backend',
-           'SourcePlot', 'SourceContour', 'Histogram', 'plotter')
+           'SourcePlot', 'SourceContour', 'Histogram',
+           'HistogramPlot', 'ModelHistogramPlot', 'SourceHistogramPlot',
+           'plotter')
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 
@@ -481,6 +483,39 @@ class HistogramPlot(Histogram):
         Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
                        overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+
+class ModelHistogramPlot(HistogramPlot):
+    """Display a model as a histogram."""
+
+    def __init__(self):
+        super().__init__()
+        self.title = 'Model'
+
+    def prepare(self, data, model, stat=None):
+        """Create the plot.
+
+        The stat parameter is ignored.
+        """
+
+        plot = data.to_plot(yfunc=model)
+        (_, y, _, _, self.xlabel, self.ylabel) = plot
+
+        # taken from get_x from Data1DInt
+        indep = data.get_evaluation_indep(filter=True, model=model)
+
+        self.xlo = indep[0]
+        self.xhi = indep[1]
+        self.y = y[1]
+        assert self.y.size == self.xlo.size
+
+
+class SourceHistogramPlot(ModelHistogramPlot):
+    """Display a source model as a histogram."""
+
+    def __init__(self):
+        super().__init__()
+        self.title = 'Source'
 
 
 class PDFPlot(HistogramPlot):
@@ -1413,6 +1448,16 @@ class ComponentModelPlot(ModelPlot):
         self.title = 'Model component: %s' % model.name
 
 
+class ComponentModelHistogramPlot(ModelHistogramPlot):
+
+    # Is this the correct setting?
+    plot_prefs = backend.get_component_plot_defaults()
+
+    def prepare(self, data, model, stat=None):
+        super().prepare(data, model, stat)
+        self.title = 'Model component: {}'.format(model.name)
+
+
 class ComponentTemplateModelPlot(ComponentModelPlot):
 
     def prepare(self, data, model, stat=None):
@@ -1456,6 +1501,27 @@ class ComponentSourcePlot(SourcePlot):
         (self.x, self.y, self.yerr, self.xerr,
          self.xlabel, self.ylabel) = data.to_component_plot(yfunc=model)
         self.y = self.y[1]
+        self.title = 'Source model component: {}'.format(model.name)
+
+
+class ComponentSourceHistogramPlot(SourceHistogramPlot):
+
+    # Is this the correct setting?
+    plot_prefs = backend.get_component_plot_defaults()
+
+    def prepare(self, data, model, stat=None):
+
+        plot = data.to_component_plot(yfunc=model)
+        (_, y, _, _, self.xlabel, self.ylabel) = plot
+
+        # taken from get_x from Data1DInt
+        indep = data.get_evaluation_indep(filter=True, model=model)
+
+        self.xlo = indep[0]
+        self.xhi = indep[1]
+        self.y = y[1]
+        assert self.y.size == self.xlo.size
+
         self.title = 'Source model component: {}'.format(model.name)
 
 

@@ -7,7 +7,7 @@ The sherpa.astro.plot module
 .. automodule:: sherpa.astro.plot
 
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
@@ -21,21 +21,21 @@ The sherpa.astro.plot module
       BkgFitPlot
       HistogramPlot
       ARFPlot
+      ModelPHAHistogram
       ModelHistogram
+      BkgModelPHAHistogram
       BkgModelHistogram
       OrderPlot
       SourcePlot
       BkgSourcePlot
       ModelPlot
-      BkgModelPlot
       RatioPlot
       BkgRatioPlot
       ResidPlot
       BkgResidPlot
-   
+
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::  ChisqrPlot BkgChisqrPlot DataPlot BkgDataPlot DelchiPlot BkgDelchiPlot FitPlot BkgFitPlot HistogramPlot ARFPlot ModelHistogram BkgModelHistogram OrderPlot SourcePlot BkgSourcePlot ModelPlot BkgModelPlot RatioPlot BkgRatioPlot ResidPlot BkgResidPlot
+.. inheritance-diagram::  ChisqrPlot BkgChisqrPlot DataPlot BkgDataPlot DelchiPlot BkgDelchiPlot FitPlot BkgFitPlot HistogramPlot ARFPlot ModelPHAHistogram ModelHistogram BkgModelPHAHistogram BkgModelHistogram OrderPlot SourcePlot BkgSourcePlot ModelPlot RatioPlot BkgRatioPlot ResidPlot BkgResidPlot
    :parts: 1
-

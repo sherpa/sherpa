@@ -33,17 +33,25 @@ import copy
 import logging
 import numpy as np
 
+import pytest
+
 from sherpa.astro import ui
+from sherpa.astro.ui.utils import Session as AstroSession
 
+from sherpa.plot import DataPlot, FitPlot, ModelPlot
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
-    SourcePlot
+    OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot, \
+    ModelPHAHistogram, BkgModelHistogram, BkgModelPHAHistogram
+from sherpa.data import Data1D, Data1DInt
+from sherpa.models import basic
+from sherpa.models.template import create_template_model
 
-from sherpa.utils.err import IdentifierErr
+from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_pylab, requires_xspec
 
-import pytest
-
+import sherpa.ui.utils
+import sherpa.astro.ui.utils
 
 _data_chan = np.linspace(1, 10, 10, dtype=np.int8)
 _data_counts = np.asarray([0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
@@ -292,6 +300,25 @@ get_source_plot              X
 """
 
 
+@pytest.mark.parametrize("idval", [None, 'x'])
+def test_get_arf_plot_no_arf(idval, clean_astro_ui):
+    """Errors out if we are unthoughtful enough to have no ARF
+    """
+
+    setup_example(idval)
+    ui.get_data(idval).set_arf(None)
+
+    with pytest.raises(DataErr) as exc:
+        if idval is None:
+            idval = 1
+            ap = ui.get_arf_plot()
+        else:
+            ap = ui.get_arf_plot(idval)
+
+    emsg = "data set '{}' does not have an associated ARF".format(idval)
+    assert str(exc.value) == emsg
+
+
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_arf_plot(idval, clean_astro_ui):
     """Basic testing of get_arf_plot
@@ -315,6 +342,69 @@ def test_get_arf_plot(idval, clean_astro_ui):
 
     # the y label depends on the backend (due to LaTeX)
     # assert ap.ylabel == 'cm$^2$'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_arf_plot_recalc(idval, clean_astro_ui):
+    """Check recalc=False handling
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ap = ui.get_arf_plot(recalc=False)
+    else:
+        ap = ui.get_arf_plot(idval, recalc=False)
+
+    assert isinstance(ap, ARFPlot)
+    assert ap.xlo is None
+    assert ap.y is None
+    assert ap.title is None
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_order_plot(idval, clean_astro_ui):
+    """Basic testing of get_order_plot: orders=None
+    """
+
+    setup_example(idval)
+    if idval is None:
+        op = ui.get_order_plot()
+    else:
+        op = ui.get_order_plot(idval)
+
+    assert isinstance(op, OrderPlot)
+
+    # Why is this using analysis=channel?
+    # Would this be changed by #884?
+    #
+    xaxis = _data_chan.reshape((1, _data_chan.size))
+    assert op.xlo == pytest.approx(xaxis)
+    assert op.xhi == pytest.approx(xaxis + 1)
+
+    yexp = _arf * 1.02e2 * (_energies[1:] - _energies[:-1])
+    yexp.resize((1, yexp.size))
+    assert op.y == pytest.approx(yexp)
+
+    assert op.title == 'Model Orders [1]'
+    assert op.xlabel == 'Channel'
+    assert op.ylabel == 'Counts/sec/channel'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_order_plot_recalc(idval, clean_astro_ui):
+    """Check recalc=False handling
+    """
+
+    setup_example(idval)
+    if idval is None:
+        op = ui.get_order_plot(recalc=False)
+    else:
+        op = ui.get_order_plot(idval, recalc=False)
+
+    assert isinstance(op, OrderPlot)
+    assert op.xlo is None
+    assert op.y is None
+    assert op.title == 'Model'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -519,9 +609,53 @@ def test_get_bkg_model_plot(idval, direct, clean_astro_ui):
     yexp = _arf * BGND_NORM * _energies_width
     assert bp.y == pytest.approx(yexp)
 
-    assert bp.title == 'Model'
+    assert bp.title == 'Background Model Contribution'
     assert bp.xlabel == 'Channel'
     assert bp.ylabel == 'Counts/sec/channel'
+
+
+def test_get_bkg_plot_recalc(clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = ui.get_bkg_plot(recalc=False)
+    assert bp.x is None
+    assert bp.y is None
+    assert bp.title is None
+
+
+@pytest.mark.parametrize("func", [ui.get_bkg_resid_plot,
+                                  ui.get_bkg_ratio_plot,
+                                  ui.get_bkg_delchi_plot,
+                                  ui.get_bkg_chisqr_plot])
+def test_get_bkg_xxx_plot_recalc(func, clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = func(recalc=False)
+    assert bp.x is None
+    assert bp.y is None
+    assert bp.title == 'Model'
+
+
+def test_get_bkg_model_plot_recalc(clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = ui.get_bkg_model_plot(recalc=False)
+    assert bp.xlo is None
+    assert bp.y is None
+    assert bp.title == 'Background Model Contribution'
+
+
+def test_get_bkg_source_plot_recalc(clean_astro_ui):
+
+    setup_example_bkg_model(None)
+
+    bp = ui.get_bkg_source_plot(recalc=False)
+    assert bp.xlo is None
+    assert bp.y is None
+    assert bp.title == 'Source'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -548,7 +682,7 @@ def test_get_bkg_model_plot_energy(idval, direct, clean_astro_ui):
     yexp = _arf * BGND_NORM
     assert bp.y == pytest.approx(yexp)
 
-    assert bp.title == 'Model'
+    assert bp.title == 'Background Model Contribution'
     assert bp.xlabel == 'Energy (keV)'
     assert bp.ylabel == 'Counts/sec/keV'
 
@@ -614,6 +748,7 @@ def test_get_bkg_fit_plot(idval, clean_astro_ui):
 
     dp = fp.dataplot
     mp = fp.modelplot
+    assert isinstance(mp, BkgModelPHAHistogram)
 
     assert dp.title == 'example-bkg'
     assert mp.title == 'Background Model Contribution'
@@ -621,7 +756,9 @@ def test_get_bkg_fit_plot(idval, clean_astro_ui):
     for plot in [dp, mp]:
         assert plot.xlabel == 'Channel'
         assert plot.ylabel == 'Counts/sec/channel'
-        assert plot.x == pytest.approx(_data_chan)
+
+    assert dp.x == pytest.approx(_data_chan)
+    assert mp.xlo == pytest.approx(_data_chan)
 
     yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dp.y == pytest.approx(dp.y)
@@ -645,6 +782,7 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
 
     dp = fp.dataplot
     mp = fp.modelplot
+    assert isinstance(mp, BkgModelPHAHistogram)
 
     assert dp.title == 'example-bkg'
     assert mp.title == 'Background Model Contribution'
@@ -652,7 +790,9 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
     for plot in [dp, mp]:
         assert plot.xlabel == 'Energy (keV)'
         assert plot.ylabel == 'Counts/sec/keV'
-        assert plot.x == pytest.approx(_energies_mid)
+
+    assert dp.x == pytest.approx(_energies_mid)
+    assert mp.xlo == pytest.approx(_energies_lo)
 
     yexp = _data_bkg / (1201.0 * _bexpscale)
     assert dp.y == pytest.approx(dp.y)
@@ -661,7 +801,7 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
     assert mp.y == pytest.approx(yexp)
 
 
-def check_bkg_fit(plotfunc):
+def check_bkg_fit(plotfunc, isfit=True):
     """Is the background fit displayed?
 
     This only checks the plot object, not the plot "hardcopy" output
@@ -670,6 +810,7 @@ def check_bkg_fit(plotfunc):
 
     dplot = ui._session._bkgdataplot
     mplot = ui._session._bkgmodelplot
+    assert isinstance(mplot, BkgModelPHAHistogram)
 
     # check the "source" plots are not set
     for plot in [ui._session._dataplot, ui._session._modelplot]:
@@ -683,7 +824,8 @@ def check_bkg_fit(plotfunc):
         assert plot.xlabel == xlabel
         assert plot.ylabel == 'Counts/sec/channel'
 
-        assert plot.x == pytest.approx(_data_chan)
+    assert dplot.x == pytest.approx(_data_chan)
+    assert mplot.xlo == pytest.approx(_data_chan)
 
     assert dplot.title == 'example-bkg'
     assert mplot.title == 'Background Model Contribution'
@@ -695,7 +837,7 @@ def check_bkg_fit(plotfunc):
     assert mplot.y == pytest.approx(yexp)
 
 
-def check_bkg_resid(plotfunc):
+def check_bkg_resid(plotfunc, isfit=True):
     """Is the background residual displayed?
 
     This only checks the plot object, not the plot "hardcopy" output
@@ -710,10 +852,10 @@ def check_bkg_resid(plotfunc):
 
     # check the "other" background plots are not set
     plot = None
-    for pf, pd in [(ui.plot_bkg_fit_delchi, ui._session._bkgdelchiplot),
-                   (ui.plot_bkg_fit_ratio, ui._session._bkgratioplot),
-                   (ui.plot_bkg_fit_resid, ui._session._bkgresidplot)]:
-        if pf == plotfunc:
+    for pfs, pd in [([ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi], ui._session._bkgdelchiplot),
+                    ([ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio], ui._session._bkgratioplot),
+                    ([ui.plot_bkg_resid, ui.plot_bkg_fit_resid], ui._session._bkgresidplot)]:
+        if plotfunc in pfs:
             assert plot is None  # a precaution
             plot = pd
             continue
@@ -725,7 +867,28 @@ def check_bkg_resid(plotfunc):
     #
     assert plot.xlabel == 'Channel'
     assert plot.ylabel != ''  # depends on the plot type
-    assert plot.title == ''
+
+    if plotfunc in [ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi]:
+        assert plot.ylabel == 'Sigma'
+    elif plotfunc in [ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio]:
+        assert plot.ylabel == 'Data / Model'
+    elif plotfunc in [ui.plot_bkg_resid, ui.plot_bkg_fit_resid]:
+        assert plot.ylabel == 'Counts/sec/channel'
+    else:
+        assert False  # check I've caught everything
+
+    # Plot title depends on whether this is part of a fit or not.
+    #
+    if isfit:
+        assert plot.title == ''
+    elif plotfunc == ui.plot_bkg_delchi:
+        assert plot.title == 'Sigma Residuals for example-bkg'
+    elif plotfunc == ui.plot_bkg_ratio:
+        assert plot.title == 'Ratio of example-bkg : Bkg Model'
+    elif plotfunc == ui.plot_bkg_resid:
+        assert plot.title == 'Residuals of example-bkg - Bkg Model'
+    else:
+        assert False  # check I've caught everything
 
     assert plot.x == pytest.approx(_data_chan)
     assert plot.y is not None
@@ -733,21 +896,112 @@ def check_bkg_resid(plotfunc):
     # the way the data and model are constructed, all residual values
     # should be negative, and the ratio values positive (or zero).
     #
-    if plotfunc == ui.plot_bkg_fit_ratio:
+    if plotfunc in [ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio]:
         assert np.all(plot.y >= 0)
     else:
         assert np.all(plot.y < 0)
 
 
+def check_bkg_chisqr(plotfunc, isfit=True):
+    """Is the background residual displayed?"""
+
+    # check the "other" background plots are not set
+    for pd in [ui._session._bkgdelchiplot,
+               ui._session._bkgratioplot,
+               ui._session._bkgresidplot]:
+        assert pd.x is None
+        assert pd.y is None
+
+    plot = ui._session._bkgchisqrplot
+    assert plot.x is not None
+    assert plot.y is not None
+
+    # Very limited checks. The y-axis label depends on the
+    # LaTeX emulation of the backend so will need changing
+    # once we have multiple backends.
+    #
+    assert plot.xlabel == 'Channel'
+    assert plot.ylabel == '$\\chi^2$'
+    assert plot.title == '$\\chi^2$ for example-bkg'
+
+    assert np.all(plot.y >= 0)
+
+
+def check_bkg_model(plotfunc, isfit=True):
+    """Is the background model displayed?"""
+
+    # check the "other" background plots are not set
+    for pd in [ui._session._bkgdelchiplot,
+               ui._session._bkgratioplot,
+               ui._session._bkgresidplot,
+               ui._session._bkgchisqrplot]:
+        assert pd.x is None
+        assert pd.y is None
+
+    assert ui._session._bkgsourceplot.xlo is None
+    assert ui._session._bkgsourceplot.xhi is None
+    assert ui._session._bkgsourceplot.y is None
+
+    plot = ui._session._bkgmodelhisto
+    assert isinstance(plot, BkgModelHistogram)
+    assert plot.xlo is not None
+    assert plot.xhi is not None
+    assert plot.y is not None
+
+    assert plot.xlabel == 'Channel'
+    assert plot.ylabel == 'Counts/sec/channel'
+    assert plot.title == 'Background Model Contribution'
+
+    assert np.all(plot.y >= 0)
+
+
+def check_bkg_source(plotfunc, isfit=True):
+    """Is the background source model displayed?"""
+
+    # check the "other" background plots are not set
+    for pd in [ui._session._bkgdelchiplot,
+               ui._session._bkgratioplot,
+               ui._session._bkgresidplot,
+               ui._session._bkgchisqrplot]:
+        assert pd.x is None
+        assert pd.y is None
+
+    # check the background model is not set
+    assert ui._session._bkgmodelhisto.xlo is None
+    assert ui._session._bkgmodelhisto.xhi is None
+    assert ui._session._bkgmodelhisto.y is None
+
+    plot = ui._session._bkgsourceplot
+    assert isinstance(plot, BkgSourcePlot)
+    assert plot.xlo is not None
+    assert plot.xhi is not None
+    assert plot.y is not None
+
+    # Very limited checks. The y-axis label depends on the
+    # LaTeX emulation of the backend so will need changing
+    # once we have multiple backends.
+    #
+    assert plot.xlabel == 'Energy (keV)'
+    assert plot.ylabel == 'f(E)  Photons/sec/cm$^2$/keV '
+    assert plot.title == 'Source Model of example-bkg'
+
+    assert np.all(plot.y >= 0)
+
+
 @requires_plotting
-@pytest.mark.usefixtures("clean_astro_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,checkfuncs",
-                         [(ui.plot_bkg_fit, [check_bkg_fit]),
+                         [(ui.plot_bkg_delchi, [check_bkg_resid]),
+                          (ui.plot_bkg_ratio, [check_bkg_resid]),
+                          (ui.plot_bkg_resid, [check_bkg_resid]),
+                          (ui.plot_bkg_chisqr, [check_bkg_chisqr]),
+                          (ui.plot_bkg_model, [check_bkg_model]),
+                          (ui.plot_bkg_source, [check_bkg_source]),
+                          (ui.plot_bkg_fit, [check_bkg_fit]),
                           (ui.plot_bkg_fit_delchi, [check_bkg_fit, check_bkg_resid]),
                           (ui.plot_bkg_fit_ratio, [check_bkg_fit, check_bkg_resid]),
                           (ui.plot_bkg_fit_resid, [check_bkg_fit, check_bkg_resid])])
-def test_bkg_plot_xxx(idval, plotfunc, checkfuncs):
+def test_bkg_plot_xxx(idval, plotfunc, checkfuncs, clean_astro_ui):
     """Test background plotting - channel space"""
 
     setup_example_bkg_model(idval)
@@ -760,8 +1014,9 @@ def test_bkg_plot_xxx(idval, plotfunc, checkfuncs):
     # or two plots. The following isn't ideal but let's see how
     # it goes.
     #
+    isfit = checkfuncs[0] == check_bkg_fit
     for checkfunc in checkfuncs:
-        checkfunc(plotfunc)
+        checkfunc(plotfunc, isfit=isfit)
 
 
 # The following tests were added in a separate PR to those above, and
@@ -835,6 +1090,13 @@ def test_pha1_plot_component(clean_astro_ui, basic_pha1, plotfunc):
 @requires_plotting
 @requires_fits
 @requires_data
+def test_pha1_plot_order(clean_astro_ui, basic_pha1):
+    ui.plot_order()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
 @pytest.mark.parametrize("plotfunc", [ui.int_unc, ui.int_proj])
 def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc('pl.gamma')
@@ -865,6 +1127,36 @@ def test_img_contour_function(clean_astro_ui, basic_img):
     ui.contour("data", "model", "source", "fit")
 
 
+@requires_pylab
+@requires_fits
+@requires_data
+def test_img_contour_function_kwarg(clean_astro_ui, basic_img):
+    """Check we can change the alpha setting."""
+
+    from matplotlib import pyplot as plt
+
+    ui.contour("data", "model", "source", "fit", alpha=0.2)
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 4
+
+    for i, ax in enumerate(axes, 1):
+
+        assert ax.get_geometry() == (2, 2, i)
+
+        assert ax.get_xscale() == 'linear'
+        assert ax.get_yscale() == 'linear'
+
+        assert len(ax.lines) ==0
+        assert len(ax.collections) > 0
+
+        col = ax.collections[0]
+        assert col.get_alpha() == 0.2
+
+    plt.close()
+
+
 @requires_plotting
 @requires_fits
 @requires_data
@@ -879,13 +1171,13 @@ def test_img_contour(clean_astro_ui, basic_img, plotfunc):
 @requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
+def test_pha1_plot_data_options(caplog, clean_astro_ui, basic_pha1):
     """Test that the options have changed things, where easy to do so"""
 
     from matplotlib import pyplot as plt
     import matplotlib
 
-    prefs = ui.get_data_plot_prefs()
+    prefs = ui.get_data_plot_prefs('tst')
 
     # check the preference are as expected for the boolean cases
     assert not prefs['xerrorbars']
@@ -900,6 +1192,8 @@ def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
 
     prefs['color'] = 'orange'
 
+    # linecolor is unused, but check we can set it as existing code
+    # may reference it.
     prefs['linecolor'] = 'brown'
     prefs['linestyle'] = '-.'
 
@@ -907,7 +1201,18 @@ def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
     prefs['markerfacecolor'] = 'cyan'
     prefs['markersize'] = 10
 
-    ui.plot_data()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.plot_data()
+
+    # check for linecolor warning
+    assert len(caplog.record_tuples) == 1
+    rec = caplog.record_tuples[0]
+    assert len(rec) == 3
+    loc, lvl, msg = rec
+
+    assert loc == 'sherpa.plot.pylab_backend'
+    assert lvl == logging.WARNING
+    assert msg == 'The linecolor attribute, set to brown, is unused.'
 
     ax = plt.gca()
     assert ax.get_xscale() == 'log'
@@ -975,7 +1280,7 @@ def test_pha1_plot_data_options(clean_astro_ui, basic_pha1):
 @requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
+def test_pha1_plot_model_options(caplog, clean_astro_ui, basic_pha1):
     """Test that the options have changed things, where easy to do so
 
     In matplotlib 3.1 the plot_model call causes a MatplotlibDeprecationWarning
@@ -991,13 +1296,7 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
 
     from matplotlib import pyplot as plt
 
-    # Note that for PHA data sets, the mode is drawn as a histogram,
-    # so get_model_plot_prefs doesn't actually work. We need to change
-    # the histogram prefs instead. See issue
-    # https://github.com/sherpa/sherpa/issues/672
-    #
-    # prefs = ui.get_model_plot_prefs()
-    prefs = ui.get_model_plot().histo_prefs
+    prefs = ui.get_model_plot_prefs('tst')
 
     # check the preference are as expected for the boolean cases
     assert not prefs['xlog']
@@ -1008,6 +1307,8 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
 
     prefs['color'] = 'green'
 
+    # linecolor is unused, but check we can set it as existing code
+    # may reference it.
     prefs['linecolor'] = 'red'
     prefs['linestyle'] = 'dashed'
 
@@ -1015,7 +1316,18 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
     prefs['markerfacecolor'] = 'yellow'
     prefs['markersize'] = 8
 
-    ui.plot_model()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.plot_model()
+
+    # check for linecolor warning
+    assert len(caplog.record_tuples) == 1
+    rec = caplog.record_tuples[0]
+    assert len(rec) == 3
+    loc, lvl, msg = rec
+
+    assert loc == 'sherpa.plot.pylab_backend'
+    assert lvl == logging.WARNING
+    assert msg == 'The linecolor attribute (red) is unused.'
 
     ax = plt.gca()
     assert ax.get_xscale() == 'log'
@@ -1032,22 +1344,29 @@ def test_pha1_plot_model_options(clean_astro_ui, basic_pha1):
     # platform/backend differences. Let's see how pytest.approx works
     #
     xmin, xmax = ax.get_xlim()
-    assert xmin == pytest.approx(0.40770789163447285)
-    assert xmax == pytest.approx(11.477975806572461)
+    assert xmin == pytest.approx(0.4011095556520917)
+    assert xmax == pytest.approx(11.495805328091725)
 
     ymin, ymax = ax.get_ylim()
     assert ymin == pytest.approx(-0.00045772936258082011, rel=0.01)
     assert ymax == pytest.approx(0.009940286575890335, rel=0.01)
 
-    assert len(ax.lines) == 1
-    line = ax.lines[0]
+    assert len(ax.lines) == 2
 
     # Apparently color wins out over linecolor
+    line = ax.lines[0]
     assert line.get_color() == 'green'
     assert line.get_linestyle() == '--'  # note: input was dashed
-    assert line.get_marker() == '*'
-    assert line.get_markerfacecolor() == 'yellow'
-    assert line.get_markersize() == pytest.approx(8.0)
+    assert line.get_marker() == 'None'
+    assert line.get_markerfacecolor() == 'green'
+    assert line.get_markersize() == pytest.approx(6.0)
+
+    pts = ax.lines[1]
+    assert pts.get_color() == 'green'
+    assert pts.get_linestyle() == 'None'
+    assert pts.get_marker() == '*'
+    assert pts.get_markerfacecolor() == 'yellow'
+    assert pts.get_markersize() == pytest.approx(8.0)
 
     assert len(ax.collections) == 0
 
@@ -1096,7 +1415,7 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     assert ymin == pytest.approx(7.644069935298475e-05)
     assert ymax == pytest.approx(0.017031102671151491)
 
-    assert len(ax.lines) == 2
+    assert len(ax.lines) == 3
 
     # DATA
     #
@@ -1110,7 +1429,7 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     assert line.get_markersize() == pytest.approx(10.0)
     assert line.get_alpha() == pytest.approx(0.7)
 
-    # MODEL
+    # MODEL - line
     #
     line = ax.lines[1]
     assert line.get_color() != 'green'  # option over-ridden
@@ -1119,6 +1438,16 @@ def test_pha1_plot_fit_options(clean_astro_ui, basic_pha1):
     assert line.get_markerfacecolor() == line.get_color()  # option over-ridden
     assert line.get_markersize() == pytest.approx(6.0)
     assert line.get_alpha() == pytest.approx(0.7)
+
+    # MODEL - points
+    #
+    pts = ax.lines[2]
+    assert pts.get_color() != 'green'  # option over-ridden
+    assert pts.get_linestyle() == 'None'
+    assert pts.get_marker() == 'None'
+    assert pts.get_markerfacecolor() == line.get_color()  # option over-ridden
+    assert pts.get_markersize() == pytest.approx(6.0)
+    assert pts.get_alpha() == pytest.approx(0.7)
 
     # assume error bars handled by a collection; test a subset
     # of values
@@ -1851,3 +2180,528 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
     #
     got = uflux / aflux
     assert got == pytest.approx(ratio, rel=1e-3)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title,plotcls",
+                         [("model", [], "Model",
+                           sherpa.plot.ModelPlot),
+                          ("model_component", ['mdl'],
+                           "Model component: polynom1d.mdl",
+                           sherpa.plot.ComponentModelPlot),
+                          ("source", [], "Source",
+                           sherpa.plot.SourcePlot),
+                          ("source_component", ['mdl'],
+                           "Source model component: polynom1d.mdl",
+                           sherpa.plot.ComponentSourcePlot)])
+def test_data1d_get_model_plot(cls, plottype, extraargs, title, plotcls):
+    """Check we can get a motel plot of a Data1D model/source.
+
+    Note that we test both Session classes here.
+    """
+
+    x = np.arange(10, 20, 2)
+    y = np.asarray([100, 102, 104, 106, 108])
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, x, y, Data1D)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 90
+    mdl.c1 = 1
+
+    s.set_source(mdl)
+
+    plot = getattr(s, "get_{}_plot".format(plottype))(*extraargs)
+
+    assert isinstance(plot, plotcls)
+    assert plot.title == title
+    assert plot.x == pytest.approx(x)
+    assert plot.y == pytest.approx(y)
+
+
+def create_template():
+    """Create a simple template model"""
+
+    # Evalation grid
+    x = np.arange(5, 25, 1)
+
+    # The parameter for the grid (FWHM in this case)
+    grid = np.arange(1, 10, 1)
+
+    mdl = basic.Gauss1D()
+    mdl.pos = 15
+    mdl.ampl = 100
+
+    templates = []
+    for fwhm in grid:
+        mdl.fwhm = fwhm
+        template = basic.TableModel()
+        template.load(x, mdl(x))
+        templates.append(template)
+
+    grid.resize((grid.size, 1))
+    return create_template_model('tmdl', ["fwhm"], grid, templates)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title,plotcls",
+                         [("model", [], "Model",
+                           sherpa.plot.ModelPlot),
+                          ("model_component", ['tmdl'],
+                           "Model component: template.tmdl",
+                           sherpa.plot.ComponentModelPlot),
+                          ("source", [], "Source",
+                           sherpa.plot.SourcePlot),
+                          ("source_component", ['tmdl'],
+                           "Source model component: template.tmdl",
+                           sherpa.plot.ComponentSourcePlot)])
+def test_data1d_get_model_plot_template(cls, plottype, extraargs, title, plotcls):
+    """Template models are handled slightly differently.
+    """
+
+    x = np.arange(10, 20, 2)
+    y = np.asarray([100, 102, 104, 106, 108])
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, x, y, Data1D)
+
+    mdl = create_template()
+    s._tbl_models.append(mdl)
+    s._add_model_component(mdl)
+
+    s.set_source(mdl)
+
+    # best to pick a value on the grid used by create_template
+    mdl.fwhm = 3
+
+    plot = getattr(s, "get_{}_plot".format(plottype))(*extraargs)
+
+    assert isinstance(plot, plotcls)
+    assert plot.title == title
+    assert plot.x == pytest.approx(x)
+
+    # This is the template value, so it should be close to this
+    # (although there's interpolation both on the grid of parameter
+    # values and the fata grid).
+    #
+    mdl = basic.Gauss1D()
+    mdl.pos = 15
+    mdl.fwhm = 3
+    mdl.ampl = 100
+    yexp = mdl(x)
+
+    assert plot.y == pytest.approx(yexp)
+
+    # Although this class is intended for use, it currently isn't
+    # so check it isn't being used (only for the source_component
+    # case but leave the test for everything).
+    #
+    assert not isinstance(plot, sherpa.plot.ComponentTemplateSourcePlot)
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title",
+                         [("model", [], "Model"),
+                          ("model_component", ['mdl'],
+                           "Model component: polynom1d.mdl"),
+                          ("source", [], "Source"),
+                          ("source_component", ['mdl'],
+                           "Source model component: polynom1d.mdl")])
+def test_data1d_plot_model(cls, plottype, extraargs, title):
+    """Check we can plot a Data1D model/source.
+
+    For the Data1D case source and model return the
+    same plots apart for the title.
+
+    Note that we test both Session classes here.
+    """
+
+    from matplotlib import pyplot as plt
+
+    x = np.arange(10, 20, 2)
+    y = np.asarray([100, 110, 105, 95, 120])
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, x, y, Data1D)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 90
+    mdl.c1 = 1
+
+    s.set_source(mdl)
+
+    getattr(s, "plot_{}".format(plottype))(*extraargs)
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'linear'
+    assert ax.get_yscale() == 'linear'
+
+    assert ax.get_xlabel() == 'x'
+    assert ax.get_ylabel() == 'y'
+    assert ax.get_title() == title
+
+    assert len(ax.lines) == 1
+
+    # The line
+    line = ax.lines[0]
+    assert line.get_xdata().size == 5
+
+    xplot = line.get_xdata()
+    yplot = line.get_ydata()
+
+    assert xplot == pytest.approx(x)
+    assert yplot == pytest.approx(np.asarray([100, 102, 104, 106, 108]))
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title",
+                         [("model", [], "Model"),
+                          ("model_component", ['tmdl'],
+                           "Model component: template.tmdl"),
+                          ("source", [], "Source"),
+                          ("source_component", ['tmdl'],
+                           "Source model component: template.tmdl")])
+def test_data1d_plot_model_template(cls, plottype, extraargs, title):
+    """Template models are handled slightly differently.
+    """
+
+    from matplotlib import pyplot as plt
+
+    x = np.arange(10, 20, 2)
+    y = np.asarray([100, 102, 104, 106, 108])
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, x, y, Data1D)
+
+    mdl = create_template()
+    s._tbl_models.append(mdl)
+    s._add_model_component(mdl)
+
+    s.set_source(mdl)
+
+    # best to pick a value on the grid used by create_template
+    mdl.fwhm = 3
+
+    plot = getattr(s, "plot_{}".format(plottype))(*extraargs)
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'linear'
+    assert ax.get_yscale() == 'linear'
+
+    assert ax.get_xlabel() == 'x'
+    assert ax.get_ylabel() == 'y'
+    assert ax.get_title() == title
+
+    assert len(ax.lines) == 1
+    line = ax.lines[0]
+    assert line.get_xdata().size == 5
+
+    xplot = line.get_xdata()
+    yplot = line.get_ydata()
+
+    assert xplot == pytest.approx(x)
+
+    # This is the template value, so it should be close to this
+    # (although there's interpolation both on the grid of parameter
+    # values and the fata grid).
+    #
+    mdl = basic.Gauss1D()
+    mdl.pos = 15
+    mdl.fwhm = 3
+    mdl.ampl = 100
+    yexp = mdl(x)
+
+    assert yplot == pytest.approx(yexp)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title,plotcls",
+                         [("model", [], "Model",
+                           sherpa.plot.ModelHistogramPlot),
+                          ("model_component", ['mdl'],
+                           "Model component: polynom1d.mdl",
+                           sherpa.plot.ComponentModelHistogramPlot),
+                          ("source", [], "Source",
+                           sherpa.plot.SourceHistogramPlot),
+                          ("source_component", ['mdl'],
+                           "Source model component: polynom1d.mdl",
+                           sherpa.plot.ComponentSourceHistogramPlot)])
+def test_data1dint_get_model_plot(cls, plottype, extraargs, title, plotcls):
+    """Check we can plot a Data1DInt model.
+
+    This is plotted as a histogram, not as x/y values like Data1D
+
+    For the Data1DInt case source and model return the
+    same plots apart for the title.
+
+    Note that we test both Session classes here.
+    """
+
+    xlo = np.asarray([10, 12, 16, 20, 22])
+    xhi = np.asarray([12, 16, 19, 22, 26])
+    y = np.asarray([50, 54, 58, 60, 64])
+    yexp = np.asarray([22, 56, 52.5, 42, 96])
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 0
+    mdl.c1 = 1
+
+    s.set_source(mdl)
+
+    plot = getattr(s, "get_{}_plot".format(plottype))(*extraargs)
+
+    assert isinstance(plot, plotcls)
+    assert plot.title == title
+    assert plot.xlo == pytest.approx(xlo)
+    assert plot.xhi == pytest.approx(xhi)
+    assert plot.y == pytest.approx(yexp)
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("plottype,extraargs,title",
+                         [("model", [], "Model"),
+                          ("model_component", ['mdl'],
+                           "Model component: polynom1d.mdl"),
+                          ("source", [], "Source"),
+                          ("source_component", ['mdl'],
+                           "Source model component: polynom1d.mdl")])
+def test_data1dint_plot_model(cls, plottype, extraargs, title):
+    """Check we can plot a Data1DInt model.
+
+    This is plotted as a histogram, not as x/y values like Data1D
+
+    For the Data1DInt case source and model return the
+    same plots apart for the title.
+
+    Note that we test both Session classes here.
+    """
+
+    from matplotlib import pyplot as plt
+
+    xlo = np.asarray([10, 12, 16, 20, 22])
+    xhi = np.asarray([12, 16, 19, 22, 26])
+    y = np.asarray([50, 54, 58, 60, 64])
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 0
+    mdl.c1 = 1
+
+    s.set_source(mdl)
+
+    getattr(s, "plot_{}".format(plottype))(*extraargs)
+
+    ax = plt.gca()
+    assert ax.get_xscale() == 'linear'
+    assert ax.get_yscale() == 'linear'
+
+    assert ax.get_xlabel() == 'x'
+    assert ax.get_ylabel() == 'y'
+    assert ax.get_title() == title
+
+    assert len(ax.lines) == 2
+
+    # The line
+    line = ax.lines[0]
+    assert line.get_xdata().size == 11
+
+    xplot = line.get_xdata()
+    yplot = line.get_ydata()
+
+    # do it a different way to the plot backend
+    xexp = np.dstack((xlo, xhi)).flatten()
+    yexp = np.asarray([22, 56, 52.5, 42, 96]).repeat(2)
+
+    # Check for nan
+    #
+    good = np.ones(11, dtype=np.bool)
+    good[6] = False
+    assert np.isfinite(xplot) == pytest.approx(good)
+    assert np.isfinite(yplot) == pytest.approx(good)
+
+    assert xplot[good] == pytest.approx(xexp)
+    assert yplot[good] == pytest.approx(yexp)
+
+    # The points
+    pts = ax.lines[1]
+    assert pts.get_xdata().size == 5
+
+    xplot = pts.get_xdata()
+    yplot = pts.get_ydata()
+
+    # do it a different way to the plot backend
+    xexp = (xlo + xhi) / 2
+    yexp = np.asarray([22, 56, 52.5, 42, 96])
+
+    assert xplot == pytest.approx(xexp)
+    assert yplot == pytest.approx(yexp)
+
+
+# Tests from test_ui_plot but now checking out DataPHA
+#
+@requires_fits
+@requires_data
+def test_pha1_data_plot_recalc(clean_astro_ui, basic_pha1):
+    """Basic testing of get_data_plot(recalc=False)"""
+
+    ui.get_data_plot()
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    p = ui.get_data_plot(recalc=False)
+    assert isinstance(p, DataPlot)
+    assert p.x.size == 42
+    assert p.x[0] == pytest.approx(0.5183)
+    assert p.x[-1] == pytest.approx(8.2198)
+
+    p = ui.get_data_plot(recalc=True)
+    assert isinstance(p, DataPlot)
+    assert p.x.size == 26
+    assert p.x[0] == pytest.approx(1.0658)
+    assert p.x[-1] == pytest.approx(4.4822)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("ptype,extraargs,pclass,nbins1,nbins2",
+                         [('model', [], ModelHistogram, 644, 252),
+                          ('model_component', ['pl'], ComponentModelPlot, 644, 252),
+                          ('source', [], SourcePlot, 1090, 1090),
+                          ('source_component', ['pl'], ComponentSourcePlot, 1090, 1090)])
+def test_pha1_model_plot_recalc(ptype, extraargs, pclass, nbins1, nbins2,
+                                clean_astro_ui, basic_pha1):
+    """Basic testing of get_model_plot(recalc=False)"""
+
+    func = getattr(ui, 'get_{}_plot'.format(ptype))
+
+    # Seed the data for the recalc=False call
+    func(*extraargs)
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    p = func(*extraargs, recalc=False)
+    assert isinstance(p, pclass)
+    assert p.xlo.size == nbins1
+
+    p = func(*extraargs, recalc=True)
+    assert isinstance(p, pclass)
+    assert p.xlo.size == nbins2
+
+
+@requires_fits
+@requires_data
+def test_pha1_fit_plot_recalc(clean_astro_ui, basic_pha1):
+    """Basic testing of get_fit_plot(recalc=False)"""
+
+    ui.get_fit_plot('tst')
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    p = ui.get_fit_plot('tst', recalc=False)
+    assert isinstance(p, FitPlot)
+    assert isinstance(p.dataplot, DataPlot)
+    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert p.dataplot.x.size == 42
+    assert p.modelplot.xlo.size == 42
+
+    p = ui.get_fit_plot('tst', recalc=True)
+    assert isinstance(p, FitPlot)
+    assert isinstance(p.dataplot, DataPlot)
+    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert p.dataplot.x.size == 26
+    assert p.modelplot.xlo.size == 26
+
+
+@requires_fits
+@requires_data
+def test_pha1_bkg_fit_plot_no_model(clean_astro_ui, basic_pha1):
+    """Error out if get_bkg_fit_plot has no source model"""
+
+    ui.get_fit_plot('tst')
+    with pytest.raises(ModelErr) as exc:
+        ui.get_bkg_fit_plot('tst')
+
+    emsg = 'background model tst for data set tst has not been set'
+    assert str(exc.value) == emsg
+
+
+@requires_fits
+@requires_data
+def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
+    """Basic testing of get_bkg_fit_plot(recalc=False)"""
+
+    infile = make_data_path('3c273.pi')
+    ui.load_pha(infile)
+    ui.get_bkg().name = 'my-name.pi'
+
+    ui.ignore(None, 1)
+    ui.ignore(5, None)
+
+    ui.set_bkg_model(ui.polynom1d.bpl)
+
+    p = ui.get_bkg_fit_plot(recalc=False)
+    assert isinstance(p, FitPlot)
+    assert p.dataplot is None
+    assert p.modelplot is None
+
+    p = ui.get_bkg_fit_plot(recalc=True)
+    assert isinstance(p, FitPlot)
+    assert isinstance(p.dataplot, DataPlot)
+    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert p.dataplot.x.size == 26
+    assert p.modelplot.xlo.size == 26
+    assert p.dataplot.title == 'my-name.pi'
+    assert p.modelplot.title == 'Background Model Contribution'
+
+
+@requires_pylab
+@requires_fits
+@requires_data
+def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1):
+    """Check plot('bkg', 1, 1, 'bkg', 1, 2)
+
+    The dataid is actually 'tst', and the way we check
+    it has worked is by getting it to check for an unknown
+    background component: if the second argument is
+    recognized then we get an error.
+
+    Of course, just checking ('bkg', 'tst', 1) is in some
+    ways enough.
+
+    """
+
+    with pytest.raises(IdentifierErr) as exc:
+        ui.plot('bkg', 'tst', 1, 'bkg', 'tst', 'up')
+
+    emsg = 'background data set up in PHA data set tst has not been set'
+    assert str(exc.value) == emsg

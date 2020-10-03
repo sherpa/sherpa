@@ -20,7 +20,6 @@
 
 from collections import namedtuple
 import logging
-import re
 
 import numpy as np
 
@@ -243,14 +242,20 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui):
     with pytest.raises(IdentifierErr) as exc:
         ui.get_source('full')
 
-    emsg = "Convolved model\n.*\n is set for dataset full. You should use get_model instead."
-    assert re.match(emsg, str(exc.value))
+    emsg = "Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model instead."
+    assert str(exc.value) == emsg
 
     with pytest.raises(IdentifierErr) as exc:
         ui.plot_source('full')
 
-    emsg = "Convolved model\n.*\n is set for dataset full. You should use plot_model instead."
-    assert re.match(emsg, str(exc.value))
+    emsg = "Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use plot_model instead."
+    assert str(exc.value) == emsg
+
+    with pytest.raises(IdentifierErr) as exc:
+        ui.get_source_plot('full')
+
+    emsg = "Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model_plot instead."
+    assert str(exc.value) == emsg
 
     # Test Case 2
     ui.set_source('full', 'powlaw1d.p2')

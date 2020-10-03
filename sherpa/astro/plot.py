@@ -34,10 +34,10 @@ import logging
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelPlot',
+__all__ = ('SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
            'BkgRatioPlot', 'BkgChisqrPlot',
-           'OrderPlot', 'ModelHistogram', 'BkgModelHistogram')
+           'OrderPlot', 'ModelHistogram')
 
 
 def to_latex(txt):
@@ -59,13 +59,49 @@ def to_latex(txt):
     return backend.get_latex_for_string(txt)
 
 
-class ModelHistogram(HistogramPlot):
-    "Derived class for creating 1D PHA model histogram plots"
+class ModelPHAHistogram(HistogramPlot):
+    """Plot a model for a PHA dataset.
+
+    The filtering and grouping from the PHA datset
+    are used to create the bins for the model.
+    """
+
     histo_prefs = backend.get_model_histo_defaults()
 
     def __init__(self):
         HistogramPlot.__init__(self)
         self.title = 'Model'
+
+    def prepare(self, data, model, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        (_, self.y, _, _,
+         self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
+        self.y = self.y[1]
+
+        if data.units != 'channel':
+            elo, ehi = data._get_ebins(group=False)
+        else:
+            elo, ehi = (data.channel, data.channel + 1.)
+
+        self.xlo = data.apply_filter(elo, data._min)
+        self.xhi = data.apply_filter(ehi, data._max)
+        if data.units == 'wavelength':
+            self.xlo = data._hc / self.xlo
+            self.xhi = data._hc / self.xhi
+
+
+class ModelHistogram(ModelPHAHistogram):
+    """Plot a model for a PHA dataset with no grouping.
+
+    The model is drawn at the native resolution of
+    the instrument response, or ungrouped channels.
+    The model is filtered to the minimum and maximum
+    of the PHA dataset but any ignored ranges within
+    this are ignored.
+    """
 
     def prepare(self, data, model, stat=None):
 
@@ -78,20 +114,7 @@ class ModelHistogram(HistogramPlot):
                 for interval in new_filter:
                     data.notice(*interval)
 
-            (self.xlo, self.y, yerr, xerr,
-             self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
-            self.y = self.y[1]
-
-            if data.units != 'channel':
-                elo, ehi = data._get_ebins(group=False)
-            else:
-                elo, ehi = (data.channel, data.channel + 1.)
-
-            self.xlo = data.apply_filter(elo, data._min)
-            self.xhi = data.apply_filter(ehi, data._max)
-            if data.units == 'wavelength':
-                self.xlo = data._hc / self.xlo
-                self.xhi = data._hc / self.xhi
+            super().prepare(data, model, stat=stat)
 
         finally:
             if old_group:
@@ -293,10 +316,31 @@ class BkgDataPlot(DataPlot):
         DataPlot.__init__(self)
 
 
-class BkgModelPlot(ModelPlot):
-    "Derived class for creating plots of background model"
+# was BkgModelPlot; this is not a good class name
+class BkgModelPHAHistogram(ModelPHAHistogram):
+    """Plot a background model for a PHA dataset.
+
+    The filtering and grouping from the background of
+    the PHA datset are used to create the bins for the model.
+    """
+
     def __init__(self):
-        ModelPlot.__init__(self)
+        ModelPHAHistogram.__init__(self)
+        self.title = 'Background Model Contribution'
+
+
+class BkgModelHistogram(ModelHistogram):
+    """Plot a background model for a PHA dataset with no grouping.
+
+    The model is drawn at the native resolution of
+    the instrument response, or ungrouped channels.
+    The model is filtered to the minimum and maximum
+    of the background to the PHA dataset but any ignored
+    ranges within this are ignored.
+    """
+
+    def __init__(self):
+        ModelPHAHistogram.__init__(self)
         self.title = 'Background Model Contribution'
 
 
@@ -452,13 +496,9 @@ class OrderPlot(ModelHistogram):
         self.histo_prefs['linecolor'] = default_color
 
 
-class BkgModelHistogram(ModelHistogram):
-    "Derived class for creating 1D background PHA model histogram plots"
-
-    def __init__(self):
-        ModelHistogram.__init__(self)
-
-
+# TODO: we should probably derive from a histogram plot that
+#       has less PHA heritage
+#
 class FluxHistogram(ModelHistogram):
     "Derived class for creating 1D flux distribution plots"
     def __init__(self):
