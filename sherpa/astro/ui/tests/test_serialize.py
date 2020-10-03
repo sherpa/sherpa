@@ -825,21 +825,8 @@ _canonical_pha_grouped += _canonical_extra
 _canonical_usermodel += _canonical_extra
 
 
-# This extends the clean_astro_ui logic but it isn't obvious
-# to me how to chain them together, so it re-implements
-# clean_astro_ui.
-#
 @pytest.fixture(autouse=True)
-def setup(clean_astro_ui):
-
-    # Setup for the test
-    try:
-        numpy.set_printoptions(legacy='1.13')
-    except TypeError:  # numpy < 1.14
-        pass
-
-    old_logging_level = logger.level
-    logger.setLevel(logging.ERROR)
+def setup(hide_logging, old_numpy_printing, clean_astro_ui):
 
     if has_xspec:
         from sherpa.astro import xspec
@@ -853,23 +840,11 @@ def setup(clean_astro_ui):
     else:
         old_xspec = None
 
-    ui.clean()
-
     # run the test
     yield
 
-    # Restore the Sherpa/related settings
-    ui.clean()
-
     if old_xspec is not None:
         xspec.set_xsstate(old_xspec)
-
-    try:
-        numpy.set_printoptions(legacy=False)
-    except TypeError:  # numpy < 1.14
-        pass
-
-    logger.setLevel(old_logging_level)
 
 
 def add_datadir_path(output):
