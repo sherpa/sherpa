@@ -1,0 +1,88 @@
+/*
+Copyright (C) 2020  Smithsonian Astrophysical Observatory
+
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+*/
+
+:root {
+  --sherpa-border-color: var(--jp-border-color2, #e0e0e0);
+  --sherpa-background-color: var(--jp-layout-color0, white);
+  --sherpa-background-color-row-even: var(--jp-layout-color1, white);
+  --sherpa-background-color-row-odd: var(--jp-layout-color2, #eeeeee);
+
+  /* https://medium.com/ge-design/iot-cool-gray-is-a-great-background-color-for-data-visualization-ebf18c318418 */
+  --sherpa-background-color-dark1: #EBEFF2;
+  --sherpa-background-color-dark2: #D8E0E5;
+}
+
+div.sherpa-text-fallback {
+    display: none;
+}
+
+div.sherpa {
+    display: block;
+}
+
+div.sherpa details summary {
+    display: list-item;  /* needed for notebook, not lab */
+    font-size: larger;
+}
+
+div.sherpa details div.datavals {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    column-gap: 0.5em;
+}
+
+div.sherpa div.dataname {
+    font-weight: bold;
+    border-right: 1px solid var(--sherpa-border-color);
+}
+
+div.sherpa div.dataval { }
+
+div.sherpa div.datavals div:nth-child(4n + 1) ,
+div.sherpa div.datavals div:nth-child(4n + 2) {
+    background: var(--sherpa-background-color-row-odd);
+}
+
+div.sherpa table.model tbody {
+    border-bottom: 1px solid var(--sherpa-border-color);
+}
+
+div.sherpa table.model tr.block {
+    border-top: 1px solid var(--sherpa-border-color);
+}
+
+div.sherpa table.model th.model-odd ,
+div.sherpa table.model th.model-even {
+    border-right: 1px solid var(--sherpa-border-color);
+}
+
+div.sherpa table.model th.model-odd {
+    background: var(--sherpa-background-color-dark1);
+}
+
+div.sherpa table.model th.model-even {
+    background: var(--sherpa-background-color-dark2);
+}
+
+div.sherpa .failed {
+    background: orange;
+    font-size: large;
+    padding: 1em;
+}

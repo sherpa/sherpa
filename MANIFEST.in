@@ -38,6 +38,9 @@ include sherpa/optmethods/tests/tstopt.hh
 include sherpa/sherpa.rc
 include sherpa/sherpa-standalone.rc
 
+# HTML/notebook representation
+recursive-include sherpa/static *
+
 # Sphinx documentation
 recursive-include docs *
 
