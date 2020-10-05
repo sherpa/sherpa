@@ -41,7 +41,8 @@ from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
     DataContour, ModelContour, SourceContour, ResidContour, \
     RatioContour, FitContour, PSFContour, LRHistogram, \
-    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot
+    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot, \
+    DataHistogramPlot
 
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr
@@ -170,13 +171,14 @@ def test_plot_prefs_xxx(session, ptype, arg):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_prefs_model_data1dint(session):
-    """Data1DInt model class is different to Data1D
+@pytest.mark.parametrize("ptype", ["data", "model"])
+def test_plot_prefs_xxx_data1dint(session, ptype):
+    """Data1DInt is different to Data1D.
     """
 
     s = session()
 
-    get_prefs = getattr(s, 'get_model_plot_prefs')
+    get_prefs = getattr(s, 'get_{}_plot_prefs'.format(ptype))
 
     s.load_arrays(1, [1, 2, 4], [2, 3, 5], [4, 5, 10],
                   Data1DInt)
@@ -190,20 +192,27 @@ def test_plot_prefs_model_data1dint(session):
     assert 'xerrorbars' in prefs
     assert 'xaxis' in prefs
     assert 'ratioline' in prefs
+    assert not prefs['xlog']
+    prefs['xlog'] = True
 
     # It's not easy to check the difference between
     # point and histogram preferences. Some differences
-    # are xerrorbars, xaxis, and ratioline.
+    # are xaxis and ratioline.
+    #
+    # I also check xerrorbars as we want this for histograms.
     #
     prefs = get_prefs()
-    assert 'xerrorbars' not in prefs
+    assert 'xerrorbars' in prefs
     assert 'xaxis' not in prefs
     assert 'ratioline' not in prefs
+    assert not prefs['xlog']
 
     prefs = get_prefs(2)
     assert 'xerrorbars' in prefs
     assert 'xaxis' in prefs
     assert 'ratioline' in prefs
+    assert prefs['xlog']
+
 
 def change_example(idval):
     """Change the example y values (created by setup_example)"""
@@ -1940,13 +1949,14 @@ def test_data_plot_recalc(session):
     s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
 
     p = s.get_data_plot(recalc=False)
-    assert isinstance(p, DataPlot)
-    assert p.x == pytest.approx([1, 2])
-    assert p.y == pytest.approx([1, 0])
+    assert isinstance(p, DataHistogramPlot)
+    assert p.xlo is None
+    assert p.y is None
 
     p = s.get_data_plot(recalc=True)
-    assert isinstance(p, DataPlot)
-    assert p.x == pytest.approx([22.5, 35, 50])
+    assert isinstance(p, DataHistogramPlot)
+    assert p.xlo == pytest.approx([20, 30, 40])
+    assert p.xhi == pytest.approx([25, 40, 60])
     assert p.y == pytest.approx([10, 12, 14])
 
 

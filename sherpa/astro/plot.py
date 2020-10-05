@@ -34,7 +34,7 @@ import logging
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelHistogram',
+__all__ = ('DataPHAPlot', 'SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
            'BkgRatioPlot', 'BkgChisqrPlot',
            'OrderPlot', 'ModelHistogram')
@@ -57,6 +57,40 @@ def to_latex(txt):
     """
 
     return backend.get_latex_for_string(txt)
+
+
+class DataPHAPlot(sherpa.plot.DataHistogramPlot):
+    """Plot a PHA dataset."""
+
+    histo_prefs = sherpa.plot.get_data_hist_prefs()
+
+    def prepare(self, data, stat=None):
+
+        # Need a better way of accessing the binning of the data.
+        # Maybe to_plot should return the lo/hi edges as a pair
+        # here.
+        #
+        (_, self.y, self.yerr, self.xerr, self.xlabel,
+         self.ylabel) = data.to_plot()
+
+        if stat is not None:
+            yerrorbars = self.histo_prefs.get('yerrorbars', True)
+            self.yerr = sherpa.plot.calculate_errors(data, stat, yerrorbars)
+
+        self.title = data.name
+
+        # Get the X axis data.
+        #
+        if data.units != 'channel':
+            elo, ehi = data._get_ebins(group=False)
+        else:
+            elo, ehi = (data.channel, data.channel + 1.)
+
+        self.xlo = data.apply_filter(elo, data._min)
+        self.xhi = data.apply_filter(ehi, data._max)
+        if data.units == 'wavelength':
+            self.xlo = data._hc / self.xlo
+            self.xhi = data._hc / self.xhi
 
 
 class ModelPHAHistogram(HistogramPlot):
@@ -310,10 +344,11 @@ class ARFPlot(HistogramPlot):
                 self.xhi = data._hc / self.xhi
 
 
-class BkgDataPlot(DataPlot):
+class BkgDataPlot(DataPHAPlot):
     "Derived class for creating plots of background counts"
-    def __init__(self):
-        DataPlot.__init__(self)
+
+    # Is this derived class worth it?
+    pass
 
 
 # was BkgModelPlot; this is not a good class name

@@ -32,7 +32,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.utils import poisson_noise
-from sherpa.utils.err import ArgumentTypeErr, DataErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr, ModelErr
 
 
 # This is part of #397
@@ -219,3 +219,30 @@ def test_save_xxx_nodata(func, emsg, bid):
         func("temp-file-that-should-not-be-created", bkg_id=bid)
 
     assert str(exc.value) == emsg
+
+
+def test_delete_bkg_model(clean_astro_ui):
+    """Check we can delete a background model"""
+
+    channels = np.arange(1, 5)
+    counts = np.zeros(channels.size)
+    d = ui.DataPHA('src', channels, counts)
+    b = ui.DataPHA('bkg', channels, counts)
+    d.set_background(b, id=2)
+    ui.set_data(d)
+
+    ui.set_bkg_source(ui.const1d.bmdl + ui.gauss1d.gmdl, bkg_id=2)
+    assert ui.get_bkg_source(bkg_id=2) is not None
+
+    ui.delete_bkg_model(bkg_id=2)
+
+    # Expression has been removed
+    #
+    with pytest.raises(ModelErr) as exc:
+        ui.get_bkg_source(bkg_id=2)
+
+    assert str(exc.value) == 'background model 2 for data set 1 has not been set'
+
+    # components still exist
+    mdls = ui.list_model_components()
+    assert set(mdls) == set(['bmdl', 'gmdl'])

@@ -84,7 +84,7 @@ backend.init()
 plotter = backend
 
 __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
-           'DataPlot', 'DataContour', 'DelchiPlot', 'ComponentModelPlot',
+           'DataPlot', 'DataHistogramPlot', 'DataContour', 'DelchiPlot', 'ComponentModelPlot',
            'ModelPlot', 'ModelContour', 'FitPlot', 'FitContour',
            'ResidPlot', 'ResidContour', 'RatioPlot', 'RatioContour',
            'IntervalProjection', 'IntervalUncertainty', 'ChisqrPlot',
@@ -143,6 +143,68 @@ def _errorbar_warning(stat):
     return "The displayed errorbars have been supplied with the " + \
         "data or calculated using chi2xspecvar; the errors are not " + \
         "used in fits with {}".format(stat.name)
+
+
+def calculate_errors(data, stat, yerrorbars=True):
+    """Calculate errors from the statistics object."""
+
+    if stat is None:
+        return None
+
+    # Do we warn about adding in error values? The logic here isn't
+    # quite the same as the other times _errorbar_warning is used.
+    # This suggests that the code really should be re-worked to
+    # go through a common code path.
+    #
+    # Do we require that self.yerr is always set, even if the
+    # value is not used in a plot? I am going to assume not
+    # (since the existing code will not change self.yerr if
+    # the stat.name is not in _stats_noerr but an exception is
+    # raised by get_yerr).
+    #
+    # This assumes that the error bars calculated by data.to_plot are
+    # over-ridden once a statistic is given. However, how does this
+    # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
+    # but the user has given explicit errors (i.e. they are not to
+    # be calcualted by the "DataVar" part but used as is). Does
+    # data.get_yerr handle this for us, or are invalid errors
+    # used here? It appears that the correct answers are being
+    # returned, but should we only call data.get_yerr if yerr
+    # is None/empty/whatever is returned by to_plot? This also
+    # holds for the Resid/RatioPlot classes.
+    #
+    # Note that we should probably return a value for yerr if
+    # we can, even if 'yerrorbars' is set to False, so that
+    # downstream users can make use of the value even if the
+    # plot doesn't. This is similar to how labels or xerr
+    # attributes are created even if they don't get used by the
+    # plot.
+    #
+
+    msg = _errorbar_warning(stat)
+    if stat.name in _stats_noerr:
+        if yerrorbars:
+            warning(msg)
+
+        return data.get_yerr(True, Chi2XspecVar.calc_staterror)
+
+    try:
+        return data.get_yerr(True, stat.calc_staterror)
+    except Exception:
+        # TODO: can we report a useful error here?
+        #
+        # It is possible that this is actually an unrelated
+        # error: it's unclear what error class is expected to
+        # be thrown, but likely ValueError as this is raised
+        # by Chi2DataVar when sent values < 0
+        # (note that over time the behavior has changed from
+        #  <= 0 to < 0, but this error message has not been
+        # changed).
+        #
+        if yerrorbars:
+            warning(msg + "\nzeros or negative values found")
+
+        return None
 
 
 def merge_settings(prefs, user):
@@ -462,6 +524,23 @@ class HistogramPlot(Histogram):
         """Return a HTML (string) representation of the histogram plot."""
         return backend.as_html_histogram(self)
 
+    @property
+    def x(self):
+        """Return (xlo + xhi) / 2
+
+        This is intended to make it easier to swap between
+        plot- and histogram-style plots by providing access
+        to an X value.
+        """
+
+        if self.xlo is None or self.xhi is None:
+            return  None
+
+        # As we do not (yet) require NumPy arrays, enforce it.
+        xlo = numpy.asarray(self.xlo)
+        xhi = numpy.asarray(self.xhi)
+        return (xlo + xhi) / 2
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
@@ -487,6 +566,95 @@ class HistogramPlot(Histogram):
         """
 
         Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
+                       xlabel=self.xlabel, ylabel=self.ylabel,
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+
+# I think we want slightly different histogram preferences
+# than most (mark by point rather than line).
+#
+def get_data_hist_prefs():
+    """Copy the data prefences to the histogram class"""
+
+    hprefs = backend.get_model_histo_defaults()
+    dprefs = backend.get_data_plot_defaults()
+    for k, v in dprefs.items():
+        if k not in hprefs:
+            continue
+
+        hprefs[k] = v
+
+    return hprefs
+
+
+class DataHistogramPlot(HistogramPlot):
+    """Create 1D histogram plots of data values."""
+
+    histo_prefs = get_data_hist_prefs()
+
+    def __init__(self):
+        self.xerr = None
+        self.yerr = None
+        super().__init__()
+
+    def prepare(self, data, stat=None):
+        """Create the data to plot
+
+        Parameters
+        ----------
+        data
+            The Sherpa data object to display (it is assumed to be
+            one dimensional and represent binned data).
+        stat : optional
+            The Sherpa statistics object to use to add Y error bars
+            if the data has none.
+
+        See Also
+        --------
+        plot
+        """
+
+        # Need a better way of accessing the binning of the data.
+        # Maybe to_plot should return the lo/hi edges as a pair
+        # here.
+        #
+        (_, self.y, self.yerr, self.xerr, self.xlabel,
+         self.ylabel) = data.to_plot()
+
+        self.xlo, self.xhi = data.get_indep(True)
+
+        if stat is not None:
+            yerrorbars = self.histo_prefs.get('yerrorbars', True)
+            self.yerr = calculate_errors(data, stat, yerrorbars)
+
+        self.title = data.name
+
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
+
+        Histogram.plot(self, self.xlo, self.xhi, self.y,
+                       yerr=self.yerr, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
                        overplot=overplot, clearwindow=clearwindow, **kwargs)
 
@@ -1057,62 +1225,9 @@ class DataPlot(Plot):
         (self.x, self.y, self.yerr, self.xerr, self.xlabel,
          self.ylabel) = data.to_plot()
 
-        # Do we warn about adding in error values? The logic here isn't
-        # quite the same as the other times _errorbar_warning is used.
-        # This suggests that the code really should be re-worked to
-        # go through a common code path.
-        #
-        # Do we require that self.yerr is always set, even if the
-        # value is not used in a plot? I am going to assume not
-        # (since the existing code will not change self.yerr if
-        # the stat.name is not in _stats_noerr but an exception is
-        # raised by get_yerr).
-        #
-        # This assumes that the error bars calculated by data.to_plot are
-        # over-ridden once a statistic is given. However, how does this
-        # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
-        # but the user has given explicit errors (i.e. they are not to
-        # be calcualted by the "DataVar" part but used as is). Does
-        # data.get_yerr handle this for us, or are invalid errors
-        # used here? It appears that the correct answers are being
-        # returned, but should we only call data.get_yerr if yerr
-        # is None/empty/whatever is returned by to_plot? This also
-        # holds for the Resid/RatioPlot classes.
-        #
-        # Note that we should probably return a value for yerr if
-        # we can, even if 'yerrorbars' is set to False, so that
-        # downstream users can make use of the value even if the
-        # plot doesn't. This is similar to how labels or xerr
-        # attributes are created even if they don't get used by the
-        # plot.
-        #
-        try:
-            yerrorbars = self.plot_prefs['yerrorbars']
-        except KeyError:
-            yerrorbars = True
-
         if stat is not None:
-            msg = _errorbar_warning(stat)
-            if stat.name in _stats_noerr:
-                self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-                if yerrorbars:
-                    warning(msg)
-            else:
-                try:
-                    self.yerr = data.get_yerr(True, stat.calc_staterror)
-                except Exception:
-                    # TODO: can we report a useful error here?
-                    #
-                    # It is possible that this is actually an unrelated
-                    # error: it's unclear what error class is expected to
-                    # be thrown, but likely ValueError as this is raised
-                    # by Chi2DataVar when sent values < 0
-                    # (note that over time the behavior has changed from
-                    #  <= 0 to < 0, but this error message has not been
-                    # changed).
-                    #
-                    if yerrorbars:
-                        warning(msg + "\nzeros or negative values found")
+            yerrorbars = self.plot_prefs.get('yerrorbars', True)
+            self.yerr = calculate_errors(data, stat, yerrorbars)
 
         self.title = data.name
 

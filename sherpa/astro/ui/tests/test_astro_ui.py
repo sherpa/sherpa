@@ -775,7 +775,7 @@ def test_list_pileup_ids_multi(clean_astro_ui):
     assert ans == [1, "2"]
 
 
-def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
+def check_bad_grouping(exp_xlo,exp_xhi, exp_counts, lo1, hi1, lo2, hi2):
     """Common tests from test_grouped_pha_all_badXXX
 
     Sending in two ranges is a bit excessive but easiest
@@ -786,7 +786,8 @@ def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
     assert cts == pytest.approx([exp_counts])
 
     dplot = ui.get_data_plot()
-    assert dplot.x == pytest.approx([exp_xmid])
+    assert dplot.xlo == pytest.approx([exp_xlo])
+    assert dplot.xhi == pytest.approx([exp_xhi])
     assert dplot.y == pytest.approx([exp_counts])
 
     # ignore all the data
@@ -800,7 +801,8 @@ def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
     assert len(cts) == 0
 
     dplot = ui.get_data_plot()
-    assert len(dplot.x) == 0
+    assert len(dplot.xlo) == 0
+    assert len(dplot.xhi) == 0
     assert len(dplot.y) == 0
 
     # ignore does not fail
@@ -814,7 +816,8 @@ def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
     assert cts == pytest.approx([exp_counts])
 
     dplot = ui.get_data_plot()
-    assert dplot.x == pytest.approx([exp_xmid])
+    assert dplot.xlo == pytest.approx([exp_xlo])
+    assert dplot.xhi == pytest.approx([exp_xhi])
     assert dplot.y == pytest.approx([exp_counts])
 
     # now ignore the bad channels (ie everything)
@@ -825,7 +828,8 @@ def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
     assert len(cts) == 0
 
     dplot = ui.get_data_plot()
-    assert len(dplot.x) == 0
+    assert len(dplot.xlo) == 0
+    assert len(dplot.xhi) == 0
     assert len(dplot.y) == 0
 
     # there's nothing to notice (this line is an example of #790)
@@ -835,7 +839,8 @@ def check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2):
     assert len(cts) == 0
 
     dplot = ui.get_data_plot()
-    assert len(dplot.x) == 0
+    assert len(dplot.xlo) == 0
+    assert len(dplot.xhi) == 0
     assert len(dplot.y) == 0
 
 
@@ -860,16 +865,16 @@ def test_grouped_pha_all_bad_channel(clean_astro_ui):
     ui.set_data(dset)
 
     # Run tests
-    check_bad_grouping(3, 0.8, 0, 6, 2, 10)
+    check_bad_grouping(1, 6, 0.8, 0, 6, 2, 10)
 
 
 @pytest.mark.parametrize("arf,rmf", [(True, False), (False, True), (True, True)])
-@pytest.mark.parametrize("chantype,exp_counts,exp_xmid,lo1,hi1,lo2,hi2",
-                         [("channel", 0.8, 3, 0, 7, 2, 6),
-                          ("energy", 8.0, 0.35, 0.05, 1.0, 0.2, 0.8),
-                          ("wave", 0.03871461, 52.59935223, 20, 90, 30, 85)
+@pytest.mark.parametrize("chantype,exp_counts,exp_xlo,exp_xhi,lo1,hi1,lo2,hi2",
+                         [("channel", 0.8, 1.0, 6, 0, 7, 2, 6),
+                          ("energy", 8.0, 0.1, 0.6, 0.05, 1.0, 0.2, 0.8),
+                          ("wave", 0.03871461, 123.9841874, 20.66403123, 20, 90, 30, 85)
                          ])
-def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, lo1, hi1, lo2, hi2, clean_astro_ui):
+def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xlo, exp_xhi, lo1, hi1, lo2, hi2, clean_astro_ui):
     """Helpdesk ticket: low-count data had no valid bins after grouping #790
 
     A simple PHA dataset is created, which has no "good" grouped data
@@ -913,7 +918,7 @@ def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xmid, 
     ui.set_analysis(chantype)
 
     # Run tests
-    check_bad_grouping(exp_xmid, exp_counts, lo1, hi1, lo2, hi2)
+    check_bad_grouping(exp_xlo, exp_xhi, exp_counts, lo1, hi1, lo2, hi2)
 
 
 @requires_fits

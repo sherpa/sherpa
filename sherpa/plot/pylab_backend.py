@@ -217,6 +217,7 @@ def point(x, y, overplot=True, clearwindow=False,
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           overplot=False, clearwindow=True,
+          xerrorbars=False,
           yerrorbars=False,
           ecolor=_errorbar_defaults['ecolor'],
           capsize=_errorbar_defaults['capsize'],
@@ -290,7 +291,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     objs = plot(x, y2, yerr=None, xerr=None,
                 title=title, xlabel=xlabel, ylabel=ylabel,
                 overplot=overplot, clearwindow=clearwindow,
-                xerrorbars=False, yerrorbars=yerrorbars,
+                xerrorbars=False, yerrorbars=False,
                 ecolor=ecolor, capsize=capsize, barsabove=barsabove,
                 xlog=xlog, ylog=ylog,
                 linestyle=linestyle,
@@ -303,19 +304,22 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     # also be used for marker[face]color and ecolor?
     #
     xmid = 0.5 * (xlo + xhi)
+    xerr = (xhi - xlo) / 2 if xerrorbars else None
+    yerr = yerr if yerrorbars else None
+
     try:
         color = objs[0].get_color()
     except AttributeError:
         pass
-
-    # How do we want to handle X errors?
-    xerr = None
 
     axes = plt.gca()
     zorder = find_zorder(axes)
 
     # Do not draw a line connecting the points
     #
+    # Unlike plot, using errorbar for both cases.
+    #
+
     axes.errorbar(xmid, y, yerr, xerr,
                   color=color,
                   alpha=alpha,
@@ -436,6 +440,9 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
 
     # Rely on color-cycling to work for both the "no errorbar" and
     # "errorbar" case.
+    #
+    # TODO: do we really need this, or can we just use errorbar
+    #       for both cases?
     #
     if xerrorbars or yerrorbars:
         if markerfacecolor is None:
