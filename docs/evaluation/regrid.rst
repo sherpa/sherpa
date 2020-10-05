@@ -93,7 +93,7 @@ given two arrays, for the low and high edges of each bin.
    >>> y2 = imdl(x[:-1], x[1:])
    >>> np.testing.assert_allclose(y1, y2, rtol=1e-2)
 
-The fact that the models are integrated across the bins mean that the
+The fact that the models are integrated across the bins means that the
 results do not agree that closely in this case, which is why the
 relative tolerance is only 0.01 in the check above. The results would
 be closer if the two grids had a common origin (e.g. if ``xgrid`` were

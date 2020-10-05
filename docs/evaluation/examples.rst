@@ -387,7 +387,7 @@ such as ``PowLaw1D``.
 If we evaluate this model we get a surprise! The grid arguments
 are ignored (as long as something is sent in), and instead the
 model is evaluated on the channel group (hence the evaluated
-model as 1024 bins in this exampe)::
+model as 1024 bins in this example)::
 
    >>> elo.size
    989
@@ -470,7 +470,7 @@ convert anything::
    >>> mplot.prepare(pha, full)
    >>> mplot.plot()
 
-The difference to the previos plot is that this one
+The difference to the previous plot is that this one
 uses a histogram to display each bin while the previous
 version connected the mid-point of each bin (in this case
 the bins are small so it's hard to see much difference).
