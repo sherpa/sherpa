@@ -723,7 +723,6 @@ def test_evaluate_no_cache1dint():
     assert len(mdl._cache) == 0
 
 
-@pytest.mark.xfail
 def test_evaluate_cache1dint():
     """Check we run with cacheing on: 1dint"""
 
@@ -754,7 +753,6 @@ def test_evaluate_cache1dint():
     check_cache(mdl, expected, xlo, xhi)
 
 
-@pytest.mark.xfail
 def test_evaluate_cache_swap():
     """Check issue #959 when swapping integrate flag caused problems.
 
