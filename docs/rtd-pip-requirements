@@ -1,2 +1,4 @@
 numpy
 sphinx_astropy
+ipykernel
+nbsphinx

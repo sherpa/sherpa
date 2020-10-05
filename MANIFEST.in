@@ -42,6 +42,7 @@ include sherpa/sherpa-standalone.rc
 recursive-include docs *
 
 # Quick Start Tutorial
+include notebooks/nbmapping.dat
 include notebooks/SherpaQuickStart.ipynb
 
 include sherpa/_version.py

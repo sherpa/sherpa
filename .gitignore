@@ -113,6 +113,7 @@ extern/region-4.11/src/reglexer.c.tmp
 # Sphinx documentation
 docs/_build
 docs/**/api
+docs/SherpaQuickStart.ipynb
 
 #generated from python setup.py test
 .pytest_cache
