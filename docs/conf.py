@@ -26,7 +26,10 @@
 #   a) from the top level with 'python setup.py build_sphinx'
 #   b) from the docs/ directory with 'sphinx-build -b html . build/html'
 #
+import datetime
+import glob
 import os
+import shutil
 import sys
 
 import sphinx_rtd_theme
@@ -37,6 +40,8 @@ from unittest.mock import MagicMock as BaseMock
 
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+runtime_dir = os.path.split(os.getcwd())[1]
 
 
 # I found this somewhere (probably the rtd link given above). I was
@@ -104,7 +109,7 @@ sys.modules['sherpa.astro.xspec._xspec'] = XSPECMock()
 # If in the docs directory then add the parent to the system path
 # so that Sherpa can be found.
 #
-if os.path.split(os.getcwd())[1] == 'docs':
+if runtime_dir == 'docs':
     sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -142,9 +147,116 @@ extensions = [
     # to investigate.
     'sphinx.ext.napoleon',
     # 'numpydoc.numpydoc'
-    'sphinx_astropy.ext.edit_on_github'
+    'sphinx_astropy.ext.edit_on_github',
+    # notebooks
+    'nbsphinx'
 ]
 
+# notebook support
+# - for now never execute a notebook
+#
+nbsphinx_execute = 'never'
+
+# Copy over the notebooks to the documentation area
+# if they don't exist or are older. This assumes we
+# are running in the top-level directory!
+#
+nbmapping = {}
+infile = 'notebooks/nbmapping.dat'
+if runtime_dir == 'docs':
+    infile = f"../{infile}"
+
+try:
+    with open(infile, 'r') as fh:
+        for l in fh.readlines():
+            l = l.strip()
+            if l == '' or l.startswith('#'):
+                continue
+
+            toks = l.split('\t')
+            if len(toks) != 2:
+                sys.stderr.write(f"Invalid nbmapping line: {l}\n")
+                continue
+
+            nbmapping[toks[0]] = toks[1]
+except OSError:
+    pass
+
+
+def getmtime(infile):
+
+    try:
+        t = os.path.getmtime(infile)
+    except FileNotFoundError:
+        return None
+    return datetime.datetime.fromtimestamp(t)
+
+
+if len(nbmapping) == 0:
+    sys.stderr.write("No notebook mapping found\n")
+
+else:
+    path = 'notebooks/*ipynb'
+    if runtime_dir == 'docs':
+        path = f"../{path}"
+
+    nbfiles = glob.glob(path)
+    if len(nbfiles) == 0:
+        sys.stderr.write("No notebooks found!\n")
+
+    for nbfile in nbfiles:
+        head = os.path.basename(nbfile)
+        try:
+            outpath = nbmapping[head]
+        except KeyError:
+            sys.stderr.write(f"Dropping nbfile: {nbfile}\n")
+            continue
+
+        if runtime_dir == 'docs':
+            assert outpath.startswith('docs/')
+            outpath = outpath[5:]
+
+        t1 = getmtime(nbfile)
+        t2 = getmtime(outpath)
+
+        if t2 is None or t2 < t1:
+            shutil.copy2(nbfile, outpath)
+
+
+# prolog/epilog based on
+# https://nbsphinx.readthedocs.io/en/0.7.1/conf.py
+#
+# Note: we assume the notebooks are in the notebooks/
+# top-level directory and are copied into the docs/
+# directory at build time.
+#
+nbsphinx_prolog = r"""
+{% set docname = 'notebooks/' + env.docname.split('/')[-1] %}
+
+.. raw:: html
+
+    <div class="admonition note">
+
+      This page was generated from the Jupyter notebook
+      <a class="reference external" href="https://github.com/sherpa/sherpa/blob/{{ env.config.githash|e }}/{{ docname|e }}.ipynb">{{ docname|e }}</a>.
+      <script>
+        if (document.location.host) {
+          $(document.currentScript).replaceWith(
+            '<a class="reference external" ' +
+            'href="https://nbviewer.jupyter.org/url' +
+            (window.location.protocol == 'https:' ? 's/' : '/') +
+            window.location.host +
+            window.location.pathname.slice(0, -4) +
+            'ipynb">View in <em>nbviewer</em></a>.'
+          );
+        }
+      </script>
+    </div>
+
+"""
+
+# docstrings
+#
 napoleon_google_docstring = False
 
 autosummary_generate = True
@@ -485,3 +597,15 @@ texinfo_documents = [
 
 def setup(app):
     app.add_js_file('copybutton.js')
+
+    # Add in the git commit id so that the nbsphinx_prolog
+    # can pick it up. This may well be repeating logic that
+    # is already known by Sphinx.
+    #
+    # Guessing at rebuild and types arguments.
+    #
+    githash = sherpa._version.get_versions()['full']
+    if githash.endswith('.dirty'):
+        githash = githash[:-6]
+
+    app.config.add('githash', githash, rebuild=False, types=None)

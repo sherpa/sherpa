@@ -34,7 +34,7 @@ that allow you to:
 - calculate errors
 - visualize the results
 
-These are the same stages as described in the 
+These are the same stages as described in the
 :ref:`getting started <getting-started>` section, but the
 syntax is different, since the Session object handles the
 creation of, and passing around, the underlying
@@ -74,14 +74,14 @@ be used, along with the
    parts of the system may not be available. This can lead to
    warning messages such as the following to be displayed::
 
-      WARNING: imaging routines will not be available, 
-      failed to import sherpa.image.ds9_backend due to 
+      WARNING: imaging routines will not be available,
+      failed to import sherpa.image.ds9_backend due to
       'RuntimeErr: DS9Win unusable: Could not find ds9 on your PATH'
 
    Other checks are to see if the chosen I/O and plotting
    backends are present, and if support for the XSPEC
    model library is available.
-   
+
 Using the Session object
 ------------------------
 
@@ -92,7 +92,7 @@ method is used to register the models from
 :py:mod:`sherpa.models.basic` with the session (by default it will
 add any class in the module that is derived from the
 :py:class:`~sherpa.models.model.ArithmeticModel`
-class)::    
+class)::
 
    >>> from sherpa.ui.utils import Session
    >>> import sherpa.models.basic
@@ -124,7 +124,7 @@ but ``load_arrays`` requires it::
    :py:class:`~sherpa.ui.utils.Session.load_data`
    and
    :py:class:`~sherpa.ui.utils.Session.set_data`.
-   
+
 The :py:meth:`~sherpa.ui.utils.Session.list_data_ids` method
 returns the list of available data sets (i.e. those that have
 been loaded into the session)::
@@ -139,7 +139,7 @@ identifier if not specified::
    >>> s.get_data()
    <Data1D data set instance ''>
    >>> print(s.get_data())
-   name      = 
+   name      =
    x         = Int64[4]
    y         = Int64[4]
    staterror = None
@@ -156,7 +156,7 @@ data with Gaussian errors::
 As the data here is counts based, and is to be fit with Poisson
 statitics, the
 :py:meth:`~sherpa.ui.utils.Session.set_stat`
-and    
+and
 :py:meth:`~sherpa.ui.utils.Session.set_method`
 methods are used to change the statistic and optimiser.
 Note that they take a string as an argument
@@ -164,7 +164,7 @@ Note that they take a string as an argument
 :py:class:`~sherpa.stats.Stat`
 or :py:class:`~sherpa.optmethods.OptMethod`
 class)::
-   
+
    >>> s.set_stat('cash')
    >>> s.set_method('simplex')
 
@@ -199,7 +199,7 @@ also be retrieved with
    const1d.mdl
    Param        Type          Value          Min          Max      Units
    -----        ----          -----          ---          ---      -----
-   mdl.c0       thawed            1 -3.40282e+38  3.40282e+38           
+   mdl.c0       thawed            1 -3.40282e+38  3.40282e+38
 
 The source model can be retrievd with
 :py:meth:`~sherpa.ui.utils.Session.get_source`, which in this
@@ -207,13 +207,13 @@ example is just the single model component ``mdl``::
 
    >>> s.get_source()
    <Const1D model instance 'const1d.mdl'>
-   
+
 With the data, model, statistic, and optimiser set, it
 is now possible to perform a fit. The
 :py:meth:`~sherpa.ui.utils.Session.fit` method defaults to
 a simultaneous fit of all the loaded data sets; in this case
 there is only one::
-  
+
    >>> s.fit()
    Dataset               = 1
    Method                = neldermead
@@ -224,12 +224,12 @@ there is only one::
    Degrees of freedom    = 3
    Change in statistic   = 131.015
       mdl.c0         11
-   
+
 The fit results are displayed to the screen, but can also be accessed
 with methods such as
 :py:meth:`~sherpa.ui.utils.Session.calc_stat`,
 :py:meth:`~sherpa.ui.utils.Session.calc_stat_info`,
-and    
+and
 :py:meth:`~sherpa.ui.utils.Session.get_fit_results`.
 
    >>> r = s.get_fit_results()
@@ -262,12 +262,12 @@ hides the automatically-created error bars on the data points
 by changing a setting in dictionary returned by
 :py:meth:`~sherpa.ui.utils.Session.get_data_plot_prefs`,
 and then displays the data along with the model::
-   
-   >>> s.get_data_plot_prefs()['yerrorbars'] = False      
+
+   >>> s.get_data_plot_prefs()['yerrorbars'] = False
    >>> s.plot_fit()
 
 .. image:: ../_static/ui/session_basic_example_fit.png
-   
+
 Using the UI module
 -------------------
 
@@ -290,7 +290,7 @@ preceeding example::
    >>> get_data()
    <Data1D data set instance ''>
    >>> print(get_data())
-   name      = 
+   name      =
    x         = Int64[4]
    y         = Int64[4]
    staterror = None
@@ -310,11 +310,11 @@ preceeding example::
    const1d.mdl
    Param        Type          Value          Min          Max      Units
    -----        ----          -----          ---          ---      -----
-   mdl.c0       thawed            1 -3.40282e+38  3.40282e+38           
+   mdl.c0       thawed            1 -3.40282e+38  3.40282e+38
 
    >>> get_source()
    <Const1D model instance 'const1d.mdl'>
-   
+
    >>> fit()
    Dataset               = 1
    Method                = neldermead
@@ -325,7 +325,7 @@ preceeding example::
    Degrees of freedom    = 3
    Change in statistic   = 131.015
       mdl.c0         11
-   
+
    >>> r = get_fit_results()
    >>> print(r)
    datasets       = (1,)
@@ -345,12 +345,11 @@ preceeding example::
    message        = Optimization terminated successfully
    nfev           = 90
 
-   >>> get_data_plot_prefs()['yerrorbars'] = False      
+   >>> get_data_plot_prefs()['yerrorbars'] = False
    >>> plot_fit()
 
 The plot created by this function is the same as shown in
-the previous example. 
-   
+the previous example.
 
 Reference/API
 =============
