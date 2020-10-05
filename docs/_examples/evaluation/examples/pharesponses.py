@@ -33,103 +33,139 @@ def savefig(name):
 
 os.chdir('../../../../sherpa-test-data/sherpatest/')
 
-from sherpa.astro.io import read_arf, read_rmf
+from sherpa.astro.io import read_pha
 
-arf = read_arf('3c273.arf')
-rmf = read_rmf('3c273.rmf')
-dump("rmf.detchans")
+pha = read_pha('9774.pi')
+
+dump("pha")
+dump("pha.get_background()")
+dump("pha.get_arf()")
+dump("pha.get_rmf()")
+
+dump("pha.header['INSTRUME']")
+dump("pha.header['DETNAM']")
+dump("pha.channel.size")
+
+pha.set_analysis('energy')
+pha.notice(0.3, 7)
+tabs = ~pha.mask
+pha.group_counts(20, tabStops=tabs)
+
+from sherpa.plot import DataPlot
+dplot = DataPlot()
+dplot.prepare(pha)
+dplot.plot(xlog=True, ylog=True)
+savefig('pha_data.png')
+
+chans, = pha.get_indep(filter=True)
+counts = pha.get_dep(filter=True)
+dump("chans.size, counts.size")
+
+gchans = pha.apply_filter(chans, pha._middle)
+dump("gchans.size")
+
+plt.clf()
+plt.plot(gchans, counts, 'o')
+plt.xlabel('Channel')
+plt.ylabel('Counts')
+savefig('pha_data_manual.png')
+
+x = pha.get_x()
+dump("x.min(), x.max()")
+x = pha.apply_filter(x, pha._middle)
+y = pha.get_y(filter=True)
+dplot.plot(xlog=True, ylog=True)
+plt.plot(x, y)
+savefig('pha_data_compare.png')
+
+pha.set_analysis('wave')
+dump("pha.get_x().max()")
+wplot = DataPlot()
+wplot.prepare(pha)
+wplot.plot()
+savefig('pha_data_wave.png')
+pha.set_analysis('energy')
 
 from sherpa.models.basic import PowLaw1D
-mdl = PowLaw1D()
+from sherpa.astro.xspec import XSphabs
+pl = PowLaw1D()
+gal = XSphabs()
+mdl = gal * pl
+pl.gamma = 1.7
+gal.nh = 0.2
 
-from sherpa.astro.instrument import RSPModelNoPHA
-inst = RSPModelNoPHA(arf, rmf, mdl)
+report("mdl")
 
-dump("inst")
-report("inst")
-
-from sherpa.models.model import ArithmeticModel
-dump("isinstance(inst, ArithmeticModel)")
-dump("inst.pars")
-
-dump("inst(np.arange(1, 1025))")
-dump("inst([0.1, 0.2, 0.3])")
-dump("inst([0.1, 0.2, 0.3]).size")
-dump("inst([10, 20]) == inst([])")
-
-dump("inst([]).sum()")
-
-chans = np.arange(rmf.offset, rmf.offset + rmf.detchans)
-ydet = inst(chans)
-plt.plot(chans, ydet)
-plt.xlabel('Channel')
-plt.ylabel('Count / s')
-savefig('rspmodelnopha_channel.png')
-plt.clf()
-
-report("rmf")
-report("arf")
-
-# emid = (rmf.e_min + rmf.e_max) / 2
-# de = rmf.e_max - rmf.e_min
-# plt.plot(emid, arf.exposure * ydet / de)
-# plt.bar(rmf.e_min, arf.exposure * ydet / de, width=de, align='edge',
-#         log=True)
-
-x = np.vstack((rmf.e_min, rmf.e_max)).T.flatten()
-y = arf.exposure * ydet / (rmf.e_max - rmf.e_min)
-y = y.repeat(2)
-plt.plot(x, y, '-')
-
-plt.yscale('log')
-plt.ylim(1e4, 3e6)
-plt.xlim(0, 10)
-plt.xlabel('Energy (keV)')
-plt.ylabel('Count / keV')
-savefig('rspmodelnopha_energy.png')
-
-
-from sherpa.astro.io import read_pha
-from sherpa.astro.instrument import RSPModelPHA
-
-pha2 = read_pha('3c273.pi')
-arf2 = pha2.get_arf()
-rmf2 = pha2.get_rmf()
-
-mdl2 = PowLaw1D('mdl2')
-inst2 = RSPModelPHA(arf2, rmf2, pha2, mdl2)
-report("inst2")
-
-dump("inst2([]).size")
-
-pha2.set_analysis('energy')
-report('pha2.get_filter()')
-report('pha2.get_filter_expr()')
-
-pha2.notice(0.5, 7.0)
-report('pha2.get_filter()')
-report('pha2.get_filter_expr()')
-
-dump("pha2.grouped")
-# pha2.ungroup()
-# report('pha2.get_filter_expr()')
-
-pha2.ignore(2.0, 3.0)
-report('pha2.get_filter_expr()')
-
-y1 = inst2([])
-inst2.startup()
-y2 = inst2([])
-inst2.teardown()
-report("y1.size, y2.size")
-report("np.all(y1 == y2)")
+egrid = np.arange(0.1, 10, 0.01)
+elo, ehi = egrid[:-1], egrid[1:]
+emid = (elo + ehi) / 2
 
 plt.clf()
-plt.plot(pha2.channel, y1, label='all')
-plt.plot(pha2.channel, y2, label='filtered')
+plt.plot(emid, mdl(elo, ehi), label='Absorbed')
+plt.plot(emid, pl(elo, ehi), ':', label='Unabsorbed')
 plt.xscale('log')
-plt.yscale('log')
-plt.ylim(0.001, 1)
-plt.xlim(5, 1000)
-plt.legend(loc='center')
-savefig('rspmodelpha_compare.png')
+plt.ylim(0, 0.01)
+plt.legend()
+savefig('pha_model_energy.png')
+
+from sherpa.astro.instrument import Response1D
+rsp = Response1D(pha)
+full = rsp(mdl)
+
+report("full")
+
+dump("elo.size")
+dump("full(elo, ehi).size")
+dump("full([1, 2, 3]).size")
+dump("np.all(full(elo, ehi) == full([1, 2, 3]))")
+
+plt.clf()
+plt.plot(pha.channel, full(pha.channel))
+plt.xlabel('Channel')
+plt.ylabel('Counts')
+
+savefig('pha_fullmodel_manual.png')
+
+y1 = pha.eval_model(full)
+y2 = pha.eval_model_to_fit(full)
+dump("y1.size, y2.size")
+
+rmf = pha.get_rmf()
+dump("rmf.e_min.size, rmf.e_max.size")
+
+xlo = pha.apply_filter(rmf.e_min, pha._min)
+xhi = pha.apply_filter(rmf.e_max, pha._max)
+
+x2 = pha.get_x()
+xmid = pha.apply_filter(x2, pha._middle)
+plt.clf()
+plt.plot(xmid, y2 / (xhi - xlo) / pha.exposure)
+
+plt.xlabel('Energy (keV)')
+plt.ylabel('Counts/sec/keV')
+
+savefig('pha_eval_model_to_fit.png')
+
+from sherpa.astro.plot import ModelHistogram
+mplot = ModelHistogram()
+mplot.prepare(pha, full)
+mplot.plot()
+
+savefig('pha_fullmodel_model.png')
+
+from sherpa.fit import Fit
+fit = Fit(pha, full)
+res = fit.fit()
+
+report('res.format()')
+
+from sherpa.plot import ModelPlot
+
+dplot.prepare(pha)
+dplot.plot(xlog=True)
+
+mplot2 = ModelPlot()
+mplot2.prepare(pha, full)
+mplot2.overplot()
+
+savefig('pha_fullmodel_fit.png')

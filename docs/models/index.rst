@@ -2,23 +2,14 @@
 Creating model instances
 ************************
 
-The :mod:`sherpa.models` and :mod:`sherpa.astro.models`
-namespaces provides a collection of one- and 
-two-dimensional models as a convenience; the actual definition of
-each particular model depends on its type.
+The :mod:`sherpa.models` and :mod:`sherpa.astro.models` namespaces
+provides a collection of one- and two-dimensional models. There
+are also more specialised models, such as those in
+:mod:`sherpa.astro.optical`, :mod:`sherpa.astro.xspec`,
+:mod:`sherpa.instrument`, and :mod:`sherpa.astro.instrument`.
 
-
-.. todo::
-   I have no idea what deep truth I meant by the sentance
-   above.
-   
-   To get the link above probably means using
-   :mod:`sherpa.models.model`, but users can get away with
-   just importing ``sherpa.models`` as shown below. Should there
-   be some sort of a bote about this?
-   
-The following modules are assumed to have been imported for
-this section::
+The following modules are assumed to have been imported for this
+section::
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
@@ -36,12 +27,12 @@ be set. In this case a one-dimensional gaussian using the
     gauss1d
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       gauss1d.fwhm thawed           10  1.17549e-38  3.40282e+38           
-       gauss1d.pos  thawed            0 -3.40282e+38  3.40282e+38           
-       gauss1d.ampl thawed            1 -3.40282e+38  3.40282e+38           
+       gauss1d.fwhm thawed           10  1.17549e-38  3.40282e+38
+       gauss1d.pos  thawed            0 -3.40282e+38  3.40282e+38
+       gauss1d.ampl thawed            1 -3.40282e+38  3.40282e+38
 
 A description of the model is provided by ``help(g)``.
-   
+
 The parameter values have a current value, a valid range
 (as given by the the minimum and maximum columns in the table above),
 and a units field. The units field is a string, describing the
@@ -57,7 +48,7 @@ of the same model type. The default value is the lower-case version
 of the class name.
 
 ::
-   
+
     >>> g.name
     'gauss1d'
     >>> h = models.Gauss1D('other')
@@ -65,15 +56,17 @@ of the class name.
     other
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       other.fwhm   thawed           10  1.17549e-38  3.40282e+38           
-       other.pos    thawed            0 -3.40282e+38  3.40282e+38           
-       other.ampl   thawed            1 -3.40282e+38  3.40282e+38           
+       other.fwhm   thawed           10  1.17549e-38  3.40282e+38
+       other.pos    thawed            0 -3.40282e+38  3.40282e+38
+       other.ampl   thawed            1 -3.40282e+38  3.40282e+38
     >>> h.name
     'other'
-    
+
 The model classes are expected to derive from the
-:py:class:`~sherpa.models.model.ArithmeticModel` class.
-   
+:py:class:`~sherpa.models.model.ArithmeticModel` class, although
+more-complicated cases, such as :doc:`convolution models
+<../evaluation/convolution>`, may extend other classes.
+
 .. _model-combine:
 
 Combining models
@@ -92,24 +85,24 @@ represented by the following model::
     (src1 + back)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       src1.fwhm    thawed           10  1.17549e-38  3.40282e+38           
-       src1.pos     thawed            0 -3.40282e+38  3.40282e+38           
-       src1.ampl    thawed            1 -3.40282e+38  3.40282e+38           
-       back.c0      thawed            1 -3.40282e+38  3.40282e+38           
+       src1.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       src1.pos     thawed            0 -3.40282e+38  3.40282e+38
+       src1.ampl    thawed            1 -3.40282e+38  3.40282e+38
+       back.c0      thawed            1 -3.40282e+38  3.40282e+38
 
 Now consider fitting a second dataset where it is known that the background
 is two times higher than the first::
-   
+
     >>> src2 = models.Gauss1D('src2')
     >>> mdl2 = src2 + 2 * back
     >>> print(mdl2)
     (src2 + (2 * back))
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       src2.fwhm    thawed           10  1.17549e-38  3.40282e+38           
-       src2.pos     thawed            0 -3.40282e+38  3.40282e+38           
-       src2.ampl    thawed            1 -3.40282e+38  3.40282e+38           
-       back.c0      thawed            1 -3.40282e+38  3.40282e+38           
+       src2.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       src2.pos     thawed            0 -3.40282e+38  3.40282e+38
+       src2.ampl    thawed            1 -3.40282e+38  3.40282e+38
+       back.c0      thawed            1 -3.40282e+38  3.40282e+38
 
 The two models can then be fit separately or simultaneously. In this
 example the two source models (the Gaussian component) were completely
@@ -122,7 +115,10 @@ parameters to be the same but to let the position and amplitude
 values vary independently.
 
 More information is available in the
-:doc:`combining models <../evaluation/combine>` documentation.
+:doc:`combining models <../evaluation/combine>`
+and
+:doc:`convolution <../evaluation/convolution>`
+documentation.
 
 Changing a parameter
 ====================
@@ -138,7 +134,7 @@ contains the current value::
     val         = 10.0
     min         = 1.17549435082e-38
     max         = 3.40282346639e+38
-    units       = 
+    units       =
     frozen      = False
     link        = None
     default_val = 10.0
@@ -153,7 +149,7 @@ contains the current value::
     val         = 15.0
     min         = 1.17549435082e-38
     max         = 3.40282346639e+38
-    units       = 
+    units       =
     frozen      = False
     link        = None
     default_val = 15.0
@@ -168,7 +164,7 @@ Assigning a value to a parameter directly (i.e. without using the
     val         = 12.0
     min         = 1.17549435082e-38
     max         = 3.40282346639e+38
-    units       = 
+    units       =
     frozen      = False
     link        = None
     default_val = 12.0
@@ -197,14 +193,14 @@ and
     other
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       other.fwhm   thawed           12  1.17549e-38  3.40282e+38           
-       other.pos    thawed            0 -3.40282e+38  3.40282e+38           
-       other.ampl   thawed            1 -3.40282e+38  3.40282e+38           
+       other.fwhm   thawed           12  1.17549e-38  3.40282e+38
+       other.pos    thawed            0 -3.40282e+38  3.40282e+38
+       other.ampl   thawed            1 -3.40282e+38  3.40282e+38
     >>> print(h.fwhm)
     val         = 12.0
     min         = 1.17549435082e-38
     max         = 3.40282346639e+38
-    units       = 
+    units       =
     frozen      = False
     link        = None
     default_val = 12.0
@@ -229,7 +225,7 @@ and a screen message will be displayed if an attempt to move
 outside this range was made. During error analysis the parameter
 values are allowed outside the soft limits, as long as they remain
 inside the hard limits.
-   
+
 .. _params-guess:
 
 Guessing a parameter's value from the data
@@ -275,26 +271,26 @@ need to be increased manually)::
     mdl
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       mdl.fwhm     thawed           10  1.17549e-38  3.40282e+38           
-       mdl.xpos     thawed            0 -3.40282e+38  3.40282e+38           
-       mdl.ypos     thawed            0 -3.40282e+38  3.40282e+38           
-       mdl.ellip    frozen            0            0        0.999           
+       mdl.fwhm     thawed           10  1.17549e-38  3.40282e+38
+       mdl.xpos     thawed            0 -3.40282e+38  3.40282e+38
+       mdl.ypos     thawed            0 -3.40282e+38  3.40282e+38
+       mdl.ellip    frozen            0            0        0.999
        mdl.theta    frozen            0     -6.28319      6.28319    radians
-       mdl.ampl     thawed            1 -3.40282e+38  3.40282e+38           
+       mdl.ampl     thawed            1 -3.40282e+38  3.40282e+38
     >>> mdl.guess(*d2d.to_guess())
     >>> print(mdl)
     mdl
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       mdl.fwhm     thawed           10  1.17549e-38  3.40282e+38           
-       mdl.xpos     thawed         3020         3000         3060           
-       mdl.ypos     thawed         4010         4000         4040           
-       mdl.ellip    frozen            0            0        0.999           
+       mdl.fwhm     thawed           10  1.17549e-38  3.40282e+38
+       mdl.xpos     thawed         3020         3000         3060
+       mdl.ypos     thawed         4010         4000         4040
+       mdl.ellip    frozen            0            0        0.999
        mdl.theta    frozen            0     -6.28319      6.28319    radians
-       mdl.ampl     thawed      2375.22      2.37522  2.37522e+06           
+       mdl.ampl     thawed      2375.22      2.37522  2.37522e+06
 
 .. _params-freeze:
-   
+
 Freezing and Thawing parameters
 ===============================
 
@@ -317,7 +313,7 @@ and :py:meth:`~sherpa.models.parameter.Parameter.thaw`
 methods for the parameter.
 
 ::
-   
+
     >>> h.fwhm.thaw()
     >>> h.fwhm.frozen
     False
@@ -353,7 +349,7 @@ than via the :py:attr:`~sherpa.models.parameter.Parameter.val` attribute.
 The :py:attr:`~sherpa.models.parameter.Parameter.link` attribute
 is set to the link value (and is ``None`` for parameters that are
 not linked).
-   
+
 Equality
 --------
 
@@ -377,8 +373,8 @@ When displaying the model, the value and link expression are included::
     g2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       g2.fwhm      linked         1024            expr: g1.fwhm           
-       g2.pos       thawed            0 -3.40282e+38  3.40282e+38           
+       g2.fwhm      linked         1024            expr: g1.fwhm
+       g2.pos       thawed            0 -3.40282e+38  3.40282e+38
        g2.ampl      thawed            1 -3.40282e+38  3.40282e+38
 
 Functional relationship
@@ -440,7 +436,7 @@ Resetting parameter values
 
    Needs work, including discussing the
    :py:attr:`~sherpa.models.parameter.Parameter.default_val` attribute?
- 
+
 The
 :py:meth:`~sherpa.models.parameter.Parameter.reset`
 method of a parameter will change the parameter settings (which
@@ -460,9 +456,9 @@ to see how robust the optimiser is by:
 - fit the data
 - call reset
 - change one or more parameters
-- refit  
+- refit
 
-  
+
 Inspecting models and parameters
 ================================
 
@@ -479,4 +475,3 @@ Composite models can be queried to find the individual
 components using the ``parts`` attribute, which contains
 a tuple of the components (these components can themselves
 be composite objects).
-

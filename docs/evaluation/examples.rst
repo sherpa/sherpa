@@ -1,4 +1,4 @@
-********   
+********
 Examples
 ********
 
@@ -11,7 +11,7 @@ Examples
 
    Can we link back to the section that describes each evaluation
    method (or introduces the concept)?
-   
+
 The following examples show the different ways that a model can
 be evaluted, for a range of situations. The
 :ref:`direct method <model_evaluate_example_oned_direct>` is
@@ -19,7 +19,7 @@ often sufficient, but for more complex cases it can be useful to
 :ref:`ask a data object to evaluate the
 model <model_evaluate_example_twod_via_data>`, particularly
 if you want to include instrumental responses,
-:ref:`such as a RMF and ARF <model_evaluate_example_pha_via_data>`.
+:ref:`such as a RMF and ARF <model_evaluate_example_pha>`.
 
 .. _model_evaluate_example_oned_direct:
 
@@ -32,7 +32,7 @@ on a grid of 5 points by
 The first approch just calls the model with the evaluation
 grid (here the array ``x``),
 which uses the parameter values as defined in the model itself::
-  
+
     >>> from sherpa.models.basic import Gauss1D
     >>> gmdl = Gauss1D()
     >>> gmdl.fwhm = 100
@@ -47,7 +47,7 @@ call along with the grid on which to evaluate the model.
 The order matches that of the parameters in the model, which can be
 found from the
 :py:attr:`~sherpa.models.model.Model.pars` attribute of the model::
-    
+
     >>> [p.name for p in gmdl.pars]
     ['fwhm', 'pos', 'ampl']
     >>> y2 = gmdl.calc([100, 5050, 100], x)
@@ -69,7 +69,7 @@ First the data is set up (there are only four points
 in this example to make things easy to follow).
 
 ::
-   
+
     >>> from sherpa.data import Data2D
     >>> x0 = [1.0, 1.9, 2.4, 1.2]
     >>> x1 = [-5.0, -7.0, 2.3, 1.2]
@@ -86,7 +86,7 @@ and
 to
 :py:attr:`~sherpa.models.basic.Box2D.yhi`
 limits are set to the
-:py:attr:`~sherpa.models.basic.Box2D.ampl` 
+:py:attr:`~sherpa.models.basic.Box2D.ampl`
 value, those outside are zero).
 
 ::
@@ -104,7 +104,7 @@ within the "box", and so are set to the amplitude value
 when the model is evaluated.
 
 ::
-    
+
     >>> twod.eval_model(mdl)
     array([  0.,  10.,   10.,   0.])
 
@@ -134,11 +134,11 @@ and
 :py:meth:`~sherpa.data.Data.eval_model_to_fit`,
 as shown below. The call to
 :py:meth:`~sherpa.data.Data.get_indep`
-is used to show the grid used by    
+is used to show the grid used by
 :py:meth:`~sherpa.data.Data.eval_model_to_fit`.
 
 ::
-   
+
     >>> twod.ignore(x0lo=2, x0hi=3, x1lo=0, x1hi=10)
     >>> twod.eval_model(mdl)
     array([  0.,  10.,   10.,   0.])
@@ -146,461 +146,374 @@ is used to show the grid used by
     (array([ 1. ,  1.9,  1.2]), array([-5. , -7. ,  1.2]))
     >>> twod.eval_model_to_fit(mdl)
     array([  0.,  10.,   0.])
-    
-.. _model_evaluate_example_pha_via_data:
 
-Evaluating a model using a DataPHA object
-=========================================
+.. _model_evaluate_example_pha:
 
-.. todo::
+Handling PHA datasets
+=====================
 
-   Not convinced model evaluation is correct here; do I need
-   to add the instrument model in or not? I am pretty sure
-   that, as written, it does *not* include the response
-   information. So, could compare model evaluation without
-   and with the instrument model.
-   
-This example is similar to the
-:ref:`two-dimensional case above <model_evaluate_example_twod_via_data>`,
-in that it again shows the differences between the
-:py:meth:`~sherpa.astro.data.DataPHA.eval_model`
-and
-:py:meth:`~sherpa.astro.data.DataPHA.eval_model_to_fit`
-methods. The added complication in this
-case is that the response information provided with a PHA file
-is used to convert between the "native" axis of the
-PHA file (channels) and that of the model (energy or
-wavelength). This conversion is handled automatically
-by the two methods (the
-:ref:`following example <model_evaluate_example_pha_directly>`
-shows how this can be done manually). 
+:term:`PHA` data is more complicated than other data types in Sherpa because
+of the need to convert between the units used by the model (energy
+or wavelength) and the units of the data (channel). As a user you
+will generally be thinking in keV or Angstroms, but the
+:py:class:`~sherpa.astro.data.DataPHA` class has to convert to
+channel units internally.
 
-To start with, the data is loaded from a file, which also loads
-in the associated :term:`ARF` and :term:`RMF` files::
-
-    >>> from sherpa.astro.io import read_pha
-    >>> pha = read_pha('3c273.pi')
-    WARNING: systematic errors were not found in file '3c273.pi'
-    statistical errors were found in file '3c273.pi' 
-    but not used; to use them, re-read with use_errors=True
-    read ARF file 3c273.arf
-    read RMF file 3c273.rmf
-    WARNING: systematic errors were not found in file '3c273_bg.pi'
-    statistical errors were found in file '3c273_bg.pi' 
-    but not used; to use them, re-read with use_errors=True
-    read background file 3c273_bg.pi
-    >>> pha
-    <DataPHA data set instance '3c273.pi'>
-    >>> pha.get_arf()
-    <DataARF data set instance '3c273.arf'>
-    >>> pha.get_rmf()
-    <DataRMF data set instance '3c273.rmf'>
-
-The returned object - here ``pha`` - is an instance of the
-:py:class:`sherpa.astro.data.DataPHA` class - which has a number
-of attributes and methods specialized to handling PHA data.
-
-This particular file has grouping information in it, that it it contains
-``GROUPING`` and ``QUALITY`` columns, so Sherpa
-applies them: that is, the number of bins over which the data is
-analysed is smaller than the number of channels in the file because
-each bin can consist of multiple channels. For this file,
-there are 46 bins after grouping (the ``filter`` argument to the
-:py:meth:`~sherpa.astro.data.DataPHA.get_dep` call applies both
-filtering and grouping steps, but so far no filter has been applied)::
-
-    >>> pha.channel.size
-    1024
-    >>> pha.get_dep().size
-    1024
-    >>> pha.grouped
-    True
-    >>> pha.get_dep(filter=True).size
-    46
-
-A filter - in this case to restrict to only bins that cover the
-energy range 0.5 to 7.0 keV - is applied with the
-:py:meth:`~sherpa.astro.data.DataPHA.notice` call, which
-removes four bins for this particular data set::
-    
-    >>> pha.set_analysis('energy')
-    >>> pha.notice(0.5, 7.0)
-    >>> pha.get_dep(filter=True).size
-    42
-
-A power-law model (:py:class:`~sherpa.models.basic.PowLaw1D`) is
-created and evaluated by the data object::
-  
-    >>> from sherpa.models.basic import PowLaw1D
-    >>> mdl = PowLaw1D()
-    >>> y1 = pha.eval_model(mdl)
-    >>> y2 = pha.eval_model_to_fit(mdl)
-    >>> y1.size
-    1024
-    >>> y2.size
-    42
-
-The :py:meth:`~sherpa.astro.data.DataPHA.eval_model` call
-evaluates the model over the full dataset and *does not*
-apply any grouping, so it returns a vector with 1024 elements.
-In contrast, :py:meth:`~sherpa.astro.data.DataPHA.eval_model_to_fit`
-applies *both* filtering and grouping, and returns a vector that
-matches the data (i.e. it has 42 elements).
-
-The filtering and grouping information is *dynamic*, in that it
-can be changed without having to re-load the data set. The
-:py:meth:`~sherpa.astro.data.DataPHA.ungroup` call removes
-the grouping, but leaves the 0.5 to 7.0 keV energy filter:
-
-    >>> pha.ungroup()
-    >>> y3 = pha.eval_model_to_fit(mdl)
-    >>> y3.size
-    644
-
-.. todo::   
-
-   add in a way to get the X axis after grouping, if we have it;
-   maybe the apply_grouping call of the data object? Or the to_fit
-   option? Also to_plot.
-
-.. _model_evaluate_example_pha_directly:
-
-Evaluating a model using PHA responses
-======================================
-
-.. todo::
-   
-   Should this just use Response1D directly?
-
-The :py:class:`sherpa.astro.data.DataPHA` class handles the
-response information automatically, but it is possible to
-directly apply the response information to a model using
-the :py:mod:`sherpa.astro.instrument` module. In the following
-example the
-:py:class:`~sherpa.astro.instrument.RSPModelNoPHA`
-and    
-:py:class:`~sherpa.astro.instrument.RSPModelPHA`
-classes are used to wrap a power-law model
-(:py:class:`~sherpa.models.basic.PowLaw1D`)
-so that the
-instrument responses - the :term:`ARF` and :term:`RMF` -
-are included in the model evaluation.
+First we will load in a PHA dataset, along with its response
+files (:term:`ARF` and :term:`RMF`), and have a look at how we can
+interrogate the object.
 
 ::
 
-    >>> from sherpa.astro.io import read_arf, read_rmf
-    >>> arf = read_arf('3c273.arf')
-    >>> rmf = read_rmf('3c273.rmf')
-    >>> rmf.detchans
-    1024
+   >>> from sherpa.astro.io import read_pha
+   >>> pha = read_pha('9774.pi')
+   read ARF file 9774.arf
+   read RMF file 9774.rmf
+   read background file 9774_bg.pi
 
-The number of channels in the RMF - that is, the number of bins over which
-the RMF is defined - is 1024.
-    
-    >>> from sherpa.models.basic import PowLaw1D
-    >>> mdl = PowLaw1D()
+We can see that the ARF, RMF, and a background dataset have
+automatically been loaded for us. They can be loaded manually - with
+:py:func:`sherpa.astro.io.read_arf`, :py:func:`sherpa.astro.io.read_rmf`,
+and :py:func:`sherpa.astro.io.read_pha` -
+and set with :py:meth:`~sherpa.astro.data.DataPHA.set_arf`,
+:py:meth:`~sherpa.astro.data.DataPHA.set_rmf`, and
+:py:meth:`~sherpa.astro.data.DataPHA.set_background`
+methods of the :py:class:`~sherpa.astro.data.DataPHA` class::
 
-The :py:class:`~sherpa.astro.instrument.RSPModelNoPHA` class
-models the inclusion of both the ARF and RMF::
-    
-    >>> from sherpa.astro.instrument import RSPModelNoPHA
-    >>> inst = RSPModelNoPHA(arf, rmf, mdl)
-    >>> inst
-    <RSPModelNoPHA model instance 'apply_rmf(apply_arf(powlaw1d))'>
-    >>> print(inst)
-    apply_rmf(apply_arf(powlaw1d))
-       Param        Type          Value          Min          Max      Units
-       -----        ----          -----          ---          ---      -----
-       powlaw1d.gamma thawed            1          -10           10           
-       powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38           
-       powlaw1d.ampl thawed            1            0  3.40282e+38           
+   >>> pha
+   <DataPHA data set instance '9774.pi'>
+   >>> pha.get_background()
+   <DataPHA data set instance '9774_bg.pi'>
+   >>> pha.get_arf()
+   <DataARF data set instance '9774.arf'>
+   >>> pha.get_rmf()
+   <DataRMF data set instance '9774.rmf'>
+
+This is a Chandra imaging-mode ACIS observation, as shown
+by header keywords defined by :term:`OGIP`, and so it has
+1024 channels::
+
+   >>> pha.header['INSTRUME']
+   'ACIS'
+   >>> pha.header['DETNAM']
+   'ACIS-23567'
+   >>> pha.channel.size
+   1024
+
+The raw data is available from the
+:py:attr:`~sherpa.astro.data.DataPHA.channel` and
+:py:attr:`~sherpa.astro.data.DataPHA.counts` attributes, but
+it is better to use the various methods, such as
+:py:meth:`~sherpa.astro.data.DataPHA.get_indep` and
+:py:meth:`~sherpa.astro.data.DataPHA.get_dep`, to
+access the data.
+
+PHA data generally requires filtering to exclude parts of the
+data, so let's pick a common energy range for ACIS data,
+0.3 to 7 keV, and then use that range - which is indicated
+by the :py:attr:`~sherpa.astro.data.DataPHA.mask` attribute -
+to ensure we only group the data within this range::
+
+   >>> pha.set_analysis('energy')
+   >>> pha.notice(0.3, 7)
+   >>> tabs = ~pha.mask
+   >>> pha.group_counts(20, tabStops=tabs)
+
+The standard :doc:`Sherpa plotting <../plots/index>` setup can
+be used to display the data, which has the advantage of picking
+up the filtering, grouping, and analysis setting::
+
+   >>> from sherpa.plot import DataPlot
+   >>> dplot = DataPlot()
+   >>> dplot.prepare(pha)
+   >>> dplot.plot(xlog=True, ylog=True)
+
+.. _example_pha_data:
+
+.. image:: ../_static/evaluation/pha_data.png
+
+It can be useful to create these plots manually, so let's step
+through the steps. First we can access the data in channel
+units using :py:meth:`~sherpa.astro.data.DataPHA.get_indep`
+and :py:meth:`~sherpa.astro.data.DataPHA.get_dep`,
+noting that `get_indep` returns a tuple so we want the
+first element::
+
+   >>> chans, = pha.get_indep(filter=True)
+   >>> counts = pha.get_dep(filter=True)
+   >>> chans.size, counts.size
+   (460, 143)
+
+As shown above, the data sizes do not match. The counts has been grouped
+while the channels data remains ungrouped. We can use the
+:py:meth:`~sherpa.astro.data.DataPHA.apply_filter` method to
+group the channel data, selecting the mid-point of each group, and
+show the "raw" data (you can see that each group has at least
+20 counts, except for the last one)::
+
+   >>> gchans = pha.apply_filter(chans, pha._middle)
+   >>> gchans.size
+   143
+   >>> plt.clf()
+   >>> plt.plot(gchans, counts, 'o')
+   >>> plt.xlabel('Channel')
+   >>> plt.ylabel('Counts')
+
+.. image:: ../_static/evaluation/pha_data_manual.png
+
+While the channel data is important, it doesn't let us create
+a plot like :ref:`above <example_pha_data>`. For this we
+want to use the
+:py:meth:`~sherpa.astro.data.DataPHA.get_x` and
+:py:meth:`~sherpa.astro.data.DataPHA.get_y` methods,
+which return data matching the analysis setting and,
+for the dependent axis, normalizing by bin-width and
+exposure time as appropriate. In this case we have selected
+the "energy" setting so units are KeV for the X axis.
+We can overplot the new data onto the previous plot to
+show they match::
+
+   >>> x = pha.get_x()
+   >>> x.min(), x.max()
+   (0.008030000200960785, 14.943099975585938)
+   >>> x = pha.apply_filter(x, pha._middle)
+   >>> y = pha.get_y(filter=True)
+   >>> dplot.plot(xlog=True, ylog=True)
+   >>> plt.plot(x, y)
+
+.. image:: ../_static/evaluation/pha_data_compare.png
+
+As mentioned, the :py:class:`~sherpa.plot.DataPlot` class
+handles the units for you. Switching the analysis setting
+to wavelength will create a plot in Angstroms::
+
+   >>> pha.set_analysis('wave')
+   >>> pha.get_x().max()
+   1544.0122577477066
+   >>> wplot = DataPlot()
+   >>> wplot.prepare(pha)
+   >>> wplot.plot()
+
+.. image:: ../_static/evaluation/pha_data_wave.png
+
+For now we want to make sure we complete our analysis in
+energy units::
+
+   >>> pha.set_analysis('energy')
+
+We can finally think about evaluating a model. To start with
+we look at a physically-motivated model - an
+absorbed (:py:class:`~sherpa.astro.xspec.XSphabs`)
+powerlaw (:py:class:`~sherpa.models.basic.PowLaw1D`)::
+
+   >>> from sherpa.models.basic import PowLaw1D
+   >>> from sherpa.astro.xspec import XSphabs
+   >>> pl = PowLaw1D()
+   >>> gal = XSphabs()
+   >>> mdl = gal * pl
+   >>> pl.gamma = 1.7
+   >>> gal.nh = 0.2
+   >>> print(mdl)
+   (phabs * powlaw1d)
+      Param        Type          Value          Min          Max      Units
+      -----        ----          -----          ---          ---      -----
+      phabs.nH     thawed          0.2            0       100000 10^22 atoms / cm^2
+      powlaw1d.gamma thawed          1.7          -10           10
+      powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38
+      powlaw1d.ampl thawed            1            0  3.40282e+38
+
+The model can be evaluated directly. XSPEC models use units of
+KeV for the X axis, so we generate a grid between 0.1 and 10 keV
+for use. As the data is binned we call the models - here the
+commbined model labelled "Absorbed" and just the powerlaw
+component labelled "Unabsorbed" - with both low and high edges::
+
+   >>> egrid = np.arange(0.1, 10, 0.01)
+   >>> elo, ehi = egrid[:-1], egrid[1:]
+   >>> emid = (elo + ehi) / 2
+   >>> plt.clf()
+   >>> plt.plot(emid, mdl(elo, ehi), label='Absorbed')
+   >>> plt.plot(emid, pl(elo, ehi), ':', label='Unabsorbed')
+   >>> plt.xscale('log')
+   >>> plt.ylim(0, 0.01)
+   >>> plt.legend()
+
+The Y axis has been restricted because the absorption is quite severe
+at low energies!
+
+.. image:: ../_static/evaluation/pha_model_energy.png
+
+However, we need to include the response information -
+:term:`ARF` and :term:`RMF` - in order to be able to
+compare to the data. The easiest way to do this is to
+use the :py:class:`~sherpa.astro.instrument.Response1D`
+class to extract the ARF amd RMF from the PHA dataset,
+and then apply it to create a model expression, here
+called ``full``, which includes the corrections::
+
+   >>> from sherpa.astro.instrument import Response1D
+   >>> rsp = Response1D(pha)
+   >>> full = rsp(mdl)
+   >>> print(full)
+   apply_rmf(apply_arf((75141.227687398 * (phabs * powlaw1d))))
+      Param        Type          Value          Min          Max      Units
+      -----        ----          -----          ---          ---      -----
+      phabs.nH     thawed          0.2            0       100000 10^22 atoms / cm^2
+      powlaw1d.gamma thawed          1.7          -10           10
+      powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38
+      powlaw1d.ampl thawed            1            0  3.40282e+38
+
+Note that the full model expression not only includes the
+ARF and RMF terms, but also includes the exposure time of
+the dataset. This ensures that the output has units of counts,
+for XSPEC additive models whose normalization is per-second,
+or defines the model amplitude to ber per-second, for models
+such as ``PowLaw1D``.
 
 .. note::
 
-   The RMF and ARF are represented as models that "enclose" the
-   spectrum - that is, they are written ``apply_rmf(model)`` and
-   ``apply_arf(model)`` rather than ``rmf * model`` - since they
-   may perform a convolution or rebinning (ARF) of the model
-   output.
-   
-The return value (``inst``) behaves as a normal Shepra model, for
-example::
+   Instead of using :py:class:`~sherpa.astro.instrument.Response1D`
+   you can directly create a model using
+   :py:class:`~sherpa.astro.instrument.RSPModelPHA` or
+   :py:class:`~sherpa.astro.instrument.RSPModelNoPHA` with logic
+   like
 
-    >>> from sherpa.models.model import ArithmeticModel
-    >>> isinstance(inst, ArithmeticModel)
-    True
-    >>> inst.pars
-    (<Parameter 'gamma' of model 'powlaw1d'>,
-     <Parameter 'ref' of model 'powlaw1d'>,
-     <Parameter 'ampl' of model 'powlaw1d'>)
+   >>> from sherpa.astro.instrument import RSPModelPHA
+   >>> full = RSPModelPHA(arf, rmf, pha, pha.exposure * mdl)
 
-The model can therefore be evaluated by calling it
-with a grid (as used in the :ref:`first example
-above <model_evaluate_example_oned_direct>`), except that
-the input grid is ignored and the "native" grid of the
-response information is used. In this case, no matter the
-size of the one-dimensional array passed to ``inst``, the
-output has 1024 elements (matching the number of channels in
-the RMF)::
+   Note that the exposure time is not automatically included for you as it
+   is with ``Response1D``.
 
-    >>> inst(np.arange(1, 1025))
-    array([ 0.,  0.,  0., ...,  0.,  0.,  0.])
-    >>> inst([0.1, 0.2, 0.3])
-    array([ 0.,  0.,  0., ...,  0.,  0.,  0.])
-    >>> inst([0.1, 0.2, 0.3]).size
-    1024
-    >>> inst([10, 20]) == inst([])
-    array([ True,  True,  True, ...,  True,  True,  True], dtype=bool)
+If we evaluate this model we get a surprise! The grid arguments
+are ignored (as long as something is sent in), and instead the
+model is evaluated on the channel group (hence the evaluated
+model as 1024 bins in this example)::
 
-.. todo::
+   >>> elo.size
+   989
+   >>> full(elo, ehi).size
+   1024
+   >>> full([1, 2, 3]).size
+   1024
+   >>> np.all(full(elo, ehi) == full([1, 2, 3]))
+   True
 
-   Explain - as a note - the reason why it looks like the model
-   evaluates to 0
+The evaluated model can therefore be displayed with a
+call such as::
 
-   >>> inst([]).sum()
-   202.6242538153944
-    
-The output of this call represents the number of counts expected
-in each bin::
+   >>> plt.clf()
+   >>> plt.plot(pha.channel, full(pha.channel))
+   >>> plt.xlabel('Channel')
+   >>> plt.ylabel('Counts')
 
-    >>> chans = np.arange(rmf.offset, rmf.offset + rmf.detchans)
-    >>> ydet = inst(chans)
-    >>> plt.plot(chans, ydet)
-    >>> plt.xlabel('Channel')
-    >>> plt.ylabel('Count / s')
+The reason for the ridiculously-large count range is because
+the powerlaw amplitude has not been changed from its
+default value of 1!
 
-.. image:: ../_static/evaluation/rspmodelnopha_channel.png
+.. image:: ../_static/evaluation/pha_fullmodel_manual.png
 
-.. note::
+The :py:meth:`~sherpa.astro.data.DataPHA.eval_model` and
+:py:meth:`~sherpa.astro.data.DataPHA.eval_model_to_fit` methods
+can be used, but they **must** be applied to a response model
+(e.g. ``full``), otherwise the output will be meaningless::
 
-   The interpretation of the model output as being in units of "counts"
-   (or a rate)
-   depends on the normalisation (or amplitude) of the model components,
-   and whether any term representing the exposure time has been included.
-   
-   XSPEC additive models - such as :py:class:`~sherpa.astro.xspec.XSapec` -
-   return values that have units of photon/cm^2/s (that is, the spectrum
-   is integrated across each bin), which when passed through the
-   ARF and RMF results in count/s (the ARF has units of cm^2 and the
-   RMF can be thought of as converting photons to counts).
-   The Sherpa models, such as :py:class:`~sherpa.models.basic.PowLaw1D`,
-   do not in general have units (so that the models can be applied
-   to different data sets). This means that the interpretation of
-   the normalization or amplitude term depends on how the model
-   is being used.
-   
-The data in the ``EBOUNDS`` extension of the RMF - which provides
+   >>> y1 = pha.eval_model(full)
+   >>> y2 = pha.eval_model_to_fit(full)
+   >>> y1.size, y2.size
+   (1024, 143)
+
+The ``eval_model`` output is ungrouped whereas the
+``eval_model_to_fit`` output is grouped and filtered to
+match the PHA dataset. In order to create a "nice" plot
+we want to use energy units, which requires converting
+between channel and energy units. For this we take advantage of
+the data in the ``EBOUNDS`` extension of the RMF, which provides
 an **approximate** mapping from channel to energy for visualization
-purposes only - is available as the
+purposes only. These arrays are available as the
 :py:attr:`~sherpa.astro.data.DataRMF.e_min`
 and
 :py:attr:`~sherpa.astro.data.DataRMF.e_max`
 attributes of the
 :py:class:`~sherpa.astro.data.DataRMF` object returned by
-:py:func:`~sherpa.astro.io.read_rmf`.
-The ARF object may contain an
-exposure time, in its
-:py:attr:`~sherpa.astro.data.DataARF.exposure`
-attribute::
+:py:meth:`~sherpa.astro.data.DataPHA.get_rmf`, and we can
+group them as we did earlier (except for chosing the
+``pha._min`` and ``pha._max`` functions for defining the
+bounds)::
 
-    >>> print(rmf)
-    name     = 3c273.rmf
-    detchans = 1024
-    energ_lo = Float64[1090]
-    energ_hi = Float64[1090]
-    n_grp    = UInt64[1090]
-    f_chan   = UInt64[2002]
-    n_chan   = UInt64[2002]
-    matrix   = Float64[61834]
-    offset   = 1
-    e_min    = Float64[1024]
-    e_max    = Float64[1024]
-    ethresh  = 1e-10
-    >>> print(arf)
-    name     = 3c273.arf
-    energ_lo = Float64[1090]
-    energ_hi = Float64[1090]
-    specresp = Float64[1090]
-    bin_lo   = None
-    bin_hi   = None
-    exposure = 38564.141454905
-    ethresh  = 1e-10
+   >>> rmf = pha.get_rmf()
+   >>> rmf.e_min.size, rmf.e_max.size
+   (1024, 1024)
+   >>> xlo = pha.apply_filter(rmf.e_min, pha._min)
+   >>> xhi = pha.apply_filter(rmf.e_max, pha._max)
 
-These can be used to create a plot of energy versus counts per energy
-bin::
+With these, we can convert the counts values returned by
+``eval_model_to_fit`` to counts per keV per second
+(using the :py:attr:`~sherpa.astro.data.DataARF.exposure`
+attribute to get the exposure time)::
 
-    >>> # intersperse the low and high edges of each bin
-    >>> x = np.vstack((rmf.e_min, rmf.e_max)).T.flatten()
-    >>> # normalize each bin by its width and include the exposure time
-    >>> y = arf.exposure * ydet / (rmf.e_max - rmf.e_min)
-    >>> # Repeat for the low and high edges of each bin
-    >>> y = y.repeat(2)
-    >>> plt.plot(x, y, '-')
-    >>> plt.yscale('log')
-    >>> plt.ylim(1e3, 1e7)
-    >>> plt.xlim(0, 10)
-    >>> plt.xlabel('Energy (keV)')
-    >>> plt.ylabel('Count / keV')
+   >>> x2 = pha.get_x()
+   >>> xmid = pha.apply_filter(x2, pha._middle)
+   >>> plt.clf()
+   >>> plt.plot(xmid, y2 / (xhi - xlo) / pha.exposure)
+   >>> plt.xlabel('Energy (keV)')
+   >>> plt.ylabel('Counts/sec/keV')
 
-.. image:: ../_static/evaluation/rspmodelnopha_energy.png
+.. image:: ../_static/evaluation/pha_eval_model_to_fit.png
 
-.. note::
+We can also use the Astronomy-specific
+:py:class:`~sherpa.astro.plot.ModelHistogram` plotting
+class to display the model data without needing to
+convert anything::
 
-   The bin widths are small enough that it is hard to make out each
-   bin on this plot.
-           
-The
-:py:class:`~sherpa.astro.instrument.RSPModelPHA`
-class adds in a
-:py:class:`~sherpa.astro.data.DataPHA` object, which lets the
-evaluation grid be determined by any filter applied to the
-data object. In the following, the
-:py:func:`~sherpa.astro.io.read_pha` call reads in a PHA
-file, along with its associated ARF and RMF (because the
-``ANCRFILE`` and ``RESPFILE`` keywords are set in the
-header of the PHA file), which means that there is no need
-to call
-:py:func:`~sherpa.astro.io.read_arf`
-and
-:py:func:`~sherpa.astro.io.read_rmf`
-to creating the ``RSPModelPHA`` instance.    
+   >>> from sherpa.astro.plot import ModelHistogram
+   >>> mplot = ModelHistogram()
+   >>> mplot.prepare(pha, full)
+   >>> mplot.plot()
 
-::
-   
-    >>> from sherpa.astro.io import read_pha
-    >>> from sherpa.astro.instrument import RSPModelPHA
-    >>> pha = read_pha('3c273.pi')
-    WARNING: systematic errors were not found in file '3c273.pi'
-    statistical errors were found in file '3c273.pi' 
-    but not used; to use them, re-read with use_errors=True
-    read ARF file 3c273.arf
-    read RMF file 3c273.rmf
-    WARNING: systematic errors were not found in file '3c273_bg.pi'
-    statistical errors were found in file '3c273_bg.pi' 
-    but not used; to use them, re-read with use_errors=True
-    read background file 3c273_bg.pi
-    >>> arf2 = pha2.get_arf()
-    >>> rmf2 = pha2.get_rmf()
-    >>> mdl2 = PowLaw1D('mdl2')
-    >>> inst2 = RSPModelPHA(arf2, rmf2, pha2, mdl2)
-    >>> print(inst2)
-    apply_rmf(apply_arf(mdl2))
-       Param        Type          Value          Min          Max      Units
-       -----        ----          -----          ---          ---      -----
-       mdl2.gamma   thawed            1          -10           10           
-       mdl2.ref     frozen            1 -3.40282e+38  3.40282e+38           
-       mdl2.ampl    thawed            1            0  3.40282e+38           
+The difference to the previous plot is that this one
+uses a histogram to display each bin while the previous
+version connected the mid-point of each bin (in this case
+the bins are small so it's hard to see much difference).
 
-The model again is evaluated on the channel grid defined by
-the RMF::
+.. image:: ../_static/evaluation/pha_fullmodel_model.png
 
-    >>> inst2([]).size
-    1024
+We can use the model including the response to
+:doc:`fit the data <../fit/index>` (here I am not going
+to tweak the statistic choice or optimiser which you should
+consider)::
 
-The :py:class:`~sherpa.astro.data.DataPHA` object can be
-adjusted to select a subset of data. The default is to use
-the full channel range::
+   >>> from sherpa.fit import Fit
+   >>> fit = Fit(pha, full)
+   >>> res = fit.fit()
+   >>> print(res.format())
+   Method                = levmar
+   Statistic             = chi2gehrels
+   Initial fit statistic = 3.34091e+11
+   Final fit statistic   = 100.348 at function evaluation 33
+   Data points           = 143
+   Degrees of freedom    = 140
+   Probability [Q-value] = 0.995322
+   Reduced statistic     = 0.716768
+   Change in statistic   = 3.34091e+11
+      phabs.nH       0.0129625    +/- 0.00727019
+      powlaw1d.gamma   1.78432      +/- 0.0459786
+      powlaw1d.ampl   7.17014e-05  +/- 2.48751e-06
 
-    >>> pha2.set_analysis('energy')
-    >>> pha2.get_filter()
-    '0.124829999695:12.410000324249'
-    >>> pha2.get_filter_expr()
-    '0.1248-12.4100 Energy (keV)'
+We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
+which should make the predicted counts a lot more believable!
+We can display the data and model together, this time using
+the :py:class:`~sherpa.plot.ModelPlot` class (since the
+:py:class:`~sherpa.astro.plot.ModelHistogram` class used
+earlier doesn't group the model to match the data)::
 
-This can be changed with the
-:py:meth:`~sherpa.astro.data.DataPHA.notice`
-and
-:py:meth:`~sherpa.astro.data.DataPHA.ignore`
-methods::
-  
-    >>> pha2.notice(0.5, 7.0)
-    >>> pha2.get_filter()
-    '0.518300011754:8.219800233841'
-    >>> pha2.get_filter_expr()
-    '0.5183-8.2198 Energy (keV)'
+   >>> from sherpa.plot ModelPlot
+   >>> dplot.prepare(pha)
+   >>> dplot.plot(xlog=True)
+   >>> mplot2 = ModelPlot()
+   >>> mplot2.prepare(pha, full)
+   >>> mplot2.overplot()
 
-.. note::
+.. image:: ../_static/evaluation/pha_fullmodel_fit.png
 
-   Since the channels have a finite width, the method of filtering
-   (in other words, is it ``notice`` or ``ignore``)
-   determines whether a channel that
-   includes a boundary (in this case 0.5 and 7.0 keV) is included
-   or excluded from the final range. The dataset used in this example
-   includes grouping information, which is automatically applied,
-   which is why the upper limit of the included range is at 8 rather
-   than 7 keV::
-     
-       >>> pha2.grouped
-       True
-
-.. todo::
-
-   Rewrite the following.
-
-Ignore a range within the previous range to make the plot more
-interesting.
-
-::
-
-   >>> pha2.ignore(2.0, 3.0)
-   >>> pha2.get_filter_expr()
-   '0.5183-1.9199,3.2339-8.2198 Energy (keV)'
-   
-When evaluate, over whole 1-1024 channels, but can take advantage
-of the filter if within a pair of calls to
-:py:meth:`~sherpa.models.model.Model.startup`
-and
-:py:meth:`~sherpa.models.model.Model.teardown`
-(this is performed
-automatically by certain routines, such as within a fit):
-
-    >>> y1 = inst2([])
-    >>> inst2.startup()
-    >>> y2 = inst2([])
-    >>> inst2.teardown()
-    >>> y1.size, y2.size
-    (1024, 1024)
-    >>> np.all(y1 == y2)
-    False
-
-::
-   
-    >>> plt.plot(pha2.channel, y1, label='all')
-    >>> plt.plot(pha2.channel, y2, label='filtered')
-    >>> plt.xscale('log')
-    >>> plt.yscale('log')
-    >>> plt.ylim(0.001, 1)
-    >>> plt.xlim(5, 1000)
-    >>> plt.legend(loc='center')
-
-.. image:: ../_static/evaluation/rspmodelpha_compare.png
-
-Why is the exposure time not being included?    
-
-Or maybe this?
-==============
-
-This could come first, although maybe need a separate section
-on how to use astro.instruments (since this is geeting quite long
-now).
-
-    >>> from sherpa.astro.io import read_pha
-    >>> from sherpa.models.basic import PowLaw1D
-    >>> pha = read_pha('3c273.pi')
-    >>> pl = PowLaw1D()
-
-    >>> from sherpa.astro.instrument import Response1D, RSPModelPHA
-    >>> rsp = Response1D(pha)
-    >>> mdl = rsp(pl)
-    >>> isinstance(mdl, RSPModelPHA)
-    >>> print(mdl)
-    apply_rmf(apply_arf((38564.608926889 * powlaw1d)))
-       Param        Type          Value          Min          Max      Units
-       -----        ----          -----          ---          ---      -----
-       powlaw1d.gamma thawed            1          -10           10           
-       powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38           
-       powlaw1d.ampl thawed            1            0  3.40282e+38           
-
-Note that the exposure time - taken from the PHA or the ARF - is
-included so that the normalization is correct.
-
+Note that this example has not tried to subtract the background
+or fit it!
