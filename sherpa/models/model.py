@@ -23,13 +23,17 @@ import logging
 import hashlib
 import warnings
 
+from collections import defaultdict
+
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
+from sherpa.utils import formatting
 
 from .parameter import Parameter
+
 
 warning = logging.getLogger(__name__).warning
 
@@ -162,6 +166,11 @@ class Model(NoNewAttributesAfterInit):
                 s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
                       (p.fullname, tp, p.val, p.min, p.max, p.units))
         return s
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the model
+        """
+        return html_model(self)
 
     # This allows all models to be used in iteration contexts, whether or
     # not they're composite
@@ -1041,3 +1050,84 @@ def _wrapobj(obj, wrapper):
         return obj
 
     return wrapper(obj)
+
+
+# Notebook representation
+#
+def html_model(mdl):
+    """Construct the HTML to display the model."""
+
+    # Note that as this is a specialized table we do not use
+    # formatting.html_table but create everything directly.
+    #
+    nrows = defaultdict(int)
+    for par in mdl.pars:
+        if par.hidden:
+            continue
+
+        nrows[par.modelname] += 1
+
+    out = '<table class="model">'
+    out += '<caption>Expression: {}</caption>'.format(formatting.clean_bracket(mdl.name))
+    out += '<thead><tr>'
+    cols = ['Component', 'Parameter', 'Thawed', 'Value',
+            'Min', 'Max', 'Units']
+    for col in cols:
+        out += '<th>{}</th>'.format(col)
+
+    out += '</tr></thead><tbody>'
+    seen = set([])
+    mcount = 1
+    for par in mdl.pars:
+        if par.hidden:
+            continue
+
+        def addtd(val):
+            "Use the parameter to convert to HTML"
+            return '<td>{}</td>'.format(par._val_to_html(val))
+
+        mname = par.modelname
+
+        style = ''
+        if mname not in seen:
+            if len(seen) > 0:
+                style = ' class="block"'
+
+        out += '<tr{}>'.format(style)
+        if mname not in seen:
+            cls = "model-" + ("even" if mcount % 2 == 0 else "odd")
+            out += '<th class="{}" scope="rowgroup" '.format(cls)
+            out += 'rowspan={}>{}</th>'.format(nrows[mname], mname)
+            seen.add(mname)
+            mcount += 1
+
+        out += '<td>{}</td>'.format(par.name)
+
+        linked = par.link is not None
+        if linked:
+            out += "<td>linked</td>"
+        else:
+            out += '<td><input disabled type="checkbox"'
+            if not par.frozen:
+                out += ' checked'
+            out += '></input></td>'
+
+        out += addtd(par.val)
+
+        if linked:
+            # 8592 is single left arrow
+            # 8656 is double left arrow
+            #
+            out += '<td colspan=2>&#8656; {}</td>'.format(formatting.clean_bracket(par.link.fullname))
+
+        else:
+            out += addtd(par.min)
+            out += addtd(par.max)
+
+        out += '<td>{}</td>'.format(par._units_to_html())
+        out += '</tr>'
+
+    out += '</tbody></table>'
+
+    ls = ['<details open><summary>Model</summary>' + out + '</details>']
+    return formatting.html_from_sections(mdl, ls)

@@ -31,6 +31,7 @@ from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, calc_total_error, bool_cast, \
     filter_bins, parallel_map_funcs
+from sherpa.utils import formatting
 
 
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
@@ -77,7 +78,7 @@ def _check_err(array, masktemplate):
         (hasattr(array, 'mask') and not numpy.all(array.mask == masktemplate.mask))):
         warnings.warn('The mask of {} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.'.format(array))
     return array
-        
+
 
 
 class DataSpace1D(EvaluationSpace1D):
@@ -123,7 +124,7 @@ class DataSpace1D(EvaluationSpace1D):
 
     def for_model(self, model):
         """
-        Models can be defined over arbitrary evaluation spaces. However, 
+        Models can be defined over arbitrary evaluation spaces. However,
         at evaluation time during a fit, the model's evaluation space shall
         be done at the user's request space only and set to 0 every where else.
 
@@ -983,6 +984,11 @@ class Data1D(Data):
     def __init__(self, name, x, y, staterror=None, syserror=None):
         Data.__init__(self, name, (x, ), y, staterror, syserror)
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the data
+        """
+        return html_data1d(self)
+
     def _init_data_space(self, filter, *data):
         return DataSpace1D(filter, *data)
 
@@ -1183,6 +1189,11 @@ class Data2D(Data):
         self.shape = shape
         Data.__init__(self, name, (x0, x1), y, staterror, syserror)
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the data
+        """
+        return html_data2d(self)
+
     def _init_data_space(self, filter, *data):
         return DataSpace2D(filter, *data)
 
@@ -1311,3 +1322,110 @@ class Data2DInt(Data2D):
 
     def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
         Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None), ignore)
+
+
+# Notebook representations
+#
+def html_data1d(data):
+    """HTML representation: Data1D and derived classes
+
+    If have matplotlib then plot the data, otherwise summarize it.
+
+    """
+
+    from sherpa.plot import DataPlot, backend
+
+    dtype = type(data).__name__
+
+    plotter = DataPlot()
+    plotter.prepare(data)
+
+    summary = '{} Plot'.format(dtype)
+    try:
+        out = backend.as_html_plot(plotter, summary)
+    except AttributeError:
+        out = None
+
+    if out is not None:
+        return formatting.html_from_sections(data, [out])
+
+    # Summary properties
+    #
+    meta = []
+    if data.name is not None and data.name != '':
+        meta.append(('Identifier', data.name))
+
+    meta.append(('Number of bins', len(data.x)))
+
+    # Should this only be displayed if a filter has been applied?
+    #
+    fexpr = data.get_filter_expr()
+    nbins = data.get_dep(filter=True).size
+    meta.append(('Using', '{} with {} bins'.format(fexpr, nbins)))
+
+    # Rely on the _fields ordering, ending at staterror
+    for f in data._fields[1:]:
+        if f == 'staterror':
+            break
+
+        meta.append((f.upper(), getattr(data, f)))
+
+    if data.staterror is not None:
+        meta.append(('Statistical error', data.staterror))
+
+    if data.syserror is not None:
+        meta.append(('Systematic error', data.syserror))
+
+    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+                                  open_block=True)]
+    return formatting.html_from_sections(data, ls)
+
+
+def html_data2d(data):
+    """HTML representation: Data2D and derived classes
+
+    """
+
+    dtype = type(data).__name__
+
+    """
+
+    It would be nice to plot the plot, but there are several questions to
+    resolve, such as:
+
+      - do we plot each point (okay for sparse data) or binned
+      - simple binning, adaptive binning, hexagonal binning?
+      - do we just pick a number, like 100, to bin the data to
+
+    """
+
+    # Summary properties
+    #
+    meta = []
+    if data.name is not None and data.name != '':
+        meta.append(('Identifier', data.name))
+
+    # NOTE: shape is not well defined, is it x by y or
+    # the inverse, so I am not going to display it at the
+    # moment.
+    # if data.shape != None:
+    #     meta.append(('Shape', data.shape))
+
+    meta.append(('Number of bins', len(data.y)))
+
+    # Rely on the _fields ordering, ending at shape
+    for f in data._fields[1:]:
+        if f == 'shape':
+            break
+
+        meta.append((f.upper(), getattr(data, f)))
+
+    if data.staterror is not None:
+        meta.append(('Statistical error', data.staterror))
+
+    if data.syserror is not None:
+        meta.append(('Systematic error', data.syserror))
+
+    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+                                  open_block=True)]
+    return formatting.html_from_sections(data, ls)

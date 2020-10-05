@@ -35,22 +35,22 @@ References
 
 """
 
-from sherpa.astro.utils import reshape_2d_arrays
-
 from configparser import ConfigParser
 import logging
 import os
 import os.path
 import sys
+import importlib
+
 import numpy
+
 import sherpa.io
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA, DataRosatRMF
+from sherpa.astro.utils import reshape_2d_arrays
 from sherpa import get_config
-
-import importlib
 
 config = ConfigParser()
 config.read(get_config())

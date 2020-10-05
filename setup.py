@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019 Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017, 2018, 2019, 2020
+#               Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -103,7 +104,8 @@ meta = dict(name='sherpa',
                       ],
             package_data={'sherpa': ['include/sherpa/*.hh',
                                      'include/sherpa/astro/*.hh',
-                                     'tests/*'],
+                                     'tests/*',
+                                     'static/css/*'],
                           'sherpa.estmethods': ['tests/test_*.py'],
                           'sherpa.image': ['tests/test_*.py'],
                           'sherpa.models': ['tests/test_*.py'],

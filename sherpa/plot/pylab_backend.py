@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2017, 2019, 2020
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +18,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import io
+import logging
+
 # Although this is labelled pylab mode, use the pyplot interface
 # (for the functionlity used here, they are the same).
 #
@@ -28,6 +32,7 @@ from matplotlib import pyplot as plt
 
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import NotImplementedErr
+from sherpa.utils import formatting
 
 
 __all__ = ('clear_window','point','plot','histo','contour','set_subplot','init',
@@ -44,6 +49,11 @@ __all__ = ('clear_window','point','plot','histo','contour','set_subplot','init',
            'vline', 'hline', 'get_scatter_plot_defaults', 'get_cdf_plot_defaults',
            'get_latex_for_string', 'name')
 
+
+lgr = logging.getLogger(__name__)
+
+
+# Name of the backend
 name = 'pylab'
 
 logger = logging.getLogger(__name__)
@@ -691,3 +701,139 @@ def get_latex_for_string(txt):
     """
 
     return "${}$".format(txt)
+
+
+# HTML representation as SVG plots
+#
+
+def as_svg(func):
+    """Create HTML representation of a plot
+
+    The output is a SVG representation of the data, as a HTML
+    svg element, or a single div pointing out that the
+    plot object has not been prepared,
+
+    Parameters
+    ----------
+    func : function
+        The function, which takes no arguments, which will create the
+        plot. It creates and returns the Figure.
+
+    Returns
+    -------
+    plot : str or None
+        The HTML, or None if there was an error (e.g. prepare not
+        called).
+
+    """
+
+    svg = io.StringIO()
+    try:
+        fig = func()
+        fig.savefig(svg, format='svg')
+        plt.close(fig)
+
+    except Exception as e:
+        lgr.debug("Unable to create SVG plot: {}".format(e))
+        return None
+
+    # strip out the leading text so this can be used in-line
+    svg = svg.getvalue()
+    idx = svg.find('<svg ')
+    if idx == -1:
+        lgr.debug("SVG output does not contain '<svg ': {}".format(svg))
+        return None
+
+    return svg[idx:]
+
+
+def as_html_plot(data, summary=None):
+    """Create HTML representation of a plot
+
+    The output is a SVG representation of the data, as a HTML
+    svg element.
+
+    Parameters
+    ----------
+    data : Plot instance
+        The plot object to display. It has already had its prepare
+        method called.
+    summary : str or None, optional
+        The summary of the detail. If not set then the data type
+        name is used.
+
+    Returns
+    -------
+    plot : str or None
+        The HTML, or None if there was an error (e.g. prepare not
+        called).
+
+    """
+
+    def plotfunc():
+        fig = plt.figure()
+        data.plot()
+        return fig
+
+    svg = as_svg(plotfunc)
+    if svg is None:
+        return None
+
+    if summary is None:
+        summary = type(data).__name__
+
+    ls = [formatting.html_svg(svg, summary)]
+    return formatting.html_from_sections(data, ls)
+
+
+def as_html_contour(data, summary=None):
+    """Create HTML representation of a contour
+
+    The output is a SVG representation of the data, as a HTML
+    svg element.
+
+    Parameters
+    ----------
+    data : Contour instance
+        The contour object to display. It has already had its prepare
+        method called.
+    summary : str or None, optional
+        The summary of the detail. If not set then the data type
+        name is used.
+
+    Returns
+    -------
+    plot : str or None
+        The HTML, or None if there was an error (e.g. prepare not
+        called).
+
+    """
+
+    def plotfunc():
+        fig = plt.figure()
+        data.contour()
+        return fig
+
+    svg = as_svg(plotfunc)
+    if svg is None:
+        return None
+
+    if summary is None:
+        summary = type(data).__name__
+
+    ls = [formatting.html_svg(svg, summary)]
+    return formatting.html_from_sections(data, ls)
+
+
+as_html_histogram = as_html_plot
+as_html_pdf = as_html_plot
+as_html_cdf = as_html_plot
+as_html_lr = as_html_plot
+as_html_data = as_html_plot
+as_html_datacontour = as_html_contour
+as_html_model = as_html_plot
+as_html_modelcontour = as_html_contour
+as_html_fit = as_html_plot
+as_html_fitcontour = as_html_contour
+as_html_contour1d = as_html_plot
+as_html_contour2d = as_html_contour

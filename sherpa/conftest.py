@@ -44,6 +44,15 @@ except ImportError:
     has_xspec = False
 
 
+import sherpa.plot
+import sherpa.astro.plot
+from sherpa.plot import dummy_backend
+try:
+    from sherpa.plot import pylab_backend
+except ImportError:
+    pylab_backend = None
+
+
 # In some instances, if some xvfb processes did not stop cleanly
 # pytest-xfvb starts complaining that a virtual screen is already on
 # the following code works around that. The issue is hard to reproduce
@@ -96,12 +105,21 @@ known_warnings = {
             #  This does not have to do with Sherpa and is coming from some versions of
             #  jupyter_client
             r"metadata .* was set from the constructor.*",
+
+            # Matplotlib version 2 warnings (from HTML notebook represention)
+            #
+            r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
+            r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working"
         ],
     UserWarning:
         [
             r"File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",
             r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode.",
             r"Converting array .* to numpy array",
+
+            # Matplotlib version 2 warnings (from HTML notebook represention)
+            #
+            r'Attempting to set identical bottom==top results\nin singular transformations; automatically expanding.\nbottom=1.0, top=1.0',
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
@@ -485,10 +503,15 @@ def hide_logging():
 
 @pytest.fixture
 def old_numpy_printing():
-    """Force the old style for NumPy printing.
+    """Force NumPy to use old-style printing for the test.
 
-    This is intended to make it easier to check the
-    string output in tests.
+    This is only needed whilst we still support NumPy 1.13
+    (I think). Calling this fixture will ensure we have
+    consistent printing of NumPy arrays (to some degree
+    anyway).
+
+    The original printoptions is reset after the test is
+    run.
     """
 
     oldopts = np.get_printoptions()
@@ -499,3 +522,37 @@ def old_numpy_printing():
 
     if 'legacy' in oldopts:
         np.set_printoptions(legacy=oldopts['legacy'])
+
+
+PLOT_BACKENDS = [dummy_backend]
+if pylab_backend is not None:
+    PLOT_BACKENDS.append(pylab_backend)
+
+
+@pytest.fixture(params=PLOT_BACKENDS)
+def override_plot_backend(request):
+    """Override the plot backend for this test
+
+    Runs the test with the given plot backend and then restores the
+    original value.
+
+    Note that this does not reload the ui layers, which will have
+    retain reference to the original backend throughout.
+
+    """
+
+    old = sherpa.plot.backend
+
+    # safety check
+    #
+    assert old.name == sherpa.astro.plot.backend.name
+
+    changed = old.name != request.param.name
+    if changed:
+        sherpa.plot.backend = request.param
+        sherpa.astro.plot.backend = request.param
+
+    yield
+    if changed:
+        sherpa.plot.backend = old
+        sherpa.astro.plot.backend = old

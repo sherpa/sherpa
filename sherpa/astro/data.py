@@ -25,14 +25,15 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 import os.path
 import logging
 import warnings
+
 import numpy
-import hashlib
 
 from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, IntegratedDataSpace2D
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
+from sherpa.utils import formatting
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid or Region symbols.
@@ -55,7 +56,7 @@ groupstatus = False
 try:
     import group as pygroup
     groupstatus = True
-except:
+except ImportError:
     groupstatus = False
     warning('the group module (from the CIAO tools package) is not ' +
             'installed.\nDynamic grouping functions will not be available.')
@@ -94,6 +95,664 @@ def _notice_resp(chans, arf, rmf):
             bin_mask = rmf.notice(chans)
         if arf is not None:
             arf.notice(bin_mask)
+
+
+def display_header(header, key):
+    """Return the header value for display by _repr_html
+
+    The value is not displayed if it doesn't exist, is None,
+    is empty, or is the string 'NONE'. This is intended for
+    PHA responses.
+
+    Parameters
+    ----------
+    header : dict-like
+    key : str
+        The key to display
+
+    Returns
+    -------
+    value : None or value
+        The value to display, or None.
+
+    Notes
+    -----
+    It is not clear if the Meta class is intended to only store
+    string values or not. Limited protection is provided in case
+    the value stored is not a string.
+    """
+
+    try:
+        val = header[key]
+    except KeyError:
+        return None
+
+    # Unclear if this can happen
+    if val is None:
+        return None
+
+    # The metadata value is not guaranteed to be a string
+    try:
+        val = val.strip()
+        if val in ['', 'NONE']:
+            return None
+    except AttributeError:
+        pass
+
+    return val
+
+
+def make_metadata(header, items):
+    """Create the metadata table.
+
+    Parameters
+    ----------
+    header : dict-like
+        The header. Expected to be a sherpa.astro.io.meta.Meta
+        object but just needs to act like a dictionary.
+    items : list of (str, str)
+        The keys to display (in order), if set. The first element
+        is the key name, and the second is the label in the header
+        to display.
+
+    Returns
+    -------
+    meta : list of (str, str) or None
+        The two-element table rows to display. If no rows matched
+        return None.
+
+    """
+
+    meta = []
+    for key, desc in items:
+        val = display_header(header, key)
+        if val is None:
+            continue
+
+        meta.append((desc, val))
+
+    if len(meta) == 0:
+        return None
+
+    return meta
+
+
+def _extract_fields(obj, stop, summary, open_block=True):
+    """Extract the fields up until the stop field.
+
+    Parameters
+    ----------
+    obj : Data instance
+        It has to have a _fields attribute
+    stop : str
+        The attribute at which to stop (and is not included).
+    summary : str
+        The label for the details tab.
+    open_block : bool, optional
+        Is the details tab open or closed?
+
+    Returns
+    -------
+    html : str
+        The HTML for this section.
+    """
+
+    meta = []
+    for f in obj._fields[1:]:
+        if f == stop:
+            break
+
+        v = getattr(obj, f)
+        if v is None:
+            continue
+
+        meta.append((f.upper(), v))
+
+    return formatting.html_section(meta, summary=summary,
+                                   open_block=open_block)
+
+
+
+def html_pha(pha):
+    """HTML representation: PHA"""
+
+    from sherpa.plot import DataPlot, backend
+
+    ls = []
+
+    plotter = DataPlot()
+    plotter.prepare(pha)
+
+    try:
+        out = backend.as_html_plot(plotter, 'PHA Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
+        out = _extract_fields(pha, 'grouped', 'PHA Data')
+
+    ls.append(out)
+
+    # Summary properties
+    meta = []
+    if pha.name is not None and pha.name != '':
+        meta.append(('Identifier', pha.name))
+
+    if pha.exposure is not None:
+        meta.append(('Exposure', '{:g} s'.format(pha.exposure)))
+
+    meta.append(('Number of bins', len(pha.channel)))
+
+    meta.append(('Channel range', '{} - {}'.format(int(pha.channel[0]),
+                                                   int(pha.channel[-1]))))
+
+    # Although assume the counts are integers, do not force this
+    cmin = pha.counts.min()
+    cmax = pha.counts.max()
+    meta.append(('Count range', '{} - {}'.format(cmin, cmax)))
+
+    if pha.background_ids != []:
+        if pha.subtracted:
+            msg = 'Subtracted'
+        else:
+            msg = 'Not subtracted'
+
+        meta.append(('Background', msg))
+
+    # Make sure show all groups (not just those that are within
+    # the filter applied to the object).
+    #
+    if pha.grouping is not None:
+        if pha.grouped:
+            ngrp = pha.apply_grouping(pha.counts).size
+            msg = 'Applied ({} groups)'.format(ngrp)
+        else:
+            msg = 'Not applied'
+
+        meta.append(('Grouping', msg))
+
+    # Should this only be displayed if a filter has been applied?
+    #
+    fexpr = pha.get_filter_expr()
+    bintype = 'groups' if pha.grouped else 'channels'
+    nbins = pha.get_dep(filter=True).size
+    meta.append(('Using', '{} with {} {}'.format(fexpr, nbins, bintype)))
+
+    ls.append(formatting.html_section(meta, summary='Summary',
+                                      open_block=True))
+
+    # TODO:
+    #   correction factors
+
+    # Display a subset of header values
+    # - maybe don't display the FITLER if NONE
+    # - how about RESPFILE / PHAFILE
+    if pha.header is not None:
+        meta = make_metadata(pha.header,
+                             [('TELESCOP', 'Mission or Satellite'),
+                              ('INSTRUME', 'Instrument or Detector'),
+                              ('FILTER', 'Instrument filter'),
+                              ('OBJECT', 'Object'),
+                              ('TITLE', 'Program description'),
+                              ('DATE-OBS', 'Observation date'),
+                              ('CREATOR', 'Program that created the PHA'),
+                              ('CHANTYPE', 'The channel type'),
+                              ('HDUCLAS2', 'Data stored'),
+                              ('HDUCLAS3', 'Data format'),
+                              ('HDUCLAS4', 'PHA format')])
+
+        if meta is not None:
+            ls.append(formatting.html_section(meta, summary='Metadata'))
+
+    return formatting.html_from_sections(pha, ls)
+
+
+def _calc_erange(elo, ehi):
+    """Create the energy range information.
+
+    Parameters
+    ----------
+    elo, ehi - NumPy array
+        The low and high energy bins, in keV.
+
+    Returns
+    -------
+    erange : str
+        The string representation of the energy range
+
+    """
+
+    # Have we guaranteed the ordering here or not? Assuming
+    # NumPy arrays.
+    e1 = elo[0]
+    e2 = ehi[-1]
+    emin, emax = (e1, e2) if e1 <= e2 else (e2, e1)
+    erange = '{:g} - {:g} keV'.format(emin, emax)
+
+    # Randomly pick 1% as the cut-off for a constant bin width
+    #
+    de = numpy.abs(ehi - elo)
+    demin = de.min()
+    demax = de.max()
+    if demin > 0.0:
+        dedelta = (demax - demin) / demin
+    else:
+        dedelta = 1
+
+    if dedelta <= 0.01:
+        erange += ', bin size {:g} keV'.format(demax)
+    else:
+        erange += ', bin size {:g} - {:g} keV'.format(demin, demax)
+
+    return erange
+
+
+def _calc_wrange(wlo, whi):
+    """Create the wavelength range information.
+
+    Parameters
+    ----------
+    wlo, whi - NumPy array
+        The low and high wavelength bins, in Angstroms.
+
+    Returns
+    -------
+    wrange : str
+        The string representation of the wavelength range
+
+    """
+
+    w1 = wlo[0]
+    w2 = whi[-1]
+    wmin, wmax = (w1, w2) if w1 <= w2 else (w2, w1)
+    wrange = '{:g} - {:g} &#8491;'.format(wmin, wmax)
+
+    # Randomly pick 1% as the cut-off for a constant bin width
+    #
+    dw = numpy.abs(whi - wlo)
+    dwmin = dw.min()
+    dwmax = dw.max()
+    if dwmin > 0.0:
+        dwdelta = (dwmax - dwmin) / dwmin
+    else:
+        dwdelta = 1
+
+    if dwdelta <= 0.01:
+        wrange += ', bin size {:g} &#8491;'.format(dwmax)
+    else:
+        wrange += ', bin size {:g} - {:g} &#8491;'.format(dwmin, dwmax)
+
+    return wrange
+
+
+def html_arf(arf):
+    """HTML representation: ARF"""
+
+    # Unlike the string representation, this provides extra
+    # information (e.g. energy range covered). Should it include
+    # any filters or masks? How about bin_lo/hi values?
+    #
+    # It also assumes the units are keV/cm^2 which is not
+    # guaranteed.
+
+    from sherpa.astro.plot import ARFPlot, backend
+
+    ls = []
+
+    plotter = ARFPlot()
+    plotter.prepare(arf)
+
+    try:
+        out = backend.as_html_plot(plotter, 'ARF Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
+        out = _extract_fields(arf, 'exposure', 'ARF Data')
+
+    ls.append(out)
+
+    # Summary properties
+    meta = []
+    if arf.name is not None and arf.name != '':
+        meta.append(('Identifier', arf.name))
+
+    if arf.exposure is not None:
+        meta.append(('Exposure', '{:g} s'.format(arf.exposure)))
+
+    meta.append(('Number of bins', len(arf.specresp)))
+
+    erange = _calc_erange(arf.energ_lo, arf.energ_hi)
+    meta.append(('Energy range', erange))
+
+    # repeat for wavelengths (without the energy threshold)
+    #
+    if arf.bin_lo is not None and arf.bin_hi is not None:
+        wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
+        meta.append(('Wavelength range', wrange))
+
+    a1 = numpy.min(arf.specresp)
+    a2 = numpy.max(arf.specresp)
+    meta.append(('Area range', '{:g} - {:g} cm<sup>2</sup>'.format(a1, a2)))
+
+    ls.append(formatting.html_section(meta, summary='Summary',
+                                      open_block=True))
+
+    # Display a subset of header values
+    # - maybe don't display the FITLER if NONE
+    # - how about RESPFILE / PHAFILE
+    if arf.header is not None:
+        meta = make_metadata(arf.header,
+                             [('TELESCOP', 'Mission or Satellite'),
+                              ('INSTRUME', 'Instrument or Detector'),
+                              ('FILTER', 'Instrument filter'),
+                              ('OBJECT', 'Object'),
+                              ('TITLE', 'Program description'),
+                              ('DATE-OBS', 'Observation date'),
+                              ('CREATOR', 'Program that created the ARF')])
+
+        if meta is not None:
+            ls.append(formatting.html_section(meta, summary='Metadata'))
+
+    return formatting.html_from_sections(arf, ls)
+
+
+def html_rmf(rmf):
+    """HTML representation: RMF"""
+
+    # See _html_arf for general comments
+
+    ls = []
+
+    svg = simulate_rmf_plot(rmf)
+    if svg is not None:
+        out = formatting.html_svg(svg, 'RMF Plot')
+    else:
+        out = _extract_fields(rmf, 'ethresh', 'RMF Data')
+
+    ls.append(out)
+
+    # Summary properties
+    meta = []
+    if rmf.name is not None and rmf.name != '':
+        meta.append(('Identifier', rmf.name))
+
+    meta.append(('Number of channels', rmf.detchans))
+    meta.append(('Number of energies', len(rmf.energ_hi)))
+
+    erange = _calc_erange(rmf.energ_lo, rmf.energ_hi)
+    if rmf.ethresh is not None and rmf.energ_lo[0] <= rmf.ethresh:
+        # Not entirely happy with the wording of this
+        erange += ' (minimum threshold of {} was used)'.format(rmf.ethresh)
+
+    meta.append(('Energy range', erange))
+
+    meta.append(('Channel range', '{} - {}'.format(int(rmf.offset),
+                                                   int(rmf.offset + rmf.detchans - 1))))
+
+    # Could show the energy range as given by e_min/e_max but
+    # is this useful?
+
+    ls.append(formatting.html_section(meta, summary='Summary',
+                                      open_block=True))
+
+    # Display a subset of header values
+    # - how about PHAFILE
+    if rmf.header is not None:
+        meta = make_metadata(rmf.header,
+                             [('TELESCOP', 'Mission or Satellite'),
+                              ('INSTRUME', 'Instrument or Detector'),
+                              ('FILTER', 'Instrument filter'),
+                              ('OBJECT', 'Object'),
+                              ('TITLE', 'Program description'),
+                              ('DATE-OBS', 'Observation date'),
+                              ('CREATOR', 'Program that created the RMF'),
+                              ('CHANTYPE', 'The channel type'),
+                              ('LO_THRES', 'The minimum probability threshold'),
+                              ('HDUCLAS3', 'Matrix contents')])
+
+        if meta is not None:
+            ls.append(formatting.html_section(meta, summary='Metadata'))
+
+    return formatting.html_from_sections(rmf, ls)
+
+
+def html_img(img):
+    """HTML representation: IMG
+
+    Special-case of the Data2D handling. It would be nice to re-use
+    parts of the superclass behavior.
+    """
+
+    ls = []
+    dtype = type(img).__name__
+
+    svg = img_plot(img)
+    if svg is not None:
+        out = formatting.html_svg(svg, '{} Plot'.format(dtype))
+        summary = ''
+    else:
+        # Only add prefix to summary if there's no plot
+        summary = '{} '.format(dtype)
+
+        # Summary properties
+        #
+        meta = []
+        if img.name is not None and img.name != '':
+            meta.append(('Identifier', img.name))
+
+        # shape is better defined for DataIMG than Data2D
+        meta.append(('Shape',
+                     ('{1} by {0} pixels'.format(*img.shape))))
+
+        meta.append(('Number of bins', len(img.y)))
+
+        # Rely on the _fields ordering, ending at shape
+        for f in img._fields[1:]:
+            if f == 'shape':
+                break
+
+            meta.append((f.upper(), getattr(img, f)))
+
+        if img.staterror is not None:
+            meta.append(('Statistical error', img.staterror))
+
+        if img.syserror is not None:
+            meta.append(('Systematic error', img.syserror))
+
+        out = formatting.html_section(meta, summary=summary + 'Data',
+                                      open_block=True)
+
+    ls.append(out)
+
+    # Add coordinate-system information. The WCS structure in Sherpa
+    # is not really sufficient to identify the transform.
+    #
+    if img.sky is not None:
+        meta = []
+        meta.append(('Center pixel (logical)', img.sky.crpix))
+        meta.append(('Center pixel (physical)', img.sky.crval))
+        meta.append(('Pixel size', img.sky.cdelt))
+
+        ls.append(formatting.html_section(meta,
+                                          summary='Coordinates: {}'.format(img.sky.name)))
+
+    if img.eqpos is not None:
+        meta = []
+        meta.append(('Center pixel (physical)', img.eqpos.crpix))
+        # could convert to RA/Dec
+        meta.append(('Center pixel (world)', img.eqpos.crval))
+        meta.append(('Pixel size', img.eqpos.cdelt))
+
+        meta.append(('Rotation', img.eqpos.crota))
+        meta.append(('Epoch', img.eqpos.epoch))
+        meta.append(('Equinox', img.eqpos.equinox))
+
+        ls.append(formatting.html_section(meta,
+                                          summary='Coordinates: {}'.format(img.eqpos.name)))
+
+    if img.header is not None:
+        meta = make_metadata(img.header,
+                             [('TELESCOP', 'Mission or Satellite'),
+                              ('INSTRUME', 'Instrument or Detector'),
+                              ('FILTER', 'Instrument filter'),
+                              ('OBJECT', 'Object'),
+                              ('TITLE', 'Program description'),
+                              ('OBSERVER', 'Observer'),
+                              ('EXPOSURE', 'Exposure time'),
+                              ('DATE-OBS', 'Observation date'),
+                              ('CREATOR', 'Program that created the image')])
+
+        if meta is not None:
+            ls.append(formatting.html_section(meta, summary='Metadata'))
+
+    return formatting.html_from_sections(img, ls)
+
+
+def simulate_rmf_plot(rmf):
+    """Create a plot which shows the response to monochromatic energies.
+
+    The SVG of the plot is returned if matplotlib is selected as the
+    backend. The choice of energies used to create the response to
+    monochromatic energies is based on the data range (using log
+    scaling).
+
+    """
+
+    from sherpa.models.basic import Delta1D
+    from sherpa.plot import backend
+
+    try:
+        from matplotlib import pyplot as plt
+    except ImportError:
+        return None
+
+    # X access
+    #
+    if rmf.e_min is None:
+        x = numpy.arange(rmf.offset, rmf.detchans + rmf.offset)
+        xlabel = 'Channel'
+    else:
+        x = 0.5 * (rmf.e_min + rmf.e_max)
+        xlabel = 'Energy (keV)'
+
+    # How many monochromatic lines to use
+    #
+    nlines = 5
+
+    # for now let's just create log-spaced energies
+    #
+    elo, ehi = rmf.energ_lo, rmf.energ_hi
+    l1 = numpy.log10(elo[0])
+    l2 = numpy.log10(ehi[-1])
+    dl = (l2 - l1) / (nlines + 1)
+
+    lines = l1 + dl * numpy.arange(1, nlines + 1)
+    energies = numpy.power(10, lines)
+
+    mdl = Delta1D()
+
+    def plotfunc():
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(bottom=0.2)
+
+        for energy in energies:
+            mdl.pos = energy
+            y = rmf.apply_rmf(mdl(elo, ehi))
+            ax.plot(x, y, label='{:.2g} keV'.format(energy))
+
+        # Try to get the legend centered nicely below the plot
+        fig.legend(loc='center', ncol=nlines, bbox_to_anchor=(0.0, 0, 1, 0.1))
+
+        ax.set_xlabel(xlabel)
+        ax.set_title(rmf.name)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+
+        return fig
+
+    try:
+        return backend.as_svg(plotfunc)
+    except AttributeError:
+        return None
+
+
+def img_plot(img):
+    """Display the image.
+
+    The SVG of the plot is returned if matplotlib is selected as the
+    backend.
+
+    The eqpos/wcs coordinate system is not used; it uses physical
+    instead. This greatly simplifies the plot (no need to handle WCS).
+
+    """
+
+    from sherpa.plot import backend
+
+    try:
+        from matplotlib import pyplot as plt
+    except ImportError:
+        return None
+
+    # Apply filter and coordinate system
+    #
+    y = img.get_img()
+
+    # extent is left, right, bottom, top and describes the
+    # outer-edge of the pixels.
+    #
+    ny, nx = img.shape
+    coord = img.coord
+    if coord in ['physical', 'world']:
+        x0, y0 = img._logical_to_physical(0.5, 0.5)
+        x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
+        extent = (x0, x1, y0, y1)
+        lbl = 'physical'
+        cdelt = img.sky.cdelt
+        aspect = 'equal' if cdelt[1] == cdelt[0] else 'auto'
+
+    else:
+        extent = (0.5, nx + 0.5, 0.5, ny + 0.5)
+        aspect = 'equal'
+        lbl = 'logical'
+
+    # What is the filtered dataset?
+    #
+    if img.get_filter_expr() != '':
+        x0, x1 = img.get_indep(filter=True)
+
+        x0min, x0max = numpy.min(x0), numpy.max(x0)
+        x1min, x1max = numpy.min(x1), numpy.max(x1)
+
+        # Should add in half cdelt to padd these, but
+        # it looks like it isn't necessary.
+        filtered = (x0min, x1min, x0max, x1max)
+
+    else:
+        filtered = None
+
+    def plotfunc():
+        fig, ax = plt.subplots()
+
+        im = ax.imshow(y, origin='lower', extent=extent, aspect=aspect)
+        fig.colorbar(im, ax=ax)
+
+        if filtered != None:
+            ax.set_xlim(filtered[0], filtered[2])
+            ax.set_ylim(filtered[1], filtered[3])
+
+        ax.set_xlabel('X ({})'.format(lbl))
+        ax.set_ylabel('Y ({})'.format(lbl))
+        if img.name is not None and img.name != '':
+            ax.set_title(img.name)
+
+        return fig
+
+    try:
+        return backend.as_svg(plotfunc)
+    except AttributeError:
+        return None
 
 
 class DataOgipResponse(Data1DInt):
@@ -309,6 +968,11 @@ class DataARF(DataOgipResponse):
             ss = self._fields
         return ss
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the ARF
+        """
+        return html_arf(self)
+
     def __setstate__(self, state):
         if 'header' not in state:
             self.header = None
@@ -438,6 +1102,11 @@ class DataRMF(DataOgipResponse):
         finally:
             self._fields = old
         return ss
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the RMF
+        """
+        return html_rmf(self)
 
     def __setstate__(self, state):
         if 'header' not in state:
@@ -652,12 +1321,12 @@ class DataPHA(Data1D):
             units = 'channel'
 
         elif units.startswith('ener'):
-            self._to_channel   = self._energy_to_channel
+            self._to_channel = self._energy_to_channel
             self._from_channel = self._channel_to_energy
             units = 'energy'
 
         elif units.startswith('wave'):
-            self._to_channel   = self._wavelength_to_channel
+            self._to_channel = self._wavelength_to_channel
             self._from_channel = self._channel_to_wavelength
             units = 'wavelength'
 
@@ -754,7 +1423,7 @@ class DataPHA(Data1D):
         self._subtracted = False
         self._response_ids = []
         self._background_ids = []
-        self._responses   = {}
+        self._responses = {}
         self._backgrounds = {}
         self._rate = True
         self._plot_fac = 0
@@ -773,6 +1442,11 @@ class DataPHA(Data1D):
         finally:
             self._fields = old
         return ss
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the PHA
+        """
+        return html_pha(self)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -1704,7 +2378,7 @@ class DataPHA(Data1D):
         if self.grouped and (self.mask is not True):
             self.notice()
             warning('filtering grouped data with quality flags,' +
-                    ' previous filters deleted' )
+                    ' previous filters deleted')
 
         elif not self.grouped:
             # if ungrouped, create/combine with self.mask
@@ -2913,6 +3587,11 @@ class DataIMG(Data2D):
 
         self._coord = coord
 
+    # You should use set_coord rather than changing coord directly,
+    # otherwise constraints set in set_coord are not run. This is
+    # probably an error in set_coord (i.e. this logic should be
+    # moved into _set_coord).
+    #
     coord = property(_get_coord, _set_coord,
                      doc='Coordinate system of independent axes')
 
@@ -2937,6 +3616,11 @@ class DataIMG(Data2D):
         finally:
             self._fields = old
         return ss
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the data
+        """
+        return html_img(self)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -3160,6 +3844,9 @@ class DataIMG(Data2D):
         if numpy.iterable(self.mask):
             # create bounding box around noticed image regions
             mask = numpy.array(self.mask).reshape(*self.shape)
+
+            # TODO: should replace 'mask == True' with mask but
+            # not sure we have a good set of tests
             x0_i, x1_i = numpy.where(mask == True)
 
             x0_lo = x0_i.min()

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 from sherpa.utils import get_keyword_defaults
+from sherpa.utils import formatting
+
 
 __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
            'get_split_plot_defaults','get_confid_point_defaults',
@@ -35,11 +39,16 @@ __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
            'get_latex_for_string', 'name')
 
 
+lgr = logging.getLogger(__name__)
+
+# Identify the backend
 name = 'dummy'
 
 
 def point(*args, **kwargs):
+    """A do-nothing operation"""
     pass
+
 
 clear_window = point
 set_window_redraw = point
@@ -115,3 +124,129 @@ def get_latex_for_string(txt):
     """
 
     return txt
+
+
+# HTML representation as tabular data
+#
+def as_html(data, fields):
+    """Create HTML representation of a plot
+
+    Parameters
+    ----------
+    data : Plot instance
+        The plot object to display.
+    fields : sequence of strings
+        The fields of data to use.
+
+    """
+
+    # Would like a nicer way to set the summary label, but without
+    # adding a per-class field for this it is safest just to use
+    # the object name.
+
+    meta = []
+    for name in fields:
+        # skip records which we don't know about. This indicates
+        # an error in the calling code, but we don't want it to
+        # stop the generation of the HTML.
+        #
+        try:
+            val = getattr(data, name)
+        except Exception as e:
+            lgr.debug("Skipping field {}: {}",format(name, e))
+            continue
+
+        meta.append((name, val))
+
+    ls = [formatting.html_section(meta, open_block=True,
+                                  summary=type(data).__name__)]
+    return formatting.html_from_sections(data, ls)
+
+
+def as_html_histogram(plot):
+    return as_html(plot,
+                   ['xlo', 'xhi', 'y', 'title', 'xlabel', 'ylabel'])
+
+
+def as_html_pdf(plot):
+    return as_html(plot,
+                   ['points', 'xlo', 'xhi', 'y', 'title', 'xlabel', 'ylabel'])
+
+
+def as_html_cdf(plot):
+    return as_html(plot,
+                   ['points', 'x', 'y',
+                    'median', 'lower', 'upper',
+                    'title', 'xlabel', 'ylabel'])
+
+
+def as_html_lr(plot):
+    return as_html(plot,
+                   ['ratios', 'lr', 'xlo', 'xhi', 'y',
+                    'title', 'xlabel', 'ylabel'])
+
+
+def as_html_data(plot):
+    return as_html(plot,
+                   ['x', 'xerr', 'y', 'yerr',
+                    'title', 'xlabel', 'ylabel'])
+
+
+def as_html_datacontour(plot):
+    return as_html(plot,
+                   ['x0', 'x1', 'y', 'levels',
+                    'title', 'xlabel', 'ylabel'])
+
+
+def as_html_model(plot):
+    return as_html(plot,
+                   ['x', 'xerr', 'y', 'yerr',
+                    'title', 'xlabel', 'ylabel'])
+
+
+def as_html_modelcontour(plot):
+    return as_html(plot,
+                   ['x0', 'x1', 'y', 'levels',
+                    'title', 'xlabel', 'ylabel'])
+
+
+def get_html(attr):
+    if attr is None:
+        return ''
+    return attr._repr_html_()
+
+
+def as_html_fit(plot):
+    # Would like to do a better combination than this
+    dplot = get_html(plot.dataplot)
+    mplot = get_html(plot.modelplot)
+
+    if dplot == '' and mplot == '':
+        return None
+
+    return dplot + mplot
+
+
+def as_html_fitcontour(plot):
+    # Would like to do a better combination than this
+    dplot = get_html(plot.datacontour)
+    mplot = get_html(plot.modelcontour)
+
+    if dplot == '' and mplot == '':
+        return None
+
+    return dplot + mplot
+
+
+def as_html_contour1d(plot):
+    return as_html(plot,
+                   ['x', 'y', 'min', 'max', 'nloop',
+                    'delv', 'fac', 'log'])
+
+
+def as_html_contour2d(plot):
+    return as_html(plot,
+                   ['parval0', 'parval1', 'sigma',
+                    'x0', 'x1', 'y', 'levels',
+                    'min', 'max', 'nloop',
+                    'delv', 'fac', 'log'])
