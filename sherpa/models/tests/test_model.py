@@ -18,6 +18,7 @@
 #
 
 from collections import namedtuple
+import hashlib
 import logging
 import operator
 import warnings
@@ -31,7 +32,7 @@ from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, \
     UnaryOpModel
 from sherpa.models.parameter import Parameter, hugeval, tinyval
-from sherpa.models.basic import Sin, Const1D, Box1D
+from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -620,3 +621,175 @@ def test_constant_show(value, name, expected):
 
     m = ArithmeticConstantModel(value, name=name)
     assert m.name == expected
+
+
+def check_cache(mdl, expected, x, xhi=None):
+    """Check the cache contents.
+
+    We assume only one value is being cached at a time. The
+    code matches that in sherpa.models.model.modelCacher1d,
+    so all it does is check we are using this method.
+    """
+
+    cache = mdl._cache
+    assert len(cache) == 1
+
+    pars = [p.val for p in mdl.pars]
+    data = [numpy.asarray(pars).tobytes(),
+            b'1' if mdl.integrate else b'0',
+            x.tobytes()]
+    if xhi is not None:
+        data.append(xhi.tobytes())
+
+    token = b''.join(data)
+    digest = hashlib.sha256(token).digest()
+    assert digest in cache
+    assert cache[digest] == pytest.approx(expected)
+
+
+def test_evaluate_no_cache1d():
+    """Check we can turn off cacheing: 1d"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    mdl.integrate = False
+    mdl._use_caching = False
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    expected = 5 + 2 * xgrid
+    assert mdl(xgrid) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+
+def test_evaluate_cache1d():
+    """Check we run with cacheing on: 1d"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    mdl.integrate = False
+    mdl._use_caching = True
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+    check_cache(mdl, expected, xgrid)
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    expected = 5 + 2 * xgrid
+    assert mdl(xgrid) == pytest.approx(expected)
+    check_cache(mdl, expected, xgrid)
+
+
+def test_evaluate_no_cache1dint():
+    """Check we can turn off cacheing: 1dint"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+    xlo, xhi = xgrid[:-1], xgrid[1:]
+
+    mdl = Polynom1D()
+    mdl._use_caching = False
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(5) * 1.5
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    def xval(x):
+        return 5 + 2 * x
+
+    dx = xhi - xlo
+    ylo = xval(xlo)
+    yhi = xval(xhi)
+
+    expected = dx * (yhi + ylo) / 2
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+
+@pytest.mark.xfail
+def test_evaluate_cache1dint():
+    """Check we run with cacheing on: 1dint"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+    xlo, xhi = xgrid[:-1], xgrid[1:]
+
+    mdl = Polynom1D()
+    mdl._use_caching = True
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(5) * 1.5
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    def xval(x):
+        return 5 + 2 * x
+
+    dx = xhi - xlo
+    ylo = xval(xlo)
+    yhi = xval(xhi)
+
+    expected = dx * (yhi + ylo) / 2
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+
+@pytest.mark.xfail
+def test_evaluate_cache_swap():
+    """Check issue #959 when swapping integrate flag caused problems.
+
+    Note that the problem causing #959 is actually tested in
+    test_evaluate_cache1dint but it's nice to have this
+    separate check in case things change.
+    """
+
+    xgrid = numpy.arange(2, 10, 1.5)
+    xlo, xhi = xgrid[:-1], xgrid[1:]
+
+    mdl = Polynom1D()
+    mdl._use_caching = True
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    mdl.integrate = False
+    expected = 5 + 2 * xlo
+
+    y1 = mdl(xlo, xhi)
+    assert y1 == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+    mdl.integrate = True
+
+    def xval(x):
+        return 5 + 2 * x
+
+    dx = xhi - xlo
+    ylo = xval(xlo)
+    yhi = xval(xhi)
+
+    expected = dx * (yhi + ylo) / 2
+
+    y2 = mdl(xlo, xhi)
+    assert y2 == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
