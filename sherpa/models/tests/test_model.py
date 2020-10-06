@@ -30,7 +30,7 @@ import pytest
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, \
-    UnaryOpModel
+    UnaryOpModel, RegridWrappedModel
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D
 
@@ -793,3 +793,44 @@ def test_evaluate_cache_swap():
     y2 = mdl(xlo, xhi)
     assert y2 == pytest.approx(expected)
     check_cache(mdl, expected, xlo, xhi)
+
+
+def test_evaluate_cache_arithmeticconstant():
+    """Check we run with cacheing: ArihmeticConstant"""
+
+    mdl = ArithmeticConstantModel(2.3)
+    assert not hasattr(mdl, '_use_caching')
+
+
+def test_evaluate_cache_unaryop():
+    """UnaryOp has no cache"""
+
+    mdl = Polynom1D()
+    assert hasattr(mdl, '_use_caching')
+
+    fmdl = -mdl
+    assert isinstance(fmdl, UnaryOpModel)
+    assert not hasattr(fmdl, '_use_caching')
+
+
+def test_evaluate_cache_binaryop():
+    """BinaryOp has no cache"""
+
+    mdl = Polynom1D()
+    assert hasattr(mdl, '_use_caching')
+
+    fmdl = mdl + 2
+    assert isinstance(fmdl, BinaryOpModel)
+    assert not hasattr(fmdl, '_use_caching')
+
+
+def test_evaluate_cache_regrid1d():
+    """How about a regridded model?"""
+
+    mdl = Polynom1D()
+
+    x = numpy.arange(2, 20, 0.5)
+    rmdl = mdl.regrid(x)
+
+    assert isinstance(rmdl, RegridWrappedModel)
+    assert not hasattr(rmdl, '_use_caching')
