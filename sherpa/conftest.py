@@ -120,6 +120,13 @@ known_warnings = {
             # Matplotlib version 2 warnings (from HTML notebook represention)
             #
             r'Attempting to set identical bottom==top results\nin singular transformations; automatically expanding.\nbottom=1.0, top=1.0',
+
+            # See issue #571 and tests
+            # test_ui_plot.py
+            #    test_plot_fit_xxx_pylab
+            #    test_plot_fit_xxx_overplot_pylab
+            r"Attempted to set non-positive xlimits for log-scale axis; invalid limits will be ignored.",
+            r"Attempted to set non-positive left xlim on a log-scaled axis.*",
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
