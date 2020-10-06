@@ -32,7 +32,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.utils import poisson_noise
-from sherpa.utils.err import ArgumentTypeErr, DataErr, ModelErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ModelErr
 
 
 # This is part of #397
@@ -246,3 +246,145 @@ def test_delete_bkg_model(clean_astro_ui):
     # components still exist
     mdls = ui.list_model_components()
     assert set(mdls) == set(['bmdl', 'gmdl'])
+
+
+def test_default_background_issue(clean_astro_ui):
+    """Test issue #943"""
+
+    ui.set_default_id('x')
+
+    # use least-square as we don't really care about the fit
+    ui.set_stat('leastsq')
+
+    ui.load_arrays('x', [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    arf = ui.create_arf(np.asarray([0.1, 0.2, 0.3]), np.asarray([0.2, 0.3, 0.4]))
+    bkg.set_arf(arf)
+    ui.set_bkg(bkg)
+
+    ui.set_bkg_source(ui.const1d.mdl2)
+
+    # Ensure we can fit the background model. Prior to #943 being
+    # fixed the fit_bkg call would error out.
+    #
+    ui.fit_bkg()
+    assert mdl2.c0.val == pytest.approx(2 / 3 / 0.1)
+
+
+def test_show_bkg_model_issue943(clean_astro_ui):
+    """Test issue #943
+
+    We do not check that show_bkg_model is creating anything
+    useful, just that it can be called.
+
+    See https://github.com/sherpa/sherpa/issues/943#issuecomment-696119982
+    """
+
+    ui.set_default_id('x')
+
+    ui.load_arrays('x', [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    arf = ui.create_arf(np.asarray([0.1, 0.2, 0.3]), np.asarray([0.2, 0.3, 0.4]))
+    bkg.set_arf(arf)
+    ui.set_bkg(bkg)
+
+    ui.set_bkg_source(ui.const1d.mdl2)
+    ui.show_bkg_model()
+
+
+def test_default_background_issue_fit(clean_astro_ui):
+    """Test issue #943 with fit
+
+    See https://github.com/sherpa/sherpa/issues/943#issuecomment-696119982
+    """
+
+    ui.set_default_id('x')
+
+    # use least-square as we don't really care about the fit
+    ui.set_stat('leastsq')
+
+    ui.load_arrays('x', [1, 2, 3, 4], [5, 4, 3, 4], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3, 4]), [1, 1, 0, 1])
+    arf = ui.create_arf(np.asarray([0.1, 0.2, 0.3, 0.4]),
+                        np.asarray([0.2, 0.3, 0.4, 0.5]))
+    ui.set_arf(arf)
+    bkg.set_arf(arf)
+    ui.set_bkg(bkg)
+
+    # The model being fitted is a constant to 1,1,0,1 for
+    # the background, so that should be 0.75 / 0.1 (as the
+    # bin width is constant), and for the source it is
+    # 5,4,3,4 - <0.75> [here ignoring the bin-width],
+    # so [4.25,3.25,2.25,3.25] -> 13 / 4 -> 3.25
+    #
+    ui.set_source(ui.const1d.mdl1)
+    ui.set_bkg_source(ui.const1d.mdl2)
+
+    # Prior to #943 this would give a confusing error.
+    #
+    ui.fit()
+    assert mdl1.c0.val == pytest.approx(3.25 / 0.1)
+    assert mdl2.c0.val == pytest.approx(0.75 / 0.1)
+
+
+def test_bkg_id_get_bkg_source(clean_astro_ui):
+    """Check the error message when the background model has not been set (issue #943)"""
+
+    ui.set_default_id('x')
+
+    ui.load_arrays('x', [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+
+    with pytest.raises(ModelErr) as exc:
+        ui.get_bkg_source()
+
+    assert str(exc.value) == 'background model 1 for data set x has not been set'
+
+
+def test_fix_background_id_error_checks1():
+    """Check error handling of background id"""
+
+    ui.load_arrays(2, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(2, bkg)
+
+    with pytest.raises(ArgumentTypeErr) as exc:
+        ui.get_bkg_source(id=2, bkg_id=bkg)
+
+    assert str(exc.value) == 'identifiers must be integers or strings'
+
+
+def test_fix_background_id_error_checks2():
+    """Check error handling of background id"""
+
+    ui.load_arrays(2, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(2, bkg)
+
+    with pytest.raises(IdentifierErr) as exc:
+        ui.get_bkg_source(id=2, bkg_id='bkg')
+
+    assert str(exc.value) == "identifier 'bkg' is a reserved word"
+
+
+@pytest.mark.parametrize("id", [1, 'x'])
+def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
+    """Check we call delete_bkg_model with non-default bkg_id"""
+
+    ui.load_arrays(id, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(id, bkg, bkg_id=2)
+
+    ui.set_bkg_source(id, ui.const1d.bmdl, bkg_id=2)
+    assert ui.list_model_components() == ['bmdl']
+    assert ui.get_bkg_source(id, 2).name == 'const1d.bmdl'
+
+    ui.delete_bkg_model(id, bkg_id=2)
+    assert ui.list_model_components() == ['bmdl']
+
+    with pytest.raises(ModelErr) as exc:
+        ui.get_bkg_source(id, 2)
+
+    emsg = 'background model 2 for data set {} has not been set'.format(id)
+    assert str(exc.value) == emsg

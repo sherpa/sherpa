@@ -1084,21 +1084,18 @@ def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc()
 
 
-def fail(x):
-    return pytest.param(x, marks=pytest.mark.xfail)
-
-
 @requires_plotting
 @requires_fits
 @requires_data
-@pytest.mark.parametrize("plotfunc", [fail(ui.plot_bkg_model),
+@pytest.mark.parametrize("plotfunc", [ui.plot_bkg_model,
                                       ui.plot_bkg_source,
-                                      fail(ui.plot_bkg_fit),
-                                      fail(ui.plot_bkg_fit_resid),
-                                      fail(ui.plot_bkg_fit_ratio),
-                                      fail(ui.plot_bkg_fit_delchi)])
+                                      ui.plot_bkg_fit,
+                                      ui.plot_bkg_fit_resid,
+                                      ui.plot_bkg_fit_ratio,
+                                      ui.plot_bkg_fit_delchi])
 def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1, hide_logging):
-    """These fail because of issue #943"""
+    """Test issue #943 and general check of plot_bkg_xxx"""
+
     ui.unsubtract()
     ui.set_bkg_source(ui.const1d.bmdl + ui.gauss1d.bgmdl)
     plotfunc()
@@ -2744,7 +2741,7 @@ def test_pha1_bkg_fit_plot_no_model(clean_astro_ui, basic_pha1):
     with pytest.raises(ModelErr) as exc:
         ui.get_bkg_fit_plot('tst')
 
-    emsg = 'background model tst for data set tst has not been set'
+    emsg = 'background model 1 for data set tst has not been set'
     assert str(exc.value) == emsg
 
 
