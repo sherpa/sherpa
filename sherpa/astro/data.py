@@ -216,11 +216,11 @@ def _extract_fields(obj, stop, summary, open_block=True):
 def html_pha(pha):
     """HTML representation: PHA"""
 
-    from sherpa.plot import DataPlot, backend
+    from sherpa.astro.plot import DataPHAPlot, backend
 
     ls = []
 
-    plotter = DataPlot()
+    plotter = DataPHAPlot()
     plotter.prepare(pha)
 
     try:
