@@ -1153,6 +1153,11 @@ class Data1DInt(Data1D):
     def __init__(self, name, xlo, xhi, y, staterror=None, syserror=None):
         Data.__init__(self, name, (xlo, xhi), y, staterror, syserror)
 
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the data
+        """
+        return html_data1dint(self)
+
     def _init_data_space(self, filter, *data):
         return IntegratedDataSpace1D(filter, *data)
 
@@ -1327,7 +1332,7 @@ class Data2DInt(Data2D):
 # Notebook representations
 #
 def html_data1d(data):
-    """HTML representation: Data1D and derived classes
+    """HTML representation: Data1D
 
     If have matplotlib then plot the data, otherwise summarize it.
 
@@ -1356,6 +1361,61 @@ def html_data1d(data):
         meta.append(('Identifier', data.name))
 
     meta.append(('Number of bins', len(data.x)))
+
+    # Should this only be displayed if a filter has been applied?
+    #
+    fexpr = data.get_filter_expr()
+    nbins = data.get_dep(filter=True).size
+    meta.append(('Using', '{} with {} bins'.format(fexpr, nbins)))
+
+    # Rely on the _fields ordering, ending at staterror
+    for f in data._fields[1:]:
+        if f == 'staterror':
+            break
+
+        meta.append((f.upper(), getattr(data, f)))
+
+    if data.staterror is not None:
+        meta.append(('Statistical error', data.staterror))
+
+    if data.syserror is not None:
+        meta.append(('Systematic error', data.syserror))
+
+    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+                                  open_block=True)]
+    return formatting.html_from_sections(data, ls)
+
+
+def html_data1dint(data):
+    """HTML representation: Data1DInt
+
+    If have matplotlib then plot the data, otherwise summarize it.
+
+    """
+
+    from sherpa.plot import DataHistogramPlot, backend
+
+    dtype = type(data).__name__
+
+    plotter = DataHistogramPlot()
+    plotter.prepare(data)
+
+    summary = '{} Plot'.format(dtype)
+    try:
+        out = backend.as_html_plot(plotter, summary)
+    except AttributeError:
+        out = None
+
+    if out is not None:
+        return formatting.html_from_sections(data, [out])
+
+    # Summary properties
+    #
+    meta = []
+    if data.name is not None and data.name != '':
+        meta.append(('Identifier', data.name))
+
+    meta.append(('Number of bins', len(data.xlo)))
 
     # Should this only be displayed if a filter has been applied?
     #

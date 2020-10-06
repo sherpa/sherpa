@@ -94,6 +94,7 @@ The last version of Sherpa compatible with Python 2.7 was the
    :name: notebooks
 
    SherpaQuickStart
+   NotebookSupport
 
 .. toctree::
    :maxdepth: 2
