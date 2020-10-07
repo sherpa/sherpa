@@ -73,9 +73,9 @@ DEFAULT_CITATION = """Please review the Zenodo Sherpa page at
        https://doi.org/10.5281/zenodo.593753
 to identify the latest release of Sherpa. The Zenodo page
 https://help.zenodo.org/#versioning provides information on how to
-cite the specific version.
+cite a specific version.
 
-If you want a general-purpose citation then please either of the
+If you want a general-purpose citation then please use either of the
 following, kindly provided by the SAO/NASA Astrophysics Data System
 service:
 
@@ -462,13 +462,13 @@ def citation(version='latest', filename=None, clobber=False):
 
     The citation information is taken from Zenodo [1]_, using the
     Sherpa "latest release" identifier [2]_, and so requires an
-    internet connection. The message is displaye on screen, using
+    internet connection. The message is displayed on screen, using
     pagination, or can be written to a file.
 
     Parameters
     ----------
     version : str, optional
-        The version to retrieve the citation before. The supported
+        The version to retrieve the citation for. The supported
         values are limited to 'latest' and the current set of
         releases available on Zenodo (this goes back to '4.8.0').
     filename : str or StringIO or None, optional
