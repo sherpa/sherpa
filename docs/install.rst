@@ -470,7 +470,9 @@ additional packages:
 * `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
 * NumPy and `sphinx-astropy <https://github.com/astropy/sphinx-astropy/>`_
-  (the latter can be installed with ``pip``).
+  (the latter can be installed with ``pip``)
+* `nbsphinx <https://pypi.org/project/nbsphinx/>`_, ``ipykernel``, and ``pandoc``
+  for including Jupyter notebooks
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
 With these installed, the documentation can be built with the
