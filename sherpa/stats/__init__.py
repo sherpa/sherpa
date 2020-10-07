@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020
 #             Smithsonian Astrophysical Observatory
 #
 #
@@ -488,15 +488,15 @@ class CStat(Likelihood):
 class Chi2(Stat):
     """A Gaussian Log-likelihood function.
 
-    It is assumed that the counts are sampled from the Gaussian 
-    (Normal) distribution and so the best way to assess the quality of 
-    model fit is to use the product of individual Gaussian probabilities 
+    It is assumed that the counts are sampled from the Gaussian
+    (Normal) distribution and so the best way to assess the quality of
+    model fit is to use the product of individual Gaussian probabilities
     computed in each bin i, or the likelihood:
 
-    L = (prod)_i 1/(\sigma^2 sqrt(2 \pi)) exp[(N(i) - M(i))^2/2 sigma(i)^2]
+        L = (prod)_i 1/(sigma^2 sqrt(2 pi)) exp[(N(i) - M(i))^2/2 sigma(i)^2]
 
-    where M(i) = S(i) +B(i) is the sum of source and background model amplitudes, 
-    and N(i) is the total number of observed counts in bin i.
+    where M(i) = S(i) + B(i) is the sum of source and background model
+    amplitudes, and N(i) is the total number of observed counts in bin i.
 
     The chi-square statistic is:
 
@@ -514,11 +514,11 @@ class Chi2(Stat):
     bin i.
 
     Note that there are several weightings of this statistics depending
-    on calculation of sigma(i). N(i,S) contains the background counts and 
-    in a case of background subtraction the number of contributing 
-    background counts needs to be estimated from the background, so an 
-    off-source region. In such case, N(i,B) is the total number of observed 
-    counts in bin i of the off-source region; A(B) is the off-source "area", 
+    on calculation of sigma(i). N(i,S) contains the background counts and
+    in a case of background subtraction the number of contributing
+    background counts needs to be estimated from the background, so an
+    off-source region. In such case, N(i,B) is the total number of observed
+    counts in bin i of the off-source region; A(B) is the off-source "area",
     which could be the size of the region from which the background is extracted, or
     the length of a background time segment, or a product of the two,
     etc.; and A(S) is the on-source "area". These terms may be defined
