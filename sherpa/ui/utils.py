@@ -13329,6 +13329,9 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
 
+        .. versionchanged:: 4.12.2
+           The ``overplot`` option now works.
+
         .. versionchanged:: 4.12.0
            The Y axis of the residual plot is now always drawn using a
            linear scale.
@@ -13417,6 +13420,9 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_ratio` - for a data set.
 
+        .. versionchanged:: 4.12.2
+           The ``overplot`` option now works.
+
         .. versionadded:: 4.12.0
 
         Parameters
@@ -13502,6 +13508,9 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_delchi` - for a data set.
+
+        .. versionchanged:: 4.12.2
+           The ``overplot`` option now works.
 
         .. versionchanged:: 4.12.0
            The Y axis of the delchi plot is now always drawn using a

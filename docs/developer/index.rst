@@ -119,6 +119,25 @@ can be activated and Sherpa can be build from source.
 How do I ...
 ============
 
+Add a new notebook
+------------------
+
+The easiest way to add a new notebook to the documentation is to
+add it to the desired location in the ``docs/`` tree and add it to
+the table of contents. If you want to place the notebook into the
+top-level ``notebooks/`` directory and also have it included in
+the documentation then add an entry to the ``notebooks/nbmapping.dat``
+file, which is a tab-separated text file listing the name
+of the notebook and the location in the ``docs/`` directory structure
+that it should be copied to. The ``docs/conf.py`` file will ensure
+it is copied (if necessary) when building the documentation. The
+location of the documentation version **must** be added to the
+``.gitignore`` file (see the section near the end) to make sure it
+does not accidentally get added.
+
+At present we require that the notebook be fully evaluated as we
+do not run the notebooks while building the documentation.
+
 Update the XSPEC bindings?
 --------------------------
 
