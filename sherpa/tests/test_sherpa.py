@@ -52,3 +52,25 @@ def test_reading_floats(make_data_path):
 @requires_data
 def test_reading_strings(make_data_path):
     ui.load_data(make_data_path('table.txt'), require_floats=False)
+
+
+# tmp_path is not supported by pytest 3.8.1 which we are using
+# for Python 3.5 tests, so we have to use tmpdir
+#
+def test_citation_hardcoded(tmpdir):
+    """Check citation works for hardcoded queries.
+
+    We do not try to query Zenodo as we don't want to
+    suffer network issues, run out of queries, or
+    unnescessarily overload Zenodo.
+    """
+
+    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    with citefile.open(mode='w') as fh:
+        sherpa.citation('4.8.0', filename=fh, clobber=True)
+
+    cts = citefile.read_text('ascii').split('\n')
+    assert cts[0] == 'Sherpa 4.8.0 was released on January 27, 2016.'
+    assert cts[1] == ''
+    assert cts[2] == '@software{sherpa_2016_45243,'
+    assert len(cts) == 63
