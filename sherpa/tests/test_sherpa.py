@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020
+#          Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,31 +19,36 @@
 #
 
 import os.path
+
+import pytest
+
 import sherpa
-from sherpa.utils.testing import SherpaTestCase, requires_data
 from sherpa import ui
+from sherpa.utils.testing import requires_data
+
+
+def test_include_dir():
+    incdir = os.path.join(sherpa.get_include(), 'sherpa')
+    assert os.path.isdir(incdir)
 
 
 @requires_data
-class test_sherpa(SherpaTestCase):
+def test_not_reading_header_without_comment(make_data_path):
+    with pytest.raises(ValueError):
+        ui.load_data(make_data_path('agn2'))
 
-    def test_include_dir(self):
-        incdir = os.path.join(sherpa.get_include(), 'sherpa')
-        self.assertTrue(os.path.isdir(incdir))
 
-    def setUp(self):
-        self.agn2 = self.make_path('agn2')
-        self.agn2_fixed = self.make_path('agn2_fixed')
-        self.template_idx = self.make_path('table.txt')
+@requires_data
+def test_require_float(make_data_path):
+    with pytest.raises(ValueError):
+        ui.load_data(make_data_path('agn2'))
 
-    def test_not_reading_header_without_comment(self):
-        self.assertRaises(ValueError, ui.load_data, self.agn2)
 
-    def test_reading_floats(self):
-        ui.load_data(self.agn2_fixed)
+@requires_data
+def test_reading_floats(make_data_path):
+    ui.load_data(make_data_path('agn2_fixed'))
 
-    def test_reading_strings(self):
-        ui.load_data(self.template_idx, require_floats=False)
 
-    def test_require_float(self):
-        self.assertRaises(ValueError, ui.load_data, self.agn2)
+@requires_data
+def test_reading_strings(make_data_path):
+    ui.load_data(make_data_path('table.txt'), require_floats=False)
