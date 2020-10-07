@@ -1,63 +1,47 @@
 
-If you are writing a paper and would like to cite Sherpa, we recommend
-the native software citation and the following two papers. Note how it is advisable
-(http://help.zenodo.org/#versioning) to cite the specific version of your record in citation.
+The sherpa module contains an experimental citation() function which
+will return the citation information for the latest release or a given
+release:
 
+   >>> import sherpa
+   >>> sherpa.citation()
+   >>> sherpa.citation('4.12.1')
 
-Doug Burke, Omar Laurino, dtnguyen2, Jamie Budynkiewicz, Tom Aldcroft, Aneta Siemiginowska, … Katrin Leinweber.
-(2019, February 20). sherpa/sherpa: Sherpa 4.11.0 (Version 4.11.0).
-Zenodo. http://doi.org/10.5281/zenodo.2573885
+The output can be saved to a file by setting the filename argument.
 
-Sherpa: a mission-independent data analysis application
-http://adsabs.harvard.edu/abs/2001SPIE.4477...76F
-P. E. Freeman, S. Doe, A. Siemiginowska
-SPIE Proceedings, Vol. 4477, p.76, 2001	
+This will only work if you have internet access (at least for the
+latest query) as it takes the data from the Sherpa record at
+Zenodo: https://zenodo.org/record/3944985
 
-Developing Sherpa with Python
-http://adsabs.harvard.edu/abs/2007ASPC..376..543D
-S. Doe, et al.
-Astronomical Data Analysis Software and Systems XVI, 376, 543
+The Zenodo guide to versioning at http://help.zenodo.org/#versioning
+provides advice on how to cite the correct version.
 
-
-BibTeX entries for LaTeX users are
-
-@misc{doug_burke_2019_2573885,
-  author       = {Doug Burke and
-                  Omar Laurino and
-                  dtnguyen2 and
-                  Jamie Budynkiewicz and
-                  Tom Aldcroft and
-                  Aneta Siemiginowska and
-                  Christoph Deil and
-                  wmclaugh and
-                  Brigitta Sipocz and
-                  Katrin Leinweber},
-  title        = {sherpa/sherpa: Sherpa 4.11.0},
-  month        = feb,
-  year         = 2019,
-  doi          = {10.5281/zenodo.593753},
-  url          = {https://doi.org/10.5281/zenodo. 593753}
-}
+If you want a general-purpose citation then please either of the
+following, kindly provided by the SAO/NASA Astrophysics Data System
+service:
 
 @INPROCEEDINGS{2001SPIE.4477...76F,
-   author = {{Freeman}, P. and {Doe}, S. and {Siemiginowska}, A.},
-    title = "{Sherpa: a mission-independent data analysis application}",
-booktitle = {Astronomical Data Analysis},
-     year = 2001,
-   series = {Society of Photo-Optical Instrumentation Engineers (SPIE) Conference Series},
-   volume = 4477,
-   eprint = {astro-ph/0108426},
-   editor = {{Starck}, J.-L. and {Murtagh}, F.~D.},
-    month = nov,
-    pages = {76-87},
-      doi = {10.1117/12.447161},
-   adsurl = {http://adsabs.harvard.edu/abs/2001SPIE.4477...76F},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+       author = {{Freeman}, Peter and {Doe}, Stephen and {Siemiginowska}, Aneta},
+        title = "{Sherpa: a mission-independent data analysis application}",
+     keywords = {Astrophysics},
+    booktitle = {Astronomical Data Analysis},
+         year = 2001,
+       editor = {{Starck}, Jean-Luc and {Murtagh}, Fionn D.},
+       series = {Society of Photo-Optical Instrumentation Engineers (SPIE) Conference Series},
+       volume = {4477},
+        month = nov,
+        pages = {76-87},
+          doi = {10.1117/12.447161},
+archivePrefix = {arXiv},
+       eprint = {astro-ph/0108426},
+ primaryClass = {astro-ph},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 
 @INPROCEEDINGS{2007ASPC..376..543D,
-   author = {{Doe}, S. and {Nguyen}, D. and {Stawarz}, C. and {Refsdal}, B. and 
-	{Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and 
+   author = {{Doe}, S. and {Nguyen}, D. and {Stawarz}, C. and {Refsdal}, B. and
+	{Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and
 	{McDowell}, J. and {Houck}, J. and {Nowak}, M.},
     title = "{Developing Sherpa with Python}",
 booktitle = {Astronomical Data Analysis Software and Systems XVI},
@@ -70,4 +54,3 @@ booktitle = {Astronomical Data Analysis Software and Systems XVI},
    adsurl = {http://adsabs.harvard.edu/abs/2007ASPC..376..543D},
   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
-
