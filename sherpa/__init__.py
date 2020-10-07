@@ -499,9 +499,9 @@ def citation(version='latest', filename=None, clobber=False):
 
     """
 
-    from sherpa.ui.utils import _send_to_pager
+    from sherpa.utils import send_to_pager
     cite = _get_citation(version=version)
-    _send_to_pager(cite, filename=filename, clobber=clobber)
+    send_to_pager(cite, filename=filename, clobber=clobber)
 
 
 def get_include():
