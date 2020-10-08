@@ -3806,27 +3806,40 @@ class DataIMG(Data2D):
     get_filter = get_filter_expr
 
     def notice2d(self, val=None, ignore=False):
-        mask = None
+        """Apply a 2D filter.
+
+        Parameters
+        ----------
+        val : str or None, optional
+            The filter to apply. It can be a region string or a
+            filename.
+        ignore : bool, optional
+            If set then the filter should be ignored, not noticed.
+
+        """
+
         ignore = bool_cast(ignore)
-        if val is not None:
 
-            if not regstatus:
-                raise ImportErr('importfailed', 'region', 'notice2d')
-
-            val = str(val).strip()
-            (self._region,
-             mask) = region_mask(self._region, val,
-                                 self.get_x0(), self.get_x1(),
-                                 os.path.isfile(val), ignore)
-            mask = numpy.asarray(mask, dtype=numpy.bool_)
-        else:
-            self._region = None
-
-        if mask is None:
+        # This was originally a bit-more complex, but it has been
+        # simplified.
+        #
+        if val is None:
             self.mask = not ignore
             self._region = None
+            return
 
-        elif not ignore:
+        if not regstatus:
+            raise ImportErr('importfailed', 'region', 'notice2d')
+
+        val = str(val).strip()
+        ans = region_mask(self._region, val,
+                          self.get_x0(), self.get_x1(),
+                          os.path.isfile(val), ignore)
+
+        self._region, mask = ans
+        mask = mask.astype(numpy.bool)
+
+        if not ignore:
             if self.mask is True:
                 self.mask = mask
             else:
