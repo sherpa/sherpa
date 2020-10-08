@@ -177,7 +177,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
         The dimensions are num by mfree. The ordering of the parameter
         values in each row matches that of the free parameters in
         fit.model.  The clipped array indicates whether a row had one
-        or more clipped paraneters.
+        or more clipped parameters.
 
     Raises
     ------
@@ -298,7 +298,7 @@ def _sample_flux_get_samples(fit, src, correlated, num, clip='hard'):
         The dimensions are num by mfree. The ordering of the parameter
         values in each row matches that of the free parameters in
         fit.model. The clipped array indicates whether a row
-        had one or more clipped paraneters.
+        had one or more clipped parameters.
 
     Notes
     -----
@@ -368,7 +368,7 @@ def decompose(mdl):
 def sample_flux(fit, data, src,
                 method=calc_energy_flux, correlated=False,
                 num=1, lo=None, hi=None, numcores=None, samples=None,
-                clip="hard"):
+                clip='hard'):
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
@@ -494,7 +494,7 @@ def sample_flux(fit, data, src,
         samples, clipped = _sample_flux_get_samples_with_scales(fit, src, correlated,
                                                                 scales, num, clip=clip)
 
-    # When a subset of the full model is use we need to know how
+    # When a subset of the full model is used we need to know how
     # to select which rows in the samples array refer to the
     # parameters of interest. We could compare on fullname,
     # but is not sufficient to guarantee the match.

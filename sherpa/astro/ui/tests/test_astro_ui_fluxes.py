@@ -828,7 +828,7 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
         assert ans[i, 0] == flux
 
     # check clipped is 0/1; ideally this is a boolean and not a
-    # float represention
+    # float representation
     #
     clipped = ans[:, 4]
     v0 = clipped == 0

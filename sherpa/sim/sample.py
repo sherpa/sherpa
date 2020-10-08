@@ -517,7 +517,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
         dof : int
-            The degrees of freedon of the distribution.
+            The degrees of freedom of the distribution.
         num : int, optional
             The number of samples to return.
 
@@ -727,7 +727,7 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
         num : int, optional
             The number of samples to return.
         dof : int
-            The degrees of freedon of the distribution.
+            The degrees of freedom of the distribution.
         numcores : int or None, optional
             Should the calculation be done on multiple CPUs?
             The default (None) is to rely on the parallel.numcores
