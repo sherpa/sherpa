@@ -34,12 +34,11 @@ import logging
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('DataPHAPlot', 'ModelHistogram', 'SourcePlot', 'ComponentModelPlot',
+__all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
            'ComponentSourcePlot', 'ARFPlot', 'BkgDataPlot',
-           'BkgSourcePlot',
-           'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot',
-           'BkgRatioPlot', 'BkgChisqrPlot', 'BkgSourcePlot',
-           'OrderPlot', 'BkgModelHistogram',
+           'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
+           'BkgRatioPlot', 'BkgChisqrPlot',
+           'OrderPlot', 'ModelHistogram', 'BkgModelHistogram',
            'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
 
 
