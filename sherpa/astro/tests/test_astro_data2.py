@@ -611,3 +611,57 @@ def test_img_get_bounding_mask_filtered(make_test_image):
     assert len(ans) == 2
     assert ans[0] == pytest.approx(mask)
     assert ans[1] == (5, 7)
+
+
+def test_img_get_filter(make_test_image):
+    """Simple get_filter check on an image."""
+    d = make_test_image
+    assert d.get_filter() == ''
+
+    shape = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape)
+    assert d.get_filter() == shape.capitalize()
+
+
+def test_img_get_filter_none(make_test_image):
+    """Simple get_filter check on an image: no data"""
+    d = make_test_image
+
+    shape = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape)
+    d.notice2d(ignore=True)
+
+    # It's not clear what the filter should be here
+    assert d.get_filter() == ''
+
+
+@pytest.mark.skip(reason='can cause a segfault')
+def test_img_get_filter_combined(make_test_image):
+    """Simple get_filter check on an image."""
+    d = make_test_image
+    assert d.get_filter() == ''
+
+    shape1 = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape1)
+
+    shape2 = 'rect(4258,3830,4264,3841)'
+    d.notice2d(shape1)
+
+    shape = shape1.capitalize() + '+' + shape2.capitalize()
+    assert d.get_filter() == shape
+
+
+@pytest.mark.skip(reason='can cause a segfault')
+def test_img_get_filter_excluded(make_test_image):
+    """Simple get_filter check on an image."""
+    d = make_test_image
+    assert d.get_filter() == ''
+
+    shape1 = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape1)
+
+    shape2 = 'rect(4258,3830,4264,3841)'
+    d.notice2d(shape1, ignore=True)
+
+    shape = shape1.capitalize() + '&!' + shape2.capitalize()
+    assert d.get_filter() == shape
