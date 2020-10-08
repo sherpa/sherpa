@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,10 +34,12 @@ import logging
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('DataPHAPlot', 'SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelHistogram',
+__all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
+           'ComponentSourcePlot', 'ARFPlot', 'BkgDataPlot',
            'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
            'BkgRatioPlot', 'BkgChisqrPlot',
-           'OrderPlot', 'ModelHistogram')
+           'OrderPlot', 'ModelHistogram', 'BkgModelHistogram',
+           'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
 
 
 def to_latex(txt):
@@ -536,8 +538,10 @@ class OrderPlot(ModelHistogram):
 #
 class FluxHistogram(ModelHistogram):
     "Derived class for creating 1D flux distribution plots"
+
     def __init__(self):
         self.modelvals = None
+        self.clipped = None
         self.flux = None
         ModelHistogram.__init__(self)
 
@@ -547,18 +551,44 @@ class FluxHistogram(ModelHistogram):
             vals = array2string(asarray(self.modelvals), separator=',',
                                 precision=4, suppress_small=False)
 
+        clip = self.clipped
+        if self.clipped is not None:
+            # Could convert to boolean, but it is surprising for
+            # anyone trying to access the clipped field
+            clip = array2string(asarray(self.clipped), separator=',',
+                                precision=4, suppress_small=False)
+
         flux = self.flux
         if self.flux is not None:
             flux = array2string(asarray(self.flux), separator=',',
                                 precision=4, suppress_small=False)
 
-        return '\n'.join(['modelvals = %s' % vals, 'flux = %s' % flux,
+        return '\n'.join(['modelvals = {}'.format(vals),
+                          'clipped = {}'.format(clip),
+                          'flux = {}'.format(flux),
                           ModelHistogram.__str__(self)])
 
     def prepare(self, fluxes, bins):
-        y = asarray(fluxes[:, 0])
+        """Define the histogram plot.
+
+        Parameter
+        ---------
+        fluxes : numpy array
+            The data, stored in a niter by (npar + 2) matrix, where
+            each row is an iteration, the first column is the flux for
+            that row, the next npar columns are the parameter values,
+            and the last column indicates whether the row was clipped
+            (1) or not (0).
+        bins : int
+            The number of bins to split the flux data into.
+
+        """
+
+        fluxes = asarray(fluxes)
+        y = fluxes[:, 0]
         self.flux = y
-        self.modelvals = asarray(fluxes[:, 1:])
+        self.modelvals = fluxes[:, 1:-1]
+        self.clipped = fluxes[:, -1]
         self.xlo, self.xhi = dataspace1d(y.min(), y.max(),
                                          numbins=bins + 1)[:2]
         y = histogram1d(y, self.xlo, self.xhi)

@@ -796,7 +796,7 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
     ampl0 = pl.ampl.val
 
     ans = multi(lo=0.5, hi=7, id=id, num=niter, correlated=correlated)
-    assert ans.shape == (niter, 4)
+    assert ans.shape == (niter, 5)
 
     # the routine hasn't changed the parameter values
     assert gal.nh.val == nh0
@@ -826,6 +826,15 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
 
         flux = single(lo=0.5, hi=7, id=id)
         assert ans[i, 0] == flux
+
+    # check clipped is 0/1; ideally this is a boolean and not a
+    # float representation
+    #
+    clipped = ans[:, 4]
+    v0 = clipped == 0
+    v1 = clipped == 1
+    v = v0 | v1
+    assert v.all()
 
 
 @requires_data
@@ -932,6 +941,81 @@ def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
     # a simple check on the flux, it should be > 0
     #
     assert ans[:, 0].min() > 0
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("id", [None, "foo"])
+def test_sample_foo_flux_clip_soft(multi, id,
+                                   make_data_path, clean_astro_ui):
+    """Can we clip with soft limits?
+    """
+
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    niter = 100
+
+    # make this even more obvious than test_sample_foo_flux_params
+    pl.gamma.min = 1.9
+    pl.gamma.max = 2.1
+
+    ans = multi(lo=0.5, hi=7, id=id, num=niter, clip='soft')
+    assert ans.shape == (niter, 5)
+
+    # check clipped is 0/1; expect just under 50% clipped but just check
+    # we have some clipped, not the number
+    #
+    clipped = ans[:, 4]
+    v0 = clipped == 0
+    v1 = clipped == 1
+    v = v0 | v1
+    assert v.all()
+    assert v0.any()
+    assert v1.any()
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("multi", [ui.sample_energy_flux, ui.sample_photon_flux])
+@pytest.mark.parametrize("id", [None, "foo"])
+def test_sample_foo_flux_clip_none(multi, id,
+                                   make_data_path, clean_astro_ui):
+    """We get no clipping.
+
+    Same setup as test_sample_foo_flux_clip_soft
+    """
+
+    gal, pl = setup_sample(id, make_data_path)
+
+    nh0 = gal.nh.val
+    gamma0 = pl.gamma.val
+    ampl0 = pl.ampl.val
+
+    niter = 100
+
+    # make this even more obvious than test_sample_foo_flux_params
+    pl.gamma.min = 1.9
+    pl.gamma.max = 2.1
+
+    ans = multi(lo=0.5, hi=7, id=id, num=niter, clip='none')
+    assert ans.shape == (niter, 5)
+
+    # check clipped is 0/1
+    #
+    clipped = ans[:, 4]
+    v0 = clipped == 0
+    v1 = clipped == 1
+    v = v0 | v1
+    assert v.all()
+    assert v0.all()
+    assert not(v1.any())
 
 
 # The covariance matrix should be close to the following
@@ -1123,8 +1207,8 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     unabsorbed = multi(lo=0.5, hi=2, id=id, num=1000,
                        model=pl, correlated=correlated)
 
-    assert absorbed.shape == (1000, 4)
-    assert unabsorbed.shape == (1000, 4)
+    assert absorbed.shape == (1000, 5)
+    assert unabsorbed.shape == (1000, 5)
 
     assert np.isfinite(absorbed).all()
     assert np.isfinite(unabsorbed).all()
@@ -1220,7 +1304,7 @@ def test_sample_foo_flux_component_scales(method, correlated, scales3,
                          model=pl, correlated=correlated,
                          scales=scales3)
 
-    assert unabsorbed3.shape == (1000, 4)
+    assert unabsorbed3.shape == (1000, 5)
 
     assert np.isfinite(unabsorbed3).all()
 
@@ -1319,19 +1403,19 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
     # uncorrelated, give errors
     ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=False,
                  scales=errs)
-    assert ans.shape == (2, 4)
+    assert ans.shape == (2, 5)
     validate()
 
     # uncorrelated, give covariance matrix
     ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=False,
                  scales=cmat)
-    assert ans.shape == (2, 4)
+    assert ans.shape == (2, 5)
     validate()
 
     # correlated, give covariance matrix
     ans = method(lo=0.2, hi=10, id=id, num=2, model=pl, correlated=True,
                  scales=cmat)
-    assert ans.shape == (2, 4)
+    assert ans.shape == (2, 5)
     validate()
 
 
@@ -1406,10 +1490,10 @@ def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
     #
     niter = 10
     aflux = method(0.5, 7, id=id, num=niter)
-    assert aflux.shape == (niter, 6)
+    assert aflux.shape == (niter, 7)
 
     bflux = method(0.5, 7, id=id, bkg_id=1, num=niter)
-    assert bflux.shape == (niter, 6)
+    assert bflux.shape == (niter, 7)
 
     # Compare the median values to the input values.
     #
@@ -1420,6 +1504,12 @@ def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
     #
     assert np.median(aflux[:, 2]) == pytest.approx(1.9575001493165511, rel=1e-4)
     assert np.median(bflux[:, 4]) == pytest.approx(0.6022031224500035, rel=1e-4)
+
+    # This assumes there's at least one clipped value; this is not
+    # guaranteed but it looks like it happens consistently
+    print(aflux[:, 6])
+    assert aflux[:, 6].min() == 0
+    assert aflux[:, 6].max() == 1
 
 
 @requires_data
@@ -1494,11 +1584,11 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
     b3 = ui.sample_energy_flux(lo=0.5, hi=7, id='3', otherids=(1, 4),
                                bkg_id=1, model=bpl, num=niter)
 
-    assert s1.shape == (niter, 5)
-    assert b1.shape == (niter, 5)
+    assert s1.shape == (niter, 6)
+    assert b1.shape == (niter, 6)
 
-    assert s3.shape == (niter, 5)
-    assert b3.shape == (niter, 5)
+    assert s3.shape == (niter, 6)
+    assert b3.shape == (niter, 6)
 
     # Compare the median and std dev of the gamma parameter (as of order 1)
     # for both the source and background measurements, as they should be
@@ -1532,8 +1622,8 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
     b4 = ui.sample_energy_flux(lo=0.5, hi=7, id=4, otherids=(),
                                bkg_id=1, model=bpl, num=niter)
 
-    assert s4.shape == (niter, 5)
-    assert b4.shape == (niter, 5)
+    assert s4.shape == (niter, 6)
+    assert b4.shape == (niter, 6)
 
     # The point is that y4 > y3 in both these (compare to previously)
     y4 = np.std(s4[:, 1])
@@ -1541,6 +1631,11 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
 
     y4 = np.std(b4[:, 3])
     assert y4 == pytest.approx(0.23594231624955062)
+
+    # would like to assume there's at least one clipped value for s4
+    # but not clear
+    assert s4[:, 5].min() == 0
+    assert s4[:, 5].max() <= 1
 
 
 @requires_data

@@ -1764,6 +1764,13 @@ def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic
     # Ensure near the minimum
     ui.fit()
 
+    # At this point the return should be None
+    res = getfunc(recalc=False)
+    assert isinstance(res, FluxHistogram)
+    assert res.flux is None
+    assert res.xlo is None
+    assert res.y is None
+
     # Since the results are not being inspected here, the "quality"
     # of the results isn't important, so we can use a relatively-low
     # number of iterations.
@@ -2035,6 +2042,8 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     assert std1 == pytest.approx(0.1330728846451271, rel=1e-3)
     assert std2 == pytest.approx(-4.54079387550295, rel=1e-3)
 
+    assert res.clipped.shape == (1000,)
+
     assert res.y.shape == (20,)
 
     aflux = np.median(res.flux)
@@ -2062,6 +2071,154 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     #
     got = uflux / aflux
     assert got == pytest.approx(ratio, rel=1e-3)
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_soft(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+    """Check we can send clip=soft
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=True, clip='soft')
+
+    # check we can access these results (relying on the fact that the num
+    # and bins arguments have been changed from their default values).
+    #
+    res = getfunc(recalc=False)
+    validate_flux_histogram(res)
+
+    # check we have clip information and assume at least one bin is
+    # clipped (expect ~ 40 of 200 from testing this)
+    clip = res.clipped
+    c0 = clip == 0
+    c1 = clip == 1
+    assert (c0 | c1).all()
+    assert c0.any()
+    assert c1.any()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("plotfunc,getfunc",
+                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_none(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+    """Check we can send clip=none
+
+    Copy of test_pha1_plot_foo_flux_none
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    # Since the results are not being inspected here, the "quality"
+    # of the results isn't important, so we can use a relatively-low
+    # number of iterations.
+    #
+    plotfunc(lo=0.5, hi=2, num=200, bins=20, correlated=True, clip='none')
+
+    # check we can access these results (relying on the fact that the num
+    # and bins arguments have been changed from their default values).
+    #
+    res = getfunc(recalc=False)
+    validate_flux_histogram(res)
+
+    # check we have clip information but that it's all zeros
+    clip = res.clipped
+    c0 = clip == 0
+    c1 = clip == 1
+    assert (c0 | c1).all()
+    assert c0.all()
+    assert not(c1.any())
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+def test_pha1_get_foo_flux_soft(getfunc, clean_astro_ui, basic_pha1):
+    """Can we send clip=soft?
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=False,
+                  clip='soft')
+    validate_flux_histogram(res)
+
+    # check we have clip information and assume at least one bin is
+    # clipped (expect ~ 40 of 200 from testing this)
+    clip = res.clipped
+    c0 = clip == 0
+    c1 = clip == 1
+    assert (c0 | c1).all()
+    assert c0.any()
+    assert c1.any()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@requires_xspec
+@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
+                                     ui.get_photon_flux_hist])
+def test_pha1_get_foo_flux_none(getfunc, clean_astro_ui, basic_pha1):
+    """Can we send clip=none?
+
+    Copy of test_pha1_get_foo_flux_soft
+    """
+
+    orig_mdl = ui.get_source('tst')
+    gal = ui.create_model_component('xswabs', 'gal')
+    gal.nh = 0.04
+    ui.set_source('tst', gal * orig_mdl)
+
+    # Ensure near the minimum
+    ui.fit()
+
+    res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=False,
+                  clip='none')
+    validate_flux_histogram(res)
+
+    # check we have clip information and all are 0
+    clip = res.clipped
+    c0 = clip == 0
+    c1 = clip == 1
+    assert (c0 | c1).all()
+    assert c0.all()
+    assert not(c1.any())
 
 
 @requires_plotting
@@ -2183,6 +2340,8 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
     std2 = np.log10(np.std(avals[:, 2]))
     assert std1 == pytest.approx(0.13478302893162564, rel=1e-3)
     assert std2 == pytest.approx(-4.518960679037794, rel=1e-3)
+
+    assert res.clipped.shape == (1000,)
 
     assert res.y.shape == (20,)
 

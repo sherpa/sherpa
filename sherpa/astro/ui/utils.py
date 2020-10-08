@@ -11126,25 +11126,34 @@ class Session(sherpa.ui.utils.Session):
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores, bkg_id,
-                                  scales=None, model=None, otherids=()):
+                                  scales=None, model=None, otherids=(),
+                                  clip='hard'):
+        """Run sample_energy_flux and convert to a plot.
+        """
         dist = self.sample_energy_flux(lo, hi, id=id, otherids=otherids,
                                        num=num, scales=scales, model=model,
-                                       correlated=correlated, numcores=numcores, bkg_id=bkg_id)
+                                       correlated=correlated, numcores=numcores,
+                                       bkg_id=bkg_id, clip=clip)
         plot.prepare(dist, bins)
         return plot
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores, bkg_id,
-                                  scales=None, model=None, otherids=()):
+                                  scales=None, model=None, otherids=(),
+                                  clip='hard'):
+        """Run sample_photon_flux and convert to a plot.
+        """
         dist = self.sample_photon_flux(lo, hi, id=id, otherids=otherids,
                                        num=num, scales=scales, model=model,
-                                       correlated=correlated, numcores=numcores, bkg_id=bkg_id)
+                                       correlated=correlated, numcores=numcores,
+                                       bkg_id=bkg_id, clip=clip)
         plot.prepare(dist, bins)
         return plot
 
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, otherids=(), recalc=True):
+                             scales=None, model=None, otherids=(), recalc=True,
+                             clip='hard'):
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
@@ -11154,7 +11163,8 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model and otherids parameters have been added.
+           model and otherids parameters have been added. The clip
+           argument has been added.
 
         Parameters
         ----------
@@ -11212,6 +11222,12 @@ class Session(sherpa.ui.utils.Session):
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
+        clip : {'hard', 'soft', 'none'}, optional
+            What clipping strategy should be applied to the sampled
+            parameters. The default ('hard') is to fix values at their
+            hard limits if they exceed them. A value of 'soft' uses
+            the soft limits instead, and 'none' applies no
+            clipping.
 
         Returns
         -------
@@ -11266,13 +11282,14 @@ class Session(sherpa.ui.utils.Session):
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
-                                           otherids=otherids,
+                                           otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
         return self._energyfluxplot
 
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, otherids=(), recalc=True):
+                             scales=None, model=None, otherids=(), recalc=True,
+                             clip='hard'):
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
@@ -11340,6 +11357,12 @@ class Session(sherpa.ui.utils.Session):
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
+        clip : {'hard', 'soft', 'none'}, optional
+            What clipping strategy should be applied to the sampled
+            parameters. The default ('hard') is to fix values at their
+            hard limits if they exceed them. A value of 'soft' uses
+            the soft limits instead, and 'none' applies no
+            clipping.
 
         Returns
         -------
@@ -11394,7 +11417,7 @@ class Session(sherpa.ui.utils.Session):
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
-                                           otherids=otherids,
+                                           otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
 
@@ -12139,7 +12162,8 @@ class Session(sherpa.ui.utils.Session):
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
                          scales=None, model=None, otherids=(),
-                         recalc=True, overplot=False, clearwindow=True,
+                         recalc=True, clip='hard',
+                         overplot=False, clearwindow=True,
                          **kwargs):
         """Display the energy flux distribution.
 
@@ -12153,7 +12177,8 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model and otherids parameters have been added.
+           model and otherids parameters have been added. The clip
+           argument has been added.
 
         Parameters
         ----------
@@ -12211,6 +12236,12 @@ class Session(sherpa.ui.utils.Session):
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
+        clip : {'hard', 'soft', 'none'}, optional
+            What clipping strategy should be applied to the sampled
+            parameters. The default ('hard') is to fix values at their
+            hard limits if they exceed them. A value of 'soft' uses
+            the soft limits instead, and 'none' applies no
+            clipping.
         overplot : bool, optional
            If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
@@ -12279,14 +12310,15 @@ class Session(sherpa.ui.utils.Session):
         efplot = self.get_energy_flux_hist(lo=lo, hi=hi, id=id, num=num, bins=bins,
                                            correlated=correlated, numcores=numcores,
                                            bkg_id=bkg_id, scales=scales, model=model,
-                                           otherids=otherids, recalc=recalc)
+                                           otherids=otherids, clip=clip, recalc=recalc)
         self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None,
                          scales=None, model=None, otherids=(),
-                         recalc=True, overplot=False, clearwindow=True,
+                         recalc=True, clip='hard',
+                         overplot=False, clearwindow=True,
                          **kwargs):
         """Display the photon flux distribution.
 
@@ -12300,7 +12332,8 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
-           model and otherids parameters have been added.
+           model and otherids parameters have been added. The clip
+           argument has been added.
 
         Parameters
         ----------
@@ -12358,6 +12391,12 @@ class Session(sherpa.ui.utils.Session):
            If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
+        clip : {'hard', 'soft', 'none'}, optional
+            What clipping strategy should be applied to the sampled
+            parameters. The default ('hard') is to fix values at their
+            hard limits if they exceed them. A value of 'soft' uses
+            the soft limits instead, and 'none' applies no
+            clipping.
         overplot : bool, optional
            If ``True`` then add the data to an existing plot, otherwise
            create a new plot. The default is ``False``.
@@ -12426,7 +12465,7 @@ class Session(sherpa.ui.utils.Session):
         pfplot = self.get_photon_flux_hist(lo=lo, hi=hi, id=id, num=num, bins=bins,
                                            correlated=correlated, numcores=numcores,
                                            bkg_id=bkg_id, scales=scales, model=model,
-                                           otherids=otherids, recalc=recalc)
+                                           otherids=otherids, clip=clip, recalc=recalc)
         self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
@@ -12801,7 +12840,7 @@ class Session(sherpa.ui.utils.Session):
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
                            numcores=None, bkg_id=None, model=None,
-                           otherids=()):
+                           otherids=(), clip='hard'):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -12811,7 +12850,8 @@ class Session(sherpa.ui.utils.Session):
         The units for the flux are as returned by `calc_photon_flux`.
 
         .. versionchanged:: 4.12.2
-           The model and otherids parameters were added.
+           The model, otherids, and clip parameters were added and
+           the return value has an extra column.
 
         Parameters
         ----------
@@ -12863,17 +12903,26 @@ class Session(sherpa.ui.utils.Session):
         otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
            calculating the errors to draw values from.
+        clip : {'hard', 'soft', 'none'}, optional
+            What clipping strategy should be applied to the sampled
+            parameters. The default ('hard') is to fix values at their
+            hard limits if they exceed them. A value of 'soft' uses
+            the soft limits instead, and 'none' applies no
+            clipping. The last column in the returned arrays indicates
+            if the row had any clipped parameters (even when clip is
+            set to 'none').
 
         Returns
         -------
         vals
-           The return array has the shape ``(num, N+1)``, where ``N``
+           The return array has the shape ``(num, N+2)``, where ``N``
            is the number of free parameters in the fit and num is the
            `num` parameter.  The rows of this array contain the flux
            value, as calculated by `calc_photon_flux`, followed by the
-           values of the thawed parameters used for that
-           iteration. The order of the parameters matches the data
-           returned by `get_fit_results`.
+           values of the thawed parameters used for that iteration,
+           and then a flag column indicating if the parameters were
+           clipped (1) or not (0).  The order of the parameters
+           matches the data returned by `get_fit_results`.
 
         See Also
         --------
@@ -12983,6 +13032,22 @@ class Session(sherpa.ui.utils.Session):
         >>> vals = sample_photon_flux(0.5, 10, id=1, otherids=[2],
         ...                           model=clus, num=10000)
 
+        Generate two sets of parameter values, where the parameter
+        values in v1 are generated from a random distribution and then
+        clipped to the hard limits of the parameters, and the values
+        in v2 use the soft limits of the parameters. The last column
+        in both v1 and v2 indicates whether the row had any clipped
+        parameters. The flux1_filt and flux2_filt arrays indicate the
+        photon-flux distribution after it has been filtered to remove
+        any row with clipped parameters:
+
+        >>> v1 = sample_photon_flux(0.5, 2, num=1000)
+        >>> v2 = sample_photon_flux(0.5, 2, num=1000, clip='soft')
+        >>> flux1 = v1[:, 0]
+        >>> flux2 = v2[:, 0]
+        >>> flux1_filt = flux1[v1[:, -1] == 0]
+        >>> flux2_filt = flux2[v2[:, -1] == 0]
+
         """
         ids, fit = self._get_fit(id, otherids=otherids)
 
@@ -13002,12 +13067,12 @@ class Session(sherpa.ui.utils.Session):
                                              correlated=correlated,
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
-                                             samples=scales)
+                                             samples=scales, clip=clip)
 
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
                            numcores=None, bkg_id=None, model=None,
-                           otherids=()):
+                           otherids=(), clip='hard'):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -13017,7 +13082,8 @@ class Session(sherpa.ui.utils.Session):
         The units for the flux are as returned by `calc_energy_flux`.
 
         .. versionchanged:: 4.12.2
-           The model and otherids parameters were added.
+           The model, otherids, and clip parameters were added and
+           the return value has an extra column.
 
         Parameters
         ----------
@@ -13069,17 +13135,26 @@ class Session(sherpa.ui.utils.Session):
         otherids : sequence of integer and string ids, optional
            The list of other datasets that should be included when
            calculating the errors to draw values from.
+        clip : {'hard', 'soft', 'none'}, optional
+            What clipping strategy should be applied to the sampled
+            parameters. The default ('hard') is to fix values at their
+            hard limits if they exceed them. A value of 'soft' uses
+            the soft limits instead, and 'none' applies no
+            clipping. The last column in the returned arrays indicates
+            if the row had any clipped parameters (even when clip is
+            set to 'none').
 
         Returns
         -------
         vals
-           The return array has the shape ``(num, N+1)``, where ``N``
+           The return array has the shape ``(num, N+2)``, where ``N``
            is the number of free parameters in the fit and num is the
            `num` parameter.  The rows of this array contain the flux
            value, as calculated by `calc_energy_flux`, followed by the
-           values of the thawed parameters used for that
-           iteration. The order of the parameters matches the data
-           returned by `get_fit_results`.
+           values of the thawed parameters used for that iteration,
+           and then a flag column indicating if the parameters were
+           clipped (1) or not (0).  The order of the parameters
+           matches the data returned by `get_fit_results`.
 
         See Also
         --------
@@ -13189,6 +13264,21 @@ class Session(sherpa.ui.utils.Session):
         >>> vals = sample_energy_flux(0.5, 10, id=1, otherids=[2],
         ...                           model=clus, num=10000)
 
+        Generate two sets of parameter values, where the parameter
+        values in v1 are generated from a random distribution and then
+        clipped to the hard limits of the parameters, and the values
+        in v2 use the soft limits of the parameters. The last column
+        in both v1 and v2 indicates whether the row had any clipped
+        parameters. The flux1_filt and flux2_filt arrays indicate the
+        energy-flux distribution after it has been filtered to remove
+        any row with clipped parameters:
+
+        >>> v1 = sample_energy_flux(0.5, 2, num=1000)
+        >>> v2 = sample_energy_flux(0.5, 2, num=1000, clip='soft')
+        >>> flux1 = v1[:, 0]
+        >>> flux2 = v2[:, 0]
+        >>> flux1_filt = flux1[v1[:, -1] == 0]
+        >>> flux2_filt = flux2[v2[:, -1] == 0]
 
         """
         ids, fit = self._get_fit(id, otherids=otherids)
@@ -13209,7 +13299,7 @@ class Session(sherpa.ui.utils.Session):
                                              correlated=correlated,
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
-                                             samples=scales)
+                                             samples=scales, clip=clip)
 
 
     # DOC-NOTE: are scales the variance or standard deviation?

@@ -136,7 +136,8 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     return numpy.asarray(fluxes)
 
 
-def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
+def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
+                                         num, clip='hard'):
     """Return the parameter samples given the parameter scales.
 
     Parameters
@@ -162,13 +163,21 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
         mfree by mfree.
     num : int
         Tne number of samples to return. This must be 1 or greater.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping. The last
+        column in the returned arrays indicates if the row had any
+        clipped parameters (even when clip is set to 'none').
 
     Returns
     -------
-    samples : 2D NumPy array
+    samples, clipped : 2D NumPy array, 1D NumPy array
         The dimensions are num by mfree. The ordering of the parameter
         values in each row matches that of the free parameters in
-        fit.model.
+        fit.model.  The clipped array indicates whether a row had one
+        or more clipped parameters.
 
     Raises
     ------
@@ -185,6 +194,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
     has not been tested for complex models, that is when fit.model
     is rmf(arf(source_model)) and src is a combination of components
     in source_model but not all the components of source_model.
+
     """
 
     npar = len(src.thawedpars)
@@ -247,10 +257,12 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num):
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    return sampler.get_sample(fit, scales, num=num)
+    samples = sampler.get_sample(fit, scales, num=num)
+    clipped = sampler.clip(fit, samples, clip=clip)
+    return samples, clipped
 
 
-def _sample_flux_get_samples(fit, src, correlated, num):
+def _sample_flux_get_samples(fit, src, correlated, num, clip='hard'):
     """Return the parameter samples, using fit to define the scales.
 
     The covariance method is used to estimate the errors for the
@@ -272,13 +284,21 @@ def _sample_flux_get_samples(fit, src, correlated, num):
         Are the parameters assumed to be correlated or not?
     num : int
         Tne number of samples to return. This must be 1 or greater.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping. The last
+        column in the returned arrays indicates if the row had any
+        clipped parameters (even when clip is set to 'none').
 
     Returns
     -------
-    samples : 2D NumPy array
+    samples, clipped : 2D NumPy array, 1D NumPy array
         The dimensions are num by mfree. The ordering of the parameter
         values in each row matches that of the free parameters in
-        fit.model.
+        fit.model. The clipped array indicates whether a row
+        had one or more clipped parameters.
 
     Notes
     -----
@@ -297,7 +317,9 @@ def _sample_flux_get_samples(fit, src, correlated, num):
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    return sampler.get_sample(fit, num=num)
+    samples = sampler.get_sample(fit, num=num)
+    clipped = sampler.clip(fit, samples, clip=clip)
+    return samples, clipped
 
 
 def decompose(mdl):
@@ -345,13 +367,18 @@ def decompose(mdl):
 
 def sample_flux(fit, data, src,
                 method=calc_energy_flux, correlated=False,
-                num=1, lo=None, hi=None, numcores=None, samples=None):
+                num=1, lo=None, hi=None, numcores=None, samples=None,
+                clip='hard'):
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
     the model flux for each set of parameter values. The values are
     drawn from normal distributions, and the distributions can either
     be independent or have correlations between the parameters.
+
+    .. versionchanged:: 4.12.2
+       The clip parameter was added and an extra column is added to
+       the return to indicate if each row was clipped.
 
     Parameters
     ----------
@@ -395,14 +422,22 @@ def sample_flux(fit, data, src,
         1D array of the error values (i.e. the sigma of the normal
         distribution). If there are n free parameters then the 1D array has
         to have n elements and the 2D array n by n elements.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping. The last
+        column in the returned arrays indicates if the row had any
+        clipped parameters (even when clip is set to 'none').
 
     Returns
     -------
     vals : 2D NumPy array
-        The shape of samples is (num, nfree + 1), where nfree is the
+        The shape of samples is (num, nfree + 2), where nfree is the
         number of free parameters in fit.model. Each row contains one
-        iteration, and the columns are the calculated flux,
-        followed by the free parameters.
+        iteration, and the columns are the calculated flux, followed
+        by the free parameters, and then a flag column indicating if
+        the parameters were clipped (1) or not (0).
 
     See Also
     --------
@@ -418,6 +453,7 @@ def sample_flux(fit, data, src,
     If src is a subset of the full source expression then samples,
     when not None, must still match the number of free parameters in
     the full source expression (that given by fit.model).
+
     """
 
     if num <= 0:
@@ -452,22 +488,13 @@ def sample_flux(fit, data, src,
     #
     scales = samples
     if scales is None:
-        samples = _sample_flux_get_samples(fit, src, correlated, num)
+        samples, clipped = _sample_flux_get_samples(fit, src, correlated,
+                                                    num, clip=clip)
     else:
-        samples = _sample_flux_get_samples_with_scales(fit, src, correlated, scales, num)
+        samples, clipped = _sample_flux_get_samples_with_scales(fit, src, correlated,
+                                                                scales, num, clip=clip)
 
-    # Ensure that samples falls within the hard limits by
-    # clipping the values. Values outside the hard limit are
-    # set to the hard limit.
-    #
-    hardmins = fit.model.thawedparhardmins
-    hardmaxs = fit.model.thawedparhardmaxes
-
-    for pvals, pmin, pmax in zip(samples.T, hardmins, hardmaxs):
-        # do the clipping in place
-        numpy.clip(pvals, pmin, pmax, out=pvals)
-
-    # When a subset of the full mdel is use we need to know how
+    # When a subset of the full model is used we need to know how
     # to select which rows in the samples array refer to the
     # parameters of interest. We could compare on fullname,
     # but is not sufficient to guarantee the match.
@@ -491,8 +518,12 @@ def sample_flux(fit, data, src,
     else:
         cols = None
 
-    return calc_flux(data, src, samples, method, lo, hi, numcores,
+    # Need to append the clipped array (it would be nice to retain
+    # the boolean nature of this).
+    #
+    vals = calc_flux(data, src, samples, method, lo, hi, numcores,
                      subset=cols)
+    return numpy.concatenate((vals, numpy.expand_dims(clipped, 1)), axis=1)
 
 
 def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
