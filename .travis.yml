@@ -10,6 +10,9 @@ jobs:
     ##- env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule TRAVIS_PYTHON_VERSION="3.8"
     ##  os: osx
     # macOS build - everything
+    - env: INSTALL_TYPE=install FITS="astropy" TEST=submodule MATPLOTLIBVER="3" XSPECVER="12.10.1n" TRAVIS_PYTHON_VERSION="3.7"
+      os: osx
+    # macOS build - everything
     - env: INSTALL_TYPE=install FITS="astropy" TEST=submodule MATPLOTLIBVER="3" XSPECVER="12.10.1n" TRAVIS_PYTHON_VERSION="3.8"
       os: osx
     # Barebone build to check tests pass when most of the tests must be skipped.
