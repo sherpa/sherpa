@@ -36,21 +36,20 @@ from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
 from sherpa.utils import formatting
 
 # There are currently (Sep 2015) no tests that exercise the code that
-# uses the compile_energy_grid or Region symbols.
+# uses the compile_energy_grid symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
 
-regstatus = False
-try:
-    from sherpa.astro.utils import Region, region_mask
-    regstatus = True
-except ImportError:
-    # sherpa.astro.utils will have already generated a warning so
-    # no need to create one here
-    pass
-
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
+
+regstatus = False
+try:
+    from sherpa.astro.utils._region import Region, region_combine, region_mask
+    regstatus = True
+except ImportError:
+    warning('failed to import sherpa.astro.utils._region; Region routines ' +
+            'will not be available')
 
 groupstatus = False
 try:
@@ -3831,25 +3830,40 @@ class DataIMG(Data2D):
         if not regstatus:
             raise ImportErr('importfailed', 'region', 'notice2d')
 
+        # Crete the new region
+        #
         val = str(val).strip()
-        ans = region_mask(self._region, val,
-                          self.get_x0(), self.get_x1(),
-                          os.path.isfile(val), ignore)
+        isfile = os.path.isfile(val)
+        reg = Region(val, isfile)
 
-        self._region, mask = ans
+        # Calculate the mask for this region as an "included"
+        # region.
+        #
+        mask = region_mask(reg,
+                           self.get_x0(), self.get_x1())
         mask = mask.astype(numpy.bool)
 
+        # Apply the new mask to the existing mask.
+        #
         if not ignore:
             if self.mask is True:
                 self.mask = mask
             else:
                 self.mask |= mask
         else:
+            # Invert the response from region_mask
             mask = ~mask
             if self.mask is False:
                 self.mask = mask
             else:
                 self.mask &= mask
+
+        # Create the new region shape.
+        #
+        if self._region is None:
+            self._region = reg
+        else:
+            self._region = region_combine(self._region, reg, ignore)
 
     def get_bounding_mask(self):
         mask = self.mask

@@ -635,7 +635,6 @@ def test_img_get_filter_none(make_test_image):
     assert d.get_filter() == ''
 
 
-@pytest.mark.skip(reason='can cause a segfault')
 def test_img_get_filter_combined(make_test_image):
     """Simple get_filter check on an image."""
     d = make_test_image
@@ -645,13 +644,13 @@ def test_img_get_filter_combined(make_test_image):
     d.notice2d(shape1)
 
     shape2 = 'rect(4258,3830,4264,3841)'
-    d.notice2d(shape1)
+    d.notice2d(shape2)
 
-    shape = shape1.capitalize() + '+' + shape2.capitalize()
+    shape2 = shape2.replace('rect', 'rectangle')
+    shape = shape1.capitalize() + '&' + shape2.capitalize()
     assert d.get_filter() == shape
 
 
-@pytest.mark.skip(reason='can cause a segfault')
 def test_img_get_filter_excluded(make_test_image):
     """Simple get_filter check on an image."""
     d = make_test_image
@@ -661,7 +660,8 @@ def test_img_get_filter_excluded(make_test_image):
     d.notice2d(shape1)
 
     shape2 = 'rect(4258,3830,4264,3841)'
-    d.notice2d(shape1, ignore=True)
+    d.notice2d(shape2, ignore=True)
 
+    shape2 = shape2.replace('rect', 'rectangle')
     shape = shape1.capitalize() + '&!' + shape2.capitalize()
     assert d.get_filter() == shape
