@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -665,3 +666,55 @@ def test_img_get_filter_excluded(make_test_image):
     shape2 = shape2.replace('rect', 'rectangle')
     shape = shape1.capitalize() + '&!' + shape2.capitalize()
     assert d.get_filter() == shape
+
+
+def check_ignore_ignore(d):
+    """Check removing the shapes works as expected."""
+
+    shape1 = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape1, ignore=True)
+
+    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(np.bool)
+    assert d.mask == pytest.approx(mask1)
+
+    shape2 = 'rect(4258,3830,4264,3841)'
+    d.notice2d(shape2, ignore=True)
+
+    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(np.bool)
+    assert d.mask == pytest.approx(mask1 & mask2)
+
+    shape2 = shape2.replace('rect', 'rectangle')
+    shape = shape1.capitalize() + '&!' + shape2.capitalize()
+    assert d.get_filter() == shape
+
+
+def test_img_get_filter_included_excluded(make_test_image):
+    """Simple get_filter check on an image.
+
+    Just to match test_img_get_filter_excluded_excluded.
+    """
+    d = make_test_image
+    check_ignore_ignore(d)
+
+
+def test_img_get_filter_excluded_excluded(make_test_image):
+    """Simple get_filter check on an image.
+
+    Here we want to check the behavior when d.mask is False.
+    I am not sure this makes sense, but this is done to
+    show the current behavior.
+    """
+    d = make_test_image
+
+    assert d.mask
+    d.notice2d(ignore=True)
+    assert not d.mask
+
+    # It is not at all obvious to me that we should get the
+    # same results as test_img_get_filter_included_excluded,
+    # as we start with ignoring all points.
+    #
+    # However, this is just to check the existing behavior,
+    # which was not changed in #968.
+    #
+    check_ignore_ignore(d)
