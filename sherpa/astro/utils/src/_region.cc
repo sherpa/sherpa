@@ -35,7 +35,22 @@ typedef struct {
 } PyRegion;
 
 
-static regRegion* parse_string( char* str, int fileflag );
+// Declare symbols
+static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs );
+
+
+static regRegion* parse_string( char* str, int fileflag ) {
+
+  regRegion *reg = NULL;
+  std::string input(str); // what benefit do we get casting to std:string?
+  if( fileflag ) {
+    reg = regReadAsciiRegion( (char*)input.c_str() , 0 ); // Verbosity set to 0
+  } else {
+    reg = regParse( (char*)input.c_str() );
+  }
+
+  return reg;
+}
 
 
 static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
@@ -89,9 +104,9 @@ static void pyRegion_dealloc(PyRegion* reg) {
   if( reg ) {
     if( reg->region )
       regFree( reg->region );
-  }
 
-  PyObject_Del( reg );
+    PyObject_Del( reg );
+  }
 }
 
 static PyObject* pyRegion_str(PyRegion* reg) {
@@ -106,18 +121,59 @@ static PyObject* pyRegion_str(PyRegion* reg) {
 }
 
 
-static regRegion* parse_string( char* str, int fileflag ) {
+// Return the mask indicating whether the array points
+// lie inside or outside the region.
+//
+static PyObject* region_mask( PyRegion* self, PyObject* args, PyObject *kwargs )
+{
 
-  regRegion *reg = NULL;
-  std::string input(str);
-  if( fileflag ) {
-  	  reg = regReadAsciiRegion( (char*)input.c_str() , 0 ); // Verbosity set to 0
-  } else {
-	  reg = regParse( (char*)input.c_str() );
+  DoubleArray xpos, ypos;
+
+  static char *kwlist[] = {"x0", "x1", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O&O&", kwlist,
+				     CONVERTME(DoubleArray), &xpos,
+				     CONVERTME(DoubleArray), &ypos))
+    return NULL;
+
+  npy_intp size = xpos.get_size();
+  if ( size != ypos.get_size() ) {
+    std::ostringstream err;
+    err << "input array sizes do not match, "
+	<< "xpos: " << size << " vs ypos: " << ypos.get_size();
+    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    return NULL;
   }
 
-  return reg;
+  IntArray mask;
+  npy_intp dim[1];
+  dim[0] = npy_intp(size);
+
+  if ( EXIT_SUCCESS != mask.create( 1, dim ) )
+    return NULL;
+
+  // Extract the region
+  PyRegion *region = (PyRegion*)(self);
+
+  for ( npy_intp ii = 0; ii < size; ii++)
+    mask[ii] = regInsideRegion( region->region, xpos[ii], ypos[ii] );
+
+  return mask.return_new_ref();
+
 }
+
+
+static PyMethodDef pyRegion_methods[] = {
+
+  { (char*)"mask", (PyCFunction) region_mask,
+    METH_VARARGS | METH_KEYWORDS, (char*)"Calculate the mask for a set of points: mask = r.mask(x0, x1)" },
+
+  { (char*)"combine", (PyCFunction) region_combine,
+    METH_VARARGS | METH_KEYWORDS, (char*)"Combine regions: rnew = r.combine(region, exclude=0)" },
+
+  { NULL, NULL, 0, NULL }
+
+};
+
 
 static PyTypeObject pyRegion_Type = {
   // Note that there is no semicolon after the PyObject_HEAD_INIT macro;
@@ -149,7 +205,7 @@ static PyTypeObject pyRegion_Type = {
   0,		                 // tp_weaklistoffset
   0,		                 // tp_iter, __iter__
   0,		                 // tp_iternext
-  0,                             // tp_methods
+  pyRegion_methods,              // tp_methods
   0,                             // tp_members
   0,                             // tp_getset
   0,                             // tp_base
@@ -163,69 +219,27 @@ static PyTypeObject pyRegion_Type = {
 };
 
 
-// Return the mask indicating whether the array points
-// lie inside or outside the region.
-//
-static PyObject* region_mask( PyObject* self, PyObject* args )
-{
-
-  PyObject *reg_obj = NULL;
-  DoubleArray xpos, ypos;
-
-  if ( !PyArg_ParseTuple( args, (char*)"O!O&O&",
-			  &pyRegion_Type, &reg_obj,
-			  CONVERTME(DoubleArray), &xpos,
-			  CONVERTME(DoubleArray), &ypos))
-    return NULL;
-
-  npy_intp size = xpos.get_size();
-  if ( size != ypos.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "xpos: " << size << " vs ypos: " << ypos.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
-
-  IntArray mask;
-  npy_intp dim[1];
-  dim[0] = npy_intp(size);
-
-  if ( EXIT_SUCCESS != mask.create( 1, dim ) )
-    return NULL;
-
-  // Extract the region
-  PyRegion *region = (PyRegion*)(reg_obj);
-
-  for ( npy_intp ii = 0; ii < size; ii++)
-    mask[ii] = regInsideRegion( region->region, xpos[ii], ypos[ii] );
-
-  return mask.return_new_ref();
-
-}
-
-
 // If reverse is 0 then       reg1&reg2
 //                 otherwise  reg1&!reg2
+// where reg1 is self.
 //
-static PyObject* region_combine( PyObject* self, PyObject* args )
+// Needs to be defined after pyRegion_type is defined.
+//
+static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs )
 {
 
-  PyObject *reg_obj1 = NULL;
   PyObject *reg_obj2 = NULL;
-
   int reverse = 0;
 
-  if ( !PyArg_ParseTuple( args, (char*)"O!O!|i",
-			  &pyRegion_Type, &reg_obj1,
-			  &pyRegion_Type, &reg_obj2,
-			  &reverse))
+  static char *kwlist[] = {"region", "exclude", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!|i", kwlist,
+				     &pyRegion_Type, &reg_obj2,
+				     &reverse))
     return NULL;
 
-  PyRegion *reg1 = (PyRegion*)(reg_obj1);
   PyRegion *reg2 = (PyRegion*)(reg_obj2);
 
-  regRegion *r1 = reg1->region;
+  regRegion *r1 = self->region;
   regRegion *r2 = reg2->region;
 
   if( reverse ) {
@@ -255,68 +269,16 @@ static PyObject* region_combine( PyObject* self, PyObject* args )
 }
 
 
-/*
-static PyObject* region_parse( PyObject* self, PyObject* args )
-{
-
-  int fileflag = 1;
-  char* str = NULL;
-  PyObject *cobj = NULL;
-  PyRegion *region = NULL;
-  regRegion *reg = NULL;
-
-  if ( !PyArg_ParseTuple( args, (char*)"s|i", &str, &fileflag))
-    return NULL;
-
-  reg = parse_string( str, fileflag );
-
-  if ( NULL == reg) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"unable to parse region string successfully" );
-    return NULL;
-  }
-
-  // In order to pass in regRegion* as a Python argument, use void* trick
-  cobj = PyCObject_FromVoidPtr((void*)reg, NULL);
-
-  region = (PyRegion*) pyRegion_new( &pyRegion_Type,
-				     Py_BuildValue((char*)"(O)", cobj ),
-				     NULL );
-
-  Py_XINCREF(region);
-
-  return (PyObject*)region;
-
-}
-*/
-
-static PyMethodDef RegionFcts[] = {
-
-  { (char*)"region_mask", (PyCFunction) region_mask,
-    METH_VARARGS, (char*)"Calculate the mask for a region and set of points" },
-
-  { (char*)"region_combine", (PyCFunction) region_combine,
-    METH_VARARGS, (char*)"Combine regions" },
-
-  /*
-    { (char*)"region_parse", (PyCFunction)region_parse,
-    METH_VARARGS, (char*)"Parse and create a region using CXC region lib" },
-  */
-
-  { NULL, NULL, 0, NULL }
-
-};
-
 #ifndef PyMODINIT_FUNC	// declarations for DLL import/export
 #define PyMODINIT_FUNC void
 #endif
 
 static struct PyModuleDef module_region = {
-PyModuleDef_HEAD_INIT,
-"_region",
-NULL,
--1,
-RegionFcts
+    PyModuleDef_HEAD_INIT,
+    "_region",
+    "Defines the Region type.",
+    -1,
+    NULL
 };
 
 PyMODINIT_FUNC

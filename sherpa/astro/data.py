@@ -45,7 +45,7 @@ warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region, region_combine, region_mask
+    from sherpa.astro.utils._region import Region
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
@@ -3839,8 +3839,7 @@ class DataIMG(Data2D):
         # Calculate the mask for this region as an "included"
         # region.
         #
-        mask = region_mask(reg,
-                           self.get_x0(), self.get_x1())
+        mask = reg.mask(self.get_x0(), self.get_x1())
         mask = mask.astype(numpy.bool)
 
         # Apply the new mask to the existing mask.
@@ -3863,7 +3862,7 @@ class DataIMG(Data2D):
         if self._region is None:
             self._region = reg
         else:
-            self._region = region_combine(self._region, reg, ignore)
+            self._region = self._region.combine(reg, ignore)
 
     def get_bounding_mask(self):
         mask = self.mask

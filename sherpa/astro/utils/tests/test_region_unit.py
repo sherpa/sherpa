@@ -18,14 +18,16 @@
 #
 import pytest
 
-from sherpa.astro.utils._region import Region, region_combine, region_mask
+from sherpa.astro.utils._region import Region
 
 
-region_string = 'Circle(256 ,256 , 25)'
-normalized_string = 'Circle(256,256,25)'
+# Use a non-rotational shape so we can swap the
+# xm and ym values and see a difference in the mask.
+region_string = 'ellipse(256 ,256 , 25, 10, 0)'
+normalized_string = 'Ellipse(256,256,25,10,0)'
 x = [1, 2, 3]
 y = [1, 2, 3]
-xm = [254, 255, 256]
+xm = [254, 275, 256]
 ym = [254, 255, 256]
 
 
@@ -68,7 +70,8 @@ def test_region_file_invalid(tmpdir):
 
     Note that the file parser apparently fails if
     there are spaces, so I use region_string here
-    in case the parser ever gets improved.
+    in case the parser ever gets improved, in which
+    case this test will need a new invalid file.
     """
     f = tmpdir.join('reg')
     f.write(region_string)
@@ -90,15 +93,40 @@ def test_region_invalid(arg):
 def test_region_mask_nomatch():
     """All points are excluded"""
     r = Region(region_string)
-    m = region_mask(r, x, y)
+    m = r.mask(x, y)
     assert all(val == 0 for val in m)
 
 
 def test_region_mask_match():
     """All points are included"""
     r = Region(region_string)
-    m = region_mask(r, xm, ym)
+    m = r.mask(xm, ym)
     assert all(val == 1 for val in m)
+
+
+def test_region_mask_match_swapped():
+    """All points are included
+
+    This is just to check the ordering is handled
+    correctly for test_region_mask_keywords
+    """
+    r = Region(region_string)
+    m = r.mask(ym, xm)
+    assert m == pytest.approx([1, 0, 1])
+
+
+def test_region_mask_keywords1():
+    """Check can use x0/x1 names"""
+    r = Region(region_string)
+    m = r.mask(x1=ym, x0=xm)
+    assert m == pytest.approx([1, 1, 1])
+
+
+def test_region_mask_keywords2():
+    """Check can use x0/x1 names"""
+    r = Region(region_string)
+    m = r.mask(x1=xm, x0=ym)
+    assert m == pytest.approx([1, 0, 1])
 
 
 def test_region_mask_nomatch_file(tmpdir):
@@ -107,7 +135,7 @@ def test_region_mask_nomatch_file(tmpdir):
     f.write(normalized_string)
 
     r = Region(str(f), True)
-    m = region_mask(r, x, y)
+    m = r.mask(x, y)
     assert all(val == 0 for val in m)
 
 
@@ -117,35 +145,30 @@ def test_region_mask_match_file(tmpdir):
     f.write(normalized_string)
 
     r = Region(str(f), True)
-    m = region_mask(r, xm, ym)
+    m = r.mask(xm, ym)
     assert all(val == 1 for val in m)
 
 
 def test_region_mask_null():
     """What happens if the region is empty?"""
     empty = Region()
-    m = region_mask(empty, x, y)
+    m = empty.mask(x, y)
     assert all(val == 0 for val in m)
-
-
-@pytest.mark.parametrize("arg", [None, "circle(100,100,3)"])
-def test_region_mask_non_region(arg):
-    """The first argument must be a Region"""
-    with pytest.raises(TypeError):
-        region_mask(arg, x, y)
 
 
 def test_region_combine_nothing1():
     """Adding a region to nothing == region"""
 
-    r = region_combine(Region(), Region(region_string))
+    empty = Region()
+    r = empty.combine(Region(region_string))
     assert normalized_string == str(r)
 
 
 def test_region_ignore_nothing1():
     """Ignoring a region frm nothing == !region"""
 
-    r = region_combine(Region(), Region(region_string), True)
+    empty = Region()
+    r = empty.combine(Region(region_string), True)
     assert '!' + normalized_string == str(r)
 
 
@@ -153,7 +176,8 @@ def test_region_ignore_nothing1():
 def test_region_combine_nothing2(ignore):
     """Adding or ignoring nothing to a region == region"""
 
-    r = region_combine(Region(region_string), Region(), ignore)
+    orig = Region(region_string)
+    r = orig.combine(Region(), ignore)
     assert normalized_string == str(r)
 
 
@@ -162,7 +186,7 @@ def test_region_combine():
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(100,100,200,200)'
-    r = region_combine(Region(r1), Region(r2))
+    r = Region(r1).combine(Region(r2))
 
     r2 = r2.replace('rect', 'rectangle')
     expected = r1.capitalize() + '&' + r2.capitalize()
@@ -178,7 +202,7 @@ def test_region_ignore_no_overlap():
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(100,100,200,200)'
-    r = region_combine(Region(r1), Region(r2), True)
+    r = Region(r1).combine(Region(r2), True)
 
     r2 = r2.replace('rect', 'rectangle')
     expected = r1.capitalize() + '&!' + r2.capitalize()
@@ -190,7 +214,7 @@ def test_region_ignore_overlap():
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(5,5,7,10)'
-    r = region_combine(Region(r1), Region(r2), True)
+    r = Region(r1).combine(Region(r2), True)
 
     r2 = r2.replace('rect', 'rectangle')
     expected = r1.capitalize() + '&!' + r2.capitalize()
@@ -204,8 +228,8 @@ def test_region_combine_combined():
     r2 = 'rect(100,100,200,200)'
     r3 = 'ellipse(70,70,10,12,45)'
 
-    rcomb = region_combine(Region(r1), Region(r2))
-    rcomb = region_combine(rcomb, Region(r3))
+    rcomb = Region(r1).combine(Region(r2))
+    rcomb = rcomb.combine(Region(r3))
 
     r2 = r2.replace('rect', 'rectangle')
     expected = '&'.join([x.capitalize() for x in [r1, r2, r3]])
@@ -223,9 +247,41 @@ def test_region_ignore_combined():
     r2 = 'rect(100,100,200,200)'
     r3 = 'ellipse(70,70,10,12,45)'
 
-    rcomb = region_combine(Region(r1), Region(r2), True)
-    rcomb = region_combine(rcomb, Region(r3))
+    rcomb = Region(r1).combine(Region(r2), True)
+    rcomb = rcomb.combine(Region(r3))
 
     r2 = '!' + r2.replace('rect', 'rectangle').capitalize()
     expected = '&'.join([r1.capitalize(), r2, r3.capitalize()])
     assert expected == str(rcomb)
+
+
+def test_region_combine_kwargs():
+    """Adding two regions together with keyword arguments"""
+
+    r1 = 'circle(10,10,10)'
+    r2 = 'rect(100,100,200,200)'
+    r = Region(r1).combine(exclude=0, region=Region(r2))
+
+    r2 = r2.replace('rect', 'rectangle')
+    expected = r1.capitalize() + '&' + r2.capitalize()
+    assert expected == str(r)
+
+
+def test_region_ignore_kwargs():
+    """Removing a regions with keyword arguments"""
+
+    r1 = 'circle(10,10,10)'
+    r2 = 'rect(100,100,200,200)'
+    r = Region(r1).combine(exclude=1, region=Region(r2))
+
+    r2 = r2.replace('rect', 'rectangle')
+    expected = r1.capitalize() + '&!' + r2.capitalize()
+    assert expected == str(r)
+
+
+@pytest.mark.parametrize("arg", [None, "circle(0,0,1)"])
+def test_region_combine_invalid(arg):
+    """Check we error out if not sent a region."""
+
+    with pytest.raises(TypeError):
+        Region().combine(arg)
