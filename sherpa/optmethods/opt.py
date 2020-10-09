@@ -19,10 +19,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import multiprocessing
+
 import numpy as np
 import random
 from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks, func_counter
-import multiprocessing
+
 
 __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep', 'tst_opt', 'tst_unc_opt')
