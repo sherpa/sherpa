@@ -63,13 +63,11 @@ _multi = False
 
 try:
     import multiprocessing
-    try:
-        multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method')
-    except (NoSectionError, NoOptionError):
-        multiprocessing_start_method = 'fork'
+    
+    multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method', fallback='fork')
 
     if multiprocessing_start_method not in ('fork', 'spawn', 'default'):
-        raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
+       raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
 
     if multiprocessing_start_method != 'default':
         multiprocessing.set_start_method(multiprocessing_start_method, force=True)
