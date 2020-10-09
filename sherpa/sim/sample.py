@@ -318,8 +318,8 @@ class ParameterSample(NoNewAttributesAfterInit):
     def clip(self, fit, samples, clip='none'):
         """Clip the samples if out of bounds.
 
-        Parameter
-        --------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             Contains the thawed parameters used to generate the
             samples.
@@ -398,8 +398,8 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     def get_sample(self, fit, factor=4, num=1):
         """Return the parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -437,8 +437,8 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     def get_sample(self, fit, myscales=None, num=1):
         """Return the parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -475,8 +475,8 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
     def get_sample(self, fit, mycov=None, num=1):
         """Return the parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -511,8 +511,8 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
     def get_sample(self, fit, dof, num=1):
         """Return the parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -553,7 +553,7 @@ class Evaluate():
 def _sample_stat(fit, samples, numcores=None, cache=True):
     """Calculate the statistic for each set of samples.
 
-    Parameter
+    Parameters
     ----------
     fit : sherpa.fit.Fit instance
         This defines the thawed parameters that are used to generate
@@ -600,8 +600,8 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
     def get_sample(self, fit, num=1, numcores=None):
         """Return the statistic and parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -640,8 +640,8 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
     def get_sample(self, fit, num=1, numcores=None):
         """Return the statistic and parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -677,8 +677,8 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
     def get_sample(self, fit, num=1, factor=4, numcores=None):
         """Return the statistic and parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
@@ -719,8 +719,8 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
     def get_sample(self, fit, num=1, dof=2, numcores=None):
         """Return the statistic and parameter samples.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit : sherpa.fit.Fit instance
             This defines the thawed parameters that are used to generate
             the samples, along with any possible error analysis.
