@@ -42,11 +42,10 @@ static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwarg
 static regRegion* parse_string( char* str, int fileflag ) {
 
   regRegion *reg = NULL;
-  std::string input(str); // what benefit do we get casting to std:string?
   if( fileflag ) {
-    reg = regReadAsciiRegion( (char*)input.c_str() , 0 ); // Verbosity set to 0
+    reg = regReadAsciiRegion( str, 0 ); // Verbosity set to 0
   } else {
-    reg = regParse( (char*)input.c_str() );
+    reg = regParse( str );
   }
 
   return reg;
