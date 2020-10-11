@@ -19,6 +19,7 @@ Reference/API
 .. toctree::
    :maxdepth: 2
 
+   sherpa
    err
    utils
    testing

@@ -42,7 +42,7 @@ import subprocess
 import sys
 
 
-__all__ = ('citation', 'get_include',)
+__all__ = ('citation', 'get_config', 'get_include', 'smoke')
 
 from ._version import get_versions
 __version__ = get_versions()['version']
@@ -545,8 +545,7 @@ def citation(version='latest', filename=None, clobber=False):
     If there is no internet connection, or there was a problem in
     downloading the data, or the Zenodo API has started to return
     different informatioon than expected, then the code will return
-    the basic information (that is, as if run with
-    ``download=False``).
+    information on why the call failed and other citation options.
 
     Zenodo only lets you perform a limited number of calls in
     a set time span, so if you call this routine too many times
@@ -558,6 +557,20 @@ def citation(version='latest', filename=None, clobber=False):
     .. [1] https://zenodo.org/
 
     .. [2] https://doi.org/10.5281/zenodo.593753
+
+    Examples
+    --------
+
+    Display the citation information for the latest release on
+    Zenodo. The information is paged to the display:
+
+    >>> import sherpa
+    >>> sherpa.citation()
+
+    Write out the citation information for Sherpa 4.12.1 to the file
+    ``cite.txt``:
+
+    >>> sherpa.citation('4.12.1', outfile='cite.txt')
 
     """
 
@@ -605,28 +618,36 @@ def get_config():
 
 
 def smoke(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
-    """
-    Run Sherpa's "smoke" test. The smoke test is a simple test that
-        ensures the Sherpa installation is functioning. It is not a complete
-        test suite, but it fails if obvious issues are found.
+    """Run Sherpa's "smoke" test.
+
+    The smoke test is a simple test that ensures the Sherpa
+    installation is functioning. It is not a complete test suite, but
+    it fails if obvious issues are found.
 
     Parameters
     ----------
-    xspec : boolean
-        Require xspec module when running tests. Tests requiring xspec may still run if the xspec module is present.
-    fits : str
-        Require a fits module with this name to be present before running the smoke test.
-        This option makes sure that when the smoke test is run the required modules are present.
-        Note that tests requiring fits may still run if any fits backend is available, and they might
-        still fail on their own.
-    require_failure : boolean
-        For debugging purposes, the smoke test may be required to always fail. Defaults to False.
-    verbosity : int
+    verbosity : int, optional
         The level of verbosity of this test
+    require_failure : boolean, optional
+        For debugging purposes, the smoke test may be required to
+        always fail. Defaults to False.
+    fits : str or None, optional
+        Require a fits module with this name to be present before
+        running the smoke test. This option makes sure that when the
+        smoke test is run the required modules are present.  Note that
+        tests requiring fits may still run if any fits backend is
+        available, and they might still fail on their own.
+    xspec : boolean, optional
+        Require xspec module when running tests. Tests requiring xspec
+        may still run if the xspec module is present.
+    ds9 : boolean, optional
+        Requires DS9 when running tests.
 
-    Returns
-    -------
-    The method raises the SystemExit if errors are found during the smoke test
+    Raises
+    ------
+    SystemExit
+        Raised if any errors are found during the tests.
+
     """
     from sherpa.astro.utils import smoke
     smoke.run(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec, ds9=ds9)
