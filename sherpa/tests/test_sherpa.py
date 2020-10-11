@@ -58,12 +58,7 @@ def test_reading_strings(make_data_path):
 # for Python 3.5 tests, so we have to use tmpdir
 #
 def test_citation_hardcoded(tmpdir):
-    """Check citation works for hardcoded queries.
-
-    We do not try to query Zenodo as we don't want to
-    suffer network issues, run out of queries, or
-    unnescessarily overload Zenodo.
-    """
+    """Check citation works for hardcoded queries."""
 
     citefile = tmpdir.mkdir("citation").join("cite.txt")
     with citefile.open(mode='w') as fh:
@@ -74,3 +69,47 @@ def test_citation_hardcoded(tmpdir):
     assert cts[1] == ''
     assert cts[2] == '@software{sherpa_2016_45243,'
     assert len(cts) == 63
+
+
+@pytest.mark.zenodo
+def test_todo_latest_success(tmpdir):
+    """Check Zenodo knows about the current version.
+
+    Since we don't know what the actual text should be, this
+    is not a full test, but enough to know that the
+    information has been extracted.
+    """
+
+    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    with citefile.open(mode='w') as fh:
+        sherpa.citation('latest', filename=fh)
+
+    cts = citefile.read_text('utf-8').split('\n')
+    assert cts[0].startswith('You are using Sherpa ')
+    assert cts[1] == ''
+    assert cts[2].startswith('The latest release of Sherpa is ')
+    assert cts[3].startswith('released on ')
+    assert cts[4] == ''
+    assert cts[5].startswith('@software{sherpa_')
+    assert 'Please review the Zenodo Sherpa page at' in cts
+    assert '@INPROCEEDINGS{2001SPIE.4477...76F,' in cts
+    assert '@INPROCEEDINGS{2007ASPC..376..543D,' in cts
+
+
+@pytest.mark.zenodo
+def test_todo_version_fail(tmpdir):
+    """Check Zenodo can not found an invalid version"""
+
+    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    with citefile.open(mode='w') as fh:
+        sherpa.citation('4.7.0', filename=fh)
+
+    cts = citefile.read_text('utf-8').split('\n')
+    assert cts[0].startswith('You are using Sherpa ')
+    assert cts[1] == ''
+    assert cts[2] == 'There was a problem retireving the data from Zenodo:'
+    assert cts[3] == 'Zenodo has no information for version 4.7.0.'
+    assert cts[4] == ''
+    assert cts[5] == 'Please review the Zenodo Sherpa page at'
+    assert '@INPROCEEDINGS{2001SPIE.4477...76F,' in cts
+    assert '@INPROCEEDINGS{2007ASPC..376..543D,' in cts

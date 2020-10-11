@@ -265,8 +265,8 @@ def _download_json(url):
 
     Returns
     -------
-    response : object or None
-        The data in JSON or None if there was any problem.
+    response : dict
+        The data in JSON as 'success' or an error message as 'failed'.
 
     """
 
@@ -296,15 +296,15 @@ def _download_json(url):
         res = urlopen(req, context=context)
     except HTTPError as he:
         dbg("Unable to access {}: {}".format(url, he))
-        return None
+        return {'failed': 'Unable to access the Zenodo site.'}
 
     try:
         jsdata = json.load(res)
     except UnicodeDecodeError as ue:
         dbg("Unable to decode JSON from Zenodo: {}".format(ue))
-        return None
+        return {'failed': 'Unable to understand the response from Zenodo.'}
 
-    return jsdata
+    return {'success': jsdata}
 
 
 def _make_zenodo_citation(jsdata, latest=True):
@@ -351,14 +351,50 @@ def _make_zenodo_citation(jsdata, latest=True):
     return out
 
 
+def _get_citation_version():
+    """What version of Sherpa are we using?
+
+    Returns
+    -------
+    version : str
+        The Sherpa version.
+    """
+
+    out = 'You are using Sherpa {}'.format(__version__)
+    if '+' in __version__:
+        out += " (it is not a released version)"
+
+    out += ".\n\n"
+    return out
+
+
+def _get_citation_zenodo_failure(failed):
+    """Standard response when there's a problem.
+
+    Returns
+    -------
+    text : str
+        The failure message.
+
+    """
+    out = 'There was a problem retireving the data from Zenodo:\n'
+    out += failed
+    out += '\n\n'
+    out += DEFAULT_CITATION
+    return out
+
+
 def _get_citation_zenodo_latest():
     """Query Zenodo for the latest release.
 
     Returns
     -------
-    citation : str or None
-        Citation information, if found.
+    citation : str
+        Citation information. It will include information
+        on any failure.
     """
+
+    out = _get_citation_version()
 
     # Can we retrieve the information from Zenodo?
     #
@@ -366,10 +402,56 @@ def _get_citation_zenodo_latest():
     # url = 'https://doi.org/10.5281/zenodo.593753'
     url = 'https://zenodo.org/api/records/593753'
     jsdata = _download_json(url)
-    if jsdata is None:
-        return None
+    if 'failed' in jsdata:
+        out += _get_citation_zenodo_failure(jsdata['failed'])
+        return out
 
-    return _make_zenodo_citation(jsdata)
+    out +=_make_zenodo_citation(jsdata['success'])
+    return out
+
+
+def _parse_zenodo_data(jsdata, version):
+    """Extract data for the given version from a Zenodo query.
+
+    Parameters
+    ----------
+    jsdata : json
+        The response from Zenodo.
+    version : str
+        The version we are looking for.
+
+    Returns
+    -------
+    response : dict
+        Success in 'success' (dict) or failure message in 'failed'.
+    """
+
+    try:
+        hits = jsdata['hits']['hits']
+    except KeyError:
+        dbg("Unable to find hits/hits")
+        return {'failed': 'Unable to parse the Zenodo response.'}
+
+    data = None
+    try:
+        for hit in hits:
+            if hit['metadata']['version'] == version:
+                data = hit
+                break
+
+    except KeyError:
+        dbg("Record missing version")
+        return {'failed': 'Unable to parse the Zenodo response.'}
+
+    except TypeError:
+        dbg('hits/hits is not iterable!')
+        return {'failed': 'Unable to parse the Zenodo response.'}
+
+    if data is None:
+        dbg('Version {} not found'.format(version))
+        return {'failed': "Zenodo has no information for version {}.".format(version)}
+
+    return {'success': data}
 
 
 def _get_citation_zenodo_version(version):
@@ -383,39 +465,23 @@ def _get_citation_zenodo_version(version):
         Citation information, if found.
     """
 
+    out = _get_citation_version()
+
     # Is there a better way to do this?
     #
     url = 'https://zenodo.org/api/records/?q=conceptrecid:"593753"&all_versions=True'
     jsdata = _download_json(url)
-    if jsdata is None:
-        return None
+    if 'failed' in jsdata:
+        out += _get_citation_zenodo_failure(jsdata['failed'])
+        return out
 
-    try:
-        hits = jsdata['hits']['hits']
-    except KeyError:
-        dbg("Unable to find hits/hits")
-        return None
+    data = _parse_zenodo_data(jsdata['success'], version)
+    if 'failed' in data:
+        out += _get_citation_zenodo_failure(data['failed'])
+        return out
 
-    data = None
-    try:
-        for hit in hits:
-            if hit['metadata']['version'] == version:
-                data = hit
-                break
-
-    except KeyError:
-        dbg("Record missing version")
-        return None
-
-    except TypeError:
-        dbg('hits/hits is not iterable!')
-        return None
-
-    if data is None:
-        dbg('Version {} not found'.format(version))
-        return None
-
-    return _make_zenodo_citation(data, latest=False)
+    out += _make_zenodo_citation(data['success'], latest=False)
+    return out
 
 
 def _get_citation(version='latest'):
@@ -436,11 +502,7 @@ def _get_citation(version='latest'):
     """
 
     if version == 'latest':
-        out = _get_citation_zenodo_latest()
-        if out is not None:
-            return out
-
-        return DEFAULT_CITATION
+        return _get_citation_zenodo_latest()
 
     # If we know this version there's no need to call Zenodo
     #
