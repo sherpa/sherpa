@@ -394,8 +394,6 @@ def _get_citation_zenodo_latest():
         on any failure.
     """
 
-    out = _get_citation_version()
-
     # Can we retrieve the information from Zenodo?
     #
     # We do not access the DOI but the Zenodo API
@@ -403,11 +401,9 @@ def _get_citation_zenodo_latest():
     url = 'https://zenodo.org/api/records/593753'
     jsdata = _download_json(url)
     if 'failed' in jsdata:
-        out += _get_citation_zenodo_failure(jsdata['failed'])
-        return out
+        return _get_citation_zenodo_failure(jsdata['failed'])
 
-    out +=_make_zenodo_citation(jsdata['success'])
-    return out
+    return _make_zenodo_citation(jsdata['success'])
 
 
 def _parse_zenodo_data(jsdata, version):
@@ -461,38 +457,35 @@ def _get_citation_zenodo_version(version):
 
     Returns
     -------
-    citation : str or None
-        Citation information, if found.
+    citation : str
+        Citation information.
     """
-
-    out = _get_citation_version()
 
     # Is there a better way to do this?
     #
     url = 'https://zenodo.org/api/records/?q=conceptrecid:"593753"&all_versions=True'
     jsdata = _download_json(url)
     if 'failed' in jsdata:
-        out += _get_citation_zenodo_failure(jsdata['failed'])
-        return out
+        return _get_citation_zenodo_failure(jsdata['failed'])
 
     data = _parse_zenodo_data(jsdata['success'], version)
     if 'failed' in data:
-        out += _get_citation_zenodo_failure(data['failed'])
-        return out
+        return _get_citation_zenodo_failure(data['failed'])
 
-    out += _make_zenodo_citation(data['success'], latest=False)
-    return out
+    return _make_zenodo_citation(data['success'], latest=False)
 
 
-def _get_citation(version='latest'):
+def _get_citation(version='current'):
     """Retrieve the citation information.
 
     Parameters
     ----------
     version : str, optional
-        The version to retrieve the citation before. The supported
-        values are limited to 'latest' and the current set of
-        releases available on Zenodo (this goes back to '4.8.0').
+        The version to retrieve the citation for. The supported values
+        are limited to 'current', to return the citation for the
+        installed version of Sherpa, 'latest' which will return the
+        latest release, and the current set of releases available on
+        Zenodo (this goes back to '4.8.0').
 
     Returns
     -------
@@ -501,25 +494,38 @@ def _get_citation(version='latest'):
 
     """
 
+    vstr = _get_citation_version()
+
     if version == 'latest':
-        return _get_citation_zenodo_latest()
+        return vstr + _get_citation_zenodo_latest()
+
+    if version == 'current':
+        # Replace with the version (excluding any extraneous
+        # information). Note that development versions close to a
+        # release will have a version which has no release, but
+        # I believe it is okay to say "Hey, Zenodo has no info
+        # on this", rather than to try and fall back to the
+        # previous version (since there's no good Zenodo reference
+        # in this case).
+        #
+        version = __version__.split('+')[0]
+
+    # We could include a check on the version number (e.g. a.b.c
+    # where all elements are an integer), but do we want to
+    # require this naming scheme?
 
     # If we know this version there's no need to call Zenodo
     #
     out = _get_citation_hardcoded(version)
     if out is not None:
-        return out
+        return vstr + out
 
     # In case the hardcoded list hasn't been updated.
     #
-    out = _get_citation_zenodo_version(version)
-    if out is not None:
-        return out
-
-    return DEFAULT_CITATION
+    return vstr + _get_citation_zenodo_version(version)
 
 
-def citation(version='latest', filename=None, clobber=False):
+def citation(version='current', filename=None, clobber=False):
     """Return citatation information for Sherpa.
 
     The citation information is taken from Zenodo [1]_, using the
@@ -530,9 +536,11 @@ def citation(version='latest', filename=None, clobber=False):
     Parameters
     ----------
     version : str, optional
-        The version to retrieve the citation for. The supported
-        values are limited to 'latest' and the current set of
-        releases available on Zenodo (this goes back to '4.8.0').
+        The version to retrieve the citation for. The supported values
+        are limited to 'current', to return the citation for the
+        installed version of Sherpa, 'latest' which will return the
+        latest release, and the current set of releases available on
+        Zenodo (this goes back to '4.8.0').
     filename : str or StringIO or None, optional
         If not None, write the output to the given file or filelike
         object.
@@ -551,6 +559,10 @@ def citation(version='latest', filename=None, clobber=False):
     a set time span, so if you call this routine too many times
     then it may start to fail.
 
+    If a specific version is given then a hard-coded list of versions
+    is checked, and if it matches then this information is used,
+    rather than requiring a call to Zenodo.
+
     References
     ----------
 
@@ -561,7 +573,7 @@ def citation(version='latest', filename=None, clobber=False):
     Examples
     --------
 
-    Display the citation information for the latest release on
+    Display the citation information for the current release on
     Zenodo. The information is paged to the display:
 
     >>> import sherpa
@@ -571,6 +583,10 @@ def citation(version='latest', filename=None, clobber=False):
     ``cite.txt``:
 
     >>> sherpa.citation('4.12.1', outfile='cite.txt')
+
+    Display the information for the latest release:
+
+    >>> sherpa.citation('latest')
 
     """
 

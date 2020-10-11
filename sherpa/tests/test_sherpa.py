@@ -65,10 +65,12 @@ def test_citation_hardcoded(tmpdir):
         sherpa.citation('4.8.0', filename=fh, clobber=True)
 
     cts = citefile.read_text('ascii').split('\n')
-    assert cts[0] == 'Sherpa 4.8.0 was released on January 27, 2016.'
+    assert cts[0].startswith('You are using Sherpa ')
     assert cts[1] == ''
-    assert cts[2] == '@software{sherpa_2016_45243,'
-    assert len(cts) == 63
+    assert cts[2] == 'Sherpa 4.8.0 was released on January 27, 2016.'
+    assert cts[3] == ''
+    assert cts[4] == '@software{sherpa_2016_45243,'
+    assert len(cts) == 65
 
 
 @pytest.mark.zenodo
