@@ -37,6 +37,7 @@ typedef struct {
 
 // Declare symbols
 static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs );
+static PyObject* region_invert( PyRegion* self, PyObject* args );
 
 
 static regRegion* parse_string( char* str, int fileflag ) {
@@ -67,16 +68,16 @@ static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
 // API could just deal with strings.
 //
 static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
-			      PyObject *kwds)
+			      PyObject *kwargs)
 {
   regRegion *reg = NULL;
   char *objS = NULL;
   int fileflag = 0;
 
-  if ( !PyArg_ParseTuple( args, "|si", &objS, &fileflag ) ) {
-    PyErr_SetString( PyExc_TypeError, "Region expects optional string and flag" );
+  static char *kwlist[] = {"region", "fileflag", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "|si", kwlist,
+				     &objS, &fileflag ) )
     return NULL;
-  }
 
   if (objS == NULL) {
     reg = regCreateEmptyRegion();
@@ -150,11 +151,9 @@ static PyObject* region_mask( PyRegion* self, PyObject* args, PyObject *kwargs )
   if ( EXIT_SUCCESS != mask.create( 1, dim ) )
     return NULL;
 
-  // Extract the region
-  PyRegion *region = (PyRegion*)(self);
-
+  // Create the mask
   for ( npy_intp ii = 0; ii < size; ii++)
-    mask[ii] = regInsideRegion( region->region, xpos[ii], ypos[ii] );
+    mask[ii] = regInsideRegion( self->region, xpos[ii], ypos[ii] );
 
   return mask.return_new_ref();
 
@@ -168,6 +167,9 @@ static PyMethodDef pyRegion_methods[] = {
 
   { (char*)"combine", (PyCFunction) region_combine,
     METH_VARARGS | METH_KEYWORDS, (char*)"Combine regions: rnew = r.combine(region, exclude=0)" },
+
+  { (char*)"invert", (PyCFunction) region_invert,
+    METH_NOARGS, (char*)"Invert the region: r.invert()" },
 
   { NULL, NULL, 0, NULL }
 
@@ -197,7 +199,7 @@ static PyTypeObject pyRegion_Type = {
   0,                             // tp_setattro
   0,                             // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags  DO NOT REMOVE
-  (char*)"PyRegion reg = Region('Circle(256,256,25)')",      // tp_doc, __doc__
+  (char*)"PyRegion reg = Region(region=None, fileflag=0)",      // tp_doc, __doc__
   0,		                 // tp_traverse
   0,		                 // tp_clear
   0,		                 // tp_richcompare
@@ -267,6 +269,24 @@ static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwarg
 
 }
 
+// Invert a region. The method takes no arguments, so I assume
+// args is NULL.
+//
+static PyObject* region_invert( PyRegion* self, PyObject* args )
+{
+  regRegion *rold = self->region;
+  regRegion *rnew = regInvert( rold );
+  if ( NULL == rnew ) {
+    PyErr_SetString( PyExc_TypeError,
+		     (char*)"unable to invert the region" );
+    return NULL;
+  }
+
+  self->region = rnew;
+  regFree( rold );
+
+  Py_RETURN_NONE;
+}
 
 #ifndef PyMODINIT_FUNC	// declarations for DLL import/export
 #define PyMODINIT_FUNC void

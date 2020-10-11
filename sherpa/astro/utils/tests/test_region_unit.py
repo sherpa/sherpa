@@ -18,6 +18,8 @@
 #
 import pytest
 
+import numpy as np
+
 from sherpa.astro.utils._region import Region
 
 
@@ -285,3 +287,35 @@ def test_region_combine_invalid(arg):
 
     with pytest.raises(TypeError):
         Region().combine(arg)
+
+
+def test_region_invert():
+    """Can we invert a region?"""
+
+    x = np.asarray([50, 95, 105])
+    y = np.asarray([50, 105, 115])
+
+    r = Region("box(100,100,10,20)")
+
+    assert r.mask(x, y) == pytest.approx([0, 1, 0])
+
+    r.invert()
+    assert str(r) == "!Box(100,100,10,20)"
+
+    assert r.mask(x, y) == pytest.approx([1, 0, 1])
+
+
+def test_region_invert_empty():
+    """Can we invert an empty region?"""
+
+    x = np.asarray([50, 95, 105])
+    y = np.asarray([50, 105, 115])
+
+    r = Region()
+
+    assert r.mask(x, y) == pytest.approx([0, 0, 0])
+
+    r.invert()
+    assert str(r) == ''
+
+    assert r.mask(x, y) == pytest.approx([0, 0, 0])

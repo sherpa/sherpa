@@ -624,6 +624,18 @@ def test_img_get_filter(make_test_image):
     assert d.get_filter() == shape.capitalize()
 
 
+def test_img_get_filter_exclude(make_test_image):
+    """Simple get_filter check on an image."""
+    d = make_test_image
+    assert d.get_filter() == ''
+
+    shape = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape, ignore=True)
+
+    expected = '!' + shape.capitalize()
+    assert d.get_filter() == expected
+
+
 def test_img_get_filter_none(make_test_image):
     """Simple get_filter check on an image: no data"""
     d = make_test_image
@@ -684,8 +696,28 @@ def check_ignore_ignore(d):
     assert d.mask == pytest.approx(mask1 & mask2)
 
     shape2 = shape2.replace('rect', 'rectangle')
-    shape = shape1.capitalize() + '&!' + shape2.capitalize()
-    assert d.get_filter() == shape
+    expected = '!' + shape1.capitalize() + '&!' + shape2.capitalize()
+    assert d.get_filter() == expected
+
+
+def check_ignore_ignore2(d):
+    """Check removing the shapes works as expected."""
+
+    shape1 = 'ellipse(4260,3840,3,2,0)'
+    d.notice2d(shape1, ignore=True)
+
+    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(np.bool)
+    assert d.mask == pytest.approx(mask1)
+
+    shape2 = 'rect(4258,3830,4264,3841)'
+    d.notice2d(shape2, ignore=True)
+
+    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(np.bool)
+    assert d.mask == pytest.approx(mask1 & mask2)
+
+    shape2 = shape2.replace('rect', 'rectangle')
+    expected = '!' + shape1.capitalize() + '&!' + shape2.capitalize()
+    assert d.get_filter() == expected
 
 
 def test_img_get_filter_included_excluded(make_test_image):
@@ -718,3 +750,32 @@ def test_img_get_filter_excluded_excluded(make_test_image):
     # which was not changed in #968.
     #
     check_ignore_ignore(d)
+
+
+def test_img_get_filter_compare_filtering(make_test_image):
+    """Check calling notice2d(ignore=True) with 2 shapes is same as once.
+
+    """
+    d = make_test_image
+
+    shape1 = 'ellipse(4260,3840,3,2,0)'
+    shape2 = 'rect(4258,3830,4264,3841)'
+    d.notice2d(shape1, ignore=True)
+    d.notice2d(shape2, ignore=True)
+    assert d._region is not None
+
+    maska = d.mask.copy()
+
+    d.notice2d()
+    assert d._region is None
+    assert d.mask is True
+
+    exc = "field()-{}-{}".format(shape1, shape2)
+    d.notice2d(exc)
+
+    maskb = d.mask.copy()
+    assert maskb == pytest.approx(maska)
+
+    # just check we have some True and False values
+    assert maska.min() == 0
+    assert maska.max() == 1

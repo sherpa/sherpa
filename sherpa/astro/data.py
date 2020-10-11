@@ -3860,6 +3860,9 @@ class DataIMG(Data2D):
         # Create the new region shape.
         #
         if self._region is None:
+            if ignore:
+                reg.invert()
+
             self._region = reg
         else:
             self._region = self._region.combine(reg, ignore)
