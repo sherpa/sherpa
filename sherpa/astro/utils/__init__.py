@@ -18,13 +18,15 @@
 #
 
 import logging
+
 import numpy
-from ._utils import arf_fold, do_group, expand_grouped_mask, \
-    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
-from ._pileup import apply_pileup
 
 from sherpa.utils import get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
+
+from ._utils import arf_fold, do_group, expand_grouped_mask, \
+    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
+from ._pileup import apply_pileup
 
 
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
@@ -39,16 +41,6 @@ __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
 
 warning = logging.getLogger(__name__).warning
 
-
-try:
-    from ._region import Region, region_mask
-
-    __all__.append('region_mask')
-    __all__.append('Region')
-
-except ImportError:
-    warning('failed to import sherpa.astro.utils._region; Region routines ' +
-            'will not be available')
 
 # Useful constants
 #
