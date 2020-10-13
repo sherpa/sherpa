@@ -42,7 +42,7 @@ def test_region_empty():
 def test_region_string():
     """We can create with a string.
 
-    Note the regon gets normalized.
+    Note the region gets normalized.
     """
     r = Region(region_string)
     assert normalized_string == str(r)
