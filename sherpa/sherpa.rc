@@ -1,4 +1,4 @@
-# SHERPA_VERSION 4.12.1
+# SHERPA_VERSION 4.12.2
 [options]
 # Plotting packages available- pylab
 plot_pkg   : pylab
