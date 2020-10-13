@@ -28,7 +28,7 @@ from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
-from configparser import ConfigParser, NoSectionError
+from configparser import ConfigParser, NoSectionError, NoOptionError
 import numpy
 import numpy.random
 import numpy.fft
@@ -63,8 +63,17 @@ _multi = False
 
 try:
     import multiprocessing
-    _multi = True
+    
+    multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method', fallback='fork')
 
+    if multiprocessing_start_method not in ('fork', 'spawn', 'default'):
+       raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
+
+    if multiprocessing_start_method != 'default':
+        multiprocessing.set_start_method(multiprocessing_start_method, force=True)
+
+    _multi = True
+    
     if _ncpus is None:
         _ncpus = multiprocessing.cpu_count()
 except Exception as e:

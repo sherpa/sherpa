@@ -1,4 +1,4 @@
-# SHERPA_VERSION 4.12.1
+# SHERPA_VERSION 4.12.2
 [options]
 # Plotting packages available- pylab
 plot_pkg   : pylab
@@ -46,3 +46,13 @@ arraylength: 1000000
 # Fewer than 2 will turn off parallel processing.
 numcores : None
 
+[multiprocessing]
+# Define the method by which the multiprocessing package starts
+# parallel processes. Sherpa requires the "fork" method in order to
+# utilize multiprocessing to improve performance and pass all tests. 
+# However, on MacOSX there are known issues with using "fork" that 
+# prompted a change in the multiprocessing default to be "spawn" on 
+# MacOSX. Expert users may consider changing this value to either
+# "spawn" or "default", where the latter will use the 
+# platform-specific start method of the multiprocessing package.
+multiprocessing_start_method: fork
