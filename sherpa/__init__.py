@@ -317,8 +317,8 @@ def _make_zenodo_citation(jsdata, latest=True):
 
     Returns
     -------
-    citation : str or None
-        Citation information, if found.
+    response : dict
+        Success in 'success' (dict) or failure message in 'failed'.
 
     """
 
@@ -328,13 +328,15 @@ def _make_zenodo_citation(jsdata, latest=True):
         idval = jsdata['id']
     except KeyError as ke:
         dbg("Unable to find metadata: {}".format(ke))
-        return None
+        return {'failed': 'Unable to parse the Zenodo response.'}
 
+    created = created.split('T')[0]
+    isoformat = '%Y-%m-%d'
     try:
-        date = datetime.datetime.fromisoformat(created)
+        date = datetime.datetime.strptime(created, isoformat)
     except ValueError:
         dbg("Unable to convert created: '{}'".format(created))
-        return None
+        return {'failed': 'Unable to parse the Zenodo response.'}
 
     try:
         version = mdata['version']
@@ -342,13 +344,13 @@ def _make_zenodo_citation(jsdata, latest=True):
         creators = mdata['creators']
     except KeyError as ke:
         dbg("Unable to find metadata: {}".format(ke))
-        return None
+        return {'failed': 'Unable to parse the Zenodo response.'}
 
     authors = [c['name'] for c in creators]
     out = _make_citation(version=version, title=title, date=date,
                          authors=authors, idval=idval,
                          latest=latest)
-    return out
+    return {'success': out}
 
 
 def _get_citation_version():
@@ -403,7 +405,11 @@ def _get_citation_zenodo_latest():
     if 'failed' in jsdata:
         return _get_citation_zenodo_failure(jsdata['failed'])
 
-    return _make_zenodo_citation(jsdata['success'])
+    out = _make_zenodo_citation(jsdata['success'])
+    if 'failed' in out:
+        return _get_citation_zenodo_failure(out['failed'])
+
+    return out['success']
 
 
 def _parse_zenodo_data(jsdata, version):
@@ -472,7 +478,11 @@ def _get_citation_zenodo_version(version):
     if 'failed' in data:
         return _get_citation_zenodo_failure(data['failed'])
 
-    return _make_zenodo_citation(data['success'], latest=False)
+    out = _make_zenodo_citation(jsdata['success'], latest=False)
+    if 'failed' in out:
+        return _get_citation_zenodo_failure(out['failed'])
+
+    return out['success']
 
 
 def _get_citation(version='current'):
