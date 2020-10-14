@@ -16,10 +16,10 @@ the code you are using - in particular for Sherpa, NumPy, and Python. The
 Sherpa version can be found using
 
     $ python -c 'import sherpa; print(sherpa.__version__)'
-    4.10.0
+    4.12.1
 
 When using a development version of Sherpa, the value will include the
-Git commit. An example of this is ``4.10.0+177.g3540951``.
+Git commit. An example of this is ``4.12.1+327.ge5183cd4``.
 
 Contributing code
 -----------------
@@ -96,7 +96,7 @@ Example: new functionality, such as
 
 **Software versions**
 
-Development should use Python 3.5 or later (Sherpa does support Python 2.7, 
+Development should use Python 3.6 or later (Sherpa does support Python 3.5,
 but this will be dropped soon).
 
 Ideally, NumPy support should be 1.6 or greater, but please include a comment
