@@ -421,7 +421,8 @@ section - can be found with::
     python setup.py test -a "--pyargs sherpa --help"
 
 and to pass an argument to the Sherpa test suite (there are currently
-two options, namely ``--test-data`` and ``--runslow``)::
+three options, namely ``--test-data``, ``--runslow``, and
+``-runzenodo``)::
 
     python setup.py test -a "--pyargs sherpa --runslow"
 

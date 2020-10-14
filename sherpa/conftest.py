@@ -81,16 +81,23 @@ def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False,
                      help="run slow tests")
 
+    parser.addoption("--runzenodo", action="store_true", default=False,
+                     help="run tests that query Zenodo (requires internet)")
+
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
 
+    # Skip tests unless --runxxx given in cli
+    #
+    for label in ["slow", "zenodo"]:
+        opt = "--run{}".format(label)
+        if config.getoption(opt):
+            continue
+
+        skip = pytest.mark.skip(reason="need {} option to run".format(opt))
+        for item in items:
+            if label in item.keywords:
+                item.add_marker(skip)
 
 
 # Whilelist of known warnings. One can associate different warning messages
@@ -261,7 +268,7 @@ def pytest_configure(config):
     This configuration hook overrides the default mechanism for test data self-discovery, if the --test-data command line
     option is provided
 
-    It also adds support for the "slow" test marker
+    It also adds support for the "slow" and "zenodo" test markers.
 
     Parameters
     ----------
@@ -275,6 +282,7 @@ def pytest_configure(config):
         pass
 
     config.addinivalue_line("markers", "slow: mark test as slow to run")
+    config.addinivalue_line("markers", "zenodo: indicates requires internet access to Zenodo")
 
 
 @pytest.fixture(scope="session")

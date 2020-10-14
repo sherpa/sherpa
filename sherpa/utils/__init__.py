@@ -22,13 +22,17 @@
 Objects and utilities used by multiple Sherpa subpackages
 """
 
+import logging
 import operator
+import os
 import inspect
 from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
-from configparser import ConfigParser, NoSectionError, NoOptionError
+from configparser import ConfigParser, NoSectionError
+import pydoc
+
 import numpy
 import numpy.random
 import numpy.fft
@@ -42,7 +46,6 @@ from sherpa.utils import _psf
 
 from sherpa import get_config
 
-import logging
 warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug
 
@@ -63,17 +66,17 @@ _multi = False
 
 try:
     import multiprocessing
-    
+
     multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method', fallback='fork')
 
     if multiprocessing_start_method not in ('fork', 'spawn', 'default'):
-       raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
+        raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
 
     if multiprocessing_start_method != 'default':
         multiprocessing.set_start_method(multiprocessing_start_method, force=True)
 
     _multi = True
-    
+
     if _ncpus is None:
         _ncpus = multiprocessing.cpu_count()
 except Exception as e:
@@ -103,7 +106,8 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            'pad_bounding_box', 'parallel_map', 'parallel_map_funcs',
            'param_apply_limits', 'parse_expr', 'poisson_noise',
            'print_fields', 'rebin',
-           'sao_arange', 'sao_fcmp', 'set_origin', 'sum_intervals', 'zeroin',
+           'sao_arange', 'sao_fcmp', 'send_to_pager',
+           'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile')
 
 
@@ -4143,3 +4147,41 @@ def public(f):
     if f.__name__ not in _all:  # Prevent duplicates if run from an IDE.
         _all.append(f.__name__)
     return f
+
+
+def send_to_pager(txt, filename=None, clobber=False):
+    """Write out the given string, using pagination if supported.
+
+    This used to call out to using less/more but now is handled
+    by pydoc.pager
+
+    Parameters
+    ----------
+    txt : str
+        The text to display
+    filename : str or StringIO or None, optional
+        If not None, write the output to the given file or filelike
+        object.
+    clobber : bool, optional
+        If filename is a string, then - when clobber is set - refuse
+        to overwrite the file if it already exists.
+
+    """
+
+    if filename is None:
+        pydoc.pager(txt)
+        return
+
+    # Have we been sent a StringIO-like object?
+    #
+    if hasattr(filename, 'write'):
+        print(txt, file=filename)
+        return
+
+    # Assume a filename
+    clobber = bool_cast(clobber)
+    if os.path.isfile(filename) and not clobber:
+        raise IOErr('filefound', filename)
+
+    with open(filename, 'w') as fh:
+        print(txt, file=fh)

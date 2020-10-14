@@ -135,8 +135,28 @@ location of the documentation version **must** be added to the
 ``.gitignore`` file (see the section near the end) to make sure it
 does not accidentally get added.
 
+If the notebook is not placed in ``notebooks/`` then the
+``nbsphinx_prolog`` setting in ``docs/conf.py`` will need updating.
+This sets the text used to indicate the link to the notebook on the
+Sherpa repository.
+
 At present we require that the notebook be fully evaluated as we
 do not run the notebooks while building the documentation.
+
+Add a new test option?
+----------------------
+
+The ``sherpa/conftest.py`` file contains general-purpose testing
+routines, fixtures, and configuration support for the test suite.
+To add a new command-line option:
+
+ - add to the ``pytest_addoption`` routine, to add the option;
+
+ - add to ``pytest_collection_modifyitems`` if the option adds
+   a new mark;
+
+ - and add support in ``pytest_configure``, such as registering
+   a new mark.
 
 Update the XSPEC bindings?
 --------------------------

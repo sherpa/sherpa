@@ -25,13 +25,13 @@ import logging
 import sys
 import os
 import inspect
-import pydoc
 
 import numpy
 
 import sherpa.all
 from sherpa.models.basic import TableModel
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, export_method
+from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
+    export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, IOErr, ModelErr, SessionErr
 
@@ -89,45 +89,6 @@ def _fix_array(arg, argname, ndims=1):
 
 def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
-
-
-def _send_to_pager(txt, filename=None, clobber=False):
-    """Write out the given string, using pagination if supported.
-
-    This used to call out to using less/more but now is handled
-    by pydoc.pager
-
-    Parameters
-    ----------
-    txt : str
-        The text to display
-    filename : str or StringIO or None, optional
-        If not None, write the output to the given file or filelike
-        object.
-    clobber : bool, optional
-        If filename is a string, then - when clobber is set - refuse
-        to overwrite the file if it already exists.
-
-    """
-
-    if filename is None:
-        pydoc.pager(txt)
-        return
-
-    # Have we been sent a StringIO-like object?
-    #
-    if hasattr(filename, 'write'):
-        print(txt, file=filename)
-        return
-
-    # Assume a filename
-    clobber = sherpa.utils.bool_cast(clobber)
-    _check_type(filename, string_types, 'filename', 'a string')
-    if os.path.isfile(filename) and not clobber:
-        raise IOErr('filefound', filename)
-
-    with open(filename, 'w') as fh:
-        print(txt, file=fh)
 
 
 ###############################################################################
@@ -726,7 +687,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_stat()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_method(self, outfile=None, clobber=False):
         """Display the current optimization method and options.
@@ -771,7 +732,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_method()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_fit(self, outfile=None, clobber=False):
         """Summarize the fit results.
@@ -808,7 +769,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_fit()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_data(self, id=None, outfile=None, clobber=False):
         """Summarize the available data sets.
@@ -844,7 +805,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_data(id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_filter(self, id=None, outfile=None, clobber=False):
         """Show any filters applied to a data set.
@@ -883,7 +844,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_filter(id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
@@ -925,7 +886,7 @@ class Session(NoNewAttributesAfterInit):
         """
         txt = self._get_show_psf(id)
         txt += self._get_show_model(id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_source(self, id=None, outfile=None, clobber=False):
         """Display the source model expression for a data set.
@@ -965,7 +926,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_source(id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     # DOC-TODO: how and where to describe the PSF/kernel difference
     # as the Notes section below is inadequate
@@ -1020,7 +981,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_kernel(id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     # DOC-TODO: how and where to describe the PSF/kernel difference
     # as the Notes section below is inadequate
@@ -1075,7 +1036,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_psf(id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_conf(self, outfile=None, clobber=False):
         """Display the results of the last conf evaluation.
@@ -1108,7 +1069,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_conf()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_proj(self, outfile=None, clobber=False):
         """Display the results of the last proj evaluation.
@@ -1141,7 +1102,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_proj()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_covar(self, outfile=None, clobber=False):
         """Display the results of the last covar evaluation.
@@ -1174,7 +1135,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         txt = self._get_show_covar()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_all(self, id=None, outfile=None, clobber=False):
         """Report the current state of the Sherpa session.
@@ -1233,7 +1194,7 @@ class Session(NoNewAttributesAfterInit):
         txt += self._get_show_conf()
         txt += self._get_show_proj()
         txt += self._get_show_covar()
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def get_functions(self):
         """Return the functions provided by Sherpa.
@@ -1288,7 +1249,7 @@ class Session(NoNewAttributesAfterInit):
         for func in funcs_list:
             funcs += '%s\n' % func
 
-        _send_to_pager(funcs, outfile, clobber)
+        send_to_pager(funcs, outfile, clobber)
 
     ###########################################################################
     # IDs and general data management

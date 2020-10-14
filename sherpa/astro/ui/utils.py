@@ -31,8 +31,9 @@ import numpy
 
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, create_non_delta_rmf
-from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
-from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
+from sherpa.ui.utils import _argument_type_error, _check_type
+from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
+    send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.data import Data1D, Data1DAsymmetricErrs
@@ -524,7 +525,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         txt = self._get_show_bkg(id, bkg_id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_bkg_source(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression for a data set.
@@ -568,7 +569,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         txt = self._get_show_bkg_source(id, bkg_id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     def show_bkg_model(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression used to fit a data set.
@@ -613,7 +614,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         txt = self._get_show_bkg_model(id, bkg_id)
-        _send_to_pager(txt, outfile, clobber)
+        send_to_pager(txt, outfile, clobber)
 
     ###########################################################################
     # Data

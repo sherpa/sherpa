@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020
+#          Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,31 +19,99 @@
 #
 
 import os.path
+
+import pytest
+
 import sherpa
-from sherpa.utils.testing import SherpaTestCase, requires_data
 from sherpa import ui
+from sherpa.utils.testing import requires_data
+
+
+def test_include_dir():
+    incdir = os.path.join(sherpa.get_include(), 'sherpa')
+    assert os.path.isdir(incdir)
 
 
 @requires_data
-class test_sherpa(SherpaTestCase):
+def test_not_reading_header_without_comment(make_data_path):
+    with pytest.raises(ValueError):
+        ui.load_data(make_data_path('agn2'))
 
-    def test_include_dir(self):
-        incdir = os.path.join(sherpa.get_include(), 'sherpa')
-        self.assertTrue(os.path.isdir(incdir))
 
-    def setUp(self):
-        self.agn2 = self.make_path('agn2')
-        self.agn2_fixed = self.make_path('agn2_fixed')
-        self.template_idx = self.make_path('table.txt')
+@requires_data
+def test_require_float(make_data_path):
+    with pytest.raises(ValueError):
+        ui.load_data(make_data_path('agn2'))
 
-    def test_not_reading_header_without_comment(self):
-        self.assertRaises(ValueError, ui.load_data, self.agn2)
 
-    def test_reading_floats(self):
-        ui.load_data(self.agn2_fixed)
+@requires_data
+def test_reading_floats(make_data_path):
+    ui.load_data(make_data_path('agn2_fixed'))
 
-    def test_reading_strings(self):
-        ui.load_data(self.template_idx, require_floats=False)
 
-    def test_require_float(self):
-        self.assertRaises(ValueError, ui.load_data, self.agn2)
+@requires_data
+def test_reading_strings(make_data_path):
+    ui.load_data(make_data_path('table.txt'), require_floats=False)
+
+
+# tmp_path is not supported by pytest 3.8.1 which we are using
+# for Python 3.5 tests, so we have to use tmpdir
+#
+def test_citation_hardcoded(tmpdir):
+    """Check citation works for hardcoded queries."""
+
+    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    with citefile.open(mode='w') as fh:
+        sherpa.citation('4.8.0', filename=fh, clobber=True)
+
+    cts = citefile.read_text('ascii').split('\n')
+    assert cts[0].startswith('You are using Sherpa ')
+    assert cts[1] == ''
+    assert cts[2] == 'Sherpa 4.8.0 was released on January 27, 2016.'
+    assert cts[3] == ''
+    assert cts[4] == '@software{sherpa_2016_45243,'
+    assert len(cts) == 65
+
+
+@pytest.mark.zenodo
+def test_todo_latest_success(tmpdir):
+    """Check Zenodo knows about the current version.
+
+    Since we don't know what the actual text should be, this
+    is not a full test, but enough to know that the
+    information has been extracted.
+    """
+
+    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    with citefile.open(mode='w') as fh:
+        sherpa.citation('latest', filename=fh)
+
+    cts = citefile.read_text('utf-8').split('\n')
+    assert cts[0].startswith('You are using Sherpa ')
+    assert cts[1] == ''
+    assert cts[2].startswith('The latest release of Sherpa is ')
+    assert cts[3].startswith('released on ')
+    assert cts[4] == ''
+    assert cts[5].startswith('@software{sherpa_')
+    assert 'Please review the Zenodo Sherpa page at' in cts
+    assert '@INPROCEEDINGS{2001SPIE.4477...76F,' in cts
+    assert '@INPROCEEDINGS{2007ASPC..376..543D,' in cts
+
+
+@pytest.mark.zenodo
+def test_todo_version_fail(tmpdir):
+    """Check Zenodo can not found an invalid version"""
+
+    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    with citefile.open(mode='w') as fh:
+        sherpa.citation('4.7.0', filename=fh)
+
+    cts = citefile.read_text('utf-8').split('\n')
+    assert cts[0].startswith('You are using Sherpa ')
+    assert cts[1] == ''
+    assert cts[2] == 'There was a problem retireving the data from Zenodo:'
+    assert cts[3] == 'Zenodo has no information for version 4.7.0.'
+    assert cts[4] == ''
+    assert cts[5] == 'Please review the Zenodo Sherpa page at'
+    assert '@INPROCEEDINGS{2001SPIE.4477...76F,' in cts
+    assert '@INPROCEEDINGS{2007ASPC..376..543D,' in cts
