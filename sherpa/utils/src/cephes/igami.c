@@ -51,7 +51,11 @@ Copyright 1984, 1987, 1995 by Stephen L. Moshier
 #include "mconf.h"
 #include <stdio.h>
 
+#ifdef MAKECEPHESC99COMPLIANT
+extern double MACHEP, MAXNUM, MAXLOG, MINLOG, NAN;
+#else
 extern double MACHEP, MAXNUM, MAXLOG, MINLOG/*, NAN*/;
+#endif
 
 #ifndef ANSIPROT
 double igamc(), ndtri(), exp(), fabs(), log(), sqrt(), lgam();
