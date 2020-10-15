@@ -23,10 +23,11 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import DataPlot, SourcePlot
+from sherpa.astro.plot import DataPlot, SourcePlot, \
+    DataPHAPlot, ModelPHAHistogram
 from sherpa.astro import plot as aplot
 from sherpa.data import Data1D
-from sherpa.models.basic import Const1D, Gauss1D
+from sherpa.models.basic import Const1D, Gauss1D, Polynom1D
 from sherpa import stats
 from sherpa.utils.err import IOErr
 from sherpa.utils.testing import requires_pylab
@@ -267,3 +268,86 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     assert plot.xlo[0] > plot.xhi[0]
     assert np.all(plot.y > 0)
     assert plot.y.size == 1090
+
+
+@pytest.mark.xfail(reason='issue #977')
+def test_pha_data_with_gaps_977():
+    """If the lo/hi edges don't quite match what happens?
+
+    Ideally it recognizes the data is the same (to float32
+    "precision"). At the moment this is only done for PHA
+    data and model plots, not for generic histogram plots.
+    See issue #977
+    """
+
+    chans = np.arange(1, 6)
+    vals = np.arange(1, 6)
+
+    blo = np.asarray([100, 99, 98, 97, 96])
+    bhi = np.asarray([101, 100.0000000001, 99, 98, 97])
+
+    d = DataPHA('x', chans, vals, bin_lo=blo, bin_hi=bhi)
+    d.set_analysis('wave')
+
+    p = DataPHAPlot()
+    p.prepare(d)
+
+    assert p.y == pytest.approx([1, 2, 3, 4, 5])
+
+    xlo = p.xlo
+    xhi = p.xhi
+
+    assert xlo.size == 5
+    assert xlo[0] == pytest.approx(101)
+    assert xhi[0] == pytest.approx(100)
+
+    assert xlo[-1] == pytest.approx(97)
+    assert xhi[-1] == pytest.approx(96)
+
+    # This is an equality check, not with pytest.approx,
+    # since this is enforced by the plot code. This fails
+    # before #977 is fixed.
+    #
+    assert (xlo[1:] == xhi[:-1]).all()
+
+
+@pytest.mark.xfail(reason='issue #977')
+def test_pha_model_with_gaps_977():
+    """If the lo/hi edges don't quite match what happens?
+
+    See test_pha_data_with_gaps_977.
+    """
+
+    chans = np.arange(1, 6)
+    vals = np.arange(1, 6)
+
+    blo = np.asarray([100, 99, 98, 97, 96])
+    bhi = np.asarray([101, 100.0000000001, 99, 98, 97])
+
+    d = DataPHA('x', chans, vals, bin_lo=blo, bin_hi=bhi)
+    d.set_analysis('wave')
+
+    mdl = Polynom1D()
+    mdl.c0 = 0.1
+    mdl.c1 = 1.1
+
+    p = ModelPHAHistogram()
+    p.prepare(d, mdl)
+
+    assert p.y == pytest.approx([1.2, 2.3, 3.4, 4.5, 5.6])
+
+    xlo = p.xlo
+    xhi = p.xhi
+
+    assert xlo.size == 5
+    assert xlo[0] == pytest.approx(101)
+    assert xhi[0] == pytest.approx(100)
+
+    assert xlo[-1] == pytest.approx(97)
+    assert xhi[-1] == pytest.approx(96)
+
+    # This is an equality check, not with pytest.approx,
+    # since this is enforced by the plot code. This fails
+    # before #977 is fixed.
+    #
+    assert (xlo[1:] == xhi[:-1]).all()
