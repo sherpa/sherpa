@@ -21,6 +21,11 @@
 Classes for plotting, analysis of astronomical data sets
 """
 
+import logging
+
+import numpy as np
+from numpy import iterable, array2string, asarray
+
 from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
@@ -28,9 +33,8 @@ from sherpa.plot import ComponentSourcePlot as _ComponentSourcePlot
 import sherpa.plot
 from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
-from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins
-from numpy import iterable, array2string, asarray
-import logging
+from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
+    sao_fcmp
 
 warning = logging.getLogger(__name__).warning
 
@@ -40,6 +44,42 @@ __all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
            'BkgRatioPlot', 'BkgChisqrPlot',
            'OrderPlot', 'ModelHistogram', 'BkgModelHistogram',
            'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
+
+
+# Identify "close-enough" bin edges when plotting histograms
+_tol = np.finfo(np.float32).eps
+
+
+def _check_hist_bins(plot):
+    """Ensure lo/hi edges that are "close" are merged.
+
+    Ensure that "close-enough" bin edges use the same value.  We do
+    this for all bins, even those that are identical, as it's
+    easier. The tolerance is taken to be the float32 "eps" setting, as
+    this seems to work for the (limited) data sets I've seen. This is
+    to fix issue #977.
+
+    Parameters
+    ----------
+    plot
+        The plot structure, which must have xlo and xhi attributes.
+
+    Notes
+    -----
+    Note that this holds even when plotting wavelength values, who
+    have xlo/xhi in decreasing order, since the lo/hi values still
+    hold.
+
+    """
+
+    # Technically idx should be 0 or 1, with no -1 values. We
+    # do not enforce this. What we do is to take all bins that
+    # appear similar (sao_fcmp==0) and set the xlo[i+1] bin
+    # to the xhi[i] value.
+    #
+    equal = sao_fcmp(plot.xlo[1:], plot.xhi[:-1], _tol)
+    idx, = np.where(equal == 0)
+    plot.xlo[idx + 1] = plot.xhi[idx]
 
 
 def to_latex(txt):
@@ -94,6 +134,8 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
             self.xlo = data._hc / self.xlo
             self.xhi = data._hc / self.xhi
 
+        _check_hist_bins(self)
+
 
 class ModelPHAHistogram(HistogramPlot):
     """Plot a model for a PHA dataset.
@@ -127,6 +169,8 @@ class ModelPHAHistogram(HistogramPlot):
         if data.units == 'wavelength':
             self.xlo = data._hc / self.xlo
             self.xhi = data._hc / self.xhi
+
+        _check_hist_bins(self)
 
 
 class ModelHistogram(ModelPHAHistogram):
