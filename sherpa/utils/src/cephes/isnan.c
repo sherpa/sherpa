@@ -71,6 +71,7 @@ Copyright 1984, 1995 by Stephen L. Moshier
 #endif
 #endif
 
+#ifdef MAKECEPHESC99COMPLIANT
 #ifdef ANSIPROT
 extern int signbit ( double x );
 extern int cephes_isnan ( double x );
@@ -116,7 +117,7 @@ else
 #endif
 	}
 }
-
+#endif
 
 /* Return 1 if x is a number that is Not a Number, else return 0.  */
 
@@ -187,7 +188,7 @@ return(0);
 
 
 /* Return 1 if x is not infinite and is not a NaN.  */
-
+#ifdef MAKECEPHESC99COMPLIANT
 int isfinite(x)
 double x;
 {
@@ -238,3 +239,4 @@ else
 return(1);
 #endif
 }
+#endif

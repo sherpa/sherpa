@@ -51,7 +51,8 @@ Copyright 1984, 1987, 1995 by Stephen L. Moshier
 #include "mconf.h"
 #include <stdio.h>
 
-extern double MACHEP, MAXNUM, MAXLOG, MINLOG, NAN;
+extern double MACHEP, MAXNUM, MAXLOG, MINLOG/*, NAN*/;
+
 #ifndef ANSIPROT
 double igamc(), ndtri(), exp(), fabs(), log(), sqrt(), lgam();
 #endif
