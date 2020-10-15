@@ -270,7 +270,6 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     assert plot.y.size == 1090
 
 
-@pytest.mark.xfail(reason='issue #977')
 def test_pha_data_with_gaps_977():
     """If the lo/hi edges don't quite match what happens?
 
@@ -311,7 +310,6 @@ def test_pha_data_with_gaps_977():
     assert (xlo[1:] == xhi[:-1]).all()
 
 
-@pytest.mark.xfail(reason='issue #977')
 def test_pha_model_with_gaps_977():
     """If the lo/hi edges don't quite match what happens?
 
