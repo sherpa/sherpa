@@ -36,9 +36,9 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
-from sherpa.astro.ui.utils import Session as AstroSession
 
-from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import create_arf
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
     OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot, \
     ModelPHAHistogram, BkgModelHistogram, BkgModelPHAHistogram, \
@@ -46,6 +46,7 @@ from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogra
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
+from sherpa.plot import DataPlot, FitPlot, ModelPlot
 
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -2954,3 +2955,218 @@ def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1):
 
     emsg = 'background data set up in PHA data set tst has not been set'
     assert str(exc.value) == emsg
+
+
+def example_data1d():
+    """Create a Data1D object"""
+    x = np.asarray([2, 5, 20])
+    y = np.asarray([2, 20, 200])
+    return Data1D('name1d', x, y)
+
+
+def example_data1dint():
+    """Create a Data1DInt object"""
+    x1 = np.asarray([2, 5, 20])
+    x2 = np.asarray([5, 10, 40])
+    y = np.asarray([2, 20, 200])
+    return Data1DInt('name1d int', x1, x2, y)
+
+
+def example_datapha():
+    """Create a DataPHA object"""
+    chans = np.arange(1, 6, dtype=np.int16)
+    d = DataPHA('example.pha', chans, chans)
+
+    ebins = np.arange(1, 7)
+    arf = create_arf(ebins[:-1], ebins[1:])
+
+    d.set_arf(arf)
+    return d
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_data1d,
+                                      pytest.param(example_data1dint, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("plotfunc",
+                         ['data',
+                          'model',
+                          'fit',
+                          'resid',
+                          'ratio',
+                          'delchi'
+                         ])
+def test_set_plot_opt_x(cls, datafunc, plotfunc):
+    """Does set_xlog/xlinear work?
+
+    We run for both session types here, rather than duplicate
+    the code across tests. We run both the log and linear
+    versions in the same test since it makes it easy to check
+    if the call worked.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_xlog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    # Create the plot
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    plot()
+    assert plt.gca().get_xscale() == 'log'
+
+    s.set_xlinear()
+    plot()
+    assert plt.gca().get_xscale() == 'linear'
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_data1d,
+                                      pytest.param(example_data1dint, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("plotfunc,answer",
+                         [('data', 'log'),
+                          ('model', 'log'),
+                          ('fit', 'log'),
+                          ('resid', 'linear'),
+                          ('ratio', 'linear'),
+                          ('delchi', 'linear')
+                         ])
+def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
+    """Does set_ylog/ylinear work?
+
+    Unlike test_set_plot_opt_x, the Y axis setting of the plot
+    does not necessarily folloe the set_ylog setting (e.g.
+    the residual plots).
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_ylog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    plot()
+    assert plt.gca().get_yscale() == answer
+
+    s.set_ylinear()
+    plot()
+    assert plt.gca().get_yscale() == 'linear'
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_datapha])
+@pytest.mark.parametrize("plotfunc",
+                         [pytest.param('data', marks=pytest.mark.xfail),
+                          'model',
+                          pytest.param('fit', marks=pytest.mark.xfail),
+                          'resid',
+                          'ratio',
+                          'delchi'
+                         ])
+def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
+    """Does set_xlog/xlinear work? Astro data objects only.
+
+    Given that cls and datafunc are single-element lists they could be
+    hard-coded, but leave as is to mirror test_set_plot_opt.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_xlog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    # Create the plot
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    plot()
+    assert plt.gca().get_xscale() == 'log'
+
+    s.set_xlinear()
+    plot()
+    assert plt.gca().get_xscale() == 'linear'
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_datapha])
+@pytest.mark.parametrize("plotfunc,answer",
+                         [pytest.param('data', 'log', marks=pytest.mark.xfail),
+                          ('model', 'log'),
+                          pytest.param('fit', 'log', marks=pytest.mark.xfail),
+                          ('resid', 'linear'),
+                          ('ratio', 'linear'),
+                          ('delchi', 'linear')
+                         ])
+def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
+    """Does set_ylog/ylinear work?  Astro data objects only.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_ylog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    plot()
+    assert plt.gca().get_yscale() == answer
+
+    s.set_ylinear()
+    plot()
+    assert plt.gca().get_yscale() == 'linear'
