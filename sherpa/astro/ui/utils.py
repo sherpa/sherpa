@@ -104,6 +104,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['astrocompsource'] = self._astrocompsrcplot
         self._plot_types['astrocompmodel'] = self._astrocompmdlplot
 
+        self._plot_types['astrodata'] = self._dataphaplot
         self._plot_types['astrosource'] = self._astrosourceplot
         self._plot_types['astromodel'] = self._modelhisto
         self._plot_types['arf'] = self._arfplot
@@ -122,6 +123,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_type_names['astrocompsource'] = 'source_component'
         self._plot_type_names['astrocompmodel'] = 'model_componentl'
 
+        self._plot_type_names['astrodata'] = 'data'
         self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
         self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
         self._plot_type_names['arf'] = 'arf'
@@ -194,6 +196,7 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
+        self._dataphaplot = sherpa.astro.plot.DataPHAPlot()
         self._astrosourceplot = sherpa.astro.plot.SourcePlot()
         self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
         self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
@@ -226,6 +229,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['astrocompsource'] = self._astrocompsrcplot
         self._plot_types['astrocompmodel'] = self._astrocompmdlplot
 
+        self._plot_types['astrodata'] = self._dataphaplot
         self._plot_types['astrosource'] = self._astrosourceplot
         self._plot_types['astromodel'] = self._modelhisto
         self._plot_types['arf'] = self._arfplot
@@ -244,6 +248,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_type_names['astrocompsource'] = 'source_component'
         self._plot_type_names['astrocompmodel'] = 'model_componentl'
 
+        self._plot_type_names['astrodata'] = 'data'
         self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
         self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
         self._plot_type_names['arf'] = 'arf'
@@ -11432,7 +11437,7 @@ class Session(sherpa.ui.utils.Session):
             keys = [plottype]
 
         for key in keys:
-            plots = self._plot_types[key]
+            plots = [self._plot_types[key]]
 
             # the astro package complicates plotting by using a regular and
             # astro version of model plots, source plots, and
@@ -11441,10 +11446,15 @@ class Session(sherpa.ui.utils.Session):
             # To avoid confusion for the user, when 'model' is passed.  Change
             # both the regular and astro model plot type.  Astro versions are
             # prefixed with 'astro' in the _plot_types key.
-            if key in ["model", "source", "compsource", "compmodel"]:
-                plots = [plots, self._plot_types["astro" + key]]
-            else:
-                plots = [plots]
+            #
+            # Try and make this automatic rather than special-casing this
+            # behavior.
+            #
+            akey = 'astro{}'.format(key)
+            try:
+                plots.append(self._plot_types[akey])
+            except KeyError:
+                pass
 
             for plot in plots:
                 try:

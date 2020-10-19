@@ -36,6 +36,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
+import sherpa.plot
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_arf
@@ -2984,6 +2985,48 @@ def example_datapha():
     return d
 
 
+def test_datapha_plot_after_clean():
+    """Check we can get the DataPHA plot back after a clean."""
+
+    d = example_datapha()
+
+    s = sherpa.astro.ui.utils.Session()
+    s.set_data(d)
+
+    d1 = s.get_data_plot()
+
+    # Change the yerrorbars setting. It depends whether we
+    # have a plot backend or not.
+    #
+    prefs = s.get_data_plot_prefs()
+    have_backend = sherpa.plot.backend.name != 'dummy'
+    if have_backend:
+        assert prefs['yerrorbars']
+    else:
+        assert 'yerrorbars' not in prefs
+
+    prefs['yerrorbars'] = False
+
+    assert isinstance(d1, DataPHAPlot)
+    assert not d1.histo_prefs['yerrorbars']
+
+    s.clean()
+    s.set_data(d)
+
+    # Check the yerrorbars setting is back to True
+    #
+    d2 = s.get_data_plot()
+    assert isinstance(d2, DataPHAPlot)
+
+    prefs = s.get_data_plot_prefs()
+
+    if have_backend:
+        assert prefs['yerrorbars']
+        assert d2.histo_prefs['yerrorbars']
+    else:
+        assert 'yerrorbars' not in prefs
+
+
 @requires_pylab
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
@@ -3087,9 +3130,9 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
                          [sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_datapha])
 @pytest.mark.parametrize("plotfunc",
-                         [pytest.param('data', marks=pytest.mark.xfail),
+                         ['data',
                           'model',
-                          pytest.param('fit', marks=pytest.mark.xfail),
+                          'fit',
                           'resid',
                           'ratio',
                           'delchi'
@@ -3134,9 +3177,9 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
                          [sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_datapha])
 @pytest.mark.parametrize("plotfunc,answer",
-                         [pytest.param('data', 'log', marks=pytest.mark.xfail),
+                         [('data', 'log'),
                           ('model', 'log'),
-                          pytest.param('fit', 'log', marks=pytest.mark.xfail),
+                          ('fit', 'log'),
                           ('resid', 'linear'),
                           ('ratio', 'linear'),
                           ('delchi', 'linear')
