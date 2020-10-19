@@ -11998,10 +11998,13 @@ class Session(NoNewAttributesAfterInit):
 
         for key in keys:
             plot = self._plot_types[key]
-            if _is_subclass(plot.__class__, sherpa.plot.Plot):
+            try:
                 plot.plot_prefs[item] = value
-            elif _is_subclass(plot.__class__, sherpa.plot.Histogram):
-                plot.histo_prefs[item] = value
+            except AttributeError:
+                try:
+                    plot.histo_prefs[item] = value
+                except AttributeError:
+                    pass
 
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.

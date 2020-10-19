@@ -11447,12 +11447,13 @@ class Session(sherpa.ui.utils.Session):
                 plots = [plots]
 
             for plot in plots:
-                if sherpa.ui.utils._is_subclass(plot.__class__,
-                                                sherpa.plot.Histogram):
-                    plot.histo_prefs[item] = value
-                elif sherpa.ui.utils._is_subclass(plot.__class__,
-                                                  sherpa.plot.Plot):
+                try:
                     plot.plot_prefs[item] = value
+                except AttributeError:
+                    try:
+                        plot.histo_prefs[item] = value
+                    except AttributeError:
+                        pass
 
     def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
