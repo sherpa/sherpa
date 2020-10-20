@@ -3452,7 +3452,6 @@ def test_set_opt_invalid(cls):
 
 
 @requires_pylab
-@pytest.mark.xfail
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 def test_set_plot_opt_explicit(cls):
