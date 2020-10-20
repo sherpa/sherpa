@@ -3039,7 +3039,7 @@ def test_datapha_plot_after_clean():
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_data1d,
-                                      pytest.param(example_data1dint, marks=pytest.mark.xfail)])
+                                      example_data1dint])
 @pytest.mark.parametrize("plotfunc",
                          ['data',
                           'model',
@@ -3118,7 +3118,7 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_data1d,
-                                      pytest.param(example_data1dint, marks=pytest.mark.xfail)])
+                                      example_data1dint])
 @pytest.mark.parametrize("plotfunc,answer",
                          [('data', True),
                           ('model', True),
@@ -3243,7 +3243,12 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     p1 = pdata()
     if plotfunc in ['fit', 'bkg_fit']:
         assert p1.dataplot.histo_prefs['xlog']
-        # Check the current behavior of the model plot in case it changes
+        # Check the current behavior of the model plot in case it changes.
+        # Note that for DataPHA datasets the modelplot object is
+        # created on-the-fly using sherpa.astro.plot.ModelPHAHistogram,
+        # rather than a session._plotobj value that is also set in
+        # session._plot_types, so it doesn't get changed bu set_xlog etc.
+        #
         # Ideally this would match the dataplot setting but it isn't
         # actually required for the plot to work.
         #
@@ -3340,7 +3345,6 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
 
 
 @requires_pylab
-@pytest.mark.xfail(reason='known failure with Data1DInt')
 def test_set_plot_opt_with_plot_x():
     """Does set_xlog/xlinear work with plot()  Astro data objects only.
 
@@ -3390,7 +3394,6 @@ def test_set_plot_opt_with_plot_x():
 
 
 @requires_pylab
-@pytest.mark.xfail(reason='known failure with Data1DInt')
 def test_set_plot_opt_with_plot_y():
     """Does set_ylog/ylinear work with plot()  Astro data objects only.
     """

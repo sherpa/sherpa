@@ -348,8 +348,11 @@ class Session(NoNewAttributesAfterInit):
 
         self._plot_types = {
             'data': self._dataplot,
+            'data1dint': self._datahistplot,
             'model': self._modelplot,
+            'model1dint': self._modelhistplot,
             'source': self._sourceplot,
+            'source1dint': self._sourcehistplot,
             'fit': self._fitplot,
             'resid': self._residplot,
             'ratio': self._ratioplot,
