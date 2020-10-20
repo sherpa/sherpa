@@ -47,7 +47,7 @@ from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogra
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
-from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.plot import DataPlot, FitPlot, ModelPlot, PlotErr
 
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -3436,3 +3436,130 @@ def test_set_plot_opt_with_plot_y():
     for idx, ax in enumerate(fig.axes):
         assert ax.get_xscale() == 'linear', idx
         assert ax.get_yscale() == 'linear', idx
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_opt_invalid(cls):
+    """Check we error out if called with an invalid option"""
+
+    s = cls()
+    with pytest.raises(PlotErr) as exc:
+        s.set_xlog('notdata')
+
+    msg = "Plot type 'notdata' not found in ["
+    assert str(exc.value).startswith(msg)
+
+
+@requires_pylab
+@pytest.mark.xfail
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_plot_opt_explicit(cls):
+    """Check we can call set_xlog('data').
+
+    We don't check all options (unlike the set_xlog/ylog
+    tests above) since we assume they work. This is specific
+    to setting just the data options.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_xlog('data')
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    s.plot('data', 'model', 'data', 2, 'model', 2)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 4
+
+    for idx, ax in enumerate(fig.axes[0:4:2]):
+        assert ax.get_xscale() == 'log', idx
+        assert ax.get_yscale() == 'linear', idx
+
+    for idx, ax in enumerate(fig.axes[1:4:2]):
+        assert ax.get_xscale() == 'linear', idx
+        assert ax.get_yscale() == 'linear', idx
+
+
+@requires_pylab
+def test_set_plot_opt_explicit_astro():
+    """Check we can call set_xlog('data') with astro data.
+
+    We don't check all options (unlike the set_xlog/ylog
+    tests above) since we assume they work. This is specific
+    to setting just the data options.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = sherpa.astro.ui.utils.Session()
+    s._add_model_types(basic)
+
+    s.set_xlog('data')
+
+    d1 = example_datapha()
+
+    s.set_data(1, d1)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_bkg_source(1, mdl)
+
+    s.plot('data', 'model', 'bkg', 'bkgmodel')
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 4
+
+    # Only data has X axis drawn in log scale. We may decide to
+    # make the 'bkg' plot act like a "data" plot in the future.
+    #
+    assert fig.axes[0].get_xscale() == 'log'
+    assert fig.axes[0].get_yscale() == 'linear'
+
+    assert fig.axes[1].get_xscale() == 'linear'
+    assert fig.axes[1].get_yscale() == 'linear'
+
+    assert fig.axes[2].get_xscale() == 'linear'
+    assert fig.axes[2].get_yscale() == 'linear'
+
+    assert fig.axes[3].get_xscale() == 'linear'
+    assert fig.axes[3].get_yscale() == 'linear'
+
+    plt.close(fig)
+
+    # Now set the model y axis to log
+    #
+    s.set_ylog('model')
+
+    s.plot('data', 'model', 'bkg', 'bkgmodel')
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 4
+
+    assert fig.axes[0].get_xscale() == 'log'
+    assert fig.axes[0].get_yscale() == 'linear'
+
+    assert fig.axes[1].get_xscale() == 'linear'
+    assert fig.axes[1].get_yscale() == 'log'
+
+    assert fig.axes[2].get_xscale() == 'linear'
+    assert fig.axes[2].get_yscale() == 'linear'
+
+    assert fig.axes[3].get_xscale() == 'linear'
+    assert fig.axes[3].get_yscale() == 'linear'
+
+    plt.close(fig)
