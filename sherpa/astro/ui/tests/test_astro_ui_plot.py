@@ -3027,7 +3027,6 @@ def test_datapha_plot_after_clean():
         assert 'yerrorbars' not in prefs
 
 
-@requires_pylab
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_data1d,
@@ -3049,8 +3048,6 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
     if the call worked.
     """
 
-    from matplotlib import pyplot as plt
-
     s = cls()
     s._add_model_types(basic)
 
@@ -3060,6 +3057,7 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
     # not matter what the data type is
     #
     s.set_data(datafunc())
+    is_int = hasattr(s.get_data(), 'xlo')
 
     # Set up a model, in case we need it.
     mdl = s.create_model_component('polynom1d', 'm1')
@@ -3067,28 +3065,57 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
     mdl.c1 = 1
     s.set_source(mdl)
 
-    # Create the plot
     plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
+    # Create the plot
     plot()
-    assert plt.gca().get_xscale() == 'log'
+    p1 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert p1.dataplot.histo_prefs['xlog']
+            assert p1.modelplot.histo_prefs['xlog']
+        else:
+            assert p1.dataplot.plot_prefs['xlog']
+            assert p1.modelplot.plot_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert p1.plot_prefs['xlog']
+    elif is_int:
+        assert p1.histo_prefs['xlog']
+    else:
+        assert p1.plot_prefs['xlog']
 
     s.set_xlinear()
     plot()
-    assert plt.gca().get_xscale() == 'linear'
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert not p2.dataplot.histo_prefs['xlog']
+            assert not p2.modelplot.histo_prefs['xlog']
+        else:
+            assert not p2.dataplot.plot_prefs['xlog']
+            assert not p2.modelplot.plot_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert not p2.plot_prefs['xlog']
+    elif is_int:
+        assert not p2.histo_prefs['xlog']
+    else:
+        assert not p2.plot_prefs['xlog']
 
 
-@requires_pylab
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_data1d,
                                       pytest.param(example_data1dint, marks=pytest.mark.xfail)])
 @pytest.mark.parametrize("plotfunc,answer",
-                         [('data', 'log'),
-                          ('model', 'log'),
-                          ('fit', 'log'),
-                          ('resid', 'linear'),
-                          ('ratio', 'linear'),
-                          ('delchi', 'linear')
+                         [('data', True),
+                          ('model', True),
+                          ('fit', True),
+                          ('resid', False),
+                          ('ratio', False),
+                          ('delchi', False)
                          ])
 def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     """Does set_ylog/ylinear work?
@@ -3097,8 +3124,6 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     does not necessarily folloe the set_ylog setting (e.g.
     the residual plots).
     """
-
-    from matplotlib import pyplot as plt
 
     s = cls()
     s._add_model_types(basic)
@@ -3109,6 +3134,7 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     # not matter what the data type is
     #
     s.set_data(datafunc())
+    is_int = hasattr(s.get_data(), 'xlo')
 
     # Set up a model, in case we need it.
     mdl = s.create_model_component('polynom1d', 'm1')
@@ -3117,15 +3143,44 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     s.set_source(mdl)
 
     plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
     plot()
-    assert plt.gca().get_yscale() == answer
+    p1 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert p1.dataplot.histo_prefs['ylog'] == answer
+            assert p1.modelplot.histo_prefs['ylog'] == answer
+        else:
+            assert p1.dataplot.plot_prefs['ylog'] == answer
+            assert p1.modelplot.plot_prefs['ylog'] == answer
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert p1.plot_prefs['ylog'] == answer
+    elif is_int:
+        assert p1.histo_prefs['ylog'] == answer
+    else:
+        assert p1.plot_prefs['ylog'] == answer
 
     s.set_ylinear()
     plot()
-    assert plt.gca().get_yscale() == 'linear'
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert not p2.dataplot.histo_prefs['ylog']
+            assert not p2.modelplot.histo_prefs['ylog']
+        else:
+            assert not p2.dataplot.plot_prefs['ylog']
+            assert not p2.modelplot.plot_prefs['ylog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert not p2.plot_prefs['ylog']
+    elif is_int:
+        assert not p2.histo_prefs['ylog']
+    else:
+        assert not p2.plot_prefs['ylog']
 
 
-@requires_pylab
 @pytest.mark.parametrize("cls",
                          [sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_datapha])
@@ -3144,8 +3199,6 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     hard-coded, but leave as is to mirror test_set_plot_opt.
     """
 
-    from matplotlib import pyplot as plt
-
     s = cls()
     s._add_model_types(basic)
 
@@ -3162,33 +3215,54 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     mdl.c1 = 1
     s.set_source(mdl)
 
-    # Create the plot
     plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
+    # Create the plot
     plot()
-    assert plt.gca().get_xscale() == 'log'
+    p1 = pdata()
+    if plotfunc == 'fit':
+        assert p1.dataplot.histo_prefs['xlog']
+        # Check the current behavior of the model plot in case it changes
+        # Ideally this would match the dataplot setting but it isn't
+        # actually required for the plot to work.
+        #
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p1.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert p1.plot_prefs['xlog']
+    else:
+        assert p1.histo_prefs['xlog']
 
     s.set_xlinear()
     plot()
-    assert plt.gca().get_xscale() == 'linear'
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc == 'fit':
+        assert not p2.dataplot.histo_prefs['xlog']
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p2.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert not p2.plot_prefs['xlog']
+    else:
+        assert not p2.histo_prefs['xlog']
 
 
-@requires_pylab
 @pytest.mark.parametrize("cls",
                          [sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_datapha])
 @pytest.mark.parametrize("plotfunc,answer",
-                         [('data', 'log'),
-                          ('model', 'log'),
-                          ('fit', 'log'),
-                          ('resid', 'linear'),
-                          ('ratio', 'linear'),
-                          ('delchi', 'linear')
+                         [('data', True),
+                          ('model', True),
+                          ('fit', True),
+                          ('resid', False),
+                          ('ratio', False),
+                          ('delchi', False)
                          ])
 def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     """Does set_ylog/ylinear work?  Astro data objects only.
     """
-
-    from matplotlib import pyplot as plt
 
     s = cls()
     s._add_model_types(basic)
@@ -3207,9 +3281,30 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     s.set_source(mdl)
 
     plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
     plot()
-    assert plt.gca().get_yscale() == answer
+    p1 = pdata()
+    if plotfunc == 'fit':
+        assert p1.dataplot.histo_prefs['ylog'] == answer
+        # Check the current behavior of the model plot in case it changes
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p1.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert p1.plot_prefs['ylog'] == answer
+    else:
+        assert p1.histo_prefs['ylog'] == answer
 
     s.set_ylinear()
     plot()
-    assert plt.gca().get_yscale() == 'linear'
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc == 'fit':
+        assert not p2.dataplot.histo_prefs['ylog']
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p2.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert not p2.plot_prefs['ylog']
+    else:
+        assert not p2.histo_prefs['ylog']
