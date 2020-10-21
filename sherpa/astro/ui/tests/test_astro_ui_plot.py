@@ -3132,7 +3132,7 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     """Does set_ylog/ylinear work?
 
     Unlike test_set_plot_opt_x, the Y axis setting of the plot
-    does not necessarily folloe the set_ylog setting (e.g.
+    does not necessarily follow the set_ylog setting (e.g.
     the residual plots).
     """
 
@@ -3166,6 +3166,10 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
             assert p1.dataplot.plot_prefs['ylog'] == answer
             assert p1.modelplot.plot_prefs['ylog'] == answer
     elif plotfunc in ['resid', 'ratio', 'delchi']:
+        # We use plot_prefs even if is_int is True for
+        # the residual-style plots. That is, the ordering
+        # of the checks here is important.
+        #
         assert p1.plot_prefs['ylog'] == answer
     elif is_int:
         assert p1.histo_prefs['ylog'] == answer
@@ -3247,7 +3251,7 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
         # Note that for DataPHA datasets the modelplot object is
         # created on-the-fly using sherpa.astro.plot.ModelPHAHistogram,
         # rather than a session._plotobj value that is also set in
-        # session._plot_types, so it doesn't get changed bu set_xlog etc.
+        # session._plot_types, so it doesn't get changed by set_xlog etc.
         #
         # Ideally this would match the dataplot setting but it isn't
         # actually required for the plot to work.
