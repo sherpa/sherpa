@@ -61,78 +61,9 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def __init__(self):
-        self._pileup_models = {}
-        self._background_models = {}
-        self._background_sources = {}
 
-        self._dataphaplot = sherpa.astro.plot.DataPHAPlot()
-        self._astrosourceplot = sherpa.astro.plot.SourcePlot()
-        self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
-        self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
-        self._modelhisto = sherpa.astro.plot.ModelHistogram()
-        self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
-
-        # self._bkgdataplot = sherpa.astro.plot.DataPHAPlot()
-        self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
-        self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
-        self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
-        self._bkgchisqrplot = sherpa.astro.plot.BkgChisqrPlot()
-        self._bkgdelchiplot = sherpa.astro.plot.BkgDelchiPlot()
-        self._bkgresidplot = sherpa.astro.plot.BkgResidPlot()
-        self._bkgratioplot = sherpa.astro.plot.BkgRatioPlot()
-        self._bkgsourceplot = sherpa.astro.plot.BkgSourcePlot()
-        self._arfplot = sherpa.astro.plot.ARFPlot()
-        self._orderplot = sherpa.astro.plot.OrderPlot()
-        self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
-        self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
-
-        # This is a new dictionary of XSPEC module settings.  It
-        # is meant only to be populated by the save function, so
-        # that the user's XSPEC settings can be saved in the pickle
-        # file.  Then, restore can peel out settings from the
-        # restored _xspec_state variable, and set abundance,
-        # cross-section, etc. in the XSPEC module.
-        self._xspec_state = None
-
+        self.clean()
         sherpa.ui.utils.Session.__init__(self)
-
-        self._pyblocxs = sherpa.astro.sim.MCMC()
-
-        self._plot_types['order'] = self._orderplot
-        self._plot_types['energy'] = self._energyfluxplot
-        self._plot_types['photon'] = self._photonfluxplot
-        self._plot_types['astrocompsource'] = self._astrocompsrcplot
-        self._plot_types['astrocompmodel'] = self._astrocompmdlplot
-
-        self._plot_types['astrosource'] = self._astrosourceplot
-        self._plot_types['astromodel'] = self._modelhisto
-        self._plot_types['arf'] = self._arfplot
-        self._plot_types['bkg'] = self._bkgdataplot
-        self._plot_types['bkgmodel'] = self._bkgmodelhisto
-        self._plot_types['bkgfit'] = self._bkgfitplot
-        self._plot_types['bkgsource'] = self._bkgsourceplot
-        self._plot_types['bkgratio'] = self._bkgratioplot
-        self._plot_types['bkgresid'] = self._bkgresidplot
-        self._plot_types['bkgdelchi'] = self._bkgdelchiplot
-        self._plot_types['bkgchisqr'] = self._bkgchisqrplot
-
-        self._plot_type_names['order'] = 'order'
-        # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
-        # self._plot_type_names['photon'] = 'photon'
-        self._plot_type_names['astrocompsource'] = 'source_component'
-        self._plot_type_names['astrocompmodel'] = 'model_componentl'
-
-        self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
-        self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
-        self._plot_type_names['arf'] = 'arf'
-        self._plot_type_names['bkg'] = 'bkg'
-        self._plot_type_names['bkgmodel'] = 'bkg_model'
-        self._plot_type_names['bkgfit'] = 'bkg_fit'
-        self._plot_type_names['bkgsource'] = 'bkg_source'
-        self._plot_type_names['bkgratio'] = 'bkg_ratio'
-        self._plot_type_names['bkgresid'] = 'bkg_resid'
-        self._plot_type_names['bkgdelchi'] = 'bkg_delchi'
-        self._plot_type_names['bkgchisqr'] = 'bkg_chisqr'
 
     ###########################################################################
     # High-level utilities
@@ -194,6 +125,7 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
+        self._dataphaplot = sherpa.astro.plot.DataPHAPlot()
         self._astrosourceplot = sherpa.astro.plot.SourcePlot()
         self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
         self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
@@ -214,29 +146,42 @@ class Session(sherpa.ui.utils.Session):
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
+        # This is a new dictionary of XSPEC module settings.  It
+        # is meant only to be populated by the save function, so
+        # that the user's XSPEC settings can be saved in the pickle
+        # file.  Then, restore can peel out settings from the
+        # restored _xspec_state variable, and set abundance,
+        # cross-section, etc. in the XSPEC module.
+        #
+        # TODO: it should probably not be reset by clean since there's
+        #       no way to clear the XSPEC state (we could try and
+        #       unset all the changes but it's not guaranteed we can
+        #       do so).
+        #
         self._xspec_state = None
 
         sherpa.ui.utils.Session.clean(self)
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
 
-        self._plot_types['order'] = self._orderplot
-        self._plot_types['energy'] = self._energyfluxplot
-        self._plot_types['photon'] = self._photonfluxplot
-        self._plot_types['astrocompsource'] = self._astrocompsrcplot
-        self._plot_types['astrocompmodel'] = self._astrocompmdlplot
+        self._plot_types['order'] = [self._orderplot]
+        self._plot_types['energy'] = [self._energyfluxplot]
+        self._plot_types['photon'] = [self._photonfluxplot]
+        self._plot_types['compsource'].append(self._astrocompsrcplot)
+        self._plot_types['compmodel'].append(self._astrocompmdlplot)
 
-        self._plot_types['astrosource'] = self._astrosourceplot
-        self._plot_types['astromodel'] = self._modelhisto
-        self._plot_types['arf'] = self._arfplot
-        self._plot_types['bkg'] = self._bkgdataplot
-        self._plot_types['bkgmodel'] = self._bkgmodelhisto
-        self._plot_types['bkgfit'] = self._bkgfitplot
-        self._plot_types['bkgsource'] = self._bkgsourceplot
-        self._plot_types['bkgratio'] = self._bkgratioplot
-        self._plot_types['bkgresid'] = self._bkgresidplot
-        self._plot_types['bkgdelchi'] = self._bkgdelchiplot
-        self._plot_types['bkgchisqr'] = self._bkgchisqrplot
+        self._plot_types['data'].append(self._dataphaplot)
+        self._plot_types['source'].append(self._astrosourceplot)
+        self._plot_types['model'].append(self._modelhisto)
+        self._plot_types['arf'] = [self._arfplot]
+        self._plot_types['bkg'] = [self._bkgdataplot]
+        self._plot_types['bkgmodel'] = [self._bkgmodelhisto]
+        self._plot_types['bkgfit'] = [self._bkgfitplot]
+        self._plot_types['bkgsource'] = [self._bkgsourceplot]
+        self._plot_types['bkgratio'] = [self._bkgratioplot]
+        self._plot_types['bkgresid'] = [self._bkgresidplot]
+        self._plot_types['bkgdelchi'] = [self._bkgdelchiplot]
+        self._plot_types['bkgchisqr'] = [self._bkgchisqrplot]
 
         self._plot_type_names['order'] = 'order'
         # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
@@ -244,6 +189,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_type_names['astrocompsource'] = 'source_component'
         self._plot_type_names['astrocompmodel'] = 'model_componentl'
 
+        self._plot_type_names['astrodata'] = 'data'
         self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
         self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
         self._plot_type_names['arf'] = 'arf'
@@ -11421,38 +11367,6 @@ class Session(sherpa.ui.utils.Session):
                                            otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
         return self._photonfluxplot
-
-    def _set_plot_item(self, plottype, item, value):
-        keys = list(self._plot_types.keys())
-
-        if plottype.strip().lower() != "all":
-            if plottype not in keys:
-                raise sherpa.utils.err.PlotErr(
-                    'wrongtype', plottype, str(keys))
-            keys = [plottype]
-
-        for key in keys:
-            plots = self._plot_types[key]
-
-            # the astro package complicates plotting by using a regular and
-            # astro version of model plots, source plots, and
-            # component plots.  One is for PHA, the other is everything else.
-
-            # To avoid confusion for the user, when 'model' is passed.  Change
-            # both the regular and astro model plot type.  Astro versions are
-            # prefixed with 'astro' in the _plot_types key.
-            if key in ["model", "source", "compsource", "compmodel"]:
-                plots = [plots, self._plot_types["astro" + key]]
-            else:
-                plots = [plots]
-
-            for plot in plots:
-                if sherpa.ui.utils._is_subclass(plot.__class__,
-                                                sherpa.plot.Histogram):
-                    plot.histo_prefs[item] = value
-                elif sherpa.ui.utils._is_subclass(plot.__class__,
-                                                  sherpa.plot.Plot):
-                    plot.plot_prefs[item] = value
 
     def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
