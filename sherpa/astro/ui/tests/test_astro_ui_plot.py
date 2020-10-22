@@ -36,9 +36,10 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
-from sherpa.astro.ui.utils import Session as AstroSession
+import sherpa.plot
 
-from sherpa.plot import DataPlot, FitPlot, ModelPlot
+from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import create_arf
 from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
     OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot, \
     ModelPHAHistogram, BkgModelHistogram, BkgModelPHAHistogram, \
@@ -46,6 +47,7 @@ from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogra
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
+from sherpa.plot import DataPlot, FitPlot, ModelPlot, PlotErr
 
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -2954,3 +2956,613 @@ def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1):
 
     emsg = 'background data set up in PHA data set tst has not been set'
     assert str(exc.value) == emsg
+
+
+def example_data1d():
+    """Create a Data1D object"""
+    x = np.asarray([2, 5, 20])
+    y = np.asarray([2, 20, 200])
+    return Data1D('name1d', x, y)
+
+
+def example_data1dint():
+    """Create a Data1DInt object"""
+    x1 = np.asarray([2, 5, 20])
+    x2 = np.asarray([5, 10, 40])
+    y = np.asarray([2, 20, 200])
+    return Data1DInt('name1d int', x1, x2, y)
+
+
+def example_datapha():
+    """Create a DataPHA object.
+
+    The background is set to be equal to the source just
+    because it is easier.
+    """
+    chans = np.arange(1, 6, dtype=np.int16)
+    d = DataPHA('example.pha', chans, chans)
+
+    ebins = np.arange(1, 7)
+    arf = create_arf(ebins[:-1], ebins[1:])
+
+    d.set_arf(arf)
+
+    # re-create so we don't have a circular dataset
+    b = DataPHA('background.pha', chans, chans)
+    d.set_background(b)
+
+    return d
+
+
+def test_datapha_plot_after_clean():
+    """Check we can get the DataPHA plot back after a clean."""
+
+    d = example_datapha()
+
+    s = sherpa.astro.ui.utils.Session()
+    s.set_data(d)
+
+    d1 = s.get_data_plot()
+
+    # Change the yerrorbars setting. It depends whether we
+    # have a plot backend or not.
+    #
+    prefs = s.get_data_plot_prefs()
+    have_backend = sherpa.plot.backend.name != 'dummy'
+    if have_backend:
+        assert prefs['yerrorbars']
+    else:
+        assert 'yerrorbars' not in prefs
+
+    prefs['yerrorbars'] = False
+
+    assert isinstance(d1, DataPHAPlot)
+    assert not d1.histo_prefs['yerrorbars']
+
+    s.clean()
+    s.set_data(d)
+
+    # Check the yerrorbars setting is back to True
+    #
+    d2 = s.get_data_plot()
+    assert isinstance(d2, DataPHAPlot)
+
+    prefs = s.get_data_plot_prefs()
+
+    if have_backend:
+        assert prefs['yerrorbars']
+        assert d2.histo_prefs['yerrorbars']
+    else:
+        assert 'yerrorbars' not in prefs
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_data1d,
+                                      example_data1dint])
+@pytest.mark.parametrize("plotfunc",
+                         ['data',
+                          'model',
+                          'source',
+                          'fit',
+                          'resid',
+                          'ratio',
+                          'delchi'
+                         ])
+def test_set_plot_opt_x(cls, datafunc, plotfunc):
+    """Does set_xlog/xlinear work?
+
+    We run for both session types here, rather than duplicate
+    the code across tests. We run both the log and linear
+    versions in the same test since it makes it easy to check
+    if the call worked.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_xlog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+    is_int = hasattr(s.get_data(), 'xlo')
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
+    # Create the plot
+    plot()
+    p1 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert p1.dataplot.histo_prefs['xlog']
+            assert p1.modelplot.histo_prefs['xlog']
+        else:
+            assert p1.dataplot.plot_prefs['xlog']
+            assert p1.modelplot.plot_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert p1.plot_prefs['xlog']
+    elif is_int:
+        assert p1.histo_prefs['xlog']
+    else:
+        assert p1.plot_prefs['xlog']
+
+    s.set_xlinear()
+    plot()
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert not p2.dataplot.histo_prefs['xlog']
+            assert not p2.modelplot.histo_prefs['xlog']
+        else:
+            assert not p2.dataplot.plot_prefs['xlog']
+            assert not p2.modelplot.plot_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert not p2.plot_prefs['xlog']
+    elif is_int:
+        assert not p2.histo_prefs['xlog']
+    else:
+        assert not p2.plot_prefs['xlog']
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_data1d,
+                                      example_data1dint])
+@pytest.mark.parametrize("plotfunc,answer",
+                         [('data', True),
+                          ('model', True),
+                          ('source', True),
+                          ('fit', True),
+                          ('resid', False),
+                          ('ratio', False),
+                          ('delchi', False)
+                         ])
+def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
+    """Does set_ylog/ylinear work?
+
+    Unlike test_set_plot_opt_x, the Y axis setting of the plot
+    does not necessarily follow the set_ylog setting (e.g.
+    the residual plots).
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_ylog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+    is_int = hasattr(s.get_data(), 'xlo')
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
+    plot()
+    p1 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert p1.dataplot.histo_prefs['ylog'] == answer
+            assert p1.modelplot.histo_prefs['ylog'] == answer
+        else:
+            assert p1.dataplot.plot_prefs['ylog'] == answer
+            assert p1.modelplot.plot_prefs['ylog'] == answer
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        # We use plot_prefs even if is_int is True for
+        # the residual-style plots. That is, the ordering
+        # of the checks here is important.
+        #
+        assert p1.plot_prefs['ylog'] == answer
+    elif is_int:
+        assert p1.histo_prefs['ylog'] == answer
+    else:
+        assert p1.plot_prefs['ylog'] == answer
+
+    s.set_ylinear()
+    plot()
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc == 'fit':
+        if is_int:
+            assert not p2.dataplot.histo_prefs['ylog']
+            assert not p2.modelplot.histo_prefs['ylog']
+        else:
+            assert not p2.dataplot.plot_prefs['ylog']
+            assert not p2.modelplot.plot_prefs['ylog']
+    elif plotfunc in ['resid', 'ratio', 'delchi']:
+        assert not p2.plot_prefs['ylog']
+    elif is_int:
+        assert not p2.histo_prefs['ylog']
+    else:
+        assert not p2.plot_prefs['ylog']
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_datapha])
+@pytest.mark.parametrize("plotfunc",
+                         ['data',
+                          'model',
+                          'source',
+                          'fit',
+                          'resid',
+                          'ratio',
+                          'delchi',
+                          'bkg',
+                          'bkg_model',
+                          'bkg_source',
+                          'bkg_fit',
+                          'bkg_resid',
+                          'bkg_ratio',
+                          'bkg_delchi',
+                         ])
+def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
+    """Does set_xlog/xlinear work? Astro data objects only.
+
+    Given that cls and datafunc are single-element lists they could be
+    hard-coded, but leave as is to mirror test_set_plot_opt.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_xlog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+    s.set_bkg_source(mdl)
+
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
+    # Create the plot
+    plot()
+    p1 = pdata()
+    if plotfunc in ['fit', 'bkg_fit']:
+        assert p1.dataplot.histo_prefs['xlog']
+        # Check the current behavior of the model plot in case it changes.
+        # Note that for DataPHA datasets the modelplot object is
+        # created on-the-fly using sherpa.astro.plot.ModelPHAHistogram,
+        # rather than a session._plotobj value that is also set in
+        # session._plot_types, so it doesn't get changed by set_xlog etc.
+        #
+        # Ideally this would match the dataplot setting but it isn't
+        # actually required for the plot to work.
+        #
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p1.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
+        assert p1.plot_prefs['xlog']
+    else:
+        assert p1.histo_prefs['xlog']
+
+    s.set_xlinear()
+    plot()
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc in ['fit', 'bkg_fit']:
+        assert not p2.dataplot.histo_prefs['xlog']
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p2.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
+        assert not p2.plot_prefs['xlog']
+    else:
+        assert not p2.histo_prefs['xlog']
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("datafunc", [example_datapha])
+@pytest.mark.parametrize("plotfunc,answer",
+                         [('data', True),
+                          ('model', True),
+                          ('source', True),
+                          ('fit', True),
+                          ('resid', False),
+                          ('ratio', False),
+                          ('delchi', False),
+                          ('bkg', True),
+                          ('bkg_model', True),
+                          ('bkg_source', True),
+                          ('bkg_fit', True),
+                          ('bkg_resid', False),
+                          ('bkg_ratio', False),
+                          ('bkg_delchi', False)
+                         ])
+def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
+    """Does set_ylog/ylinear work?  Astro data objects only.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_ylog()
+
+    # load the data *after* calling the log method, as it should
+    # not matter what the data type is
+    #
+    s.set_data(datafunc())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(mdl)
+    s.set_bkg_source(mdl)
+
+    plot = getattr(s, 'plot_{}'.format(plotfunc))
+    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+
+    plot()
+    p1 = pdata()
+    if plotfunc in ['fit', 'bkg_fit']:
+        assert p1.dataplot.histo_prefs['ylog'] == answer
+        # Check the current behavior of the model plot in case it changes
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p1.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
+        assert p1.plot_prefs['ylog'] == answer
+    else:
+        assert p1.histo_prefs['ylog'] == answer
+
+    s.set_ylinear()
+    plot()
+
+    # Technically not needed as p1 is the same as p2
+    p2 = pdata()
+    if plotfunc in ['fit', 'bkg_fit']:
+        assert not p2.dataplot.histo_prefs['ylog']
+        if sherpa.plot.backend.name != 'dummy':
+            assert not p2.modelplot.histo_prefs['xlog']
+    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
+        assert not p2.plot_prefs['ylog']
+    else:
+        assert not p2.histo_prefs['ylog']
+
+
+@requires_pylab
+def test_set_plot_opt_with_plot_x():
+    """Does set_xlog/xlinear work with plot()  Astro data objects only.
+
+    We could repeat the other tests - i.e. query the
+    plot objects - but that is a bit messy, so require
+    matplotlib.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = sherpa.astro.ui.utils.Session()
+    s._add_model_types(basic)
+
+    s.set_xlog()
+
+    s.set_data(1, example_data1d())
+    s.set_data(2, example_data1dint())
+    s.set_data(3, example_datapha())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+    s.set_source(3, mdl)
+
+    s.plot('fit', 1, 'fit', 2, 'fit', 3)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 3
+    for idx, ax in enumerate(fig.axes):
+        assert ax.get_xscale() == 'log', idx
+        assert ax.get_yscale() == 'linear', idx
+
+    s.set_xlinear()
+
+    s.plot('fit', 1, 'fit', 2, 'fit', 3)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 3
+    for idx, ax in enumerate(fig.axes):
+        assert ax.get_xscale() == 'linear', idx
+        assert ax.get_yscale() == 'linear', idx
+
+
+@requires_pylab
+def test_set_plot_opt_with_plot_y():
+    """Does set_ylog/ylinear work with plot()  Astro data objects only.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = sherpa.astro.ui.utils.Session()
+    s._add_model_types(basic)
+
+    s.set_ylog()
+
+    s.set_data(1, example_data1d())
+    s.set_data(2, example_data1dint())
+    s.set_data(3, example_datapha())
+
+    # Set up a model, in case we need it.
+    mdl = s.create_model_component('polynom1d', 'm1')
+    mdl.c0 = 1
+    mdl.c1 = 1
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+    s.set_source(3, mdl)
+
+    s.plot('fit', 1, 'fit', 2, 'fit', 3)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 3
+    for idx, ax in enumerate(fig.axes):
+        assert ax.get_xscale() == 'linear', idx
+        assert ax.get_yscale() == 'log', idx
+
+    s.set_ylinear()
+
+    s.plot('fit', 1, 'fit', 2, 'fit', 3)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 3
+    for idx, ax in enumerate(fig.axes):
+        assert ax.get_xscale() == 'linear', idx
+        assert ax.get_yscale() == 'linear', idx
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_opt_invalid(cls):
+    """Check we error out if called with an invalid option"""
+
+    s = cls()
+    with pytest.raises(PlotErr) as exc:
+        s.set_xlog('notdata')
+
+    msg = "Plot type 'notdata' not found in ["
+    assert str(exc.value).startswith(msg)
+
+
+@requires_pylab
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_plot_opt_explicit(cls):
+    """Check we can call set_xlog('data').
+
+    We don't check all options (unlike the set_xlog/ylog
+    tests above) since we assume they work. This is specific
+    to setting just the data options.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = cls()
+    s._add_model_types(basic)
+
+    s.set_xlog('data')
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    s.plot('data', 'model', 'data', 2, 'model', 2)
+
+    fig = plt.gcf()
+
+    assert len(fig.axes) == 4
+
+    for idx, ax in enumerate(fig.axes[0:4:2]):
+        assert ax.get_xscale() == 'log', idx
+        assert ax.get_yscale() == 'linear', idx
+
+    for idx, ax in enumerate(fig.axes[1:4:2]):
+        assert ax.get_xscale() == 'linear', idx
+        assert ax.get_yscale() == 'linear', idx
+
+
+@requires_pylab
+def test_set_plot_opt_explicit_astro():
+    """Check we can call set_xlog('data') with astro data.
+
+    We don't check all options (unlike the set_xlog/ylog
+    tests above) since we assume they work. This is specific
+    to setting just the data options.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = sherpa.astro.ui.utils.Session()
+    s._add_model_types(basic)
+
+    s.set_xlog('data')
+
+    d1 = example_datapha()
+
+    s.set_data(1, d1)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_bkg_source(1, mdl)
+
+    s.plot('data', 'model', 'bkg', 'bkgmodel')
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 4
+
+    # Only data has X axis drawn in log scale. We may decide to
+    # make the 'bkg' plot act like a "data" plot in the future.
+    #
+    assert fig.axes[0].get_xscale() == 'log'
+    assert fig.axes[0].get_yscale() == 'linear'
+
+    assert fig.axes[1].get_xscale() == 'linear'
+    assert fig.axes[1].get_yscale() == 'linear'
+
+    assert fig.axes[2].get_xscale() == 'linear'
+    assert fig.axes[2].get_yscale() == 'linear'
+
+    assert fig.axes[3].get_xscale() == 'linear'
+    assert fig.axes[3].get_yscale() == 'linear'
+
+    plt.close(fig)
+
+    # Now set the model y axis to log
+    #
+    s.set_ylog('model')
+
+    s.plot('data', 'model', 'bkg', 'bkgmodel')
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 4
+
+    assert fig.axes[0].get_xscale() == 'log'
+    assert fig.axes[0].get_yscale() == 'linear'
+
+    assert fig.axes[1].get_xscale() == 'linear'
+    assert fig.axes[1].get_yscale() == 'log'
+
+    assert fig.axes[2].get_xscale() == 'linear'
+    assert fig.axes[2].get_yscale() == 'linear'
+
+    assert fig.axes[3].get_xscale() == 'linear'
+    assert fig.axes[3].get_yscale() == 'linear'
+
+    plt.close(fig)

@@ -347,18 +347,18 @@ class Session(NoNewAttributesAfterInit):
         self._regunc = sherpa.plot.RegionUncertainty()
 
         self._plot_types = {
-            'data': self._dataplot,
-            'model': self._modelplot,
-            'source': self._sourceplot,
-            'fit': self._fitplot,
-            'resid': self._residplot,
-            'ratio': self._ratioplot,
-            'delchi': self._delchiplot,
-            'chisqr': self._chisqrplot,
-            'psf': self._psfplot,
-            'kernel': self._kernelplot,
-            'compsource': self._compsrcplot,
-            'compmodel': self._compmdlplot
+            'data': [self._dataplot, self._datahistplot],
+            'model': [self._modelplot, self._modelhistplot],
+            'source': [self._sourceplot, self._sourcehistplot],
+            'fit': [self._fitplot],
+            'resid': [self._residplot],
+            'ratio': [self._ratioplot],
+            'delchi': [self._delchiplot],
+            'chisqr': [self._chisqrplot],
+            'psf': [self._psfplot],
+            'kernel': [self._kernelplot],
+            'compsource': [self._compsrcplot],
+            'compmodel': [self._compmdlplot]
         }
 
         self._plot_type_names = {
@@ -11990,18 +11990,25 @@ class Session(NoNewAttributesAfterInit):
     def _set_plot_item(self, plottype, item, value):
         keys = list(self._plot_types.keys())
 
-        if plottype.strip().lower() != "all":
-            if plottype not in keys:
+        plottype = plottype.strip().lower()
+        if plottype != "all":
+            if plottype not in self._plot_types:
                 raise sherpa.utils.err.PlotErr(
                     'wrongtype', plottype, str(keys))
+
             keys = [plottype]
 
         for key in keys:
-            plot = self._plot_types[key]
-            if _is_subclass(plot.__class__, sherpa.plot.Plot):
-                plot.plot_prefs[item] = value
-            elif _is_subclass(plot.__class__, sherpa.plot.Histogram):
-                plot.histo_prefs[item] = value
+            for plot in self._plot_types[key]:
+                # This could be a "line" or "histogram" style plot.
+                #
+                try:
+                    plot.plot_prefs[item] = value
+                except AttributeError:
+                    try:
+                        plot.histo_prefs[item] = value
+                    except AttributeError:
+                        pass
 
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.
