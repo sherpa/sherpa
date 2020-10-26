@@ -28,11 +28,6 @@ stages:
   tags:
       - sherpa-macos-build
 
-macos-python3.5-conda-build:
-  <<: *template_macos_conda_build
-  variables:
-      SHERPA_PYTHON_VERSION: "3.5.*"
-
 macos-python3.6-conda-build:
   <<: *template_macos_conda_build
   variables:
@@ -43,10 +38,10 @@ macos-python3.7-conda-build:
   variables:
       SHERPA_PYTHON_VERSION: "3.7.*"
 
-linux-python3.5-conda-build:
-  <<: *template_linux_conda_build
+macos-python3.8-conda-build:
+  <<: *template_macos_conda_build
   variables:
-    SHERPA_PYTHON_VERSION: '3.5.*'
+      SHERPA_PYTHON_VERSION: "3.8.*"
 
 linux-python3.6-conda-build:
   <<: *template_linux_conda_build
@@ -58,18 +53,23 @@ linux-python3.7-conda-build:
   variables:
     SHERPA_PYTHON_VERSION: '3.7.*'
 
+linux-python3.8-conda-build:
+  <<: *template_linux_conda_build
+  variables:
+    SHERPA_PYTHON_VERSION: '3.8.*'
+
 conda:
   stage: deploy
   tags:
       - sherpa
   image: registry.gitlab.com/olaurino/sherpa-docker-build:master
   dependencies:
-      - linux-python3.5-conda-build
       - linux-python3.6-conda-build
       - linux-python3.7-conda-build
-      - macos-python3.5-conda-build
+      - linux-python3.8-conda-build
       - macos-python3.6-conda-build
       - macos-python3.7-conda-build
+      - macos-python3.8-conda-build
   script:
       - echo $CONDA_UPLOAD_TOKEN
       - anaconda -t $CONDA_UPLOAD_TOKEN upload -u sherpa -c dev packages/linux-64/sherpa* --force
@@ -89,11 +89,6 @@ conda:
       - bash Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda
       - export PATH=~/miniconda/bin:$PATH
       - conda update -qq -y --all
-      - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib pytest-openfiles"<=0.4.0" pytest-doctestplus"<=0.5.0" # How to make sure it's the correct version?
-      - source activate test35
-      - pip install /master.zip
-      - sherpa_smoke -f astropy
-      - sherpa_test
       - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
       - source activate test36
       - pip install /master.zip
@@ -101,6 +96,11 @@ conda:
       - sherpa_test
       - conda create -n test37 --yes -q -c sherpa/label/dev python=3.7 astropy sherpa matplotlib # How to make sure it's the correct version?
       - source activate test37
+      - pip install /master.zip
+      - sherpa_smoke -f astropy
+      - sherpa_test
+      - conda create -n test38 --yes -q -c sherpa/label/dev python=3.8 astropy sherpa matplotlib # How to make sure it's the correct version?
+      - source activate test38
       - pip install /master.zip
       - sherpa_smoke -f astropy
       - sherpa_test
@@ -113,11 +113,6 @@ conda:
     - cd /tmp
     - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/master.zip
     - conda update -qq -y --all
-    - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib pytest-openfiles"<=0.4.0" pytest-doctestplus"<=0.5.0" # How to make sure it's the correct version?
-    - conda activate test35
-    - pip install master.zip
-    - sherpa_smoke -f astropy
-    - sherpa_test
     - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
     - conda activate test36
     - pip install master.zip
@@ -125,6 +120,11 @@ conda:
     - sherpa_test
     - conda create -n test37 --yes -q -c sherpa/label/dev python=3.7 astropy sherpa matplotlib # How to make sure it's the correct version?
     - conda activate test37
+    - pip install master.zip
+    - sherpa_smoke -f astropy
+    - sherpa_test
+    - conda create -n test38 --yes -q -c sherpa/label/dev python=3.8 astropy sherpa matplotlib # How to make sure it's the correct version?
+    - conda activate test38
     - pip install master.zip
     - sherpa_smoke -f astropy
     - sherpa_test
