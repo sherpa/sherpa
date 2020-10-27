@@ -36,8 +36,10 @@ from sherpa.fit import Fit, DataSimulFit, SimulFitModel
 def f1(a, b, c):
     pass
 
+
 def f2(a, b=1, c=2, d=3, e=4):
     pass
+
 
 def f3(a=None, b=1, c=2, d=3, e=4):
     pass
@@ -317,20 +319,20 @@ def test_neville2d():
                             (5, 5)
                          ])
 def test_parallel_map(num_tasks, num_segments):
-        f = numpy.sum
-        iterable = [numpy.arange(1, 2 + 2 * i) for i in range(num_segments)]
+    f = numpy.sum
+    iterable = [numpy.arange(1, 2 + 2 * i) for i in range(num_segments)]
 
-        result = list(map(f, iterable))
-        result = numpy.asarray(result)
+    result = list(map(f, iterable))
+    result = numpy.asarray(result)
 
-        pararesult = utils.parallel_map(f, iterable, num_tasks)
+    pararesult = utils.parallel_map(f, iterable, num_tasks)
 
-        assert numpy.asarray(pararesult) == pytest.approx(result)
+    assert numpy.asarray(pararesult) == pytest.approx(result)
 
 
-@pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
-                                            ([], [1], [0,1,2,3,4]),
-                                            ([1], [], [0,1,2,3,4]),
+@pytest.mark.parametrize("los, his, axis", [([], [], [0, 1, 2, 3, 4]),
+                                            ([], [1], [0, 1, 2, 3, 4]),
+                                            ([1], [], [0, 1, 2, 3, 4]),
                                             ([], [], [])])
 def test_filter_bins_empty(los, his, axis):
     """Ensure filter_bins returns None if one input is empty."""
@@ -426,7 +428,8 @@ def test_filter_bins_two(lo1, lo2, hi1, hi2, expected):
 def test_filter_bins_unordered():
     """What happens if the array is unordered?"""
 
-    flags = utils.filter_bins((3, ), (8, ), [[1,4,3,7,8,10,5]])
+    flags = utils.filter_bins((3, ), (8, ),
+                              [[1, 4, 3, 7, 8, 10, 5]])
 
     expected = [False, True, True, True, True, False, True]
 

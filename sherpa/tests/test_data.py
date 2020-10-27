@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,14 +16,18 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
 import numpy
+
 import pytest
 
-from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, Data2D, Data2DInt, BaseData
+from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, Data2D, \
+    Data2DInt, BaseData
 from sherpa.models import Polynom1D, Polynom2D
 from sherpa.utils.err import NotImplementedErr, DataErr
 from sherpa.ui.utils import Session
 from sherpa.astro.ui.utils import Session as AstroSession
+
 
 NAME = "data_test"
 X_ARRAY = numpy.arange(0, 10, 1)
@@ -1160,7 +1164,7 @@ def test_regression_346(Session):
     session = Session()
     x = numpy.arange(-5, 5.1)
     old_y = x*x + 23.2
-    y = numpy.ma.masked_array(old_y,mask=old_y<35)
+    y = numpy.ma.masked_array(old_y, mask=old_y < 35)
     e = numpy.ones(x.size)
     session.load_arrays("mydata", x, y, e)
     filtered_y = session. get_dep("mydata", filter=True)
@@ -1185,9 +1189,9 @@ def test_manual_setting_mask():
 
     d.mask = [True, False, True]
     assert len(d.get_dep(filter=True)) == 2
-    arr = numpy.ma.array([3,4,5])
-    d.mask = arr.mask  # aka numpy.ma.nomask, but used in a more
-                       # natural way
+    arr = numpy.ma.array([3, 4, 5])
+    # aka numpy.ma.nomask, but used in a more natural way
+    d.mask = arr.mask
     assert len(d.get_dep(filter=True)) == 3
 
     with pytest.raises(DataErr) as e:

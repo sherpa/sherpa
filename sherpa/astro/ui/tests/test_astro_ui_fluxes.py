@@ -22,13 +22,13 @@
 Flux-related tests of the sherpa.astro.ui module.
 """
 
-import pytest
-
 import numpy as np
 
+import pytest
+
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, requires_fits, requires_plotting, \
-    requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_plotting, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
     ModelErr, SherpaErr
 import sherpa.astro.utils
@@ -95,7 +95,7 @@ def test_calc_foo_flux_no_bkg(method, make_data_path, clean_astro_ui):
 
     setup_sample(1, make_data_path, fit=False)
     with pytest.raises(ModelErr) as exc:
-         method(lo=0.5, hi=7, bkg_id=1)
+        method(lo=0.5, hi=7, bkg_id=1)
 
     assert str(exc.value) == 'background model 1 for data set 1 has not been set'
 

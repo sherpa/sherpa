@@ -28,7 +28,6 @@ from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
 
-from tempfile import NamedTemporaryFile
 
 @requires_data
 @requires_fits
@@ -39,6 +38,7 @@ def test_mod_fits(make_data_path):
     tmod = ui.get_model_component("tmod")
     assert tmod.name == "xstablemodel.tmod"
 
+
 @requires_fits
 def test_warnings_are_gone_arrays():
     ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
@@ -48,6 +48,7 @@ def test_warnings_are_gone_arrays():
         ui.save_data(1, f.name, ascii=True, clobber=True)
     with NamedTemporaryFile() as f:
         ui.save_data(1, f.name, ascii=False, clobber=True)
+
 
 @requires_fits
 @requires_data
@@ -74,7 +75,7 @@ def assert_staterr(use_errors):
     ui.ignore(None, 3.)
     if use_errors is True:
         assert np.all(ui.get_data("phacounts").get_error() ==
-                  pytest.approx(ui.get_data("pharate").get_error()))
+                      pytest.approx(ui.get_data("pharate").get_error()))
     else:
         assert ui.get_data("phacounts").get_error() is None
         assert ui.get_data("pharate").get_error() is None
@@ -128,8 +129,8 @@ def test_scaling_staterr_pha2(make_data_path, use_errors):
                 use_errors=use_errors)
     ui.copy_data(9, "pharate")
     for n in ['phacounts', 'pharate']:
-            ui.load_arf(n, make_data_path("3c120_meg_-1.arf.gz"))
-            ui.load_rmf(n, make_data_path("3c120_meg_-1.rmf.gz"))
+        ui.load_arf(n, make_data_path("3c120_meg_-1.arf.gz"))
+        ui.load_rmf(n, make_data_path("3c120_meg_-1.rmf.gz"))
     assert_staterr(use_errors)
 
 
@@ -309,4 +310,4 @@ def test_read_ideal_rmf():
     # Multiply by 100 so numbers are close to unity
     expected = 100 * 0.01 * np.asarray([2, 3, 2.5, 2, 2])
     y = 100 * r.eval_model(mdl)
-    assert  y == pytest.approx(expected, rel=2e-6)
+    assert y == pytest.approx(expected, rel=2e-6)
