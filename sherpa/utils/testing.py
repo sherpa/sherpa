@@ -17,10 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
-import unittest
-import os
 import importlib
+import os
+import unittest
+
+import numpy
 
 from sherpa.utils._utils import sao_fcmp
 
@@ -32,7 +33,14 @@ except ImportError:
 
 
 def _get_datadir():
-    import os
+    """Return the location of the test data files, if installed.
+
+    Returns
+    -------
+    path : str or None
+        The path to the Sherpa test data directory or None.
+    """
+
     try:
         import sherpatest
         datadir = os.path.dirname(sherpatest.__file__)
@@ -50,13 +58,51 @@ def _get_datadir():
     return datadir
 
 
+DATADIR = _get_datadir()
+
+
+def set_datadir(datadir):
+    """Set the data directory.
+
+    Parameters
+    ----------
+    datadir : str
+        The name to the data directory. It must exist.
+
+    Raises
+    ------
+    OSError
+        If datadir is not a directory or is empty.
+
+    """
+
+    if not os.path.exists(datadir) or not os.listdir(datadir):
+        raise OSError("datadir={} is empty or not a directory".format(datadir))
+
+    global DATADIR
+    DATADIR = datadir
+
+
+def get_datadir():
+    """Return the data directory.
+
+    Returns
+    -------
+    datadir : str or None
+        The name to the data directory, if it exists.
+
+    """
+
+    return DATADIR
+
+
 class SherpaTestCase(unittest.TestCase):
     """
     Base class for Sherpa unit tests. The use of this class is deprecated in favor of pytest functions.
     """
 
     # The location of the Sherpa test data (it is optional)
-    datadir = _get_datadir()
+    datadir = DATADIR
 
     def make_path(self, *segments):
         """Add the segments onto the test data location.
@@ -186,7 +232,7 @@ if HAS_PYTEST:
 
          See PR #391 for why this is a function: https://github.com/sherpa/sherpa/pull/391
          """
-        condition = SherpaTestCase.datadir is None
+        condition = DATADIR is None
         msg = "required test data missing"
         return pytest.mark.skipif(condition, reason=msg)(test_function)
 
