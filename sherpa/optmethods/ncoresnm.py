@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,9 +21,7 @@
 
 #import autograd.numpy as np
 import numpy as np
-from numpy import mgrid
-from numpy.linalg.linalg import LinAlgError
-from sherpa.utils import Knuth_close, _ncpus
+from sherpa.utils import _ncpus
 from sherpa.optmethods import _saoopt
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
@@ -32,6 +30,7 @@ from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
 __all__ = ('ncoresNelderMead')
 
 EPSILON = np.float_(np.finfo(np.float32).eps)
+
 
 class MyNelderMead(Opt):
 

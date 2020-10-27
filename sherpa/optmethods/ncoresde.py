@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@ from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.opt import Opt, SimplexRandom
 # from ncoresnm import ncoresNelderMead
 # from opt import Opt, SimplexRandom
-from sherpa.utils import parallel_map, _ncpus, Knuth_close, sao_fcmp
+from sherpa.utils import parallel_map, _ncpus
 
 
 class Key2:
