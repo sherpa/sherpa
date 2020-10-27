@@ -1051,8 +1051,8 @@ def test_data_deperr_masked_numpyarray(arrpos, Dataclass):
     args[i] = numpy.ma.array(args[i], mask=mask)
     args[j] = numpy.ma.array(args[j], mask=mask)
     data = Dataclass(*args)
-    assert len(data.get_dep(filter=True)) == (~mask).sum()    
-    
+    assert len(data.get_dep(filter=True)) == (~mask).sum()
+
 
 @pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
 def test_data_dep_masked_numpyarray(Dataclass):
@@ -1071,7 +1071,7 @@ def test_data_dep_masked_numpyarray_nomask(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     posy = POS_Y_ARRAY[Dataclass]
     # By default, numpy creates a masked array with no mask set
-    args[posy] = numpy.ma.array(args[posy]) 
+    args[posy] = numpy.ma.array(args[posy])
     data = Dataclass(*args)
     # Sherpa's way of saying "mask is not set"
     assert data.mask is True
@@ -1158,15 +1158,15 @@ def test_data_dep_masked_numpyarray_nomask_ui(data_for_load_arrays, Session):
 @pytest.mark.parametrize('Session', [Session, AstroSession])
 def test_regression_346(Session):
     session = Session()
-    x = numpy.arange(-5, 5.1) 
+    x = numpy.arange(-5, 5.1)
     old_y = x*x + 23.2
-    y = numpy.ma.masked_array(old_y,mask=old_y<35) 
-    e = numpy.ones(x.size) 
-    session.load_arrays("mydata", x, y, e) 
+    y = numpy.ma.masked_array(old_y,mask=old_y<35)
+    e = numpy.ones(x.size)
+    session.load_arrays("mydata", x, y, e)
     filtered_y = session. get_dep("mydata", filter=True)
     assert numpy.allclose(filtered_y, [48.2, 39.2, 39.2, 48.2])
 
-    
+
 def test_manual_setting_mask():
     d = Data1D(name='test', x=[1, 2, 3], y=[0, 0, 0])
     d.mask = True
@@ -1193,5 +1193,3 @@ def test_manual_setting_mask():
     with pytest.raises(DataErr) as e:
         d.mask = None
     assert 'True, False, or a mask array' in str(e.value)
-
-        

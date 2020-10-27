@@ -57,7 +57,7 @@ class MyNcores:
             numcores = _ncpus
         num_funcs = len(funcs)
         numcores = min(numcores, num_funcs)
-        
+
         # Returns a started SyncManager object which can be used for sharing
         # objects between processes. The returned manager object corresponds
         # to a spawned child process and has methods which will create shared
@@ -84,7 +84,7 @@ class MyNcores:
     def my_worker(self, *args):
         raise NotImplementedError("my_worker has not been implemented")
 
-    
+
 class Opt:
 
     def __init__(self, func, xmin, xmax):
@@ -233,7 +233,7 @@ class SimplexBase:
                                              xpar[jj]+factor*abs(xpar[jj]))) \
                           for jj in range(self.npar)])
         return simplex
-    
+
     def move_vertex(self, centroid, coef):
         vertex = (1.0 + coef) * centroid - coef * self.simplex[self.npar]
         vertex[-1] = self.func(vertex[:-1])
@@ -252,7 +252,7 @@ class SimplexBase:
         tmp = np.array(sorted(simp, key=lambda arg:arg[-1]))
         tmp.reshape(myshape)
         return tmp
-    
+
     def sort(self):
         self.simplex = self.sort_me(self.simplex)
 
@@ -285,7 +285,7 @@ class SimplexStep(SimplexBase):
         return
 
     def init(self, npop, xpar, step, seed, factor):
-        npar1 = self.npar + 1        
+        npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
         for ii in range(self.npar):
@@ -303,13 +303,13 @@ class SimplexRandom(SimplexBase):
         return
 
     def init(self, npop, xpar, step, seed, factor):
-        npar1 = self.npar + 1        
+        npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
         simplex = self.init_random_simplex(xpar, simplex, 1, npop, seed, factor)
         return self.eval_simplex(npop, simplex)
 
-            
+
 def Ackley(x):
     """Ackley(0, ..., 0) = 0"""
     n = x.shape[0]; a = 20; b = 0.2; c = 2*np.pi; s1 = 0; s2 = 0;
@@ -555,7 +555,7 @@ def myprint(name, func, result):
         print(name, par, ' = ', fmin, 'in', nfev, 'nfevs')
         if func is None:
             return
-        # print('autograd covariance:\n', autograd_covar(func, par))        
+        # print('autograd covariance:\n', autograd_covar(func, par))
     except NotImplementedError as nie:
         raise nie
 
@@ -563,7 +563,7 @@ def tst_unc_opt(algorithms, npar):
     """
     More, J.J., Garbow, B.S. and Hillstrom, K.E., Testing Unconstrained Optimization Software, ACM Trans. Math. Software 7 (1981), 17-41.
     """
-    
+
     from sherpa.optmethods import _tstoptfct
 
     def tst_algo(opt, fcn, name, num):
@@ -573,7 +573,7 @@ def tst_unc_opt(algorithms, npar):
         result = opt(func_wrapper, x0, xmin, xmax)
         opt_name = opt.__class__.__name__
         print(opt_name, result[2], '=', result[1], 'in', result[0], 'nfevs')
-        
+
     def rosenbrock(name, opt):
         tst_algo(opt, _tstoptfct.rosenbrock, name, npar)
     name = 'rosenbrock'
@@ -589,7 +589,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         freudenstein_roth(name, algo)
-        
+
     def powell_badly_scaled(name, opt):
         tst_algo(opt, _tstoptfct.powell_badly_scaled, name, npar)
     name = 'powell_badly_scaled'
@@ -597,7 +597,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         powell_badly_scaled(name, algo)
-        
+
     def brown_badly_scaled(name, opt):
         tst_algo(opt, _tstoptfct.brown_badly_scaled, name, npar)
     name = 'brown_badly_scaled'
@@ -613,7 +613,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         beale(name, algo)
-        
+
     def jennrich_sampson(name, opt):
         tst_algo(opt, _tstoptfct.jennrich_sampson, name, npar)
     name = 'jennrich_sampson'
@@ -629,7 +629,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         helical_valley(name, algo)
-    
+
     def bard(name, opt):
         tst_algo(opt, _tstoptfct.bard, name, 3 * npar)
     name = 'bard'
@@ -792,7 +792,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         discrete_integral(name, algo)
-        
+
     def broyden_tridiagonal(name, opt):
         tst_algo(opt, _tstoptfct.broyden_tridiagonal, name, npar)
     name = 'broyden_tridiagonal'
@@ -800,7 +800,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         broyden_tridiagonal(name, algo)
-        
+
     def broyden_banded(name, opt):
         tst_algo(opt, _tstoptfct.broyden_banded, name, npar)
     name = 'broyden_banded'
@@ -824,7 +824,7 @@ def tst_unc_opt(algorithms, npar):
     print('\n', name,' fmin =', fmin)
     for algo in algorithms:
         linear_fullrank1(name, algo)
-        
+
     def linear_fullrank0cols0rows(name, opt):
         tst_algo(opt, _tstoptfct.linear_fullrank0cols0rows, name, npar)
     name = 'linear_fullrank0cols0rows'
@@ -833,9 +833,9 @@ def tst_unc_opt(algorithms, npar):
     for algo in algorithms:
         if algo.__class__.__name__ == 'Midnight':
             print('Minuit aborts skip test')
-            continue        
+            continue
         linear_fullrank0cols0rows(name, algo)
-        
+
     def chebyquad(name, opt):
         tst_algo(opt, _tstoptfct.chebyquad, name, npar)
     name = 'chebyquad'
@@ -855,7 +855,7 @@ def tst_opt(algorithms, npar):
             result = algo(func, x0, xmin, xmax)
             myprint(algo.__class__.__name__, func, result)
         return
-    
+
     xmin = npar * [-32.768]
     xmax = npar * [32.768]
     x0 = npar * [12.3]
@@ -865,7 +865,7 @@ def tst_opt(algorithms, npar):
     xmax = [4.5, 4.5]
     x0 = [-1.0, 2.0]
     tst_algos(Beale, x0, xmin, xmax)
-    
+
     xmin = [-100, -100]
     xmax = [100, 100]
     x0	 = [-12, 10]
@@ -874,17 +874,17 @@ def tst_opt(algorithms, npar):
     xmin = [-100, -100]
     xmax = [100, 100]
     x0	 = [12, 10]
-    tst_algos(Bohachevsky2, x0, xmin, xmax)    
+    tst_algos(Bohachevsky2, x0, xmin, xmax)
 
     xmin = [-100, -100]
     xmax = [100, 100]
     x0	 = [-61.2, 51.0]
-    tst_algos(Bohachevsky3, x0, xmin, xmax)        
+    tst_algos(Bohachevsky3, x0, xmin, xmax)
 
     xmin = [-10, -10]
     xmax = [10, 10]
     x0	 = [-6.2, 5.0]
-    tst_algos(Booth, x0, xmin, xmax)        
+    tst_algos(Booth, x0, xmin, xmax)
 
     xmin = [0.9, 9.0, 0.9]
     xmax = [1.2, 11.2, 1.2]
@@ -901,7 +901,7 @@ def tst_opt(algorithms, npar):
     xmax = npar * [1.0e9]
     x0 = npar * [1]
     tst_algos(BrownBadlyScaled, x0, xmin, xmax)
-    
+
     xmin = [-10, -10, -10, -10]
     xmax = [10, 10, 10, 10.]
     x0	 = [-3.2, -5.0, -6.0, -1.0]
@@ -922,7 +922,7 @@ def tst_opt(algorithms, npar):
     xmax = npar * [1000, 1000]
     x0       = npar * [0.5, -2]
     tst_algos(FreudensteinRoth, x0, xmin, xmax)
-    
+
     xmin = [-2, -2]
     xmax = [2, 2]
     x0	 = [-1, 1]
@@ -1000,7 +1000,7 @@ def tst_opt(algorithms, npar):
     tst_algos(Zakharov, x0, xmin, xmax)
 
 if '__main__' == __name__:
-    
+
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-N", "--npar", dest="npar", default=10, \
@@ -1019,9 +1019,8 @@ if '__main__' == __name__:
 
     simp = SimplexStep(Rosenbrock, len(x0) + 2, x0, xmin, xmax, x0 + 1.2,
                        seed, factor)
-    print('simp =\n', simp.simplex)    
+    print('simp =\n', simp.simplex)
 
     simp = SimplexRandom(Rosenbrock, len(x0) + 5, x0, xmin, xmax, x0 + 1.2,
                          seed, factor)
-    print('simp =\n', simp.simplex)    
-    
+    print('simp =\n', simp.simplex)

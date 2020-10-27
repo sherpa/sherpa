@@ -33,4 +33,3 @@ def test_akima():
         z = akima.interpolate(x, y, xx)
         akima_z = myakima(xx)
         assert akima_z == pytest.approx(z)
-

@@ -300,7 +300,7 @@ class MyDifEvo(Opt):
         return
 
     def __call__(self, maxnfev, ftol):
-        
+
         random.seed(self.seed)
         mypop = self.polytope
         npop_1 = self.npop - 1
@@ -333,7 +333,7 @@ class MyDifEvo(Opt):
         if best_trial[-1] < mypop[0][-1]:
             best_trial = self.apply_local_opt(best_trial, index)
         return best_trial
-    
+
     def apply_local_opt(self, arg, index):
         local_opt = self.local_opt[index % len(self.local_opt)]
         result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
@@ -347,14 +347,14 @@ class MyDifEvo(Opt):
             rand = random.randint(start, end)
             result[ii] = self.key2.calc(rand, index)
         return result
-            
+
     def check_convergence(self, mypop, ftol, npar):
         fval_std = numpy.std([col[-1] for col in mypop])
         if fval_std < ftol:
             return True
         return False
 
-    
+
 class ncoresMyDifEvo(MyDifEvo):
 
     def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
@@ -398,18 +398,18 @@ class ncoresMyDifEvo(MyDifEvo):
                     old_fval = tmp_fval
                 else:
                     old_fval = best_fval
-                
+
         best_vertex = self.polytope[0]
         best_par = best_vertex[:-1]
         best_fval = best_vertex[-1]
         return nfev, best_fval, best_par
 
-    
+
 class DifEvo:
 
     def __init__(self):
         pass
-    
+
     def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
                  npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
 
@@ -449,16 +449,16 @@ class ncoresDifEvo:
 class ncoresDifEvoNelderMead:
 
     def __init__(self):
-        self.ncores_nm = ncoresNelderMead()        
+        self.ncores_nm = ncoresNelderMead()
         return
-    
+
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
                  numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
                  verbose=0):
 
         nfev, nm_fmin, nm_par = \
             self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
-        
+
         npar = len(x)
         if npop is None:
             npop = 12 * npar
@@ -470,7 +470,7 @@ class ncoresDifEvoNelderMead:
         de_nfev, de_fmin, de_par = \
             mydifevo(tol, maxnfev - nfev, step, seed, numcores)
         nfev += de_nfev
-        
+
         if nm_fmin < de_fmin:
             my_fmin = nm_fmin
             my_par = nm_par
@@ -480,7 +480,7 @@ class ncoresDifEvoNelderMead:
         nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol,
                                                   maxnfev - nfev, numcores)
         nfev += nm_nfev
-        
+
         if nm_fmin < my_fmin:
             my_fmin = nm_fmin
             my_par = nm_par
@@ -492,7 +492,7 @@ if '__main__' == __name__:
 
     # from sherpa.optmethods.opt import tst_opt, tst_unc_opt
     from opt import tst_opt, tst_unc_opt
-    
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--difevo', action="store_true",
@@ -502,7 +502,7 @@ if '__main__' == __name__:
     parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True, \
                       action="store_false", help="do not run tst_unc_opt")
     parser.add_argument("-o", "--opt", dest="global_func", default=True, \
-                      action="store_false", help="do not run tst_opt")    
+                      action="store_false", help="do not run tst_opt")
     parser.add_argument('-N', action="store", dest="num", default=4, type=int)
 
     options = parser.parse_args()
@@ -529,4 +529,3 @@ if '__main__' == __name__:
             tst_unc_opt(algo, npar)
         if options.global_func:
             tst_opt(algo, npar)
-

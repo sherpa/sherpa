@@ -47,7 +47,7 @@ class test_get_int_proj(SherpaTestCase):
         'fac': 1,
         'log': False
     }
-    
+
     def setUp(self):
         # defensive programming (one of the tests has been seen to fail
         # when the whole test suite is run without this)
@@ -64,7 +64,7 @@ class test_get_int_proj(SherpaTestCase):
         poly.c2.thaw()
         ui.int_proj(poly.c0)
         ui.fit()
-        
+
     def tearDown(self):
         ui.clean()
 
@@ -83,8 +83,8 @@ class test_get_int_proj(SherpaTestCase):
         assert self._get_int_uncproj_recalc_bench["nloop"] == result.nloop
         assert self._get_int_uncproj_recalc_bench["delv"] == result.delv
         assert self._get_int_uncproj_recalc_bench["fac"] == result.fac
-        assert self._get_int_uncproj_recalc_bench["log"] == result.log        
-        
+        assert self._get_int_uncproj_recalc_bench["log"] == result.log
+
     def test_get_int_proj(self):
         result = ui.get_int_proj(poly.c1, recalc=True, min=-5, max=0, nloop=21)
         self.cmp_args(result)
@@ -93,7 +93,6 @@ class test_get_int_proj(SherpaTestCase):
 
     def test_get_int_unc(self):
         result = ui.get_int_unc(poly.c1, recalc=True, min=-5, max=0, nloop=21)
-        self.cmp_args(result)        
+        self.cmp_args(result)
         self.cmp_values(self._get_int_uncproj_recalc_bench["x"], result.x)
         self.cmp_values(self._get_int_uncproj_recalc_bench["unc"], result.y)
-        

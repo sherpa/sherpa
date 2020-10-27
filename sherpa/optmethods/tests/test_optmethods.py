@@ -32,7 +32,7 @@ def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
     """The central function for all the optimization test
     1) Out of the 35 tests from:
     J. MORE', B. GARBOW & K. HILLSTROM,
-    "Algorithm 566: Fortran Subroutines for Testing Unconstrained 
+    "Algorithm 566: Fortran Subroutines for Testing Unconstrained
     Optimization Software.", ACM TOMS, VOL. 7, PAGES 14-41 AND 136-140, 1981
     xfail: lmdif(6), minim(5), neldermead(3), moncar(2)
     2) The remaining random 32 'global' func tests:
@@ -59,7 +59,7 @@ def test_rosenbrock(opt, npar=4):
                                               marks=pytest.mark.xfail)])
 def test_freudensteinroth(opt, npar=4):
     tst_opt(opt, _tstoptfct.freudenstein_roth, npar)
-    
+
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
                                  minim, montecarlo, neldermead])
 def test_powell_badly_scaled(opt, npar=2):
@@ -107,7 +107,7 @@ def test_box3d(opt, npar=3):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_powell_singular(opt, npar=4):
     tst_opt(opt, _tstoptfct.powell_singular, npar)
-    
+
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
                                  minim, montecarlo, neldermead])
 def test_wood(opt, npar=4):
@@ -160,7 +160,7 @@ def test_penaltyI(opt, npar=4):
                                  minim, montecarlo, neldermead])
 def test_penaltyII(opt, npar=4):
     tst_opt(opt, _tstoptfct.penaltyII, npar)
-    
+
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_variably_dimensioned(opt, npar=6):
     tst_opt(opt, _tstoptfct.variably_dimensioned, npar)
@@ -185,7 +185,7 @@ def test_discrete_boundary(opt, npar=4):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_discrete_integral(opt, npar=4):
     tst_opt(opt, _tstoptfct.discrete_integral, npar)
-    
+
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_broyden_tridiagonal(opt, npar=4):
     tst_opt(opt, _tstoptfct.broyden_tridiagonal, npar)
@@ -212,7 +212,7 @@ def test_linear_chebyquad(opt, npar=9):
 ###############################################################################
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
-                                 montecarlo, 
+                                 montecarlo,
                                  pytest.param(neldermead,
                                               marks=pytest.mark.xfail)])
 def test_Ackley(opt, npar=4):
@@ -429,4 +429,3 @@ def test_Trecanni(opt, npar=2):
 #                                               marks=pytest.mark.xfail)])
 # def test_Trefethen4(opt, npar=2):
 #     tst_opt(opt, _tstoptfct.Trefethen4, npar)
-    

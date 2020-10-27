@@ -51,7 +51,7 @@ class MyNelderMead(Opt):
                                    step, None, None)
         result = \
             self.optimize(xpar, simplex, maxnfev, tol, finalsimplex, verbose)
-        # print('MyNelderMead::__call__ result =', result)        
+        # print('MyNelderMead::__call__ result =', result)
         return result
 
     def contract_in_out(self, simplex, centroid, reflection_pt, rho_gamma,
@@ -203,7 +203,7 @@ class NelderMead1(NelderMead0):
     def calc_step(self, x):
         return x + 1.2
 
-    
+
 class NelderMead2(NelderMead0):
 
     def __init__(self):
@@ -233,7 +233,7 @@ class NelderMead3(NelderMead0):
                                xmin, xmax, x0, fcn)
         return nfev, fmin, par
 
-    
+
 class NelderMead4(NelderMead0):
 
     def __init__(self):
@@ -282,7 +282,7 @@ class NelderMead5(NelderMead0):
                           step, xmin, xmax, x0, fcn)
         return nfev, fmin, par
 
-    
+
 class NelderMead6(NelderMeadBase):
 
     class MyNelderMead6(MyNelderMead):
@@ -290,16 +290,16 @@ class NelderMead6(NelderMeadBase):
         def __init__(self, fcn, xmin, xmax):
             MyNelderMead.__init__(self, fcn, xmin, xmax)
             return
-        
+
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
             simplex = SimplexNoStep(self.func, npar + 1, x, self.xmin,
                                     self.xmax, None, None, None)
             result = \
                 self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
-            # print('MyNelderMead6::__call__ result =', result)        
+            # print('MyNelderMead6::__call__ result =', result)
             return result
-            
+
     def __init__(self):
         NelderMeadBase.__init__(self)
         return
@@ -320,7 +320,7 @@ class NelderMead7(NelderMeadBase):
         def __init__(self, fcn, xmin, xmax):
             MyNelderMead.__init__(self, fcn, xmin, xmax)
             return
-        
+
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
             factor = 2
@@ -328,9 +328,9 @@ class NelderMead7(NelderMeadBase):
                                     self.xmax, None, None, factor)
             result = \
                 self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
-            # print('MyNelderMead7::__call__ result =', result)        
+            # print('MyNelderMead7::__call__ result =', result)
             return result
-            
+
     def __init__(self):
         NelderMeadBase.__init__(self)
         return
@@ -349,7 +349,7 @@ class nmNcores(MyNcores):
     def __init__self(self):
         MyNcores.__init__(self)
         return
-    
+
     def my_worker(self, opt, id, out_q, err_q, lock, \
                   fcn, x, xmin, xmax, tol, maxnfev):
         try:
@@ -360,7 +360,7 @@ class nmNcores(MyNcores):
         # output the result and task ID to output queue
         out_q.put((id, vals))
 
-        
+
 class ncoresNelderMead:
 
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
@@ -368,7 +368,7 @@ class ncoresNelderMead:
         # NelderMead6(), NelderMead7()]):
         self.algo = algo
         return
-    
+
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=_ncpus):
         try:
@@ -436,8 +436,8 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
         except NotImplementedError as nie:
             print(nie)
             raise nie
-                
-        
+
+
 # from iminuit import minimize, Minuit
 # class Midnight:
 #     def __init__(self):
@@ -446,11 +446,11 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
 #         m = minimize(func, x0)
 #         return  m.nfev, m.fun, m.x
 
-    
+
 if '__main__' == __name__:
 
     from opt import tst_opt, tst_unc_opt
-    
+
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-N", "--num", dest="num", default=10, \
@@ -460,13 +460,13 @@ if '__main__' == __name__:
     parser.add_option("-u", "--unc_opt", dest="unc_opt", default=True, \
                       action="store_false", help="do not run tst_unc_opt")
     parser.add_option("-o", "--opt", dest="global_func", default=True, \
-                      action="store_false", help="do not run tst_opt")    
+                      action="store_false", help="do not run tst_opt")
     (options, args) = parser.parse_args()
     npar = options.num
 
     if npar % 2 != 0:
         raise ValueError("-N option must be an even number")
-    
+
     if options.single:
         nmcores = ncoresNelderMead()
         # midnight = Midnight()
@@ -482,7 +482,4 @@ if '__main__' == __name__:
         if options.unc_opt:
             tst_unc_opt(algorithms, npar)
         if options.global_func:
-            tst_opt(algorithms, npar)        
-
-
-
+            tst_opt(algorithms, npar)
