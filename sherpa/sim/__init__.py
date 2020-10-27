@@ -968,7 +968,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])
-            info('{} : avg = {} , std = {}'.format(name, avg, std, std))
+            info('{} : avg = {} , std = {}'.format(name, avg, std))
             result[name] = pars[name]
 
         return result

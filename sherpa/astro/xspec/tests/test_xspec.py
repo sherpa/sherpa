@@ -19,8 +19,10 @@
 #
 
 import numpy
-import pytest
 from numpy.testing import assert_allclose, assert_array_equal
+
+import pytest
+
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, \
     requires_fits, requires_xspec
@@ -690,7 +692,7 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert_is_finite(evals2, modelcls, "energy")
     assert_is_finite(wvals2, modelcls, "wavelength")
 
-    emsg = "{} non-contiguous model evaluation " + \
-        "failed: ".format(modelcls)
+    emsg = "{} non-contiguous model evaluation ".format(modelcls) + \
+        "failed: "
     assert_allclose(evals2, wvals2,
                     err_msg=emsg + "energy to wavelength")
