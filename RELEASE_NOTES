@@ -3,22 +3,25 @@ Release Notes
 Sherpa 4.12.2
 =============
 
-This release of Sherpa serves as the baseline release of Sherpa for CIAO 4.13. It contains numerous enhancements and fixes including items which are stand alone sherpa specific. Notable highlights include:
+This  Sherpa Standalone release, 4.12.2, serves as the baseline version of Sherpa for CIAO 4.13. It contains numerous enhancements and bug fixes including items which are specific to the standalone This release of Sherpa serves as the baseline release of Sherpa for CIAO 4.13. It contains numerous enhancements and fixes including items which are stand alone sherpa specific.  This is the first Sherpa release supporting Python version 3.8.
 
-* plotting improvements
+The main areas with the enhancements include
+
+* plotting improvements:
     * improved support for matplotlib (linestyle changes in matplotlib 3.3, support of alpha channels)
     * overplot support for plot_fit_* plt_bkg_fit_*
     * updates to histograms, residual plots
-* data I/O and data handling
+* data I/O and data handling:
     * several bug fixes to handling of the PHA, ARF, RMF files
-* modeling
+    * improvements to handling the PHA data filtering to address long-standing issues
+* modeling:
     * support for regrid models in the binary expressions
     * improvements and bug fixes to background treatment in spectral models
     * improvements in the flux calculations and resampling
-    * added the Voigt model 
-* documentation changes
+    * added the Voigt model
+* documentation changes:
     * improvements to Sherpa display in IPython/Jupyter notebooks
-    * updates to the content of the docstrings for generation of ahelp files
+    * updates to the content of the docstrings for generation of ahelp files python package. 
 
 Details
 -------
