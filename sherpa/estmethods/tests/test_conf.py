@@ -90,7 +90,7 @@ class test_estmethods(SherpaTestCase):
     def tst_ui(self, thaw_c1):
         ui.load_arrays(1, self._x, self._y, self._e)
         ui.set_source(1, ui.polynom1d.mdl)
-        if  thaw_c1:
+        if thaw_c1:
             ui.thaw(mdl.c1)
         ui.thaw(mdl.c2)
         mdl.c2 = 1

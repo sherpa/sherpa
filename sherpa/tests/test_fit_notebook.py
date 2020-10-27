@@ -28,7 +28,7 @@ from sherpa.data import Data1D, DataSimulFit
 from sherpa.models import SimulFitModel
 from sherpa.models.basic import Const1D
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats  import Chi2, LeastSq
+from sherpa.stats import Chi2, LeastSq
 
 
 def test_statinfo_basic():

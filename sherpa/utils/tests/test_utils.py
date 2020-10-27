@@ -536,7 +536,7 @@ def test_parse_expr_not_num(instr, bound):
         utils.parse_expr(instr)
 
     emsg = "Invalid {} bound 'None'".format(bound)
-    assert  str(exc.value) == emsg
+    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("instr",

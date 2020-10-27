@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,9 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import sys
 
 import numpy
-import sys
+
 from sherpa.utils import demuller, bisection, new_muller, apache_muller, \
     zeroin
 from sherpa.utils.testing import SherpaTestCase
@@ -153,14 +154,14 @@ def prob38( x, *args ):
     return x - numpy.exp( numpy.sin(x) )
 
 def repeller( x, *args ):
-    return  20.0 * x / ( 100.0 * x * x + 1.0 )
+    return 20.0 * x / ( 100.0 * x * x + 1.0 )
 
 def pinhead( x, *args ):
     epsilon = 0.00001
     if epsilon == 0.0:
         return ( 16.0 - x**4 ) / ( 16.0 * x**4 )
-    else:
-        return  ( 16.0 - x**4 ) / ( 16.0 * x**4 + epsilon )
+
+    return ( 16.0 - x**4 ) / ( 16.0 * x**4 + epsilon )
 
 #    Sample results:
 #
@@ -192,7 +193,7 @@ def wallis( x, *args ):
 
 def thinpole( x, *args ):
     pi = 3.141592653589793
-    return  3.0 * x**2 + 1.0 + ( numpy.log ( ( x - pi )**2 ) ) / pi**4
+    return 3.0 * x**2 + 1.0 + ( numpy.log ( ( x - pi )**2 ) ) / pi**4
 
 def muller_convergence_rate(x):
     return x - pow(x,3.0)/3.0
@@ -442,14 +443,3 @@ class test_root(SherpaTestCase):
         a = 1.7
         b = 10.0
         self.tst_solve( muller_convergence_rate, a, b, self.tol )
-
-def tstme():
-    from sherpa.utils import SherpaTest
-    import sherpa.utils
-    SherpaTest(sherpa.utils).test()
-
-#
-# pushd ../../.. ; makeme ; popd ; python test_root.py
-#
-if '__main__' == __name__:
-    tstme()
