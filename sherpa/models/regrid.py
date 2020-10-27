@@ -452,10 +452,10 @@ class EvaluationSpace2D():
         bool
             True if they overlap, False if not
         """
-        return bool(self.x_axis.start == other.x_axis.start\
-               and self.y_axis.start == other.y_axis.start\
-               and self.x_axis.end == other.x_axis.end\
-               and self.y_axis.end == other.y_axis.end)
+        return bool(self.x_axis.start == other.x_axis.start
+                    and self.y_axis.start == other.y_axis.start
+                    and self.x_axis.end == other.x_axis.end
+                    and self.y_axis.end == other.y_axis.end)
 
     @property
     def grid(self):
@@ -635,7 +635,7 @@ class ModelDomainRegridder1D():
         # join all elements of data_space within
         # eval_spaee to minimize interpolation
         #
-        indices = np.where((data_space > eval_space[0]) & \
+        indices = np.where((data_space > eval_space[0]) &
                            (data_space < eval_space[-1]))
         my_eval_space = np.unique(np.append(eval_space, data_space[indices]))
 

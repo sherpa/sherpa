@@ -231,7 +231,7 @@ class SimplexBase:
                 np.array([random.uniform(max(self.xmin[jj],
                                              xpar[jj]-factor*abs(xpar[jj])),
                                          min(self.xmax[jj],
-                                             xpar[jj]+factor*abs(xpar[jj]))) \
+                                             xpar[jj]+factor*abs(xpar[jj])))
                           for jj in range(self.npar)])
         return simplex
 
@@ -409,10 +409,10 @@ def FreudensteinRoth(x):
     n = len(x)
     tmp = 0
     for ii in range(0, n, 2):
-        tmp += pow(-13 + x[ii] + ((5 - x[ii+1]) * x[ii+1] - 2) * \
-                        x[ii+1], 2.0) + \
-                        pow(-29 + x[ii] + ((x[ii+1] + 1) * \
-                                               x[ii+1] - 14) * x[ii+1], 2.0)
+        tmp += pow(-13 + x[ii] + ((5 - x[ii+1]) * x[ii+1] - 2) *
+                   x[ii+1], 2.0) + \
+                   pow(-29 + x[ii] + ((x[ii+1] + 1) *
+                                      x[ii+1] - 14) * x[ii+1], 2.0)
     return tmp
 
 def GoldsteinPrice(x):
@@ -1009,12 +1009,12 @@ if '__main__' == __name__:
 
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("-N", "--npar", dest="npar", default=10, \
+    parser.add_option("-N", "--npar", dest="npar", default=10,
                       type=int, help="set npar")
     (options, args) = parser.parse_args()
     npar = options.npar
 
-    x0 = np.array( npar * [-1.2, 1.0])
+    x0 = np.array(npar * [-1.2, 1.0])
     xmin = npar * [-1000, -1000]
     xmax = npar * [1000, 1000]
     factor = 10

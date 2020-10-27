@@ -224,8 +224,8 @@ class Strategy7(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] += self.sfactor * ((pop[0][n] - trial[n]) + \
-                                             (pop[r1][n] - pop[r2][n]))
+                trial[n] += self.sfactor * ((pop[0][n] - trial[n]) +
+                                            (pop[r1][n] - pop[r2][n]))
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
 
@@ -263,8 +263,8 @@ class Strategy9(Strategy):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
                 trial[n] = pop[r5][n] + \
-                    self.sfactor * (pop[r1][n] +pop[r2][n] - pop[r3][n] - \
-                                         pop[r4][n])
+                    self.sfactor * (pop[r1][n] +pop[r2][n] - pop[r3][n] -
+                                    pop[r4][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
 
@@ -441,7 +441,7 @@ class ncoresDifEvo:
         if maxnfev is None:
             maxnfev = 8192 * npar
 
-        mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, \
+        mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob,
                                   step, seed)
         return mydifevo(tol, maxnfev, numcores)
 
@@ -499,10 +499,10 @@ if '__main__' == __name__:
                         default=False, help='run simple difevo', dest="difevo")
     parser.add_argument('-c', '--combine', action="store_true",
                         default=False, help='run nm & difevo', dest="combine")
-    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True, \
-                      action="store_false", help="do not run tst_unc_opt")
-    parser.add_argument("-o", "--opt", dest="global_func", default=True, \
-                      action="store_false", help="do not run tst_opt")
+    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True,
+                        action="store_false", help="do not run tst_unc_opt")
+    parser.add_argument("-o", "--opt", dest="global_func", default=True,
+                        action="store_false", help="do not run tst_opt")
     parser.add_argument('-N', action="store", dest="num", default=4, type=int)
 
     options = parser.parse_args()

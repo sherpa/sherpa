@@ -351,29 +351,26 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     nfev = len( sequence_results ) + 1
     ierr = 0
     status, msg = _get_saofit_msg( ierr, ierr )
-    rv = ( status, x, fval )
+    rv = (status, x, fval)
     rv += (msg, {'info': ierr, 'nfev': nfev })
 
-    if ( 'NelderMead' == method or 'neldermead' == method or \
-         'Neldermead' == method or 'nelderMead' == method ):
+    if method in ['NelderMead', 'neldermead', 'Neldermead', 'nelderMead']:
         #re.search( '^[Nn]elder[Mm]ead', method ):
         nm_result = neldermead( fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
                                 verbose=verbose )
         tmp_nm_result = list(nm_result)
         tmp_nm_result_4 = tmp_nm_result[4]
         tmp_nm_result_4['nfev'] += nfev
-        rv = tuple( tmp_nm_result )
+        rv = tuple(tmp_nm_result)
 
-    if ( 'LevMar' == method or 'levmar' == method or \
-         'Levmar' == method or 'levMar' == method ):
+    if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
         #re.search( '^[Ll]ev[Mm]ar', method ):
         levmar_result = lmdif( fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
                                gtol=ftol, maxfev=maxfev, verbose=verbose )
         tmp_levmar_result = list(levmar_result)
         tmp_levmar_result_4 = tmp_levmar_result[4]
         tmp_levmar_result_4['nfev'] += nfev
-        rv = tuple( tmp_levmar_result )
-
+        rv = tuple(tmp_levmar_result)
 
     return rv
 
@@ -515,7 +512,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             ############################ nmDifEvo #############################
             y = random_start(xmin, xmax)
             mymaxfev = min(maxfev_per_iter, maxfev - nfev)
-            if 1 == numcores:
+            if numcores == 1:
                 result = difevo_nm(myfcn, y, xmin, xmax, ftol, mymaxfev,
                                    verbose, seed, pop, xprob, weight)
                 nfev += result[4].get('nfev')
@@ -523,7 +520,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                     nfval = result[2]
                     x = numpy.asarray(result[1], numpy.float_)
                 if verbose or debug:
-                    print('f_de_nm%s=%.14e in %d nfev' % \
+                    print('f_de_nm%s=%.14e in %d nfev' %
                           (x, result[2], result[4].get('nfev')))
             ############################ nmDifEvo #############################
 

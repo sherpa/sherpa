@@ -348,7 +348,7 @@ class nmNcores(MyNcores):
         MyNcores.__init__(self)
         return
 
-    def my_worker(self, opt, id, out_q, err_q, lock, \
+    def my_worker(self, opt, id, out_q, err_q, lock,
                   fcn, x, xmin, xmax, tol, maxnfev):
         try:
             vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
@@ -418,7 +418,7 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
 
     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=_ncpus, fval=np.inf, nfev=0):
+             numcores=_ncpus, fval=np.inf, nfev=0):
         try:
             num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)
@@ -451,13 +451,13 @@ if '__main__' == __name__:
 
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("-N", "--num", dest="num", default=10, \
+    parser.add_option("-N", "--num", dest="num", default=10,
                       type=int, help="set num")
-    parser.add_option("-s", "--single", dest="single", default=True, \
+    parser.add_option("-s", "--single", dest="single", default=True,
                       action="store_false", help="run test using 1 core")
-    parser.add_option("-u", "--unc_opt", dest="unc_opt", default=True, \
+    parser.add_option("-u", "--unc_opt", dest="unc_opt", default=True,
                       action="store_false", help="do not run tst_unc_opt")
-    parser.add_option("-o", "--opt", dest="global_func", default=True, \
+    parser.add_option("-o", "--opt", dest="global_func", default=True,
                       action="store_false", help="do not run tst_opt")
     (options, args) = parser.parse_args()
     npar = options.num

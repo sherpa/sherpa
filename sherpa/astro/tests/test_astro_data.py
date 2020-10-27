@@ -499,8 +499,8 @@ def test_arf_with_zero_energy_elem_replace():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    expected_warnings = [UserWarning("The minimum ENERG_LO in the ARF 'test-arf' was 0 " + \
-           "and has been replaced by {}".format(ethresh))]
+    expected_warnings = [UserWarning("The minimum ENERG_LO in the ARF 'test-arf' was 0 " +
+                                     "and has been replaced by {}".format(ethresh))]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -697,8 +697,8 @@ def test_rmf_with_zero_energy_elem_replace():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    expected_warnings = [UserWarning("The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " + \
-           "and has been replaced by {}".format(ethresh))]
+    expected_warnings = [UserWarning("The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " +
+                                     "and has been replaced by {}".format(ethresh))]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
