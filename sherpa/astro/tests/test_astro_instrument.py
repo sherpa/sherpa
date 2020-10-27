@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -46,7 +46,7 @@ from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
     RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf
 from sherpa.fit import Fit
-from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.data import DataPHA, DataRMF
 from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits

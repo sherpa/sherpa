@@ -23,7 +23,7 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import DataPlot, SourcePlot, \
+from sherpa.astro.plot import SourcePlot, \
     DataPHAPlot, ModelPHAHistogram
 from sherpa.astro import plot as aplot
 from sherpa.data import Data1D
@@ -139,7 +139,7 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
     pha.ignore(None, 0.5)
     pha.ignore(7.0, None)
 
-    dplot = DataPlot()
+    dplot = DataPHAPlot()
     dplot.prepare(pha, stat=stat)
 
 

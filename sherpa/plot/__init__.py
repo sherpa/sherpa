@@ -24,7 +24,6 @@ A visualization interface to Sherpa
 
 import logging
 import importlib
-import sys
 
 import numpy
 

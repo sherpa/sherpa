@@ -27,7 +27,7 @@ import numpy as np
 from numpy import iterable, array2string, asarray
 
 from sherpa.astro.data import DataPHA
-from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
+from sherpa.plot import FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
 from sherpa.plot import ComponentSourcePlot as _ComponentSourcePlot
 import sherpa.plot

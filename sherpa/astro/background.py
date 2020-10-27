@@ -22,9 +22,7 @@
 """
 
 from collections import defaultdict
-from functools import reduce
 import logging
-import operator
 
 import numpy as np
 

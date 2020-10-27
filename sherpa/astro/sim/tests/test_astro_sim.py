@@ -30,7 +30,6 @@ from sherpa.astro import sim
 from sherpa.astro.instrument import Response1D
 from sherpa.fit import Fit
 from sherpa.models.parameter import Parameter
-from sherpa.models.model import ArithmeticModel
 from sherpa.sim import inverse2
 from sherpa.stats import CStat
 from sherpa.optmethods import NelderMead

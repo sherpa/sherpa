@@ -17,13 +17,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import math
+
 import warnings
 
 import numpy
 import logging
 
-from sherpa.astro.data import DataIMG
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, CompositeModel, Model

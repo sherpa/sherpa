@@ -23,12 +23,13 @@ import pytest
 
 import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat
-from sherpa.utils.testing import SherpaTestCase
-from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, boolean_to_byte
+from sherpa.models.model import ArithmeticModel, RegriddableModel2D, \
+    RegriddableModel1D, boolean_to_byte
 from sherpa.models.basic import Const
 
 
-EXCLUDED_MODEL_CLASSES = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, Const)
+EXCLUDED_MODEL_CLASSES = (ArithmeticModel, RegriddableModel1D,
+                          RegriddableModel2D, Const)
 
 
 def test_create_and_evaluate():

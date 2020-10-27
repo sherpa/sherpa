@@ -98,8 +98,6 @@ def test_ignore_ylog_kwarg(plottype):
 def test_warning_dataplot_linecolor(caplog):
     """We get a warning when using linecolor: DataPlot"""
 
-    from matplotlib import pyplot as plt
-
     data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
     plot = DataPlot()
     plot.prepare(data, stat=None)
@@ -116,8 +114,6 @@ def test_warning_dataplot_linecolor(caplog):
 @requires_pylab
 def test_warning_plot_hist_linecolor(caplog):
     """We get a warning when using linecolor: ModelHistogramPlot"""
-
-    from matplotlib import pyplot as plt
 
     data = Data1DInt('tst', np.asarray([1, 2, 3]),
                      np.array([2, 2.5, 4]),

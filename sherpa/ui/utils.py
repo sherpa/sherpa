@@ -33,7 +33,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, IOErr, ModelErr, SessionErr
+    IdentifierErr, ModelErr, SessionErr
 
 from sherpa import get_config
 

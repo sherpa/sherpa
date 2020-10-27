@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,18 +17,24 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
-_ = numpy.seterr(invalid='ignore')
-
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is_iterable, list_to_open_interval, mysgn, quad_coef, apache_muller, bisection, demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
-
 import logging
-import sherpa.estmethods._est_funcs
 
 try:
     import multiprocessing
-except:
+except ImportError:
     pass
+
+import numpy
+
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
+    is_iterable, list_to_open_interval, mysgn, quad_coef, \
+    demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
+
+import sherpa.estmethods._est_funcs
+
+
+# TODO: this should not be set globally
+_ = numpy.seterr(invalid='ignore')
 
 
 __all__ = ('EstNewMin', 'Covariance', 'Confidence',
@@ -323,8 +329,6 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         # parameter values to the exception obj.  These modified
         # parvals determine the new lower statistic.
         raise EstNewMin(pars)
-    except:
-        raise
 
     # Invert matrix, take its square root and multiply by sigma to get
     # parameter uncertainties; parameter uncertainties are the

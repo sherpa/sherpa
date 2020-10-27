@@ -30,10 +30,8 @@ import numpy as np
 from sherpa import plot
 from sherpa.data import Data1D, Data2D
 from sherpa.fit import Fit
-from sherpa.models.basic import Const1D, Const2D, Gauss2D, Polynom1D
+from sherpa.models.basic import Const1D, Gauss2D, Polynom1D
 from sherpa.stats import Chi2
-
-from sherpa import plot
 
 
 def check_empty(r, summary, nsummary=0):

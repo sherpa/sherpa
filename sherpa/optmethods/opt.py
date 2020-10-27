@@ -584,7 +584,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.rosenbrock, name, npar)
     name = 'rosenbrock'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         rosenbrock(name, algo)
 
@@ -592,7 +592,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.freudenstein_roth, name, npar)
     name = 'freudenstein_roth'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         freudenstein_roth(name, algo)
 
@@ -600,7 +600,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.powell_badly_scaled, name, npar)
     name = 'powell_badly_scaled'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         powell_badly_scaled(name, algo)
 
@@ -608,7 +608,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.brown_badly_scaled, name, npar)
     name = 'brown_badly_scaled'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         brown_badly_scaled(name, algo)
 
@@ -616,7 +616,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.beale, name, npar)
     name = 'beale'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         beale(name, algo)
 
@@ -624,7 +624,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.jennrich_sampson, name, npar)
     name = 'jennrich_sampson'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         jennrich_sampson(name, algo)
 
@@ -632,7 +632,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.helical_valley, name, 3)
     name = 'helical_valley'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 3)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         helical_valley(name, algo)
 
@@ -640,7 +640,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.bard, name, 3 * npar)
     name = 'bard'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 3 * npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         bard(name, algo)
 
@@ -648,7 +648,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.gaussian, name, 3)
     name = 'gaussian'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 3)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         gaussian(name, algo)
 
@@ -656,7 +656,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.meyer, name, 3)
     name = 'meyer'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 3)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         meyer(name, algo)
 
@@ -664,7 +664,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.gulf_research_development, name, 3)
     name = 'gulf_research_development'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 3)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         gulf_research_development(name, algo)
 
@@ -672,7 +672,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.box3d, name, 3)
     name = 'box3d'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 3)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         box3d(name, algo)
 
@@ -680,7 +680,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.powell_singular, name, 4 * npar)
     name = 'powell_singular'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 4 * npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         powell_singular(name, algo)
 
@@ -688,7 +688,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.wood, name, 4 * npar)
     name = 'wood'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 4 * npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         wood(name, algo)
 
@@ -696,7 +696,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.kowalik_osborne, name, 4)
     name = 'kowalik_osborne'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 4)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         kowalik_osborne(name, algo)
 
@@ -704,7 +704,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.brown_dennis, name, 4)
     name = 'brown_dennis'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 4)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         brown_dennis(name, algo)
 
@@ -712,7 +712,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.osborne1, name, 5)
     name = 'osborne1'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 5)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         osborne1(name, algo)
 
@@ -720,7 +720,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.biggs, name, 6)
     name = 'biggs'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 6)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         if algo.__class__.__name__ == 'Midnight':
             print('Minuit aborts skip test')
@@ -731,7 +731,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.osborne2, name, 11)
     name = 'osborne2'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 11)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         osborne2(name, algo)
 
@@ -739,7 +739,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.watson, name, 6)
     name = 'watson'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 6)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         watson(name, algo)
 
@@ -747,7 +747,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.penaltyI, name, 4)
     name = 'penaltyI'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 4)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         penaltyI(name, algo)
 
@@ -755,7 +755,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.penaltyII, name, 4)
     name = 'penaltyII'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, 4)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         penaltyII(name, algo)
 
@@ -763,7 +763,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.variably_dimensioned, name, npar)
     name = 'variably_dimensioned'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         variably_dimensioned(name, algo)
 
@@ -771,7 +771,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.trigonometric, name, npar)
     name = 'trigonometric'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         trigonometric(name, algo)
 
@@ -779,7 +779,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.brown_almost_linear, name, npar)
     name = 'brown_almost_linear'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         brown_almost_linear(name, algo)
 
@@ -787,7 +787,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.discrete_boundary, name, npar)
     name = 'discrete_boundary'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         discrete_boundary(name, algo)
 
@@ -795,7 +795,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.discrete_integral, name, npar)
     name = 'discrete_integral'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         discrete_integral(name, algo)
 
@@ -803,7 +803,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.broyden_tridiagonal, name, npar)
     name = 'broyden_tridiagonal'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         broyden_tridiagonal(name, algo)
 
@@ -811,7 +811,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.broyden_banded, name, npar)
     name = 'broyden_banded'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         broyden_banded(name, algo)
 
@@ -819,7 +819,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.linear_fullrank, name, npar)
     name = 'linear_fullrank'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         linear_fullrank(name, algo)
 
@@ -827,7 +827,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.linear_fullrank, name, npar)
     name = 'linear_fullrank1'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         linear_fullrank1(name, algo)
 
@@ -835,7 +835,7 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.linear_fullrank0cols0rows, name, npar)
     name = 'linear_fullrank0cols0rows'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         if algo.__class__.__name__ == 'Midnight':
             print('Minuit aborts skip test')
@@ -846,14 +846,12 @@ def tst_unc_opt(algorithms, npar):
         tst_algo(opt, _tstoptfct.chebyquad, name, npar)
     name = 'chebyquad'
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
-    print('\n', name,' fmin =', fmin)
+    print('\n', name, ' fmin =', fmin)
     for algo in algorithms:
         chebyquad(name, algo)
 
 
 def tst_opt(algorithms, npar):
-
-    from sherpa.optmethods import optfcts
 
     def tst_algos(func, x0, xmin, xmax):
         print('\n', func.__doc__)

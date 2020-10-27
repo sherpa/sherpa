@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -47,16 +47,17 @@ to exercise actual images and PSFs with WCS headers.
 """
 
 from math import sqrt
-from pytest import approx, fixture, mark
 
 import attr
 import numpy as np
+
+from pytest import approx, fixture, mark
 
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataIMG
 from sherpa.astro.instrument import PSFModel
 from sherpa.instrument import PSFSpace2D
-from sherpa.models import SigmaGauss2D, NormGauss2D
+from sherpa.models import SigmaGauss2D
 from sherpa.models.regrid import EvaluationSpace2D
 
 
