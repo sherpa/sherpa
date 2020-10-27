@@ -313,7 +313,12 @@ class SimplexRandom(SimplexBase):
 
 def Ackley(x):
     """Ackley(0, ..., 0) = 0"""
-    n = x.shape[0]; a = 20; b = 0.2; c = 2*np.pi; s1 = 0; s2 = 0;
+    n = x.shape[0]
+    a = 20
+    b = 0.2
+    c = 2 * np.pi
+    s1 = 0
+    s2 = 0
     for ii in range(n):
         s1 += x[ii] * x[ii]
         s2 += np.cos(c * x[ii])
@@ -371,10 +376,10 @@ def BrownBadlyScaled(x):
     n = len(x)
     fval = 0.0
     for ii in range(0, n, 2):
-        fvec0 = x[ii] - 1.0e6;
-        fvec1 = x[ii + 1] - 2.0e-6;
-        fvec2 = x[ii] * x[ii + 1] - 2.0;
-        fval += fvec0 * fvec0 +fvec1 * fvec1 + fvec2 * fvec2
+        fvec0 = x[ii] - 1.0e6
+        fvec1 = x[ii + 1] - 2.0e-6
+        fvec2 = x[ii] * x[ii + 1] - 2.0
+        fval += fvec0 * fvec0 + fvec1 * fvec1 + fvec2 * fvec2
     return fval
 
 def Colville(x):

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy as np
 import logging
+
+import numpy as np
+
 import pytest
 
 from sherpa.utils.testing import SherpaTestCase
@@ -26,13 +28,14 @@ from sherpa import ui
 
 logger = logging.getLogger('sherpa')
 
+
 class test_get_int_proj(SherpaTestCase):
 
     _get_int_uncproj_recalc_bench = {
         'x': np.array([-5., -4.75, -4.5, -4.25, -4., -3.75, -3.5, -3.25, -3.,
-                      -2.75, -2.5, -2.25, -2., -1.75, -1.5, -1.25, -1., -0.75,
+                       -2.75, -2.5, -2.25, -2., -1.75, -1.5, -1.25, -1., -0.75,
                        -0.5, -0.25, 0.]),
-        'proj': np.array([110.0185, 90.493 , 72.9534, 57.3995, 43.8316,
+        'proj': np.array([110.0185, 90.493, 72.9534, 57.3995, 43.8316,
                           32.2494, 22.6531, 15.0427, 9.4181, 5.7794, 4.1265,
                           4.4594, 6.7782, 11.0829, 17.3734, 25.6497, 35.9119,
                           48.1599, 62.3938, 78.6135, 96.8191]),
@@ -55,8 +58,8 @@ class test_get_int_proj(SherpaTestCase):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
 
-        x = [-13, -5, -3, 2, 7, 12];
-        y = [102.3, 16.7, -0.6, -6.7, -9.9, 33.2];
+        x = [-13, -5, -3, 2, 7, 12]
+        y = [102.3, 16.7, -0.6, -6.7, -9.9, 33.2]
         dy = np.ones(6) * 5
         ui.load_arrays(1, x, y, dy)
         ui.set_source(ui.polynom1d.poly)

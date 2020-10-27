@@ -103,11 +103,10 @@ class MyNelderMead(Opt):
                 msg = 'f%s=%e' % (simplex[0, :-1], simplex[0, -1])
                 print(msg)
 
-            centroid = simplex.calc_centroid( )
-
+            centroid = simplex.calc_centroid()
 
             if simplex.check_convergence(tol, finalsimplex):
-                break;
+                break
 
             reflection_pt = simplex.move_vertex(centroid, self.reflection_coef)
 

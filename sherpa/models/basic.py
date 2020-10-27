@@ -116,11 +116,13 @@ class Const(ArithmeticModel):
         ylo = 0
         if numpy.abs(min - 0) > DBL_EPSILON:
             ylo = min / 100.
-            if min < 0: ylo = 0
+            if min < 0:
+                ylo = 0
         yhi = 0
         if numpy.abs(max - 0) > DBL_EPSILON:
             yhi = -10 * max
-            if max > 0: yhi = 100 * max
+            if max > 0:
+                yhi = 100 * max
         param_apply_limits({'val': (max + min) / 2.,
                             'min': ylo, 'max': yhi},
                            self.c0, **kwargs)
@@ -1742,12 +1744,14 @@ class Polynom2D(RegriddableModel2D):
         ylo = 0
         if numpy.abs(ymin - 0) > DBL_EPSILON:
             ylo = -ymin
-            if ymin < 0: ylo = ymin
+            if ymin < 0:
+                ylo = ymin
 
         yhi = 0
         if numpy.abs(ymax - 0) > DBL_EPSILON:
             yhi = -ymax
-            if ymax > 0: yhi = ymax
+            if ymax > 0:
+                yhi = ymax
 
         dydx0 = (ymax - ymin) / (x0max - x0min)
         dydx1 = (ymax - ymin) / (x1max - x1min)
