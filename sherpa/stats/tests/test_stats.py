@@ -19,7 +19,9 @@
 #
 
 import logging
+
 import numpy
+
 import pytest
 
 from sherpa.data import Data1D
@@ -742,9 +744,9 @@ def test_xspecvar_zero_handling(bexp, yexp, dyexp):
     contains (after three 'header' lines) the data 'x 0.5 y dy'
 
         data foo.fits
-	iplot data
-	wplot foo.dat
-	quit
+        iplot data
+        wplot foo.dat
+        quit
 
     where foo.fits is a fake PHA file set up to have the channel/count
     values used below (a CSC-style PHA file was used so that source

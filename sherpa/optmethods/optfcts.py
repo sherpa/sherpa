@@ -19,18 +19,21 @@
 #
 
 
-import numpy
 import random
-import sys
 
-from . import _saoopt
+import numpy
+
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
 from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
 
-import numpy as np
+from . import _saoopt
+
+__all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
+           'minim', 'montecarlo', 'neldermead')
+
 
 #
 # Use FLT_EPSILON as default tolerance
@@ -174,8 +177,6 @@ def _set_limits(x, xmin, xmax):
 
     return 0
 
-
-__all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif', 'minim', 'montecarlo', 'neldermead')
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
            seed=2005815, population_size=None, xprob=0.9,
@@ -531,7 +532,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     x, fval, nfev = myopt(fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
                            seed, population_size, xprob, weighting_factor,
                            factor=2.0, debug=False)
-    
+
     if nfev < maxfev:
         if all(x == 0.0):
             mystep = list(map(lambda fubar: 1.2 + fubar, x))
@@ -680,7 +681,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             fval = minim_fval
         if debug:
             print('minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info))
-    
+
     if nfev >= maxfev:
         ier = 3
     key = {
@@ -706,7 +707,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
           maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
 
     class fdJac:
-        
+
         def __init__(self, func, fvec, pars):
             self.func = func
             self.fvec = fvec
@@ -741,7 +742,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
                 params.append(tmp_pars)
             return tuple(params)
 
-        
+
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if maxfev is None:
@@ -757,7 +758,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         fjac = parallel_map(fd_jac, params, numcores)
         return numpy.concatenate(fjac)
     num_parallel_map, fcn_parallel_counter = func_counter(fcn_parallel)
-    
+
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
 

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2008  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2008, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,10 @@
 #
 
 import numpy
+
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.astro.utils._wcs import pix2world, world2pix
+
 
 class WCS(NoNewAttributesAfterInit):
 
@@ -60,6 +62,6 @@ class WCS(NoNewAttributesAfterInit):
 
     def invert(self, x0, x1):
         x0, x1 = world2pix(self.type, x0, x1,
-                        self.crpix, self.crval, self.cdelt,
-                        self.crota, self.equinox, self.epoch)
+                           self.crpix, self.crval, self.cdelt,
+                           self.crota, self.equinox, self.epoch)
         return (x0, x1)

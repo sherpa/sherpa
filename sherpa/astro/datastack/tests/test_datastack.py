@@ -24,12 +24,12 @@ import logging
 
 import numpy as np
 
+import pytest
+
 from sherpa.utils.testing import requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model
-
-import pytest
 
 logger = logging.getLogger('sherpa')
 
@@ -867,7 +867,7 @@ def test_operations_datastack_subtract(ds_setup, ds_datadir):
     datastack.unsubtract('myid')
     assert np.all(d1.get_dep()[15:20] == [3., 7., 1., 6., 4.])
 
-    
+
 @requires_fits
 @requires_stk
 def test_operations_datastack_group(ds_setup, ds_datadir):

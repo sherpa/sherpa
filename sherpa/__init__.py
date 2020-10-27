@@ -100,8 +100,8 @@ archivePrefix = {arXiv},
 
 @INPROCEEDINGS{2007ASPC..376..543D,
    author = {{Doe}, S. and {Nguyen}, D. and {Stawarz}, C. and {Refsdal}, B. and
-	{Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and
-	{McDowell}, J. and {Houck}, J. and {Nowak}, M.},
+        {Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and
+        {McDowell}, J. and {Houck}, J. and {Nowak}, M.},
     title = "{Developing Sherpa with Python}",
 booktitle = {Astronomical Data Analysis Software and Systems XVI},
      year = 2007,
