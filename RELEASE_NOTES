@@ -3,8 +3,7 @@ Release Notes
 Sherpa 4.12.2
 =============
 
-This release contains numerous enhancements and fixes including items which are stand alone sherpa specific.  This is the first Sherpa release fully supporting Python version 3.8.
-
+This release contains numerous enhancements and fixes and it is the first Sherpa release to fully support Python version 3.8.
 
 The main areas with the enhancements include
 
