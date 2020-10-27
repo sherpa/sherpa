@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -654,7 +654,7 @@ def _save_iter_method(state, fh=None):
         # is probably what we want but is a change, so leave
         # for now.
         # return 'set_iter_method_opt("{}", {})'.format(key, val)
-        return 'set_iter_method_opt("%s", %s)'.format(key, val)
+        return 'set_iter_method_opt("{}", {})'.format(str(key), str(val))
 
     _save_entries(state.get_iter_method_opt(), tostatement, fh)
     _output("", fh)
@@ -705,7 +705,7 @@ def _handle_usermodel(mod, modelname, fh=None):
     # in case getsource can return None, have check here
     if pycode is None:
         msg = "Unable to save Python code for user model " + \
-              "'{}' function {}".format(mod.name, )
+              "'{}' function {}".format(modelname, mod.calc.name)
         warning(msg)
         _output('print("{}")'.format(msg), fh)
         _output("def {}(*args):".format(mod.calc.name), fh)

@@ -25,7 +25,6 @@ corresponding functions in sherpa.astro.ui.utils.
 #    set_full_model
 #    multiple sources
 #    linked parameters
-#    iter fit method
 #    check the noticed range after restoring it
 #    pha dataset; wavelength analysis
 #    pha2 dataset
@@ -138,6 +137,49 @@ set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
 set_method_opt("step", None)
 set_method_opt("verbose", 1)
+
+
+######### Set Model Components and Parameters
+
+
+
+######### Set Source, Pileup and Background Models
+
+"""
+
+_canonical_empty_iterstat = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+
+
+######### Set Statistic
+
+set_stat("leastsq")
+
+
+######### Set Fitting Method
+
+set_method("neldermead")
+
+set_method_opt("finalsimplex", 9)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("initsimplex", 0)
+set_method_opt("iquad", 1)
+set_method_opt("maxfev", 5000)
+set_method_opt("step", None)
+set_method_opt("verbose", 1)
+
+
+######### Set Iterative Fitting Method
+
+set_iter_method("sigmarej")
+
+set_iter_method_opt("grow", 1)
+set_iter_method_opt("hrej", 3)
+set_iter_method_opt("lrej", 3)
+set_iter_method_opt("maxiters", 5)
 
 
 ######### Set Model Components and Parameters
@@ -820,6 +862,7 @@ else:
 
 _canonical_empty += _canonical_extra
 _canonical_empty_stats += _canonical_extra
+_canonical_empty_iterstat += _canonical_extra
 _canonical_pha_basic += _canonical_extra
 _canonical_pha_grouped += _canonical_extra
 _canonical_usermodel += _canonical_extra
@@ -1081,6 +1124,21 @@ def test_canonical_empty_stats():
     ui.set_method_opt('verbose', 1)
 
     compare(_canonical_empty_stats)
+
+
+def test_canonical_empty_iterstat():
+    "Check iterated-fit setting"
+
+    ui.set_stat('leastsq')
+
+    ui.set_method('simplex')
+    ui.set_method_opt('maxfev', 5000)
+    ui.set_method_opt('verbose', 1)
+
+    ui.set_iter_method('sigmarej')
+    ui.set_iter_method_opt('grow', 1)
+
+    compare(_canonical_empty_iterstat)
 
 
 @requires_data
