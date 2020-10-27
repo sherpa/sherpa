@@ -3,7 +3,8 @@ Release Notes
 Sherpa 4.12.2
 =============
 
-This  Sherpa Standalone release, 4.12.2, serves as the baseline version of Sherpa for CIAO 4.13. It contains numerous enhancements and bug fixes including items which are specific to the standalone This release of Sherpa serves as the baseline release of Sherpa for CIAO 4.13. It contains numerous enhancements and fixes including items which are stand alone sherpa specific.  This is the first Sherpa release supporting Python version 3.8.
+This release contains numerous enhancements and fixes including items which are stand alone sherpa specific.  This is the first Sherpa release fully supporting Python version 3.8.
+
 
 The main areas with the enhancements include
 
