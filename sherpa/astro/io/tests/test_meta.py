@@ -28,12 +28,14 @@ import pytest
 
 from sherpa.utils.testing import requires_fits
 
+
 @requires_fits
 def test_empty():
     """An empty store is empty."""
 
     from sherpa.astro.io.meta import Meta
     store = Meta()
+    assert len(store) == 0
     assert len(store.keys()) == 0
 
 
@@ -43,7 +45,8 @@ def test_key_does_not_exist():
 
     from sherpa.astro.io.meta import Meta
     store = Meta()
-    assert not store.has_key("key")
+    assert "key" not in store
+    assert not store.has_key('key')
 
 
 @requires_fits
@@ -55,7 +58,9 @@ def test_add_keyword(value):
     store = Meta()
     store['key'] = value
     assert store.keys() == ['key']
+    assert "key" in store
     assert store.has_key('key')
+    assert len(store) == 1
     assert len(store.values()) == 1
 
     svalue = store['key']
@@ -244,3 +249,24 @@ def test_str_multi():
     assert lines[2] == ' a             = 23'
     assert lines[3] == ' outfile       = /tmp/b.fits'
     assert lines[4] == ' xkey          =  y  y'
+
+
+@requires_fits
+def test_iter():
+
+    from sherpa.astro.io.meta import Meta
+    store = Meta()
+    store['Xkey'] = 'X X'
+    store['xkey'] = ' y  y'
+    store['a'] = 23
+    store['INFILE'] = 'none'
+    store['outfile'] = '/tmp/b.fits'
+
+    assert len(store) == 5
+
+    keys = set()
+    for k in iter(store):
+        assert k not in keys
+        keys.add(k)
+
+    assert keys == set(['a', 'outfile', 'xkey', 'INFILE', 'Xkey'])

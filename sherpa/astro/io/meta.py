@@ -40,6 +40,15 @@ class Meta(NoNewAttributesAfterInit):
     def __setitem__(self, name, val):
         self.__header[name] = val
 
+    def __contains__(self, item):
+        return item in self.__header
+
+    def __len__(self):
+        return len(self.__header)
+
+    def __iter__(self):
+        return self.__header.__iter__()
+
     def get(self, name, default=None):
         return self.__header.get(name, default)
 
@@ -58,11 +67,14 @@ class Meta(NoNewAttributesAfterInit):
         return keys
 
     def has_key(self, key):
-        return key in self.__header
+        "obj in key should be used instead"
+        return self.__contains__(key)
 
     def values(self):
         return [self.__header[key] for key in self.keys()]
 
+    # NOTE: this does not return a copy of the Meta object.
+    #       Is this intentional?
     def copy(self):
         return self.__header.copy()
 
