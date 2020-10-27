@@ -49,6 +49,7 @@ EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
 #
 FUNC_MAX = numpy.float_(numpy.finfo(numpy.float_).max)
 
+
 def _check_args(x0, xmin, xmax):
     x = numpy.array(x0, numpy.float_)  # Make a copy
     xmin = numpy.asarray(xmin, numpy.float_)
@@ -61,6 +62,7 @@ def _check_args(x0, xmin, xmax):
 
     return x, xmin, xmax
 
+
 def _get_saofit_msg( maxfev, ierr ):
     key = {
         0: (True, 'successful termination'),
@@ -72,6 +74,7 @@ def _get_saofit_msg( maxfev, ierr ):
         }
     return key.get( ierr, (False, 'unknown status flag (%d)' % ierr))
 
+
 def _move_within_limits(x, xmin, xmax):
     below = numpy.flatnonzero(x < xmin)
     if below.size > 0:
@@ -81,12 +84,11 @@ def _move_within_limits(x, xmin, xmax):
     if above.size > 0:
         x[above] = xmax[above]
 
+
 def _my_is_nan( x ):
     fubar = list(filter(lambda xx: xx != xx or xx is numpy.nan or numpy.isnan(xx) and numpy.isfinite(xx), x))
-    if len( fubar ) > 0:
-        return True
-    else:
-        return False
+    return len( fubar ) > 0
+
 
 def _narrow_limits( myrange, xxx, debug ):
 
@@ -131,14 +133,14 @@ def _narrow_limits( myrange, xxx, debug ):
     xmin = xxx[ 1 ]
     xmax = xxx[ 2 ]
 
-    if False != debug:
+    if debug:
         print('narrow_limits: xmin=%s' % xmin)
         print('narrow_limits: x=%s' % x)
         print('narrow_limits: xmax=%s' % xmax)
     myxmin = raise_min_limit( myrange, xmin, x, debug=False )
     myxmax = lower_max_limit( myrange, x, xmax, debug=False )
 
-    if False != debug:
+    if debug:
         print('range = %d' % myrange)
         print('narrow_limits: myxmin=%s' % myxmin)
         print('narrow_limits: x=%s' % x)
@@ -148,6 +150,7 @@ def _narrow_limits( myrange, xxx, debug ):
 
     return myxmin, myxmax
 
+
 def _par_at_boundary( low, val, high, tol ):
     for par_min, par_val, par_max in zip( low, val, high ):
         if sao_fcmp( par_val, par_min, tol ) == 0:
@@ -156,8 +159,10 @@ def _par_at_boundary( low, val, high, tol ):
             return True
     return False
 
+
 def _outside_limits(x, xmin, xmax):
     return (numpy.any(x < xmin) or numpy.any(x > xmax))
+
 
 def _same_par(a,b):
     b = numpy.array(b, numpy.float_)
@@ -165,6 +170,7 @@ def _same_par(a,b):
     if same.size == 0:
         return 1
     return 0
+
 
 def _set_limits(x, xmin, xmax):
     below = numpy.nonzero(x < xmin)
@@ -213,6 +219,7 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     return rv
 
+
 def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
               seed=2005815, population_size=None, xprob=0.9,
               weighting_factor=0.8):
@@ -245,6 +252,7 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     rv += (msg, {'info': ierr, 'nfev': nfev})
 
     return rv
+
 
 def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed, population_size, xprob,
               weighting_factor):
@@ -283,6 +291,7 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed, population_size,
     rv += (msg, {'info': ierr, 'nfev': nfev})
 
     return rv
+
 
 def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
                  maxfev=None, ftol=EPSILON, method=None, verbose=0 ):
@@ -471,7 +480,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             ncores_nm = ncoresNelderMead()
             nfev, nfval, x = \
                 ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
-        if verbose or debug != False:
+        if verbose or debug:
             print('f_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
         ############################# NelderMead #############################
 
@@ -494,7 +503,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             if tmp_fmin < nfval:
                 nfval = tmp_fmin
                 x     = tmp_par
-        if verbose or debug != False:
+        if verbose or debug:
             print('f_de_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
         ############################## nmDifEvo #############################
 
@@ -513,13 +522,13 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 if result[2] < nfval:
                     nfval = result[2]
                     x = numpy.asarray(result[1], numpy.float_)
-                if verbose or debug != False:
+                if verbose or debug:
                     print('f_de_nm%s=%.14e in %d nfev' % \
                           (x, result[2], result[4].get('nfev')))
             ############################ nmDifEvo #############################
 
 
-            if debug != False:
+            if debug:
                 print('ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval))
 
             if sao_fcmp(ofval, nfval, ftol) <= 0:
@@ -625,8 +634,8 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             finalsimplex = [ 2, 1, 1 ]
         else:
             finalsimplex = [ 2, 2, 2 ]
-    elif ( False == numpy.isscalar(finalsimplex) and
-           1 == numpy.iterable(finalsimplex) ):
+    elif (not numpy.isscalar(finalsimplex) and
+          numpy.iterable(finalsimplex) == 1):
         pass
     else:
         finalsimplex = [ 2, 2, 2 ]
@@ -696,7 +705,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     rv = (status, x, fval)
     print_covar_err = False
-    if print_covar_err and None != covarerr:
+    if print_covar_err and covarerr is not None:
         rv += (msg, {'covarerr': covarerr, 'info': status, 'nfev': nfev})
     else:
         rv += (msg, {'info': status, 'nfev': nfev})

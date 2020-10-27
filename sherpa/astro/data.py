@@ -28,7 +28,8 @@ import warnings
 
 import numpy
 
-from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, IntegratedDataSpace2D
+from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
+    IntegratedDataSpace2D
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
@@ -737,7 +738,7 @@ def img_plot(img):
         im = ax.imshow(y, origin='lower', extent=extent, aspect=aspect)
         fig.colorbar(im, ax=ax)
 
-        if filtered != None:
+        if filtered is not None:
             ax.set_xlim(filtered[0], filtered[2])
             ax.set_ylim(filtered[1], filtered[3])
 

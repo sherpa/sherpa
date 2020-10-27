@@ -455,7 +455,7 @@ def test_parallel_map_funcs2():
         return result
 
     def cmp_results(result, tol=1.0e-3):
-        assert(result.succeeded == True)
+        assert result.succeeded
         parvals = (1.7555670572301785, 1.5092728216164186, 4.893136872267538)
         assert result.numpoints == 200
 

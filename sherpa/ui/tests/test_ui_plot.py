@@ -2539,7 +2539,7 @@ def test_ratio_contour_recalc(session):
 
     ygood = np.isfinite(p.y)
     assert ygood.sum() == ygood.size - 1
-    assert ygood[40] == False
+    assert not ygood[40]
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2587,7 +2587,7 @@ def test_resid_contour_recalc(session):
 
     ygood = np.isfinite(p.y)
     assert ygood.sum() == ygood.size - 1
-    assert ygood[40] == False
+    assert not ygood[40]
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])

@@ -775,7 +775,7 @@ class ConfRootBracket(ConfRootNone):
             xb = xbfb[0]
             fb = xbfb[1]
             if mysgn(fa) != mysgn(fb):
-                if False == self.open_interval:
+                if not self.open_interval:
                     warn_user_about_open_interval([xa, xb])
                     return (xa + xb) / 2.0
                 else:
@@ -863,8 +863,8 @@ class ConfStep():
         except ZeroDivisionError:
             xroot = None
 
-        if (None != xroot and False == numpy.isnan( xroot )) and \
-                self.is_same_dir(dir, self.xtrial[-1], xroot):
+        if xroot is not None and not numpy.isnan(xroot) and \
+           self.is_same_dir(dir, self.xtrial[-1], xroot):
             return xroot
         else:
             return self.covar(dir, iter, step_size, base)
@@ -894,7 +894,7 @@ class ConfStep():
 
 def trace_fcn(fcn, bloginfo):
 
-    if False == bloginfo.debug:
+    if not bloginfo.debug:
         return fcn
 
     from itertools import chain
@@ -944,7 +944,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         if is_iterable(arg):
             return arg
             # return map( lambda x: my_neg_pos * abs( x - par_at_min ), arg )
-        elif None != arg:
+        elif arg is not None:
             arg -= par_at_min
             return my_neg_pos * abs(arg)
         else:

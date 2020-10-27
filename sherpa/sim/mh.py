@@ -425,10 +425,10 @@ class MH(Sampler):
             self._mu[self.inv]=1.0/(self._mu[self.inv])
             current[self.inv]=1.0/( current[self.inv])
 
-        self.rejections=0
+        self.rejections = 0
 
         self.sigma_m = sigma_m
-        if np.mean(sigma_m) == False:
+        if not np.mean(sigma_m):
             self.sigma_m = self._sigma.copy()
 
         return (current, stat)

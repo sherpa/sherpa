@@ -386,12 +386,12 @@ def test_regrid_binaryop_2d():
 
     ans1 = rmdlg(x0, y0).reshape(shape)
     ans2 = rmdlc(x0, y0).reshape(shape)
-    assert (ans1 != truthg).any() == False
-    assert (ans2 != truthc).any() == False
+    assert (ans1 == truthg).all()
+    assert (ans2 == truthc).all()
 
     rmdl = (gmdl + cmdl).regrid(xr1, yr1)
     ans3 = rmdl(x0, y0).reshape(shape)
-    assert (ans3 != truth).any() == False
+    assert (ans3 == truth).all()
 
 
 def test_regrid_call_behavior():

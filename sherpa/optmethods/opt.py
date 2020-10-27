@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,10 @@
 #
 
 import multiprocessing
+import random
 
 import numpy as np
-import random
+
 from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks, func_counter
 
 
@@ -193,13 +194,13 @@ class SimplexBase:
             if is_max_length_small_enough(ftol):
                 return True
         elif 2 == method:
-            if False == is_max_length_small_enough(ftol):
+            if not is_max_length_small_enough(ftol):
                 return False
             stddev = is_fct_stddev_small_enough(ftol)
             fctval = are_func_vals_close_enough(ftol)
             return stddev and fctval
         else:
-            if False == is_max_length_small_enough(ftol):
+            if not is_max_length_small_enough(ftol):
                 return False
             stddev = is_fct_stddev_small_enough(ftol)
             fctval = are_func_vals_close_enough(ftol)
