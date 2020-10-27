@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import operator
+
+import numpy
+
 from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
-import numpy, operator
 from sherpa.utils.err import ModelErr
 
 __all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator', 'Template')
@@ -176,5 +179,5 @@ class TemplateModel(ArithmeticModel):
 
 
 interpolators = {
-        'default' : (Template, {'k':2, 'order':2})
+    'default' : (Template, {'k': 2, 'order': 2})
 }
