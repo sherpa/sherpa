@@ -1,5 +1,305 @@
 Release Notes
 
+Sherpa 4.12.2
+=============
+
+This release of Sherpa serves as the baseline release of Sherpa for CIAO 4.13. It contains numerous enhancements and fixes including items which are stand alone sherpa specific. Notable highlights include:
+
+* plotting improvements
+    * improved support for matplotlib (linestyle changes in matplotlib 3.3, support of alpha channels)
+    * overplot support for plot_fit_* plt_bkg_fit_*
+    * updates to histograms, residual plots
+* data I/O and data handling
+    * several bug fixes to handling of the PHA, ARF, RMF files
+* modeling
+    * support for regrid models in the binary expressions
+    * improvements and bug fixes to background treatment in spectral models
+    * improvements in the flux calculations and resampling
+    * added the Voigt model 
+* documentation changes
+    * improvements to Sherpa display in IPython/Jupyter notebooks
+    * updates to the content of the docstrings for generation of ahelp files
+
+Details
+-------
+
+Testing and infrastructure fixes are not shown.
+
+#351 - fix handling of AREASCAL column in PHA files (fix #350)
+    Adds support for handling the AREASCAL value (either scalar of vector) for PHA 
+    data sets. This array is used in XMM RGS data to handle missing chips.
+
+#385 - Properly handle Swift RMF when using Astropy backend
+    Fixes an issue where some low lever xpa calls were returning byte strings rather 
+    than strings in Python 3. This had particular impact on the image_getregion 
+    function.
+
+#483 - An initial release of simultaneous fit on multicores (slower for most…
+    Distributes the evaluations of the multiple independent data sets using the 
+    multi-cores built-in the user's workstation. The current default setting for this 
+    PR is to evaluate the multiple independent data sets sequentially since the 
+    overhead for distributing the workload across multi-cores is high if the evaluation 
+    of the data sets is not time consuming.
+
+#631 - Add HTML representations of common classes for IPython display (fix #345)
+    An initial version of HTML display support for Sherpa objects for users of 
+    IPython/Jupyter notebooks. 
+
+#634 - Added invitation for native software citation
+    Adds a citation method to the sherpa module and updates CITATION to refer to this 
+    new functionality
+
+#693 - Address matplotlib linestyle removal in Matplotlib version 3.3
+    Matplotlib version 3.3 now requires you to split out the drawstyle and linestyle 
+    arguments. This set of PRs changes the code so that the two arguments are now set: 
+    linestyle defaults to solid and drawstyle to default for plots and step-mid for 
+    histograms. This appears to replicate the old version, and should be backwards 
+    compatible (drawstyle is supported in Matplotlib 2.2.5 and 1.5.3)
+
+#709 - Residual-style plots ignore the ylog setting (fi#586)
+    Residual, ratio, and delchi plots always use a linear scale for the y axis, no 
+    matter what the ylog setting is.
+
+#740 - resample_data: when the error range on a bin includes -1 and no-longer restrict 
+       sampling to +/-1 sigma
+    Fixes resample_data/ReSampleData so that it correctly handles bins where the range 
+    of data values (i.e. low to high limit) includes the value -1.
+
+#741 - Fix issue 638, guess needs to update fwhm/sigma bounds
+    Adds support for guessing the fwhm or sigma parameters of the Gauss2D, 
+    NormGauss2D, and SigmaGauss2D models
+
+#750 - Add xspec convolution api
+    Adds support for XSPEC convolution-style models - this link is valid for XSPEC 
+    12.10.1 documentation
+
+#765 - Add docs for setting up all dependencies of the source build with conda
+    Adds documentation on how to use conda to install source build dependencies
+
+#766 - No error for no-ops in `ungroup` and friends
+    Removes DataErrs when ungrouping a dataset that is not grouped or unsubtracting 
+    a dataset that was not subtracted
+
+#770 - Replace EmissionVoigt/AbsorptionVoigt models by Voigt model (fix #597)
+    Replaces the EmissionVoigt and AbsorptionVoigt models with a single model, 
+    Voigt1D. The EmissionVoigt and AbsorptionVoigt models will error out when an 
+    instance is created, pointing users to Voigt1D (as the parameter definitions 
+    have changed).
+
+#772 - Add XSPEC 12.11.0 support (HEAsoft 6.27)
+    Adds support for XSPEC 12.11.0 (released March 31 2020)
+
+#782 - Add a pyproject.toml file
+    Adds a pyproject.toml file to the top level (PEP 518) to document build 
+    requirements
+
+#789 - fix issue #788, fit using moncar with verbose=1 and/or numcores!=1
+    Fixes NameError in moncar when verbose setting >0
+
+#791 - Fix ignore/notice error-ing out when all bins have been set bad #790
+    Allow notice and ignore to be called on a dataset which has no "good" bins 
+    after ignore_bad has been called
+
+#793 - Accept masked arrays for Data XXX creation
+    Allows use the mask of numpy arrays when initializing DataXXX
+
+#798 - enable regrid for the BinaryOpModel class
+    Adds the regrid method to the BinaryOpModel. 
+
+#803 - Updates to sampling of energy and photon fluxes: bug fixes and calculate 
+       unabsorbed components
+    Fixes and improvements to the energy_flux and photon_flux set of commands: 
+    sample_energy_flux, sample_photon_flux, plot_energy_flux, plot_photon_flux, 
+    get_energy_flux_hist, and get_photon_flux_hist
+
+#811 - Remove all __future__ imports
+    Removes __future__ imports that were in place when sherpa supported python 2
+
+#812 - Add unsubtract and ungroup to datastack
+    Adds  corresponding unsubtract and ungroup methods to match subtract and group
+
+#815 - fix typo in rst docs
+    Fixes a typo in the rst docs
+
+#821 - Add hyperlink to similarly named SHERPA package
+    Documentation update to include a link to thethe similarly named package "SHERPA" 
+    for hyperparameter tuning of machine learning models
+
+#842 - Fix scaling of staterror when reading PHA file with rate instead of counts
+    Fixes scaling of STAT_ERR when reading a PHA spectra with a RATES column instead of 
+    COUNTS
+
+#845 - xspec table models: add out-of-bound check to avoid segfault
+    Adds explicit out of bounds checks to avoid segv when calling an Xspec table model
+
+#851 - Updates to the Read-The-Docs build environment
+    Update the Read-The-Docs configuration to the latest version (2), and switch to a 
+    cleaner build (using conda) for the documentation. The minimum Sphinx requirement is 
+    now 1.8 (updated from 1.3).
+
+#856 - Support setting the id value in load_pha with pha2 files (fix #666)
+    Updates load_pha to set the data ids of PHA2 datasets  to: id to id + nfiles - 1 
+    (when id is an integer), or "{}1".format(id) to "{}{}".format(id, nfiles) when id 
+    is a string.
+
+#858 - Minor documentation improvements to ReadTheDocs
+    Adds minor updates to the convolution, regrid, and model evaluation sections of 
+    the ReadTheDocs documentation
+
+#859 - Clean up of the XSPEC interface code
+    Internal changes to the XSPEC interface code, which reduces the amount of similar 
+    (sometimes identical) code. There is no change to the behavior of the XSPEC models.
+
+#865 - Minor documentation fixes
+    Several documentation fixes: XSPEC parameter names, avoiding confusion over links on 
+    references (Sphinx pages), and adding some basic documentation to the 
+    sherpa.astro.background module
+
+#866 - Add parameter-clipping strategy to routines that generate samples (fix #846)
+    The addition of the clip parameter lets users control how parameter values are 
+    clipped before use in sample_energy_flux, sample_photon_flux, plot_energy_flux, 
+    plot_photon_flux, get_energy_flux_hist, and get_photon_flux_hist.
+
+#868 - Add delete_pileup_model (fix #441), list_pileup_model_ids, list_psf_ids functions, 
+       fix list_models (fix #749)
+    Add the delete_pileup_model() function to allow a pileup model to be removed from 
+    a fit (issue #441), and list_psf_ids() and list_pileup_model_ids() routines to list 
+    those datasets with an associated PSF or pileup model. The list_models() routine 
+    no-longer returns an iterator but a list when given an option (issue #749).
+
+#871 - Add MacOS LDFLAGS warning to devdocs
+    Copies the warning about setting PYTHON_LDFLAGS from the install page to the 
+    developer docs
+
+#884 - Move logic from ui layer to DataPHA class: background responses (fix #879, #880)
+    Moves the logic for adding a background response, if one doesn't exist, from the UI 
+    layer to the DataPHA class to clear up several edge cases
+
+#888 - Support vector backscales and bugfix for background modeling
+    Supports fitting backgrounds to PHA datasets which have a variable BACKSCAL array 
+    (rather than a scalar), which can come from combining spectra (e.g. the CIAO contrib 
+    script combine_spectra) or from the data extraction process. In doing so a number of 
+    routines related to the scaling of background-to-source aperture data have seen 
+    adjustments to behavior and some enhanced functionality (such as 
+    sherpa.astro.ui.get_bkg_scale and the sherpa.astro.data.DataPHA.get_background_scale 
+    method).
+
+#897 - Add support for XSPEC 12.11.1
+    Allows Sherpa to be built against XSPEC 12.11.1. There are no new or changed models 
+    in this release compared to XSPEC 12.11.0.
+
+#899 - Update likelihood descriptions
+    Updates likelihood description in several doc-strings and clarifies descriptions 
+    of statistics.
+
+#900 - Ensure that 1D and 2D models are not combined in an expression.
+    Checks that models have the correct dimensionality when combining them, so 
+    expressions like gauss2d.src + const1d.bgnd will now raise a ModelErr.
+
+#906 - Improve and add support for histogram plots
+    Updates to the display of histogram-style plots, in particular for 1D integrated 
+    datasets and some model display for PHA data. The histograms now cover the full 
+    length of each bin (previously they only showed half the bin for the first and 
+    last bins), and gaps in the histogram (where the high edge of a bin is less than 
+    the lower edge of the next bin) are now correctly displayed.
+
+#907 - FEATURE: support alpha transparency for matplotlib plots
+    Supports the 'alpha' preference setting for most plots and contours generated 
+    by Matplotlib
+
+#909 - Refactor: remove _get_model/source methods
+    Removes the _get_source and _get_model methods as they are the same as 
+    get_source and get_model
+
+#910 - Docs: fix several minor issues
+    Documentation clean up - the load_template_interpolator function was named 
+    incorrectly in the example, and the examples for 
+    get_source_component_plot/get_model_component_plot were missing the trailing 
+    _plot for the function names
+
+#911 - Docstring: changes for ahelp
+    Formatting changes to the docstrings for several routines that are useful for 
+    SDS in generating ahelp files
+
+#918 - fix an issue with PHA filtering that affects plot_model
+    Fixes an issue when applying filters to generate the plot_model and 
+    plot_model_component plots for PHA datasets
+
+#919 - enable regrid for the BinaryOpModel class (rebased #798)
+    Enables composite models (created by a binary operation between two models) to 
+    be regridded. The composite model is evaluated at the new grid, and it is only 
+    the combined model expression that is rebinned to the data grid.
+
+#922 - channel settings with grouped PHA data and model plotting
+    Fixes a bug when filtering a grouped PHA dataset using analysis=channel. The 
+    selected bin ranges did not always match the versions you would have received 
+    when doing the same operation with energy or wavelength analysis (the first or 
+    last bin may have been different).
+
+#924 - Updated to ignore the .vscode directory
+    updates system .gitignore to skip over vscode directories
+
+#929 - Support overplot option in plot_fit_xxx (issue #700)
+    The overplot argument can now be used with the plot_fit_xxx and plot_bkg_fit_xxx 
+    routines (e.g. plot_fit_ratio).
+
+#931 - Update Data1DInt / DataPHA data plots to use the histogram plot style
+    Switch the plot_data/plot_bkg plots to draw the data as histograms for Data1DInt 
+    and DataPHA plots.  This will change the behavior of code that accesses the plot 
+    data - e.g. get_data_plot() or the dataplot element of get_fit_plot() - since for 
+    DataPHA and Data1DInt datasets the data will no-longer have an x attribute but 
+    xlo and xhi. To reduce the need for code changes for existing scripts - as many 
+    people use get_model_plot and get_data_plot to get the data - the histogram 
+    plots will return (xlo+xhi)/2 when asked for the x attribute.
+
+#939 - Docs: note XSPEC convolution models are new in 4.12.2
+    Documentation only change noting  that the support for XSPEC convolution models 
+    is new to 4.12.2.
+
+#940 - Minor documentation improvements
+    Fixed several minor issues in the existing documentation
+
+#944 - Improve handling of the default id with PHA background datasets (fix issue #943)
+    The sherpa.astro.ui.set_default_id call no-longer sets the default identifier for 
+    background ids, which are now kept as the value 1. This avoids several issues when 
+    using set_default_id with the background components of PHA datasets
+
+#950 - Documentation fixes
+    Minor documentation updates and adding ReSampleData to the RTD documentation
+
+#953 - docstring fixes
+    Cleans up typos in documentation
+
+#957 - Docs: include the example notebook in the RTD pages
+    Adds the example notebook (SherpaQuickStart.ipynb) to the Sphinx documentation 
+    under the "Notebooks" heading
+
+#961 - Update notebook support for Data1DInt/PHA data
+    Improves the display of Data1DInt and DataPHA objects when displayed directly 
+    by Jupyter notebook and add a new notebook showing off the notebook support
+
+#963 -Docs: note plot_fit_xxx overplot change and add info on notebook support
+    Adds documentation updates including notes on overplot support in plot_fit_xxx 
+    and plot_bkg_fit_xxx functions and RTD notes on adding notebooks 
+
+#964 - Docs: avoid invalid escape sequence warning
+    Very-minor tweak to the Chi2 docstring
+
+#968 - Fix 2d image filtering (fix #965)
+    Fix problems with ignore2d and notice2d when multiple regions are used.
+
+#969 - Support Python 3.8 for MacOSX
+    Add a new multiprocessing_start_method option to sherpa.rc and 
+    sherpa-standalone.rc and init code to set start multiprocessing method 
+    to fork by default.
+
+#971 - Docs: fix sphinx warnings
+    Fix documentation in sherpa.sim.sample on the ReadTheDocs site.
+
+#984 - Address set_xlog/ylog problems with DataPHA/Data1DInt classes (#981)
+    Fix the set_xlog/ylog routines for PHA and 1D integrated datasets.
+
+
 Sherpa 4.12.1
 =============
 
