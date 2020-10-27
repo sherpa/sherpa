@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,17 +17,21 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
+import logging
+import os
+import sys
 from tempfile import NamedTemporaryFile
+import unittest
+
+from numpy.testing import assert_almost_equal
 
 from sherpa.astro import ui
 from sherpa.utils.testing import has_package_from_list
-from numpy.testing import assert_almost_equal
-import logging
-import sys
-import os
 
 logger = logging.getLogger("sherpa")
+
+# We use unittest rather than pytest so we have a test that can be run
+# without requiring external packages.
 
 
 def run(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
