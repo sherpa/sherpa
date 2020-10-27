@@ -926,8 +926,7 @@ def test_data2_int_get_indep_notice(data):
     expected = [(X0_2D - 0.5)[test_filter_0],
                 (X0_2D + 0.5)[test_filter_0],
                 (X1_2D - 0.5)[test_filter_1],
-                (X1_2D + 0.5)[test_filter_1],
-               ]
+                (X1_2D + 0.5)[test_filter_1]]
     actual = data.get_indep(filter=True)
     numpy.testing.assert_array_equal(actual[0], expected[0])
     numpy.testing.assert_array_equal(actual[1], expected[1])

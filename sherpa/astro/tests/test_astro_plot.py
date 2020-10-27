@@ -118,8 +118,7 @@ def test_sourceplot():
                           stats.LeastSq(),
                           stats.Cash(),
                           stats.CStat(),
-                          stats.WStat(),
-                         ])
+                          stats.WStat()])
 def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
     from sherpa.astro import io

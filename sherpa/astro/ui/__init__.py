@@ -51,8 +51,8 @@ if hasattr(sherpa.astro, 'xspec'):
                                sherpa.astro.xspec.XSConvolutionKernel))
 
     from sherpa.astro.xspec import get_xsabund, get_xscosmo, get_xsxsect, \
-         set_xsabund, set_xscosmo, set_xsxsect, set_xsxset, get_xsxset, \
-         get_xschatter, set_xschatter
+        set_xsabund, set_xscosmo, set_xsxsect, set_xsxset, get_xsxset, \
+        get_xschatter, set_xschatter
     __all__.extend(('get_xsabund', 'get_xschatter', 'get_xscosmo',
                     'get_xsxsect', 'set_xsabund', 'set_xschatter',
                     'set_xscosmo', 'set_xsxsect', 'set_xsxset',

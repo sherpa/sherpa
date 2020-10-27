@@ -28,12 +28,14 @@ import pytest
 
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
+    ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, \
+    UnaryOpModel
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D
 
 
-def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
+def validate_warning(warning_capturer, parameter_name="norm",
+                     model_name="ParameterCase", actual_name="Ampl", num=1):
     assert num == len(warning_capturer)
     for warning in warning_capturer:
         assert issubclass(warning.category, DeprecationWarning)
@@ -545,9 +547,10 @@ def test_functionmodel_check():
 
 
 @pytest.mark.parametrize('model,mtype',
-                         [(ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel),
-                          (ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel)
-                         ])
+                         [(ArithmeticConstantModel(23, name='the-23'),
+                           ArithmeticConstantModel),
+                          (ArithmeticFunctionModel(numpy.sin),
+                           ArithmeticFunctionModel)])
 def test_unop_arithmeticxxx(model, mtype):
     """Can we apply a function to an Arithmetic*Model object?
 
@@ -571,9 +574,10 @@ def test_unop_arithmeticxxx(model, mtype):
 
 @pytest.mark.parametrize('model,mtype',
                          [(23, ArithmeticConstantModel),
-                          (ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel),
-                          (ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel)
-                         ])
+                          (ArithmeticConstantModel(23, name='the-23'),
+                           ArithmeticConstantModel),
+                          (ArithmeticFunctionModel(numpy.sin),
+                           ArithmeticFunctionModel)])
 def test_binop_arithmeticxxx(model, mtype):
     """Can we create and combine Arithmetic*Model objects?"""
 

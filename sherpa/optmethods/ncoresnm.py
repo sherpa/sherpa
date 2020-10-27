@@ -47,14 +47,14 @@ class MyNelderMead(Opt):
         # print('MyNelderMead::__call__ xpar =', xpar)
         npar = len(xpar)
         simplex = SimplexStep(self.func, npar + 1, xpar, self.xmin, self.xmax,
-                                   step, None, None)
+                              step, None, None)
         result = \
             self.optimize(xpar, simplex, maxnfev, tol, finalsimplex, verbose)
         # print('MyNelderMead::__call__ result =', result)
         return result
 
     def contract_in_out(self, simplex, centroid, reflection_pt, rho_gamma,
-                         contraction_coef, badindex, maxnfev, verbose):
+                        contraction_coef, badindex, maxnfev, verbose):
 
         if simplex[badindex - 1, -1] <= reflection_pt[-1] and \
                reflection_pt[-1] < simplex[badindex, -1]:
@@ -147,7 +147,7 @@ class NelderMeadBase:
         self.fmin = np.inf
         self.par = np.nan
         np.seterr(over='ignore', divide='ignore', under='ignore',
-                     invalid='ignore')
+                  invalid='ignore')
         return
 
     def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6,  maxnfev=None,
@@ -179,7 +179,7 @@ class NelderMead0(NelderMeadBase):
         return 1.2 * x
 
     def neldermead0(self, fcn, x0, xmin, xmax, step=None, finalsimplex=1,
-                     maxnfev=None, tol=1.0e-6, verbose=0):
+                    maxnfev=None, tol=1.0e-6, verbose=0):
         x0 = np.asarray(x0)
         maxnfev = self.get_maxnfev(maxnfev, len(x0))
 

@@ -116,9 +116,9 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
     p = mu.size
 
     # log density unnormalized
-    val = (-0.5*np.log(np.linalg.det(sigma)) - (dof+p)/2.0*
-            np.log( dof + np.dot( x-mu, np.dot(
-                    np.linalg.inv(sigma), x-mu ) ) ) )
+    val = (-0.5*np.log(np.linalg.det(sigma)) - (dof+p)/2.0 *
+           np.log(dof + np.dot(x - mu,
+                               np.dot(np.linalg.inv(sigma), x-mu))))
 
     # log density normalized
     if norm:
@@ -145,17 +145,16 @@ def dmvnorm(x, mu, sigma, log=True):
         raise ValueError("Error: sigma is not symmetric")
 
     # log density
-    logdens = (-mu.size/2.0*np.log(2*np.pi)-
-                1/2.0*np.log( np.linalg.det(sigma) )-1/2.0 *
-                np.dot( x-mu, np.dot(np.linalg.inv(sigma), x-mu ) ) )
+    logdens = (-mu.size/2.0*np.log(2*np.pi) -
+               1/2.0 * np.log(np.linalg.det(sigma)) - 1 / 2.0 *
+               np.dot(x - mu, np.dot(np.linalg.inv(sigma), x-mu)))
 
     if log:
         return logdens
 
     # density
-    dens = np.exp( logdens )
+    dens = np.exp(logdens)
     return dens
-
 
 
 # def progress_bar(current, total, tstart, name=None):
@@ -256,7 +255,7 @@ class Walk():
 
                 # Accept this proposal?
                 if self._sampler.accept(current_params, current_stat,
-                                         proposed_params, proposed_stat):
+                                        proposed_params, proposed_stat):
                     proposals[jump] = proposed_params
                     stats[jump] = proposed_stat
                     acceptflag[jump] = True

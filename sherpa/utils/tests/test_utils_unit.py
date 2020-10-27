@@ -16,13 +16,14 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import pytest
 import numpy
+from numpy.testing import assert_almost_equal, assert_array_equal, \
+    assert_array_almost_equal
+
+import pytest
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box
 from sherpa.utils.testing import requires_data
-from numpy.testing import assert_almost_equal, assert_array_equal, \
-    assert_array_almost_equal
 
 
 def test_calc_ftest():
@@ -127,10 +128,10 @@ def test_calc_hist2d():
     yin = yy.ravel()
 
     expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
-       0, 4, 0, 4, 0, 4, 0, 4]
+                0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 4, 0, 4, 0, 4, 0, 4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
+                0, 4, 0, 4, 0, 4, 0, 4]
 
     assert_array_equal(expected, _utils.hist2d(xin, yin, x, x))
 

@@ -828,7 +828,7 @@ def _install_test_deps():
     def install(package_name):
         try:
             subprocess.call([sys.executable, '-m', 'pip', 'install', package_name],
-                               stdout=sys.stdout, stderr=sys.stderr)
+                            stdout=sys.stdout, stderr=sys.stderr)
         except:
             print("""Cannot import pip or install packages with it.
             You need pytest, and possibly pytest-cov, in order to run the tests.

@@ -47,7 +47,7 @@ from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogra
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
-from sherpa.plot import DataPlot, FitPlot, ModelPlot, PlotErr
+from sherpa.plot import FitPlot, PlotErr
 
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -1734,8 +1734,7 @@ def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1):
                          [("channel", 'Channel', 'Counts/sec/channel',
                            33, 677),
                           ("wavelength", 'Wavelength (Angstrom)', 'Counts/sec/Angstrom',
-                           26.537710718511885,  1.2562229845315145),
-                         ])
+                           26.537710718511885,  1.2562229845315145)])
 def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     """plot_model units appear to depend on setting.
 
@@ -3064,8 +3063,7 @@ def test_datapha_plot_after_clean():
                           'fit',
                           'resid',
                           'ratio',
-                          'delchi'
-                         ])
+                          'delchi'])
 def test_set_plot_opt_x(cls, datafunc, plotfunc):
     """Does set_xlog/xlinear work?
 
@@ -3143,8 +3141,7 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
                           ('fit', True),
                           ('resid', False),
                           ('ratio', False),
-                          ('delchi', False)
-                         ])
+                          ('delchi', False)])
 def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     """Does set_ylog/ylinear work?
 
@@ -3230,8 +3227,7 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
                           'bkg_fit',
                           'bkg_resid',
                           'bkg_ratio',
-                          'bkg_delchi',
-                         ])
+                          'bkg_delchi'])
 def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     """Does set_xlog/xlinear work? Astro data objects only.
 
@@ -3312,8 +3308,7 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
                           ('bkg_fit', True),
                           ('bkg_resid', False),
                           ('bkg_ratio', False),
-                          ('bkg_delchi', False)
-                         ])
+                          ('bkg_delchi', False)])
 def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     """Does set_ylog/ylinear work?  Astro data objects only.
     """

@@ -21,15 +21,18 @@
 import numpy as np
 
 import sherpa.models.basic as basic
-from sherpa.utils import SherpaFloat, _utils
-from sherpa.models.model import ArithmeticModel, RegriddableModel1D, RegriddableModel2D
+from sherpa.utils import SherpaFloat
+from sherpa.models.model import ArithmeticModel, RegriddableModel1D, \
+    RegriddableModel2D
 
 
 def userfunc(pars, x, *args, **kwargs):
     return x
 
 
-EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, basic.Const)
+EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D,
+                   basic.Const)
+
 
 def test_create_and_evaluate():
 
@@ -40,8 +43,8 @@ def test_create_and_evaluate():
         clsobj = getattr(basic, cls)
 
         if not isinstance(clsobj, type) \
-            or not issubclass(clsobj, ArithmeticModel) \
-            or clsobj in EXCLUDED_MODELS:
+           or not issubclass(clsobj, ArithmeticModel) \
+           or clsobj in EXCLUDED_MODELS:
             continue
 
         # These have very different interfaces than the others

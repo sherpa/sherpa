@@ -376,7 +376,7 @@ class Model(NoNewAttributesAfterInit):
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                 doc='The hard maximum values for the thawed parameters.')
+                                  doc='The hard maximum values for the thawed parameters.')
 
     def reset(self):
         """Reset the parameter values."""

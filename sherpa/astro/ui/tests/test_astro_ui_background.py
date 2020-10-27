@@ -413,8 +413,7 @@ def test_pha1_subtract(id, exps, bscales, ascales, results, clean_astro_ui, hide
                             0.5 * (100 * 2 * 0.5) / (400 * 0.5 * 0.8)]),
                           ((100, 200, 1.0), (2, 4, 1 * np.ones(19)), (0.5, 0.1, 1.0),
                            [0.5 * (100 * 2 * 0.5) / (200 * 4 * 0.1),
-                            None]),
-                         ])
+                            None])])
 @pytest.mark.parametrize("id", [None, 1, "x"])
 def test_pha1_show_data(id, exps, bscales, ascales, results, clean_astro_ui):
     """Check we can show the data and get the scaling.
@@ -599,8 +598,7 @@ SCALING[15] = 0.7
                           ((100, 1000, 1500), (0.01, 0.05 * SCALING, 0.04), (0.4, 0.5, 0.6 * SCALING),
                            1, 0.5 * (100 * 0.01 * 0.4) / (1000 * 0.05 * SCALING * 0.5)),
                           ((100, 1000, 1500), (0.01, 0.05 * SCALING, 0.04), (0.4, 0.5, 0.6 * SCALING),
-                           2, 0.5 * (100 * 0.01 * 0.4) / (1500 * 0.04 * 0.6 * SCALING)),
-                         ])
+                           2, 0.5 * (100 * 0.01 * 0.4) / (1500 * 0.04 * 0.6 * SCALING))])
 @pytest.mark.parametrize("id", [None, "x"])
 def test_pha1_get_bkg_scale(id, exps, bscales, ascales, bkg_id, result, clean_astro_ui):
     """Check we can calculate the scaling factor"""
@@ -1129,8 +1127,7 @@ SCALING2[9:15] = 0.8
                          [((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), False, 2742.484820710452),
                           ((100.0, 1000.0), (0.01, 0.05 * SCALING2), (0.8, 0.4), True, 764.242724090022),
                           ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), False, 53935156.203287244),
-                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True, 28780409.397312585)
-                         ])
+                          ((100.0, 1000.0, 750.0), (0.01, 0.05 * SCALING2, 0.02 * SCALING), (0.8, 0.4, 0.2), True, 28780409.397312585)])
 def test_pha1_eval_vector_stat(exps, bscales, ascales,
                                dofilter, expected, clean_astro_ui):
     """Compare statistic, with and without filtering.

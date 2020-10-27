@@ -862,8 +862,8 @@ def test_operations_datastack_subtract(ds_setup, ds_datadir):
     d1 = datastack.get_data('myid')
     assert np.all(d1.get_dep()[15:20] == [3., 7., 1., 6., 4.])
     datastack.subtract('myid')
-    assert np.allclose(d1.get_dep()[15:20], [2.86507936, 6.86507936, 1. ,
-                                      6. , 4.])
+    assert np.allclose(d1.get_dep()[15:20], [2.86507936, 6.86507936, 1.,
+                                             6., 4.])
     datastack.unsubtract('myid')
     assert np.all(d1.get_dep()[15:20] == [3., 7., 1., 6., 4.])
 

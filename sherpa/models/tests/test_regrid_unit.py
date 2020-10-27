@@ -25,7 +25,7 @@ import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
     ArithmeticFunctionModel, RegridWrappedModel
-from sherpa.models.basic import Box1D, Const1D, Gauss1D, Const2D, \
+from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
 from sherpa.instrument import PSFModel
@@ -35,7 +35,8 @@ import sherpa.astro.ui as ui
 import sherpa.utils
 from sherpa.utils.err import ModelErr
 
-from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, EvaluationSpace2D
+from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
+    EvaluationSpace2D
 
 
 @pytest.fixture(params=[True, False])
@@ -479,10 +480,9 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
 
 
 @pytest.mark.parametrize("requested",
-                         [ np.arange(1, 7, 0.1),
-                           np.arange(1, 7, 0.05),
-                           np.arange(1, 7, 0.2),
-                       ])
+                         [np.arange(1, 7, 0.1),
+                          np.arange(1, 7, 0.05),
+                          np.arange(1, 7, 0.2)])
 def test_low_level_regrid1d_full_overlap(requested):
     """Base case of test_low_level_regrid1d_partial_overlap
     """
@@ -505,13 +505,12 @@ def test_low_level_regrid1d_full_overlap(requested):
 
 
 @pytest.mark.parametrize("requested",
-                         [ np.arange(2.5, 7, 0.2),
-                           np.arange(1, 5.1, 0.2),
-                           np.arange(2.5, 5.1, 0.2),
-                           np.arange(2.5, 7, 0.075),
-                           np.arange(1, 5.1, 0.075),
-                           np.arange(2.5, 5.1, 0.075)
-                       ])
+                         [np.arange(2.5, 7, 0.2),
+                          np.arange(1, 5.1, 0.2),
+                          np.arange(2.5, 5.1, 0.2),
+                          np.arange(2.5, 7, 0.075),
+                          np.arange(1, 5.1, 0.075),
+                          np.arange(2.5, 5.1, 0.075)])
 def test_low_level_regrid1d_partial_overlap(requested):
     """What happens if there is partial overlap of the grid?
 
@@ -549,10 +548,9 @@ def test_low_level_regrid1d_partial_overlap(requested):
 
 
 @pytest.mark.parametrize("requested, tol",
-                         [ (np.arange(1, 7, 0.1), 1e-7),
-                           (np.arange(1, 7, 0.05), 1e-7),
-                           (np.arange(1, 7, 0.2), 0.02)
-                       ])
+                         [(np.arange(1, 7, 0.1), 1e-7),
+                          (np.arange(1, 7, 0.05), 1e-7),
+                          (np.arange(1, 7, 0.2), 0.02)])
 def test_low_level_regrid1d_int_full_overlap(requested, tol):
     """Base case of test_low_level_regrid1d_int_partial_overlap
     """
@@ -578,16 +576,15 @@ def test_low_level_regrid1d_int_full_overlap(requested, tol):
 
 
 @pytest.mark.parametrize("requested, tol",
-                         [ (np.arange(2.5, 7, 0.075), 0.007),
-                           (np.arange(1, 5.1, 0.075), 0.007),
-                           (np.arange(2.5, 5.1, 0.075), 0.007),
-                           (np.arange(2.5, 7, 0.12), 0.007),
-                           (np.arange(1, 5.1, 0.12), 0.012),
-                           (np.arange(2.5, 5.1, 0.12), 0.007),
-                           (np.arange(2.5, 7, 0.2), 0.02),
-                           (np.arange(1, 5.1, 0.2), 0.02),
-                           (np.arange(2.5, 5.1, 0.2), 0.02)
-                       ])
+                         [(np.arange(2.5, 7, 0.075), 0.007),
+                          (np.arange(1, 5.1, 0.075), 0.007),
+                          (np.arange(2.5, 5.1, 0.075), 0.007),
+                          (np.arange(2.5, 7, 0.12), 0.007),
+                          (np.arange(1, 5.1, 0.12), 0.012),
+                          (np.arange(2.5, 5.1, 0.12), 0.007),
+                          (np.arange(2.5, 7, 0.2), 0.02),
+                          (np.arange(1, 5.1, 0.2), 0.02),
+                          (np.arange(2.5, 5.1, 0.2), 0.02)])
 def test_low_level_regrid1d_int_partial_overlap(requested, tol):
     """What happens if there is partial overlap of the grid?
 

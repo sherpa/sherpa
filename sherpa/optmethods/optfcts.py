@@ -448,7 +448,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         maxfev = 8192 * population_size
 
     def myopt(myfcn, xxx, ftol, maxfev, seed, pop, xprob,
-               weight, factor=4.0, debug=False):
+              weight, factor=4.0, debug=False):
 
         x = xxx[0]
         xmin = xxx[1]
@@ -486,7 +486,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         mymaxfev = min(maxfev_per_iter, maxfev - nfev)
         if 1 == numcores:
             result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
-                                seed, pop, xprob, weight)
+                               seed, pop, xprob, weight)
             nfev += result[4].get('nfev')
             x = numpy.asarray(result[1], numpy.float_)
             nfval = result[2]
@@ -536,8 +536,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         return x, nfval, nfev
 
     x, fval, nfev = myopt(fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
-                           seed, population_size, xprob, weighting_factor,
-                           factor=2.0, debug=False)
+                          seed, population_size, xprob, weighting_factor,
+                          factor=2.0, debug=False)
 
     if nfev < maxfev:
         if all(x == 0.0):
@@ -788,8 +788,8 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
         if _par_at_boundary(xmin, x, xmax, xtol):
             nm_result = neldermead(fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol),
-                                    maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
-                                    verbose=0)
+                                   maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
+                                   verbose=0)
             nfev += nm_result[4]['nfev']
             x = nm_result[1]
             fval = nm_result[2]

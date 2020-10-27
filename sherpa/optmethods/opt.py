@@ -164,7 +164,7 @@ class SimplexBase:
             smallest_fct_val = self.simplex[0, -1]
             largest_fct_val = self.simplex[-1, -1]
             return Knuth_close(smallest_fct_val, largest_fct_val,
-                                tolerance)
+                               tolerance)
 
         def is_fct_stddev_small_enough(tolerance):
             fval_std = np.std([col[-1] for col in self.simplex])

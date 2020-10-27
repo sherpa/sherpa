@@ -393,9 +393,9 @@ class EvaluationSpace2D():
         bool
             True if the axes are integrated, False otherwise.
         """
-        return (not self.is_empty)\
-               and self.x_axis.is_integrated\
-               and self.y_axis.is_integrated
+        return (not self.is_empty) \
+            and self.x_axis.is_integrated \
+            and self.y_axis.is_integrated
 
     @property
     def is_ascending(self):
@@ -922,9 +922,10 @@ def rebin_no_int(array, dimensions=None, scale=None):
 
     result = np.zeros(dimensions)
     for j, i in itertools.product(*map(range, array.shape)):
-        (J, dj), (I, di) = divmod(j * dimensions[0], array.shape[0]), divmod(i * dimensions[1], array.shape[1])
-        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])), \
-                               divmod(i + 1, array.shape[1] / float(dimensions[1]))
+        (J, dj) = divmod(j * dimensions[0], array.shape[0])
+        (I, di) = divmod(i * dimensions[1], array.shape[1])
+        (J1, dj1) = divmod(j + 1, array.shape[0] / float(dimensions[0]))
+        (I1, di1) = divmod(i + 1, array.shape[1] / float(dimensions[1]))
 
         # Moving to new bin
         # Is this a discrete bin?

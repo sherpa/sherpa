@@ -11020,7 +11020,7 @@ class XSjet(XSAdditiveModel):
         self.Dco = Parameter(name, 'Dco', 3350.6, 1., 1e8, 1., 1e8,
                              units='Mpc', frozen=True)
         self.log_mdot = Parameter(name, 'log_mdot', -1., -5., 2., -5., 2.,
-                                 units='logL/lEdd')
+                                  units='logL/lEdd')
         self.thetaobs = Parameter(name, 'thetaobs', 3., 0., 90., 0., 90.,
                                   units='deg', frozen=True)
         self.BulkG = Parameter(name, 'BulkG', 13., 1., 100., 1., 100, frozen=True)

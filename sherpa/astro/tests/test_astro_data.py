@@ -887,9 +887,7 @@ def test_ungroup():
     '''
     session = Session()
     testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
-                                   np.zeros(50),
-                                   bin_lo=1,
-                                   bin_hi=10)
+                       np.zeros(50), bin_lo=1, bin_hi=10)
     session.set_data(1, testdata)
     session.ungroup(1)
     session.group_bins(1, 5)
@@ -1411,8 +1409,7 @@ def xfail(*args):
                           (30, 2000, '27:850'),
                           (-5, 350, '9:356'),
                           xfail(-20, -5, ''),
-                          (2000, 3000, ''),
-                         ])
+                          (2000, 3000, '')])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results
 
@@ -1439,8 +1436,7 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (0.7, 2000, '0.6716:12.4100'),
                           (-5, 4.2, '0.1248:4.1391'),
                           xfail(-20, -5, ''),
-                          xfail(2000, 3000, ''),
-                         ])
+                          xfail(2000, 3000, '')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1461,8 +1457,7 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (20, 8000, '20.4628:99.3224'),
                           xfail(-5, 15, '0.9991:14.7688'),
                           xfail(-20, -5, ''),
-                          xfail(8000, 9000, ''),
-                         ])
+                          xfail(8000, 9000, '')])
 def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1483,8 +1478,7 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (30, 2000, '9:19'),
                           (-5, 350, '386:850'),
                           xfail(-20, -5, '9:850'),
-                          (2000, 3000, '9:850'),
-                         ])
+                          (2000, 3000, '9:850')])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1505,8 +1499,7 @@ def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (0.8, 2000, '0.1248:0.7665'),
                           (-5, 3.5, '3.6792:12.4100'),
                           xfail(-20, -5, '0.1248:12.4100'),
-                          xfail(2000, 3000, '0.1248:12.4100'),
-                         ])
+                          xfail(2000, 3000, '0.1248:12.4100')])
 def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1527,8 +1520,7 @@ def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (20, 2000, '0.9991:18.4610'),
                           xfail(-5, 15, '15.4401:99.3224'),
                           xfail(-20, -5, '0.9991:99.3224'),
-                          xfail(2000, 3000, '0.9991:99.3224'),
-                         ])
+                          xfail(2000, 3000, '0.9991:99.3224')])
 def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 

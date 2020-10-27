@@ -673,8 +673,7 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
                                                      (ArgumentErr, False, [1, 2, None]),
                                                      (ArgumentErr, True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]]),
                                                      (ArgumentErr, False, np.ones(3).reshape(1, 3, 1)),
-                                                     (ArgumentErr, True, np.ones(9).reshape(1, 3, 3))
-                                              ])
+                                                     (ArgumentErr, True, np.ones(9).reshape(1, 3, 3))])
 def test_sample_foo_flux_invalid_scales(method, etype, correlated, scales,
                                         make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when scales is
@@ -1987,8 +1986,7 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("getfunc,medflux",
                          [(ui.get_photon_flux_hist, 1.276591979716474e-4),
-                          (ui.get_energy_flux_hist, 4.550271338687814e-13),
-                         ])
+                          (ui.get_energy_flux_hist, 4.550271338687814e-13)])
 def test_get_xxx_flux_hist_unabsorbed(getfunc, medflux, make_data_path, clean_astro_ui,
                                       reset_seed, hide_logging):
     """Can we get the histogram data for fluxes (for an unabsorbed flux?)"""

@@ -40,7 +40,7 @@ from sherpa.models import basic
 from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
     DataContour, ModelContour, SourceContour, ResidContour, \
-    RatioContour, FitContour, PSFContour, LRHistogram, \
+    RatioContour, FitContour, LRHistogram, \
     ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot, \
     DataHistogramPlot
 
@@ -1177,7 +1177,7 @@ def test_plot_multiple(session):
                                                  'Ratio of Data to Model'],
                                                 ['y', 'y', 'y', 'y',
                                                  'Data / Model']),
-                                    1):
+                                            1):
 
         assert ax.get_geometry() == (2, 3, i)
         assert ax.get_title() == title
