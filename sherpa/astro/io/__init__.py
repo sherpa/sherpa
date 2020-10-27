@@ -90,7 +90,7 @@ except ImportError:
                       .format(io_opt))
 
 warning = logging.getLogger(__name__).warning
-info    = logging.getLogger(__name__).info
+info = logging.getLogger(__name__).info
 
 
 __all__ = ('read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',

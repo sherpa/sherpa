@@ -58,10 +58,10 @@ def test_create_and_evaluate():
 
         try:
             if m.name.count('2d') or m.name == 'hubblereynolds':
-                pt_out  = m(x, x)
+                pt_out = m(x, x)
                 int_out = m(x, x, x, x)
             else:
-                pt_out  = m(x)
+                pt_out = m(x)
                 int_out = m(x, x)
         except ValueError:
             assert False, "evaluation of model '{}' failed".format(cls)

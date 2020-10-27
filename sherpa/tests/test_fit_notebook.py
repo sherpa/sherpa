@@ -48,7 +48,7 @@ def test_statinfo_basic():
 def test_statinfo_chisq():
     """Fake rstat and qval"""
     s = fit.StatInfoResults('chi2foo', 1.2, 12, None, 10)
-    s.qval= 0.9
+    s.qval = 0.9
     s.rstat = 1.1
     r = s._repr_html_()
 

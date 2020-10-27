@@ -75,7 +75,7 @@ class FullBayes(PragBayes):
 
             stat_temp = self.calc_fit_stat(self._mu)
 
-            mu0  = np.repeat(0, ncomp)
+            mu0 = np.repeat(0, ncomp)
             sig0 = np.diag(np.repeat(1, ncomp))
             accept_pr = dmvnorm(new_rr, mu0, sig0) - \
                 dmvnorm(old_rr, mu0, sig0)

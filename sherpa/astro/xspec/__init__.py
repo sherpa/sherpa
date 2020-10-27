@@ -10440,7 +10440,7 @@ class XSzbabs(XSMultiplicativeModel):
 
     """
 
-    __function__ =  "xszbabs"
+    __function__ = "xszbabs"
 
     def __init__(self, name='zbabs'):
         self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')

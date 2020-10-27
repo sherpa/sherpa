@@ -53,7 +53,7 @@ def test_create_and_evaluate():
 
         m = clsobj()
         if isinstance(m, basic.TableModel):
-            m.load(x,x)
+            m.load(x, x)
         if isinstance(m, basic.UserModel):
             m.calc = userfunc
         assert type(m).__name__.lower() == m.name
@@ -61,14 +61,14 @@ def test_create_and_evaluate():
 
         try:
             if m.name.count('2d'):
-                pt_out  = m(x, x)
+                pt_out = m(x, x)
                 int_out = m(x, x, x, x)
             else:
                 if m.name in ('log', 'log10'):
                     xx = -x
                 else:
                     xx = x
-                pt_out  = m(xx)
+                pt_out = m(xx)
                 int_out = m(xx, xx)
         except ValueError:
             assert False, "evaluation of model '{}' failed".format(cls)

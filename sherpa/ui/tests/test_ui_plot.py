@@ -2631,7 +2631,7 @@ def test_fit_contour_recalc(session):
     assert pd.x1 == pytest.approx(x1)
     assert pm.x0 == pytest.approx(x0)
     assert pm.x1 == pytest.approx(x1)
-    assert pd.y== pytest.approx(y)
+    assert pd.y == pytest.approx(y)
     # just check the model isn't flat
     assert pm.y.min() < pm.y.max()
 
@@ -2645,7 +2645,7 @@ def test_fit_contour_recalc(session):
     assert pd.x1 == pytest.approx(nx1)
     assert pm.x0 == pytest.approx(nx0)
     assert pm.x1 == pytest.approx(nx1)
-    assert pd.y== pytest.approx(ny)
+    assert pd.y == pytest.approx(ny)
     # just check the model is flat
     assert pm.y.min() == pm.y.max()
 

@@ -28,6 +28,7 @@ def init(name, npar):
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
     return x0, xmin, xmax, fmin
 
+
 def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
     """The central function for all the optimization test
     1) Out of the 35 tests from:
@@ -43,8 +44,9 @@ def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
     assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
     if opt == lmdif and _ncpus > 1:
         status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax, numcores=_ncpus)
-        assert fmin  == pytest.approx(fval, rel=reltol, abs=abstol)
+        assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
         assert xtra.get('num_parallel_map') != 0
+
 
 ###############################################################################
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])

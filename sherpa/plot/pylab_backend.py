@@ -507,7 +507,7 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
 
     x0 = numpy.unique(x0)
     x1 = numpy.unique(x1)
-    y  = numpy.asarray(y)
+    y = numpy.asarray(y)
 
     if x0.size * x1.size != y.size:
         raise NotImplementedErr('contourgrids')

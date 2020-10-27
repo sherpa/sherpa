@@ -36,10 +36,10 @@ class MyNelderMead(Opt):
 
     def __init__(self, fcn, xmin, xmax):
         Opt.__init__(self, fcn, xmin, xmax)
-        self.expansion_coef   = 2.0          # chi
+        self.expansion_coef = 2.0          # chi
         self.contraction_coef = 0.5          # gamma
-        self.reflection_coef    = 1.0          # rho
-        self.shrink_coef         = 0.5          # sigma
+        self.reflection_coef = 1.0          # rho
+        self.shrink_coef = 0.5          # sigma
         self.simplex = None
 
     def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
@@ -304,7 +304,7 @@ class NelderMead6(NelderMeadBase):
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
-        my_nm_6 =  NelderMead6.MyNelderMead6(fcn, xmin, xmax)
+        my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
         if maxnfev is None:
             maxnfev = 512 * len(x)
         result = my_nm_6(x, maxnfev, tol, step, finalsimplex, verbose)
@@ -335,7 +335,7 @@ class NelderMead7(NelderMeadBase):
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
-        my_nm_7 =  NelderMead7.MyNelderMead7(fcn, xmin, xmax)
+        my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
         if maxnfev is None:
             maxnfev = 512 * len(x)
         result = my_nm_7(x, maxnfev, tol, step, finalsimplex, verbose)

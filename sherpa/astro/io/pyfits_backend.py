@@ -685,7 +685,7 @@ def get_rmf_data(arg, make_copy=False):
             # QUS: should this actually be an error, rather than just
             #      something that is logged to screen?
             error("Failed to locate TLMIN keyword for F_CHAN" +
-                  " column in RMF file '%s'; "  % filename +
+                  " column in RMF file '%s'; " % filename +
                   'Update the offset value in the RMF data set to' +
                   ' appropriate TLMIN value prior to fitting')
 
@@ -819,8 +819,8 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             data['exposure'] = _try_key(hdu, 'EXPOSURE', True, SherpaFloat)
             # data['poisserr'] = _try_key(hdu, 'POISSERR', True, bool)
             data['backfile'] = _try_key(hdu, 'BACKFILE')
-            data['arffile']  = _try_key(hdu, 'ANCRFILE')
-            data['rmffile']  = _try_key(hdu, 'RESPFILE')
+            data['arffile'] = _try_key(hdu, 'ANCRFILE')
+            data['rmffile'] = _try_key(hdu, 'RESPFILE')
 
             # Keywords or columns
             data['backscal'] = _try_col_or_key(hdu, 'BACKSCAL', fix_type=True)
@@ -877,8 +877,8 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             exposure = _try_key(hdu, 'EXPOSURE', True, SherpaFloat)
             # poisserr = _try_key(hdu, 'POISSERR', True, bool)
             backfile = _try_key(hdu, 'BACKFILE')
-            arffile  = _try_key(hdu, 'ANCRFILE')
-            rmffile  = _try_key(hdu, 'RESPFILE')
+            arffile = _try_key(hdu, 'ANCRFILE')
+            rmffile = _try_key(hdu, 'RESPFILE')
 
             # Keywords or columns
             backscal = _try_vec_or_key(hdu, 'BACKSCAL', num, fix_type=True)
@@ -1084,7 +1084,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         cdeltw = data['eqpos'].cdelt
         crpixw = data['eqpos'].crpix
         crvalw = data['eqpos'].crval
-        equin  = data['eqpos'].equinox
+        equin = data['eqpos'].equinox
 
     if data['sky'] is not None:
         cdeltp = data['sky'].cdelt

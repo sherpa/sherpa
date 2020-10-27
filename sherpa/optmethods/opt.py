@@ -74,7 +74,7 @@ class MyNcores:
         procs = []
 
         for id, func in enumerate(funcs):
-            myargs=(func, id, out_q, err_q, lock) + args
+            myargs = (func, id, out_q, err_q, lock) + args
             try:
                 procs.append(multiprocessing.Process(target=self.my_worker,
                                                      args=myargs))
@@ -438,7 +438,7 @@ def Griewank(x):
 def Hump(x):
     """Hump((0.0898, -0.7126) = Hump(-0.0898, 0.7126) = 0"""
     return 1.0316285 + 4 * x[0] * x[0] - 2.1 * pow(x[0], 4) + \
-        pow(x[0], 6) / 3 + x[0] * x[1] - 4 * x[1]* x[1] + \
+        pow(x[0], 6) / 3 + x[0] * x[1] - 4 * x[1] * x[1] + \
         4 * pow(x[1], 4)
 
 def Levy(x):
@@ -473,8 +473,8 @@ def Paviani(x):
     n = len(x)
     for ii in range(n):
         a = np.log(x[ii] - 2.0)
-        b = np.log(10.0 - x[ii ])
-        fval += a * a +  b * b
+        b = np.log(10.0 - x[ii])
+        fval += a * a + b * b
         mul *= x[ii]
     fval -= pow(mul, 0.2)
     return fval
@@ -490,7 +490,7 @@ def Rastrigin(x):
 def Rosenbrock(x):
     """Rosenbrock(1, 1, ..., 1) = 0"""
     x = np.asarray(x)
-    val = np.sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0,axis=0)
+    val = np.sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0, axis=0)
     return val
 
 def Schwefel(x):
@@ -872,33 +872,33 @@ def tst_opt(algorithms, npar):
 
     xmin = [-100, -100]
     xmax = [100, 100]
-    x0	 = [-12, 10]
+    x0 = [-12, 10]
     tst_algos(Bohachevsky1, x0, xmin, xmax)
 
     xmin = [-100, -100]
     xmax = [100, 100]
-    x0	 = [12, 10]
+    x0 = [12, 10]
     tst_algos(Bohachevsky2, x0, xmin, xmax)
 
     xmin = [-100, -100]
     xmax = [100, 100]
-    x0	 = [-61.2, 51.0]
+    x0 = [-61.2, 51.0]
     tst_algos(Bohachevsky3, x0, xmin, xmax)
 
     xmin = [-10, -10]
     xmax = [10, 10]
-    x0	 = [-6.2, 5.0]
+    x0 = [-6.2, 5.0]
     tst_algos(Booth, x0, xmin, xmax)
 
     xmin = [0.9, 9.0, 0.9]
     xmax = [1.2, 11.2, 1.2]
-    x0      = [(xmin[0] + xmax[0]) * 0.5, (xmin[1] + xmax[1]) * 0.5,
-               (xmin[2] + xmax[2]) * 0.5]
+    x0 = [(xmin[0] + xmax[0]) * 0.5, (xmin[1] + xmax[1]) * 0.5,
+          (xmin[2] + xmax[2]) * 0.5]
     tst_algos(BoxBetts, x0, xmin, xmax)
 
     xmin = [-5, 0]
     xmax = [10, 15]
-    x0	 = [-3.2, 5.0]
+    x0 = [-3.2, 5.0]
     tst_algos(Branin, x0, xmin, xmax)
 
     xmin = npar * [-1.0e2]
@@ -908,7 +908,7 @@ def tst_opt(algorithms, npar):
 
     xmin = [-10, -10, -10, -10]
     xmax = [10, 10, 10, 10.]
-    x0	 = [-3.2, -5.0, -6.0, -1.0]
+    x0 = [-3.2, -5.0, -6.0, -1.0]
     tst_algos(Colville, x0, xmin, xmax)
 
     xmin = npar * [-10]
@@ -918,18 +918,18 @@ def tst_opt(algorithms, npar):
 
     xmin = [-100, -100]
     xmax = [100, 100]
-    # x0	 = [5.5, 5.5]
-    x0	 = [25., 25.]
+    # x0 = [5.5, 5.5]
+    x0 = [25., 25.]
     tst_algos(Easom, x0, xmin, xmax)
 
     xmin = npar * [-1000, -1000]
     xmax = npar * [1000, 1000]
-    x0       = npar * [0.5, -2]
+    x0 = npar * [0.5, -2]
     tst_algos(FreudensteinRoth, x0, xmin, xmax)
 
     xmin = [-2, -2]
     xmax = [2, 2]
-    x0	 = [-1, 1]
+    x0 = [-1, 1]
     tst_algos(GoldsteinPrice, x0, xmin, xmax)
 
     xmin = npar * [-600]
@@ -939,7 +939,7 @@ def tst_opt(algorithms, npar):
 
     xmin = [-5, -5]
     xmax = [5, 5]
-    x0	 = [-3.2, 5.0]
+    x0 = [-3.2, 5.0]
     tst_algos(Hump, x0, xmin, xmax)
 
     xmin = npar * [-10]
@@ -949,47 +949,47 @@ def tst_opt(algorithms, npar):
 
     xmin = [-10, -10]
     xmax = [10, 10]
-    x0	 = [-3.2, 5.0]
+    x0 = [-3.2, 5.0]
     tst_algos(Matyas, x0, xmin, xmax)
 
     xmin = [-1.5, -3.0]
     xmax = [4.0, 4.0]
-    x0     = [0.0, 0.0]
+    x0 = [0.0, 0.0]
     tst_algos(McCormick, x0, xmin, xmax)
 
     xmin = npar * [2.001]
     xmax = npar * [9.999]
-    x0	 = npar * [5.0]
+    x0 = npar * [5.0]
     tst_algos(Paviani, x0, xmin, xmax)
 
     xmin = npar * [-5.12]
     xmax = npar * [5.12]
-    x0	 = npar * [-2.0]
+    x0 = npar * [-2.0]
     tst_algos(Rastrigin, x0, xmin, xmax)
 
     xmin = npar * [-1000, -1000]
     xmax = npar * [1000, 1000]
-    x0	 = npar * [-1.2, 1.0]
+    x0 = npar * [-1.2, 1.0]
     tst_algos(Rosenbrock, x0, xmin, xmax)
 
     xmin = npar * [-500]
     xmax = npar * [500]
-    x0	 = npar * [-200]
+    x0 = npar * [-200]
     tst_algos(Schwefel, x0, xmin, xmax)
 
     xmin = [-10, -10]
     xmax = [10, 10]
-    x0	 = [-2.0, 5.0]
+    x0 = [-2.0, 5.0]
     tst_algos(Shubert, x0, xmin, xmax)
 
     xmin = npar * [-5.12]
     xmax = npar * [5.12]
-    x0	 = npar * [-2.0]
+    x0 = npar * [-2.0]
     tst_algos(Sphere, x0, xmin, xmax)
 
     xmin = npar * [-10]
     xmax = npar * [10]
-    x0	 = npar * [-2.0]
+    x0 = npar * [-2.0]
     tst_algos(SumSquares, x0, xmin, xmax)
 
     if npar == 6 or npar == 10:
@@ -1000,7 +1000,7 @@ def tst_opt(algorithms, npar):
 
     xmin = npar * [-5, -5]
     xmax = npar * [10, 10]
-    x0   = npar * [0.5, -2]
+    x0 = npar * [0.5, -2]
     tst_algos(Zakharov, x0, xmin, xmax)
 
 if '__main__' == __name__:

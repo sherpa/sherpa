@@ -49,7 +49,7 @@ class test_models(SherpaTestCase):
 
             out = None
             try:
-                out  = m(x)
+                out = m(x)
             except ValueError:
                 self.fail("evaluation of model '%s' failed" % cls)
 

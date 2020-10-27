@@ -1316,7 +1316,7 @@ class DataPHA(Data1D):
         if units.startswith('chan'):
             # Note: the names of these routines appear confusing because of the
             #       way group values are used
-            self._to_channel   = self._channel_to_group
+            self._to_channel = self._channel_to_group
             self._from_channel = self._group_to_channel
             units = 'channel'
 

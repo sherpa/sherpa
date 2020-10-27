@@ -312,7 +312,7 @@ class AbsorptionGaussian(RegriddableModel1D):
         y = numpy.ones_like(x)
         sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044 ?
         delta = numpy.abs((x - p[1]) / sigma)
-        ampl  = p[2] / sigma / 2.50662828  # document this constant
+        ampl = p[2] / sigma / 2.50662828  # document this constant
 
         idx = (delta < self.limit.val)
         y[idx] = 1.0 - ampl * numpy.exp(- delta[idx] * delta[idx] / 2.0)

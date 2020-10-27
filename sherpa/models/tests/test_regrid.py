@@ -357,7 +357,7 @@ def test_regrid_binaryop_1d():
     assert result.numpoints == x.size
     assert result.statval < 1.0
     assert mygauss.counter == myconst.counter
-    assert (result.nfev + 4) * x_regrid.size  == mygauss.counter
+    assert (result.nfev + 4) * x_regrid.size == mygauss.counter
 
 def test_regrid_binaryop_2d():
     y0, x0 = np.mgrid[20:29, 10:20]

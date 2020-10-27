@@ -58,7 +58,7 @@ class Strategy:
 
     def __init__(self, func, npar, npop, sfactor, xprob):
         self.func = func
-        self.npar  = npar
+        self.npar = npar
         self.npop = npop
         self.sfactor = sfactor
         self.xprob = xprob
@@ -125,8 +125,8 @@ class Strategy2(Strategy):
         trial = numpy.array(pop[icurrent][:])
         n = random.randint(0, self.npar - 1)
         for _ in range(self.npar):
-            trial[n] = trial[n] + self.sfactor* (pop[0][n] - trial[n]) + \
-                self.sfactor* (pop[r1][n] - pop[r2][n])
+            trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
+                self.sfactor * (pop[r1][n] - pop[r2][n])
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
@@ -144,7 +144,7 @@ class Strategy3(Strategy):
         trial = numpy.array(pop[icurrent][:])
         n = random.randint(0, self.npar - 1)
         for _ in range(self.npar):
-            trial[n] = pop[0][n]  + \
+            trial[n] = pop[0][n] + \
                 (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
                 self.sfactor
             n = (n + 1) % self.npar
@@ -164,7 +164,7 @@ class Strategy4(Strategy):
         trial = numpy.array(pop[icurrent][:])
         n = random.randint(0, self.npar - 1)
         for _ in range(self.npar):
-            trial[n] = pop[r5][n]  + \
+            trial[n] = pop[r5][n] + \
                 (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
                 self.sfactor
             n = (n + 1) % self.npar
@@ -186,8 +186,8 @@ class Strategy5(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[0][n]  + \
-                    self.sfactor *(pop[r2][n] - pop[r3][n])
+                trial[n] = pop[0][n] + \
+                    self.sfactor * (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
 
@@ -205,7 +205,7 @@ class Strategy6(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[r1][n]  + self.sfactor * \
+                trial[n] = pop[r1][n] + self.sfactor * \
                     (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
@@ -243,7 +243,7 @@ class Strategy8(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[0][n]  + \
+                trial[n] = pop[0][n] + \
                     self.sfactor * (pop[r2][n] - pop[r3][n] - pop[r4][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
@@ -263,7 +263,7 @@ class Strategy9(Strategy):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
                 trial[n] = pop[r5][n] + \
-                    self.sfactor * (pop[r1][n] +pop[r2][n] - pop[r3][n] -
+                    self.sfactor * (pop[r1][n] + pop[r2][n] - pop[r3][n] -
                                     pop[r4][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)

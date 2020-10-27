@@ -87,7 +87,7 @@ class Kernel(NoNewAttributesAfterInit):
         self.kshape = kshape
         self.kernel = None
         self.skshape = None
-        self.norm   = norm
+        self.norm = norm
         self.origin = origin
         self.frozen = frozen
         self.center = center

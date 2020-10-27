@@ -132,7 +132,7 @@ class MyCashWithBkg(UserStat):
         modeldata = data.eval_model_to_fit(model)
 
         fitdata = tofit[0]
-        fvec = modeldata - (fitdata  * numpy.log(modeldata))
+        fvec = modeldata - (fitdata * numpy.log(modeldata))
         weight = kwargs.get('weight')
         if weight is not None:
             fvec = fvec * weight
@@ -201,7 +201,7 @@ class MyCashNoBkg(UserStat):
         modeldata = data.eval_model_to_fit(model)
 
         fitdata = tofit[0]
-        fvec = modeldata - (fitdata  * numpy.log(modeldata))
+        fvec = modeldata - (fitdata * numpy.log(modeldata))
         weight = kwargs.get('weight')
         if weight is not None:
             fvec = fvec * weight

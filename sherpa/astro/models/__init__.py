@@ -686,7 +686,7 @@ class Voigt1D(RegriddableModel1D):
         self.fwhm_g = Parameter(name, 'fwhm_g', 10, tinyval, hard_min=tinyval)
         self.fwhm_l = Parameter(name, 'fwhm_l', 10, 0, hard_min=0)
         self.pos = Parameter(name, 'pos', 0.0)
-        self.ampl  = Parameter(name, 'ampl', 1.0)
+        self.ampl = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
         return
@@ -776,7 +776,7 @@ class PseudoVoigt1D(RegriddableModel1D):
         self.frac = Parameter(name, 'frac', 0.5, 0, 1, hard_min=0, hard_max=1)
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.pos = Parameter(name, 'pos', 0.0)
-        self.ampl  = Parameter(name, 'ampl', 1.0)
+        self.ampl = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
                                  (self.frac, self.fwhm, self.pos, self.ampl))
         return

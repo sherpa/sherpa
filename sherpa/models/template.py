@@ -112,7 +112,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
 
     def interpolate(self, point, x_out):
         self._calc_distances(point)
-        if self._distances[0][1]==0:
+        if self._distances[0][1] == 0:
             return self.template_model.templates[self._distances[0][0]]
         k_distances = self._distances[:self.k]
         weights = [(idx, 1/numpy.array(distance)) for idx, distance in k_distances]

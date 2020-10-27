@@ -50,17 +50,17 @@ class ARFSIMFactory():
                 emethod = hdr[key]['EMETHOD'].strip().upper()
 
         if emethod is not None and emethod.startswith('PCA1DADD'):
-            bias      = cols[2]['BIAS']
+            bias = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
             fvariance = cols[3]['FVARIANCE']
-            eigenval  = cols[3]['EIGENVAL']
-            eigenvec  = cols[3]['EIGENVEC']
+            eigenval = cols[3]['EIGENVAL']
+            eigenvec = cols[3]['EIGENVEC']
             return PCA1DAdd(bias, component, fvariance, eigenval, eigenvec)
 
         elif emethod is not None and emethod.startswith('SIM1DADD'):
-            bias      = cols[2]['BIAS']
+            bias = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
-            simcomp   = cols[3]['SIMCOMP']
+            simcomp = cols[3]['SIMCOMP']
             return SIM1DAdd(bias, component, simcomp)
 
         raise TypeError("Unknown simulation ARF '%s'" % filename)
@@ -69,13 +69,13 @@ class ARFSIMFactory():
 class PCA1DAdd():
 
     def __init__(self, bias, component, fvariance, eigenval, eigenvec):
-        self.bias      = bias
+        self.bias = bias
         self.component = component
         self.fvariance = fvariance
-        self.eigenval  = eigenval
-        self.eigenvec  = eigenvec
-        self.ncomp     = len(self.component)
-        self.rrout     = None
+        self.eigenval = eigenval
+        self.eigenvec = eigenvec
+        self.ncomp = len(self.component)
+        self.rrout = None
 
     def add_deviations(self, specresp, rrin=None, rrsig=None):
         # copy the old ARF (use new memory for deviations)
@@ -95,10 +95,10 @@ class PCA1DAdd():
 class SIM1DAdd():
 
     def __init__(self, bias, component, simcomp):
-        self.bias      = bias
+        self.bias = bias
         self.component = component
-        self.simcomp   = simcomp
-        self.ncomp     = len(self.component)
+        self.simcomp = simcomp
+        self.ncomp = len(self.component)
 
     def add_deviations(self, specresp):
         # copy the old ARF (use new memory for deviations)
@@ -208,7 +208,7 @@ class WalkWithSubIters(Walk):
                 jump = ii + 1
 
                 current_params = proposals[ii]
-                current_stat   = stats[ii]
+                current_stat = stats[ii]
 
                 # Perturb the associated PHA ARF with deviations
                 self._sampler.perturb_arf(current_params, current_stat)
@@ -219,7 +219,7 @@ class WalkWithSubIters(Walk):
 
                 # Assume proposal is rejected by default
                 proposals[jump] = current_params
-                stats[jump]  = current_stat
+                stats[jump] = current_stat
 
                 for jj in range(nsubiter):
 
@@ -258,7 +258,7 @@ class WalkWithSubIters(Walk):
 
                         # Mini convergence step
                         current_params = proposed_params
-                        current_stat   = proposed_stat
+                        current_stat = proposed_stat
 
                     else:
                         self._sampler.reject()
@@ -268,11 +268,11 @@ class WalkWithSubIters(Walk):
                         # accepted iteration or the last accepted
                         # subiteration?
                         current_params = proposals[ii]
-                        current_stat   = stats[ii]
+                        current_stat = stats[ii]
 
                         # Proposal is rejected
                         proposals[jump] = np.array(current_params)
-                        stats[jump]  = current_stat
+                        stats[jump] = current_stat
 
         finally:
             self._sampler.tear_down()

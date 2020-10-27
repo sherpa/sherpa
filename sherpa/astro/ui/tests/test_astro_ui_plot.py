@@ -1237,7 +1237,7 @@ def test_img_contour_function_kwarg(clean_astro_ui, basic_img):
         assert ax.get_xscale() == 'linear'
         assert ax.get_yscale() == 'linear'
 
-        assert len(ax.lines) ==0
+        assert len(ax.lines) == 0
         assert len(ax.collections) > 0
 
         col = ax.collections[0]

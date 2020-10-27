@@ -97,7 +97,7 @@ def rmvt(mu, sigma, dof):
 
     zero_vec = np.zeros_like(mu)
     q = np.random.chisquare(dof, 1)[0]
-    nsample  = np.random.multivariate_normal(zero_vec, sigma)
+    nsample = np.random.multivariate_normal(zero_vec, sigma)
     proposal = mu + nsample / np.sqrt(q / dof)
     return proposal
 
@@ -108,9 +108,9 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
     Probability Density of a multi-variate Student's t distribution
     """
 
-    #if np.min( np.linalg.eigvalsh(sigma))<=0 :
+    # if np.min( np.linalg.eigvalsh(sigma))<=0 :
     #    raise ValueError("Error: sigma is not positive definite")
-    if np.max( np.abs(sigma-sigma.T))>=1e-9 :
+    if np.max(np.abs(sigma-sigma.T)) >= 1e-9 :
         raise ValueError("Error: sigma is not symmetric")
 
     p = mu.size
@@ -139,13 +139,13 @@ def dmvnorm(x, mu, sigma, log=True):
     Probability Density of a multi-variate Normal distribution
     """
 
-    #if np.min( np.linalg.eigvalsh(sigma))<=0 :
+    # if np.min( np.linalg.eigvalsh(sigma))<=0 :
     #    raise ValueError("Error: sigma is not positive definite")
-    if np.max( np.abs(sigma-sigma.T))>=1e-9 :
+    if np.max(np.abs(sigma-sigma.T)) >= 1e-9 :
         raise ValueError("Error: sigma is not symmetric")
 
     # log density
-    logdens = (-mu.size/2.0*np.log(2*np.pi) -
+    logdens = (-mu.size / 2.0 * np.log(2 * np.pi) -
                1/2.0 * np.log(np.linalg.det(sigma)) - 1 / 2.0 *
                np.dot(x - mu, np.dot(np.linalg.inv(sigma), x-mu)))
 
@@ -178,7 +178,6 @@ def dmvnorm(x, mu, sigma, log=True):
 #     sys.stdout.flush()
 
 
-
 class Walk():
 
     def __init__(self, sampler=None, niter=1000):
@@ -191,7 +190,7 @@ class Walk():
     def __call__(self, **kwargs):
 
         if self._sampler is None:
-            raise AttributeError("sampler object has not been set, "+
+            raise AttributeError("sampler object has not been set, " +
                                  "please use set_sampler()")
 
         pars, stat = self._sampler.init(**kwargs)
@@ -218,22 +217,22 @@ class Walk():
         #   that the limits need increasing or very low s/n data?
         #
 
-        #tstart = time.time()
+        # tstart = time.time()
 
         try:
             for ii in range(niter):
 
-                #progress_bar(ii, niter, tstart, self._sampler.__class__.__name__)
+                # progress_bar(ii, niter, tstart, self._sampler.__class__.__name__)
 
                 jump = ii+1
 
                 current_params = proposals[ii]
-                current_stat   = stats[ii]
+                current_stat = stats[ii]
 
                 # Assume proposal is rejected by default
                 proposals[jump] = current_params
-                stats[jump]  = current_stat
-                #acceptflag[jump] = False
+                stats[jump] = current_stat
+                # acceptflag[jump] = False
 
                 # Draw a proposal
 
@@ -264,7 +263,7 @@ class Walk():
                     self._sampler.reject()
         finally:
             self._sampler.tear_down()
-            #progress_bar(niter, niter, tstart, self._sampler.__class__.__name__)
+            # progress_bar(niter, niter, tstart, self._sampler.__class__.__name__)
 
         params = proposals.transpose()
         return (stats, acceptflag, params)
@@ -336,10 +335,8 @@ class MH(Sampler):
         self.sigma_m = False
         Sampler.__init__(self)
 
-
     def calc_fit_stat(self, proposed_params):
         return self.fcn(proposed_params)
-
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
              priors=(), originalscale=True, scale=1, sigma_m=False):
@@ -374,10 +371,10 @@ class MH(Sampler):
         if not defaultprior:
             # if log transformed but prior on original scale, jacobian
             # for those parameters is needed
-            if np.sum( log*self.originalscale ) > 0:
-                self.jacobian[ log*self.originalscale ] = True
-            if np.sum( inv*self.originalscale ) > 0:
-                self.jacobian[ inv*self.originalscale ] = True
+            if np.sum(log * self.originalscale) > 0:
+                self.jacobian[log * self.originalscale] = True
+            if np.sum(inv * self.originalscale) > 0:
+                self.jacobian[inv * self.originalscale] = True
 
         self.log = np.array(log)
         if self.log.size == 1:
@@ -387,7 +384,7 @@ class MH(Sampler):
         if self.inv.size == 1:
             self.inv = np.tile(self.inv, self._mu.size)
 
-        if np.sum(log*inv) > 0:
+        if np.sum(log * inv) > 0:
             raise TypeError(
                 "Cannot specify both log and inv transformation for the same " +
                 "parameter")
@@ -406,23 +403,23 @@ class MH(Sampler):
         # selected parameters
         if np.sum(self.log) > 0:
             logcovar = self._sigma.copy()
-            logcovar[:,self.log]= logcovar[:,self.log]/self._mu[self.log]
-            logcovar[self.log]= (logcovar[self.log].T/self._mu[self.log]).T
+            logcovar[:, self.log] = logcovar[:, self.log] / self._mu[self.log]
+            logcovar[self.log] = (logcovar[self.log].T / self._mu[self.log]).T
             self._sigma = np.copy(logcovar)
-            self._mu[self.log]=np.log(self._mu[self.log])
-            current[self.log]=np.log( current[self.log])
+            self._mu[self.log] = np.log(self._mu[self.log])
+            current[self.log] = np.log(current[self.log])
 
         # using delta method to create proposal distribution on inverse scale
         # for selected parameters
         if np.sum(self.inv) > 0:
             invcovar = self._sigma.copy()
-            invcovar[:,self.inv] = invcovar[:,self.inv]/(
-                                   -1.0*np.power(self._mu[self.inv],2))
-            invcovar[self.inv] = (invcovar[self.inv].T/(
-                                  -1.0*np.power(self._mu[self.inv],2))).T
+            invcovar[:, self.inv] = invcovar[:, self.inv] / (
+                                   -1.0*np.power(self._mu[self.inv], 2))
+            invcovar[self.inv] = (invcovar[self.inv].T / (
+                                  -1.0*np.power(self._mu[self.inv], 2))).T
             self._sigma = np.copy(invcovar)
-            self._mu[self.inv]=1.0/(self._mu[self.inv])
-            current[self.inv]=1.0/( current[self.inv])
+            self._mu[self.inv] = 1.0 / self._mu[self.inv]
+            current[self.inv] = 1.0 / current[self.inv]
 
         self.rejections = 0
 
@@ -432,16 +429,15 @@ class MH(Sampler):
 
         return (current, stat)
 
-
     def update(self, stat, mu, init=True):
         """ include prior """
         if not self.defaultprior:
             x = mu.copy()
             if np.sum(self.originalscale) < mu.size:
                 for j in range(mu.size):
-                    if self.log[j]*(1-self.originalscale[j])>0:
+                    if self.log[j] * (1 - self.originalscale[j]) > 0:
                         x[j] = np.log(x[j])
-                    if self.inv[j]*(1-self.originalscale[j])>0:
+                    if self.inv[j] * (1 - self.originalscale[j]) > 0:
                         x[j] = 1.0 / x[j]
 
             for ii, func in enumerate(self.prior_funcs):
@@ -452,16 +448,15 @@ class MH(Sampler):
         # 0.0 == np.sum(np.log(np.ones(mu.size)))
         stat += np.sum(np.log(self.prior))
 
-        if np.sum(self.log*self.jacobian) > 0:
-            stat += np.sum( np.log( mu[self.log*self.jacobian] ) )
-        if np.sum(self.inv*self.jacobian) > 0:
-            stat_temp = np.sum(2.0*np.log(np.abs(mu[self.inv*self.jacobian])))
+        if np.sum(self.log * self.jacobian) > 0:
+            stat += np.sum(np.log(mu[self.log * self.jacobian]))
+        if np.sum(self.inv * self.jacobian) > 0:
+            stat_temp = np.sum(2.0 * np.log(np.abs(mu[self.inv * self.jacobian])))
             if init:
                 stat += stat_temp
             else:
                 stat -= stat_temp
         return stat
-
 
     def draw(self, current):
         """Create a new set of parameter values using the t distribution.
@@ -474,7 +469,6 @@ class MH(Sampler):
         self.accept_func = self.accept_mh
         return proposal
 
-
     def mh(self, current):
         """ MH jumping rule """
 
@@ -483,16 +477,13 @@ class MH(Sampler):
         proposal = rmvt(self._mu, self._sigma, self._dof)
         return proposal
 
-
     def dmvt(self, x, log=True, norm=False):
         return dmvt(x, self._mu, self._sigma, self._dof, log, norm)
-
 
     def accept_mh(self, current, current_stat, proposal, proposal_stat):
         alpha = np.exp(proposal_stat + self.dmvt(current) -
                        current_stat - self.dmvt(proposal))
         return alpha
-
 
     def accept(self, current, current_stat, proposal, proposal_stat, **kwargs):
         """
@@ -500,36 +491,33 @@ class MH(Sampler):
         t distribution)?
         """
         alpha = self.accept_func(current, current_stat, proposal, proposal_stat)
-        u = np.random.uniform(0,1,1)
+        u = np.random.uniform(0, 1, 1)
         return u <= alpha
-
 
     def reject(self):
         ### added for test
         self.rejections += 1
 
-
     def calc_stat(self, proposed_params):
 
-        if np.sum(self.log)>0:
-            proposed_params[self.log]=np.exp(proposed_params[self.log])
-        if np.sum(self.inv)>0:
-            proposed_params[self.inv]=1.0/proposed_params[self.inv]
+        if np.sum(self.log) > 0:
+            proposed_params[self.log] = np.exp(proposed_params[self.log])
+        if np.sum(self.inv) > 0:
+            proposed_params[self.inv] = 1.0 / proposed_params[self.inv]
 
         proposed_stat = self.calc_fit_stat(proposed_params)
 
-        #putting parameters back on log scale
-        if np.sum(self.log)>0:
+        # putting parameters back on log scale
+        if np.sum(self.log) > 0:
             proposed_params[self.log] = np.log(proposed_params[self.log])
-        #putting parameters back on inverse scale
-        if np.sum(self.inv)>0:
-            proposed_params[self.inv] = 1.0/proposed_params[self.inv]
+        # putting parameters back on inverse scale
+        if np.sum(self.inv) > 0:
+            proposed_params[self.inv] = 1.0 / proposed_params[self.inv]
 
         # include prior
         proposed_stat = self.update(proposed_stat, proposed_params, False)
 
         return proposed_stat
-
 
     def tear_down(self):
         pass
@@ -545,7 +533,6 @@ class MetropolisMH(MH):
         self.num_mh = 0
         self.num_metropolis = 0
 
-
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
              priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5):
 
@@ -559,7 +546,6 @@ class MetropolisMH(MH):
         return MH.init(self, log, inv, defaultprior, priorshape, priors,
                        originalscale, scale, sigma_m)
 
-
     def draw(self, current):
         """Create a new set of parameter values using the t distribution.
 
@@ -567,7 +553,7 @@ class MetropolisMH(MH):
         parameters, along with the covariance matrix (sigma),
         return a new set of parameters.
         """
-        u = np.random.uniform(0,1,1)
+        u = np.random.uniform(0, 1, 1)
         proposal = None
         if u <= self.p_M:
             proposal = self.metropolis(current)
@@ -580,23 +566,20 @@ class MetropolisMH(MH):
 
         return proposal
 
-
     def metropolis(self, current):
         """ Metropolis Jumping Rule """
 
         # Metropolis with MH jumps from the current accepted parameter
         # proposal at each iteration
-        proposal = rmvt(current, self.sigma_m*self.scale, self._dof)
+        proposal = rmvt(current, self.sigma_m * self.scale, self._dof)
         return proposal
 
-
     def accept_metropolis(self, current, current_stat, proposal, proposal_stat):
-        alpha = np.exp( proposal_stat - current_stat)
+        alpha = np.exp(proposal_stat - current_stat)
         return alpha
-
 
     def tear_down(self):
         num = float(self.num_metropolis + self.num_mh)
         if num > 0:
-            debug("p_M: %g, Metropolis: %g%%" % (self.p_M, 100 * self.num_metropolis/num))
-            debug("p_M: %g, Metropolis-Hastings: %g%%" % (self.p_M, 100 * self.num_mh/num))
+            debug("p_M: %g, Metropolis: %g%%" % (self.p_M, 100 * self.num_metropolis / num))
+            debug("p_M: %g, Metropolis-Hastings: %g%%" % (self.p_M, 100 * self.num_mh / num))

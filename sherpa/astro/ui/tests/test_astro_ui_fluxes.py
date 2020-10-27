@@ -927,7 +927,7 @@ def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
     # The nH value, as it bumps against the lower bound of 0, has
     # been seen to require a larger tolerance than the other parameters.
     #
-    assert np.log10(np.median(nh)) ==  pytest.approx(lnh0, rel=1e-3)
+    assert np.log10(np.median(nh)) == pytest.approx(lnh0, rel=1e-3)
     assert np.median(gamma) == pytest.approx(gamma0, rel=1e-3)
     assert np.log10(np.median(ampl)) == pytest.approx(lampl0, rel=1e-3)
 

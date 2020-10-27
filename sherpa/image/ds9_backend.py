@@ -95,12 +95,12 @@ def _set_wcs(keys):
     eqpos, sky, name = keys
 
     phys = ''
-    wcs  = "OBJECT = '%s'\n" % name
+    wcs = "OBJECT = '%s'\n" % name
 
     if eqpos is not None:
-        wcrpix  = eqpos.crpix
-        wcrval  = eqpos.crval
-        wcdelt  = eqpos.cdelt
+        wcrpix = eqpos.crpix
+        wcrval = eqpos.crval
+        wcdelt = eqpos.cdelt
 
     if sky is not None:
         pcrpix = sky.crpix

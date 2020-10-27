@@ -1759,13 +1759,13 @@ class Polynom2D(RegriddableModel2D):
         dyd2x1 = (ymax - ymin) / ((x1max - x1min) * (x1max - x1min))
         dydx0dx1 = (ymax - ymin) / ((x0max - x0min) * (x1max - x1min))
 
-        c     = {'val': (ymax + ymin) / 2., 'min': ylo, 'max': yhi}
-        cx1   = {'val': 0., 'min': -100 * dydx0, 'max': 100 * dydx0}
-        cy1   = {'val': 0., 'min': -100 * dydx1, 'max': 100 * dydx1}
-        cx2   = {'val': 0., 'min': -100 * dyd2x0, 'max': 100 * dyd2x0}
-        cy2   = {'val': 0., 'min': -100 * dyd2x1, 'max': 100 * dyd2x1}
+        c = {'val': (ymax + ymin) / 2., 'min': ylo, 'max': yhi}
+        cx1 = {'val': 0., 'min': -100 * dydx0, 'max': 100 * dydx0}
+        cy1 = {'val': 0., 'min': -100 * dydx1, 'max': 100 * dydx1}
+        cx2 = {'val': 0., 'min': -100 * dyd2x0, 'max': 100 * dyd2x0}
+        cy2 = {'val': 0., 'min': -100 * dyd2x1, 'max': 100 * dyd2x1}
         cx1y1 = {'val': 0., 'min': -100 * dydx0dx1, 'max': 100 * dydx0dx1}
-        c22   = {'val': 0., 'min': ylo, 'max': yhi }
+        c22 = {'val': 0., 'min': ylo, 'max': yhi }
 
         param_apply_limits(c, self.c, **kwargs)
         param_apply_limits(cx1, self.cx1, **kwargs)

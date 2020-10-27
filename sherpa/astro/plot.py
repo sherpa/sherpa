@@ -224,7 +224,7 @@ class SourcePlot(HistogramPlot):
 
     def __init__(self):
         self.units = None
-        self.mask  = None
+        self.mask = None
         HistogramPlot.__init__(self)
         self.title = 'Source'
 
@@ -242,7 +242,7 @@ class SourcePlot(HistogramPlot):
             self.units = "energy"
 
         self.xlabel = data.get_xlabel()
-        self.title  = 'Source Model of %s' % data.name
+        self.title = 'Source Model of %s' % data.name
         self.xlo, self.xhi = data._get_indep(filter=False)
         self.mask = filter_bins((lo,), (hi,), (self.xlo,))
         self.y = src(self.xlo, self.xhi)

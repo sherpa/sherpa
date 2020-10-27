@@ -136,7 +136,7 @@ def prob32( x, *args ):
     return 11.0 * pow( x, 11.0 ) - 1.0
 
 def prob33( x, *args ):
-    return numpy.exp( (1.0*x+7)*x -30.0 ) - 1.0
+    return numpy.exp( (1.0*x+7) * x - 30.0 ) - 1.0
 
 def prob34( x, *args ):
     return 1.0 / x - numpy.sin( x ) + 1.0
@@ -331,7 +331,7 @@ class test_root(SherpaTestCase):
 
     def test_prob21( self ):
         a = -1000.0
-        b =  1000.0
+        b = 1000.0
         self.tst_solve( prob21, a, b, self.tol )
 
     def test_prob22( self ):
@@ -361,12 +361,12 @@ class test_root(SherpaTestCase):
 
     def test_prob27( self ):
         a = -1000.0
-        b =  1000.0
+        b = 1000.0
         self.tst_solve( prob27, a, b, self.tol )
 
     def test_prob28( self ):
         a = -10.0
-        b =  10.0
+        b = 10.0
         self.tst_solve( prob28, a, b, self.tol )
 
     def test_prob29( self ):
@@ -421,17 +421,17 @@ class test_root(SherpaTestCase):
 
     def test_repeller( self ):
         a = -10.0
-        b =  10.0
+        b = 10.0
         self.tst_solve( repeller, a, b, self.tol )
 
     def test_pinhead( self ):
-        a =  1.0e-5
-        b =  10.0
+        a = 1.0e-5
+        b = 10.0
         self.tst_solve( pinhead, a, b, self.tol )
 
     def test_kepler( self ):
         a = -175.0
-        b =  185.0
+        b = 185.0
         self.tst_solve( kepler, a, b, self.tol )
 
     def test_wallis( self ):

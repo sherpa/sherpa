@@ -119,9 +119,9 @@ def setup_parametercase():
 
 def setup_composite():
     out = namedtuple('composite', ['m', 'm2', 's', 'x', 'xx'])
-    out.m  = Const1D('m')
+    out.m = Const1D('m')
     out.m2 = Const1D('m2')
-    out.m.c0  = 2
+    out.m.c0 = 2
     out.m2.c0 = 4
     out.s = Sin('s')
     out.x = 1.0

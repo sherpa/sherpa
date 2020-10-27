@@ -127,7 +127,7 @@ class test_template(SherpaTestCase):
         for ii in range(self.ntemplates):
             t = TableModel()
             g1.fwhm = numpy.random.uniform(0.5, 2.0)
-            g1.pos  = numpy.random.uniform(1.0, 4.5)
+            g1.pos = numpy.random.uniform(1.0, 4.5)
             g1.ampl = numpy.random.uniform(1.0, 50.)
             t.load(coords, g1(coords))
             templates.append(t)

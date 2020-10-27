@@ -624,7 +624,8 @@ def test_data_simul_fit_eval_model_to_fit(data_simul_fit):
     data_simul_fit.datasets[0].mask = X_ARRAY <= X_THRESHOLD
     data_simul_fit.datasets[1].mask = X_ARRAY <= X_THRESHOLD
     evaluated_data = data_simul_fit.eval_model_to_fit((model, model))
-    expected_data = numpy.concatenate((MULTIPLIER * X_ARRAY[:X_THRESHOLD+1], MULTIPLIER **2 * X_ARRAY[:X_THRESHOLD+1]))
+    expected_data = numpy.concatenate((MULTIPLIER * X_ARRAY[:X_THRESHOLD+1],
+                                       MULTIPLIER**2 * X_ARRAY[:X_THRESHOLD+1]))
     numpy.testing.assert_array_equal(evaluated_data, expected_data)
 
 
