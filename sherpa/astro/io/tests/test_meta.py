@@ -157,7 +157,7 @@ def test_keyword_order():
 
 
 @requires_fits
-def test_key_pop():
+def test_key_pop_known():
     """Can pop a known value"""
 
     from sherpa.astro.io.meta import Meta
@@ -170,7 +170,7 @@ def test_key_pop():
 
 
 @requires_fits
-def test_key_pop():
+def test_key_pop_unknown():
     """Can pop an unknown"""
 
     from sherpa.astro.io.meta import Meta

@@ -133,56 +133,72 @@ def setup():
 def test_student_t(setup):
     sim.multivariate_t(setup.mu, setup.cov, setup.dof, setup.num)
 
+
 def test_cauchy(setup):
     sim.multivariate_cauchy(setup.mu, setup.cov, setup.num)
+
 
 def test_parameter_scale_vector(setup):
     ps = sim.ParameterScaleVector()
     ps.get_scales(setup.fit)
 
+
 def test_parameter_scale_matrix(setup):
     ps = sim.ParameterScaleMatrix()
     ps.get_scales(setup.fit)
+
 
 def test_uniform_parameter_sample(setup):
     up = sim.UniformParameterSampleFromScaleVector()
     up.get_sample(setup.fit, num=setup.num)
 
+
 def test_normal_parameter_sample_vector(setup):
     np = sim.NormalParameterSampleFromScaleVector()
     np.get_sample(setup.fit, num=setup.num)
+
 
 def test_normal_parameter_sample_matrix(setup):
     np = sim.NormalParameterSampleFromScaleMatrix()
     np.get_sample(setup.fit, num=setup.num)
 
+
 def test_t_parameter_sample_matrix(setup):
     np = sim.StudentTParameterSampleFromScaleMatrix()
     np.get_sample(setup.fit, setup.dof, num=setup.num)
+
 
 def test_uniform_sample(setup):
     up = sim.UniformSampleFromScaleVector()
     up.get_sample(setup.fit, num=setup.num)
 
+
+# This used to have the same name as test_uniform_sample,
+# so it has been renamed. Neither apparent to do much
+# testing.
+#
+def test_uniform_sample2(setup):
+    sim.uniform_sample(setup.fit, num=setup.num)
+
+
 def test_normal_sample_vector(setup):
     np = sim.NormalSampleFromScaleVector()
     np.get_sample(setup.fit, num=setup.num)
+
 
 def test_normal_sample_matrix(setup):
     np = sim.NormalSampleFromScaleMatrix()
     np.get_sample(setup.fit, num=setup.num)
 
+
 def test_t_sample_matrix(setup):
     np = sim.StudentTSampleFromScaleMatrix()
     np.get_sample(setup.fit, setup.num, setup.dof)
 
-# TODO: this overwrites the test_uniform_sample routine above,
-#       should one be renamed?
-def test_uniform_sample(setup):
-    sim.uniform_sample(setup.fit, num=setup.num)
 
 def test_normal_sample(setup):
     sim.normal_sample(setup.fit, num=setup.num, correlate=False)
+
 
 def test_normal_sample_correlated(setup):
     sim.normal_sample(setup.fit, num=setup.num, correlate=True)

@@ -81,7 +81,7 @@ def test_decanom(opt, npar=2):
 def test_dodecal(opt, npar=3):
     tst_opt(opt, _tstoptfct.dodecal, npar)
 
-@pytest.mark.slow    
+@pytest.mark.slow
 @pytest.mark.parametrize("opt", [NCORES_NM, NCORES_DE])
 def test_DixonPrice(opt, npar=5):
     tst_opt(opt, _tstoptfct.DixonPrice, npar)
@@ -90,7 +90,7 @@ def test_DixonPrice(opt, npar=5):
 def test_Hansen(opt, npar=2):
     tst_opt(opt, _tstoptfct.Hansen, npar)
 
-@pytest.mark.slow    
+@pytest.mark.slow
 @pytest.mark.parametrize("opt", [NCORES_NM, NCORES_DE])
 def test_Holzman2(opt, npar=3):
     tst_opt(opt, _tstoptfct.Holzman2, npar)
@@ -108,28 +108,25 @@ def test_McCormick(opt, npar=2):
 def test_Michalewicz(opt, npar=2):
     tst_opt(opt, _tstoptfct.Michalewicz, npar)
 
-@pytest.mark.parametrize("opt", [NCORES_NM])
-def test_Paviani(opt, npar=10):
-    tst_opt(opt, _tstoptfct.Paviani, npar)
+def test_Paviani_nm(npar=10):
+    tst_opt(NCORES_NM, _tstoptfct.Paviani, npar)
 
 @pytest.mark.slow
-def test_Paviani(npar=10):
+def test_Paviani_de(npar=10):
     tst_opt(NCORES_DE, _tstoptfct.Paviani, npar)
 
-@pytest.mark.parametrize("opt", [NCORES_NM])
-def test_Rastrigin(opt, npar=4):
-    tst_opt(opt, _tstoptfct.Rastrigin, npar)
+def test_Rastrigin_nm(npar=4):
+    tst_opt(NCORES_NM, _tstoptfct.Rastrigin, npar)
 
 @pytest.mark.slow
-def test_Rastrigin(npar=4):
+def test_Rastrigin_de(npar=4):
     tst_opt(NCORES_DE, _tstoptfct.Rastrigin, npar)
-    
-@pytest.mark.parametrize("opt", [NCORES_NM, NCORES_DE])
-def test_seqp(opt, npar=2):
-    tst_opt(opt, _tstoptfct.seqp, npar)
+
+def test_seqp_nm(npar=2):
+    tst_opt(NCORES_NM, _tstoptfct.seqp, npar)
 
 @pytest.mark.slow
-def test_seqp(npar=2):
+def test_seqp_de(npar=2):
     tst_opt(NCORES_DE, _tstoptfct.seqp, npar)
 
 @pytest.mark.parametrize("opt", [NCORES_NM, NCORES_DE])
@@ -139,5 +136,3 @@ def test_Shubert(opt, npar=2):
 @pytest.mark.parametrize("opt", [NCORES_NM, NCORES_DE])
 def test_Trecanni(opt, npar=2):
     tst_opt(opt, _tstoptfct.Trecanni, npar)
-
-    
