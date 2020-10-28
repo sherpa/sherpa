@@ -229,7 +229,7 @@ def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
         # positive-semidefinite. This is just needed to make sure
         # we don't trigger the default warning check.
         #
-        with pytest.warns(Warning) as record:
+        with pytest.warns(Warning):
             stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
 
     # This is a lower bound, in case there's any messages from

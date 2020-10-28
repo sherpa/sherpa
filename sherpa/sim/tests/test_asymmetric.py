@@ -205,7 +205,6 @@ def test_warning(make_data_path):
 
     infile = make_data_path('gro.txt')
     ui.load_ascii_with_errors(1, infile)
-    data = ui.get_data(1)
     powlaw1d = PowLaw1D('p1')
     ui.set_model(powlaw1d)
     ui.fit()

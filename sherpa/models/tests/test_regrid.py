@@ -244,7 +244,8 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
     # This is the important part. Note that there is overlap, but
     # the start and end p
     with pytest.raises(ModelErr) as excinfo:
-        regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
+        my_model.regrid([2, 2.5], [2, 2.5])
+
     assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
@@ -407,7 +408,6 @@ def test_regrid_call_behavior():
             self.ncalled.append((xlo[0], xlo[-1], xlo.size))
             return self.baseclass.calc(self, pars, xlo, *args, **kwargs)
 
-
     m1 = Wrappable1D(basic.Const1D, 'm1')
     m2 = Wrappable1D(basic.Gauss1D, 'm2')
 
@@ -419,7 +419,8 @@ def test_regrid_call_behavior():
     morig = m1 + m2
     mwrap = morig.regrid(xregrid)
 
-    y = mwrap(xdata)
+    # evaluate the model, we do not check the return value
+    _ = mwrap(xdata)
 
     # Check both components were called with the same grid
     assert m1.ncalled == m2.ncalled

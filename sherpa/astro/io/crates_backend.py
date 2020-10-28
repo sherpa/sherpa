@@ -448,7 +448,6 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
     checked for new crates
     """
 
-    filename = ''
     close_dataset = False
     if type(arg) == str:
 
@@ -462,13 +461,11 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
             raise e
 
         close_dataset = True
-        filename = tbl.get_filename()
 
         # Make a copy of the data, since we don't know that pycrates will
         # do something sensible wrt reference counting
     elif isinstance(arg, pycrates.TABLECrate):
         tbl = arg
-        filename = arg.get_filename()
     else:
         raise IOErr('badfile', arg, 'TABLECrate obj')
 

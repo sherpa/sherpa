@@ -469,7 +469,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         return (singlebounds[0][0], singlebounds[1][0], singlebounds[2][0],
                 singlebounds[3], None)
 
-    if len(limit_parnums) < 2 or not _multi or numcores < 2:
+    if numsearched < 2 or not _multi or numcores < 2:
         do_parallel = False
 
     if not do_parallel:
@@ -478,7 +478,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         upper_limits = numpy.array([])
         eflags = numpy.array([], numpy.int)
         nfits = 0
-        for i in range(len(limit_parnums)):
+        for i in range(numsearched):
             singlebounds = func(i, limit_parnums[i])
             lower_limits = append(lower_limits, singlebounds[0])
             upper_limits = append(upper_limits, singlebounds[1])
@@ -906,7 +906,7 @@ def trace_fcn(fcn, bloginfo):
     def echo(*args, **kwargs):
         '''compact but more details then debugger'''
         name = fcn.__name__
-        str = '%s%s(%s)' % (bloginfo.prefix, fcn.__name__, ", ".join(
+        str = '%s%s(%s)' % (bloginfo.prefix, name, ", ".join(
             list(map(repr, chain(args, list(kwargs.values()))))))
         bloginfo.blogger.info(str)
         return fcn(*args, **kwargs)

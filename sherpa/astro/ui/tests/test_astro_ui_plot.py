@@ -2651,7 +2651,8 @@ def test_data1d_plot_model_template(cls, plottype, extraargs, title):
     # best to pick a value on the grid used by create_template
     mdl.fwhm = 3
 
-    plot = getattr(s, "plot_{}".format(plottype))(*extraargs)
+    plot = getattr(s, "plot_{}".format(plottype))
+    plot(*extraargs)
 
     ax = plt.gca()
     assert ax.get_xscale() == 'linear'

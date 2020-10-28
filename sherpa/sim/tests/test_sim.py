@@ -202,10 +202,13 @@ def test_normal_sample(setup):
 def test_normal_sample_correlated(setup):
     sim.normal_sample(setup.fit, num=setup.num, correlate=True)
 
+
 def test_t_sample(setup):
     sim.t_sample(setup.fit, setup.num, setup.dof)
 
+
 def test_lrt(setup):
+    # There is no check of the results
     results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
                                           setup.fit.model, niter=25)
 
@@ -214,20 +217,15 @@ def test_mh(setup):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = Cash()
-    results = setup.fit.fit()
+    setup.fit.fit()
     results = setup.fit.est_errors()
     cov = results.extra_output
 
     mcmc = sim.MCMC()
-
-    samplers = mcmc.list_samplers()
-    priors = mcmc.list_priors()
     for par in setup.fit.model.pars:
         mcmc.set_prior(par, sim.flat)
         prior = mcmc.get_prior(par)
-
-    sampler = mcmc.get_sampler()
-    name = mcmc.get_sampler_name()
+        assert prior.__name__ == 'flat'
 
     mcmc.set_sampler('MH')
 
@@ -242,6 +240,7 @@ def test_mh(setup):
         stats, accept, params = mcmc.get_draws(setup.fit, cov, niter=1e2)
     finally:
         log.setLevel(level)
+
 
 def test_metropolisMH(setup):
 
