@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,9 @@
 #
 
 import logging
+
 import numpy
+
 from sherpa.utils import NoNewAttributesAfterInit, \
     get_keyword_names, get_keyword_defaults, print_fields
 from sherpa.optmethods.optfcts import grid_search, lmdif, montecarlo, \
@@ -378,6 +380,7 @@ class GridSearch(OptMethod):
          lated J
 
 """
+
 
 class LevMar(OptMethod):
     """Levenberg-Marquardt optimization method.

@@ -87,6 +87,7 @@ WSTAT_ERR_MSG = "No background data has been supplied. Use cstat"
 NO_COVAR_MSG = "covariance has not been performed"
 RIGHT_STATS = {'cash', 'cstat', 'wstat'}
 
+
 @pytest.fixture
 def setup_covar(make_data_path):
 

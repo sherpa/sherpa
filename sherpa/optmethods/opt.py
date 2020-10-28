@@ -250,18 +250,19 @@ class SimplexBase:
 
     def sort_me(self, simp):
         myshape = simp.shape
-        tmp = np.array(sorted(simp, key=lambda arg:arg[-1]))
+        tmp = np.array(sorted(simp, key=lambda arg: arg[-1]))
         tmp.reshape(myshape)
         return tmp
 
     def sort(self):
         self.simplex = self.sort_me(self.simplex)
 
+
 class SimplexNoStep(SimplexBase):
 
     def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed, factor)
-        return
+        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
+                             factor)
 
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
@@ -282,8 +283,8 @@ class SimplexNoStep(SimplexBase):
 class SimplexStep(SimplexBase):
 
     def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed, factor)
-        return
+        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
+                             factor)
 
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
@@ -300,14 +301,15 @@ class SimplexStep(SimplexBase):
 class SimplexRandom(SimplexBase):
 
     def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed, factor)
-        return
+        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
+                             factor)
 
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
-        simplex = self.init_random_simplex(xpar, simplex, 1, npop, seed, factor)
+        simplex = self.init_random_simplex(xpar, simplex, 1, npop, seed,
+                                           factor)
         return self.eval_simplex(npop, simplex)
 
 
@@ -325,6 +327,7 @@ def Ackley(x):
     tmp = -a*np.exp(-b*np.sqrt(s1/n))-np.exp(s2/n)+a+np.exp(1)
     return tmp
 
+
 def Beale(x):
     """Beale(3, 0.5) = 0."""
     a = pow(1.5-x[0]*(1-x[1]), 2.0)
@@ -332,15 +335,18 @@ def Beale(x):
     c = pow(2.625-x[0]*(1-x[1]*x[1]*x[1]), 2.0)
     return a + b + c
 
+
 def Bohachevsky1(x):
     """Bohchevsky1(0, 0) = 0"""
     return x[0]*x[0] + 2*x[1]*x[1] - 0.3*np.cos(3*np.pi*x[0]) - \
         0.4 * np.cos(4*np.pi*x[1]) + 0.7
 
+
 def Bohachevsky2(x):
     """Bohachevsky2(0, 0) = 0"""
     return x[0]*x[0] + 2*x[1]*x[1] - \
         0.3*np.cos(3*np.pi*x[0])*np.cos(4*np.pi*x[1]) + 0.3
+
 
 def Bohachevsky3(x):
     """Bohachevsky3(0, 0) = 0"""
@@ -348,28 +354,32 @@ def Bohachevsky3(x):
         0.3*np.cos(3*np.pi*x[0]+4*np.pi*x[1]) + 0.3
     return tmp
 
+
 def Booth(x):
     """Booth(1, 3) = 0"""
     return pow(x[0]+2*x[1]-7, 2.0) + pow(2*x[0]+x[1]-5, 2.0)
+
 
 def BoxBetts(x):
     """BoxBetts(1, 10, 1) = 0"""
     fval = 0.0
     for ii in range(10):
-        e0 = np.exp( -0.1 * ii * x[0] )
-        e1 = np.exp( -0.1 * ii * x[1] )
-        e2 = np.exp( -0.1 * ii ) - np.exp( - ii )
+        e0 = np.exp(-0.1 * ii * x[0])
+        e1 = np.exp(-0.1 * ii * x[1])
+        e2 = np.exp(-0.1 * ii) - np.exp(-ii)
         tmp = e0 - e1 - e2 * x[2]
         fval += tmp * tmp
     return fval
+
 
 def Branin(x):
     """Branin(-pi, 12.275) = 0.397887
     Branin(pi, 2.275) = 0.397887
     Branin(9.42478, 2.475)  = 0.397887"""
     return \
-        pow(x[1]-(5.1/(4*np.pi*np.pi))*x[0]*x[0]+5*x[0]/np.pi-6,2.0) \
+        pow(x[1]-(5.1/(4*np.pi*np.pi))*x[0]*x[0]+5*x[0]/np.pi-6, 2.0) \
         + 10*(1-1/(8*np.pi))*np.cos(x[0])+10
+
 
 def BrownBadlyScaled(x):
     """BrownBadlyScaled(1.0e6, 2.0e-6, ...,1.0e6, 2.0e-6) = 0"""
@@ -382,14 +392,16 @@ def BrownBadlyScaled(x):
         fval += fvec0 * fvec0 + fvec1 * fvec1 + fvec2 * fvec2
     return fval
 
+
 def Colville(x):
     """Colville(1, 1, 1, 1) = 0"""
     if 0.0 == x[1]:
         return 1.0e35
-    tmp = 100 * pow(x[0]*x[0]-x[1],2.0) + pow(x[0]-1,2.0) + \
+    tmp = 100 * pow(x[0]*x[0]-x[1], 2.0) + pow(x[0]-1, 2.0) + \
         pow(x[2]-1, 2.0) + 90 * pow(x[2]*x[2]-x[3], 2.0) + \
-        10.1 * (pow(x[1]-1, 2.0) + pow(x[3]-1,2.0)) + 19.8*(1./x[1])*(x[3]-1)
+        10.1 * (pow(x[1]-1, 2.0) + pow(x[3]-1, 2.0)) + 19.8*(1./x[1])*(x[3]-1)
     return tmp
+
 
 def DixonPrice(x):
     """DixonPrice(2^((2^i-2) / 2^i)) = 0"""
@@ -397,12 +409,13 @@ def DixonPrice(x):
     jj = range(2, npar + 1)
     x2 = 2 * x**2
     return sum(jj * (x2[1:] - x[:-1])**2) + (x[0] - 1)**2
-    s = 0
+
 
 def Easom(x):
     """Easom(pi, pi) = -1"""
     return -np.cos(x[0])*np.cos(x[1]) * \
-        np.exp(-pow(x[0]-np.pi,2) - pow(x[1]-np.pi,2.0))
+        np.exp(-pow(x[0]-np.pi, 2) - pow(x[1]-np.pi, 2.0))
+
 
 def FreudensteinRoth(x):
     """FreudensteinRoth(5, 4, 5, 4, ...., 5, 4) = 0"""
@@ -415,14 +428,16 @@ def FreudensteinRoth(x):
                                       x[ii+1] - 14) * x[ii+1], 2.0)
     return tmp
 
+
 def GoldsteinPrice(x):
     """GoldsteinPrice(0, 1) = 3"""
-    a = 1 + pow(x[0]+x[1]+1,2) * \
+    a = 1 + pow(x[0]+x[1]+1, 2) * \
         (19-14*x[0]+3*x[0]*x[0]-14*x[1]+6*x[0]*x[1]+3*x[1]*x[1])
     b = 30 + \
-        pow(2*x[0]-3*x[1],2.0) * \
+        pow(2*x[0]-3*x[1], 2.0) * \
         (18-32*x[0]+12*x[0]*x[0]+48*x[1]-36*x[0]*x[1]+27*x[1]*x[1])
     return a * b
+
 
 def Griewank(x):
     """Griewank(0, 0, ..., 0) = 0"""
@@ -435,11 +450,13 @@ def Griewank(x):
         p *= np.cos(x[ii]) / np.sqrt(ii + 1)
     return s / 4000.0 - p + 1
 
+
 def Hump(x):
     """Hump((0.0898, -0.7126) = Hump(-0.0898, 0.7126) = 0"""
     return 1.0316285 + 4 * x[0] * x[0] - 2.1 * pow(x[0], 4) + \
         pow(x[0], 6) / 3 + x[0] * x[1] - 4 * x[1] * x[1] + \
         4 * pow(x[1], 4)
+
 
 def Levy(x):
     """Levy(1, 1, ..., 1) = 0"""
@@ -453,11 +470,13 @@ def Levy(x):
             pow(z[ii]-1, 2) * \
             (1 + 10 * pow(np.sin(np.pi * z[ii] + 1), 2.))
     return s + pow(z[n - 1]-1, 2) * \
-        (1 + pow(np.sin(2 * np.pi * z[n - 1]) , 2))
+        (1 + pow(np.sin(2 * np.pi * z[n - 1]), 2))
+
 
 def Matyas(x):
     """Matyas(0, 0) = 0"""
     return 0.26 * (x[0] * x[0] + x[1] * x[1]) - 0.48 * x[0] * x[1]
+
 
 def McCormick(x):
     """McCormick( -0.547197553, -1.54719756 ) = -1.91"""
@@ -465,6 +484,7 @@ def McCormick(x):
     b = x[0] - x[1]
     fval = np.sin(a) + b * b - 1.5 * x[0] + 2.5 * x[1] + 1.0
     return fval
+
 
 def Paviani(x):
     """Paviani( 9.35026583, 9.35026583, ..., 9.35026583, 9.35026583 ) = -45.7"""
@@ -479,6 +499,7 @@ def Paviani(x):
     fval -= pow(mul, 0.2)
     return fval
 
+
 def Rastrigin(x):
     """Rastrigin(0, 0, ..., 0) = 0"""
     if not np.isscalar(x[0]):
@@ -487,17 +508,20 @@ def Rastrigin(x):
     N = len(x)
     return 10*N + sum(x**2 - 10*np.cos(2*np.pi*x))
 
+
 def Rosenbrock(x):
     """Rosenbrock(1, 1, ..., 1) = 0"""
     x = np.asarray(x)
     val = np.sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0, axis=0)
     return val
 
+
 def Schwefel(x):
     """Schwefel(1, , 1, ...., 1) = 0"""
     n = len(x)
     s = sum(- x * np.sin(np.sqrt(abs(x))))
     return 418.9829 * n + s
+
 
 def Shubert(x):
     """Shubert(x) = -186.7309"""
@@ -508,6 +532,7 @@ def Shubert(x):
         s2 += (ii + 1) * np.cos((ii + 2) * x[1] + ii + 1)
     return s1 * s2
 
+
 def Sphere(x):
     """Sphere(0, 0, ..., 0) = 0"""
     n = len(x)
@@ -516,6 +541,7 @@ def Sphere(x):
         s += x[ii] * x[ii]
     return s
 
+
 def SumSquares(x):
     """SumSquares(0, 0, ..., 0) = 0"""
     n = len(x)
@@ -523,6 +549,7 @@ def SumSquares(x):
     for ii in range(n):
         s += (ii + 1) * x[ii] * x[ii]
     return s
+
 
 def Trid(x):
     """Trid(n == 6) = -50, Trid(n = 10) = -200"""
@@ -536,6 +563,7 @@ def Trid(x):
         s2 += x[ii] * x[ii - 1]
     return s1 - s2
 
+
 def Zakharov(x):
     """Zakharov(0, 0, ..., 0) = 0"""
     n = len(x)
@@ -543,11 +571,13 @@ def Zakharov(x):
     s2 = sum( jj * x ) / 2
     return sum(x**2) + s2**2 + s2**4
 
+
 def pack_result(arg):
     par = arg[2:]
     result = np.asarray(arg[:2])
     result = np.append(result, par)
     return result
+
 
 def myprint(name, func, result):
     try:
@@ -564,6 +594,7 @@ def myprint(name, func, result):
         # print('autograd covariance:\n', autograd_covar(func, par))
     except NotImplementedError as nie:
         raise nie
+
 
 def tst_unc_opt(algorithms, npar):
     """
@@ -1002,6 +1033,7 @@ def tst_opt(algorithms, npar):
     xmax = npar * [10, 10]
     x0 = npar * [0.5, -2]
     tst_algos(Zakharov, x0, xmin, xmax)
+
 
 if '__main__' == __name__:
 

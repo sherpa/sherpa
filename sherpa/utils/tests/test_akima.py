@@ -18,9 +18,11 @@
 #
 
 import numpy
+
 import pytest
 
 from sherpa.utils import akima
+
 
 def test_akima():
     x = numpy.sort(numpy.random.random(10) * 10)

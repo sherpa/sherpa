@@ -38,8 +38,10 @@ References
 
 """
 
-import numpy
 import os
+
+import numpy
+
 import sherpa
 from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
 from sherpa.models.model import ArithmeticModel, CompositeModel, Model
@@ -55,7 +57,7 @@ from sherpa.astro.utils import compile_energy_grid
 WCS = None
 try:
     from sherpa.astro.io.wcs import WCS
-except:
+except ImportError:
     WCS = None
 
 _tol = numpy.finfo(numpy.float32).eps
@@ -1139,7 +1141,6 @@ class PileupResponse1D(NoNewAttributesAfterInit):
     Response1D
 
     """
-
 
     def __init__(self, pha, pileup_model):
         self.pha = pha

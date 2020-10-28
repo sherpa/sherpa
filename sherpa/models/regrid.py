@@ -656,14 +656,14 @@ class ModelDomainRegridder1D():
 
         return y
 
-
     def _evaluate(self, data_space, pars, modelfunc, **kwargs):
         """
         Evaluate the model on the user-defined grid and then interpolate/rebin
         onto the desired grid. This is based on sherpa.models.TableModel
         but is simplified as we do not provide a fold method.
         """
-        kwargs['integrate'] = self.integrate  # Not really sure I need this, but let's be safe
+        # Not really sure I need this, but let's be safe
+        kwargs['integrate'] = self.integrate
 
         eval_space = self.evaluation_space
         if data_space.is_integrated:

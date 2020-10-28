@@ -2046,7 +2046,6 @@ def test_xxx_plot_recalc(ptype, pclass, y1, y2, session):
     assert p.y == pytest.approx(y2)
 
 
-
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_fit_plot_recalc(session):
     """Basic testing of get_fit_plot(recalc=False)"""
@@ -2324,7 +2323,6 @@ def test_pylab_plot_trace_empty_replot(session):
     # error can depend on matplotlib version
     with pytest.raises(ValueError):
         s.plot_trace(y, replot=True)
-
 
 
 @requires_pylab

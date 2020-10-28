@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -88,10 +88,10 @@
 # are just representative tests.
 #
 
-import pytest
 import numpy as np
-
 from numpy.testing import assert_almost_equal
+
+import pytest
 
 from sherpa.fit import Fit, StatInfoResults
 from sherpa.data import Data1D, DataSimulFit
@@ -447,6 +447,7 @@ def test_fit_raises_error_on_bgsubtraction(stat):
     emsg = '{} statistics cannot be used with '.format(statobj.name) + \
            'background subtracted data'
     assert str(excinfo.value) == emsg
+
 
 expected_leastsq = 31.5625
 

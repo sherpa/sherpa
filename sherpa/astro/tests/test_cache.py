@@ -1,4 +1,3 @@
-
 #
 #  Copyright (C) 2018, 2019  Smithsonian Astrophysical Observatory
 #
@@ -18,6 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 import numpy
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits,\
@@ -31,8 +32,8 @@ from sherpa.stats import Cash, LeastSq
 from sherpa.fit import Fit
 from sherpa.astro import ui
 
-import logging
 logger = logging.getLogger("sherpa")
+
 
 @requires_data
 @requires_fits
@@ -77,6 +78,7 @@ class test_ARFModelPHA(SherpaTestCase):
         result = ui.get_fit_results()
         assert result.numpoints == self._fit_using_ARFModelPHA['numpoints']
         assert result.dof == self._fit_using_ARFModelPHA['dof']
+
 
 class test_cache(SherpaTestCase):
 
@@ -229,11 +231,9 @@ class test_cache(SherpaTestCase):
         # again not 1
         mdl.c0 = 8
 
-
         # Copy the values from the plot structures, since get_xxx_plot
         # returns the same object so m1.y == m2.y will not note a difference.
         #
-
         d1y = ui.get_data_plot().y.copy()
         m1y = ui.get_model_plot().y.copy()
         s1y = ui.get_source_plot().y.copy()

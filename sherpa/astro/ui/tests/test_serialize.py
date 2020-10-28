@@ -858,6 +858,7 @@ def add_datadir_path(output):
 
     return re.sub('@@', dname, output, count=0)
 
+
 def compileit(output):
     # Let it just throw an exception in case of failure.
     compile(output, "test.py", "exec")

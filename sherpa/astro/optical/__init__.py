@@ -122,9 +122,9 @@ class EmissionVoigt(ArithmeticModel):
         raise ModelErr("The EmissionVoigt model has been replaced by Voigt1D")
 
 
-
 # This model sets in edge (in Angstroms) beyond which absorption
 # is a significant feature to the spectrum or SED.
+#
 class AbsorptionEdge(RegriddableModel1D):
     """Optical model of an absorption edge.
 

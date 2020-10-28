@@ -26,10 +26,12 @@ from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
 from sherpa.utils.err import ModelErr
 
-__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator', 'Template')
+__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator',
+           'Template')
 
 
-def create_template_model(modelname, names, parvals, templates, template_interpolator_name='default'):
+def create_template_model(modelname, names, parvals, templates,
+                          template_interpolator_name='default'):
     """
     Create a TemplateModel model class from template input
 
@@ -133,7 +135,8 @@ class Template(KNNInterpolator):
 
 class TemplateModel(ArithmeticModel):
 
-    def __init__(self, name='templatemodel', pars=(), parvals=None, templates=None):
+    def __init__(self, name='templatemodel', pars=(), parvals=None,
+                 templates=None):
         self.parvals = parvals if parvals is not None else []
         self.templates = templates if templates is not None else []
         self.index = {}
@@ -151,7 +154,6 @@ class TemplateModel(ArithmeticModel):
         for template in self.templates:
             template.fold(data)
 
-
     def get_x(self):
         p = tuple(par.val for par in self.pars)
         template = self.query(p)
@@ -162,19 +164,18 @@ class TemplateModel(ArithmeticModel):
         template = self.query(p)
         return template.get_y()
 
-
     def query(self, p):
         try:
             return self.index[tuple(p)]
-        except:
+        except KeyError:
             raise ModelErr("Interpolation of template parameters was disabled for this model, but parameter values not in the template library have been requested. Please use gridsearch method and make sure the sequence option is consistent with the template library")
-
 
     @modelCacher1d
     def calc(self, p, x0, x1=None, *args, **kwargs):
         table_model = self.query(p)
 
-        # return interpolated the spectrum according to the input grid (x0, [x1])
+        # return interpolated the spectrum according to the input grid
+        # (x0, [x1])
         return table_model(x0, x1, *args, **kwargs)
 
 

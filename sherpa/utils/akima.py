@@ -78,6 +78,7 @@ import numpy
 
 __all__ = ('Akima', 'akima')
 
+
 def interpolate(x, y, x_new, axis=-1, out=None):
     """
     Return interpolated data using Akima's method.
@@ -187,8 +188,10 @@ def interpolate(x, y, x_new, axis=-1, out=None):
 
 ###############################################################################
 
+
 def akima(xout, xin, yin, axis=-1, out=None):
     return interpolate(xin, yin, xout, axis, out)
+
 
 class Akima:
 

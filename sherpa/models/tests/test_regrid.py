@@ -19,7 +19,9 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import numpy as np
+
 import pytest
 from pytest import approx
 
@@ -32,6 +34,7 @@ from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, \
 from sherpa.utils.err import ModelErr
 from sherpa.utils import neville, linear_interp
 from sherpa.utils import akima
+
 
 @pytest.fixture
 def setup():
@@ -300,7 +303,6 @@ def test_regrid_binaryop_1d():
     from sherpa.fit import Fit
     from sherpa.optmethods import LevMar
 
-
     class MyConst1D(RegriddableModel1D):
 
         def __init__(self, name='myconst1d'):
@@ -312,7 +314,6 @@ def test_regrid_binaryop_1d():
             x = args[0]
             self.counter += x.size
             return par[0]
-
 
     class MyGauss(RegriddableModel1D):
 
@@ -328,7 +329,6 @@ def test_regrid_binaryop_1d():
             x = args[0]
             self.counter += x.size
             return ampl * np.exp(-0.5 * (args[0] - pos)**2 / sigma**2)
-
 
     np.random.seed(0)
     leastsq = LeastSq()
@@ -359,6 +359,7 @@ def test_regrid_binaryop_1d():
     assert result.statval < 1.0
     assert mygauss.counter == myconst.counter
     assert (result.nfev + 4) * x_regrid.size == mygauss.counter
+
 
 def test_regrid_binaryop_2d():
     y0, x0 = np.mgrid[20:29, 10:20]

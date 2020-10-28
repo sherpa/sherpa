@@ -169,6 +169,7 @@ def has_package_from_list(*packages):
             importlib.import_module(package)
             return True
         except:
+            # We can have ImportError but also RuntimeErr
             pass
     return False
 
@@ -189,7 +190,6 @@ if HAS_PYTEST:
         msg = "required test data missing"
         return pytest.mark.skipif(condition, reason=msg)(test_function)
 
-
     def requires_package(msg=None, *packages):
         """
         Decorator for test functions requiring specific packages.
@@ -203,7 +203,6 @@ if HAS_PYTEST:
 
         return decorator
 
-
     def requires_plotting(test_function):
         """
         Decorator for test functions requiring a plotting library.
@@ -211,7 +210,6 @@ if HAS_PYTEST:
         packages = ('pylab', )
         msg = "plotting backend required"
         return requires_package(msg, *packages)(test_function)
-
 
     def requires_pylab(test_function):
         """
@@ -222,7 +220,6 @@ if HAS_PYTEST:
                     )
         msg = "matplotlib backend required"
         return requires_package(msg, *packages)(test_function)
-
 
     def requires_fits(test_function):
         """
@@ -235,21 +232,17 @@ if HAS_PYTEST:
         msg = "FITS backend required"
         return requires_package(msg, *packages)(test_function)
 
-
     def requires_group(test_function):
         """Decorator for test functions requiring group library"""
         return requires_package("group library required", 'group')(test_function)
-
 
     def requires_stk(test_function):
         """Decorator for test functions requiring stk library"""
         return requires_package("stk library required", 'stk')(test_function)
 
-
     def requires_ds9(test_function):
         """Decorator for test functions requiring ds9"""
         return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
-
 
     def requires_xspec(test_function):
         return requires_package("xspec required", "sherpa.astro.xspec")(test_function)
@@ -258,7 +251,6 @@ else:
 
     def wrapped():
         raise ImportError(PYTEST_MISSING_MESSAGE)
-
 
     def make_fake():
         def wrapper(*args, **kwargs):

@@ -57,6 +57,7 @@ class Formatter(logging.Formatter):
             msg = record.msg
         return msg
 
+
 log = logging.getLogger('sherpa')
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(Formatter())
@@ -66,7 +67,6 @@ log.setLevel(logging.INFO)
 dbg = log.debug
 
 del Formatter, log, handler
-
 
 
 DEFAULT_CITATION = """Please review the Zenodo Sherpa page at

@@ -588,6 +588,7 @@ SCALING = np.ones(19)
 SCALING[2:5] = 0.8
 SCALING[15] = 0.7
 
+
 @pytest.mark.parametrize("exps,bscales,ascales,bkg_id,result",
                          [((100, 1000), (0.01, 0.05), (0.4, 0.5),
                            1, (100 * 0.01 * 0.4) / (1000 * 0.05 * 0.5)),

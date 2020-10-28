@@ -323,6 +323,7 @@ pars['acis8s'] = {
 pars['acis4s'] = pars['acis6s']
 pars['acis9s'] = pars['acis8s']
 
+
 def acis_bkg_model(detnam, root='bkg_', as_str=False):
     """Empirically derived background model for the ACIS detector, based on
     fitting a broken powerlaw plus 6 gaussians to ACIS background data.  These

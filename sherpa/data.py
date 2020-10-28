@@ -80,7 +80,6 @@ def _check_err(array, masktemplate):
     return array
 
 
-
 class DataSpace1D(EvaluationSpace1D):
     """
     Class for representing 1-D Data Space. Data Spaces are spaces that describe the data domain. As models can be

@@ -234,8 +234,6 @@ def test_errresults():
     assert '<tr><td>const1d.c0</td><td>           3</td><td>   -0.562226</td><td>    0.562226</td></tr>' in r
 
 
-
-
 def test_errresults_limits_none():
     """Missing an error limit"""
     d = Data1D('dx', [1, 2, 3], [4, 2, 2], [1.2, 0.9, 0.9])

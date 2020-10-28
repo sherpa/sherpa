@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2014, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2014, 2015, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,7 @@ Plotting routines for the data stack module. These are dummy
 routines that do nothing, and are for when no supported
 plotting module is available.
 """
+
 from sherpa.utils.logging import config_logger
 
 logger = config_logger(__name__)
@@ -31,6 +32,7 @@ name = "dummy_backend"
 
 def dummy(*args, **kwargs):
     logger.warning("using dummy plotting backend")
+
 
 initialize_backend = dummy
 initialize_plot = dummy

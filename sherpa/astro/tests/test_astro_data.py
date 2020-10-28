@@ -757,7 +757,6 @@ def test_arf_with_negative_energy_elem_replace():
     _assert_userwarning(expected_warnings, ws)
 
 
-
 def test_rmf_with_negative_energy_elem():
     """What happens creating an ARf with negative energies.
 
@@ -879,6 +878,7 @@ def test_rmf_get_x_unit():
     actual_rmf_x = rmf.get_x()
     np.testing.assert_array_almost_equal(expected_rmf_x, actual_rmf_x)
 
+
 # https://github.com/sherpa/sherpa/pull/766
 def test_ungroup():
     '''Make sure that ungrouped data can be ungrouped.
@@ -900,6 +900,7 @@ def test_ungroup():
     # the grouping
     session.ungroup(1)
     assert not testdata.grouped
+
 
 # https://github.com/sherpa/sherpa/pull/766
 def test_unsubtract():
@@ -1193,7 +1194,6 @@ def test_get_filter_group_bug(make_data_path):
     assert len(filters2[0]) == 2
     assert filters2[0][0] == n1 + 1
     assert filters2[0][1] == n2 + 1
-
 
 
 @requires_data

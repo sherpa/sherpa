@@ -1032,6 +1032,7 @@ def test_data_indep_masked_numpyarray(arrpos, Dataclass):
         data = Dataclass(*args)
     assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
 
+
 @pytest.mark.parametrize('arrpos', [POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
 @pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
 def test_data_err_masked_numpyarray(arrpos, Dataclass):
@@ -1085,6 +1086,7 @@ def test_data_dep_masked_numpyarray_nomask(Dataclass):
 @pytest.mark.parametrize("Dataclass", ALL_DATA_CLASSES)
 def test_data_indep_anyobj_with_mask(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
+
     class DummyMask(list):
         mask = 'whatisthis'
     args[1] = DummyMask(args[1])
@@ -1098,6 +1100,7 @@ def test_data_indep_anyobj_with_mask(Dataclass):
 def test_data_dep_any_obj_with_mask(Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     posy = POS_Y_ARRAY[Dataclass]
+
     class DummyMask(list):
         mask = 'whatisthis'
     args[posy] = DummyMask(args[posy])

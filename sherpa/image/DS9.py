@@ -18,7 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 r"""
 Interface for viewing images with the ds9 image viewer.
 Loosely based on XPA, by Andrew Williams.
@@ -136,12 +135,14 @@ History:
 2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
 
-import numpy as np
 import os
 import sys
 import time
 import warnings
 import subprocess
+
+import numpy as np
+
 from sherpa.utils.err import RuntimeErr, TypeErr
 
 __all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
@@ -373,6 +374,7 @@ def _computeCnvDict():
         cnvDict[np.uint64] = np.float64
 
     return cnvDict
+
 
 _CnvDict = _computeCnvDict()
 _FloatTypes = (np.float32, np.float64)
@@ -658,6 +660,7 @@ class DS9Win:
             template=self.template,
             doRaise=self.doRaise,
         )
+
 
 if __name__ == "__main__":
     errStr = setup(doRaise=True, debug=True)

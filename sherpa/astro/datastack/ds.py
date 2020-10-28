@@ -403,6 +403,7 @@ class DataStack():
         """
 
         str_value = str(value)
+
         def func(dataset):
             try:
                 hdr = dataset.header

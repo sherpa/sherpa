@@ -120,7 +120,6 @@ def rms(a, b):
     return np.sqrt(a * a + b * b)
 
 
-
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("filename, delta", [('gro.txt', False),

@@ -212,7 +212,6 @@ def _extract_fields(obj, stop, summary, open_block=True):
                                    open_block=open_block)
 
 
-
 def html_pha(pha):
     """HTML representation: PHA"""
 

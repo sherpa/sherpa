@@ -72,7 +72,7 @@ def _get_saofit_msg(maxfev, ierr):
             ('number of function evaluations has exceeded maxfev=%d' %
              maxfev))
         }
-    return key.get( ierr, (False, 'unknown status flag (%d)' % ierr))
+    return key.get(ierr, (False, 'unknown status flag (%d)' % ierr))
 
 
 def _move_within_limits(x, xmin, xmax):
@@ -293,8 +293,8 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
     return rv
 
 
-def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
-                 maxfev=None, ftol=EPSILON, method=None, verbose=0 ):
+def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
+                maxfev=None, ftol=EPSILON, method=None, verbose=0):
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -329,17 +329,16 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     if sequence is None:
         ranges = []
         for index in range(npar):
-            ranges.append([ xmin[index], xmax[index]])
+            ranges.append([xmin[index], xmax[index]])
         sequence = make_sequence(ranges, num)
     else:
         if not numpy.iterable(sequence):
             raise TypeError("sequence option must be iterable")
         else:
             for seq in sequence:
-                if npar != len( seq ):
+                if npar != len(seq):
                     msg = "%s must be of length %d" % (seq, npar)
                     raise TypeError(msg)
-
 
     answer = eval_stat_func(x)
     sequence_results = list(parallel_map(eval_stat_func, sequence, numcores))
@@ -600,6 +599,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     # A safeguard just in case the initial simplex is outside the bounds
     #
     orig_fcn = stat_cb0
+
     def stat_cb0(x_new):
         if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
@@ -759,7 +759,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
                 params.append(tmp_pars)
             return tuple(params)
 
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if maxfev is None:
@@ -767,13 +766,16 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     def stat_cb0(pars):
         return fcn(pars)[0]
+
     def stat_cb1(pars):
         return fcn(pars)[1]
+
     def fcn_parallel(pars, fvec):
         fd_jac = fdJac(stat_cb1, fvec, pars)
         params = fd_jac.calc_params()
         fjac = parallel_map(fd_jac, params, numcores)
         return numpy.concatenate(fjac)
+
     num_parallel_map, fcn_parallel_counter = func_counter(fcn_parallel)
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif

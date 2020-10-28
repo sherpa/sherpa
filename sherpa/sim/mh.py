@@ -73,6 +73,7 @@ __all__ = ('LimitError', 'MetropolisMH', 'MH', 'Sampler',
 class LimitError(Exception):
     pass
 
+
 class CovarError(Exception):
     pass
 
