@@ -496,7 +496,7 @@ class MH(Sampler):
         return u <= alpha
 
     def reject(self):
-        ### added for test
+        # added for test
         self.rejections += 1
 
     def calc_stat(self, proposed_params):

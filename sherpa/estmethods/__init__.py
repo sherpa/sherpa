@@ -228,7 +228,7 @@ class Confidence(EstMethod):
             # lmdif, need to recalculate stat at end, just
             # like in sherpa/sherpa/fit.py:fit()
             stat = statfunc(fit_pars)[0]
-            #stat = fitfunc(scb, pars, parmins, parmaxes)[2]
+            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
             # thaw model parameter i
             thaw_par(i)
             return stat
@@ -296,7 +296,7 @@ class Projection(EstMethod):
             # lmdif, need to recalculate stat at end, just
             # like in sherpa/sherpa/fit.py:fit()
             stat = statfunc(fit_pars)[0]
-            #stat = fitfunc(scb, pars, parmins, parmaxes)[2]
+            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
             # thaw model parameter i
             thaw_par(i)
             return stat
@@ -649,7 +649,7 @@ class ConfBracket():
                     x = conf_step.covar(dir, iter, step_size, base)
                 elif 1 == iter:
                     x = conf_step.secant(dir, iter, step_size, base)
-                    #x = conf_step.covar( dir, iter, step_size, base )
+                    # x = conf_step.covar( dir, iter, step_size, base )
                 else:
                     x = conf_step.quad(dir, iter, step_size, base, bloginfo)
 
@@ -1196,7 +1196,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
                 err_q.put(EstNewMin(parvals))
                 return
             except Exception as e:
-                #err_q.put( e.__class__() )
+                # err_q.put( e.__class__() )
                 err_q.put(e)
                 return
 

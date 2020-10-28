@@ -19,7 +19,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-#import autograd.numpy as np
+# import autograd.numpy as np
 import numpy as np
 from sherpa.utils import _ncpus
 from sherpa.optmethods import _saoopt

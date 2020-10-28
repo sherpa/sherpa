@@ -376,7 +376,7 @@ def test_more_ui_string_model_with_rmf(make_data_path):
     assert isinstance(m, RMFModelPHA)
 
 
-#bug #38
+# bug #38
 @requires_fits
 @requires_data
 @requires_group

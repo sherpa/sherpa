@@ -9056,7 +9056,7 @@ class XSzwndabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.WindowE, self.redshift))
 
 
-### New additive and multiplicative models, as of XSPEC 12.7
+# New additive and multiplicative models, as of XSPEC 12.7
 
 
 class XScplinear(XSAdditiveModel):
@@ -9724,7 +9724,7 @@ class XSzigm(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.redshift, self.model, self.lyman_limit))
 
 
-## Here are the seven new additive models from XSPEC 12.7.1
+# Here are the seven new additive models from XSPEC 12.7.1
 
 
 class XSgadem(XSAdditiveModel):
