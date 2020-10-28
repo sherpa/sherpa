@@ -359,7 +359,7 @@ class ncoresMyDifEvo(MyDifEvo):
 
     def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
                  seed):
-        MyDifEvo.__init__(self, func, xpar,xmin, xmax, npop, sfactor, xprob,
+        MyDifEvo.__init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob,
                           step, seed)
         return
 

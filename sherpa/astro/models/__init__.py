@@ -530,7 +530,7 @@ class LineBroad(RegriddableModel1D):
             vsini = 2. * fwhm * c_km / numpy.sqrt(3.) / self.rest.val
             vs = {'val': vsini,
                   'min': vsini / _guess_ampl_scale,
-                  'max': vsini * _guess_ampl_scale }
+                  'max': vsini * _guess_ampl_scale}
             param_apply_limits(vs, self.vsini, **kwargs)
 
         modampl = norm['val'] * numpy.pi * self.vsini.val * \
@@ -1249,8 +1249,8 @@ class Lorentz2D(RegriddableModel2D):
         self.ypos = Parameter(name, 'ypos', 0)
         self.ellip = Parameter(name, 'ellip', 0, 0, 0.999, 0, 0.9999,
                                frozen=True)
-        self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, -2*numpy.pi,
-                               4*numpy.pi, 'radians',frozen=True)
+        self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi,
+                               -2*numpy.pi, 4*numpy.pi, 'radians', frozen=True)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,

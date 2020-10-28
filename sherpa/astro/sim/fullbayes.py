@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,6 +19,7 @@
 
 
 import numpy as np
+
 from sherpa.sim.mh import MetropolisMH, dmvnorm
 from sherpa.astro.sim.pragbayes import PragBayes, PCA1DAdd, ARFSIMFactory
 
@@ -31,7 +32,7 @@ class FullBayes(PragBayes):
     def __init__(self, fcn, sigma, mu, dof, fit, *args):
         PragBayes.__init__(self, fcn, sigma, mu, dof, fit, *args)
         self.arf_dicts = [{'current': arf.specresp.copy(),
-                           'old_rr': None }
+                           'old_rr': None}
                           for arf in self.arfs]
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,

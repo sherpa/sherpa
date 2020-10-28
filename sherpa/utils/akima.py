@@ -178,8 +178,7 @@ def interpolate(x, y, x_new, axis=-1, out=None):
     #
     #   Try this to fix bad interpolations below first point
     #
-
-    bins = numpy.maximum(bins,0)
+    bins = numpy.maximum(bins, 0)
 
     bb = bins[0:len(xi)]
     wj = xi - x[bb]

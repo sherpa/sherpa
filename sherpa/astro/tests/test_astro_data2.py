@@ -606,7 +606,8 @@ def test_img_get_bounding_mask_filtered(make_test_image):
     print(np.where(ans[0]))
 
     mask = np.zeros(5 * 7, dtype=np.bool)
-    for i in [ 3,  8,  9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 31]:
+    for i in [3,  8,  9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24,
+              25, 26, 31]:
         mask[i] = True
 
     assert len(ans) == 2

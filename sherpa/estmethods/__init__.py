@@ -818,7 +818,7 @@ class ConfStep():
         self.ftrial = ftrial
 
     def covar(self, dir, iter, stepsize, base):
-        return self.xtrial[ -1 ] + \
+        return self.xtrial[-1] + \
             ConfBracket.neg_pos[dir] * pow(base, iter) * stepsize
         # return self.xtrial[ 0 ] + \
         #       ConfBracket.neg_pos[ dir ] * pow( base, iter ) * stepsize

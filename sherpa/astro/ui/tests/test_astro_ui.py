@@ -1018,7 +1018,7 @@ def test_list_pileup_ids_multi(clean_astro_ui):
     assert ans == [1, "2"]
 
 
-def check_bad_grouping(exp_xlo,exp_xhi, exp_counts, lo1, hi1, lo2, hi2):
+def check_bad_grouping(exp_xlo, exp_xhi, exp_counts, lo1, hi1, lo2, hi2):
     """Common tests from test_grouped_pha_all_badXXX
 
     Sending in two ranges is a bit excessive but easiest

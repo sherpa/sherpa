@@ -11904,7 +11904,7 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentTypeErr('plotargs')
 
         if plotmeth not in ['plot', 'contour']:
-            raise ArgumentErr("Unsupported plotmeth={}",format(plotmeth))
+            raise ArgumentErr("Unsupported plotmeth={}".format(plotmeth))
 
         plots = []
         allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))

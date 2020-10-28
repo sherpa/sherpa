@@ -72,7 +72,7 @@ _arf = np.asarray([0.8, 0.8, 0.9, 1.0, 1.1, 1.1, 0.7, 0.6, 0.6, 0.6])
 # to confuse for other terms.
 #
 _energies = np.linspace(0.5, 1.5, 11)
-_energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1. , 1.1, 1.12, 1.3, 1.4, 1.5])
+_energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1., 1.1, 1.12, 1.3, 1.4, 1.5])
 _energies_lo = _energies[:-1]
 _energies_hi = _energies[1:]
 _energies_mid = (_energies_lo + _energies_hi) / 2
@@ -1205,7 +1205,7 @@ _img_plotfuncs = [ui.contour_data,
                   ui.contour_model,
                   ui.contour_ratio,
                   ui.contour_resid,
-                  ui.contour_source ]
+                  ui.contour_source]
 
 
 @requires_plotting

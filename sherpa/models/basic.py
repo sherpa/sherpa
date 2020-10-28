@@ -1765,7 +1765,7 @@ class Polynom2D(RegriddableModel2D):
         cx2 = {'val': 0., 'min': -100 * dyd2x0, 'max': 100 * dyd2x0}
         cy2 = {'val': 0., 'min': -100 * dyd2x1, 'max': 100 * dyd2x1}
         cx1y1 = {'val': 0., 'min': -100 * dydx0dx1, 'max': 100 * dydx0dx1}
-        c22 = {'val': 0., 'min': ylo, 'max': yhi }
+        c22 = {'val': 0., 'min': ylo, 'max': yhi}
 
         param_apply_limits(c, self.c, **kwargs)
         param_apply_limits(cx1, self.cx1, **kwargs)

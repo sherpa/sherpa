@@ -85,7 +85,7 @@ def get_region(coord):
                 regionstr = "regions -format saoimage -strip yes -system image"
 
         reg = imager.get(regionstr)
-        reg = reg.replace(';','')
+        reg = reg.replace(';', '')
         return reg
 
     except:

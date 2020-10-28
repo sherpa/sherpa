@@ -1254,7 +1254,7 @@ def test_restore_usermodel():
     src_expr = ui.get_model(3)
     assert src_expr.name == '(sin.sin_model + usermodel.mymodel)'
     mymodel = ui.get_model_component("mymodel")
-    assert mymodel.m.frozen,"is mymodel.m frozen?"
+    assert mymodel.m.frozen, "is mymodel.m frozen?"
     assert mymodel.c.val == 2.0
     assert mymodel.c.units == "m"
     assert mymodel.m.max == 5.5

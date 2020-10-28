@@ -56,9 +56,9 @@ def create_template_model(modelname, names, parvals, templates,
     # Create a list of parameters from input
     pars = []
     for ii, name in enumerate(names):
-        minimum = min(parvals[:,ii])
-        maximum = max(parvals[:,ii])
-        initial = parvals[:,ii][0]
+        minimum = min(parvals[:, ii])
+        maximum = max(parvals[:, ii])
+        initial = parvals[:, ii][0]
         # Initial parameter value is always first parameter value listed
         par = Parameter(modelname, name, initial,
                         minimum, maximum,
@@ -180,5 +180,5 @@ class TemplateModel(ArithmeticModel):
 
 
 interpolators = {
-    'default' : (Template, {'k': 2, 'order': 2})
+    'default': (Template, {'k': 2, 'order': 2})
 }

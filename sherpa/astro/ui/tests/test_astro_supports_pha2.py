@@ -108,14 +108,19 @@ def validate_pha(d, bkg=True):
         assert d.background_ids == []
 
 
+one_to_12 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+hundred_to_11 = [99 + i for i in one_to_12]
+xids = ["x{}".format(i) for i in one_to_12]
+
+
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("loader", [ui.load_pha, ui.load_data])
 @pytest.mark.parametrize("id0,ids",
-                         [(None, [1,2,3,4,5,6,7,8,9,10,11,12]),
-                          (1, [1,2,3,4,5,6,7,8,9,10,11,12]),
-                          (100, [100,101,102,103,104,105,106,107,108,109,110,111]),
-                          ("x", ["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12"])])
+                         [(None, one_to_12),
+                          (1, one_to_12),
+                          (100, hundred_to_11),
+                          ("x", xids)])
 def test_load_pha2(loader, id0, ids, make_data_path, caplog, clean_astro_ui):
     """Basic test that a pha2 file can be read in."""
 

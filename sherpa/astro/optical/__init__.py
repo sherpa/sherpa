@@ -292,7 +292,7 @@ class AbsorptionGaussian(RegriddableModel1D):
                              units='angstroms')
         self.ewidth = Parameter(name, 'ewidth', 1.)
         self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
+                               hidden=True)
 
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.ewidth, self.limit))
@@ -515,7 +515,7 @@ class OpticalGaussian(RegriddableModel1D):
                              units='angstroms')
         self.tau = Parameter(name, 'tau', 0.5)
         self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
+                               hidden=True)
 
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.tau, self.limit))
@@ -606,7 +606,7 @@ class EmissionGaussian(RegriddableModel1D):
         self.flux = Parameter(name, 'flux', 1.)
         self.skew = Parameter(name, 'skew', 1., tinyval, frozen=True)
         self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
+                               hidden=True)
 
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.pos, self.flux,
@@ -1467,7 +1467,7 @@ class FM(RegriddableModel1D):
         x = 10000. / x
         av = 3.14
 
-        dru = x * x / (p[2] * p[2] * x * x + numpy.power((x - p[1] ), 2.0))
+        dru = x * x / (p[2] * p[2] * x * x + numpy.power((x - p[1]), 2.0))
         dx = x - 5.9
         fuv = 0.5392 * dx * dx + 0.0564 * numpy.power(dx, 3.0)
         ext = av + p[3] + p[4] * x + p[5] * dru

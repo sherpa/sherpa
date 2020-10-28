@@ -1106,7 +1106,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         if data['eqpos'] is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
-            crpixw = ((crpixw - crvalp) / cdeltp + crpixp )
+            crpixw = ((crpixw - crvalp) / cdeltp + crpixp)
 
     if data['eqpos'] is not None:
         _add_keyword(hdrlist, 'MTYPE2', 'EQPOS   ')

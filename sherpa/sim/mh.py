@@ -111,7 +111,7 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
 
     # if np.min( np.linalg.eigvalsh(sigma))<=0 :
     #    raise ValueError("Error: sigma is not positive definite")
-    if np.max(np.abs(sigma-sigma.T)) >= 1e-9 :
+    if np.max(np.abs(sigma-sigma.T)) >= 1e-9:
         raise ValueError("Error: sigma is not symmetric")
 
     p = mu.size
@@ -142,7 +142,7 @@ def dmvnorm(x, mu, sigma, log=True):
 
     # if np.min( np.linalg.eigvalsh(sigma))<=0 :
     #    raise ValueError("Error: sigma is not positive definite")
-    if np.max(np.abs(sigma-sigma.T)) >= 1e-9 :
+    if np.max(np.abs(sigma-sigma.T)) >= 1e-9:
         raise ValueError("Error: sigma is not symmetric")
 
     # log density
@@ -201,7 +201,7 @@ class Walk():
         niter = self.niter
         nelem = niter+1
 
-        proposals = np.zeros((nelem,npars), dtype=np.float)
+        proposals = np.zeros((nelem, npars), dtype=np.float)
         proposals[0] = pars.copy()
 
         stats = np.zeros(nelem, dtype=np.float)

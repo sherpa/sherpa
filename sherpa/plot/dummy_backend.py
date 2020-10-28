@@ -159,7 +159,7 @@ def as_html(data, fields):
         try:
             val = getattr(data, name)
         except Exception as e:
-            lgr.debug("Skipping field {}: {}",format(name, e))
+            lgr.debug("Skipping field {}: {}".format(name, e))
             continue
 
         meta.append((name, val))

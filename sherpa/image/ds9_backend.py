@@ -120,8 +120,7 @@ def _set_wcs(keys):
 
         if eqpos is not None:
             wcdelt = wcdelt * pcdelt
-            wcrpix = ((wcrpix - pcrval) /
-                      pcdelt + pcrpix )
+            wcrpix = (wcrpix - pcrval) / pcdelt + pcrpix
 
     if eqpos is not None:
         # join together all strings with a '\n' between each

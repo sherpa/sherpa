@@ -1572,7 +1572,7 @@ def test_get_cdf_plot_empty(session):
 
     s = session()
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
     for f in ["points", "x", "y", "median", "lower", "upper", "xlabel", "ylabel", "title"]:
         assert getattr(p, f) is None
 
@@ -1638,7 +1638,7 @@ def test_plot_cdf(session):
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     xsort = np.sort(x)
     assert p.points == pytest.approx(x)
@@ -1662,7 +1662,7 @@ def test_plot_cdf_labels_noname(session):
     s.plot_cdf(x, xlabel='a b')
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     assert p.xlabel == 'a b'
     assert p.ylabel == 'p(<=a b)'
@@ -1679,7 +1679,7 @@ def test_plot_cdf_labels(session):
     s.plot_cdf(x, xlabel='a b', name='b a')
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     assert p.xlabel == 'a b'
     assert p.ylabel == 'p(<=a b)'
@@ -1693,7 +1693,7 @@ def test_show_cdf_plot_empty(session):
     s = session()
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 10
@@ -1724,7 +1724,7 @@ def test_show_cdf_plot(session, old_numpy_printing):
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 10
@@ -1745,7 +1745,7 @@ def test_get_pdf_plot_empty(session):
 
     s = session()
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
     for f in ["points", "xlo", "xhi", "y", "xlabel", "ylabel", "title"]:
         assert getattr(p, f) is None
 
@@ -1760,7 +1760,7 @@ def test_plot_pdf(session):
     s.plot_pdf(x)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     xgrid = np.arange(2, 8.5, 0.5)
 
@@ -1855,7 +1855,7 @@ def test_plot_pdf_labels_noname(session):
     s.plot_pdf(x, xlabel='x^2 x', bins=4)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     assert p.xlo.size == 4
     assert p.xhi.size == 4
@@ -1876,7 +1876,7 @@ def test_plot_pdf_labels(session):
     s.plot_pdf(x, xlabel='x^2 x', name='no name', bins=4)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     assert p.xlo.size == 4
     assert p.xhi.size == 4
@@ -1894,7 +1894,7 @@ def test_show_pdf_plot_empty(session):
     s = session()
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 8
@@ -1923,7 +1923,7 @@ def test_show_pdf_plot(session, old_numpy_printing):
     s.plot_pdf(x, bins=3, normed=False)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 8

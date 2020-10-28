@@ -219,14 +219,14 @@ class NelderMead3(NelderMead0):
         return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0,1, 1], verbose=0):
+                 step=None, finalsimplex=[0, 1, 1], verbose=0):
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
             step = n * [1.2]
         maxnfev = self.get_maxnfev(maxnfev, n)
         init = 0
-        par, fmin , nfev, err = \
+        par, fmin, nfev, err = \
             _saoopt.neldermead(verbose, maxnfev, init, finalsimplex, tol, step,
                                xmin, xmax, x0, fcn)
         return nfev, fmin, par
@@ -239,7 +239,7 @@ class NelderMead4(NelderMead0):
         return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0,1, 1], verbose=0):
+                 step=None, finalsimplex=[0, 1, 1], verbose=0):
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
@@ -428,7 +428,7 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
             nfev += tmp_nfev
             # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
             if fmin < fval:
-                return self.calc( fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
+                return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
             else:
                 return nfev, fval, par
         except NotImplementedError as nie:

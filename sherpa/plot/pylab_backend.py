@@ -30,19 +30,19 @@ from sherpa.utils.err import ArgumentErr, NotImplementedErr
 from sherpa.utils import formatting
 
 
-__all__ = ('clear_window','point','plot','histo','contour','set_subplot','init',
-           'get_split_plot_defaults', 'get_plot_defaults', 'begin', 'end',
-           'get_data_plot_defaults', 'get_model_plot_defaults', 'exceptions',
-           'get_fit_plot_defaults', 'get_resid_plot_defaults',
+__all__ = ('clear_window', 'point', 'plot', 'histo', 'contour', 'set_subplot',
+           'init', 'get_split_plot_defaults', 'get_plot_defaults', 'begin',
+           'end', 'get_data_plot_defaults', 'get_model_plot_defaults',
+           'exceptions', 'get_fit_plot_defaults', 'get_resid_plot_defaults',
            'get_ratio_plot_defaults', 'get_contour_defaults',
            'get_data_contour_defaults', 'get_model_contour_defaults',
            'get_fit_contour_defaults', 'get_resid_contour_defaults',
-           'get_ratio_contour_defaults','get_confid_plot_defaults',
+           'get_ratio_contour_defaults', 'get_confid_plot_defaults',
            'get_confid_contour_defaults', 'set_window_redraw', 'set_jointplot',
            'get_model_histo_defaults', 'get_histo_defaults',
-           'get_component_plot_defaults','get_component_histo_defaults',
-           'vline', 'hline', 'get_scatter_plot_defaults', 'get_cdf_plot_defaults',
-           'get_latex_for_string', 'name')
+           'get_component_plot_defaults', 'get_component_histo_defaults',
+           'vline', 'hline', 'get_scatter_plot_defaults',
+           'get_cdf_plot_defaults', 'get_latex_for_string', 'name')
 
 
 # Name of the backend

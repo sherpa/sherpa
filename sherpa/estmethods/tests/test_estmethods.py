@@ -18,6 +18,7 @@
 #
 
 import numpy
+
 from sherpa.estmethods import Covariance, Projection
 from sherpa.utils.testing import SherpaTestCase
 
@@ -25,30 +26,30 @@ from sherpa.utils.testing import SherpaTestCase
 # Test data arrays -- together this makes a line best fit with a
 # 1D Gaussian function.
 x = numpy.array(
-    [ 758,  759,  760,  761,  762,  763,  764,  765,  766,  767,  768,  769,
-      770,  771,  772,  773,  774,  775,  776,  777,  778,  779,  780,  781,
-      782,  783,  784,  785,  786,  787,  788,  789,  790,  791,  792,  793,
-      794,  795,  796,  797,  798,  799,  800,  801,  802,  803,  804,  805,
-      806,  807,  808,  809,  810,  811,  812,  813,  814,  815,  816,  817,
-      818,  819,  820,  821,  822,  823,  824,  825,  826,  827,  828,  829,
-      830,  831,  832,  833,  834,  835,  836,  837,  838,  839,  840,  841,
-      842,  843,  844,  845,  846,  847,  848,  849,  850,  851,  852,  853,
-      854,  855,  856,  857,  858,  859,  860,  861,  862,  863,  864,  865,
-      866,  867,  868,  869,  870,  871,  872,  873,  874,  875,  876,  877,
-      878,  879,  880,  881])
+    [758,  759,  760,  761,  762,  763,  764,  765,  766,  767,  768,  769,
+     770,  771,  772,  773,  774,  775,  776,  777,  778,  779,  780,  781,
+     782,  783,  784,  785,  786,  787,  788,  789,  790,  791,  792,  793,
+     794,  795,  796,  797,  798,  799,  800,  801,  802,  803,  804,  805,
+     806,  807,  808,  809,  810,  811,  812,  813,  814,  815,  816,  817,
+     818,  819,  820,  821,  822,  823,  824,  825,  826,  827,  828,  829,
+     830,  831,  832,  833,  834,  835,  836,  837,  838,  839,  840,  841,
+     842,  843,  844,  845,  846,  847,  848,  849,  850,  851,  852,  853,
+     854,  855,  856,  857,  858,  859,  860,  861,  862,  863,  864,  865,
+     866,  867,  868,  869,  870,  871,  872,  873,  874,  875,  876,  877,
+     878,  879,  880,  881])
 
 y = numpy.array(
-    [ 1,    0,    1,    0,    1,    2,    0,    3,    0,    1,    0,    5,
-      0,    5,    3,    5,    6,    5,   11,   14,   11,   13,   12,   21,
-      15,   24,   20,   29,   32,   43,   47,   49,   50,   64,   60,   72,
-      61,   73,   83,   98,   99,  100,   94,   92,  121,  107,  126,  107,
-      112,  123,  114,  126,  113,   86,  111,  126,   95,  119,   93,  119,
-      93,   89,   75,   80,   71,   68,   59,   54,   61,   37,   21,   33,
-      37,   32,   31,   22,   19,   25,   14,   13,   12,   10,    7,   10,
-      5,    4,    8,    1,    5,    2,    1,    3,    1,    5,    0,    3,
-      1,    0,    0,    0,    1,    0,    0,    0,    0,    0,    0,    0,
-      0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-      0,    0,    0,    1])
+    [1,    0,    1,    0,    1,    2,    0,    3,    0,    1,    0,    5,
+     0,    5,    3,    5,    6,    5,   11,   14,   11,   13,   12,   21,
+     15,   24,   20,   29,   32,   43,   47,   49,   50,   64,   60,   72,
+     61,   73,   83,   98,   99,  100,   94,   92,  121,  107,  126,  107,
+     112,  123,  114,  126,  113,   86,  111,  126,   95,  119,   93,  119,
+     93,   89,   75,   80,   71,   68,   59,   54,   61,   37,   21,   33,
+     37,   32,   31,   22,   19,   25,   14,   13,   12,   10,    7,   10,
+     5,    4,    8,    1,    5,    2,    1,    3,    1,    5,    0,    3,
+     1,    0,    0,    0,    1,    0,    0,    0,    0,    0,    0,    0,
+     0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+     0,    0,    0,    1])
 
 # These parameter values are known to be the best-fit parameter values
 # of a Gaussian to the x- and y-arrays above.
@@ -90,8 +91,8 @@ def gauss_func(p):
 # estimating errors.
 def stat(p):
     errors = 1.0 + numpy.sqrt(y + 0.75)
-    fvec = (y - gauss_func(p) ) / errors
-    return ((fvec * fvec).sum(),)
+    fvec = (y - gauss_func(p)) / errors
+    return ((fvec * fvec).sum(), )
 
 
 # Easiest "fit" function for unit tests is actually just to
@@ -150,9 +151,9 @@ class test_estmethods(SherpaTestCase):
                           freeze_par, thaw_par, report_progress, get_par_name)
 
     def test_covar(self):
-        standard = numpy.array([[ 0.4935702,  0.06857833, numpy.nan],
-                                [ 0.06857833, 0.26405554, numpy.nan],
-                                [ numpy.nan,  numpy.nan,  2.58857314]])
+        standard = numpy.array([[0.4935702,  0.06857833, numpy.nan],
+                                [0.06857833, 0.26405554, numpy.nan],
+                                [numpy.nan,  numpy.nan,  2.58857314]])
         results = Covariance().compute(stat, None, fittedpars,
                                        minpars, maxpars,
                                        hardminpars, hardmaxpars,
@@ -164,7 +165,7 @@ class test_estmethods(SherpaTestCase):
 
     def test_projection(self):
         standard_elo = numpy.array([-0.39973743, -0.26390339, -2.08784716])
-        standard_ehi = numpy.array([ 0.39580942,  0.26363223,  2.08789851])
+        standard_ehi = numpy.array([0.39580942,  0.26363223,  2.08789851])
         results = Projection().compute(stat, fitter, fittedpars,
                                        minpars, maxpars,
                                        hardminpars, hardmaxpars,

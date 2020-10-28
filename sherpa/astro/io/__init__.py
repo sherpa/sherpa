@@ -757,7 +757,7 @@ def write_image(filename, dataset, ascii=True, clobber=False):
 
     """
     data, hdr = _pack_image(dataset)
-    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber )
+    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber)
 
 
 def write_pha(filename, dataset, ascii=True, clobber=False):

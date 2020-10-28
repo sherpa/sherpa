@@ -386,7 +386,7 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     # global symbol is not created, so need to access the component
     tmod = ui.get_model_component('tmod')
     with pytest.raises(ParameterErr) as e:
-        tmod.calc([0., .2, 1., 1.], numpy.arange(1,5))
+        tmod.calc([0., .2, 1., 1.], numpy.arange(1, 5))
     assert 'minimum' in str(e)
 
 

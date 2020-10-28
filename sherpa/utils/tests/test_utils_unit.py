@@ -258,7 +258,8 @@ def test_sao_arange():
 
     py3-todo: this function has no python docs
     """
-    assert_array_equal([  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.], _utils.sao_arange(0, 10, 1))
+    assert_array_equal([0.,  1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.,  9.,  10.],
+                       _utils.sao_arange(0, 10, 1))
 
 
 # py3-todo: skipping test for sum_intervals, not enough info to make a quick test.

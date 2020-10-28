@@ -462,7 +462,7 @@ class MyModel(RegriddableModel1D):
             if p[0] == 0:
                 return [100, ] * len(x)
             else:
-                return [100-p[0]*100,] * len(x)
+                return [100-p[0] * 100, ] * len(x)
         if p[0] == 1:
             return [100, ] * len(x)
         else:
@@ -500,11 +500,11 @@ class MyModel2D(RegriddableModel2D):
             if has_25 == 0:
                 return [100, ] * len(array)
             else:
-                return [100-has_25*100,] * len(array)
+                return [100 - has_25 * 100, ] * len(array)
         if has_25 == 1:
             return [100, ] * len(array)
         else:
-            return [has_25*100, ] * len(array)
+            return [has_25 * 100, ] * len(array)
 
 
 def assert_fit(ui, model, value):

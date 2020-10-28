@@ -568,7 +568,7 @@ def Zakharov(x):
     """Zakharov(0, 0, ..., 0) = 0"""
     n = len(x)
     jj = np.arange(1.0, n + 1)
-    s2 = sum( jj * x ) / 2
+    s2 = sum(jj * x) / 2
     return sum(x**2) + s2**2 + s2**4
 
 
