@@ -118,7 +118,8 @@ def image(arr, newframe=False, tile=False):
         arr = numpy.asarray(arr, dtype=SherpaFloat)
         imager.set_np2arr(arr.T)
     except:
-        raise # DS9Err('noimage')
+        # raise DS9Err('noimage')
+        raise
 
 
 def _set_wcs(keys):

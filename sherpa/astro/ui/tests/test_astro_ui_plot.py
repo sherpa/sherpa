@@ -423,7 +423,7 @@ def test_get_bkg_plot(idval, clean_astro_ui):
 
     assert isinstance(bp, BkgDataPlot)
 
-    assert bp.xlo == pytest.approx(_data_chan) # why is this not -0.5?
+    assert bp.xlo == pytest.approx(_data_chan)
 
     # normalise by exposure time and bin width, but bin width here
     # is 1 (because it is being measured in channels).

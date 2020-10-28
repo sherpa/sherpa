@@ -719,7 +719,8 @@ class PSFModel(Model):
 
             try:
                 psf_pixel_size = self.kernel.sky.cdelt
-            except AttributeError: # If the kernel does not have a pixel size, issue a warning and keep going
+            except AttributeError:
+                # If the kernel does not have a pixel size, issue a warning and keep going
                 warnings.warn("PSF Image does not have a pixel size. Sherpa will assume the pixel size is the same"
                               "as the data")
                 return self.SAME_RESOLUTION

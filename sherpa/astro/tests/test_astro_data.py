@@ -1116,12 +1116,15 @@ def test_get_filter_channel_grouped_prefiltered(make_data_path):
     pha.notice(1.0, 7.0)
 
     pha.set_analysis('channel')
-    assert pha.get_filter() == '75:475'  # DOES NOT MATCH 69-480
+
+    # DOES NOT MATCH 69-480
+    assert pha.get_filter() == '75:475'
 
     # What units does ignore use? It appears to be channels.
     pha.ignore(150, 300)
 
-    assert pha.get_filter() == '75,325:475'  #  ODD
+    #  ODD
+    assert pha.get_filter() == '75,325:475'
 
 
 @requires_data
