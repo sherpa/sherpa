@@ -412,6 +412,23 @@ def _get_citation_zenodo_latest():
     return out['success']
 
 
+def _zenodo_missing(version):
+    """
+
+    Parameters
+    ----------
+    version : str
+        The version we are looking for.
+
+    Returns
+    -------
+    message : str
+        The "unable to find" message.
+    """
+
+    return 'Zenodo has no information for version {}.'.format(version)
+
+
 def _parse_zenodo_data(jsdata, version):
     """Extract data for the given version from a Zenodo query.
 
@@ -451,9 +468,82 @@ def _parse_zenodo_data(jsdata, version):
 
     if data is None:
         dbg('Version {} not found'.format(version))
-        return {'failed': "Zenodo has no information for version {}.".format(version)}
+        return {'failed': _zenodo_missing(version)}
 
     return {'success': data}
+
+
+def _download_zenodo_data(version):
+    """Query Zenodo for the specific release.
+
+    We have to deal with pagination in the Zenodo response.
+
+    Parameters
+    ----------
+    version : str
+        The release number (e.g. '4.12.2').
+
+    Returns
+    -------
+    response : dict
+        The data in JSON as 'success' or an error message as 'failed'.
+
+    """
+
+    # We could set the size parameter to something very large, to
+    # get all responses with one call, but instead we use pagination.
+    # Zenodo helpfully provides a links/next record with the
+    # next URL, but it seems to be missing the all_versions=True
+    # option, which makes it less-than-useful, hence the addition
+    # of it below. The alternative would be to manually track the
+    # page counter and add '&page=n' to the call.
+    #
+    url = 'https://zenodo.org/api/records/?q=conceptrecid:"593753"&all_versions=True&sort=mostrecent'
+    missing = _zenodo_missing(version)
+
+    while True:
+        dbg("Zenodo query: {}".format(url))
+        jsdata = _download_json(url)
+
+        # If the query fails then we error out
+        #
+        if 'failed' in jsdata:
+            return jsdata
+
+        jsdata = jsdata['success']
+        data = _parse_zenodo_data(jsdata, version)
+        if 'success' in data:
+            return data
+
+        # There are two failures we care about:
+        #  - we can parse the information but have not been able to
+        #    find the version
+        #  - any other reason
+        #
+        # If the former then we look for the links/next entry to
+        # look at the next page of the response. If it doesn't
+        # exist we assume we are on the last page and so can error
+        # out.
+        #
+        # If the latter then we error out rather than trying anything
+        # else.
+        #
+        if data['failed'] != missing:
+            return data
+
+        try:
+            url = jsdata['links']['next']
+
+            # Add in the necessary all_versions tag: see
+            # https://github.com/zenodo/zenodo/issues/1662
+            #
+            if 'all_versions=True' not in url:
+                url += '&all_versions=True'
+
+        except KeyError:
+            # There is no links/next field so assume we've checked all
+            # pages
+            return data
 
 
 def _get_citation_zenodo_version(version):
@@ -461,22 +551,20 @@ def _get_citation_zenodo_version(version):
 
     As this has to return all Sherpa records it is slow.
 
+    Parameters
+    ----------
+    version : str
+        The release number (e.g. '4.12.2').
+
     Returns
     -------
     citation : str
         Citation information.
     """
 
-    # Is there a better way to do this?
-    #
-    url = 'https://zenodo.org/api/records/?q=conceptrecid:"593753"&all_versions=True'
-    jsdata = _download_json(url)
+    jsdata = _download_zenodo_data(version)
     if 'failed' in jsdata:
         return _get_citation_zenodo_failure(jsdata['failed'])
-
-    data = _parse_zenodo_data(jsdata['success'], version)
-    if 'failed' in data:
-        return _get_citation_zenodo_failure(data['failed'])
 
     out = _make_zenodo_citation(jsdata['success'], latest=False)
     if 'failed' in out:
