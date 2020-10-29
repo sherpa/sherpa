@@ -62,7 +62,30 @@ Cephes Math Library Release 2.3:  June, 1995
 Copyright 1984, 1987, 1989, 1995 by Stephen L. Moshier
 */
 
+/*
+ * The Cephes Math Library was written before the C99 standards
+ * were available as a result: a few math constants and functtions
+ * were defined by the library.  If the NOC99COMPILER is defined,
+ * i.e. by uncomment the following line:
+#define NOC99COMPILER 1
+ * then the code will be restored to its original state otherwise
+ * the aforementioned math constants and functions from the C99
+ * compiler shall be used.
+ */
+/*
+#define NOC99COMPILER 1
+*/
+#ifdef NOC99COMPILER
+/*
+ * Restore Lib to its original state
+ */
+#else
+/*
+ * Use relevant math constants and funcs from C99 compiler
+ */
 #include <math.h>
+#endif
+
 /*#include "cephes_names.h"*/
 
 /* Constant definitions for math error conditions
@@ -174,7 +197,7 @@ typedef struct
 /* Define to support tiny denormal numbers, else undefine. */
 #define DENORMAL 1
 
-#ifdef MAKECEPHESC99COMPLIANT          
+#ifdef NOC99COMPILER
 /* Define to ask for infinity support, else undefine. */
 #define INFINITIES 1
 #ifdef NOINFINITIES

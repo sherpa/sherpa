@@ -274,7 +274,7 @@ extern double MAXLOG, MAXNUM, PI;
 double pow(), log(), exp(), sin(), polevl(), p1evl(), floor(), fabs();
 int isnan(), isfinite();
 #else
-#ifdef MAKECEPHESC99COMPLIANT
+#ifdef NOC99COMPILER
 extern int isfinite ( double x );
 #endif
 static double stirf(double);

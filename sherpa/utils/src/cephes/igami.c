@@ -51,7 +51,7 @@ Copyright 1984, 1987, 1995 by Stephen L. Moshier
 #include "mconf.h"
 #include <stdio.h>
 
-#ifdef MAKECEPHESC99COMPLIANT
+#ifdef NOC99COMPILER
 extern double MACHEP, MAXNUM, MAXLOG, MINLOG, NAN;
 #else
 extern double MACHEP, MAXNUM, MAXLOG, MINLOG/*, NAN*/;

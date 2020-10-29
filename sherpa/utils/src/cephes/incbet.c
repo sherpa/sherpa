@@ -80,7 +80,7 @@ static double incbcf(), incbd(), pseries();
 static double big = 4.503599627370496e15;
 static double biginv =  2.22044604925031308085e-16;
 
-#ifdef MAKECEPHESC99COMPLIANT
+#ifdef NOC99COMPILER
 extern double NAN;
 #endif
 

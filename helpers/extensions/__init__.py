@@ -147,6 +147,8 @@ utils = Extension('sherpa.utils._utils',
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h',
                         'sherpa/utils/src/cephes/cephes.h',
+                        'sherpa/utils/src/cephes/mconf.h',
+                        'sherpa/utils/src/cephes/protos.h',
                         'sherpa/utils/src/sjohnson/Faddeeva.hh']))
 
 modelfcts = Extension('sherpa.models._modelfcts',
