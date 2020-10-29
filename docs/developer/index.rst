@@ -119,6 +119,26 @@ can be activated and Sherpa can be build from source.
 How do I ...
 ============
 
+Update the Zenodo citation information
+--------------------------------------
+
+The :py:func:`sherpa.citation` function returns citation information
+taken from the `Zenodo records for Sherpa <https://doi.org/10.5281/zenodo.593753>`_.
+It can query the Zenodo API, but it also contains a list of known
+releases in the ``sherpa._get_citation_hardcoded`` routine. To add
+to this list (for when there's been a new release), run the
+``scripts/make_zenodo_release.py`` script with the version number
+and add the screen output to the list in ``_get_citation_hardcoded``.
+
+For example, using release 4.12.2 would create (the author list has been
+simplified)::
+
+  % ./scripts/make_zenodo_release.py 4.12.2
+      add(version='4.12.2', title='sherpa/sherpa: Sherpa 4.12.2',
+          date=todate(2020, 10, 27),
+          authors=['Doug Burke', 'Omar Laurino', ... 'Todd'],
+          idval='4141888')
+
 Add a new notebook
 ------------------
 

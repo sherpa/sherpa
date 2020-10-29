@@ -164,29 +164,15 @@ def _get_citation_hardcoded(version):
     citation : str or None
         Citation information if known, otherwise None.
 
+    Notes
+    -----
+    The entries can be created with the script:
+    scripts/make_zenodo_release.py
+
     """
 
     def todate(year, mnum, dnum):
         return datetime.datetime(year, mnum, dnum)
-
-    db = 'DougBurke'
-    ol = 'Omar Laurino'
-    dn = 'dtnguyen2'
-    ta = 'Tom Aldcroft'
-    an = 'Aneta Siemiginowska'
-
-    jb = 'Jamie Budynkiewicz'
-    cd = 'Christoph Deil'
-    bs = 'Brigitta Sipocz'
-
-    wm = 'wmclaugh'
-
-    kl = 'Katrin Leinweber'
-
-    mt = 'Marie-Terrell'
-    bs2 = 'Brigitta Sipőcz'
-    hm = 'Hans Moritz Günther'
-    td = 'Todd'
 
     cite = {}
 
@@ -195,58 +181,95 @@ def _get_citation_hardcoded(version):
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
 
-    add(version='4.8.0', title='sherpa: Sherpa 4.8.0',
-        date=todate(2016, 1, 27),
-        authors=[db, ol, dn, ta, an],
-        idval='45243')
-    add(version='4.8.1', title='sherpa: Sherpa 4.8.1',
-        date=todate(2016, 4, 15),
-        authors=[db, ol, dn, ta, jb, an, cd, bs],
-        idval='49832')
-    add(version='4.8.2', title='sherpa: Sherpa 4.8.2',
-        date=todate(2016, 9, 23),
-        authors=[db, ol, dn, jb, ta, an, cd, wm, bs],
-        idval='154744')
-
-    add(version='4.9.0', title='sherpa/sherpa: Sherpa 4.9.0',
-        date=todate(2017, 1, 27),
-        authors=[db, ol, dn, jb, ta, an, wm, cd, bs],
-        idval='260416')
-    add(version='4.9.1', title='sherpa/sherpa: Sherpa 4.9.1',
-        date=todate(2017, 8, 3),
-        authors=[db, ol, dn, jb, ta, an, wm, cd, bs],
-        idval='838686')
-
-    add(version='4.10.0', title='sherpa/sherpa: Sherpa 4.10.0',
-        date=todate(2018, 5, 1),
-        authors=[db, ol, dn, jb, ta, an, wm, cd, bs],
-        idval='1245678')
-    add(version='4.10.1', title='sherpa/sherpa: Sherpa 4.10.1',
-        date=todate(2018, 10, 16),
-        authors=[db, ol, dn, jb, ta, an, wm, bs, cd, kl],
-        idval='1463962')
-    add(version='4.10.2', title='sherpa/sherpa: Sherpa 4.10.2',
-        date=todate(2018, 12, 14),
-        authors=[db, ol, dn, jb, ta, an, cd, wm, bs, kl],
-        idval='2275738')
-
-    add(version='4.11.0', title='sherpa/sherpa: Sherpa 4.11.0',
-        date=todate(2019, 2, 20),
-        authors=[db, ol, dn, jb, ta, an, cd, wm, bs, kl],
-        idval='2573885')
-    add(version='4.11.1', title='sherpa/sherpa: Sherpa 4.11.1',
-        date=todate(2019, 8, 1),
-        authors=[db, ol, dn, jb, ta, an, cd, wm, bs, kl],
-        idval='3358134')
-
-    add(version='4.12.0', title='sherpa/sherpa: Sherpa 4.12.0',
-        date=todate(2020, 1, 30),
-        authors=[db, ol, dn, wm, jb, ta, an, cd, mt, bs2, hm, td, kl],
-        idval='3631574')
+    add(version='4.12.2', title='sherpa/sherpa: Sherpa 4.12.2',
+        date=todate(2020, 10, 27),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
+                 'Hans Moritz Günther', 'Marie-Terrell', 'Aneta Siemiginowska',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Christoph Deil',
+                 'Brigitta Sipőcz', 'Johannes Buchner', 'Iva Laginja',
+                 'Katrin Leinweber', 'nplee', 'Todd'],
+        idval='4141888')
     add(version='4.12.1', title='sherpa/sherpa: Sherpa 4.12.1',
         date=todate(2020, 7, 14),
-        authors=[db, ol, wm, dn, mt, hm, jb, an, ta, cd, bs2, kl, td],
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
+                 'Marie-Terrell', 'Hans Moritz Günther', 'Jamie Budynkiewicz',
+                 'Aneta Siemiginowska', 'Tom Aldcroft', 'Christoph Deil',
+                 'Brigitta Sipőcz', 'Katrin Leinweber', 'Todd'],
         idval='3944985')
+    add(version='4.12.0', title='sherpa/sherpa: Sherpa 4.12.0',
+        date=todate(2020, 1, 30),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2', 'wmclaugh',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'Christoph Deil', 'Marie-Terrell', 'Brigitta Sipőcz',
+                 'Hans Moritz Günther', 'Todd', 'Katrin Leinweber'],
+        idval='3631574')
+
+    add(version='4.11.1', title='sherpa/sherpa: Sherpa 4.11.1',
+        date=todate(2019, 8, 1),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'Christoph Deil', 'wmclaugh', 'Brigitta Sipocz',
+                 'Katrin Leinweber'],
+        idval='3358134')
+    add(version='4.11.0', title='sherpa/sherpa: Sherpa 4.11.0',
+        date=todate(2019, 2, 20),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'Christoph Deil', 'wmclaugh', 'Brigitta Sipocz',
+                 'Katrin Leinweber'],
+        idval='2573885')
+
+    add(version='4.10.2', title='sherpa/sherpa: Sherpa 4.10.2',
+        date=todate(2018, 12, 14),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'Christoph Deil', 'wmclaugh', 'Brigitta Sipocz',
+                 'Katrin Leinweber'],
+        idval='2275738')
+    add(version='4.10.1', title='sherpa/sherpa: Sherpa 4.10.1',
+        date=todate(2018, 10, 16),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'wmclaugh', 'Brigitta Sipocz', 'Christoph Deil',
+                 'Katrin Leinweber'],
+        idval='1463962')
+    add(version='4.10.0', title='sherpa/sherpa: Sherpa 4.10.0',
+        date=todate(2018, 5, 11),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'wmclaugh', 'Christoph Deil', 'Brigitta Sipocz'],
+        idval='1245678')
+
+    add(version='4.9.1', title='sherpa/sherpa: Sherpa 4.9.1',
+        date=todate(2017, 8, 3),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'wmclaugh', 'Christoph Deil', 'Brigitta Sipocz'],
+        idval='838686')
+    add(version='4.9.0', title='sherpa/sherpa: Sherpa 4.9.0',
+        date=todate(2017, 1, 27),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'wmclaugh', 'Christoph Deil', 'Brigitta Sipocz'],
+        idval='260416')
+
+    add(version='4.8.2', title='sherpa/sherpa: Sherpa 4.8.2',
+        date=todate(2016, 9, 23),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Aneta Siemiginowska',
+                 'Christoph Deil', 'wmclaugh', 'Brigitta Sipocz'],
+        idval='154744')
+    add(version='4.8.1', title='sherpa: Sherpa 4.8.1',
+        date=todate(2016, 4, 15),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2', 'Tom Aldcroft',
+                 'Jamie Budynkiewicz', 'Aneta Siemiginowska', 'Christoph Deil',
+                 'Brigitta Sipocz'],
+        idval='49832')
+    add(version='4.8.0', title='sherpa: Sherpa 4.8.0',
+        date=todate(2016, 1, 27),
+        authors=['Doug Burke', 'Omar Laurino', 'dtnguyen2', 'Tom Aldcroft',
+                 'Aneta Siemiginowska'],
+        idval='45243')
 
     kwargs = cite.get(version, None)
     if kwargs is None:
