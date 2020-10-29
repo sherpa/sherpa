@@ -74,8 +74,9 @@ static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
   char *objS = NULL;
   int fileflag = 0;
 
-  static char *kwlist[] = {"region", "fileflag", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "|si", kwlist,
+  static const char *kwlist[] = {"region", "fileflag", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "|si",
+                                     const_cast<char**>(kwlist),
 				     &objS, &fileflag ) )
     return NULL;
 
@@ -129,8 +130,9 @@ static PyObject* region_mask( PyRegion* self, PyObject* args, PyObject *kwargs )
 
   DoubleArray xpos, ypos;
 
-  static char *kwlist[] = {"x0", "x1", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O&O&", kwlist,
+  static const char *kwlist[] = {"x0", "x1", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O&O&",
+                                     const_cast<char**>(kwlist),
 				     CONVERTME(DoubleArray), &xpos,
 				     CONVERTME(DoubleArray), &ypos))
     return NULL;
@@ -232,8 +234,9 @@ static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwarg
   PyObject *reg_obj2 = NULL;
   int reverse = 0;
 
-  static char *kwlist[] = {"region", "exclude", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!|i", kwlist,
+  static const char *kwlist[] = {"region", "exclude", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!|i",
+                                     const_cast<char**>(kwlist),
 				     &pyRegion_Type, &reg_obj2,
 				     &reverse))
     return NULL;
