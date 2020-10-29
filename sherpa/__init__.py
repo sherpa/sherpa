@@ -402,7 +402,7 @@ def _get_citation_zenodo_failure(failed):
         The failure message.
 
     """
-    out = 'There was a problem retireving the data from Zenodo:\n'
+    out = 'There was a problem retrieving the data from Zenodo:\n'
     out += failed
     out += '\n\n'
     out += DEFAULT_CITATION
