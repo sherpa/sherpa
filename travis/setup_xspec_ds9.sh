@@ -62,6 +62,9 @@ xspec_library_path=${xspec_root}/lib/
 xspec_include_path=${xspec_root}/include/
 
 case "${XSPECVER}" in
+  12.11.1*)
+      xspec_version_string="12.11.1"
+      ;;
   12.10.1*)
       xspec_version_string="12.10.1"
       ;;

@@ -2,7 +2,8 @@
 
 # Environment
 sherpa_channel=sherpa
-xspec_channel=xspec/channel/dev
+#Switch from "dev" to "test" to avoid needing to rebase old PRs prior to pinning cfitsio in xspec
+xspec_channel="xspec/label/test"
 miniconda=$HOME/miniconda
 
 if [[ ${TRAVIS_OS_NAME} == linux ]];
