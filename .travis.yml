@@ -20,8 +20,8 @@ jobs:
     - env: XSPECVER="12.11.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER="2" TRAVIS_PYTHON_VERSION="3.6"
     # As above, python 3.7, numpy 1.15, matplotlib 3
     - env: XSPECVER="12.11.1" NUMPYVER="1.15" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER="3" TRAVIS_PYTHON_VERSION="3.7"
-    # As above, python 3.8, numpy 1.15, matplotlib 3
-    - env: XSPECVER="12.11.1" NUMPYVER="1.15" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER="3" TRAVIS_PYTHON_VERSION="3.8"
+    # As above, python 3.8, numpy 1.19, matplotlib 3
+    - env: XSPECVER="12.11.1" NUMPYVER="1.19" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER="3" TRAVIS_PYTHON_VERSION="3.8"
     # We now buid all PRs on RTD thanks to their hook, so we
     # do not need to run a separate test here.
     # - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.7"
