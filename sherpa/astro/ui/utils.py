@@ -13361,6 +13361,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
+        if (confidence <= 0) or (confidence > 100):
+            raise ArgumentErr('bad', 'confidence', 'must be > 0 and <= 100')
+
         if not Xrays:
             raise NotImplementedError("sample_flux(Xrays=False) is currently unsupported")
 

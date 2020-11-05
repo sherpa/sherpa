@@ -1290,7 +1290,6 @@ def test_sample_flux_invalid_model(hide_logging, make_data_path, clean_astro_ui)
     assert res[2].shape == (2, 4)
 
 
-@pytest.mark.xfail  # no error is raised
 @pytest.mark.parametrize("conf", [0, 100.1])
 def test_sample_flux_invalid_confidence(conf):
     """What happens when confidence is outside the range (0, 100]?
