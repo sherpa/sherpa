@@ -96,7 +96,7 @@ def setup_covar(make_data_path):
 
 
 @requires_data
-@pytest.mark.parametrize('stat', set(ui.list_stats()) - RIGHT_STATS)
+@pytest.mark.parametrize('stat', sorted(set(ui.list_stats()) - RIGHT_STATS))
 def test_covar_wrong_stat(stat, clean_ui, setup_covar):
     "Test an exception is thrown is the proper stat is not set"
 
@@ -121,7 +121,7 @@ def test_covar_wstat_no_background(clean_ui, setup_covar):
 
 
 @requires_data
-@pytest.mark.parametrize("stat", RIGHT_STATS)
+@pytest.mark.parametrize("stat", sorted(RIGHT_STATS))
 def test_no_covar(stat, clean_ui, setup_covar):
     "Test an exception is thrown if covar is not run"
 
@@ -135,7 +135,7 @@ def test_no_covar(stat, clean_ui, setup_covar):
 # Test get_draws returns a valid response when the covariance matrix is provided
 # Note the accuracy of the returned values is not assessed here
 @requires_data
-@pytest.mark.parametrize('stat', RIGHT_STATS - {'wstat'})
+@pytest.mark.parametrize('stat', sorted(RIGHT_STATS - {'wstat'}))
 def test_covar_as_argument(stat, clean_ui, setup_covar):
 
     ui.set_stat(stat)
@@ -155,7 +155,7 @@ def test_covar_as_argument(stat, clean_ui, setup_covar):
 # Test get_draws returns a valid response when the covariance matrix is not provided
 # Note the accuracy of the returned values is not assessed here
 @requires_data
-@pytest.mark.parametrize('stat', RIGHT_STATS - {'wstat'})
+@pytest.mark.parametrize('stat', sorted(RIGHT_STATS - {'wstat'}))
 def test_covar_as_none(stat, clean_ui, setup_covar):
 
     ui.set_stat(stat)
