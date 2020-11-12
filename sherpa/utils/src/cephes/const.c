@@ -134,7 +134,7 @@ unsigned short LOGE2[4]  = {0x39ef,0xfefa,0x2e42,0x3fe6};
 unsigned short LOGSQ2[4] = {0x39ef,0xfefa,0x2e42,0x3fd6};
 unsigned short THPIO4[4] = {0x21d2,0x7f33,0xd97c,0x4002};
 unsigned short TWOOPI[4] = {0xc883,0x6dc9,0x5f30,0x3fe4};
-#ifdef NOC99COMPILER
+#ifndef __STDC_VERSION__
 #ifdef INFINITIES
 unsigned short INFINITY[4] = {0x0000,0x0000,0x0000,0x7ff0};
 #else
@@ -248,7 +248,7 @@ extern unsigned short LOGE2[];
 extern unsigned short LOGSQ2[];
 extern unsigned short THPIO4[];
 extern unsigned short TWOOPI[];
-#ifdef NOC99COMPILER
+#ifndef __STDC_VERSION__
 extern unsigned short INFINITY[];
 extern unsigned short NAN[];
 #endif

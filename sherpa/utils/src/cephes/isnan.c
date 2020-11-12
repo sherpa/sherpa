@@ -71,7 +71,7 @@ Copyright 1984, 1995 by Stephen L. Moshier
 #endif
 #endif
 
-#ifdef NOC99COMPILER
+#ifndef __STDC_VERSION__
 #ifdef ANSIPROT
 extern int signbit ( double x );
 extern int cephes_isnan ( double x );
@@ -188,7 +188,7 @@ return(0);
 
 
 /* Return 1 if x is not infinite and is not a NaN.  */
-#ifdef NOC99COMPILER
+#ifndef __STDC_VERSION__
 int isfinite(x)
 double x;
 {

@@ -51,10 +51,10 @@ Copyright 1984, 1987, 1995 by Stephen L. Moshier
 #include "mconf.h"
 #include <stdio.h>
 
-#ifdef NOC99COMPILER
+#ifndef __STDC_VERSION__
 extern double MACHEP, MAXNUM, MAXLOG, MINLOG, NAN;
 #else
-extern double MACHEP, MAXNUM, MAXLOG, MINLOG/*, NAN*/;
+extern double MACHEP, MAXNUM, MAXLOG, MINLOG;
 #endif
 
 #ifndef ANSIPROT
