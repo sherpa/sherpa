@@ -146,3 +146,15 @@ def test_model_hidden():
     assert r is not None
 
     assert '<tbody><tr><th class="model-odd" scope="rowgroup" rowspan=2>mdl</th><td>edgew</td><td><input disabled type="checkbox"></input></td><td>5000.0</td><td>TINY</td><td>MAX</td><td>angstroms</td></tr><tr><td>tau</td><td><input disabled type="checkbox" checked></input></td><td>0.5</td><td>-MAX</td><td>MAX</td><td></td></tr></tbody>' in r
+
+def test_model_combined_samename():
+    """We can show a binary op"""
+    m1 = Gauss1D('name')
+    m2 = Gauss1D('name')
+    m = m1 + m2
+    r = m._repr_html_()
+
+    assert r is not None
+
+    assert '<th class="model-odd" scope="rowgroup" rowspan=3>name</th>' in r
+    assert '<th class="model-even" scope="rowgroup" rowspan=3>name</th>' in r
