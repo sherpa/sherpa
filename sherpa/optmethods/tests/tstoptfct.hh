@@ -2823,9 +2823,12 @@ namespace tstoptfct {
     else
       throw std::runtime_error( "npar for the Shekel func must either 2 or 5\n" );
     mfct = 0;
+    srand(1);
     for ( int ii = 0; ii < npar; ++ii ) {
       lo[ ii ] = 0.0;
       hi[ ii ] = 10.0;
+      double tmp = rand( ) / (RAND_MAX + 1.0);
+      x[ ii ] = lo[ ii ] + ( hi[ ii ] - lo[ ii ] ) * tmp;
     }
   }
 
