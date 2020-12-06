@@ -1380,6 +1380,40 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 
         return self.__class__(lhs, rhs, self.op, self.opstr)
 
+    def separate(self):
+        """Separate out the 'additive' terms in the model expression.
+
+        Returns
+        -------
+        models : list of Model instances
+            The additive terms of the model. Summing the elements will
+            return the equivalent model expression to that stored in the
+            object.
+
+        Notes
+        -----
+        The expansion is only at the top-most level, so an expression
+        like 'a * (b - c)' will return only a list with a single
+        component, whereas 'a * b - a * c' will return two components
+        ('a * b' and '-(a * c)').
+
+        """
+
+        if self.op not in [numpy.add, numpy.subtract]:
+            return [self]
+
+        out = []
+        out.extend(separate(self.lhs))
+
+        # Do we have to convert 'a - b' to 'a + (-b)'?
+        #
+        rhs = self.rhs
+        if self.op == numpy.subtract:
+            rhs = -rhs
+
+        out.extend(separate(rhs))
+        return out
+
 
 # TODO: do we actually make use of this functionality anywhere?
 # We only have 1 test that checks this class, and it is an existence
@@ -2029,8 +2063,6 @@ def _expand(model):
 def separate(mdl):
     """Separate out the additive terms of the model.
 
-    This is not guaranteed to support all CompositeModel sub-classes.
-
     Parameters
     ----------
     model : sherpa.models.model.Model instance
@@ -2071,23 +2103,12 @@ def separate(mdl):
 
     """
 
-    # Loop through each "additive" term
+    # Since we can't guarantee all model components will contain
+    # a separate method. In fact only BinaryOpModels do at present,
+    # which is why this is left as a top-level function rather
+    # than an interface-like call.
     #
-    terms = [numpy.add, numpy.subtract]
     try:
-        is_add = mdl.lhs and mdl.rhs and mdl.op in terms
+        return mdl.separate()
     except AttributeError:
-        is_add = False
-
-    if not is_add:
         return [mdl]
-
-    out = []
-    out.extend(separate(mdl.lhs))
-
-    rhs = mdl.rhs
-    if mdl.op == numpy.subtract:
-        rhs = -rhs
-
-    out.extend(separate(rhs))
-    return out
