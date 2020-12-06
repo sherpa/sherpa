@@ -1265,6 +1265,21 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
+    def apply(self, model):
+        """Create a version of unary-op model applied to model.
+
+        Parameters
+        ----------
+        model : a Model expression
+
+        Returns
+        -------
+        applied : UnaryOpModel instance
+
+        """
+
+        return self.__class__(model, self.op, self.opstr)
+
 
 class BinaryOpModel(CompositeModel, RegriddableModel):
     """Combine two model expressions.
@@ -1349,6 +1364,21 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                              (type(self.lhs).__name__, len(lhs),
                               type(self.rhs).__name__, len(rhs)))
         return val
+
+    def apply(self, lhs, rhs):
+        """Create a version of the binary-op model applied to model.
+
+        Parameters
+        ----------
+        lhs, rhs : a Model expression
+
+        Returns
+        -------
+        applied : BinaryOpModel instance
+
+        """
+
+        return self.__class__(lhs, rhs, self.op, self.opstr)
 
 
 # TODO: do we actually make use of this functionality anywhere?
@@ -1823,7 +1853,7 @@ def _expand(model):
         if out is None:
             return None
 
-        return model.__class__(out, model.op, model.opstr)
+        return model.apply(out)
 
     if nparts != 2:
         # Do not know what to do so do nothing
@@ -1853,7 +1883,7 @@ def _expand(model):
 
         t1 = parts[0] if lhs is None else lhs
         t2 = parts[1] if rhs is None else rhs
-        return model.__class__(t1, t2, model.op, model.opstr)
+        return model.apply(t1, t2)
 
     if not is_mul(model):
         return None
@@ -1894,7 +1924,7 @@ def _expand(model):
         """
         lhs = expand(a)
         rhs = expand(b)
-        mul = mdl.__class__(lhs, rhs, mdl.op, mdl.opstr)
+        mul = mdl.apply(lhs, rhs)
         return expand(mul)
 
     def acomb(mdl, a, b):
@@ -1902,7 +1932,8 @@ def _expand(model):
 
         There is no expansion done here.
         """
-        return mdl.__class__(a, b, mdl.op, mdl.opstr)
+
+        return mdl.apply(a, b)
 
     # The idea is that we expand the components and then, if
     # we create a (a * b) term, we expand that. We don't expand
@@ -1992,7 +2023,7 @@ def _expand(model):
 
     t1 = model.lhs if lhs is None else lhs
     t2 = model.rhs if rhs is None else rhs
-    return  model.__class__(t1, t2, model.op, model.opstr)
+    return model.apply(t1, t2)
 
 
 def separate(mdl):
