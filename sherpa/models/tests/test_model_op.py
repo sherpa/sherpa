@@ -20,7 +20,7 @@
 
 """Do the unary and binary operators work for models?
 
-Other tests related to model expressions are also made here.
+This has expanded to check model expansion/contraction.
 
 """
 
@@ -34,7 +34,7 @@ import pytest
 from sherpa.astro.ui.utils import Session
 from sherpa.models import basic
 from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, UnaryOpModel, \
-    model_deconstruct
+    model_deconstruct, expand
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -374,3 +374,95 @@ def test_model_deconstruct_name(model, expecteds):
     assert len(terms) == len(expecteds)
     for term, expected in zip(terms, expecteds):
         assert term.name == expected
+
+
+@pytest.mark.parametrize("base,expected",
+                         [(BOX1, "b1"),
+                          (GAUSS2, "gauss2"),
+                          # unary operator (simple)
+                          (-BOX1, "-(b1)"),
+                          (-GAUSS2, "-(gauss2)"),
+                          (-(-BOX2), "-(-(b2))"),
+                          (-(-GAUSS2), "-(-(gauss2))"),
+                          # single binary operator
+                          (BOX1 + GAUSS2, "(b1 + gauss2)"),
+                          (BOX2 - GAUSS1, "(box2 - g1)"),
+                          (BOX1 * GAUSS2, "(b1 * gauss2)"),
+                          (BOX2 / GAUSS2, "(box2 / gauss2)"),
+                          # unary of a binary
+                          (-(BOX1 + BOX2), "-((b1 + box2))"),
+                          (-(BOX1 - BOX2), "-((b1 - box2))"),
+                          (-(BOX1 * BOX2), "-((b1 * box2))"),
+                          (-(BOX1 / BOX2), "-((b1 / box2))"),
+                          # unary, binary
+                          (BOX1 + (GAUSS1 + GAUSS2), "(b1 + (g1 + gauss2))"),
+                          (BOX1 + (GAUSS1 - GAUSS2), "(b1 + (g1 - gauss2))"),
+                          (BOX1 + (GAUSS1 * GAUSS2), "(b1 + (g1 * gauss2))"),
+                          (BOX1 + (GAUSS1 / GAUSS2), "(b1 + (g1 / gauss2))"),
+                          (BOX1 - (GAUSS1 + GAUSS2), "(b1 - (g1 + gauss2))"),
+                          (BOX1 - (GAUSS1 - GAUSS2), "(b1 - (g1 - gauss2))"),
+                          (BOX1 - (GAUSS1 * GAUSS2), "(b1 - (g1 * gauss2))"),
+                          (BOX1 - (GAUSS1 / GAUSS2), "(b1 - (g1 / gauss2))"),
+                          (BOX1 * (GAUSS1 + GAUSS2), "((b1 * g1) + (b1 * gauss2))"),
+                          (BOX1 * (GAUSS1 - GAUSS2), "((b1 * g1) - (b1 * gauss2))"),
+                          (BOX1 * (GAUSS1 * GAUSS2), "(b1 * (g1 * gauss2))"),
+                          (BOX1 * (GAUSS1 / GAUSS2), "(b1 * (g1 / gauss2))"),
+                          (BOX1 / (GAUSS1 + GAUSS2), "((b1 / g1) + (b1 / gauss2))"),
+                          (BOX1 / (GAUSS1 - GAUSS2), "((b1 / g1) - (b1 / gauss2))"),
+                          (BOX1 / (GAUSS1 * GAUSS2), "(b1 / (g1 * gauss2))"),
+                          (BOX1 / (GAUSS1 / GAUSS2), "(b1 / (g1 / gauss2))"),
+                          # binary, unary
+                          ((BOX1 + BOX2) + GAUSS2, "((b1 + box2) + gauss2)"),
+                          ((BOX1 - BOX2) + GAUSS2, "((b1 - box2) + gauss2)"),
+                          ((BOX1 * BOX2) + GAUSS2, "((b1 * box2) + gauss2)"),
+                          ((BOX1 / BOX2) + GAUSS2, "((b1 / box2) + gauss2)"),
+                          ((BOX1 + BOX2) - GAUSS2, "((b1 + box2) - gauss2)"),
+                          ((BOX1 - BOX2) - GAUSS2, "((b1 - box2) - gauss2)"),
+                          ((BOX1 * BOX2) - GAUSS2, "((b1 * box2) - gauss2)"),
+                          ((BOX1 / BOX2) - GAUSS2, "((b1 / box2) - gauss2)"),
+                          ((BOX1 + BOX2) * GAUSS2, "((b1 * gauss2) + (box2 * gauss2))"),
+                          ((BOX1 - BOX2) * GAUSS2, "((b1 * gauss2) - (box2 * gauss2))"),
+                          ((BOX1 * BOX2) * GAUSS2, "((b1 * box2) * gauss2)"),
+                          ((BOX1 / BOX2) * GAUSS2, "((b1 / box2) * gauss2)"),
+                          ((BOX1 + BOX2) / GAUSS2, "((b1 / gauss2) + (box2 / gauss2))"),
+                          ((BOX1 - BOX2) / GAUSS2, "((b1 / gauss2) - (box2 / gauss2))"),
+                          ((BOX1 * BOX2) / GAUSS2, "((b1 * box2) / gauss2)"),
+                          ((BOX1 / BOX2) / GAUSS2, "((b1 / box2) / gauss2)"),
+                          # binary, binary (at this point we start being more selective)
+                          ((BOX1 + BOX2) + (GAUSS1 + GAUSS2), "((b1 + box2) + (g1 + gauss2))"),
+                          ((BOX1 * BOX2) + (GAUSS1 * GAUSS2), "((b1 * box2) + (g1 * gauss2))"),
+                          ((BOX1 * BOX2) - (GAUSS1 / GAUSS2), "((b1 * box2) - (g1 / gauss2))"),
+                          ((BOX1 - BOX2) - (GAUSS1 + GAUSS2), "((b1 - box2) - (g1 + gauss2))"),
+                          ((BOX1 + BOX2) * (GAUSS1 + GAUSS2), "((((b1 * g1) + (box2 * g1)) + (b1 * gauss2)) + (box2 * gauss2))"),
+                          ((BOX1 + BOX2) / (GAUSS1 + GAUSS2), "((((b1 / g1) + (box2 / g1)) + (b1 / gauss2)) + (box2 / gauss2))"),
+                          ((BOX1 + BOX2) * (GAUSS1 * GAUSS2), "((b1 * (g1 * gauss2)) + (box2 * (g1 * gauss2)))"),
+                          ((BOX1 * BOX2) * (GAUSS1 + GAUSS2), "(((b1 * box2) * g1) + ((b1 * box2) * gauss2))"),
+                          ((BOX1 / BOX2) * (GAUSS1 - GAUSS2), "(((b1 / box2) * g1) - ((b1 / box2) * gauss2))"),
+                          ((BOX1 - BOX2) * (GAUSS1 / GAUSS2), "((b1 * (g1 / gauss2)) - (box2 * (g1 / gauss2)))"),
+                          # start to explore more un-balanced expressions
+                          (BOX1 * (BOX2 - (GAUSS1 + GAUSS2)), "((b1 * box2) - ((b1 * g1) + (b1 * gauss2)))"),
+                          (BOX1 * (BOX2 - (GAUSS1 * GAUSS2)), "((b1 * box2) - (b1 * (g1 * gauss2)))"),
+                          (BOX1 / (BOX2 - (GAUSS1 * GAUSS2)), "((b1 / box2) - (b1 / (g1 * gauss2)))"),
+                          # this is where things start to fail
+                          pytest.param((GAUSS1 + GAUSS2 - BOX2) * (BOX1 + BOX2), "(g1 * b1)", marks=pytest.mark.xfail),
+                          ])
+def test_expand_simple(base, expected):
+    """Simple checks of model expansion
+
+    We check for equivalency by a string comparison, as it is the
+    easiest way to check. We could do an explicit check of the model
+    structure but it does not seem worth it.
+
+    Be explicit about the various operators, rather than assume that
+    if it's okay for addition it will also work for subtraction. There
+    is, however, a limit to what we can cover.
+
+    We could send in an expected value of None to indicate that the
+    expansion has not changed the result, but do we care about that
+    here?
+
+    """
+
+    got = expand(base)
+    assert got.name == expected
+>>>>>>> 6e146d6a (Allow model expressions to be deconstructed)

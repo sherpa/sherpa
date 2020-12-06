@@ -343,6 +343,7 @@ try:
 except ImportError:
     from hashlib import sha256 as hashfunc
 
+debug = logging.getLogger(__name__).debug
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
@@ -1733,3 +1734,329 @@ def html_model(mdl):
 
     ls = ['<details open><summary>Model</summary>' + out + '</details>']
     return formatting.html_from_sections(mdl, ls)
+
+
+# Experiment in "expanding out" model expressions which is useful
+# when we want to try and combine all the "emission" components
+# (that is, components combined with * or /).
+#
+def expand(model):
+    """Expand the model expression.
+
+    This is not guaranteed to support all CompositeModel
+    sub-classes. It is also vulnerable to stack overflows as it is a
+    recursive routine. It could be converted to CPS (continuation
+    passing style) but that is not particularly Pythonic.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model instance
+        The model expression to expand.
+
+    Returns
+    -------
+    expanded : sherpa.models.model.Model instance
+        The expanded expression. It can be the same as the input, and
+        will reference the same model components.
+
+    See Also
+    --------
+    separate
+
+    Examples
+    --------
+
+    Note that we only compare the string output, since the
+    CompositeModel class doesn't compare equivalent models:
+
+    >>> box = sherpa.models.basic.Box1D()
+    >>> line = sherpa.models.basic.Gauss1D()
+    >>> bgnd = sherpa.models.basic.Polynom1D()
+    >>> orig = box * (line + bgnd)
+    >>> expected = box * line + box * bgnd
+    >>> expand(orig).name == expected.name
+    True
+
+    """
+
+    out = _expand(model)
+    if out is None:
+        return model
+
+    return out
+
+
+def _expand(model):
+    """Expand the model expression.
+
+    This performs the actual work of expand. See the docstring for
+    expand more information.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model instance
+        The model expression to expand.
+
+    Returns
+    -------
+    expanded : None or sherpa.models.model.Model instance
+        The expanded expression or None, it if can not be expanded.
+
+    Notes
+    -----
+    Returning None when nothing needs to be done is an attempt
+    to avoid excessive work, but is it worth it?
+
+    """
+
+    try:
+        parts = model.parts
+    except AttributeError:
+        # An individual component
+        return None
+
+    nparts = len(parts)
+    if nparts == 1:
+        # Assume this is UnaryOpModel.
+        #
+        out = _expand(parts[0])
+        if out is None:
+            return None
+
+        return model.__class__(out, model.op, model.opstr)
+
+    if nparts != 2:
+        # Do not know what to do so do nothing
+        #
+        debug("Model component has {nparts} components so skipping")
+        return None
+
+    # Operators include
+    #    numpy.add, numpy.subtract
+    #    numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide
+    #
+    def is_add(mdl):
+        return mdl.op in [numpy.add, numpy.subtract]
+
+    def is_mul(mdl):
+        return mdl.op in [numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide]
+
+    # For addition and subtraction we just want to expand the lhs and rhs
+    # and, if either of them have changed, re-create the combining model.
+    #
+    if is_add(model):
+        lhs = _expand(model.lhs)
+        rhs = _expand(model.rhs)
+        if lhs is None and rhs is None:
+            # We only return if both are unchanged
+            return None
+
+        t1 = parts[0] if lhs is None else lhs
+        t2 = parts[1] if rhs is None else rhs
+        return model.__class__(t1, t2, model.op, model.opstr)
+
+    if not is_mul(model):
+        return None
+
+    # This check isn't quite correct, but trying to be more Pythonic
+    # than requiring a specific subclass.
+    #
+    try:
+        is_lhs_binop = len(model.lhs.parts) == 2
+        lhs_add = is_add(model.lhs)
+        lhs_mul = is_mul(model.lhs)
+    except AttributeError:
+        is_lhs_binop = False
+        lhs_add = False
+        lhs_mul = False
+
+    try:
+        is_rhs_binop = len(model.rhs.parts) == 2
+        rhs_add = is_add(model.rhs)
+        rhs_mul = is_mul(model.rhs)
+    except AttributeError:
+        is_rhs_binop = False
+        rhs_add = False
+        rhs_mul = False
+
+    # Note that in the following we use expand and not _expand since
+    # we need to create the new structure even if the terms don't
+    # change.
+    #
+    # At this point we know model is a "multiply" model.
+    #
+    def mcomb(mdl, a, b):
+        """Multiply/Divide/... the two components
+
+        Note we expand the components and then expand the
+        result - ie expand(expand(a) * expand(b))
+        for a multiplicative model.
+        """
+        lhs = expand(a)
+        rhs = expand(b)
+        mul = mdl.__class__(lhs, rhs, mdl.op, mdl.opstr)
+        return expand(mul)
+
+    def acomb(mdl, a, b):
+        """Add/Subtract the two components.
+
+        There is no expansion done here.
+        """
+        return mdl.__class__(a, b, mdl.op, mdl.opstr)
+
+    # The idea is that we expand the components and then, if
+    # we create a (a * b) term, we expand that. We don't expand
+    # addition terms.
+    #
+    # In the following I use + and * but they are meant to be
+    # generic, since it could be - or /. We therefore use
+    # mcomb and acomb to combine the components.
+    #
+
+    # (l1 + l2) * notbinop =
+    #    expand (expand l1 * notbinop) +
+    #    expand (expand l2 * notbinop)
+    #
+    if lhs_add and not is_rhs_binop:
+        lhs = mcomb(model, model.lhs.lhs, model.rhs)
+        rhs = mcomb(model, model.lhs.rhs, model.rhs)
+        return acomb(model.lhs, lhs, rhs)
+
+    # notbinop * (r1 + r2) =
+    #   expand (notbinop * expand r1) +
+    #   expand (notbinop * expand r2)
+    #
+    if not is_lhs_binop and rhs_add:
+        lhs = mcomb(model, model.lhs, model.rhs.lhs)
+        rhs = mcomb(model, model.lhs, model.rhs.rhs)
+        return acomb(model.rhs, lhs, rhs)
+
+    # (l1 + l2) * (r1 + r2) =
+    #   expand (expand l1 * expand r1) +
+    #   expand (expand l1 * expand r2) +
+    #   expand (expand l2 * expand r1) +
+    #   expand (expand l2 * expand r2) +
+    #
+    # Need to handle potentially different addition terms for the
+    # two sides, so
+    #
+    # (l1 `f` l2) * (r1 `g` r2) =
+    #   (l1 * r1) `f` (l2 * r1) `g` (l1 * r2) `g` (l2 * r2)
+    #
+    if lhs_add and rhs_add:
+        l1, l2 = model.lhs
+        r1, r2 = model.rhs
+
+        # This duplicates the expanson of the components
+        # but it is unlikely to be expensive and I think
+        # the simplification in the code is worth it.
+        #
+        t1 = acomb(model.lhs, mcomb(model, l1, r1), mcomb(model, l2, r1))
+        t2 = acomb(model.rhs, t1, mcomb(model, l1, r2))
+        t3 = acomb(model.rhs, t2, mcomb(model, l2, r2))
+        return t3
+
+    # Can this be handled by (l1 + l2) * notbinop?
+    #
+    # (l1 + l2) * (r1 * r2) =
+    #   expand (expand l1 * expand (expand r1 * expand r2)) +
+    #   expand (expand l2 * expand (expand r1 * expand r2)) +
+    #
+    if lhs_add and rhs_mul:
+        # er gets deconstructed and reconstructed in mcomb
+        er = mcomb(model.rhs, model.rhs.lhs, model.rhs.rhs)
+        return acomb(model.lhs,
+                     mcomb(model, model.lhs.lhs, er),
+                     mcomb(model, model.lhs.rhs, er))
+
+    # Can this be handled by notbinop * (r1 + r2)?
+    #
+    # (l1 * l2) * (r1 + r2) =
+    #   expand (expand (expand l1 * expand l2) * expand r1) +
+    #   expand (expand (expand l1 * expand l2) * expand r2) +
+    #
+    if lhs_mul and rhs_add:
+        # el gets deconstructed and reconstructed in mcomb
+        el = mcomb(model.lhs, model.lhs.lhs, model.lhs.rhs)
+        return acomb(model.rhs,
+                     mcomb(model, el, model.rhs.lhs),
+                     mcomb(model, el, model.rhs.rhs))
+
+    # Just expand the children. Only change anything if they
+    # have changed.
+    #
+    lhs = _expand(model.lhs)
+    rhs = _expand(model.rhs)
+    if lhs is None and rhs is None:
+        return None
+
+    t1 = model.lhs if lhs is None else lhs
+    t2 = model.rhs if rhs is None else rhs
+    return  model.__class__(t1, t2, model.op, model.opstr)
+
+
+def separate(mdl):
+    """Separate out the additive terms of the model.
+
+    This is not guaranteed to support all CompositeModel sub-classes.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model instance
+        The model expression. It is expected to be the output of
+        `expand` but it does not have to be.
+
+    Returns
+    -------
+    terms : list of sherpa.models.model.Model instances
+        The individual additive terms. They are added together
+        to create the full model expression.
+
+    See Also
+    --------
+    expand
+
+    Examples
+    --------
+
+    >>> box = sherpa.models.basic.Box1D()
+    >>> line = sherpa.models.basic.Gauss1D()
+    >>> bgnd = sherpa.models.basic.Polynom1D()
+    >>> orig1 = box * (line + bgnd)
+    >>> orig2 = box * (bgnd - line)
+    >>> separate(orig1)
+    [<BinaryOpModel model instance '(box1d * (gauss1d + polynom1d))'>]
+    >>> separate(expand(orig1))
+    [<BinaryOpModel model instance '(box1d * gauss1d)'>,
+     <BinaryOpModel model instance '(box1d * polynom1d)'>]
+    >>> separate(expand(orig2))
+    [<BinaryOpModel model instance '(box1d * polynom1d)'>,
+     <UnaryOpModel model instance '-((box1d * gauss1d))'>]
+
+    >>> [c.name for c in separate(expand(orig1))]
+    ['(box1d * gauss1d)', '(box1d * polynom1d)']
+    >>> [c.name for c in separate(expand(orig2))]
+    ['(box1d * polynom1d)', '-((box1d * gauss1d))']
+
+    """
+
+    # Loop through each "additive" term
+    #
+    terms = [numpy.add, numpy.subtract]
+    try:
+        is_add = mdl.lhs and mdl.rhs and mdl.op in terms
+    except AttributeError:
+        is_add = False
+
+    if not is_add:
+        return [mdl]
+
+    out = []
+    out.extend(separate(mdl.lhs))
+
+    rhs = mdl.rhs
+    if mdl.op == numpy.subtract:
+        rhs = -rhs
+
+    out.extend(separate(rhs))
+    return out
