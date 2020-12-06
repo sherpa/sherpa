@@ -2952,3 +2952,45 @@ def test_get_foo_component_plot_recalc(session, label, idval):
     # and model values are the same).
     #
     assert plotobj.y == pytest.approx([9, 11, 12])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,label",
+                         [("source", "Source model"),
+                          ("model", "Model")
+                          ])
+def test_plot_xxx_components_simple(session, ptype, label):
+    """Simple check of get_xxx_components
+
+    This does not require a backend
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(3, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(3, c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"get_{ptype}_components_plot")
+    out = pfunc(3)
+
+    assert len(out) == 2
+    assert out[0].x == pytest.approx([1, 10, 50])
+    assert out[1].x == pytest.approx([1, 10, 50])
+
+    # This should be c1 * c2 and c1 * c3
+    assert out[0].y == pytest.approx([1, 1, 1])
+    assert out[1].y == pytest.approx([0, 2, 2])
+
+    assert out[0].title == f"{label} component: scale1d.c1 * const1d.c2"
+    assert out[1].title == f"{label} component: scale1d.c1 * box1d.c3"

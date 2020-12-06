@@ -28,7 +28,7 @@ import logging
 import os
 import pickle
 import sys
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 import numpy as np
 
@@ -40,7 +40,7 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
-from sherpa.plot import set_backend
+from sherpa.plot import Plot, set_backend
 from sherpa.utils import NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -717,6 +717,53 @@ class FitStore:
     idval : IdType
     data : Data
     model : Model
+
+
+def get_components_helper(getfunc: Callable[..., Plot],
+                          model: Model,
+                          idval: Union[int, str]) -> list[Plot]:
+    """Handle get_source/model_components_plot.
+
+    Iterate through each term in the source model.
+    """
+
+    out = []
+    cpts = sherpa.models.model.model_deconstruct(model)
+    for cpt in cpts:
+        # Note: we need to copy the return value since the get
+        # routines just return a shared object.
+        plotobj = getfunc(id=idval, model=cpt, recalc=True)
+        out.append(copy.deepcopy(plotobj))
+
+    return out
+
+
+def plot_components_helper(plots: list[Plot],
+                           overplot: bool,
+                           clearwindow: bool,
+                           **kwargs) -> None:
+    """Handle plot_source/model_components.
+
+    We only care about overplot and clearwindow for the first
+    plot. The plot titles are also "reset". This means the
+    plots array is changed in place.
+
+    """
+
+    with sherpa.plot.backend:
+        for plot in plots:
+
+            # Set the title to something anodyne.
+            plot.title = "Component plot"
+
+            # The first call we use the user's overplot and clearwindow
+            # settings. For the remainder we clear them.
+            #
+            plot.plot(overplot=overplot, clearwindow=clearwindow,
+                      **kwargs)
+
+            overplot = True
+            clearwindow = False
 
 
 ###############################################################################
@@ -12031,6 +12078,58 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
+    def get_model_components_plot(self, id=None):
+        """Return the data used by plot_model_components.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        instances : list of objects
+           A list of objects representing the data used to create the
+           plot by `plot_model_components`. The return value depends
+           on the data set (e.g. 1D binned or un-binned).
+
+        See Also
+        --------
+        get_model_plot, plot_model, plot_model_component,
+        plot_model_components
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
+        Unlike get_model_component this routine does not accept
+        either model or recalc arguments.
+
+        Examples
+        --------
+
+        Return the plot data for the individual components used in the
+        default data set. In this case it will report plots for
+        ``gal * pl`` and ``gal * gline``:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + gauss1d.gline))
+        >>> cplots = get_model_components_plot()
+
+        """
+
+        idval = self._fix_id(id)
+        model = self.get_source(idval)
+        return get_components_helper(self.get_model_component_plot,
+                                     model=model, idval=idval)
+
     # sherpa.astro.utils version copies this docstring
     def get_source_component_plot(self, id, model=None, recalc=True):
         """Return the data used by plot_source_component.
@@ -12108,6 +12207,58 @@ class Session(NoNewAttributesAfterInit):
             plotobj.prepare(data, model, self.get_stat())
 
         return plotobj
+
+    def get_source_components_plot(self, id=None):
+        """Return the data used by plot_source_components.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        instances : list of objects
+           A list of objects representing the data used to create the
+           plot by `plot_source_components`. The return value depends
+           on the data set (e.g. 1D binned or un-binned).
+
+        See Also
+        --------
+        get_source_plot, plot_source, plot_source_component,
+        plot_source_components
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
+        Unlike get_source_component this routine does not accept
+        either model or recalc arguments.
+
+        Examples
+        --------
+
+        Return the plot data for the individual components used in the
+        default data set. In this case it will report plots for
+        ``gal * pl`` and ``gal * gline``:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + gauss1d.gline))
+        >>> cplots = get_source_components_plot()
+
+        """
+
+        idval = self._fix_id(id)
+        model = self.get_source(idval)
+        return get_components_helper(self.get_source_component_plot,
+                                     model=model, idval=idval)
 
     def get_model_plot_prefs(self, id=None):
         """Return the preferences for plot_model.
@@ -13814,6 +13965,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_model_component : Plot a component of the model for a data set.
+        plot_source_components : Plot all the components of a source.
         plot_source : Plot the source expression for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
@@ -13854,6 +14006,52 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
+    def plot_source_components(self, id=None, overplot=False,
+                               clearwindow=True, **kwargs):
+        """Plot all the components of a source.
+
+        Display the individual components of a source expression.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        overplot : bool, optional
+           If ``True`` then add the data to an existing plot,
+           otherwise create a new plot. The default is ``False``. This
+           is only used for the first component.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating
+           this new plot (e.g. for multi-panel plots)? This is only
+           used for the first component.
+
+        See Also
+        --------
+        get_source_component_plots, plot_model_components, plot_source_component
+
+        Notes
+        -----
+        The additional keyword arguments match the keywords of the
+        dictionary returned by get_model_plot_prefs.
+
+        Examples
+        --------
+
+        Display two plots, the first for the `gal * pl` component and
+        the second for `gal * line`:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
+        >>> plot_source_components(alpha=0.6)
+
+        """
+
+        plots = self.get_source_components_plot(id)
+        plot_components_helper(plots, overplot=overplot,
+                               clearwindow=clearwindow, **kwargs)
+
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the model for a data set.
@@ -13886,6 +14084,7 @@ class Session(NoNewAttributesAfterInit):
         get_model_component_plot : Return the data used to create the model-component plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
+        plot_model_components : Plot all the components of a model.
         plot_source_component : Plot a component of the source expression for a data set.
         plot_model : Plot the model for a data set.
         set_xlinear : New plots will display a linear X axis.
@@ -13942,6 +14141,52 @@ class Session(NoNewAttributesAfterInit):
         #       which is probably surprising to users
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
+
+    def plot_model_components(self, id=None, overplot=False,
+                              clearwindow=True, **kwargs):
+        """Plot all the components of a model.
+
+        Display the individual model components of a source expression.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        overplot : bool, optional
+           If ``True`` then add the data to an existing plot,
+           otherwise create a new plot. The default is ``False``. This
+           is only used for the first component.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating
+           this new plot (e.g. for multi-panel plots)? This is only
+           used for the first component.
+
+        See Also
+        --------
+        get_model_components_plot, plot_model_component, plot_source_components
+
+        Notes
+        -----
+        The additional keyword arguments match the keywords of the
+        dictionary returned by get_model_plot_prefs.
+
+        Examples
+        --------
+
+        Display two plots, the first for the `gal * pl` component and
+        the second for `gal * line`:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
+        >>> plot_model_components(alpha=0.6)
+
+        """
+
+        plots = self.get_model_components_plot(id)
+        plot_components_helper(plots, overplot=overplot,
+                               clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self, id=None, replot=False,
