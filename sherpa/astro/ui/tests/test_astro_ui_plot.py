@@ -1090,7 +1090,7 @@ def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
 @pytest.mark.parametrize("plotfunc",
                          [ui.plot_data,
                           ui.plot_model,
-                          pytest.param(ui.plot_source, marks=pytest.mark.xfail),
+                          ui.plot_source,
                           ui.plot_resid,
                           ui.plot_delchi,
                           ui.plot_ratio,

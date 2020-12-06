@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -11515,7 +11515,7 @@ class Session(sherpa.ui.utils.Session):
             return
 
         super().plot_source(id=id, replot=replot, overplot=overplot,
-                           clearwindow=True, **kwargs)
+                            clearwindow=clearwindow, **kwargs)
 
     # DOC-TODO: is orders the same as resp_id?
     def plot_order(self, id=None, orders=None, replot=False, overplot=False,
