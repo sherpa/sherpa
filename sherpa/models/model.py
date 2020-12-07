@@ -1280,6 +1280,21 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
 
         return self.__class__(model, self.op, self.opstr)
 
+    def expand(self):
+        """Expand the model expression.
+
+        Returns
+        -------
+        expanded : UnaryOpModel instance
+        """
+
+        try:
+            expanded = self.arg.expand()
+        except AttributeError:
+            return self
+
+        return self.apply(expanded)
+
 
 class BinaryOpModel(CompositeModel, RegriddableModel):
     """Combine two model expressions.
@@ -1413,6 +1428,167 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 
         out.extend(separate(rhs))
         return out
+
+    def expand(self):
+        """Expand the model expression.
+
+        Returns
+        -------
+        expanded : UnaryOpModel instance
+        """
+
+        # Operators include
+        #    numpy.add, numpy.subtract
+        #    numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide
+        #
+        def is_add(mdl):
+            return mdl.op in [numpy.add, numpy.subtract]
+
+        def is_mul(mdl):
+            return mdl.op in [numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide]
+
+        if is_add(self):
+            try:
+                lhs = self.lhs.expand()
+            except AttributeError:
+                lhs = self.lhs
+
+            try:
+                rhs = self.rhs.expand()
+            except AttributeError:
+                rhs = self.rhs
+
+            # Do not bother trying to avoid excess work.
+            #
+            return self.apply(lhs, rhs)
+
+        if not is_mul(self):
+            # Is this possible?
+            return self
+
+        # This check isn't quite correct, but trying to avoid hard-coding
+        # class names.
+        #
+        try:
+            is_lhs_binop = len(self.lhs.parts) == 2
+            lhs_add = is_add(self.lhs)
+            lhs_mul = is_mul(self.lhs)
+        except AttributeError:
+            is_lhs_binop = False
+            lhs_add = False
+            lhs_mul = False
+
+        try:
+            is_rhs_binop = len(self.rhs.parts) == 2
+            rhs_add = is_add(self.rhs)
+            rhs_mul = is_mul(self.rhs)
+        except AttributeError:
+            is_rhs_binop = False
+            rhs_add = False
+            rhs_mul = False
+
+        def mcomb(a, b):
+            """Multiply/Divide/... the two components
+
+            Note we expand the components and then expand the
+            result - ie expand(expand(a) * expand(b))
+            for a multiplicative model.
+            """
+            lhs = expand(a)
+            rhs = expand(b)
+            mul = self.apply(lhs, rhs)
+            return expand(mul)
+
+        def acomb(mdl, a, b):
+            """Add/Subtract the two components.
+
+            There is no expansion done here.
+            """
+
+            return mdl.apply(a, b)
+
+        # The idea is that we expand the components and then, if
+        # we create a (a * b) term, we expand that. We don't expand
+        # addition terms.
+        #
+        # In the following I use + and * but they are meant to be
+        # generic, since it could be - or /. We therefore use
+        # mcomb and acomb to combine the components.
+        #
+
+        # (l1 + l2) * notbinop =
+        #    expand (expand l1 * notbinop) +
+        #    expand (expand l2 * notbinop)
+        #
+        if lhs_add and not is_rhs_binop:
+            a = mcomb(self.lhs.lhs, self.rhs)
+            b = mcomb(self.lhs.rhs, self.rhs)
+            return acomb(self.lhs, a, b)
+
+        # notbinop * (r1 + r2) =
+        #   expand (notbinop * expand r1) +
+        #   expand (notbinop * expand r2)
+        #
+        if not is_lhs_binop and rhs_add:
+            a = mcomb(self.lhs, self.rhs.lhs)
+            b = mcomb(self.lhs, self.rhs.rhs)
+            return acomb(self.rhs, a, b)
+
+        # (l1 + l2) * (r1 + r2) =
+        #   expand (expand l1 * expand r1) +
+        #   expand (expand l1 * expand r2) +
+        #   expand (expand l2 * expand r1) +
+        #   expand (expand l2 * expand r2) +
+        #
+        # Need to handle potentially different addition terms for the
+        # two sides, so
+        #
+        # (l1 `f` l2) * (r1 `g` r2) =
+        #   (l1 * r1) `f` (l2 * r1) `g` (l1 * r2) `g` (l2 * r2)
+        #
+        if lhs_add and rhs_add:
+            # This duplicates the expanson of the components
+            # but it is unlikely to be expensive and I think
+            # the simplification in the code is worth it.
+            #
+            t1 = acomb(self.lhs, mcomb(l1, r1), mcomb(l2, r1))
+            t2 = acomb(self.rhs, t1, mcomb(l1, r2))
+            t3 = acomb(self.rhs, t2, mcomb(l2, r2))
+            return t2
+
+        # Can this be handled by (l1 + l2) * notbinop?
+        #
+        # (l1 + l2) * (r1 * r2) =
+        #   expand (expand l1 * expand (expand r1 * expand r2)) +
+        #   expand (expand l2 * expand (expand r1 * expand r2)) +
+        #
+        if lhs_add and rhs_mul:
+            # er gets deconstructed and reconstructed in mcomb
+            er = mcomb(self.rhs.lhs, self.rhs.rhs)
+            return acomb(self.lhs,
+                         mcomb(self.lhs.lhs, er),
+                         mcomb(self.lhs.rhs, er))
+
+        # Can this be handled by notbinop * (r1 + r2)?
+        #
+        # (l1 * l2) * (r1 + r2) =
+        #   expand (expand (expand l1 * expand l2) * expand r1) +
+        #   expand (expand (expand l1 * expand l2) * expand r2) +
+        #
+        if lhs_mul and rhs_add:
+            # el gets deconstructed and reconstructed in mcomb
+            el = mcomb(self.lhs.lhs, self.lhs.rhs)
+            return acomb(self.rhs,
+                         mcomb(el, self.rhs.lhs),
+                         mcomb(el, self.rhs.rhs))
+
+        # Just expand the children. We don't use mcomb() as that
+        # calls expand on the result, and we don't want that here,
+        # to avoid infinite loops.
+        #
+        a = self.lhs.expand()
+        b = self.rhs.expand()
+        return self.apply(a, b)
 
 
 # TODO: do we actually make use of this functionality anywhere?
@@ -1843,10 +2019,12 @@ def expand(model):
 
     """
 
-    out = _expand(model)
-    if out is None:
+    try:
+        return model.expand()
+    except AttributeError:
         return model
 
+<<<<<<< HEAD
     return out
 
 
@@ -2059,6 +2237,218 @@ def _expand(model):
     t2 = model.rhs if rhs is None else rhs
     return model.apply(t1, t2)
 
+||||||| parent of b3204c8a (Move expand logic into BinaryOpModel/UnaryOpModel)
+    return out
+
+
+def _expand(model):
+    """Expand the model expression.
+
+    This performs the actual work of expand. See it's help for
+    more information.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model instance
+        The model expression to expand.
+
+    Returns
+    -------
+    expanded : None or sherpa.models.model.Model instance
+        The expanded expression or None, it if can not be expanded.
+
+    Notes
+    -----
+    Returning None when nothing needs to be done is an attempt
+    to avoid excessive work, but is it worth it?
+
+    """
+
+    try:
+        parts = model.parts
+    except AttributeError:
+        # An individual component
+        return None
+
+    nparts = len(parts)
+    if nparts == 1:
+        # Assume this is UnaryOpModel.
+        #
+        out = _expand(parts[0])
+        if out is None:
+            return None
+
+        return model.apply(out)
+
+    if nparts != 2:
+        # Do not know what to do so do nothing
+        #
+        debug("Model component has {nparts} components so skipping")
+        return None
+
+    # Operators include
+    #    numpy.add, numpy.subtract
+    #    numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide
+    #
+    def is_add(mdl):
+        return mdl.op in [numpy.add, numpy.subtract]
+
+    def is_mul(mdl):
+        return mdl.op in [numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide]
+
+    # For addition and subtraction we just want to expand the lhs and rhs
+    # and, if either of them have changed, re-create the combining model.
+    #
+    if is_add(model):
+        l1 = _expand(model.lhs)
+        l2 = _expand(model.rhs)
+        if l1 is None and l2 is None:
+            # We only return if both are unchanged
+            return None
+
+        l1 = parts[0] if l1 is None else l1
+        l2 = parts[1] if l2 is None else l2
+        return model.apply(l1, l2)
+
+    if not is_mul(model):
+        return None
+
+    # This check isn't quite correct, but trying to ne more Pythonic
+    # than requiring a specific subclass.
+    #
+    try:
+        is_lhs_binop = len(model.lhs.parts) == 2
+        lhs_add = is_add(model.lhs)
+        lhs_mul = is_mul(model.lhs)
+    except AttributeError:
+        is_lhs_binop = False
+        lhs_add = False
+        lhs_mul = False
+
+    try:
+        is_rhs_binop = len(model.rhs.parts) == 2
+        rhs_add = is_add(model.rhs)
+        rhs_mul = is_mul(model.rhs)
+    except AttributeError:
+        is_rhs_binop = False
+        rhs_add = False
+        rhs_mul = False
+
+    # Note that in the following we use expand and not _expand since
+    # we need to create the new structure even if the terms don't
+    # change.
+    #
+    # At this point we know model is a "multiply" model.
+    #
+    def mcomb(a, b):
+        """Multiply/Divide/... the two components
+
+        Note we expand the components and then expand the
+        result - ie expand(expand(a) * expand(b))
+        for a multiplicative model.
+        """
+        lhs = expand(a)
+        rhs = expand(b)
+        mul = model.apply(lhs, rhs)
+        return expand(mul)
+
+    def acomb(mdl, a, b):
+        """Add/Subtract the two components.
+
+        There is no expansion done here.
+        """
+
+        return mdl.apply(a, b)
+
+    # The idea is that we expand the components and then, if
+    # we create a (a * b) term, we expand that. We don't expand
+    # addition terms.
+    #
+    # In the following I use + and * but they are meant to be
+    # generic, since it could be - or /. We therefore use
+    # mcomb and acomb to combine the components.
+    #
+
+    # (l1 + l2) * notbinop =
+    #    expand (expand l1 * notbinop) +
+    #    expand (expand l2 * notbinop)
+    #
+    if lhs_add and not is_rhs_binop:
+        a = mcomb(model.lhs.lhs, model.rhs)
+        b = mcomb(model.lhs.rhs, model.rhs)
+        return acomb(model.lhs, a, b)
+
+    # notbinop * (r1 + r2) =
+    #   expand (notbinop * expand r1) +
+    #   expand (notbinop * expand r2)
+    #
+    if not is_lhs_binop and rhs_add:
+        a = mcomb(model.lhs, model.rhs.lhs)
+        b = mcomb(model.lhs, model.rhs.rhs)
+        return acomb(model.rhs, a, b)
+
+    # (l1 + l2) * (r1 + r2) =
+    #   expand (expand l1 * expand r1) +
+    #   expand (expand l1 * expand r2) +
+    #   expand (expand l2 * expand r1) +
+    #   expand (expand l2 * expand r2) +
+    #
+    # Need to handle potentially different addition terms for the
+    # two sides, so
+    #
+    # (l1 `f` l2) * (r1 `g` r2) =
+    #   (l1 * r1) `f` (l2 * r1) `g` (l1 * r2) `g` (l2 * r2)
+    #
+    if lhs_add and rhs_add:
+        # This duplicates the expanson of the components
+        # but it is unlikely to be expensive and I think
+        # the simplification in the code is worth it.
+        #
+        t1 = acomb(self.lhs, mcomb(l1, r1), mcomb(l2, r1))
+        t2 = acomb(self.rhs, t1, mcomb(l1, r2))
+        t3 = acomb(self.rhs, t2, mcomb(l2, r2))
+        return t2
+
+    # Can this be handled by (l1 + l2) * notbinop?
+    #
+    # (l1 + l2) * (r1 * r2) =
+    #   expand (expand l1 * expand (expand r1 * expand r2)) +
+    #   expand (expand l2 * expand (expand r1 * expand r2)) +
+    #
+    if lhs_add and rhs_mul:
+        # er gets deconstructed and reconstructed in mcomb
+        er = mcomb(model.rhs.lhs, model.rhs.rhs)
+        return acomb(self.lhs,
+                     mcomb(model.lhs.lhs, er),
+                     mcomb(model.lhs.rhs, er))
+
+    # Can this be handled by notbinop * (r1 + r2)?
+    #
+    # (l1 * l2) * (r1 + r2) =
+    #   expand (expand (expand l1 * expand l2) * expand r1) +
+    #   expand (expand (expand l1 * expand l2) * expand r2) +
+    #
+    if lhs_mul and rhs_add:
+        # el gets deconstructed and reconstructed in mcomb
+        el = mcomb(model.lhs.lhs, model.lhs.rhs)
+        return acomb(self.rhs,
+                     mcomb(el, model.rhs.lhs),
+                     mcomb(el, model.rhs.rhs))
+
+    # Just expand the children. Only change anything if they
+    # have changed.
+    #
+    a = _expand(model.lhs)
+    b = _expand(model.rhs)
+    if a is None and b is None:
+        return None
+
+    a = model.lhs if a is None else a
+    b = model.rhs if b is None else b
+    return  model.apply(a, b)
+
+=======
+>>>>>>> b3204c8a (Move expand logic into BinaryOpModel/UnaryOpModel)
 
 def separate(mdl):
     """Separate out the additive terms of the model.
