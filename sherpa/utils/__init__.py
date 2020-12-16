@@ -2310,12 +2310,18 @@ def get_fwhm(y, x, xhi=None):
     If there are multiple peaks of the same height then
     the first peak is used.
     """
+
     y_argmax = y.argmax()
     half_max_val = y[y_argmax] / 2.0
     x_max = x[y_argmax]
     for ii, val in enumerate(y[y_argmax:]):
         if val < half_max_val:
-            return 2.0 * ii
+            return 2.0 * (x[ii + y_argmax] - x_max)
+
+    # What is the best thing to do here? This does not handle
+    # the case where all x values are negative, as the location
+    # isn't meaningful as a result.
+    #
     return x_max
 
 

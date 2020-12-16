@@ -360,12 +360,12 @@ fwhm_y_right = numpy.asarray([46, 45, 40, 16, 20, 7, 6, 5, 3, 7])
 fwhm_y_flat = numpy.ones(fwhm_x.size)
 
 @pytest.mark.parametrize("x,y,expected",
-                         [(fwhm_x, fwhm_y_both, 6),
-                          (fwhm_x - 200, fwhm_y_both, 6),
+                         [(fwhm_x, fwhm_y_both, 80),
+                          (fwhm_x - 200, fwhm_y_both, 80),
                           (fwhm_x, fwhm_y_left, 100),
                           (fwhm_x - 200, fwhm_y_left, -100),
-                          (fwhm_x, fwhm_y_right, 6),
-                          (fwhm_x - 200, fwhm_y_right, 6),
+                          (fwhm_x, fwhm_y_right, 70),
+                          (fwhm_x - 200, fwhm_y_right, 70),
                           (fwhm_x, fwhm_y_flat, 10),
                           (fwhm_x - 200, fwhm_y_flat, -190)])
 def test_get_fwhm(x, y, expected):
