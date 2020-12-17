@@ -56,7 +56,19 @@ jobs:
       run: |
         python setup.py ${{ matrix.install-type }}
 
-    - name: Test with pytest
+    - name: ${{ matrix.test-data }} test data with pytest
+      if: ${{ matrix.test-data }} == 'submoule' || ${{ matrix.test-data }} == 'none'
+      env:
+        TEST: ${{ matrix.test-data }}
+      run: |
+        git submodule deinit -f .
+        if [ ${TEST} == package ] ; then
+            pip install pytest-xvfb
+        fi
+        sherpa_test || exit 1
+
+    - name: Submodule test with pytest
+      if: ${{ matrix.test-data }} == 'submoule'
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov codecov
@@ -64,6 +76,12 @@ jobs:
         pytest --cov=sherpa
 
     - name: Smoke test
+      env: 
+        FITS: ${{ martix.fits-pkg }}
       run: |
+        smokevars="-v 3"
+        if [ ${FITS} != '' ] ; then
+            smokevars="-f ${FITS} ${smokevars}"
+        fi
         cd ${HOME}
-        sherpa_smoke
+        sherpa_smoke ${smokevars} || exit 1
