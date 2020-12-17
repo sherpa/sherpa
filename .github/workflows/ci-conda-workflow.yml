@@ -97,7 +97,7 @@ jobs:
       env:
         PYTHON_LDFLAGS: " " 
       run: |
-        source $miniconda_loc/etc/profile.d/conda.sh
+        source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
         python setup.py ${{ matrix.install-type }}
 
@@ -107,6 +107,6 @@ jobs:
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }} 
       run: |
-        source $miniconda_loc/etc/profile.d/conda.sh
+        source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
         source travis/test.sh

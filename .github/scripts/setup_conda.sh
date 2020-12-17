@@ -23,9 +23,7 @@ chmod +x miniconda.sh
 ./miniconda.sh -b -p $miniconda_loc
 
 #Source the Conda profile
-#source ${miniconda_loc}/etc/profile.d/conda.sh
-ls ${HOME}/miniconda/etc/profile.d/conda.sh
-source ${HOME}/miniconda/etc/profile.d/conda.sh
+source ${miniconda_loc}/etc/profile.d/conda.sh
 
 # update and add channels
 conda update --yes conda

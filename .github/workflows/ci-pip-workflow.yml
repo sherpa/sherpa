@@ -58,9 +58,12 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pip install test_requirements.txt
+        pip install -r test_requirements.txt
         pip install pytest-cov codecov
+        cd ${HOME}
         pytest --cov=sherpa
 
     - name: Smoke test
-      run: sherpa_smoke
+      run: |
+        cd ${HOME}
+        sherpa_smoke
