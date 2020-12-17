@@ -59,7 +59,7 @@ jobs:
         python setup.py ${{ matrix.install-type }}
 
     - name: ${{ matrix.test-data }} test data with pytest
-      if: ${{ matrix.test-data }} == 'package' || ${{ matrix.test-data }} == 'none'
+      if: matrix.test-data == 'package' || matrix.test-data == 'none'
       env:
         TEST: ${{ matrix.test-data }}
       run: |
@@ -70,7 +70,7 @@ jobs:
         sherpa_test || exit 1
 
     - name: Submodule test with pytest
-      if: ${{ matrix.test-data }} == 'submoule'
+      if: matrix.test-data == 'submoule'
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov codecov
