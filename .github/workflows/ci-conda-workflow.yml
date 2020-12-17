@@ -78,6 +78,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        submodules: 'True'
 
     - name: Conda Testing Setup (Xspec and DS9)
       shell: bash

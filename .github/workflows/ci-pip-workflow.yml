@@ -34,6 +34,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        submodules: 'True'      
 
     - name: Pip Testing Setup - Python
       uses: actions/setup-python@v2
@@ -57,7 +59,7 @@ jobs:
         python setup.py ${{ matrix.install-type }}
 
     - name: ${{ matrix.test-data }} test data with pytest
-      if: ${{ matrix.test-data }} == 'submoule' || ${{ matrix.test-data }} == 'none'
+      if: ${{ matrix.test-data }} == 'package' || ${{ matrix.test-data }} == 'none'
       env:
         TEST: ${{ matrix.test-data }}
       run: |
