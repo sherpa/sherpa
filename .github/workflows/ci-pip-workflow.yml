@@ -2,8 +2,6 @@ name: Pip CI
 
 on: [push, pull_request]
 
-env:
-
 jobs:
   tests:
     name: ${{ matrix.name }}
