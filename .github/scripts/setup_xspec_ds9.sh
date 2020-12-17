@@ -18,19 +18,18 @@ echo "HEADAS=${HEADAS}"
 #Set the xspec_root as the top of the Conda environment
 xspec_root=${CONDA_PREFIX}
 
-if [[ ${TRAVIS_OS_NAME} == linux ]];
-then
+if [ "`uname -s`" == "Darwin" ] ; then
+    ds9_os=darwinsierra
+
+    # It looks like xvfb doesn't "just work" on osx travis, so...
+    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
+else
     # install build dependencies
     sudo apt-get update
     sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
     ds9_os=ubuntu14
-else  # osx
-    ds9_os=darwinsierra
-
-    # It looks like xvfb doesn't "just work" on osx travis, so...
-    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
 fi
 
 download () {
@@ -62,6 +61,9 @@ xspec_library_path=${xspec_root}/lib/
 xspec_include_path=${xspec_root}/include/
 
 case "${XSPECVER}" in
+  12.11.1*)
+      xspec_version_string="12.11.1"
+      ;;
   12.10.1*)
       xspec_version_string="12.10.1"
       ;;

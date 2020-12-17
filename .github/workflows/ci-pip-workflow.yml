@@ -1,0 +1,74 @@
+name: Pip CI
+
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - '*'
+  pull_request:
+
+env:
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Linux Minimum Setup 
+            os: ubuntu-latest
+            python-version: 3.8
+            numpy-pkg: 'numpy=1.17'
+            install-type: develop 
+            test-data: none
+
+          - name: Linux Build (w/o Astropy or Xspec)
+            os: ubuntu-latest
+            python-version: 3.6 
+            install-type: install
+            test-data: package
+            matplotlib-pkg: 'matplotlib=2'
+
+          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
+            os: ubuntu-latest
+            python-version: 3.7
+            install-type: develop 
+            fits-pkg: 'astropy'
+            test-data: none
+
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Pip Testing Setup - Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Pip Testing Setup - Dependencies
+      env:
+        NUMPYVER: ${{ matrix.numpy-version }}           #: Required: numpy OR '...'
+        FITSBUILD: ${{ matrix.fits }}                   #: Optional: '' OR '...'
+        MATPLOTLIBVER: ${{ matrix.matplotlib-version }} #: Optional: '' OR '...'
+      shell: bash
+      run: |
+        if [ ! -n "${NUMPYVER}" ] ; then
+          NUMPYVER='numpy'
+        fi
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} 
+        
+    - name: Build Sherpa
+      run: |
+        python setup.py ${{ matrix.install-type }}
+
+    - name: Test with pytest
+      run: |
+        pip install test_requirements.txt
+        pip install pytest-cov codecov
+        pytest --cov=sherpa
+
+    - name: Smoke test
+      run: sherpa_smoke
