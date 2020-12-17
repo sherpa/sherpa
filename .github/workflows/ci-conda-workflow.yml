@@ -5,8 +5,8 @@ on: [push, pull_request]
 env:
   sherpa_channel: sherpa
   xspec_channel: "xspec/channel/test"
-  miniconda_loc: '/home/runner/miniconda'
-  CONDA_BUILD_SYSROOT: '/home/runner/10.9SDK/MacOSX10.9.sdk'
+  miniconda_loc: ${{ github.workspace }}/miniconda
+  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
 
 jobs:
   tests:
