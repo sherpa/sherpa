@@ -77,7 +77,7 @@ jobs:
 
     - name: Smoke test
       env: 
-        FITS: ${{ martix.fits-pkg }}
+        FITS: ${{ matrix.fits-pkg }}
       run: |
         smokevars="-v 3"
         if [ ${FITS} != '' ] ; then
