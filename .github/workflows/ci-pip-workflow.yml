@@ -12,7 +12,7 @@ jobs:
           - name: Linux Minimum Setup 
             os: ubuntu-latest
             python-version: 3.8
-            numpy-pkg: 'numpy=1.17'
+            numpy-pkg: 'numpy>=1.17,<1.18'
             install-type: develop 
             test-data: none
 
@@ -22,7 +22,7 @@ jobs:
             numpy-pkg: 'numpy'
             install-type: install
             test-data: package
-            matplotlib-pkg: 'matplotlib=2'
+            matplotlib-pkg: 'matplotlib>=2,<3'
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
