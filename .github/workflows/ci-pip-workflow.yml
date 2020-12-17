@@ -19,6 +19,7 @@ jobs:
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
             python-version: 3.6 
+            numpy-pkg: 'numpy'
             install-type: install
             test-data: package
             matplotlib-pkg: 'matplotlib=2'
@@ -26,6 +27,7 @@ jobs:
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
             python-version: 3.7
+            numpy-pkg: 'numpy'
             install-type: develop 
             fits-pkg: 'astropy'
             test-data: none
@@ -44,9 +46,9 @@ jobs:
 
     - name: Pip Testing Setup - Dependencies
       env:
-        NUMPYVER: ${{ matrix.numpy-version }}           #: Required: numpy OR '...'
-        FITSBUILD: ${{ matrix.fits }}                   #: Optional: '' OR '...'
-        MATPLOTLIBVER: ${{ matrix.matplotlib-version }} #: Optional: '' OR '...'
+        NUMPYVER: ${{ matrix.numpy-pkg }}           #: Required: numpy OR '...'
+        FITSBUILD: ${{ matrix.fits-pkg }}                   #: Optional: '' OR '...'
+        MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }} #: Optional: '' OR '...'
       shell: bash
       run: |
         if [ ! -n "${NUMPYVER}" ] ; then
