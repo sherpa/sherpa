@@ -109,4 +109,4 @@ jobs:
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        source travis/test.sh
+        source .github/scripts/test.sh
