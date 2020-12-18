@@ -3,6 +3,15 @@
 if [ "`uname -s`" == "Darwin" ] ; then
     # Run headless Xvfb
     sudo /opt/X11/bin/Xvfb :99 -ac -screen 0 1024x768x8 &
+    if [ $? != 0 ] ; then
+        exit 1
+    fi
+    if [ -n $DISPLAY ] ; then
+        echo "Display not getting set? Trying to override"
+	export DISPLAY=":99"
+    fi
+    echo "DISPLAY: $DISPLAY"
+    
 fi
 
 # For now do not run tests with the documentation build
