@@ -83,7 +83,15 @@ jobs:
 
     - name: Install XQuartz on macOS
       if: runner.os == 'macOS'
-      run: sudo port -v install xorg
+      run: |
+        curl -LO https://dl.bintray.com/xquartz/downloads/XQuartz-2.7.11.dmg
+        hdiutil attach XQuartz-2.7.11.dmg
+        cd /Volumes/XQuartz-2.7.11
+        sudo installer -pkg /Volumes/XQuartz-2.7.11/XQuartz.pkg -target /
+        which Xvfb || exit 1
+        cd -
+        hdiutil detach /Volumes/XQuartz-2.7.11
+        rm XQuartz-2.7.11.dmg
 
     - name: Conda Testing Setup (Xspec and DS9)
       shell: bash
