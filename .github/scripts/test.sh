@@ -2,7 +2,7 @@
 
 if [ "`uname -s`" == "Darwin" ] ; then
     # Run headless Xvfb
-    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
+    sudo /opt/X11/bin/Xvfb :99 -ac -screen 0 1024x768x8 &
 fi
 
 # For now do not run tests with the documentation build

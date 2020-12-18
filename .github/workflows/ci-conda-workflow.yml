@@ -88,7 +88,9 @@ jobs:
         hdiutil attach XQuartz-2.7.11.dmg
         cd /Volumes/XQuartz-2.7.11
         sudo installer -pkg /Volumes/XQuartz-2.7.11/XQuartz.pkg -target /
-        which Xvfb || exit 1
+        if [ $? != 0 ] ; then
+            exit 1
+        fi
         cd -
         hdiutil detach /Volumes/XQuartz-2.7.11
         rm XQuartz-2.7.11.dmg
