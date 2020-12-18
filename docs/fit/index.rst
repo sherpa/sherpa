@@ -905,6 +905,24 @@ needs to be reshaped before it can be displayed:
    >>> rproj.contour(overplot=True)
 
 .. image:: ../_static/fit/rproj_c0_c2_image.png
+
+Suppressing output
+------------------
+
+As shown above, by default the error estimation routine prints any
+bound it finds to the screen (e.g. ``polynom1d.c1 lower bound:
+-0.250889``). Since error estimation can take a long time, this serves
+as a progress report to the user. If the results are not as exepcted,
+one can interrupt a script and change parameters before too much time
+is wasted. Sherpa uses `Python logging
+<https://docs.python.org/3/library/logging.htm>`_ for the message so
+the output can be suppressed by setting the logging level before
+calling the error estimation:
+
+  >>> import logging
+  >>> sherpalog = logging.getLogger('sherpa')
+  >>> sherpalog.setLevel(logging.WARNING)
+  
    
 .. _fit_simultaneous:
 
