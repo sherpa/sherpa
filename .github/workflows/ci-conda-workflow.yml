@@ -81,6 +81,10 @@ jobs:
       with:
         submodules: 'True'
 
+    - name: Install XQuartz on macOS
+      if: runner.os == 'macOS'
+      run: brew cask install xquartz
+
     - name: Conda Testing Setup (Xspec and DS9)
       shell: bash
       env:

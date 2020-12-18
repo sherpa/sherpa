@@ -22,7 +22,7 @@ jobs:
             numpy-pkg: 'numpy'
             install-type: install
             test-data: package
-            matplotlib-pkg: 'matplotlib>=2,<3'
+            matplotlib-pkg: 'matplotlib>=3,<4'
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
