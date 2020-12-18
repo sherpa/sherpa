@@ -83,7 +83,7 @@ jobs:
 
     - name: Install XQuartz on macOS
       if: runner.os == 'macOS'
-      run: brew cask install xquartz
+      run: sudo port -v install xorg
 
     - name: Conda Testing Setup (Xspec and DS9)
       shell: bash
