@@ -20,9 +20,6 @@ xspec_root=${CONDA_PREFIX}
 
 if [ "`uname -s`" == "Darwin" ] ; then
     ds9_os=darwinsierra
-
-    # It looks like xvfb doesn't "just work" on osx travis, so...
-    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
 else
     # install build dependencies
     sudo apt-get update

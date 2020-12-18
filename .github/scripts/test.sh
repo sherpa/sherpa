@@ -1,5 +1,10 @@
 #!/usr/bin/env bash -e
 
+if [ "`uname -s`" == "Darwin" ] ; then
+    # Run headless Xvfb
+    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
+fi
+
 # For now do not run tests with the documentation build
 if [ "${DOCS}" == true ]; then exit 0; fi
 
