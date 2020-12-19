@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015-2020  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,3 +37,26 @@ def config_logger(name, level=logging.WARNING, stream=sys.stdout, template=None)
     logger.propagate = False
 
     return logger
+
+
+class SherpaVerbosity():
+    '''Set the output logging level for sherpa as a context.
+
+    This changes the logging level globally for all modules in sherpa.
+
+    Parameters
+    ----------
+    loglevel : string or int
+        New level for logging. Allowed strings are
+        ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``, and ``CRITICAL``
+    '''
+    def __init__(self, level):
+        self.level = level
+        self.sherpalog = logging.getLogger('sherpa')
+
+    def __enter__(self):
+        self.old = self.sherpalog.level
+        self.sherpalog.setLevel(self.level)
+
+    def __exit__(self, *args):
+        self.sherpalog.setLevel(self.old)
