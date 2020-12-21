@@ -353,6 +353,9 @@ def test_pad_bounding_box_mask_too_large():
 # negative, so run the test with x and x-200 (where all bins are
 # negative).
 #
+# If the values are <= 0 then we just use the fall-through value
+# of half the x range.
+#
 fwhm_x = numpy.asarray([10, 22, 30, 45, 50, 61, 70, 90, 100, 120])
 fwhm_y_both = numpy.asarray([9, 28, 25, 52, 53, 49, 33, 10, 10, 6])
 fwhm_y_left = numpy.asarray([10, 5, 3, 5, 7, 13, 8, 42, 57, 43])
@@ -367,7 +370,9 @@ fwhm_y_flat = numpy.ones(fwhm_x.size)
                           (fwhm_x, fwhm_y_right, 70),
                           (fwhm_x - 200, fwhm_y_right, 70),
                           (fwhm_x, fwhm_y_flat, 55),
-                          (fwhm_x - 200, fwhm_y_flat, 55)])
+                          (fwhm_x - 200, fwhm_y_flat, 55),
+                          (fwhm_x, - fwhm_y_both, 55),
+                          (fwhm_x, fwhm_y_both - fwhm_y_both.max(), 55)])
 def test_get_fwhm(x, y, expected):
     """Check the FWHM algorithm."""
 

@@ -2288,18 +2288,22 @@ def get_valley(y, x, xhi=None):
 def get_fwhm(y, x, xhi=None):
     """Estimate the width of the data.
 
+    This is only valid for positive data values (``y``).
+
     Parameters
     ----------
     y, x : array_like
        The data points. The x array must be in ascending order.
     xhi : None or array_like, optional
        If given then the x array is taken to be the low-edge
-       of each bin.
+       of each bin. This is unused.
 
     Returns
     -------
     ans : scalar
-       The full-width half-maximum of the peak.
+       An estimate of the full-width half-maximum of the peak. If the
+       data is negative, or no edge is found then half the X range is
+       returned.
 
     See Also
     --------
@@ -2317,13 +2321,26 @@ def get_fwhm(y, x, xhi=None):
     reached then the value is set to be half the width of the
     x array. In all cases the upper-edge of the x arrays is ignored,
     if given.
+
     """
 
+    # Pick half the width of the X array, purely as a guess.
+    # The x array is required to be ordered, so we can just
+    # take the first and last points.
+    #
+    guess_fwhm = (x[-1] - x[0]) / 2
+
     y_argmax = y.argmax()
+    if y[y_argmax] <= 0:
+        return guess_fwhm
+
     half_max_val = y[y_argmax] / 2.0
     x_max = x[y_argmax]
 
-    # Where do the values fall below the half-height?
+    # Where do the values fall below the half-height? The assumption
+    # is that the arrays are not so large that evaluating the whole
+    # array, rather than just looping out from the maximum location,
+    # is not an expensive operation.
     #
     flags = (y - half_max_val) < 0
 
@@ -2358,9 +2375,9 @@ def get_fwhm(y, x, xhi=None):
     if rdist is not None:
         return 2 * rdist
 
-    # Pick half the width of the X array, purely as a guess.
+    # No value, so use the guess.
     #
-    return (x.max() - x.min()) / 2
+    return guess_fwhm
 
 
 def guess_fwhm(y, x, xhi=None, scale=1000):
