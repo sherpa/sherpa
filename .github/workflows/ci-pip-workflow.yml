@@ -34,7 +34,7 @@ jobs:
 
 
     steps:
-    - name: Checkout code
+    - name: Checkout Code
       uses: actions/checkout@v2
       with:
         submodules: 'True'      
