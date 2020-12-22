@@ -79,7 +79,7 @@ jobs:
         cd ${HOME}
         pytest --cov=sherpa
 
-    - name: Smoke test
+    - name: Smoke Test
       env: 
         FITS: ${{ matrix.fits-pkg }}
       run: |
