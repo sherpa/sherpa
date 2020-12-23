@@ -99,7 +99,7 @@ Testing and infrastructure fixes are not shown.
 #789 - fix issue #788, fit using moncar with verbose=1 and/or numcores!=1
     Fixes NameError in moncar when verbose setting >0
 
-#791 - Fix ignore/notice error-ing out when all bins have been set bad #790
+#791 - Fix ignore/notice erroring out when all bins have been set bad #790
     Allow notice and ignore to be called on a dataset which has no "good" bins 
     after ignore_bad has been called
 
@@ -125,7 +125,7 @@ Testing and infrastructure fixes are not shown.
     Fixes a typo in the rst docs
 
 #821 - Add hyperlink to similarly named SHERPA package
-    Documentation update to include a link to thethe similarly named package "SHERPA" 
+    Documentation update to include a link to the similarly named package "SHERPA" 
     for hyperparameter tuning of machine learning models
 
 #842 - Fix scaling of staterror when reading PHA file with rate instead of counts
@@ -446,7 +446,7 @@ Documentation and infrastructure fixes are not shown.
     requires python 3.5 or higher (but not version 4),
 
 #667 - improve matplotlib plot_fit plots (order of data and model)
-    Changes to Zorder of plot objects drawn by matplotlib to be more readible
+    Changes to Zorder of plot objects drawn by matplotlib to be more readable
 
 #674 - Add link/unlink parameter tests
     This PR adds three tests for sherpa's un/link commands.
@@ -484,7 +484,7 @@ Documentation and infrastructure fixes are not shown.
 
 #688 - Improve documentation and testing for get_source_plot when sent lo/hi arguments
     Improve the documentation for the sherpa.astro.ui.get_source_plot routine,
-    describing how touse the result when the lo or hi arguments are sent.
+    describing how to use the result when the lo or hi arguments are sent.
 
 #691 - add warning when chips is selected but cannot be imported (rebase of #648)
     Sherpa now warns the user if Chips is selected as a backend but it is
@@ -738,7 +738,7 @@ Details
     `clobber` in astropy has been deprecated for a while now in favour of overwrite and thus
     issues a `DeprecationWarning`. Sherpa now uses `overwrite` instead.
 
-#475 Fix unecessary runtime warning (fix #402)
+#475 Fix unnecessary runtime warning (fix #402)
     A condition check in the optimization code was modified so as not to produce a warning
     when the value is a NaN.
 
@@ -1197,7 +1197,7 @@ sets (and related quantities, such as the source, model, and ARF):
 #116: fix bug #27. The `astropy.io.fits`/`pyfits` interface used deprecated
 functionality. The code was updated to use the replacement classes/methods when
 available, falling back to the original code if not. The interfaces that were
-changed were, when the new symbols are availble, to:
+changed were, when the new symbols are available, to:
 
  - use `astropy.io.fits.BinTableHDU.from_columns` rather than
    `astropy.io.fits.new_table`
