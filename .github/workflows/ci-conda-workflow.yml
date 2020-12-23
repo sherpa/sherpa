@@ -1,0 +1,127 @@
+name: Conda CI
+
+on: [push, pull_request]
+
+env:
+  sherpa_channel: sherpa
+  xspec_channel: "xspec/channel/test"
+  miniconda_loc: ${{ github.workspace }}/miniconda
+  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: MacOS Full Build
+            os: macos-latest
+            python-version: 3.8
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.10.1s
+
+          - name: Linux Minimum Setup 
+            os: ubuntu-latest
+            python-version: 3.8
+            numpy-version: 1.17
+            install-type: develop 
+            test-data: none
+
+          - name: Linux Full Build (Python 3.8)
+            os: ubuntu-latest 
+            python-version: 3.8
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.11.1
+
+          - name: Linux Full Build (Python 3.7)
+            os: ubuntu-latest
+            python-version: 3.7
+            numpy-version: 1.15
+            install-type: install
+            fits: astropy
+            test-data: submodule 
+            matplotlib-version: 3
+            xspec-version: 12.10.1s
+
+          - name: Linux Full Build (Python 3.6)
+            os: ubuntu-latest
+            python-version: 3.6
+            numpy-version: 1.11
+            install-type: install
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 2
+            xspec-version: 12.10.1s
+
+          - name: Linux Build (w/o Astropy or Xspec)
+            os: ubuntu-latest
+            python-version: 3.6 
+            install-type: install
+            test-data: package
+            matplotlib-version: 2
+
+          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
+            os: ubuntu-latest
+            python-version: 3.7
+            install-type: develop 
+            fits: astropy
+            test-data: none
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+        submodules: 'True'
+
+    - name: Install XQuartz on macOS
+      if: runner.os == 'macOS'
+      run: |
+        curl -LO https://dl.bintray.com/xquartz/downloads/XQuartz-2.7.11.dmg
+        hdiutil attach XQuartz-2.7.11.dmg
+        cd /Volumes/XQuartz-2.7.11
+        sudo installer -pkg /Volumes/XQuartz-2.7.11/XQuartz.pkg -target /
+        if [ $? != 0 ] ; then
+            exit 1
+        fi
+        cd -
+        hdiutil detach /Volumes/XQuartz-2.7.11
+        rm XQuartz-2.7.11.dmg
+
+    - name: Conda Testing Setup (Xspec and DS9)
+      shell: bash
+      env:
+        PYTHONVER: ${{ matrix.python-version }}
+        NUMPYVER: ${{ matrix.numpy-version }}
+        FITSBUILD: ${{ matrix.fits }}
+        MATPLOTLIBVER: ${{ matrix.matplotlib-version }}
+        XSPECVER: ${{ matrix.xspec-version }}
+      run: |
+        source .github/scripts/setup_conda.sh
+        if [ -n "${XSPECVER}" ] ; then
+            source .github/scripts/setup_xspec_ds9.sh
+        fi
+
+    - name: Build Sherpa
+      env:
+        PYTHON_LDFLAGS: " " 
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        python setup.py ${{ matrix.install-type }}
+
+    - name: Tests
+      env:
+        TEST: ${{ matrix.test-data }}
+        XSPECVER: ${{ matrix.xspec-version }}
+        FITS: ${{ matrix.fits }} 
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        source .github/scripts/test.sh

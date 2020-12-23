@@ -1,0 +1,91 @@
+name: Pip CI
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Linux Minimum Setup 
+            os: ubuntu-latest
+            python-version: 3.8
+            numpy-pkg: 'numpy>=1.17,<1.18'
+            install-type: develop 
+            test-data: none
+
+          - name: Linux Build (w/o Astropy or Xspec)
+            os: ubuntu-latest
+            python-version: 3.6 
+            numpy-pkg: 'numpy'
+            install-type: install
+            test-data: package
+            matplotlib-pkg: 'matplotlib>=3,<4'
+
+          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
+            os: ubuntu-latest
+            python-version: 3.7
+            numpy-pkg: 'numpy'
+            install-type: develop 
+            fits-pkg: 'astropy'
+            test-data: none
+
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+        submodules: 'True'      
+
+    - name: Pip Testing Setup - Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Pip Testing Setup - Dependencies
+      env:
+        NUMPYVER: ${{ matrix.numpy-pkg }}           #: Required: numpy OR '...'
+        FITSBUILD: ${{ matrix.fits-pkg }}                   #: Optional: '' OR '...'
+        MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }} #: Optional: '' OR '...'
+      shell: bash
+      run: |
+        if [ ! -n "${NUMPYVER}" ] ; then
+          NUMPYVER='numpy'
+        fi
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} 
+        
+    - name: Build Sherpa
+      run: |
+        python setup.py ${{ matrix.install-type }}
+
+    - name: ${{ matrix.test-data }} test data with pytest
+      if: matrix.test-data == 'package' || matrix.test-data == 'none'
+      env:
+        TEST: ${{ matrix.test-data }}
+      run: |
+        git submodule deinit -f .
+        if [ ${TEST} == package ] ; then
+            pip install pytest-xvfb
+        fi
+        sherpa_test || exit 1
+
+    - name: Submodule test with pytest
+      if: matrix.test-data == 'submoule'
+      run: |
+        pip install -r test_requirements.txt
+        pip install pytest-cov codecov
+        cd ${HOME}
+        pytest --cov=sherpa
+
+    - name: Smoke Test
+      env: 
+        FITS: ${{ matrix.fits-pkg }}
+      run: |
+        smokevars="-v 3"
+        if [ ${FITS} != '' ] ; then
+            smokevars="-f ${FITS} ${smokevars}"
+        fi
+        cd ${HOME}
+        sherpa_smoke ${smokevars} || exit 1
