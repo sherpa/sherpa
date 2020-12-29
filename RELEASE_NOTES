@@ -1,5 +1,24 @@
 Release Notes
 
+Sherpa 4.13.0
+=============
+
+This release of Sherpa coincides with the CIAO 4.13 release. The release contains a few minor documentation updates, a version number update to coincide with CIAO version 4.13.0, and infrastructure changes to migrate from Travis-CI to GitHub Actions for testing.  No additional functionality has been introduced.
+
+Details
+-------
+
+#1035 - Travis to GitHub Actions
+    Replaces the Travis test infrastructure with two GitHub Actions workflows. 
+
+#1036 - Cleaned up several typos in the RELEASE_NOTES file	
+    Updates the RELEASE_NOTES file to correct several typos. 
+
+#1038 - Docs: note Python version and new build status 	
+    Updates the build status badge to track GitHub Actions rather than Travis-CI and 
+    report the python versions as 3.6, 3.7, and 3.8.
+
+
 Sherpa 4.12.2
 =============
 
