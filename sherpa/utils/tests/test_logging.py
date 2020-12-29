@@ -25,6 +25,12 @@ from sherpa.astro import ui
 
 
 def test_logging_verbosity_contextmanager(caplog):
+    # Previous tests might have changed this to a non-default
+    # level already. So, we first make sure the root logger
+    # is set right.
+    sherpalogger = logging.getLogger('sherpa')
+    sherpalogger.setLevel('WARNING')
+
     logger = logging.getLogger('sherpa.some_module')
     logger.warning('1: should be seen')
     assert len(caplog.records) == 1
