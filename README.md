@@ -1,8 +1,9 @@
-[![Build Status](https://travis-ci.org/sherpa/sherpa.svg?branch=master)](https://travis-ci.org/sherpa/sherpa)
+![Build Status: Conda](https://github.com/sherpa/sherpa/workflows/Conda%20CI/badge.svg)
+![Build Status: Pip](https://github.com/sherpa/sherpa/workflows/Pip%20CI/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
-![Python version](https://img.shields.io/badge/Python-3.5,3.6,3.7-green.svg?style=flat)
+![Python version](https://img.shields.io/badge/Python-3.6,3.7,3.8-green.svg?style=flat)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
@@ -70,9 +71,7 @@ documentation, and should be read if the following is not sufficient.
 It is strongly recommended that some form of *virtual environment* is
 used with Sherpa.
 
-Sherpa is tested against Python versions 3.5, 3.6, and 3.7. It is
-expected that it will work with Python 3.8 but testing has been
-limited.
+Sherpa is tested against Python versions 3.6, 3.7, and 3.8.
 
 The last version of Sherpa which supported Python 2.7 is
 [Sherpa 4.11.1](https://doi.org/10.5281/zenodo.3358134).
@@ -81,7 +80,7 @@ Using Anaconda
 --------------
 
 Sherpa is provided for both Linux and macOS operating systems running
-Python 3.5, 3.6, and 3.7. It can be installed with the `conda`
+Python 3.6, 3.7, and 3.8. It can be installed with the `conda`
 package manager by saying
 
     $ conda install -c sherpa sherpa
