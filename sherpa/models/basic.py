@@ -1779,6 +1779,61 @@ class Polynom2D(RegriddableModel2D):
 
 
 class TableModel(ArithmeticModel):
+    """Tabulated values in this model are simply linearly scaled.
+
+    After initializing this model, the independent and dependent
+    arrays need to be loaded using the ``load`` method before the
+    model can be used (see examples below); interpolation is used if
+    the grids of the data and the table do not match.
+
+    This model can also be used as to fit indexed data where the
+    independent axis is not a continuous variable, e.g. the
+    independent variable may hold the index for a number of stars and
+    the dependent variable some measured property for each star. In
+    this case, the independent variable needs to be loaded as ``None``
+    and the length of the dependent array needs to match the length of
+    the data array exactly.
+
+
+    Attributes
+    ----------
+    ampl
+        The linear scaling factor for table values
+
+    See Also
+    --------
+    Const1D
+
+    Examples
+    --------
+    Below is an example for the "indexed" use:
+
+      >>> import numpy as np
+      >>> from sherpa.models.basic import TableModel
+      >>> from sherpa.data import Data1D
+      >>> from sherpa.stats import Chi2
+      >>> from sherpa.optmethods import NelderMead
+      >>> from sherpa.fit import Fit
+      >>> d = Data1D('data', [1,2,3,4,5], [1.2, .4, 2.2, .3, 1.],
+      ...             staterror=[.2, .2, .2, .2, .2])
+      >>> tm = TableModel('tabmodel')
+      >>> tm.load(None, np.array([.6, .2, 1.1, .2, .5]))
+      >>> fit = Fit(d, tm)
+      >>> res = fit.fit()
+
+    This even works for masked data, if the model's ``fold`` method is
+    called first, which informs the model which values are masked.
+
+      >>> d = Data1D('data', [1,2,3,4,5],
+      ...            np.ma.masked_invalid([np.nan, np.nan, 2.2, .3, 1.]),
+      ...            staterror=[.2, .2, .2, .2, .2])
+      >>> tm = TableModel('tabmodel')
+      >>> tm.load(None, np.array([.6, .2, 1.1, .2, .5]))
+      >>> tm.fold(d)
+      >>> fit = Fit(d, tm)
+      >>> res = fit.fit()
+
+    """
 
     def __init__(self, name='tablemodel'):
         # these attributes should remain somewhat private
