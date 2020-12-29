@@ -18,6 +18,7 @@
 #
 import logging
 import sys
+import contextlib
 
 
 def config_logger(name, level=logging.WARNING, stream=sys.stdout, template=None):
@@ -39,7 +40,7 @@ def config_logger(name, level=logging.WARNING, stream=sys.stdout, template=None)
     return logger
 
 
-class SherpaVerbosity():
+class SherpaVerbosity(contextlib.AbstractContextManager):
     '''Set the output logging level for sherpa as a context.
 
     This changes the logging level globally for all modules in sherpa.

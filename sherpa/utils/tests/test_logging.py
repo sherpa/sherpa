@@ -23,9 +23,9 @@ import sherpa
 from sherpa.utils.logging import config_logger, SherpaVerbosity
 from sherpa.astro import ui
 
-logger = logging.getLogger('sherpa.some_module')
 
 def test_logging_verbosity_contextmanager(caplog):
+    logger = logging.getLogger('sherpa.some_module')
     logger.warning('1: should be seen')
     assert len(caplog.records) == 1
 
