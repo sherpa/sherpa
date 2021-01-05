@@ -8,6 +8,10 @@ This release of Sherpa coincides with the CIAO 4.13 release. The release contain
 Details
 -------
 
+#1043 - RTD: install more packages via pip
+    Install sphinx-astropy and ipykernel via pip instead of Conda for the Read the Docs 
+    builds to avoid current indirect requirement conflicts.
+
 #1035 - Travis to GitHub Actions
     Replaces the Travis test infrastructure with two GitHub Actions workflows. 
 
