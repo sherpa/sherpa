@@ -278,7 +278,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
-copyright = '2019-2020, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
+copyright = '2019-2021, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
 author = 'Chandra X-ray Center, Smithsonian Astrophysical Observatory'
 
 # The version info for the project you're documenting, acts as replacement for
