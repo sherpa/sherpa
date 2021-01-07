@@ -78,6 +78,7 @@ jobs:
         pip install pytest-cov codecov
         cd ${HOME}
         pytest --cov=sherpa
+        codecov
 
     - name: Smoke Test
       env: 
