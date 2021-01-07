@@ -32,6 +32,13 @@ jobs:
             fits-pkg: 'astropy'
             test-data: none
 
+          - name: Linux Build (submodule data w/o Matplotlib or Xspec)
+            os: ubuntu-latest
+            python-version: 3.7
+            numpy-pkg: 'numpy'
+            install-type: develop 
+            fits-pkg: 'astropy'
+            test-data: submodule
 
     steps:
     - name: Checkout Code
@@ -72,7 +79,7 @@ jobs:
         sherpa_test || exit 1
 
     - name: Submodule test with pytest
-      if: matrix.test-data == 'submoule'
+      if: matrix.test-data == 'submodule'
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov codecov
