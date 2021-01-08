@@ -83,7 +83,7 @@ jobs:
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov codecov
-        cd ${HOME}
+        # cd ${HOME}
         pytest --cov=sherpa
         codecov
 
