@@ -135,7 +135,7 @@ def test_models_filtered(mtype):
 
 
 @requires_xspec
-def test_models_all():
+def test_models_all_xspec():
     """Check all models are returned"""
 
     import sherpa.astro.xspec
