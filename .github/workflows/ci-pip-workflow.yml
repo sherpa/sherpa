@@ -67,7 +67,7 @@ jobs:
       run: |
         python setup.py ${{ matrix.install-type }}
 
-    - name: ${{ matrix.test-data }} test data with pytest
+    - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       env:
         TEST: ${{ matrix.test-data }}
