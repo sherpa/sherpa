@@ -118,6 +118,8 @@ extend (whether to other areas of Astronomy or in other domains).
 Release History
 ---------------
 
+4.13.0: 08 January 2021 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4428938.svg)](https://doi.org/10.5281/zenodo.4428938)
+
 4.12.2: 27 October 2020 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4141888.svg)](https://doi.org/10.5281/zenodo.4141888)
 
 4.12.1: 14 July 2020 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3944985.svg)](https://doi.org/10.5281/zenodo.3944985) 
