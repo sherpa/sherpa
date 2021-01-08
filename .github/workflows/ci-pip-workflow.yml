@@ -32,6 +32,13 @@ jobs:
             fits-pkg: 'astropy'
             test-data: none
 
+          - name: Linux Build (submodule data w/o Matplotlib or Xspec)
+            os: ubuntu-latest
+            python-version: 3.7
+            numpy-pkg: 'numpy'
+            install-type: develop 
+            fits-pkg: 'astropy'
+            test-data: submodule
 
     steps:
     - name: Checkout Code
@@ -60,7 +67,7 @@ jobs:
       run: |
         python setup.py ${{ matrix.install-type }}
 
-    - name: ${{ matrix.test-data }} test data with pytest
+    - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       env:
         TEST: ${{ matrix.test-data }}
@@ -72,12 +79,13 @@ jobs:
         sherpa_test || exit 1
 
     - name: Submodule test with pytest
-      if: matrix.test-data == 'submoule'
+      if: matrix.test-data == 'submodule'
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov codecov
-        cd ${HOME}
+        # cd ${HOME}
         pytest --cov=sherpa
+        codecov
 
     - name: Smoke Test
       env: 
