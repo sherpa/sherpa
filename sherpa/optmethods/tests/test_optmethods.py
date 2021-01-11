@@ -397,7 +397,11 @@ def test_Shekel7(opt, npar=4):
 def test_Shekel10(opt, npar=4):
     tst_opt(opt, _tstoptfct.Shekel10, npar)
 
-@pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
+@pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
+                                 pytest.param(montecarlo,
+                                              marks=pytest.mark.xfail),
+                                 pytest.param(neldermead,
+                                              marks=pytest.mark.xfail)])
 def test_ShekelModified(opt, npar=2):
     tst_opt(opt, _tstoptfct.ShekelModified, npar)
 
