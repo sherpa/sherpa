@@ -1786,6 +1786,10 @@ class TableModel(ArithmeticModel):
     model can be used (see examples below); interpolation is used if
     the grids of the data and the table do not match.
 
+    When used with an integrated data set (for example,
+    `Data1DInt`) the independent axis loaded should be the left-edge
+    of the bin, and the dependent axis is the integrated value for that bin.
+
     This model can also be used as to fit indexed data where the
     independent axis is not a continuous variable, e.g. the
     independent variable may hold the index for a number of stars and
