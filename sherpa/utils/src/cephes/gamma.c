@@ -274,7 +274,9 @@ extern double MAXLOG, MAXNUM, PI;
 double pow(), log(), exp(), sin(), polevl(), p1evl(), floor(), fabs();
 int isnan(), isfinite();
 #else
+#ifndef __STDC_VERSION__
 extern int isfinite ( double x );
+#endif
 static double stirf(double);
 #endif
 #ifdef INFINITIES
