@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007,2020  Smithsonian Astrophysical Observatory 
 */                                                                
 
 /*                                                                          */
@@ -145,7 +145,7 @@ int regWriteAsciiRegion( char* name, regRegion* region, char** names, long nn )
     while (Shape) {
         // Shapename
         if (Shape->include == regInclude) {
-            snprintf(shapeName, maxlen, Shape->name);
+            snprintf(shapeName, maxlen, "%s", Shape->name);
         }
         else {
             snprintf(shapeName, maxlen, "-%s", Shape->name);
@@ -373,7 +373,6 @@ void regPrintRegion( regRegion* region )
     if (region->shape == NULL) {
         return;
     }
-    int ii = 1;
     Shape = region->shape;
 
     while (Shape != NULL) {
