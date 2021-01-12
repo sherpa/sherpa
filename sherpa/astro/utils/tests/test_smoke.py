@@ -23,14 +23,14 @@ import pytest
 from sherpa import smoke
 
 
-def test_success():
+def test_success(hide_logging):
     try:
         smoke()
     except SystemExit:
         pytest.fail("smoke test should have passed")
 
 
-def test_failure():
+def test_failure(hide_logging):
     with pytest.raises(SystemExit) as cm:
         smoke(require_failure=True)
 
@@ -38,7 +38,7 @@ def test_failure():
 
 
 @mock.patch.dict('sys.modules', astropy=None)
-def test_fits_failure():
+def test_fits_failure(hide_logging):
     with pytest.raises(SystemExit) as cm:
         smoke(fits="astropy")
 
@@ -46,7 +46,7 @@ def test_fits_failure():
 
 
 @mock.patch.dict('sys.modules', values={"sherpa.astro.xspec": None})
-def test_xspec_failure():
+def test_xspec_failure(hide_logging):
     with pytest.raises(SystemExit) as cm:
         smoke(xspec=True)
 

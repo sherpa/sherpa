@@ -507,6 +507,10 @@ def reset_seed(request):
 def hide_logging():
     """Set Sherpa's logging to ERROR for the test.
 
+    This code is somehwat redundant with the decorator 
+    in utils/logging:SherpaVerbosity and, should this
+    fixture ever need to be redone, it might be worth 
+    investigating if the same decorator can be used.
     """
 
     logger = logging.getLogger('sherpa')
