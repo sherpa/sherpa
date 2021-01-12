@@ -569,14 +569,14 @@ class Lorentz1D(RegriddableModel1D):
     -----
     The functional form of the model for points is::
 
-        f(x) =                A * fwhm
+        f(x) =              ampl * fwhm
                --------------------------------------
                2 * pi * (0.25 * fwhm^2 + (x - pos)^2)
 
-           A = ampl / integral f(x) dx
-
     and for an integrated grid it is the integral of this over
     the bin.
+
+    The area under the function as defined above is 1 if ampl is 1.
     """
 
     def __init__(self, name='lorentz1d'):
