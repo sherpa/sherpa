@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -40,6 +40,7 @@ def test_basic_unop_neg_raw():
 
     assert mdl.name == '<->(polynom2d)'
     assert mdl.op == np.negative
+    assert mdl.opstr == '<->'
     assert mdl.ndim == 2
 
 
@@ -50,6 +51,7 @@ def test_basic_unop_neg():
 
     assert mdl.name == '-(polynom2d)'
     assert mdl.op == np.negative
+    assert mdl.opstr == '-'
     assert mdl.ndim == 2
 
 
@@ -60,6 +62,7 @@ def test_basic_unop_abs_raw():
 
     assert mdl.name == 'foo(polynom2d)'
     assert mdl.op == np.absolute
+    assert mdl.opstr == 'foo'
     assert mdl.ndim == 2
 
 
@@ -70,6 +73,7 @@ def test_basic_unop_abs():
 
     assert mdl.name == 'abs(polynom2d)'
     assert mdl.op == np.absolute
+    assert mdl.opstr == 'abs'
     assert mdl.ndim == 2
 
 
@@ -85,6 +89,7 @@ def test_basic_binop_raw(op):
     assert isinstance(mdl, BinaryOpModel)
     assert mdl.name == '(polynom2d xOx gauss2d)'
     assert mdl.op == op
+    assert mdl.opstr == 'xOx'
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
@@ -103,8 +108,9 @@ def test_basic_binop(op, opstr):
     mdl = op(l, r)
 
     assert isinstance(mdl, BinaryOpModel)
-    assert mdl.name == '(polynom2d {} gauss2d)'.format(opstr)
+    assert mdl.name == f'(polynom2d {opstr} gauss2d)'
     assert mdl.op == op
+    assert mdl.opstr == opstr
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
