@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -281,3 +282,85 @@ def test_load_table_model(make_data_path):
     s.load_table_model('tbl', make_data_path('double.dat'))
     tbl = s.get_model_component('tbl')
     assert tbl.ndim is None
+
+
+class TestBrackets:
+    """Provide a set of model instances for the tests."""
+
+    a = basic.Const1D('a')
+    b = basic.Const1D('b')
+    c = basic.Const1D('c')
+    d = basic.Const1D('d')
+
+    # It would be nice to instead use a principled set of states,
+    # but let's just try a somewhat-random set of expressions.
+    #
+    @pytest.mark.parametrize("model,expected",
+                             [(a, "a"),
+                              (abs(a), "abs(a)"),
+                              (abs(a) + b, "(abs(a) + b)"),
+                              (b + abs(a), "(b + abs(a))"),
+                              (abs(a + b), "abs((a + b))"),
+                              (abs(a + b * c), "abs((a + (b * c)))"),
+                              (abs(a - b * c), "abs((a - (b * c)))"),
+                              (abs((a + b) * c), "abs(((a + b) * c))"),
+                              (abs((a - b) * c), "abs(((a - b) * c))"),
+                              (abs((a - b) / c), "abs(((a - b) / c))"),
+                              (abs((a * b) - c), "abs(((a * b) - c))"),
+                              (abs((a / b) - c), "abs(((a / b) - c))"),
+                              (a * abs(b * (c + d)), "(a * abs((b * (c + d))))"),
+                              (abs(b * (c + d)) * (a + d), "(abs((b * (c + d))) * (a + d))"),
+                              (-a, "-(a)"),
+                              (-a + b, "(-(a) + b)"),
+                              (-(a + b), "-((a + b))"),
+                              (-(a * b), "-((a * b))"),
+                              (-(a - b), "-((a - b))"),
+                              (-(a * b - c), "-(((a * b) - c))"),
+                              (-(a - b * c), "-((a - (b * c)))"),
+                              (a - a - b, "((a - a) - b)"),
+                              (a - (a - b), "(a - (a - b))"),
+                              (a - (b - (c - d)), '(a - (b - (c - d)))'),
+                              (a - (b + (c - d)), '(a - (b + (c - d)))'),
+                              (b - (c + d), '(b - (c + d))'),
+                              ((a - b) - (c + d), '((a - b) - (c + d))'),
+                              (a - (b - (c + d)), '(a - (b - (c + d)))'),
+                              (a - (b + (c + d)), '(a - (b + (c + d)))'),
+                              (2 * (a + b) - c * 3, "((2.0 * (a + b)) - (c * 3.0))"),
+                              (abs(2 * (a + b) - c * 3), "abs(((2.0 * (a + b)) - (c * 3.0)))"),
+                              (a + a, "(a + a)"),
+                              (a * b, "(a * b)"),
+                              (a - a, "(a - a)"),
+                              (a / b, "(a / b)"),
+                              (a + b + c, "((a + b) + c)"),
+                              (a * b * c, "((a * b) * c)"),
+                              ((a * b) + c, "((a * b) + c)"),
+                              ((a + b) * c, "((a + b) * c)"),
+                              (a + (b * c), "(a + (b * c))"),
+                              (a * (b + c), "(a * (b + c))"),
+                              ((a + b) * (c + d), "((a + b) * (c + d))"),
+                              ((a * b) * (c + d), "((a * b) * (c + d))"),
+                              ((a + b) * (c * d), "((a + b) * (c * d))"),
+                              ((a + (b * c) + d), "((a + (b * c)) + d)"),
+                              (100 * a * (b + c), "((100.0 * a) * (b + c))"),
+                              (100 * (a * (b + c)), "(100.0 * (a * (b + c)))"),
+                              (a + b + 2 * c + d + a, "((((a + b) + (2.0 * c)) + d) + a)"),
+                              (a + b + c * 2 + d + a, "((((a + b) + (c * 2.0)) + d) + a)"),
+                              (a + b * (c - 2) + d + a, "(((a + (b * (c - 2.0))) + d) + a)"),
+                              (a + b * (2 - c) + d + a, "(((a + (b * (2.0 - c))) + d) + a)"),
+                              ((a + b + c) + (c + b + d + a), "(((a + b) + c) + (((c + b) + d) + a))"),
+                              ((a + b + c) + (c + b - d + a), "(((a + b) + c) + (((c + b) - d) + a))"),
+                              ((a + b + c) + (c + b - abs(d) + a), "(((a + b) + c) + (((c + b) - abs(d)) + a))"),
+                              ((a + b + c) * (c + b + d + a), "(((a + b) + c) * (((c + b) + d) + a))"),
+                              ((a + b + c) * (c + b - d + a), "(((a + b) + c) * (((c + b) - d) + a))"),
+                              ((a + b + c) * (c + b - abs(d) + a), "(((a + b) + c) * (((c + b) - abs(d)) + a))"),
+                              ((a * b * c) * (c + b + d + a), "(((a * b) * c) * (((c + b) + d) + a))"),
+                              ((a + b + c) * (c * b * d * a), "(((a + b) + c) * (((c * b) * d) * a))"),
+                              ((a + b + c) * (c * b + d * a), "(((a + b) + c) * ((c * b) + (d * a)))"),
+                              (2 * a * 2, "((2.0 * a) * 2.0)"),
+                              (a * 2 * 2, "((a * 2.0) * 2.0)"),
+                              (2 * a + 2 * (b + c - 4) * 3, "((2.0 * a) + ((2.0 * ((b + c) - 4.0)) * 3.0))")
+                             ])
+    def test_brackets(self, model, expected):
+        """Do we get the expected number of brackets?"""
+
+        assert model.name == expected
