@@ -49,7 +49,8 @@ def _get_datadir():
             import sherpa
             datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir,
                                    'sherpa-test-data', 'sherpatest')
-            if not os.path.exists(datadir) or not os.listdir(datadir):
+            if not os.path.exists(datadir) or not os.path.isdir(datadir) \
+               or not os.listdir(datadir):
                 # The dir is empty, maybe the submodule was not initialized
                 datadir = None
         except ImportError:
@@ -76,7 +77,8 @@ def set_datadir(datadir):
 
     """
 
-    if not os.path.exists(datadir) or not os.listdir(datadir):
+    if not os.path.exists(datadir) or not os.path.isdir(datadir) \
+       or not os.listdir(datadir):
         raise OSError("datadir={} is empty or not a directory".format(datadir))
 
     global DATADIR
