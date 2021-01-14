@@ -40,9 +40,8 @@ import numpy.fft
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
 from sherpa.utils._utils import hist1d, hist2d
-from sherpa.utils import _utils
-
-from sherpa.utils import _psf
+from sherpa.utils import _utils, _psf
+from sherpa.utils.err import IOErr
 
 from sherpa import get_config
 

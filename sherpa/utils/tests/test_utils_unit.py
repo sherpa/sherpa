@@ -38,20 +38,24 @@ def test_calc_ftest2():
                               _utils.calc_ftest(2 * [11], 2 * [16.3],
                                                 2 * [10], 2 * [10.2]))
 
+
 def test_calc_ftest_chi2_equal_0():
     with pytest.raises(TypeError) as excinfo:
         _utils.calc_ftest(11, 16.3, 10, 0.0)
     assert 'chisq_2[0] cannot be equal to 0:' in str(excinfo.value)
+
 
 def test_calc_ftest_dof2_equal_0():
     with pytest.raises(TypeError) as excinfo:
         _utils.calc_ftest(11, 16.3, 0, 10.0)
     assert 'dof_2[0] cannot be equal to 0:' in str(excinfo.value)
 
+
 def test_calc_ftest_dof1_equal_dof2():
     with pytest.raises(TypeError) as excinfo:
         _utils.calc_ftest(11, 16.3, 11, 10.0)
     assert 'dof_1[0] cannot be equal to dof_2[0]:' in str(excinfo.value)
+
 
 def test_calc_mlr():
     """
