@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,90 +22,83 @@
 # may be better placed in tests of the sherpa.astro.io module, once that
 # becomes possible
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
+import logging
+
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D
 
-import logging
 logger = logging.getLogger("sherpa")
+
+
+FILE_NAME = 'acisf01575_001N001_r0085_pha3.fits'
+
+
+def validate_pha(idval):
+    """Check that the PHA dataset in id=idval is
+    as expected.
+    """
+
+    assert ui.list_data_ids() == [idval]
+
+    pha = ui.get_data(idval)
+    assert isinstance(pha, DataPHA)
+
+    arf = ui.get_arf(idval)
+    assert isinstance(arf, ARF1D)
+
+    rmf = ui.get_rmf(idval)
+    assert isinstance(rmf, RMF1D)
+
+    bpha = ui.get_bkg(idval, bkg_id=1)
+    assert isinstance(bpha, DataPHA)
+
+    barf = ui.get_arf(idval, bkg_id=1)
+    assert isinstance(barf, ARF1D)
+
+    brmf = ui.get_rmf(idval, bkg_id=1)
+    assert isinstance(brmf, RMF1D)
+
+    # normally the background data set would have a different name,
+    # but this is a  PHA Type 3 file.
+    # assert pha.name == bpha.name
+    assert arf.name == barf.name
+    assert rmf.name == brmf.name
 
 
 @requires_fits
 @requires_data
-class test_load_pha3_gzip(SherpaTestCase):
-    """Handle a .gz FITS PHA Type 3 file"""
+def test_pha3_read_explicit(make_data_path, clean_astro_ui):
+    """Include .gz in the file name"""
 
-    longMessage = True
+    fname = make_data_path(FILE_NAME + '.gz')
+    idval = 12
+    ui.load_pha(idval, fname)
 
-    def setUp(self):
-        # hide warning messages from file I/O
-        self._old_logger_level = logger.level
-        logger.setLevel(logging.ERROR)
+    validate_pha(idval)
 
-        ui.clean()
+    # TODO: does this indicate that the file name, as read in,
+    #       should have the .gz added to it to match the data
+    #       read in, or left as is?
+    pha = ui.get_data(idval)
+    bpha = ui.get_bkg(idval, bkg_id=1)
+    assert pha.name == bpha.name + '.gz'
+    assert pha.name == fname
 
-        self.head = self.make_path('acisf01575_001N001_r0085')
 
-    def tearDown(self):
-        logger.setLevel(self._old_logger_level)
+@requires_fits
+@requires_data
+def test_pha3_read_implicit(make_data_path, clean_astro_ui):
+    """Exclude .gz from the file name"""
 
-    def validate_pha(self, idval):
-        """Check that the PHA dataset in id=idval is
-        as expected.
-        """
+    idval = "13"
+    fname = make_data_path(FILE_NAME)
+    ui.load_pha(idval, fname)
 
-        self.assertEqual(ui.list_data_ids(), [idval])
+    validate_pha(idval)
 
-        pha = ui.get_data(idval)
-        self.assertIsInstance(pha, DataPHA)
-
-        arf = ui.get_arf(idval)
-        self.assertIsInstance(arf, ARF1D)
-
-        rmf = ui.get_rmf(idval)
-        self.assertIsInstance(rmf, RMF1D)
-
-        bpha = ui.get_bkg(idval, bkg_id=1)
-        self.assertIsInstance(bpha, DataPHA)
-
-        barf = ui.get_arf(idval, bkg_id=1)
-        self.assertIsInstance(barf, ARF1D)
-
-        brmf = ui.get_rmf(idval, bkg_id=1)
-        self.assertIsInstance(brmf, RMF1D)
-
-        # normally the background data set would have a different name,
-        # but this is a  PHA Type 3 file.
-        # self.assertEqual(pha.name, bpha.name)
-        self.assertEqual(arf.name, barf.name)
-        self.assertEqual(rmf.name, brmf.name)
-
-    def testReadExplicit(self):
-        """Include .gz in the file name"""
-
-        idval = 12
-        fname = self.head + '_pha3.fits.gz'
-        ui.load_pha(idval, fname)
-
-        self.validate_pha(idval)
-
-        # TODO: does this indicate that the file name, as read in,
-        #       should have the .gz added to it to match the data
-        #       read in, or left as is?
-        pha = ui.get_data(idval)
-        bpha = ui.get_bkg(idval, bkg_id=1)
-        self.assertEqual(pha.name, bpha.name + '.gz')
-
-    def testReadImplicit(self):
-        """Exclude .gz from the file name"""
-
-        idval = "13"
-        fname = self.head + '_pha3.fits'
-        ui.load_pha(idval, fname)
-
-        self.validate_pha(idval)
-
-        pha = ui.get_data(idval)
-        bpha = ui.get_bkg(idval, bkg_id=1)
-        self.assertEqual(pha.name, bpha.name)
+    pha = ui.get_data(idval)
+    bpha = ui.get_bkg(idval, bkg_id=1)
+    assert pha.name == bpha.name
+    assert pha.name == fname
