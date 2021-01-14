@@ -101,9 +101,6 @@ class SherpaTestCase(unittest.TestCase):
     Base class for Sherpa unit tests. The use of this class is deprecated in favor of pytest functions.
     """
 
-    # The location of the Sherpa test data (it is optional)
-    datadir = DATADIR
-
     def make_path(self, *segments):
         """Add the segments onto the test data location.
 
@@ -120,9 +117,10 @@ class SherpaTestCase(unittest.TestCase):
            data directory is not set.
 
         """
-        if self.datadir is None:
+        datadir = get_datadir()
+        if datadir is None:
             return None
-        return os.path.join(self.datadir, *segments)
+        return os.path.join(datadir, *segments)
 
     # What is the benefit of this over numpy.testing.assert_allclose(),
     # which was added in version 1.5 of NumPy?
@@ -197,7 +195,7 @@ class SherpaTestCase(unittest.TestCase):
         scriptname = name + "-" + scriptname
         self.locals = {}
         cwd = os.getcwd()
-        os.chdir(self.datadir)
+        os.chdir(get_datadir())
         try:
             with open(scriptname, "rb") as fh:
                 cts = fh.read()
