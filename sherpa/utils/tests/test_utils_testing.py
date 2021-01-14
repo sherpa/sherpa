@@ -21,9 +21,11 @@
 Split out testing of parts of sherpa.utils.testing to here.
 """
 
+import os
+
 import pytest
 
-from sherpa.utils.testing import set_datadir
+from sherpa.utils.testing import get_datadir, set_datadir
 
 
 def test_set_datadir_does_not_exist(tmp_path):
@@ -61,3 +63,29 @@ def test_set_datadir_is_not_a_directory(tmp_path):
 
     assert str(exc.value).startswith('datadir=')
     assert str(exc.value).endswith('/is-a-file is empty or not a directory')
+
+
+def test_set_datadir():
+    """Check we can set it, then restore the previous setting."""
+
+    # Since set_datadir does not accept None, and I don't want to deal with
+    # the low-level internals of the testing module, skip this set if
+    # the directory is not set.
+    #
+    opath = get_datadir()
+    if opath is None:
+        pytest.skip("datadir is not set")
+
+    # Ideally we'd wrap this up so that a problem would not bleed into
+    # other tests, but this would be a fairly serious problem so do not
+    # bother at this time.
+    #
+    # Assume the current directory is a reasonable directory to use.
+    #
+    npath = os.getcwd()
+    assert opath != npath  # just a sanety check
+    set_datadir(npath)
+
+    assert get_datadir() == npath
+    set_datadir(opath)
+    assert get_datadir() != npath
