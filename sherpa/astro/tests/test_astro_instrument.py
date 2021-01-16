@@ -1170,10 +1170,10 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
 
     if phaexp:
         exposure = pha_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = '{} * flat'.format(exposure)
     elif arfexp:
         exposure = arf_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = '{} * flat'.format(exposure)
     else:
         exposure = 1.0
         mdl_label = 'flat'
@@ -1247,10 +1247,10 @@ def test_rsp_normf_call(arfexp, phaexp):
 
     if phaexp:
         exposure = pha_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = '{} * flat'.format(exposure)
     elif arfexp:
         exposure = arf_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = '{} * flat'.format(exposure)
     else:
         exposure = 1.0
         mdl_label = 'flat'
@@ -1312,7 +1312,7 @@ def test_rsp_no_arf_matrix_call(analysis, phaexp):
 
     if phaexp:
         exposure = pha_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = '{} * flat'.format(exposure)
     else:
         exposure = 1.0
         mdl_label = 'flat'

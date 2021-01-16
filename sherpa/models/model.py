@@ -330,6 +330,7 @@ from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils import formatting
 
 from .parameter import Parameter
+from .tokens import simplify
 
 # What routine do we use for the hash in modelCacher1d?  As we do not
 # need cryptographic security go for a "quick" algorithm, but md5 is
@@ -492,11 +493,34 @@ class Model(NoNewAttributesAfterInit):
     "The dimensionality of the model, if defined, or None."
 
     def __init__(self, name, pars=()):
-        self.name = name
+        # Some downstream models use the _name field, so
+        # _orig_name is used to ensure there's no change in
+        # that code.
+        #
+        self._orig_name = name
         self.type = self.__class__.__name__.lower()
         self.pars = tuple(pars)
         self.is_discrete = False
         NoNewAttributesAfterInit.__init__(self)
+
+    @property
+    def name(self):
+        """The model name.
+
+        The model expression is evaluated to remove excess brackets.
+
+        """
+
+        # we do not set the name field in __init__ since simplify
+        # requires that the object has been set up fully.
+        return simplify(self)
+
+    # Downstream classes may explictly set the name attribute.
+    #
+    @name.setter
+    def name(self, name):
+        """Set the name"""
+        self._orig_name = name
 
     def __repr__(self):
         return f"<{type(self).__name__} model instance '{self.name}'>"
@@ -952,6 +976,39 @@ class CompositeModel(Model):
             except AttributeError:
                 pass
 
+    def get_precedence(self):
+        """Return the minimum precedence of the parts.
+
+        Returns
+        -------
+        preference : int or None
+            The minimum precedence of the terms, or None if the terms
+            have no precedence (i.e. terminal objects).
+        """
+
+        out = []
+        try:
+            out.append(self.precedence)
+        except AttributeError:
+            pass
+
+        for part in self.parts:
+            try:
+                out.append(part.get_precedence())
+            except AttributeError:
+                pass
+
+        # We can get a None here, for things like a XSConvolutionModel.
+        # This may need some work further work, but for now we can just
+        # drop the None values.
+        #
+        out = [o for o in out if o is not None]
+
+        if len(out) == 0:
+            return None
+
+        return min(out)
+
 
 class SimulFitModel(CompositeModel):
     """Store multiple models.
@@ -1031,7 +1088,6 @@ class ArithmeticConstantModel(Model):
                 nstr = ','.join([str(s) for s in val.shape])
                 name = f'{val.dtype.name}[{nstr}]'
 
-        self.name = name
         self.val = val
 
         # val has to be a scalar or 1D array, even if used with a 2D
@@ -1041,7 +1097,7 @@ class ArithmeticConstantModel(Model):
         #
         self.ndim = None
 
-        Model.__init__(self, self.name)
+        Model.__init__(self, name)
 
     def _get_val(self):
         return self._val
@@ -1239,6 +1295,8 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         The ufunc to apply to the model values.
     opstr : str
         The symbol used to represent the operator.
+    precedence : int
+        The precedence of the operator
 
     See Also
     --------
@@ -1260,6 +1318,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
+        self.precedence = op_to_precedence(op)
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
 
@@ -1314,9 +1373,10 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.rhs = self.wrapobj(rhs)
         self.op = op
         self.opstr = opstr
+        self.precedence = op_to_precedence(op)
 
         CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
+                                f'{self.lhs.name} {opstr} {self.rhs.name}',
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
@@ -1571,6 +1631,69 @@ def _wrapobj(obj, wrapper):
         return obj
 
     return wrapper(obj)
+
+
+# String representation of models.
+#
+# The idea is to remove excess brackets from a model expression, which
+# requires checking whether the contents of a bracket have a lower
+# preference than the operators to the left and right of the bracket.
+# If it does then the brackets are required. There's some fun when
+# one of the brackets has no operator outside it. The algorithm
+# also doesn't really handle unary operators, just binary ones. See
+# https://stackoverflow.com/questions/18400741/remove-redundant-parentheses-from-an-arithmetic-expression
+#
+def op_to_precedence(op):
+    """Convert an operator to a precedence.
+
+    Parameters
+    ----------
+    op : function reference
+        Assumed to be numpy.add, multiply, subtract, ...
+
+    Returns
+    -------
+    precedence : int or None
+        The precedence of the operator. Any unsupported operator is
+        mapped to None (e.g. numpy.absolute).
+
+
+    Notes
+    -----
+    See the description of precedence at [1]_.
+
+    Refs
+    ----
+
+    [1] https://docs.python.org/3/reference/expressions.html?highlight=precedence#operator-precedence
+
+    """
+
+    # Take each operator from [1]_ and add an integer as
+    # you go along the reversed group (think we want the reverse here),
+    # and add 10 for each group.
+    #
+    # group: +, -
+    # group: *, @, /, //, %
+    # group: +x, -x, ~x  (these aren't handled here)
+    # group: **
+    #
+    ops = {numpy.subtract: 0,
+           numpy.add: 1,
+           numpy.remainder: 10,
+           numpy.floor_divide: 11,
+           numpy.divide: 12,
+           numpy.true_divide: 12,
+           numpy.multiply: 13,
+           numpy.negative: 20,
+           numpy.positive: 21,
+           numpy.power: 30,
+    }
+
+    try:
+        return ops[op]
+    except KeyError:
+        return None
 
 
 # Notebook representation

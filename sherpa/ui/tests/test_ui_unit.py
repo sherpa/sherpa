@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -201,7 +201,7 @@ def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "WARNING: No guess found for (dummy + dummy)"
+    assert msg == "WARNING: No guess found for dummy + dummy"
 
 
 class Parameter2(Parameter):

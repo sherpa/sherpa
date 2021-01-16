@@ -1694,7 +1694,7 @@ def test_fit_str_single(stat):
     out = str(fit)
 
     expected = [("data", "test"),
-                ("model", "((poly * step) + bg)"),
+                ("model", "poly * step + bg"),
                 ("stat", stat.__name__),
                 ("method", "LevMar"),
                 ("estmethod", "Covariance")]
