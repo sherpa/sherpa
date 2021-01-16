@@ -134,7 +134,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
 
-        CompositeModel.__init__(self, 'apply_rmf(%s)' % model.name, (model,))
+        CompositeModel.__init__(self, f'apply_rmf({model.name})', (model,))
         self.filter()
 
     def filter(self):
@@ -183,7 +183,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         # Logic for ArithmeticModel.__init__
         self.pars = ()
 
-        CompositeModel.__init__(self, 'apply_arf(%s)' % model.name, (model,))
+        CompositeModel.__init__(self, f'apply_arf({model.name})', (model,))
         self.filter()
 
     def filter(self):
@@ -234,7 +234,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
         # Logic for ArithmeticModel.__init__
         self.pars = ()
 
-        CompositeModel.__init__(self, 'apply_rmf(apply_arf(%s))' % model.name,
+        CompositeModel.__init__(self, f'apply_rmf(apply_arf({model.name}))',
                                 (model,))
         self.filter()
 
@@ -878,9 +878,9 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.models = models
         self.grid = grid
 
-        name = '%s(%s)' % (type(self).__name__,
-                           ','.join(['%s(%s)' % (m.name, source.name)
-                                     for m in models]))
+        expr = ','.join([f'{m.name}({source.name})'
+                         for m in models])
+        name = f'{type(self).__name__}({expr})'
         CompositeModel.__init__(self, name, (source,))
 
     def _get_noticed_energy_list(self):
@@ -1048,7 +1048,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.otherkwargs = None
         self.pars = ()
         CompositeModel.__init__(self,
-                                ('%s(%s)' % ('apply_rmf', self.model.name)),
+                                f'apply_rmf({self.model.name})',
                                 (self.model,))
 
     def startup(self, cache=False):

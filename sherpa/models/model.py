@@ -1199,7 +1199,7 @@ class RegriddableModel1D(RegriddableModel):
         valid_keys = ('interp',)
         for key in kwargs.keys():
             if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
+                raise TypeError(f"unknown keyword argument: '{key}'")
         eval_space = EvaluationSpace1D(*args)
         regridder = ModelDomainRegridder1D(eval_space, **kwargs)
         regridder._make_and_validate_grid(args)
@@ -1366,7 +1366,7 @@ class FilterModel(CompositeModel, ArithmeticModel):
             filter_str = self._make_filter_str(filter)
 
         CompositeModel.__init__(self,
-                                ('(%s)[%s]' % (self.model.name, filter_str)),
+                                f'({self.model.name})[{filter_str}]',
                                 (self.model,))
 
     @staticmethod
@@ -1487,8 +1487,8 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
 
     def __init__(self, models):
         self.models = tuple(models)
-        name = '%s(%s)' % (type(self).__name__,
-                           ','.join([m.name for m in models]))
+        arg = ','.join([m.name for m in models])
+        name = f'{type(self).__name__}({arg})'
         CompositeModel.__init__(self, name, self.models)
 
     def calc(self, p, arglist):
