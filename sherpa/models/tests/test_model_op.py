@@ -27,7 +27,9 @@ import numpy as np
 
 import pytest
 
+from sherpa.astro.instrument import ARF1D, RMF1D, RSPModelNoPHA, create_arf, create_delta_rmf
 from sherpa.astro.ui.utils import Session
+from sherpa.instrument import PSFModel
 from sherpa.models import basic
 from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, UnaryOpModel
 from sherpa.utils.err import ModelErr
@@ -284,6 +286,20 @@ def test_load_table_model(make_data_path):
     assert tbl.ndim is None
 
 
+class FakeResponse1D:
+    """sherpa.astro.instrument.Response1D requires a PHA. This doesn't.
+
+    This has limited functionality.
+    """
+
+    def __init__(self, arf, rmf):
+        self.arf = arf
+        self.rmf = rmf
+
+    def __call__(self, model):
+        return RSPModelNoPHA(self.arf, self.rmf, self.arf.exposure * model)
+
+
 class TestBrackets:
     """Provide a set of model instances for the tests."""
 
@@ -291,6 +307,26 @@ class TestBrackets:
     b = basic.Const1D('b')
     c = basic.Const1D('c')
     d = basic.Const1D('d')
+
+    # We don't need to 'load' the model data to use it here
+    tm = basic.TableModel('tm')
+
+    # Convolution-style model (PSF)
+    cm = PSFModel('cm', basic.Const1D('cmflat'))
+
+    # Convolution-style model (PHA)
+    #
+    egrid = np.arange(0.1, 0.5, 0.1)
+    chans = np.arange(1, egrid.size)
+    fake_arf = create_arf(egrid[:-1], egrid[1:], exposure=100.0)
+    fake_rmf = create_delta_rmf(egrid[:-1], egrid[1:])
+
+    # At the moment Response1D requires a PHA hence the need for a
+    # lambda function.
+    #
+    arf = ARF1D(fake_arf)
+    rmf = RMF1D(fake_rmf)
+    rsp = FakeResponse1D(fake_arf, fake_rmf)
 
     # It would be nice to instead use a principled set of states,
     # but let's just try a somewhat-random set of expressions.
@@ -358,7 +394,30 @@ class TestBrackets:
                               ((a + b + c) * (c * b + d * a), "(((a + b) + c) * ((c * b) + (d * a)))"),
                               (2 * a * 2, "((2.0 * a) * 2.0)"),
                               (a * 2 * 2, "((a * 2.0) * 2.0)"),
-                              (2 * a + 2 * (b + c - 4) * 3, "((2.0 * a) + ((2.0 * ((b + c) - 4.0)) * 3.0))")
+                              (2 * a + 2 * (b + c - 4) * 3, "((2.0 * a) + ((2.0 * ((b + c) - 4.0)) * 3.0))"),
+                              (tm * (a + b) + tm * (a * b),
+                               '((tm * (a + b)) + (tm * (a * b)))'),
+                              (tm * (a + b) + tm * (a * (b + 3)),
+                               '((tm * (a + b)) + (tm * (a * (b + 3.0))))'),
+                              (cm(a) + b, '(cm(a) + b)'),
+                              (a * cm(b + c), '(a * cm((b + c)))'),
+                              (a + cm(b + 2 * d + c),
+                               '(a + cm(((b + (2.0 * d)) + c)))'),
+                              (arf(b * (c * d)) + d,
+                               "(apply_arf((100.0 * (b * (c * d)))) + d)"),
+                              (a + 2 * arf(b * (c + d)),
+                               "(a + (2.0 * apply_arf((100.0 * (b * (c + d))))))"),
+                              (a + 2 * rmf(b * (c + d)),
+                               "(a + (2.0 * apply_rmf((b * (c + d)))))"),
+                              # Manually combining RMF1D and ARF1D is interesting as we would normally
+                              # use RSPModelNoPHA
+                              (a * rmf(arf(a * (b + c * d))) + d * arf(a + b),
+                               '((a * apply_rmf(apply_arf((100.0 * (a * (b + (c * d))))))) + (d * apply_arf((100.0 * (a + b)))))'),
+                              # Repeat but with rsp instead
+                              (a * rsp(a * (b + c * d)) + d * arf(a + b),
+                               '((a * apply_rmf(apply_arf((100.0 * (a * (b + (c * d))))))) + (d * apply_arf((100.0 * (a + b)))))'),
+                              (arf(b * (c + d)),
+                               "apply_arf((100.0 * (b * (c + d))))")
                              ])
     def test_brackets(self, model, expected):
         """Do we get the expected number of brackets?"""
