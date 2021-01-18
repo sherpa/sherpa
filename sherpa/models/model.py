@@ -1657,10 +1657,17 @@ def op_to_precedence(op):
         The precedence of the operator. Any unsupported operator is
         mapped to None (e.g. numpy.absolute).
 
-
     Notes
     -----
     See the description of precedence at [1]_.
+
+    The precedence level starts at 0 for the subtract operator, but
+    the numeric value is not guaranteed. It is important that the
+    subtract operator has the lowest value, since we use some run-time
+    decoding to allow precedence values less than this (they are
+    associated with negatively-associated expressions that are
+    themselves subtracted from a term). This is handled in
+    sherpa.models.tokens.simplify_brackets.
 
     Refs
     ----

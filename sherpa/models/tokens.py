@@ -61,6 +61,9 @@ class TokenOp(Token):
         self.precedence = precedence
         super().__init__(name)
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self.name}", {self.precedence})'
+
 
 class TokenUnOp(TokenOp):
     """A unary operator"""
@@ -159,8 +162,18 @@ def bracket(store, tokens, precedence, left=None):
     return [TokenLeft(ctr, precedence, left)] + tokens + [TokenRight(ctr, precedence)]
 
 
+# This MUST match sherpa.models.model.op_to_precedence(numpy.subtract)
+# but it is not written as such to avoid import loops.
+#
+ZERO_PRECEDENCE = 0
+
+
 def left_token(store, model, leftprec=None):
     """Tokenize the expression but do not process the right brackets.
+
+    We also handle repeated subtraction terms, where we want the
+    precedence to decrease (so a - (b - c) has the 'b - c' term with a
+    lower precedence).
 
     Parameters
     ----------
@@ -197,7 +210,7 @@ def left_token(store, model, leftprec=None):
     # UnaryOpModel and BinaryOpModel require processing their contents,
     # but other Composite models may not require any analysis (they
     # send in the constituent .name attribute to some model-specific
-    # string). We use the presense of the op attribute as a
+    # string). We use the presence of the op attribute as a
     # way to say "this is a *OpModel" case.
     #
     if not hasattr(model, 'op'):
@@ -245,16 +258,46 @@ def left_token(store, model, leftprec=None):
         except AttributeError:
             rprec = None
 
+        # By construction we should have a precedence, but
+        # add a fall-through just in case.
+        #
         try:
             oprec = model.precedence
         except AttributeError:
-            # We may need a precedence value here?
             oprec = None
 
+        # Do we have to deal with subtracting a term which itself
+        # contains a subtraction? We use a <= check in case we are in
+        # a chain of changes. I am not convinced this is handled
+        # correctly.
+        #
+        # If we have a subtraction of a term which contains a
+        # subtraction, we need to process those terms to adjust the
+        # precedences. We do this to the token list as we do not want
+        # to change the BinaryOpModel in case it is used in multiple
+        # expressions.
+        #
         ltokens = left_token(store, lhs, leftprec)
         lterms = bracket(store, ltokens, lprec, left=leftprec)
 
         rtokens = left_token(store, rhs, oprec)
+
+        if oprec is not None and rprec is not None and oprec == ZERO_PRECEDENCE and rprec == ZERO_PRECEDENCE:
+            ctr = -1
+            for token in rtokens:
+                if not hasattr(token, 'precedence'):
+                    continue
+
+                if token.name == '-':
+                    # Not sure about this
+                    if token.precedence <= ctr:
+                        ctr = token.precedence - 1
+
+                    token.precedence = ctr
+                    ctr -= 1
+
+            rprec = ctr  # Not sure about this
+
         rterms = bracket(store, rtokens, rprec, left=oprec)
 
         out = [TokenBinOp(model.opstr, oprec)]
