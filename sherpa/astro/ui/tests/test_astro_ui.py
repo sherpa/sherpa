@@ -847,6 +847,21 @@ def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
     ui.load_multi_rmfs(1, [rmf, rmf], [1, 2])
     ui.load_multi_rmfs(2, [rmf, rmf], [1, 2])
 
+    # Check multiple responses have been loaded
+    #
+    d1 = ui.get_data(1)
+    d2 = ui.get_data(2)
+    assert d1.response_ids == [1, 2]
+    assert d2.response_ids == [1, 2]
+
+    # Unfortunately we load the same response so it's hard
+    # to tell the difference here!
+    #
+    assert ui.get_arf(resp_id=1).name == arf
+    assert ui.get_arf(resp_id=2).name == arf
+    assert ui.get_rmf(2, resp_id=1).name == rmf
+    assert ui.get_rmf(2, resp_id=2).name == rmf
+
     ui.notice(0.5, 7)
     ui.subtract(1)
     ui.subtract(2)

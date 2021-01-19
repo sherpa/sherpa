@@ -5735,9 +5735,7 @@ class Session(sherpa.ui.utils.Session):
         if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
-        while len(filenames) > 0:
-            filename = filenames.pop(0)
-            resp_id = resp_ids.pop(0)
+        for filename, resp_id in zip(filenames, resp_ids):
             self.load_arf(id, filename, resp_id)
 
     def get_rmf(self, id=None, resp_id=None, bkg_id=None):
@@ -6201,9 +6199,7 @@ class Session(sherpa.ui.utils.Session):
         if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
-        while len(filenames) > 0:
-            filename = filenames.pop(0)
-            resp_id = resp_ids.pop(0)
+        for filename, resp_id in zip(filenames, resp_ids):
             self.load_rmf(id, filename, resp_id)
 
     def get_bkg(self, id=None, bkg_id=None):
