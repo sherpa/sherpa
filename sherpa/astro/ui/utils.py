@@ -1447,11 +1447,11 @@ class Session(sherpa.ui.utils.Session):
 
         if type(datas) is list:
             for data in datas:
-                if delta is False:
+                if not delta:
                     data.elo, data.ehi = calc_err(data)
                 data.staterror = calc_staterror(data)
         else:
-            if delta is False:
+            if not delta:
                 datas.elo, datas.ehi = calc_err(datas)
             datas.staterror = calc_staterror(datas)
 
@@ -4307,6 +4307,8 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
+
+        # Leave this check as d.mask is False since d.mask need not be a boolean
         if d.mask is False:
             raise DataErr('notmask')
         if not numpy.iterable(d.mask):
@@ -7339,7 +7341,7 @@ class Session(sherpa.ui.utils.Session):
 
             # Now check if data is already grouped, and send error message
             # if so
-        if not (data.grouped is True):
+        if not data.grouped:
             data.group()
 
     def set_grouping(self, id, val=None, bkg_id=None):
@@ -7772,7 +7774,7 @@ class Session(sherpa.ui.utils.Session):
 
             # Now check if data is already ungrouped, and send error message
             # if so
-        if (data.grouped is True):
+        if data.grouped:
             data.ungroup()
 
     # DOC-TODO: need to document somewhere that this ignores existing
@@ -8497,7 +8499,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_data(overplot=True)
 
         """
-        if (self._get_pha_data(id).subtracted is False):
+        if not self._get_pha_data(id).subtracted:
             self._get_pha_data(id).subtract()
 
     def unsubtract(self, id=None):
@@ -8548,7 +8550,7 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
-        if (self._get_pha_data(id).subtracted is True):
+        if self._get_pha_data(id).subtracted:
             self._get_pha_data(id).unsubtract()
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
@@ -13481,7 +13483,7 @@ class Session(sherpa.ui.utils.Session):
         if error:
 
             def is_numpy_ndarray(arg, name, npars, dim1=None):
-                if isinstance(arg, numpy.ndarray) is False:
+                if not isinstance(arg, numpy.ndarray):
                     msg = name + ' must be of type numpy.ndarray'
                     raise IOErr(msg)
                 shape = arg.shape
