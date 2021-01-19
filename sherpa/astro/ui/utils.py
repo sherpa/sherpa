@@ -1440,8 +1440,8 @@ class Session(sherpa.ui.utils.Session):
         def calc_staterror(data):
             if func is numpy.average:
                 return func([data.elo, data.ehi], axis=0)
-            else:
-                return func(data.elo, data.ehi)
+
+            return func(data.elo, data.ehi)
 
         if type(datas) is list:
             for data in datas:
@@ -3273,11 +3273,14 @@ class Session(sherpa.ui.utils.Session):
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+
         if isinstance(d, sherpa.astro.data.DataPHA):
             return d._get_ebins(group=False)
-        elif isinstance(d, (sherpa.data.Data2D,
-                            sherpa.astro.data.DataIMG)):
+
+        if isinstance(d, (sherpa.data.Data2D,
+                          sherpa.astro.data.DataIMG)):
             return d.get_axes()
+
         return d.get_indep()
 
     # DOC-NOTE: also in sherpa.utils
@@ -5254,11 +5257,11 @@ class Session(sherpa.ui.utils.Session):
             return create_delta_rmf(rmflo, rmfhi, offset=startchan,
                                     e_min=e_min, e_max=e_max, ethresh=ethresh,
                                     name=name)
-        else:
-            return create_non_delta_rmf(rmflo, rmfhi, fname,
-                                        offset=startchan, e_min=e_min,
-                                        e_max=e_max, ethresh=ethresh,
-                                        name=name)
+
+        return create_non_delta_rmf(rmflo, rmfhi, fname,
+                                    offset=startchan, e_min=e_min,
+                                    e_max=e_max, ethresh=ethresh,
+                                    name=name)
 
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
         """Return the ARF associated with a PHA data set.
@@ -13535,8 +13538,7 @@ class Session(sherpa.ui.utils.Session):
             return median, lower, upper, params, eqw
 
         ####################################################
-        else:
-            return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+        return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None,
                          model=None):
