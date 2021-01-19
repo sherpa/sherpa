@@ -1335,10 +1335,8 @@ class Session(sherpa.ui.utils.Session):
                 try:
                     data = self.unpack_table(filename, *args, **kwargs)
                 except:
-                    try:
-                        data = self.unpack_ascii(filename, *args, **kwargs)
-                    except:
-                        raise
+                    # If this errors out then so be it
+                    data = self.unpack_ascii(filename, *args, **kwargs)
 
         return data
 
@@ -5065,10 +5063,8 @@ class Session(sherpa.ui.utils.Session):
                 try:
                     sherpa.astro.io.write_table(filename, d, ascii, clobber)
                 except:
-                    try:
-                        sherpa.io.write_data(filename, d, clobber)
-                    except:
-                        raise
+                    # If this errors out then so be it
+                    sherpa.io.write_data(filename, d, clobber)
 
     def pack_pha(self, id=None):
         """Convert a PHA data set into a file structure.
@@ -8765,11 +8761,8 @@ class Session(sherpa.ui.utils.Session):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
-                try:
-                    kernel = self.unpack_data(filename_or_model,
-                                              *args, **kwargs)
-                except:
-                    raise
+                kernel = self.unpack_data(filename_or_model,
+                                          *args, **kwargs)
 
         psf = sherpa.astro.instrument.PSFModel(modelname, kernel)
         if isinstance(kernel, sherpa.models.Model):
@@ -9574,14 +9567,12 @@ class Session(sherpa.ui.utils.Session):
                 y = sherpa.astro.io.backend.get_table_data(filename, *args,
                                                            **kwargs)[1].pop()
             except:
-                try:
-                    # unpack_data doesn't include a call to try
-                    # getting data from image, so try that here.
-                    data = self.unpack_image(filename, *args, **kwargs)
-                    # x = data.get_x()
-                    y = data.get_y()
-                except:
-                    raise
+                # unpack_data doesn't include a call to try
+                # getting data from image, so try that here.
+                data = self.unpack_image(filename, *args, **kwargs)
+                # x = data.get_x()
+                y = data.get_y()
+
         return (x, y)
 
     def load_xstable_model(self, modelname, filename):
