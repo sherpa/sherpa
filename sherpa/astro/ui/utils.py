@@ -379,7 +379,7 @@ class Session(sherpa.ui.utils.Session):
                 data_str += bkg.__str__() + '\n\n'
 
                 for bk_rp_id in bkg.response_ids:
-                        # ARF or RMF could be None
+                    # ARF or RMF could be None
                     arf, rmf = bkg.get_response(bk_rp_id)
                     if rmf is not None:
                         data_str += ('Background RMF Data Set: %s:%s\n' %
@@ -1434,6 +1434,7 @@ class Session(sherpa.ui.utils.Session):
                                             dstype=Data1DAsymmetricErrs,
                                             sep=sep, comment=comment))
         datas = self.get_data(id)
+
         def calc_err(data):
             return data.y - data.elo, data.ehi - data.y
 
@@ -9845,6 +9846,7 @@ class Session(sherpa.ui.utils.Session):
     # Fitting
     ###########################################################################
 
+    # TODO: change bkg_ids default to None or some other "less-dangerous" value
     def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids={}):
         for id, d in zip(ids, datasets):
             if isinstance(d, sherpa.astro.data.DataPHA):
@@ -9855,7 +9857,7 @@ class Session(sherpa.ui.utils.Session):
                         warning(('data set %r is background-subtracted; ' +
                                  'background models will be ignored') % id)
                 elif not (bkg_models or bkg_srcs):
-                    if d.background_ids and 'wstat' != self._current_stat.name:
+                    if d.background_ids and self._current_stat.name != 'wstat':
                         warning(('data set %r has associated backgrounds, ' +
                                  'but they have not been subtracted, ' +
                                  'nor have background models been set') % id)
@@ -13206,7 +13208,6 @@ class Session(sherpa.ui.utils.Session):
                                              numcores=numcores,
                                              samples=scales, clip=clip)
 
-
     # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
@@ -13511,8 +13512,8 @@ class Session(sherpa.ui.utils.Session):
                 # Have enough stuff to generate samples
                 if isinstance(self._current_stat, (Cash, CStat, WStat)):
                     _, _, params = \
-                    self.get_draws(id, otherids=otherids, niter=niter,
-                                   covar_matrix=covar_matrix)
+                        self.get_draws(id, otherids=otherids, niter=niter,
+                                       covar_matrix=covar_matrix)
                 else:
                     sampler = NormalParameterSampleFromScaleMatrix()
                     tmp = sampler.get_sample(fit, covar_matrix, niter + 1)
@@ -13535,7 +13536,7 @@ class Session(sherpa.ui.utils.Session):
                 eqw[params_index] = \
                     sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
             median, lower, upper = sherpa.utils.get_error_estimates(eqw)
-            fit.model.thawedpars  = orig_par_vals
+            fit.model.thawedpars = orig_par_vals
             return median, lower, upper, params, eqw
 
         ####################################################
