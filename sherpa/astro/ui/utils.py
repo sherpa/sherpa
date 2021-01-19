@@ -9638,9 +9638,9 @@ class Session(sherpa.ui.utils.Session):
 
         try:
             from sherpa.astro import xspec
-        except ImportError:
+        except ImportError as exc:
             # TODO: what is the best error to raise here?
-            raise ImportErr('notsupported', 'XSPEC')
+            raise ImportErr('notsupported', 'XSPEC') from exc
 
         tablemodel = xspec.read_xstable_model(modelname, filename)
         self._tbl_models.append(tablemodel)
@@ -9723,6 +9723,7 @@ class Session(sherpa.ui.utils.Session):
 
         try:
             if not sherpa.utils.is_binary_file(filename):
+                # TODO: use a Sherpa exception
                 raise Exception("Not a FITS file")
 
             self.load_xstable_model(modelname, filename)
