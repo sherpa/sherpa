@@ -22,11 +22,14 @@
 Flux-related tests of the sherpa.astro.ui module.
 """
 
+import logging
+
 import numpy as np
 
 import pytest
 
 from sherpa.astro import ui
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IdentifierErr, IOErr, \
@@ -1459,7 +1462,7 @@ def test_sample_foo_flux_component(multi, fac, correlated,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
-                              hide_logging, reset_seed):
+                              hide_logging, reset_seed, caplog):
     """What happens with 1 iteration?
 
     This is the same data as test_sample_flux_751_752 but
@@ -1501,9 +1504,14 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
     assert pmdl.gamma.val == pytest.approx(gamma0)
     assert pmdl.ampl.val == pytest.approx(ampl0)
 
+    assert len(caplog.records) == 0
+
     scal = ui.get_covar_results().parmaxes
-    flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=1,
-                                        correlated=False, scales=scal)
+    with SherpaVerbosity('INFO'):
+        flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=1,
+                                            correlated=False, scales=scal)
+
+    assert len(caplog.records) == 0
 
     assert np.all(flux1 == flux2)
     assert len(flux1) == 3
@@ -1905,7 +1913,7 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
-                             hide_logging, reset_seed):
+                             hide_logging, reset_seed, caplog):
     """Very basic test of sample_flux.
 
     Based around issue #751 (not all iterations have a statistic
@@ -1942,8 +1950,11 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
     p1 = ui.get_model_component('p1')
     ui.set_par(p1.gamma, min=1.8, max=2.1)
 
-    flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=niter,
-                                        correlated=False, scales=scal)
+    with SherpaVerbosity(logging.INFO):
+        flux1, flux2, vals = ui.sample_flux(id=idval, lo=1, hi=5, num=niter,
+                                            correlated=False, scales=scal)
+
+    assert len(caplog.records) == 0
 
     # as modelcomponent is None, first two arguments should be the same
     assert np.all(flux1 == flux2)
@@ -2128,7 +2139,7 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
-                                   hide_logging, reset_seed):
+                                   hide_logging, reset_seed, caplog):
     """Does the component analysis work?
 
     Apply a model which has a normalization term in it (which is fixed)
@@ -2164,9 +2175,12 @@ def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
     stat0 = ui.calc_stat(idval)
 
     scal = ui.get_covar_results().parmaxes
-    flux1, flux2, vals = ui.sample_flux(modelcomponent=p1,
-                                        id=idval, lo=1, hi=5, num=niter,
-                                        correlated=False, scales=scal)
+    with SherpaVerbosity('INFO'):
+        flux1, flux2, vals = ui.sample_flux(modelcomponent=p1,
+                                            id=idval, lo=1, hi=5, num=niter,
+                                            correlated=False, scales=scal)
+
+    assert len(caplog.records) == 0
 
     # check the source model hasn't been changed (note: do not use
     # pytest.approx as expect the same value, but can switch if
