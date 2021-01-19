@@ -22,15 +22,12 @@ import logging
 import os
 import sys
 import warnings
-import operator
-
-from collections import defaultdict
-from functools import reduce
 
 import numpy
 
 import sherpa.ui.utils
-from sherpa.astro.instrument import create_arf, create_delta_rmf, create_non_delta_rmf
+from sherpa.astro.instrument import create_arf, create_delta_rmf, \
+    create_non_delta_rmf
 from sherpa.ui.utils import _argument_type_error, _check_type
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
@@ -249,7 +246,7 @@ class Session(sherpa.ui.utils.Session):
         >>> save('bestfit.sherpa', clobber=True)
 
         """
-        if (hasattr(sherpa.astro, "xspec")):
+        if hasattr(sherpa.astro, "xspec"):
             self._xspec_state = sherpa.astro.xspec.get_xsstate()
         else:
             self._xspec_state = None
@@ -300,8 +297,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         sherpa.ui.utils.Session.restore(self, filename)
-        if (hasattr(sherpa.astro, "xspec")):
-            if (self._xspec_state is not None):
+        if hasattr(sherpa.astro, "xspec"):
+            if self._xspec_state is not None:
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
                 self._xspec_state = None
 
@@ -5733,10 +5730,10 @@ class Session(sherpa.ui.utils.Session):
         filenames = list(filenames)
         resp_ids = list(resp_ids)
 
-        if (len(filenames) != len(resp_ids)):
+        if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
-        while (len(filenames) > 0):
+        while len(filenames) > 0:
             filename = filenames.pop(0)
             resp_id = resp_ids.pop(0)
             self.load_arf(id, filename, resp_id)
@@ -6199,10 +6196,10 @@ class Session(sherpa.ui.utils.Session):
         filenames = list(filenames)
         resp_ids = list(resp_ids)
 
-        if (len(filenames) != len(resp_ids)):
+        if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
-        while (len(filenames) > 0):
+        while len(filenames) > 0:
             filename = filenames.pop(0)
             resp_id = resp_ids.pop(0)
             self.load_rmf(id, filename, resp_id)
@@ -6591,7 +6588,7 @@ class Session(sherpa.ui.utils.Session):
         if id is not None:
             ids = [id]
 
-        if(len(ids) == 0):
+        if len(ids) == 0:
             raise IdentifierErr('nodatasets')
 
         for id in ids:
@@ -7070,7 +7067,7 @@ class Session(sherpa.ui.utils.Session):
         >>> notice2d_image(["src", "bg"])
 
         """
-        if (ids is None):
+        if ids is None:
             ids = self._default_id
         if self._valid_id(ids):
             ids = (ids,)
@@ -7085,9 +7082,9 @@ class Session(sherpa.ui.utils.Session):
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
             coord = self.get_coord(id)
-            if (coord == 'logical'):
+            if coord == 'logical':
                 coord = 'image'
-            if (coord == 'world'):
+            elif coord == 'world':
                 coord = 'wcs'
             regions = self.image_getregion(coord).replace(';', '')
             self.notice2d_id(id, regions)
@@ -7133,7 +7130,7 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d_image(["src", "bg"])
 
         """
-        if (ids is None):
+        if ids is None:
             ids = self._default_id
         if self._valid_id(ids):
             ids = (ids,)
@@ -7148,9 +7145,9 @@ class Session(sherpa.ui.utils.Session):
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
             coord = self.get_coord(id)
-            if (coord == 'logical'):
+            if coord == 'logical':
                 coord = 'image'
-            if (coord == 'world'):
+            elif coord == 'world':
                 coord = 'wcs'
             regions = self.image_getregion(coord).replace(';', '')
             self.ignore2d_id(id, regions)
@@ -8669,13 +8666,13 @@ class Session(sherpa.ui.utils.Session):
         if rmf is None:
             raise DataErr('normffake', id)
 
-        if(type(rmf) in (str, numpy.string_)):
+        if type(rmf) in (str, numpy.string_):
             if os.path.isfile(rmf):
                 rmf = self.unpack_rmf(rmf)
             else:
                 raise IOErr("filenotfound", rmf)
 
-        if(arf is not None and type(arf) in (str, numpy.string_)):
+        if arf is not None and type(arf) in (str, numpy.string_):
             if os.path.isfile(arf):
                 arf = self.unpack_arf(arf)
             else:
@@ -9847,7 +9844,7 @@ class Session(sherpa.ui.utils.Session):
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
         usermodel._file = filename
-        if (filename is not None):
+        if filename is not None:
             x, usermodel._y = self._read_user_model(filename, *args, **kwargs)
         self._add_model_component(usermodel)
 
@@ -9885,7 +9882,7 @@ class Session(sherpa.ui.utils.Session):
 
                         bkg_model = bkg_models.get(bkg_id, None)
                         bkg_src = bkg_srcs.get(bkg_id, None)
-                        if (bkg_model is None and bkg_src is not None):
+                        if bkg_model is None and bkg_src is not None:
                             resp = sherpa.astro.instrument.Response1D(bkg_data)
                             bkg_model = resp(bkg_src)
                         models.append(bkg_model)
