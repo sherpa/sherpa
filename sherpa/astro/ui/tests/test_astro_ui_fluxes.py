@@ -30,7 +30,7 @@ from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
-    ModelErr, SherpaErr
+    ModelErr
 import sherpa.astro.utils
 
 
