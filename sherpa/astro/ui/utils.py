@@ -9839,7 +9839,8 @@ class Session(sherpa.ui.utils.Session):
         usermodel.calc = func
         usermodel._file = filename
         if filename is not None:
-            x, usermodel._y = self._read_user_model(filename, *args, **kwargs)
+            _, usermodel._y = self._read_user_model(filename, *args, **kwargs)
+
         self._add_model_component(usermodel)
 
     ###########################################################################
@@ -12956,7 +12957,7 @@ class Session(sherpa.ui.utils.Session):
         >>> flux2_filt = flux2[v2[:, -1] == 0]
 
         """
-        ids, fit = self._get_fit(id, otherids=otherids)
+        _, fit = self._get_fit(id, otherids=otherids)
 
         if bkg_id is None:
             data = self.get_data(id)
@@ -13188,7 +13189,7 @@ class Session(sherpa.ui.utils.Session):
         >>> flux2_filt = flux2[v2[:, -1] == 0]
 
         """
-        ids, fit = self._get_fit(id, otherids=otherids)
+        _, fit = self._get_fit(id, otherids=otherids)
 
         if bkg_id is None:
             data = self.get_data(id)
