@@ -1433,26 +1433,19 @@ class Session(sherpa.ui.utils.Session):
                                             colkeys=colkeys,
                                             dstype=Data1DAsymmetricErrs,
                                             sep=sep, comment=comment))
-        datas = self.get_data(id)
 
-        def calc_err(data):
-            return data.y - data.elo, data.ehi - data.y
+        data = self.get_data(id)
 
-        def calc_staterror(data):
-            if func is numpy.average:
-                return func([data.elo, data.ehi], axis=0)
+        if not delta:
+            data.elo = data.y - data.elo
+            data.ehi = data.ehi - data.y
 
-            return func(data.elo, data.ehi)
-
-        if type(datas) is list:
-            for data in datas:
-                if not delta:
-                    data.elo, data.ehi = calc_err(data)
-                data.staterror = calc_staterror(data)
+        if func is numpy.average:
+            staterror = func([data.elo, data.ehi], axis=0)
         else:
-            if not delta:
-                datas.elo, datas.ehi = calc_err(datas)
-            datas.staterror = calc_staterror(datas)
+            staterror = func(data.elo, data.ehi)
+
+        data.staterror = staterror
 
     # DOC-NOTE: also in sherpa.utils
     def load_data(self, id, filename=None, *args, **kwargs):
