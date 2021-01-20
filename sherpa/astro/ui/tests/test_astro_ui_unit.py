@@ -30,9 +30,31 @@ import numpy as np
 
 import pytest
 
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import ui
 from sherpa.utils import poisson_noise
-from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ModelErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IdentifierErr, IOErr, ModelErr
+from sherpa.utils.testing import requires_fits
+
+
+def check_table(hdu, colinfo):
+    """Ensure the hdu contains the columns.
+
+    Check that the hdu dictionary matches the expected setting.
+
+    Parameters
+    ----------
+    hdu : dict
+        A table HDU
+    colinfo : dict
+    """
+
+    for k, v in colinfo.items():
+        assert k in hdu
+        assert hdu[k] == pytest.approx(v)
+
+    assert len(hdu) == len(colinfo)
 
 
 # This is part of #397
@@ -202,23 +224,834 @@ def test_save_filter_ignored(bid):
     assert str(exc.value) == "mask excludes all data"
 
 
-@pytest.mark.parametrize("func,emsg",
-                         [(ui.save_filter, "data set '1' has no filter"),
-                          (ui.save_grouping, "data set '1' does not specify grouping flags"),
-                          (ui.save_quality, "data set '1' does not specify quality flags")])
-@pytest.mark.parametrize("bid", [None, 1])
-def test_save_xxx_nodata(func, emsg, bid):
-    """Does save_xxx error out if there's no data to save?
+@pytest.mark.parametrize("func,etype,emsg",
+                         [(ui.save_filter, DataErr,
+                           "data set '1' has no filter"),
+                          (ui.save_grouping, DataErr,
+                           "data set '1' does not specify grouping flags"),
+                          (ui.save_quality,  DataErr,
+                           "data set '1' does not specify quality flags"),
+                          (ui.save_source,  IdentifierErr,
+                           "source 1 has not been set, consider using set_source() or set_model()"),
+                          (ui.save_model,  IdentifierErr,
+                           "model 1 has not been set"),
+                          (ui.save_resid,  IdentifierErr,
+                           "model 1 has not been set"),
+                          (ui.save_delchi,  IdentifierErr,
+                           "model 1 has not been set")])
+def test_save_xxx_nodata(func, etype, emsg):
+    """Does save_xxx error out if there's no data to save? DataPHA
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
     bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
-    with pytest.raises(DataErr) as exc:
-        func("temp-file-that-should-not-be-created", bkg_id=bid)
+    with pytest.raises(etype) as exc:
+        func("temp-file-that-should-not-be-created")
 
     assert str(exc.value) == emsg
+
+
+@requires_fits
+def test_save_image_nodata():
+    """Does save_image error out if there's no data to save? DataPHA
+
+    Unlike the other calls, this requires a FITS library
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+
+    with pytest.raises(IOErr) as exc:
+        ui.save_image("temp-file-that-should-not-be-created")
+
+    assert str(exc.value) == "data set '' does not contain an image"
+
+
+@pytest.mark.parametrize("func,etype,emsg",
+                         [(ui.save_filter, DataErr,
+                           "data set '1' has no filter"),
+                          (ui.save_grouping, DataErr,
+                           "data set '1' does not specify grouping flags"),
+                          (ui.save_quality,  DataErr,
+                           "data set '1' does not specify quality flags"),
+                          (ui.save_source,  ModelErr,
+                           "background model 1 for data set 1 has not been set"),
+                          (ui.save_model,  ModelErr,
+                           "background model 1 for data set 1 has not been set"),
+                          (ui.save_resid,  ModelErr,
+                           "background model 1 for data set 1 has not been set"),
+                          (ui.save_delchi,  ModelErr,
+                           "background model 1 for data set 1 has not been set")])
+def test_save_xxx_bkg_nodata(func, etype, emsg):
+    """Does save_xxx error out if there's no data to save? DataPHA + bkg
+
+    Note that save_image does not support a bkg_id parameter so is
+    not tested here.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.set_bkg(bkg)
+
+    with pytest.raises(etype) as exc:
+        func("temp-file-that-should-not-be-created", bkg_id=1)
+
+    assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("func,etype,emsg",
+                         [(ui.save_filter, DataErr,
+                           "data set '1' has no filter"),
+                          (ui.save_grouping, ArgumentErr,
+                           "data set 1 does not contain PHA data"),
+                          (ui.save_quality,  ArgumentErr,
+                           "data set 1 does not contain PHA data"),
+                          (ui.save_source,  IdentifierErr,
+                           "source 1 has not been set, consider using set_source() or set_model()"),
+                          (ui.save_model,  IdentifierErr,
+                           "model 1 has not been set"),
+                          (ui.save_resid,  IdentifierErr,
+                           "model 1 has not been set"),
+                          (ui.save_delchi,  IdentifierErr,
+                           "model 1 has not been set")])
+def test_save_xxx_data1d_nodata(func, etype, emsg):
+    """Does save_xxx error out if there's no data to save? Data1D
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
+
+    with pytest.raises(etype) as exc:
+        func("temp-file-that-should-not-be-created")
+
+    assert str(exc.value) == emsg
+
+
+@requires_fits
+def test_save_image_data1d_nodata():
+    """Does save_image error out if there's no data to save? Data1D
+
+    Unlike the other cases we need a FITS backend.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
+
+    with pytest.raises(IOErr) as exc:
+        ui.save_image("temp-file-that-should-not-be-created")
+
+    assert str(exc.value) == "data set '' does not contain an image"
+
+
+@pytest.mark.parametrize("savefunc", [ui.save_data,
+                                      ui.save_filter,
+                                      ui.save_grouping,
+                                      ui.save_quality,
+                                      ui.save_image,
+                                      ui.save_resid])
+def test_save_xxx_not_a_string(savefunc, tmp_path):
+    """Does save_xxx error out if not given a filename?
+
+    There are times it would be nice to give a non-string filename
+    (pathlib.Path or StringIO), but this is currently not supported.
+
+    At the moment this check is generic for some save commands,
+    so just worry about a restricted set of commands.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
+    out = tmp_path / "data.dat"
+
+    with pytest.raises(ArgumentTypeErr) as exc:
+        savefunc(out)
+
+    assert str(exc.value) == "'filename' must be a string"
+
+
+def test_save_delchi_image_fails(tmp_path):
+    """save_delchi doesn't work for image datasets
+
+    Only test out DataIMG
+    """
+
+    y, x = np.mgrid[10:12, 20:23]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 11)**2 + (y - 21)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.DataIMG)
+
+    ui.set_source(ui.const2d.cmdl)
+
+    out = tmp_path / 'does-not-exist'
+    with pytest.raises(AttributeError) as exc:
+        ui.save_delchi(str(out))
+
+    assert str(exc.value) == 'save_delchi() does not apply for images'
+
+
+@pytest.mark.xfail(reason='fall through does not work')
+def test_save_data_data1d_no_clobber(tmp_path):
+    """save_data: does clobber=False work? Data1D"""
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+
+    out.write_text('some text')
+
+    # check it clobbers
+    with pytest.raises(IOErr) as exc:
+        ui.save_data(outfile)
+
+    emsg = str(exc.value)
+    assert emsg.startswith("file '")
+    assert emsg.endswith("' exists and clobber is not set")
+
+
+@pytest.mark.xfail(reason='fall through does not work')
+@requires_fits
+def test_save_data_datapha_no_clobber(tmp_path):
+    """save_data: does clobber=False work? DataPHA"""
+
+    # This import requires an I/O backend hence it is done here
+    #
+    from sherpa.astro.io.meta import Meta
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+
+    # The code requires DataPHA to have a "valid" header so
+    # fake one. Ideally we would not require it.
+    #
+    hdr = Meta()
+    ui.get_data().header = hdr
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+
+    out.write_text('some text')
+
+    # check it clobbers
+    with pytest.raises(IOErr) as exc:
+        ui.save_data(outfile)
+
+    emsg = str(exc.value)
+    assert emsg.startswith("file '")
+    assert emsg.endswith("' exists and clobber is not set")
+
+
+@pytest.mark.xfail(reason='fall through does not work')
+@requires_fits
+def test_save_pha_no_clobber(tmp_path):
+    """save_pha: does clobber=False work?"""
+
+    # This import requires an I/O backend hence it is done here
+    #
+    from sherpa.astro.io.meta import Meta
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+
+    # The code requires DataPHA to have a "valid" header so
+    # fake one. Ideally we would not require it.
+    #
+    hdr = Meta()
+    ui.get_data().header = hdr
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+
+    out.write_text('some text')
+
+    # check it clobbers
+    with pytest.raises(IOErr) as exc:
+        ui.save_data(outfile)
+
+    emsg = str(exc.value)
+    assert emsg.startswith("file '")
+    assert emsg.endswith("' exists and clobber is not set")
+
+
+@requires_fits
+def test_save_data_data1d_clobber(tmp_path):
+    """save_data: does clobber=True work?"""
+
+    ui.load_arrays(1, [1], [5], ui.Data1D)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+
+    out.write_text('some text')
+
+    ui.save_data(outfile, clobber=True)
+    cts = out.read_text()
+    toks = cts.split('\n')
+    assert len(toks) == 3
+    assert toks[0] == '#X Y'
+
+
+@requires_fits
+def test_save_data_data1d(tmp_path):
+    """Does save_data work for Data1D?"""
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile)
+
+    cts = out.read_text()
+    expected = "\n".join(["#X Y", "1 5", "2 4", "3 3", ""])
+    assert cts == expected
+
+
+@requires_fits
+def test_save_data_data1d_fits(tmp_path):
+    """Does save_data work for Data1D? FITS"""
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile, ascii=False)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'X': [1, 2, 3],
+                 'Y': [5, 4, 3]})
+
+
+@requires_fits
+def test_save_data_data1dint(tmp_path):
+    """Does save_data work for Data1DInt?"""
+
+    ui.load_arrays(1, [1, 2, 4], [2, 3, 5], [5, 4, 3], ui.Data1DInt)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile)
+
+    cts = out.read_text()
+    expected = "\n".join(["#XLO XHI Y", "1 2 5", "2 3 4", "4 5 3", ""])
+    assert cts == expected
+
+
+@requires_fits
+def test_save_data_data1dint_fits(tmp_path):
+    """Does save_data work for Data1DInt? FITS"""
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [1, 2, 4], [2, 3, 5], [5, 4, 3], ui.Data1DInt)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile, ascii=False)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'XLO': [1, 2, 4],
+                 'XHI': [2, 3, 5],
+                 'Y': [5, 4, 3]})
+
+
+@requires_fits
+def test_save_data_data2d(tmp_path):
+    """Does save_data work for Data2D?"""
+
+    y, x = np.mgrid[20:22, 10:13]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 15)**2 + (y - 12)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.Data2D)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile)
+
+    cts = out.read_text()
+    expected = "\n".join([str(zz) for zz in z]) + "\n"
+    assert cts == expected
+
+
+@requires_fits
+def test_save_data_data2d_fits(tmp_path):
+    """Does save_data work for Data2D? FITS"""
+
+    from sherpa.astro.io import read_image
+
+    y, x = np.mgrid[10:12, 20:23]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 12)**2 + (y - 22)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.Data2D)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile, ascii=False)
+
+    ans = read_image(outfile)
+    assert ans.shape == (2, 3)  # Is this correct?
+
+    yl, xl = np.mgrid[1:3, 1:4]
+    xl = xl.flatten()
+    yl = yl.flatten()
+    assert ans.x0 == pytest.approx(xl)
+    assert ans.x1 == pytest.approx(yl)
+    assert ans.y == pytest.approx(z)
+
+
+@requires_fits
+def test_save_data_dataimg(tmp_path):
+    """Does save_data work for DataIMG?"""
+
+    y, x = np.mgrid[0:2, 0:3]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 1)**2 + y**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.DataIMG)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile)
+
+    cts = out.read_text()
+    expected = "\n".join([str(zz) for zz in z]) + "\n"
+    assert cts == expected
+
+
+@requires_fits
+def test_save_data_dataimg_fits(tmp_path):
+    """Does save_data work for DataIMG? FITS"""
+
+    from sherpa.astro.io import read_image
+
+    y, x = np.mgrid[10:12, 20:23]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 11)**2 + (y - 21)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.DataIMG)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile, ascii=False)
+
+    ans = read_image(outfile)
+    assert ans.shape == (2, 3)  # Is this correct?
+
+    yl, xl = np.mgrid[1:3, 1:4]
+    xl = xl.flatten()
+    yl = yl.flatten()
+    assert ans.x0 == pytest.approx(xl)
+    assert ans.x1 == pytest.approx(yl)
+    assert ans.y == pytest.approx(z)
+
+
+@requires_fits
+def test_save_data_datapha(tmp_path):
+    """Does save_data work for DataPHA?"""
+
+    # This import requires an I/O backend hence it is done here
+    #
+    from sherpa.astro.io.meta import Meta
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+
+    # The code requires DataPHA to have a "valid" header so
+    # fake one. Ideally we would not require it.
+    #
+    hdr = Meta()
+    ui.get_data().header = hdr
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_data(outfile)
+
+    cts = out.read_text()
+    expected = "\n".join(["#CHANNEL COUNTS", "1 5", "2 4", "3 3", ""])
+    assert cts == expected
+
+
+@requires_fits
+def test_save_pha(tmp_path):
+    """Does save_pha work for DataPHA?"""
+
+    # This import requires an I/O backend hence it is done here
+    #
+    from sherpa.astro.io.meta import Meta
+
+    ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+
+    # The code requires DataPHA to have a "valid" header so
+    # fake one. Ideally we would not require it.
+    #
+    hdr = Meta()
+    ui.get_data().header = hdr
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    ui.save_pha(outfile)
+
+    # just check the first line; the output may depend on the FITS backend
+    cts = out.read_text()[:80].split()
+    assert cts[0] == 'SIMPLE'
+    assert cts[1] == '='
+    assert cts[2] == 'T'
+
+
+@requires_fits
+@pytest.mark.parametrize("savefunc,mtype", [(ui.save_source, 'SOURCE'),
+                                            (ui.save_model, 'MODEL')])
+def test_save_model_ascii(savefunc, mtype, clean_astro_ui, tmp_path):
+    """Can we write out data for save_source/model? Data1D and ASCII
+
+    As this is not a PHA dataset, the two shouldbe the same bar the
+    header line.
+    """
+
+    ui.load_arrays(1, [1, 2], [5, 10])
+    ui.set_source(ui.polynom1d.cmdl)
+    cmdl.c0 = -5
+    cmdl.c1 = 10
+
+    out = tmp_path / 'model.dat'
+    savefunc(str(out), ascii=True)
+
+    cts = out.read_text().split('\n')
+    assert cts[0] == f'#X {mtype}'
+    assert cts[1] == '1 5'
+    assert cts[2] == '2 15'
+    assert cts[3] == ''
+    assert len(cts) == 4
+
+
+@requires_fits
+def test_save_source_pha_ascii(clean_astro_ui, tmp_path):
+    """Can we write out data for save_source? DataPHA and ASCII"""
+
+    ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    ui.set_arf(arf)
+
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 2
+
+    out = tmp_path / 'model.dat'
+    ui.save_source(str(out), ascii=True)
+
+    cts = out.read_text().split('\n')
+    assert cts[0] == f'#XLO XHI SOURCE'
+    assert cts[1] == '0.1 0.2 2'
+    assert cts[2] == '0.2 0.4 2'
+    assert cts[3] == ''
+    assert len(cts) == 4
+
+
+@requires_fits
+def test_save_model_pha_ascii(clean_astro_ui, tmp_path):
+    """Can we write out data for save_model? DataPHA and ASCII"""
+
+    ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    ui.set_arf(arf)
+
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 2
+
+    out = tmp_path / 'model.dat'
+    ui.save_model(str(out), ascii=True)
+
+    cts = out.read_text().split('\n')
+    assert cts[0] == f'#XLO XHI MODEL'
+    assert cts[1] == '0.1 0.2 20'
+    assert cts[2] == '0.2 0.4 40'
+    assert cts[3] == ''
+    assert len(cts) == 4
+
+
+@requires_fits
+@pytest.mark.parametrize("savefunc,mtype", [(ui.save_source, 'SOURCE'),
+                                            (ui.save_model, 'MODEL')])
+def test_save_model_fits(savefunc, mtype, clean_astro_ui, tmp_path):
+    """Can we write out data for save_source/model? Data1D and FITS
+
+    As this is not a PHA dataset, the two shouldbe the same bar the
+    header line.
+    """
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [1, 2], [5, 10])
+    ui.set_source(ui.polynom1d.cmdl)
+    cmdl.c0 = -5
+    cmdl.c1 = 10
+
+    out = tmp_path / 'model.dat'
+    outfile = str(out)
+    savefunc(outfile)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'X': [1, 2],
+                 mtype: [5, 15]})
+
+
+@requires_fits
+def test_save_source_pha_fits(clean_astro_ui, tmp_path):
+    """Can we write out data for save_source? DataPHA and FITS
+    """
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    ui.set_arf(arf)
+
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 2
+
+    out = tmp_path / 'model.dat'
+    outfile = str(out)
+    ui.save_source(outfile)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'XLO': [0.1, 0.2],
+                 'XHI': [0.2, 0.4],
+                 'SOURCE': [2, 2]})
+
+
+@requires_fits
+def test_save_model_pha_fits(clean_astro_ui, tmp_path):
+    """Can we write out data for save_model? DataPHA and FITS
+    """
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    ui.set_arf(arf)
+
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 2
+
+    out = tmp_path / 'model.dat'
+    outfile = str(out)
+    ui.save_model(outfile)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'XLO': [0.1, 0.2],
+                 'XHI': [0.2, 0.4],
+                 'MODEL': [20, 40]})
+
+
+@requires_fits
+def test_save_resid_data1d(tmp_path):
+    """Residual, Data1D, ASCII"""
+
+    ui.load_arrays(1, [100, 200], [20, 230], ui.Data1D)
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 220
+
+    out = tmp_path / 'resid.out'
+    outfile = str(out)
+    ui.save_resid(outfile, ascii=True)
+
+    cts = out.read_text().split('\n')
+    assert cts[0] == f'#X RESID'
+    assert cts[1] == '100 -200'
+    assert cts[2] == '200 10'
+    assert cts[3] == ''
+    assert len(cts) == 4
+
+
+@requires_fits
+def test_save_resid_data1d_fits(tmp_path):
+    """Residual, Data1D, FITS"""
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [100, 200], [20, 230], ui.Data1D)
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 220
+
+    out = tmp_path / 'resid.out'
+    outfile = str(out)
+    ui.save_resid(outfile)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'X': [100, 200],
+                 'RESID': [-200, 10]})
+
+
+@requires_fits
+def test_save_resid_datapha(tmp_path):
+    """Residual, DataPHA, ASCII"""
+
+    ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    ui.set_arf(arf)
+
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 2
+
+    out = tmp_path / 'resid.out'
+    outfile = str(out)
+    ui.save_resid(outfile, ascii=True)
+
+    cts = out.read_text().split('\n')
+    assert cts[0] == f'#X RESID'
+    assert cts[1] == '0.15 30'
+    assert cts[2] == '0.3 10'
+    assert cts[3] == ''
+    assert len(cts) == 4
+
+
+@requires_fits
+def test_save_resid_datapha_fits(tmp_path):
+    """Residual, DataPHA, FITS"""
+
+    from sherpa.astro.io import read_table_blocks
+
+    ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    ui.set_arf(arf)
+
+    ui.set_source(ui.const1d.cmdl)
+    cmdl.c0 = 2
+
+    out = tmp_path / 'resid.out'
+    outfile = str(out)
+    ui.save_resid(outfile)
+
+    ans = read_table_blocks(outfile)
+    blocks = ans[1]
+    assert len(blocks) == 2
+    check_table(blocks[2],
+                {'X': [0.15, 0.3],
+                 'RESID': [30, 10]})
+
+
+@requires_fits
+def test_save_resid_dataimg(tmp_path):
+    """Residual, DataIMG, ASCII"""
+
+    y, x = np.mgrid[10:12, 20:23]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 11)**2 + (y - 21)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.DataIMG)
+
+    ui.set_source(1, ui.const2d.cmdl)
+    cmdl.c0 = 10
+
+    out = tmp_path / "resid"
+    outfile = str(out)
+    ui.save_resid(outfile, ascii=True)
+
+    cts = out.read_text()
+    expected = "\n".join([str(zz - 10) for zz in z]) + "\n"
+    assert cts == expected
+
+
+@requires_fits
+def test_save_resid_dataimg_fits(tmp_path):
+    """Residual, DataIMG, FITS"""
+
+    from sherpa.astro.io import read_image
+
+    y, x = np.mgrid[10:12, 20:23]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 11)**2 + (y - 21)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.DataIMG)
+
+    ui.set_source(1, ui.const2d.cmdl)
+    cmdl.c0 = 100
+
+    out = tmp_path / "resid"
+    outfile = str(out)
+    ui.save_resid(outfile)
+
+    ans = read_image(outfile)
+    assert ans.shape == (2, 3)  # Is this correct?
+
+    yl, xl = np.mgrid[1:3, 1:4]
+    xl = xl.flatten()
+    yl = yl.flatten()
+    assert ans.x0 == pytest.approx(xl)
+    assert ans.x1 == pytest.approx(yl)
+    assert ans.y == pytest.approx(z - 100)
 
 
 def test_delete_bkg_model(clean_astro_ui):
