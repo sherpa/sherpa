@@ -30,10 +30,6 @@ from sherpa.astro import ui
 from sherpa.utils.err import DataErr,IOErr
 
 
-def xfail(arg):
-    return pytest.param(arg, marks=pytest.mark.xfail)
-
-
 @pytest.mark.parametrize("id", [None, 1, "faked"])
 def test_fake_pha_no_rmf(id, clean_astro_ui):
     """Check we error out if RMF is None."""
@@ -48,6 +44,7 @@ def test_fake_pha_no_rmf(id, clean_astro_ui):
     with pytest.raises(DataErr) as exc:
         ui.fake_pha(id, arf=None, rmf=None, exposure=1000.0)
 
+    id = 1 if id is None else id
     emsg = f'An RMF has not been found or supplied for data set {id}'
     assert str(exc.value) == emsg
 
@@ -90,7 +87,7 @@ def test_fake_pha_missing_arf(id, clean_astro_ui, tmp_path):
     assert str(exc.value) == f"file '{arf}' not found"
 
 
-@pytest.mark.parametrize("id", [xfail(None), 1, "faked"])
+@pytest.mark.parametrize("id", [None, 1, "faked"])
 def test_fake_pha_incompatible_rmf(id, clean_astro_ui):
     """Check we error out if RMF is wrong size."""
 
@@ -157,7 +154,7 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
     assert faked.get_arf().name == 'test-arf'
     assert faked.get_rmf().name == 'delta-rmf'
 
-    if has_bkg and id is not None:
+    if has_bkg:
         assert faked.background_ids == ['faked-bkg']
         bkg = ui.get_bkg(id, 'faked-bkg')
         assert bkg.name == 'bkg'
