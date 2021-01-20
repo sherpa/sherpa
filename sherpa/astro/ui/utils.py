@@ -1449,6 +1449,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def load_data(self, id, filename=None, *args, **kwargs):
+        # pylint: disable=W1113
         """Load a data set from a file.
 
         This loads a data set from the file, trying in order
@@ -1953,8 +1954,10 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
+    #
     def load_filter(self, id, filename=None, bkg_id=None, ignore=False,
                     ncols=2, *args, **kwargs):
+        # pylint: disable=W1113
         """Load the filter array from a file and add to a data set.
 
         Parameters
@@ -2033,7 +2036,9 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: does ncols make sense here? (have removed for now)
     # DOC-TODO: prob. needs a review as the existing ahelp documentation
     # talks about 2 cols, but experimentation suggests 1 col.
+    #
     def load_grouping(self, id, filename=None, bkg_id=None, *args, **kwargs):
+        # pylint: disable=W1113
         """Load the grouping scheme from a file and add to a PHA data set.
 
         This function sets the grouping column but does not
@@ -2116,10 +2121,11 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
-        self.set_grouping(id,
-                          self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
+        grouping = self._read_user_model(filename, *args, **kwargs)[1]
+        self.set_grouping(id, grouping, bkg_id=bkg_id)
 
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
+        # pylint: disable=W1113
         """Load the quality array from a file and add to a PHA data set.
 
         This function sets the quality column but does not
@@ -2269,6 +2275,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
     def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
+        # pylint: disable=W1113
         """Load the statistical errors from a file.
 
         Read in a column or image from a file and use the values
@@ -2353,6 +2360,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, bkg_id=None, *args, **kwargs):
+        # pylint: disable=W1113
         """Load the systematic errors from a file.
 
         Read in a column or image from a file and use the values
@@ -9645,7 +9653,9 @@ class Session(sherpa.ui.utils.Session):
     # also in sherpa.utils
     # DOC-NOTE: can filename be a crate/hdulist?
     # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
-    def load_table_model(self, modelname, filename, method=sherpa.utils.linear_interp, *args, **kwargs):
+    def load_table_model(self, modelname, filename,
+                         method=sherpa.utils.linear_interp, *args, **kwargs):
+        # pylint: disable=W1113
         """Load tabular or image data and use it as a model component.
 
         .. note:: Deprecated in Sherpa 4.9
@@ -9748,6 +9758,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to describe *args/**kwargs
     # DOC-TODO: how is the _y value used if set
     def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
+        # pylint: disable=W1113
         """Create a user-defined model.
 
         Assign a name to a function; this name can then be used as any
@@ -9934,7 +9945,9 @@ class Session(sherpa.ui.utils.Session):
     # also in sherpa.utils
     # DOC-TODO: existing docs suggest that bkg_only can be set, but looking
     # at the code it is always set to False.
+    #
     def fit(self, id=None, *otherids, **kwargs):
+        # pylint: disable=W1113
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
@@ -10022,6 +10035,7 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
     def fit_bkg(self, id=None, *otherids, **kwargs):
+        # pylint: disable=W1113
         """Fit a model to one or more background PHA data sets.
 
         Fit only the backgound components of PHA data sets.  This can
@@ -10099,6 +10113,7 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
     def _fit(self, id=None, *otherids, **kwargs):
+        # pylint: disable=W1113
         ids = f = None
         fit_bkg = False
 
