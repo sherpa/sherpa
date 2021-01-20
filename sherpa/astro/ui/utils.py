@@ -3780,8 +3780,10 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        if type(d) in (sherpa.astro.data.DataIMG, sherpa.astro.data.DataIMGInt,
-                       sherpa.data.Data2D, sherpa.data.Data2DInt):
+        if isinstance(d, (sherpa.astro.data.DataIMG,
+                          sherpa.astro.data.DataIMGInt,
+                          sherpa.data.Data2D, sherpa.data.Data2DInt)):
+
             backup = d.y
             if objtype == 'delchi':
                 raise AttributeError("save_delchi() does not apply for images")
@@ -3821,8 +3823,8 @@ class Session(sherpa.ui.utils.Session):
 #        if type(d) in (sherpa.data.Data1DInt, sherpa.astro.data.DataPHA):
 #            args = [obj.xlo, obj.xhi, obj.y]
 #            fields = ["XLO", "XHI", str(objtype).upper()]
-        if (type(d) is sherpa.astro.data.DataPHA and
-                objtype in ('model', 'source')):
+        if isinstance(d, sherpa.astro.data.DataPHA) and \
+           objtype in ('model', 'source'):
             args = [obj.xlo, obj.xhi, obj.y]
             fields = ["XLO", "XHI", str(objtype).upper()]
         else:
