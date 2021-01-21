@@ -25,7 +25,7 @@ import numpy
 
 import pycrates
 
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ClobberErr, IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.astro.utils import resp_init
 from sherpa.astro.io.meta import Meta
@@ -1163,7 +1163,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
     if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr('filefound', filename)
+        raise ClobberErr(filename)
 
     img = pycrates.IMAGECrate()
 
@@ -1237,7 +1237,7 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
                    ascii=False, clobber=False, packup=False):
 
     if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     tbl = pycrates.TABLECrate()
 
@@ -1265,7 +1265,7 @@ def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
     if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     phadataset = pycrates.phacratedataset.PHACrateDataset()
 
@@ -1305,7 +1305,7 @@ def set_pha_data(filename, data, col_names, header=None,
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
     if os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')

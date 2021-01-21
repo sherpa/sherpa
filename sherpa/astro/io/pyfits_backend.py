@@ -46,7 +46,7 @@ from numpy.compat import basestring
 from astropy.io import fits
 from astropy.io.fits.column import _VLF
 
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ClobberErr, IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
@@ -1003,7 +1003,7 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
                    ascii=False, clobber=False, packup=False):
 
     if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     col_names = list(col_names)
     col_names.remove("name")
@@ -1046,7 +1046,7 @@ def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
     if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     hdrlist = _create_header(header)
 
@@ -1069,7 +1069,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
     if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     if ascii:
         set_arrays(filename, [data['pixels'].ravel()],
@@ -1136,7 +1136,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         return
 
     if not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')

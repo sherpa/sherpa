@@ -31,7 +31,7 @@ from sherpa.astro.instrument import create_arf, create_delta_rmf, \
 from sherpa.ui.utils import _argument_type_error, _check_type
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, ClobberErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 import sherpa.astro.all
@@ -14585,7 +14585,7 @@ class Session(sherpa.ui.utils.Session):
                 if sherpa.utils.bool_cast(clobber):
                     os.remove(outfile)
                 else:
-                    raise IOErr('filefound', outfile)
+                    raise ClobberErr(outfile)
 
             with open(outfile, 'w') as fh:
                 serialize.save_all(self, fh)

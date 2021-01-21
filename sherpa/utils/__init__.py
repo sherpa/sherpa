@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -41,7 +41,7 @@ import numpy.fft
 #       this module; is this intentional?
 from sherpa.utils._utils import hist1d, hist2d
 from sherpa.utils import _utils, _psf
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ClobberErr
 
 from sherpa import get_config
 
@@ -4180,7 +4180,7 @@ def send_to_pager(txt, filename=None, clobber=False):
     # Assume a filename
     clobber = bool_cast(clobber)
     if os.path.isfile(filename) and not clobber:
-        raise IOErr('filefound', filename)
+        raise ClobberErr(filename)
 
     with open(filename, 'w') as fh:
         print(txt, file=fh)

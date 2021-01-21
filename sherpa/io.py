@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,7 +23,7 @@ import os
 import numpy
 
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ClobberErr, IOErr
 from sherpa.data import Data1D, BaseData
 
 
@@ -437,7 +438,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
 
     """
     if os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+        raise ClobberErr(filename)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')

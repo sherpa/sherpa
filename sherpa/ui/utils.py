@@ -33,7 +33,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, ModelErr, SessionErr
+    ClobberErr, IdentifierErr, IOErr, ModelErr, SessionErr
 
 from sherpa import get_config
 
@@ -460,7 +460,7 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
 
         if os.path.isfile(filename) and not clobber:
-            raise sherpa.utils.err.IOErr("filefound", filename)
+            raise ClobberErr(filename)
 
         fout = open(filename, 'wb')
         try:
@@ -6391,14 +6391,14 @@ class Session(NoNewAttributesAfterInit):
         """
 
         if sherpa.utils.is_binary_file(templatefile):
-            raise sherpa.utils.err.IOErr('notascii', templatefile)
+            raise IOErr('notascii', templatefile)
 
         names, cols = sherpa.io.read_file_data(templatefile,
                                                sep=sep, comment=comment,
                                                require_floats=False)
 
         if len(names) > len(cols):
-            raise sherpa.utils.err.IOErr('toomanycols')
+            raise IOErr('toomanycols')
 
         names = [name.strip().lower() for name in names]
 
@@ -6424,20 +6424,20 @@ class Session(NoNewAttributesAfterInit):
         parvals = numpy.asarray(parvals).T
 
         if len(parvals) == 0:
-            raise sherpa.utils.err.IOErr('noparamcols', templatefile)
+            raise IOErr('noparamcols', templatefile)
 
         if filenames is None:
-            raise sherpa.utils.err.IOErr('reqcol', 'filename', templatefile)
+            raise IOErr('reqcol', 'filename', templatefile)
 
         if modelflags is None:
-            raise sherpa.utils.err.IOErr('reqcol', 'modelflag', templatefile)
+            raise IOErr('reqcol', 'modelflag', templatefile)
 
         templates = []
         for filename in filenames:
             tnames, tcols = sherpa.io.read_file_data(filename,
                                                      sep=sep, comment=comment)
             if len(tcols) == 1:
-                raise sherpa.utils.err.IOErr('onecolneedtwo', filename)
+                raise IOErr('onecolneedtwo', filename)
             elif len(tcols) == 2:
                 tm = TableModel(filename)
                 tm.method = method  # interpolation method
@@ -6445,7 +6445,7 @@ class Session(NoNewAttributesAfterInit):
                 tm.ampl.freeze()
                 templates.append(tm)
             else:
-                raise sherpa.utils.err.IOErr('toomanycols', str(tnames), '2')
+                raise IOErr('toomanycols', str(tnames), '2')
 
         assert(len(templates) == parvals.shape[0])
 

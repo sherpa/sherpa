@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019, 2020
+#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,7 @@ Sherpa specific exceptions
 __all__ = ('EstErr', 'FitErr', 'SherpaErr', 'ArgumentErr',
            'ArgumentTypeErr', 'IdentifierErr', 'NotImplementedErr',
            'ImportErr', 'ParameterErr', 'DataErr', 'PSFErr', 'InstrumentErr',
-           'IOErr', 'ModelErr', 'PlotErr', 'StatErr', 'DS9Err',
+           'IOErr', 'ClobberErr', 'ModelErr', 'PlotErr', 'StatErr', 'DS9Err',
            'ConfidenceErr', 'SessionErr')
 
 
@@ -268,6 +268,8 @@ class IOErr(SherpaErr):
     dict = {'openfailed': '%s',
             'setcolfailed': 'setting column %s has failed with %s',
             'nokeyword': "file '%s' does not have a '%s' keyword",
+            # filefound is not expected to be used directly, as the
+            # ClobberErr sub-class should be used instead.
             'filefound': "file '%s' exists and clobber is not set",
             'filenotfound': "file '%s' not found",
             'badfile': "'%s' is not a filename or %s",
@@ -305,6 +307,16 @@ class IOErr(SherpaErr):
 
     def __init__(self, key, *args):
         SherpaErr.__init__(self, IOErr.dict, key, *args)
+
+
+class ClobberErr(IOErr):
+    """Special-case the clobber check.
+
+    Make it easy to identify a failure due to the clobber check.
+    """
+
+    def __init__(self, filename):
+        IOErr.__init__(self, 'filefound', filename)
 
 
 class ModelErr(SherpaErr):
