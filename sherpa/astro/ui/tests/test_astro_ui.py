@@ -1110,3 +1110,85 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
     assert lvl == logging.INFO
     assert msg.startswith('Skipping dataset /')
     assert msg.endswith('/3c273_bg.pi: mask excludes all data')
+
+
+@pytest.mark.parametrize('dtype', [ui.Data1D, ui.Data1DInt, ui.DataPHA,
+                                   ui.Data2D, ui.Data2DInt,
+                                   ui.DataIMG, ui.DataIMGInt])
+def test_unpack_arrays_missing(dtype):
+    """What happens with the wrong number of arguments"""
+
+    with pytest.raises(TypeError):
+        ui.unpack_arrays([1, 2, 5], dtype)
+
+
+def test_unpack_arrays_data1d():
+    """Can we call unpack_arrays? Data1D"""
+
+    ans = ui.unpack_arrays([1, 2, 5], [-2, 3, -1])
+    assert isinstance(ans, ui.Data1D)
+    assert ans.name == ''
+    assert ans.x == pytest.approx([1, 2, 5])
+    assert ans.y == pytest.approx([-2, 3, -1])
+    assert ans.staterror is None
+    assert ans.syserror is None
+
+
+def test_unpack_arrays_data1d_too_many():
+    """What happens with too many columns?
+
+    It just reads in the extra columns, even if "garbage"
+    (such as the negative errors). So technically this is not
+    an error case.
+    """
+
+    ans = ui.unpack_arrays([1, 2, 5], [2, 3, 6], [-2, 3, -1])
+    assert isinstance(ans, ui.Data1D)
+    assert ans.name == ''
+    assert ans.x == pytest.approx([1, 2, 5])
+    assert ans.y == pytest.approx([2, 3, 6])
+    assert ans.staterror == pytest.approx([-2, 3, -1])
+    assert ans.syserror is None
+
+
+def test_unpack_arrays_data1dint():
+    """Can we call unpack_arrays? Data1DInt"""
+
+    ans = ui.unpack_arrays([1, 2, 5], [2, 3, 10], [-2, 3, -1], ui.Data1DInt)
+    assert isinstance(ans, ui.Data1DInt)
+    assert ans.name == ''
+    assert ans.xlo == pytest.approx([1, 2, 5])
+    assert ans.xhi == pytest.approx([2, 3, 10])
+    assert ans.y == pytest.approx([-2, 3, -1])
+    assert ans.staterror is None
+    assert ans.syserror is None
+
+
+def test_unpack_arrays_datapha():
+    """Can we call unpack_arrays? DataPHA"""
+
+    ans = ui.unpack_arrays([1, 2, 3], [2, 0, 4], ui.DataPHA)
+    assert isinstance(ans, ui.DataPHA)
+    assert ans.name == ''
+    assert ans.channel == pytest.approx([1, 2, 3])
+    assert ans.counts == pytest.approx([2, 0, 4])
+    assert ans.staterror is None
+    assert ans.syserror is None
+
+
+def test_unpack_arrays_dataimg():
+    """Can we call unpack_arrays? DataIMG"""
+
+    ivals = numpy.arange(12)
+    y, x = numpy.mgrid[0:3, 0:4]
+    x = x.flatten()
+    y = y.flatten()
+    ans = ui.unpack_arrays(x, y, ivals, (3, 4), ui.DataIMG)
+    assert isinstance(ans, ui.DataIMG)
+    assert ans.name == ''
+    assert ans.x0 == pytest.approx(x)
+    assert ans.x1 == pytest.approx(y)
+    assert ans.y == pytest.approx(ivals)
+    assert ans.shape == pytest.approx(3, 4)
+    assert ans.staterror is None
+    assert ans.syserror is None
