@@ -1,0 +1,59 @@
+name: Conda+CIAO CI
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Linux (Python 3.8)
+            os: ubuntu-latest 
+            python-version: 3.8
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+        submodules: 'True'
+
+    - name: Cache conda
+      uses: actions/cache@v2
+      env:
+        # Increase this value to reset cache if the hashed file has not changed
+        CACHE_NUMBER: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key:
+          ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/ciao-environment.yml') }}
+
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: build
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+        use-only-tar-bz2: true
+        environment-file: etc/ciao-environment.yml
+
+    - name: Configure the Sherpa build
+      env:
+        PYTHONVER: ${{ matrix.python-version }}
+      run: |
+        source .github/scripts/setup_conda_ciao.sh
+
+    - name: Build Sherpa
+      env:
+        PYTHON_LDFLAGS: " " 
+      run: |
+        pip install -e .
+
+    - name: Tests
+      run: |
+        source .github/scripts/test_ciao.sh

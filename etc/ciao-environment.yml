@@ -1,0 +1,21 @@
+channels:
+  - https://cxc.cfa.harvard.edu/conda/ciao
+  - defaults
+dependencies:
+  - python=3.8
+  - ciao
+  - ds9
+  - gcc_linux-64
+  - gxx_linux-64
+  - gfortran_linux-64
+  - libgfortran-ng
+  - matplotlib
+  - numpy
+  - pip
+  - xpa
+  - xspec-modelsonly
+  - pip:
+    - pytest
+    - pytest-cov
+    - pytest-xvfb
+    - codecov
