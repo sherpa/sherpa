@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1084,6 +1084,70 @@ def test_pha1_plot_function(clean_astro_ui, basic_pha1):
 @pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
 def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc()
+
+
+@requires_plotting
+@pytest.mark.parametrize("plotfunc",
+                         [ui.plot_data,
+                          ui.plot_model,
+                          ui.plot_source,
+                          ui.plot_resid,
+                          ui.plot_delchi,
+                          ui.plot_ratio,
+                          ui.plot_fit,
+                          ui.plot_fit_delchi,
+                          ui.plot_fit_resid,
+                          ui.plot_fit_ratio,
+                          ui.plot_chisqr])
+def test_xxx_plot_clearwindow(hide_logging, clean_astro_ui, plotfunc):
+    """If set clearwindow=False does it run sensibly for Data1D data?
+
+    This does not have a great check for what "sensibly" means.
+    """
+
+    from matplotlib import pyplot as plt
+
+    ui.load_arrays(1, [1, 5, 10], [4, 2, 6])
+    ui.set_source(ui.const1d.mdl)
+
+    plotfunc()
+    axes = plt.gcf().axes
+    nlines0 = [len(ax.lines) for ax in axes]
+
+    plotfunc(clearwindow=False)
+    nlines1 = [len(ax.lines) for ax in axes]
+
+    # Check that there are twice the number of lines. This
+    # should be sufficient for all the plot types to check
+    # that new data has been added.
+    #
+    assert nlines1 == [2 * n for n in nlines0]
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
+def test_pha1_plot_clearwindow(hide_logging, clean_astro_ui, basic_pha1, plotfunc):
+    """If set clearwindow=False does it run sensibly for PHA data?
+
+    This does not have a great check for what "sensibly" means.
+    """
+
+    from matplotlib import pyplot as plt
+
+    plotfunc()
+    axes = plt.gcf().axes
+    nlines0 = [len(ax.lines) for ax in axes]
+
+    plotfunc(clearwindow=False)
+    nlines1 = [len(ax.lines) for ax in axes]
+
+    # Check that there are twice the number of lines. This
+    # should be sufficient for all the plot types to check
+    # that new data has been added.
+    #
+    assert nlines1 == [2 * n for n in nlines0]
 
 
 @requires_plotting
