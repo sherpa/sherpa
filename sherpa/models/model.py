@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -719,6 +719,9 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     arg : Model instance
         The model.
     op : function reference
+        The ufunc to apply to the model values.
+    opstr : str
+        The symbol used to represent the operator.
 
     See Also
     --------
@@ -739,6 +742,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     def __init__(self, arg, op, opstr):
         self.arg = self.wrapobj(arg)
         self.op = op
+        self.opstr = opstr
         CompositeModel.__init__(self, ('%s(%s)' % (opstr, self.arg.name)),
                                 (self.arg,))
 
@@ -767,6 +771,9 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     rhs : Model instance
         The right-hand sides of the expression.
     op : function reference
+        The ufunc which combines two array values.
+    opstr : str
+        The symbol used to represent the operator.
 
     See Also
     --------
@@ -789,6 +796,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
+        self.opstr = opstr
 
         CompositeModel.__init__(self,
                                 ('(%s %s %s)' %
