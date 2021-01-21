@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -472,6 +472,52 @@ def test_save_pha_no_clobber(tmp_path):
     assert emsg.endswith("' exists and clobber is not set")
 
 
+def check_output(out, colnames, rows):
+    """Is the output as expected?
+
+    The format of the ASCII output depends on the backend, but
+    does so in a 'principled' manner, so it can be handled
+    here.
+
+    Parameters
+    ----------
+    out : str
+        The actual output
+    colnames : sequence of str
+        The column names (assumed to be upper case).
+    rows : sequence of sequence of numbers
+        The row data. We convert the rows from the input file to
+        numeric values to avoid issues with the formatting (e.g. is 5
+        or 5.0 written out). There is no check that each row has the
+        same number of columns.
+
+    """
+
+    from sherpa.astro.io import backend
+
+    lines = out.split('\n')
+    assert len(lines) > 2
+
+    cols = ' '.join(colnames)
+    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+        assert lines[0] == "#TEXT/SIMPLE"
+        assert lines[1] == f"# {cols}"
+        lines = lines[2:]
+    elif backend.__name__ == 'sherpa.astro.io.pyfits_backend':
+        assert lines[0] == f"#{cols}"
+        lines = lines[1:]
+    else:
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {backend.__name__}")
+
+    assert lines[-1] == ""
+    lines = lines[:-1]
+
+    assert len(lines) == len(rows)
+    for l, r in zip(lines, rows):
+        got = [float(t) for t in l.split()]
+        assert got == pytest.approx(r)
+
+
 @requires_fits
 def test_save_data_data1d_clobber(tmp_path):
     """save_data: does clobber=True work?"""
@@ -485,9 +531,7 @@ def test_save_data_data1d_clobber(tmp_path):
 
     ui.save_data(outfile, clobber=True)
     cts = out.read_text()
-    toks = cts.split('\n')
-    assert len(toks) == 3
-    assert toks[0] == '#X Y'
+    check_output(cts, ['X', 'Y'], [[1, 5]])
 
 
 @requires_fits
@@ -501,8 +545,7 @@ def test_save_data_data1d(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    expected = "\n".join(["#X Y", "1 5", "2 4", "3 3", ""])
-    assert cts == expected
+    check_output(cts, ['X', 'Y'], [[1, 5], [2, 4], [3, 3]])
 
 
 @requires_fits
@@ -536,8 +579,8 @@ def test_save_data_data1dint(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    expected = "\n".join(["#XLO XHI Y", "1 2 5", "2 3 4", "4 5 3", ""])
-    assert cts == expected
+    check_output(cts, ['XLO', 'XHI', 'Y'],
+                 [[1, 2, 5], [2, 3, 4], [4, 5, 3]])
 
 
 @requires_fits
@@ -565,6 +608,8 @@ def test_save_data_data1dint_fits(tmp_path):
 def test_save_data_data2d(tmp_path):
     """Does save_data work for Data2D?"""
 
+    from sherpa.astro.io import backend
+
     y, x = np.mgrid[20:22, 10:13]
     x = x.flatten()
     y = y.flatten()
@@ -576,7 +621,22 @@ def test_save_data_data2d(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    expected = "\n".join([str(zz) for zz in z]) + "\n"
+
+    # the output depends on the backend, and neither seems ideal
+    #
+    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+        expected = ["#TEXT/SIMPLE", "# X0 X1 Y SHAPE"]
+        s = [2, 3, 0, 0, 0, 0]
+        for xi, yi, zi, si in zip(x, y, z, s):
+            expected.append(f"{xi} {yi} {zi} {si}")
+
+        expected = "\n".join(expected) + "\n"
+
+    elif backend.__name__ == 'sherpa.astro.io.pyfits_backend':
+        expected = "\n".join([str(zz) for zz in z]) + "\n"
+    else:
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {backend.__name__}")
+
     assert cts == expected
 
 
@@ -609,7 +669,12 @@ def test_save_data_data2d_fits(tmp_path):
 
 @requires_fits
 def test_save_data_dataimg(tmp_path):
-    """Does save_data work for DataIMG?"""
+    """Does save_data work for DataIMG? ASCII"""
+
+    # Can not write out an ASCII image with crates
+    from sherpa.astro.io import backend
+    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+        pytest.skip('ASCII not supported for images with pycrates')
 
     y, x = np.mgrid[0:2, 0:3]
     x = x.flatten()
@@ -674,8 +739,8 @@ def test_save_data_datapha(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    expected = "\n".join(["#CHANNEL COUNTS", "1 5", "2 4", "3 3", ""])
-    assert cts == expected
+    check_output(cts, ['CHANNEL', 'COUNTS'],
+                 [[1, 5], [2, 4], [3, 3]])
 
 
 @requires_fits
@@ -723,12 +788,8 @@ def test_save_model_ascii(savefunc, mtype, clean_astro_ui, tmp_path):
     out = tmp_path / 'model.dat'
     savefunc(str(out), ascii=True)
 
-    cts = out.read_text().split('\n')
-    assert cts[0] == f'#X {mtype}'
-    assert cts[1] == '1 5'
-    assert cts[2] == '2 15'
-    assert cts[3] == ''
-    assert len(cts) == 4
+    cts = out.read_text()
+    check_output(cts, ['X', mtype], [[1, 5], [2, 15]])
 
 
 @requires_fits
@@ -754,12 +815,9 @@ def test_save_source_pha_ascii(clean_astro_ui, tmp_path):
     out = tmp_path / 'model.dat'
     ui.save_source(str(out), ascii=True)
 
-    cts = out.read_text().split('\n')
-    assert cts[0] == f'#XLO XHI SOURCE'
-    assert cts[1] == '0.1 0.2 2'
-    assert cts[2] == '0.2 0.4 2'
-    assert cts[3] == ''
-    assert len(cts) == 4
+    cts = out.read_text()
+    check_output(cts, ['XLO', 'XHI', 'SOURCE'],
+                 [[0.1, 0.2, 2], [0.2, 0.4, 2]])
 
 
 @requires_fits
@@ -785,12 +843,9 @@ def test_save_model_pha_ascii(clean_astro_ui, tmp_path):
     out = tmp_path / 'model.dat'
     ui.save_model(str(out), ascii=True)
 
-    cts = out.read_text().split('\n')
-    assert cts[0] == f'#XLO XHI MODEL'
-    assert cts[1] == '0.1 0.2 20'
-    assert cts[2] == '0.2 0.4 40'
-    assert cts[3] == ''
-    assert len(cts) == 4
+    cts = out.read_text()
+    check_output(cts, ['XLO', 'XHI', 'MODEL'],
+                 [[0.1, 0.2, 20], [0.2, 0.4, 40]])
 
 
 @requires_fits
@@ -906,12 +961,8 @@ def test_save_resid_data1d(tmp_path):
     outfile = str(out)
     ui.save_resid(outfile, ascii=True)
 
-    cts = out.read_text().split('\n')
-    assert cts[0] == f'#X RESID'
-    assert cts[1] == '100 -200'
-    assert cts[2] == '200 10'
-    assert cts[3] == ''
-    assert len(cts) == 4
+    cts = out.read_text()
+    check_output(cts, ['X', 'RESID'], [[100, -200], [200, 10]])
 
 
 @requires_fits
@@ -960,12 +1011,8 @@ def test_save_resid_datapha(tmp_path):
     outfile = str(out)
     ui.save_resid(outfile, ascii=True)
 
-    cts = out.read_text().split('\n')
-    assert cts[0] == f'#X RESID'
-    assert cts[1] == '0.15 30'
-    assert cts[2] == '0.3 10'
-    assert cts[3] == ''
-    assert len(cts) == 4
+    cts = out.read_text()
+    check_output(cts, ['X', 'RESID'], [[0.15, 30], [0.3, 10]])
 
 
 @requires_fits
@@ -1005,6 +1052,11 @@ def test_save_resid_datapha_fits(tmp_path):
 @requires_fits
 def test_save_resid_dataimg(tmp_path):
     """Residual, DataIMG, ASCII"""
+
+    # Can not write out an ASCII image with crates
+    from sherpa.astro.io import backend
+    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+        pytest.skip('ASCII not supported for images with pycrates')
 
     y, x = np.mgrid[10:12, 20:23]
     x = x.flatten()
