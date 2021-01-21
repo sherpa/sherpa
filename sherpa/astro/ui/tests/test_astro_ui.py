@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -21,7 +21,6 @@
 from collections import namedtuple
 import os
 import re
-import unittest
 import tempfile
 import logging
 
@@ -30,13 +29,14 @@ import pytest
 import numpy
 from numpy.testing import assert_allclose
 
+from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import RMFModelPHA
+from sherpa.astro import ui
+from sherpa.data import Data1D
+from sherpa.utils.err import DataErr, IdentifierErr, StatErr
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
-from sherpa.utils.err import DataErr, IdentifierErr, StatErr
-from sherpa.astro import ui
-from sherpa.astro.instrument import RMFModelPHA
-from sherpa.data import Data1D
-from sherpa.astro.data import DataPHA
 
 logger = logging.getLogger("sherpa")
 
@@ -100,6 +100,160 @@ def test_ui_table(setup_files):
     ui.load_table(1, setup_files.fits, 3, ["RMID", "SUR_BRI", "SUR_BRI_ERR"])
     ui.load_table(1, setup_files.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                   ui.Data1DInt)
+
+
+def test_dataspace1d_data1dint(clean_astro_ui):
+    """Explicitly test dataspace1d for Data1DInt"""
+
+    assert ui.list_data_ids() == []
+    ui.dataspace1d(20, 30, step=2.5, id='x', dstype=ui.Data1DInt)
+
+    assert ui.list_data_ids() == ['x']
+    assert ui.get_data('x').name == 'dataspace1d'
+
+    grid = ui.get_indep('x')
+    assert len(grid) == 2
+
+    expected = numpy.asarray([20, 22.5, 25, 27.5, 30.0])
+    assert grid[0] == pytest.approx(expected[:-1])
+    assert grid[1] == pytest.approx(expected[1:])
+
+    y = ui.get_dep('x')
+    assert y == pytest.approx(numpy.zeros(4))
+
+
+def test_dataspace1d_datapha(clean_astro_ui):
+    """Explicitly test dataspace1d for DataPHA"""
+
+    assert ui.list_data_ids() == []
+
+    # Note the grid is ignored, other than the number of bins
+    ui.dataspace1d(20, 30, step=2.5, id='x', dstype=ui.DataPHA)
+
+    assert ui.list_data_ids() == ['x']
+    assert ui.get_data('x').name == 'dataspace1d'
+
+    grid = ui.get_indep('x')
+    assert len(grid) == 1
+
+    expected = numpy.asarray([1, 2, 3, 4, 5])
+    assert grid[0] == pytest.approx(expected)
+
+    y = ui.get_dep('x')
+    assert y == pytest.approx(numpy.zeros(5))
+
+    assert ui.get_exposure('x') is None
+    assert ui.get_grouping('x') is None
+    assert ui.get_quality('x') is None
+
+    assert ui.get_data('x').subtracted is False
+
+    with pytest.raises(IdentifierErr):
+        ui.get_bkg('x')
+
+
+def test_dataspace1d_datapha_bkg_nopha(clean_astro_ui):
+    """We need a PHA to create a background dataset"""
+
+    with pytest.raises(IdentifierErr) as exc:
+        ui.dataspace1d(20, 30, step=2.5, id='x', bkg_id=2, dstype=ui.DataPHA)
+
+    assert str(exc.value) == 'data set x has not been set'
+
+
+def test_dataspace1d_datapha_bkg(clean_astro_ui):
+    """Explicitly test dataspace1d for DataPHA (background)"""
+
+    # list_bkg_ids will error out until the dataset exists
+    assert ui.list_data_ids() == []
+
+    # We don't use the grid range or step size since numbins has been
+    # given.
+    ui.dataspace1d(20, 30, step=2.5, numbins=10, id='x', dstype=ui.DataPHA)
+
+    assert ui.list_data_ids() == ['x']
+    assert ui.list_bkg_ids('x') == []
+
+    ui.dataspace1d(20, 30, step=2.5, numbins=10, id='x', bkg_id=2,
+                   dstype=ui.DataPHA)
+
+    assert ui.list_data_ids() == ['x']
+    assert ui.list_bkg_ids('x') == [2]
+
+    assert ui.get_data('x').name == 'dataspace1d'
+
+    # I've explicitly not chosen the default background identifier
+    with pytest.raises(IdentifierErr):
+        ui.get_bkg('x')
+
+    assert ui.get_bkg('x', 2).name == 'bkg_dataspace1d'
+
+    grid = ui.get_indep('x', bkg_id=2)
+    assert len(grid) == 1
+
+    expected = numpy.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert grid[0] == pytest.approx(expected)
+
+    y = ui.get_dep('x', bkg_id=2)
+    assert y == pytest.approx(numpy.zeros(10))
+
+    assert ui.get_exposure('x', bkg_id=2) is None
+    assert ui.get_grouping('x', bkg_id=2) is None
+    assert ui.get_quality('x', bkg_id=2) is None
+
+    assert ui.get_bkg('x', bkg_id=2).subtracted is False
+
+    # check we can subtract the dataset; as the data is all zeros
+    # we don't bother checking the result.
+    #
+    ui.subtract('x')
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("loader", [ui.load_data, ui.load_pha])
+def test_load_data(loader, make_data_path, clean_astro_ui, caplog):
+    """Ensure that loading a single file to a non-integer id works.
+
+    This is just to make sure that the support for PHA2 files in both
+    load_data and load_pha does not change the single-file case.
+
+    """
+    infile = make_data_path('3c273.pi')
+    bgfile = make_data_path('3c273_bg.pi')
+
+    arf = make_data_path('3c273.arf')
+    rmf = make_data_path('3c273.rmf')
+
+    assert ui.list_data_ids() == []
+
+    with SherpaVerbosity('INFO'):
+        loader('foo', infile)
+
+    assert ui.list_data_ids() == ['foo']
+
+    msg1 = f"systematic errors were not found in file '{infile}'"
+    msg2 = f"statistical errors were found in file '{infile}' \n" + \
+        "but not used; to use them, re-read with use_errors=True"
+    msg3 = f"read ARF file {arf}"
+    msg4 = f"read RMF file {rmf}"
+
+    msg5 = f"systematic errors were not found in file '{bgfile}'"
+    msg6 = f"statistical errors were found in file '{bgfile}' \n" + \
+        "but not used; to use them, re-read with use_errors=True"
+    msg7 = f"read background file {bgfile}"
+
+    assert caplog.record_tuples[0] == ('sherpa.astro.io', logging.WARNING, msg1)
+    assert caplog.record_tuples[1] == ('sherpa.astro.io', logging.INFO, msg2)
+    assert caplog.record_tuples[2] == ('sherpa.astro.io', logging.INFO, msg3)
+    assert caplog.record_tuples[3] == ('sherpa.astro.io', logging.INFO, msg4)
+
+    assert caplog.record_tuples[4] == ('sherpa.astro.io', logging.WARNING, msg5)
+    assert caplog.record_tuples[5] == ('sherpa.astro.io', logging.INFO, msg6)
+    assert caplog.record_tuples[6] == ('sherpa.astro.io', logging.INFO, msg7)
+
+    assert len(caplog.records) == 7
+
 
 # Test table model
 @requires_fits
