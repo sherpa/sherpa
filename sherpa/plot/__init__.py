@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -166,7 +166,7 @@ def calculate_errors(data, stat, yerrorbars=True):
     # over-ridden once a statistic is given. However, how does this
     # work if the statistic is a Chi2 variant - e.g. Chi2DataVar -
     # but the user has given explicit errors (i.e. they are not to
-    # be calcualted by the "DataVar" part but used as is). Does
+    # be calculated by the "DataVar" part but used as is). Does
     # data.get_yerr handle this for us, or are invalid errors
     # used here? It appears that the correct answers are being
     # returned, but should we only call data.get_yerr if yerr
@@ -298,7 +298,7 @@ class Plot(NoNewAttributesAfterInit):
            The optional plot title and axis labels. These are ignored
            if overplot is set to ``True``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -397,7 +397,7 @@ class Point(NoNewAttributesAfterInit):
         x, y
            The coordinates of the plot.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -452,7 +452,7 @@ class Histogram(NoNewAttributesAfterInit):
            The optional plot title and axis labels. These are ignored
            if overplot is set to ``True``.
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -549,7 +549,7 @@ class HistogramPlot(Histogram):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -574,7 +574,7 @@ class HistogramPlot(Histogram):
 # than most (mark by point rather than line).
 #
 def get_data_hist_prefs():
-    """Copy the data prefences to the histogram class"""
+    """Copy the data preferences to the histogram class"""
 
     hprefs = backend.get_model_histo_defaults()
     dprefs = backend.get_data_plot_defaults()
@@ -637,7 +637,7 @@ class DataHistogramPlot(HistogramPlot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -840,7 +840,7 @@ class CDFPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -916,7 +916,7 @@ class LRHistogram(HistogramPlot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -1245,7 +1245,7 @@ class DataPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -1568,7 +1568,7 @@ class ModelPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -1618,7 +1618,7 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
 
 
 class SourcePlot(ModelPlot):
-    """Create 1D plots of unconcolved model values.
+    """Create 1D plots of unconvolved model values.
 
     Attributes
     ----------
@@ -1883,7 +1883,7 @@ class FitPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an exsiting plot, otherwise
+           If ``True`` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
