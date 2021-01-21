@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019, 2020
+#  Copyright (C) 2010, 2015, 2017, 2019, 2020, 2021
 #                Smithsonian Astrophysical Observatory
 #
 #
@@ -129,7 +129,7 @@ def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
 
 
 def find_zorder(axes):
-    """Try to come up with a good zoder value
+    """Try to come up with a good zorder value
 
     Parameters
     ----------
@@ -167,7 +167,7 @@ def find_zorder(axes):
     2.1 from plot/errorbar. This should work for the case of
       plot something
       overplot something
-    but may fall appart as soon as users add their own features
+    but may fall apart as soon as users add their own features
     to the visualization, but that may be acceptable.
     """
 
@@ -176,7 +176,7 @@ def find_zorder(axes):
     objects = axes.lines + axes.collections
 
     # could do a list comprehension, but want to catch
-    # AtributeErrors
+    # AttributeErrors
     zs = []
     for o in objects:
         try:
@@ -227,7 +227,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     """Draw histogram data.
 
     The histogram is drawn as horizontal lines connecting the
-    start and end points of each bin, with vetical lines connecting
+    start and end points of each bin, with vertical lines connecting
     consecutive bins. Non-consecutive bins are drawn with a
     (Nan,NaN) between them so no line is drawn connecting them.
 
@@ -590,7 +590,7 @@ def set_jointplot(row, col, nrows, ncols, create=True,
         fig.subplots_adjust(hspace=0.05)
 
         # Change all but the bottom row. By setting sharex
-        # this is probably un-needed as get_xticklabels is empty.
+        # this is probably unneeded as get_xticklabels is empty.
         #
         if axes.ndim == 2:
             axes = axes[:-1, :].flatten()
