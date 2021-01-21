@@ -94,12 +94,50 @@ def test_ui_ascii(setup_files):
 
 @requires_fits
 @requires_data
+def test_ui_ascii_noarg(setup_files, clean_astro_ui):
+    """Don't give a dataset id
+
+    It also lets us actually check the results of the load_table call
+    """
+    assert ui.list_data_ids() == []
+    ui.load_ascii(setup_files.ascii)
+    assert ui.list_data_ids() == [1]
+
+    d = ui.get_data()
+    assert d.name.endswith('sim.poisson.1.dat')
+    assert isinstance(d, ui.Data1D)
+    assert len(d.x) == 50
+    assert d.x[0:5] == pytest.approx([0.5, 1, 1.5, 2, 2.5])
+    assert d.y[0:5] == pytest.approx([27, 27, 20, 28, 27])
+
+
+@requires_fits
+@requires_data
 def test_ui_table(setup_files):
     ui.load_table(1, setup_files.fits)
     ui.load_table(1, setup_files.fits, 3)
     ui.load_table(1, setup_files.fits, 3, ["RMID", "SUR_BRI", "SUR_BRI_ERR"])
     ui.load_table(1, setup_files.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                   ui.Data1DInt)
+
+
+@requires_fits
+@requires_data
+def test_ui_table_noarg(setup_files, clean_astro_ui):
+    """Don't give a dataset id
+
+    It also lets us actually check the results of the load_table call
+    """
+    assert ui.list_data_ids() == []
+    ui.load_table(setup_files.fits, colkeys=['RMID', 'COUNTS'])
+    assert ui.list_data_ids() == [1]
+
+    d = ui.get_data()
+    assert d.name.endswith('1838_rprofile_rmid.fits')
+    assert isinstance(d, ui.Data1D)
+    assert len(d.x) == 38
+    assert d.x[0:5] == pytest.approx([12.5, 17.5, 22.5, 27.5, 32.5])
+    assert d.y[0:5] == pytest.approx([1529, 2014, 2385, 2158, 2013])
 
 
 def test_dataspace1d_data1dint(clean_astro_ui):
@@ -298,6 +336,16 @@ def test_ui_filter_ascii(setup_files):
     ui.load_filter(setup_files.filter_single_int_ascii, ignore=True)
 
 
+@requires_fits
+@requires_data
+def test_ui_filter_ascii_with_id(setup_files):
+    ui.load_filter(1, setup_files.filter_single_int_ascii)
+    assert ui.list_data_ids() == [1]
+
+    f = ui.get_filter()
+    assert f == '2.0000,4.0000,6.0000,8.0000,10.0000:250.0000,751.0000:1000.0000'
+
+
 # Test load_filter
 @requires_fits
 @requires_data
@@ -414,6 +462,22 @@ def test_image_12578_set_coord_bad_coord(make_data_path, clean_astro_ui):
     okmsg = "unknown coordinates: 'sky'\nValid options: " + \
             "logical, image, physical, world, wcs"
     assert okmsg in str(exc.value)
+
+
+@requires_data
+@requires_fits
+def test_image_with_id(make_data_path, clean_astro_ui):
+    """Call load_image with an identifier"""
+
+    img = make_data_path('img.fits')
+
+    assert ui.list_data_ids() == []
+    ui.load_image('ix', img)
+    assert ui.list_data_ids() == ['ix']
+
+    d = ui.get_data('ix')
+    assert isinstance(d, ui.DataIMG)
+    assert d.name.endswith('img.fits')
 
 
 # DJB notes (2020/02/29) that these tests used to not be run,

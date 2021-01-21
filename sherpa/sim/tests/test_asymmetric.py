@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -129,6 +129,18 @@ def test_load_ascii(filename, delta, make_data_path):
     infile = make_data_path(filename)
     ui.load_ascii_with_errors(1, infile, delta=delta)
     data = ui.get_data(1)
+    fit_asymmetric_err(RESULTS_BENCH_AVG, data)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filename, delta", [('gro.txt', False),
+                                             ('gro_delta.txt', True)])
+def test_load_ascii_defaultid(filename, delta, make_data_path):
+    """Use the default id"""
+    infile = make_data_path(filename)
+    ui.load_ascii_with_errors(infile, delta=delta)
+    data = ui.get_data()
     fit_asymmetric_err(RESULTS_BENCH_AVG, data)
 
 
