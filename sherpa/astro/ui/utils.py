@@ -647,6 +647,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         # support non-integrated grids with inclusive boundaries
+        # We do NOT want to use an isinstance check since Data1DInt is
+        # derived from Data1D.
         if dstype in (sherpa.data.Data1D, sherpa.astro.data.DataPHA):
             stop += step
 
