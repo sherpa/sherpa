@@ -1353,3 +1353,101 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path):
     y = ui.get_dep(idval)
     assert y.shape == (2, )
     assert y == pytest.approx([2, 3])
+
+
+def test_get_axes_data1d():
+    ui.load_arrays(1, [2, 10, 20], [1, 2, 3])
+    ax = ui.get_axes()
+    assert len(ax) == 1
+    assert ax[0] == pytest.approx([2, 10, 20])
+
+
+def test_get_axes_data1dint():
+    ui.load_arrays(1, [2, 10, 20], [10, 12, 22], [1, 2, 3], ui.Data1DInt)
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([2, 10, 20])
+    assert ax[1] == pytest.approx([10, 12, 22])
+
+
+def test_get_axes_datapha_no_response():
+    """Since we have no response this is a bit odd.
+
+    I have noted that it's unclear whether the bin edges are
+    1-2, 2-3, 3-4 or 0.5-1.5, 1.5-2.5, 2.5-3.5. Let's test
+    the status quo here.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.5, 1.5, 2.5])
+    assert ax[1] == pytest.approx([1.5, 2.5, 3.5])
+
+
+def test_get_axes_datapha_rmf():
+    """RMF only"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.1, 0.2, 0.4])
+    assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
+
+
+def test_get_axes_datapha_arf():
+    """ARF only"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.1, 0.2, 0.4])
+    assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
+
+
+def test_get_axes_datapha_rsp():
+    """Let's have a RMF and ARF for fun"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+    ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.1, 0.2, 0.4])
+    assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
+
+
+def test_get_axes_dataimg_logical():
+    """We don't set up a coordinate system so we just get logical back"""
+
+    y, x = np.mgrid[-5:-1, 5:8]
+    x = x.flatten()
+    y = y.flatten()
+    z = np.zeros(x.size)
+
+    # Not sure what ordering the shape array is meant to have
+    # and whether there is an ordering to x, y, z values.
+    #
+    ui.load_arrays(1, x, y, z, (4, 3), ui.DataIMG)
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([1, 2, 3])
+    assert ax[1] == pytest.approx([1, 2, 3, 4])
