@@ -1404,6 +1404,18 @@ def test_subtract_already_subtracted(idval):
     assert ui.get_dep(idval) == pytest.approx([0, 0, 0])
 
 
+@pytest.mark.parametrize("callfunc", [ui.group, ui.subtract])
+def test_xxx_not_pha(callfunc):
+    """Just check that these commands require a PHA dataset"""
+
+    ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
+
+    with pytest.raises(ArgumentErr) as exc:
+        callfunc()
+
+    assert str(exc.value) == 'data set 1 does not contain PHA data'
+
+
 def test_get_axes_data1d():
     ui.load_arrays(1, [2, 10, 20], [1, 2, 3])
     ax = ui.get_axes()
