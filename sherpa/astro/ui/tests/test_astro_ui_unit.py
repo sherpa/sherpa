@@ -390,6 +390,31 @@ def test_save_delchi_image_fails(tmp_path):
     assert str(exc.value) == 'save_delchi() does not apply for images'
 
 
+def check_clobber(outpath, func):
+    """Does calling func raise a clobber error and not change the contents
+
+    Parameters
+    ----------
+    outpath : pathlib.Path instance
+    func : function reference
+        Called with a single string argument.
+    """
+
+    old = outpath.read_text()
+
+    # check it clobbers
+    with pytest.raises(IOErr) as exc:
+        func(str(outpath))
+
+    emsg = str(exc.value)
+    assert emsg.startswith("file '")
+    assert emsg.endswith("' exists and clobber is not set")
+
+    # Check the file hasn't changed
+    new = outpath.read_text()
+    assert new == old
+
+
 @pytest.mark.xfail(reason='fall through does not work')
 def test_save_data_data1d_no_clobber(tmp_path):
     """save_data: does clobber=False work? Data1D"""
@@ -400,14 +425,7 @@ def test_save_data_data1d_no_clobber(tmp_path):
     outfile = str(out)
 
     out.write_text('some text')
-
-    # check it clobbers
-    with pytest.raises(IOErr) as exc:
-        ui.save_data(outfile)
-
-    emsg = str(exc.value)
-    assert emsg.startswith("file '")
-    assert emsg.endswith("' exists and clobber is not set")
+    check_clobber(out, ui.save_data)
 
 
 @pytest.mark.xfail(reason='fall through does not work')
@@ -428,17 +446,9 @@ def test_save_data_datapha_no_clobber(tmp_path):
     ui.get_data().header = hdr
 
     out = tmp_path / "data.dat"
-    outfile = str(out)
 
     out.write_text('some text')
-
-    # check it clobbers
-    with pytest.raises(IOErr) as exc:
-        ui.save_data(outfile)
-
-    emsg = str(exc.value)
-    assert emsg.startswith("file '")
-    assert emsg.endswith("' exists and clobber is not set")
+    check_clobber(out, ui.save_data)
 
 
 @pytest.mark.xfail(reason='fall through does not work')
@@ -459,17 +469,9 @@ def test_save_pha_no_clobber(tmp_path):
     ui.get_data().header = hdr
 
     out = tmp_path / "data.dat"
-    outfile = str(out)
 
     out.write_text('some text')
-
-    # check it clobbers
-    with pytest.raises(IOErr) as exc:
-        ui.save_data(outfile)
-
-    emsg = str(exc.value)
-    assert emsg.startswith("file '")
-    assert emsg.endswith("' exists and clobber is not set")
+    check_clobber(out, ui.save_data)
 
 
 def check_output(out, colnames, rows):
