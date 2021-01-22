@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,12 +22,19 @@ This is a copy of sherpa/ui/tests/test_session changed to use
 the astro Session object.
 
 If we want to do this then some way of factoring out the common
-code and tests is likely needed.
+code and tests is likely needed. I have started this, but not
+in a principled manner.
 """
 
-from sherpa.utils.testing import requires_plotting
-from sherpa.astro.ui.utils import Session
 from numpy.testing import assert_array_equal
+
+import pytest
+
+from sherpa.astro.ui.utils import Session as AstroSession
+from sherpa.ui.utils import Session
+from sherpa.utils.err import ClobberErr
+from sherpa.utils.testing import requires_plotting
+
 
 TEST = [1, 2, 3]
 TEST2 = [4, 5, 6]
@@ -41,7 +48,7 @@ TEST2 = [4, 5, 6]
 #
 @requires_plotting
 def test_set_log():
-    session = Session()
+    session = AstroSession()
     assert not session.get_data_plot_prefs()['xlog']
     assert not session.get_data_plot_prefs()['ylog']
     session.set_xlog()
@@ -56,7 +63,7 @@ def test_set_log():
 
 # bug #262
 def test_list_ids():
-    session = Session()
+    session = AstroSession()
     session.load_arrays(1, TEST, TEST)
     session.load_arrays("1", TEST, TEST2)
 
@@ -69,7 +76,7 @@ def test_list_ids():
 # bug #297
 def test_save_restore(tmpdir):
     outfile = tmpdir.join("sherpa.save")
-    session = Session()
+    session = AstroSession()
     session.load_arrays(1, TEST, TEST2)
     session.save(str(outfile), clobber=True)
     session.clean()
@@ -79,3 +86,17 @@ def test_save_restore(tmpdir):
     assert {1, } == set(session.list_data_ids())
     assert_array_equal(TEST, session.get_data(1).get_indep()[0])
     assert_array_equal(TEST2, session.get_data(1).get_dep())
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_save_clobber_check(session, tmp_path):
+    """save does not clobber"""
+
+    out = tmp_path / 'save.file'
+    out.write_text('x')
+
+    s = session()
+    with pytest.raises(ClobberErr):
+        s.save(str(out))
+
+    assert out.read_text() == 'x'
