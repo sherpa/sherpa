@@ -33,8 +33,8 @@ import pytest
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import ui
 from sherpa.utils import poisson_noise
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
-    IdentifierErr, IOErr, ModelErr, StatErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, ClobberErr, \
+    DataErr, IdentifierErr, IOErr, ModelErr, StatErr
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -402,7 +402,7 @@ def check_clobber(outpath, func):
     old = outpath.read_text()
 
     # check it clobbers
-    with pytest.raises(IOErr) as exc:
+    with pytest.raises(ClobberErr) as exc:
         func(str(outpath))
 
     emsg = str(exc.value)
