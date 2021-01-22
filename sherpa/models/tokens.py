@@ -93,7 +93,7 @@ class TokenLeft(Token):
         super().__init__('(')
 
     def __repr__(self):
-        return f'TokenLeft({self.counter}, {self.precedence}, {self.left})'
+        return f'TokenLeft({self.counter}, {self.precedence}, left={self.left})'
 
 
 class TokenRight(Token):
@@ -113,7 +113,7 @@ class TokenRight(Token):
         super().__init__(')')
 
     def __repr__(self):
-        return f'TokenRight({self.counter}, {self.precedence}, {self.right})'
+        return f'TokenRight({self.counter}, {self.precedence}, right={self.right})'
 
 
 class Store:
@@ -283,7 +283,20 @@ def left_token(store, model, leftprec=None):
         rtokens = left_token(store, rhs, oprec)
 
         if oprec is not None and rprec is not None and oprec == ZERO_PRECEDENCE and rprec == ZERO_PRECEDENCE:
+
+            # HACK for testing
+            assert oprec == 0
+            assert rprec == 0
+
+            # I was going down as I go into the expression (so -1, -2, -3...)
+            # but now I want to try -n, -(n+1), ..., -1. One hack is to use the
+            # number of terms as the starting counter value - you don't end
+            # up at -1 but that should be okay.
+            #
+
             ctr = -1
+            # ctr0 = -len(rtokens) - 1
+            # ctr = ctr0
             for token in rtokens:
                 if not hasattr(token, 'precedence'):
                     continue
@@ -292,11 +305,20 @@ def left_token(store, model, leftprec=None):
                     # Not sure about this
                     if token.precedence <= ctr:
                         ctr = token.precedence - 1
+                        # raise NotImplementedError('not sure now')
 
                     token.precedence = ctr
                     ctr -= 1
+                    # ctr += 1
 
-            rprec = ctr  # Not sure about this
+            # rprec = ctr  # Not sure about this
+            # rprec = ctr0  # Not sure about this
+
+            #maybe it is just oprec I needed to change, and can go back to counting down
+            # NOPITY NOPE NOPE
+
+            # oprec = ctr0 - 1  # is this right? completely guessing now
+            oprec = ctr  # is this right? completely guessing now
 
         rterms = bracket(store, rtokens, rprec, left=oprec)
 
