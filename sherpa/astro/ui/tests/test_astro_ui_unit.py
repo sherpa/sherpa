@@ -1277,8 +1277,8 @@ def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
     assert str(exc.value) == emsg
 
 
-@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
 @requires_fits
+@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
 def test_load_xxx_no_data(loadfunc, clean_astro_ui, tmp_path):
     """What happens when there's no data??"""
 
@@ -1291,8 +1291,8 @@ def test_load_xxx_no_data(loadfunc, clean_astro_ui, tmp_path):
     assert str(exc.value) == 'data set 2 has not been set'
 
 
-@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
 @requires_fits
+@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
 def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
     """What happens with a non-PHA dataset?"""
 
@@ -1307,6 +1307,7 @@ def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
     assert str(exc.value) == 'data set 2 does not contain PHA data'
 
 
+@requires_fits
 @pytest.mark.parametrize("idval", [None, 1, 'xx'])
 def test_load_grouping(idval, clean_astro_ui, tmp_path):
     """Simple grouping check"""
