@@ -654,12 +654,16 @@ def test_chi2(make_data_path, clean_astro_ui):
     assert stat12 == 'chi2'
 
 
+@requires_fits
 @pytest.mark.parametrize("session", [sherpa.ui.utils.Session,
                                      sherpa.astro.ui.utils.Session])
 def test_save_arrays_clobber(session, tmp_path):
     """Check that save_arrays will not clobber.
 
     For fun check both sessions here.
+
+    Only the astro session requires the FITS backend but it would
+    make the test significantly messier to handle both.
     """
 
     out = tmp_path / 'out.dat'
@@ -672,12 +676,16 @@ def test_save_arrays_clobber(session, tmp_path):
     assert out.read_text() == 'A line'
 
 
+@requires_fits
 @pytest.mark.parametrize("session", [sherpa.ui.utils.Session,
                                      sherpa.astro.ui.utils.Session])
 def test_save_arrays_nodata(session, tmp_path):
     """Check that save_arrays errors out.
 
     For fun check both sessions here.
+
+    Only the astro session requires the FITS backend but it would
+    make the test significantly messier to handle both.
     """
 
     out = tmp_path / 'out.dat'
