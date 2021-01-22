@@ -5080,12 +5080,18 @@ class Session(sherpa.ui.utils.Session):
 
         try:
             sherpa.astro.io.write_pha(filename, d, ascii, clobber)
+        except ClobberErr:
+            raise
         except IOErr:
             try:
                 sherpa.astro.io.write_image(filename, d, ascii, clobber)
+            except ClobberErr:
+                raise
             except IOErr:
                 try:
                     sherpa.astro.io.write_table(filename, d, ascii, clobber)
+                except ClobberErr:
+                    raise
                 except:
                     # If this errors out then so be it
                     sherpa.io.write_data(filename, d, clobber)
