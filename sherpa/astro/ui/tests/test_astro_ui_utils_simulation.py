@@ -70,7 +70,7 @@ def test_fake_pha_missing_rmf(id, clean_astro_ui, tmp_path):
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
 def test_fake_pha_missing_arf(id, clean_astro_ui, tmp_path):
-    """Check we error out if RMF is not valid."""
+    """Check we error out if ARF is not valid."""
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -280,4 +280,4 @@ def test_fake_pha_no_data(id, clean_astro_ui):
     # is summing the counts (to average over the randomness)
     # and then a simple check
     #
-    assert faked.counts.sum() > 200
+    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 10000)

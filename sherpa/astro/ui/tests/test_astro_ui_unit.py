@@ -776,7 +776,7 @@ def test_save_pha(tmp_path):
 def test_save_model_ascii(savefunc, mtype, clean_astro_ui, tmp_path):
     """Can we write out data for save_source/model? Data1D and ASCII
 
-    As this is not a PHA dataset, the two shouldbe the same bar the
+    As this is not a PHA dataset, the two should be the same bar the
     header line.
     """
 
