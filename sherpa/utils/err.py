@@ -160,6 +160,7 @@ class FitErr(SherpaErr):
     dict = {'statnotforbackgsub': '%s statistics cannot be used with background subtracted data',
             'binhas0': 'zeros found in uncertainties, consider using calculated uncertainties',
             'nobins': 'no noticed bins found in data set',
+            # noclobererr overlaps with ClobberErr
             'noclobererr': "'%s' exists, and clobber==False",
             'nothawedpar': 'model has no thawed parameters',
             'needchi2': '%s method requires a deviates array; use a chi-square  statistic', }
