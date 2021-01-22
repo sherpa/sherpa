@@ -1275,3 +1275,81 @@ def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
 
     emsg = 'background model 2 for data set {} has not been set'.format(id)
     assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
+@requires_fits
+def test_load_xxx_no_data(loadfunc, clean_astro_ui, tmp_path):
+    """What happens when there's no data??"""
+
+    path = tmp_path / 'data'
+    path.write_text('1\n0\n0\n')
+
+    with pytest.raises(IdentifierErr) as exc:
+        loadfunc(2, str(path))
+
+    assert str(exc.value) == 'data set 2 has not been set'
+
+
+@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
+@requires_fits
+def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
+    """What happens with a non-PHA dataset?"""
+
+    ui.load_arrays(2, [1, 2, 3], [2, 4, 9])
+
+    path = tmp_path / 'data'
+    path.write_text('1\n0\n0\n')
+
+    with pytest.raises(ArgumentErr) as exc:
+        loadfunc(2, str(path))
+
+    assert str(exc.value) == 'data set 2 does not contain PHA data'
+
+
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_load_grouping(idval, clean_astro_ui, tmp_path):
+    """Simple grouping check"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+
+    path = tmp_path / 'group.dat'
+    path.write_text('1\n-1\n1')
+
+    data = ui.get_data(idval)
+    assert data.grouping is None
+
+    if idval is None:
+        ui.load_grouping(str(path))
+    else:
+        ui.load_grouping(idval, str(path))
+
+    assert not data.grouped
+    assert data.grouping is not None
+
+    ui.group(idval)
+
+    assert data.grouped
+
+    grps = ui.get_grouping(idval)
+    assert grps.shape == (3, )
+
+    # It's not clear what requirements load_grouping makes of the
+    # data, so do not enforce a data type. At a minimum there
+    # would be potential backend differences.
+    #
+    # assert grps.dtype == np.int16
+
+    assert grps == pytest.approx([1, -1, 1])
+
+    # Note that get_dep is returning the sum per group / channel width
+    # (since we have no instrument response).
+    #
+    y = ui.get_dep(idval)
+    assert y.shape == (2, )
+    assert y == pytest.approx([2, 3])
