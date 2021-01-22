@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021
 #                Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,6 @@
 #
 
 import os
-import sys
 import re
 import logging
 
@@ -27,7 +26,6 @@ import pytest
 
 import numpy as np
 from numpy import VisibleDeprecationWarning
-import numpy as np
 
 from sherpa.utils.testing import SherpaTestCase
 
@@ -165,6 +163,11 @@ python3_warnings = {
             # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
             r"unclosed file .*/dev/null.* closefd=True>",
             r"unclosed file .*table.txt.* closefd=True>",
+            # tests in sherpa/astro/ui/tests/test_astro_ui_unit.py
+            # seen in some macOS test runs (e.g. pip, not conda) and python 3.8
+            r"unclosed file .*/data.dat'.* closefd=True>",
+            r"unclosed file .*/model.dat'.* closefd=True>",
+            r"unclosed file .*/resid.out'.* closefd=True>",
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
@@ -507,9 +510,9 @@ def reset_seed(request):
 def hide_logging():
     """Set Sherpa's logging to ERROR for the test.
 
-    This code is somehwat redundant with the decorator 
+    This code is somehwat redundant with the decorator
     in utils/logging:SherpaVerbosity and, should this
-    fixture ever need to be redone, it might be worth 
+    fixture ever need to be redone, it might be worth
     investigating if the same decorator can be used.
     """
 
