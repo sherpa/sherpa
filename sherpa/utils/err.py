@@ -268,9 +268,6 @@ class IOErr(SherpaErr):
     dict = {'openfailed': '%s',
             'setcolfailed': 'setting column %s has failed with %s',
             'nokeyword': "file '%s' does not have a '%s' keyword",
-            # filefound is not expected to be used directly, as the
-            # ClobberErr sub-class should be used instead.
-            'filefound': "file '%s' exists and clobber is not set",
             'filenotfound': "file '%s' not found",
             'badfile': "'%s' is not a filename or %s",
             'noarrs': 'No input array(s) found',
@@ -315,8 +312,10 @@ class ClobberErr(IOErr):
     Make it easy to identify a failure due to the clobber check.
     """
 
+    dict = {'filefound': "file '%s' exists and clobber is not set"}
+
     def __init__(self, filename):
-        IOErr.__init__(self, 'filefound', filename)
+        SherpaErr.__init__(self, ClobberErr.dict, 'filefound', filename)
 
 
 class ModelErr(SherpaErr):
