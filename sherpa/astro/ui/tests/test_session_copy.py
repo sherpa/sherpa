@@ -32,7 +32,7 @@ import pytest
 
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.ui.utils import Session
-from sherpa.utils.err import ClobberErr
+from sherpa.utils.err import ClobberErr, IOErr
 from sherpa.utils.testing import requires_plotting
 
 
@@ -100,3 +100,21 @@ def test_save_clobber_check(session, tmp_path):
         s.save(str(out))
 
     assert out.read_text() == 'x'
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_load_template_not_binary(session, tmp_path):
+    """load_template_model doesn't like binary files"""
+
+    # Creating a file which Sherpa thinks is a binary file is
+    # an art.
+    #
+    out = tmp_path / 'save.file'
+    out.write_bytes(b'x\0y')
+
+    s = session()
+    with pytest.raises(IOErr) as exc:
+        s.load_template_model('xmodel', str(out))
+
+    assert str(exc.value).startswith("file '")
+    assert str(exc.value).endswith("' does not appear to be ASCII")
