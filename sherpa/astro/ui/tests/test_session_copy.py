@@ -102,6 +102,21 @@ def test_save_clobber_check(session, tmp_path):
     assert out.read_text() == 'x'
 
 
+# Apparently sherpa.ui.utils does not have save_all
+@pytest.mark.parametrize("session", [AstroSession])
+def test_save_all_clobber_check(session, tmp_path):
+    """save_all does not clobber"""
+
+    out = tmp_path / 'save.file'
+    out.write_text('x')
+
+    s = session()
+    with pytest.raises(ClobberErr):
+        s.save_all(str(out))
+
+    assert out.read_text() == 'x'
+
+
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_load_template_not_binary(session, tmp_path):
     """load_template_model doesn't like binary files"""
