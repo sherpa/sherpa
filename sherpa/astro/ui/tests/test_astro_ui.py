@@ -33,10 +33,15 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import RMFModelPHA
 from sherpa.astro import ui
 from sherpa.data import Data1D
-from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, StatErr
+from sherpa.utils.err import ArgumentErr, ClobberErr, DataErr, \
+    IdentifierErr, IOErr, StatErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
+
+import sherpa.ui.utils
+import sherpa.astro.ui.utils
+
 
 logger = logging.getLogger("sherpa")
 
@@ -647,6 +652,41 @@ def test_chi2(make_data_path, clean_astro_ui):
     assert stat1 == 'chi2'
     assert stat2 == 'chi2'
     assert stat12 == 'chi2'
+
+
+@pytest.mark.parametrize("session", [sherpa.ui.utils.Session,
+                                     sherpa.astro.ui.utils.Session])
+def test_save_arrays_clobber(session, tmp_path):
+    """Check that save_arrays will not clobber.
+
+    For fun check both sessions here.
+    """
+
+    out = tmp_path / 'out.dat'
+    out.write_text('A line')
+
+    s = session()
+    with pytest.raises(ClobberErr):
+        s.save_arrays(str(out), [[1, 2, 3]], clobber=False)
+
+    assert out.read_text() == 'A line'
+
+
+@pytest.mark.parametrize("session", [sherpa.ui.utils.Session,
+                                     sherpa.astro.ui.utils.Session])
+def test_save_arrays_nodata(session, tmp_path):
+    """Check that save_arrays errors out.
+
+    For fun check both sessions here.
+    """
+
+    out = tmp_path / 'out.dat'
+
+    s = session()
+    with pytest.raises(IOErr) as exc:
+        s.save_arrays(str(out), [])
+
+    assert str(exc.value) == 'please supply array(s) to write to file'
 
 
 def save_arrays(colnames, fits, read_func):
