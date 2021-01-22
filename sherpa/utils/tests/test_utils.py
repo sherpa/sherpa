@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,7 @@ import pytest
 
 from sherpa import utils
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ClobberErr
 from sherpa.data import Data1D
 from sherpa.models.basic import Gauss1D
 from sherpa.optmethods import LevMar
@@ -833,18 +834,16 @@ def test_create_expr_mask_singlebins():
     assert out == "0.40,0.42,0.56,0.58"
 
 
-def test_send_to_pager_file(tmpdir):
+def test_send_to_pager_file(tmp_path):
     """Check we can create a file"""
 
-    # would like to use tmp_path but this needs a recent pytest
-
-    fileexists = tmpdir.join('tmp.txt')
-    fileexists.write_text('x', 'ascii')
-    assert fileexists.read() == 'x'
+    fileexists = tmp_path / 'tmp.txt'
+    fileexists.write_text('x')
+    assert fileexists.read_text() == 'x'
 
     testdata = "test\ntest"
     utils.send_to_pager(testdata, str(fileexists), clobber=True)
-    assert fileexists.read_text('ascii') == testdata + "\n"
+    assert fileexists.read_text() == testdata + "\n"
 
 
 @pytest.mark.parametrize('clobber', [False, True])
@@ -860,16 +859,20 @@ def test_send_to_pager_stringio(clobber):
     assert out.getvalue() == testdata + "\n"
 
 
-def test_send_to_pager_file_clobber(tmpdir):
+def test_send_to_pager_file_clobber(tmp_path):
     """Ensure clobber=False doesn't overwrite things"""
 
     # would like to use tmp_path but this needs a recent pytest
 
-    fileexists = tmpdir.join('tmp.txt')
-    fileexists.write_text('x', 'ascii')
+    fileexists = tmp_path / 'tmp.txt'
+    fileexists.write_text('x')
 
-    with pytest.raises(IOErr) as exc:
+    with pytest.raises(ClobberErr) as exc:
         utils.send_to_pager("test", str(fileexists))
 
     assert str(exc.value).startswith("file '")
     assert str(exc.value).endswith("/tmp.txt' exists and clobber is not set")
+
+    # Check the file contents haven't been over-written
+    #
+    assert fileexists.read_text() == 'x'
