@@ -414,13 +414,16 @@ def check_clobber(outpath, func):
     assert new == old
 
 
+@requires_fits
 def test_save_data_data1d_no_clobber(tmp_path):
-    """save_data: does clobber=False work? Data1D"""
+    """save_data: does clobber=False work? Data1D
+
+    Even though writing out an ASCII file we need the io backend.
+    """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
 
     out = tmp_path / "data.dat"
-    outfile = str(out)
 
     out.write_text('some text')
     check_clobber(out, ui.save_data)
