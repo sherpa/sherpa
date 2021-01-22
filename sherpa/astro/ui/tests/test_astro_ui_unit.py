@@ -1355,6 +1355,55 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path):
     assert y == pytest.approx([2, 3])
 
 
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_group_already_grouped(idval):
+    """Does group still work if the data is already grouped?"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+        ui.set_grouping([1, -1, 1])
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+        ui.set_grouping(idval, [1, -1, 1])
+
+    data = ui.get_data(idval)
+    assert not data.grouped
+
+    ui.group(idval)
+    assert data.grouped
+
+    ui.group(idval)
+    assert ui.get_dep(idval) == pytest.approx([2, 3])
+
+
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_subtract_already_subtracted(idval):
+    """Does subtract still work if the data is already subtracted?"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    ui.load_arrays('bgnd', x, y, ui.DataPHA)
+    bkg = ui.get_data('bgnd')
+
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+        ui.set_bkg(bkg)
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+        ui.set_bkg(idval, bkg)
+
+    data = ui.get_data(idval)
+    assert not data.subtracted
+
+    ui.subtract(idval)
+    assert data.subtracted
+
+    ui.subtract(idval)
+    assert ui.get_dep(idval) == pytest.approx([0, 0, 0])
+
+
 def test_get_axes_data1d():
     ui.load_arrays(1, [2, 10, 20], [1, 2, 3])
     ax = ui.get_axes()
