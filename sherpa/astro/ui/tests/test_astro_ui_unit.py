@@ -1374,9 +1374,11 @@ def test_group_already_grouped(idval):
 
     ui.group(idval)
     assert data.grouped
+    assert ui.get_dep(idval) == pytest.approx([2, 3])
 
     ui.group(idval)
     assert ui.get_dep(idval) == pytest.approx([2, 3])
+    assert data.grouped
 
 
 @pytest.mark.parametrize("idval", [None, 1, 'xx'])
