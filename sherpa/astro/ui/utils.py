@@ -1458,19 +1458,79 @@ class Session(sherpa.ui.utils.Session):
                 datas.elo, datas.ehi = calc_err(datas)
             datas.staterror = calc_staterror(datas)
 
-    # DOC-NOTE: also in sherpa.utils
+    def _load_data(self, id, datasets):
+        """Load one or more datasets.
+
+        Used by load_data and load_pha.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. For multi-dataset
+           files, currently only PHA2, the id value indicates the
+           first dataset: if it is an integer then the numbering
+           starts at id, and if a string then a suffix of 1 to n is
+           added.  If not given then the default identifier is used,
+           as returned by `get_default_id`.
+        datasets : Data instance or iterable of Data instances
+           The data to load, either as a single item or, for
+           multiple-dataset files, an iterable of them.
+
+        """
+
+        if not numpy.iterable(datasets):
+            self.set_data(id, datasets)
+            return
+
+        # One issue with the following is that if there's
+        # only one dataset in phasets and id is a string then the
+        # output will be "foo1" rather than "foo" (when
+        # id="foo").  DJB thinks we can live with this.
+        #
+        if id is None:
+            id = self.get_default_id()
+
+        num = len(datasets)
+        ids = []
+        for ctr, data in enumerate(datasets):
+            try:
+                idval = id + ctr
+            except TypeError:
+                # id is assumed to be a string
+                idval = id + str(ctr + 1)
+
+            self.set_data(idval, data)
+            ids.append(idval)
+
+        if num > 1:
+            info("Multiple data sets have been input: " +
+                 "{}-{}".format(ids[0], ids[-1]))
+        else:
+            info("One data set has been input: {}".format(ids[0]))
+
+    # DOC-NOTE: also in sherpa.utils without the support for
+    #           multiple datasets.
+    #
     def load_data(self, id, filename=None, *args, **kwargs):
         """Load a data set from a file.
 
         This loads a data set from the file, trying in order
         `load_pha`, `load_image`, `load_table`, then `load_ascii`.
 
+        .. versionchanged:: 4.13.1
+           The id argument is now used to define the first identifier
+           when loading in a PHA2 file to match `load_pha` (previously
+           the range always started at 1).
+
         Parameters
         ----------
         id : int or str, optional
-           The identifier for the data set to use. If not given then
-           the default identifier is used, as returned by
-           `get_default_id`.
+           The identifier for the data set to use. For multi-dataset
+           files, currently only PHA2, the id value indicates the
+           first dataset: if it is an integer then the numbering
+           starts at id, and if a string then a suffix of 1 to n is
+           added.  If not given then the default identifier is used,
+           as returned by `get_default_id`.
         filename
            A file name or a data structure representing the data to
            use, as used by the I/O backend in use by Sherpa: e.g.  a
@@ -1482,12 +1542,6 @@ class Session(sherpa.ui.utils.Session):
         kwargs
            The keyword arguments supported by `load_pha`, `load_image`,
            `load_table`, and `load_ascii`.
-
-        Returns
-        -------
-        instance
-           The type of the returned object is controlled by the
-           `dstype` parameter.
 
         See Also
         --------
@@ -1526,18 +1580,8 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
-        data = self.unpack_data(filename, *args, **kwargs)
-
-        if type(data) is list:
-            num = len(data)
-            if num > 1:
-                for id, pha in enumerate(data):
-                    self.set_data(id + 1, pha)
-                info("Multiple data sets have been input: 1-%s" % num)
-            else:
-                self.set_data(id, data.pop())
-        else:
-            self.set_data(id, data)
+        datasets = self.unpack_data(filename, *args, **kwargs)
+        self._load_data(id, datasets)
 
     def unpack_image(self, arg, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
@@ -1899,36 +1943,7 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
 
         phasets = self.unpack_pha(arg, use_errors)
-
-        if not numpy.iterable(phasets):
-            self.set_data(id, phasets)
-            return
-
-        # One issue with the following is that if there's
-        # only one dataset in phasets and id is a string then the
-        # output will be "foo1" rather than "foo" (when
-        # id="foo").  DJB thinks we can live with this.
-        #
-        if id is None:
-            id = self.get_default_id()
-
-        num = len(phasets)
-        ids = []
-        for ctr, pha in enumerate(phasets):
-            try:
-                idval = id + ctr
-            except TypeError:
-                # id is assumed to be a string
-                idval = id + str(ctr + 1)
-
-            self.set_data(idval, pha)
-            ids.append(idval)
-
-        if num > 1:
-            info("Multiple data sets have been input: " +
-                 "{}-{}".format(ids[0], ids[-1]))
-        else:
-            info("One data set has been input: {}".format(ids[0]))
+        self._load_data(id, phasets)
 
     def _get_pha_data(self, id):
         """Ensure the dataset is a PHA"""

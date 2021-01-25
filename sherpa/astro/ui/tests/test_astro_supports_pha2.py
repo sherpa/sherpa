@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -110,12 +110,13 @@ def validate_pha(d, bkg=True):
 
 @requires_data
 @requires_fits
+@pytest.mark.parametrize("loader", [ui.load_pha, ui.load_data])
 @pytest.mark.parametrize("id0,ids",
                          [(None, [1,2,3,4,5,6,7,8,9,10,11,12]),
                           (1, [1,2,3,4,5,6,7,8,9,10,11,12]),
                           (100, [100,101,102,103,104,105,106,107,108,109,110,111]),
                           ("x", ["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12"])])
-def test_load_pha2(id0, ids, make_data_path, caplog, clean_astro_ui):
+def test_load_pha2(loader, id0, ids, make_data_path, caplog, clean_astro_ui):
     """Basic test that a pha2 file can be read in."""
 
     basename = '3c120_pha2'
@@ -126,9 +127,9 @@ def test_load_pha2(id0, ids, make_data_path, caplog, clean_astro_ui):
     # The file is stored gzip-encoded
     infile = make_data_path(basename)
     if id0 is None:
-        ui.load_pha(infile)
+        loader(infile)
     else:
-        ui.load_pha(id0, infile)
+        loader(id0, infile)
 
     pha_ids = ui.list_data_ids()
     assert len(pha_ids) == 12
