@@ -1,5 +1,7 @@
 #!/usr/bin/env bash -e
 
+echo "*** Test=${TEST} ***"
+
 if [ "`uname -s`" == "Darwin" ] ; then
     export DISPLAY=":99"
     export PATH="${PATH}:/opt/X11/bin"
@@ -9,9 +11,6 @@ if [ "`uname -s`" == "Darwin" ] ; then
         exit 1
     fi
 fi
-
-# For now do not run tests with the documentation build
-if [ "${DOCS}" == true ]; then exit 0; fi
 
 # No test data, then remove submodule (git automatically clones recursively)
 if [ ${TEST} == none ];
@@ -30,20 +29,26 @@ if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
 if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
 smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 
-# Install coverage tooling and run tests using setuptools
 if [ ${TEST} == submodule ]; then
-    # pip install pytest-cov codecov;
-    conda install -yq pytest-cov codecov;
+    echo "*** Runnng Sherpa tests ***"
+    # We want to be able to say
+    #   pytest --cov sherpa --cov-report term || exit 1;
+    # but this fails for a source installation (pip install .)
+    # due to problems with the compiled components (such as
+    # sherpa.utils._utils). So stick with setuptools for now.
+    #
     python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
     codecov;
 fi
 
 # Run smoke test
+echo "*** Running sherpa_smoke ***"
 cd /home
 sherpa_smoke ${smokevars} || exit 1
 
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ]; then
+    echo "*** Running sherpa_test ***"
     cd $HOME;
     conda install -yq pytest-cov codecov;
     # This automatically picks up the sherpatest modile when TEST==package

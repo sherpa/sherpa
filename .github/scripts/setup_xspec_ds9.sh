@@ -71,7 +71,7 @@ case "${XSPECVER}" in
       xspec_version_string="12.10.1"
       ;;
   *)
-      echo "Xspec version listed currently unsuported in Travis jobs."
+      echo "Xspec version listed currently unsuported in GitHub Actions jobs."
       exit 1
       ;;
 esac

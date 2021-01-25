@@ -1,0 +1,13 @@
+channels:
+  - sherpa
+  - defaults
+dependencies:
+  - clang_osx-64
+  - clangxx_osx-64
+  - gfortran_osx-64
+  - pip
+  - pytest
+  - pytest-cov
+  - codecov
+  - pip:
+    - pytest-xvfb
