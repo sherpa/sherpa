@@ -1093,7 +1093,7 @@ def html_model(mdl):
 
     out += '</tr></thead><tbody>'
 
-    for mcount, n, comp in zip(range(len(complist)), nrows, complist):
+    for mcount, (n, comp) in enumerate(zip(nrows, complist)):
         for i, par in enumerate(comp.pars):
             style = '' if ((i > 0) or (mcount == 0)) else ' class="block"'
 
