@@ -33,7 +33,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import RMFModelPHA
 from sherpa.astro import ui
 from sherpa.data import Data1D
-from sherpa.utils.err import DataErr, IdentifierErr, StatErr
+from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, StatErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
@@ -816,6 +816,23 @@ def test_bug_316(make_data_path, clean_astro_ui):
     assert xmax == pytest.approx(7.01)
 
 
+@pytest.mark.parametrize("loadfunc", [ui.load_multi_arfs, ui.load_multi_rmfs])
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_load_multi_xxx_invalid_args(loadfunc, idval):
+    """Check we error out if the files and ids do not match."""
+
+    files = ['a', 'b', 'c']
+    rids = [1, 2]
+
+    with pytest.raises(ArgumentErr) as exc:
+        if idval is None:
+            loadfunc(files, rids)
+        else:
+            loadfunc(idval, files, rids)
+
+    assert str(exc.value) == 'A response ID is required for each file'
+
+
 @requires_data
 @requires_fits
 def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
@@ -846,6 +863,21 @@ def test_load_multi_arfsrmfs(make_data_path, clean_astro_ui):
 
     ui.load_multi_rmfs(1, [rmf, rmf], [1, 2])
     ui.load_multi_rmfs(2, [rmf, rmf], [1, 2])
+
+    # Check multiple responses have been loaded
+    #
+    d1 = ui.get_data(1)
+    d2 = ui.get_data(2)
+    assert d1.response_ids == [1, 2]
+    assert d2.response_ids == [1, 2]
+
+    # Unfortunately we load the same response so it's hard
+    # to tell the difference here!
+    #
+    assert ui.get_arf(resp_id=1).name == arf
+    assert ui.get_arf(resp_id=2).name == arf
+    assert ui.get_rmf(2, resp_id=1).name == rmf
+    assert ui.get_rmf(2, resp_id=2).name == rmf
 
     ui.notice(0.5, 7)
     ui.subtract(1)

@@ -1275,3 +1275,243 @@ def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
 
     emsg = 'background model 2 for data set {} has not been set'.format(id)
     assert str(exc.value) == emsg
+
+
+@requires_fits
+@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
+def test_load_xxx_no_data(loadfunc, clean_astro_ui, tmp_path):
+    """What happens when there's no data??"""
+
+    path = tmp_path / 'data'
+    path.write_text('1\n0\n0\n')
+
+    with pytest.raises(IdentifierErr) as exc:
+        loadfunc(2, str(path))
+
+    assert str(exc.value) == 'data set 2 has not been set'
+
+
+@requires_fits
+@pytest.mark.parametrize("loadfunc", [ui.load_grouping, ui.load_quality])
+def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
+    """What happens with a non-PHA dataset?"""
+
+    ui.load_arrays(2, [1, 2, 3], [2, 4, 9])
+
+    path = tmp_path / 'data'
+    path.write_text('1\n0\n0\n')
+
+    with pytest.raises(ArgumentErr) as exc:
+        loadfunc(2, str(path))
+
+    assert str(exc.value) == 'data set 2 does not contain PHA data'
+
+
+@requires_fits
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_load_grouping(idval, clean_astro_ui, tmp_path):
+    """Simple grouping check"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+
+    path = tmp_path / 'group.dat'
+    path.write_text('1\n-1\n1')
+
+    data = ui.get_data(idval)
+    assert data.grouping is None
+
+    if idval is None:
+        ui.load_grouping(str(path))
+    else:
+        ui.load_grouping(idval, str(path))
+
+    assert not data.grouped
+    assert data.grouping is not None
+
+    ui.group(idval)
+
+    assert data.grouped
+
+    grps = ui.get_grouping(idval)
+    assert grps.shape == (3, )
+
+    # It's not clear what requirements load_grouping makes of the
+    # data, so do not enforce a data type. At a minimum there
+    # would be potential backend differences.
+    #
+    # assert grps.dtype == np.int16
+
+    assert grps == pytest.approx([1, -1, 1])
+
+    # Note that get_dep is returning the sum per group / channel width
+    # (since we have no instrument response).
+    #
+    y = ui.get_dep(idval)
+    assert y.shape == (2, )
+    assert y == pytest.approx([2, 3])
+
+
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_group_already_grouped(idval):
+    """Does group still work if the data is already grouped?"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+        ui.set_grouping([1, -1, 1])
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+        ui.set_grouping(idval, [1, -1, 1])
+
+    data = ui.get_data(idval)
+    assert not data.grouped
+
+    ui.group(idval)
+    assert data.grouped
+    assert ui.get_dep(idval) == pytest.approx([2, 3])
+
+    ui.group(idval)
+    assert ui.get_dep(idval) == pytest.approx([2, 3])
+    assert data.grouped
+
+
+@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+def test_subtract_already_subtracted(idval):
+    """Does subtract still work if the data is already subtracted?"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    ui.load_arrays('bgnd', x, y, ui.DataPHA)
+    bkg = ui.get_data('bgnd')
+
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+        ui.set_bkg(bkg)
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+        ui.set_bkg(idval, bkg)
+
+    data = ui.get_data(idval)
+    assert not data.subtracted
+
+    ui.subtract(idval)
+    assert data.subtracted
+
+    ui.subtract(idval)
+    assert ui.get_dep(idval) == pytest.approx([0, 0, 0])
+
+
+@pytest.mark.parametrize("callfunc", [ui.group, ui.subtract])
+def test_xxx_not_pha(callfunc):
+    """Just check that these commands require a PHA dataset"""
+
+    ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
+
+    with pytest.raises(ArgumentErr) as exc:
+        callfunc()
+
+    assert str(exc.value) == 'data set 1 does not contain PHA data'
+
+
+def test_get_axes_data1d():
+    ui.load_arrays(1, [2, 10, 20], [1, 2, 3])
+    ax = ui.get_axes()
+    assert len(ax) == 1
+    assert ax[0] == pytest.approx([2, 10, 20])
+
+
+def test_get_axes_data1dint():
+    ui.load_arrays(1, [2, 10, 20], [10, 12, 22], [1, 2, 3], ui.Data1DInt)
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([2, 10, 20])
+    assert ax[1] == pytest.approx([10, 12, 22])
+
+
+def test_get_axes_datapha_no_response():
+    """Since we have no response this is a bit odd.
+
+    I have noted that it's unclear whether the bin edges are
+    1-2, 2-3, 3-4 or 0.5-1.5, 1.5-2.5, 2.5-3.5. Let's test
+    the status quo here.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.5, 1.5, 2.5])
+    assert ax[1] == pytest.approx([1.5, 2.5, 3.5])
+
+
+def test_get_axes_datapha_rmf():
+    """RMF only"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.1, 0.2, 0.4])
+    assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
+
+
+def test_get_axes_datapha_arf():
+    """ARF only"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.1, 0.2, 0.4])
+    assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
+
+
+def test_get_axes_datapha_rsp():
+    """Let's have a RMF and ARF for fun"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+    ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([0.1, 0.2, 0.4])
+    assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
+
+
+def test_get_axes_dataimg_logical():
+    """We don't set up a coordinate system so we just get logical back"""
+
+    y, x = np.mgrid[-5:-1, 5:8]
+    x = x.flatten()
+    y = y.flatten()
+    z = np.zeros(x.size)
+
+    # Not sure what ordering the shape array is meant to have
+    # and whether there is an ordering to x, y, z values.
+    #
+    ui.load_arrays(1, x, y, z, (4, 3), ui.DataIMG)
+
+    ax = ui.get_axes()
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([1, 2, 3])
+    assert ax[1] == pytest.approx([1, 2, 3, 4])
