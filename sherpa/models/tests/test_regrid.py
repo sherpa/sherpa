@@ -1,4 +1,4 @@
-# Copyright 2018, 2020 Smithsonian Astrophysical Observatory
+# Copyright 2018, 2020, 2021 Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:

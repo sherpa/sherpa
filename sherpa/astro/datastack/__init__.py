@@ -1,4 +1,4 @@
-# Copyright (c) 2010, 2014, 2015, 2020 Smithsonian Astrophysical Observatory
+# Copyright (c) 2010, 2014, 2015, 2020, 2021 Smithsonian Astrophysical Observatory
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
