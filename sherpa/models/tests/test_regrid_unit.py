@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -54,8 +54,8 @@ def setup_1d(request):
 
     if return_composite:
         return gmdl + cmdl
-    else:
-        return cmdl
+
+    return cmdl
 
 
 @pytest.mark.parametrize("cls,name",
