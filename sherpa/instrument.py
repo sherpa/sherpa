@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020
+#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021
 #        Smithsonian Astrophysical Observatory
 #
 #
@@ -18,10 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import warnings
 
 import numpy
-import logging
 
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \

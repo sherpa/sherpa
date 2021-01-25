@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021
 #                Smithsonian Astrophysical Observatory
 #
 #
@@ -18,15 +18,18 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import os.path
+
 import numpy
+
+import pycrates
+
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.astro.utils import resp_init
 from sherpa.astro.io.meta import Meta
-import pycrates
 
-import logging
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
 info = logging.getLogger(__name__).info
