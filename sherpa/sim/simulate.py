@@ -48,23 +48,23 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
     Attributes
     ----------
-    samples : numpy array
-       The parameter samples array for each simulation.
+    ratios : numpy array
+       The likelihood ratio for each simulation.
     stats : numpy array
        The fit statistic for the null and alternative models
        for each simulation. The shape is (nsim, 2).
-    ratios : numpy array
-       The likelihood ratio for each simulation.
-    null : number
-       The fit statistic of the null model on the observed data.
-    alt : number
-       The fit statistic of the alternate model on the observed data.
+    samples : numpy array
+       The parameter samples array for each simulation.
     lr : number
        The likelihood ratio of the observed data for the null and
        alternate models.
     ppp : number
        The p value of the observed data for the null and alternate
        models.
+    null : number
+       The fit statistic of the null model on the observed data.
+    alt : number
+       The fit statistic of the alternate model on the observed data.
 
     """
 
