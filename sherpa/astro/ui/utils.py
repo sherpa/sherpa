@@ -13248,6 +13248,10 @@ class Session(sherpa.ui.utils.Session):
         values used, together with the median, upper, and lower
         quantiles of the flux distribution.
 
+        .. versionchanged:: 4.13.1
+           The `id` parameter is now used if set (previously the
+           default dataset was always used).
+
         Parameters
         ----------
         modelcomponent : optional
