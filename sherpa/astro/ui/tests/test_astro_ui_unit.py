@@ -473,6 +473,23 @@ def test_save_pha_no_clobber(tmp_path):
     check_clobber(out, ui.save_data)
 
 
+@requires_fits
+@pytest.mark.parametrize("writer", [pytest.param(ui.save_data, marks=pytest.mark.xfail), ui.save_image])
+def test_save_image_no_clobber(writer, tmp_path):
+    """save_image: does clobber=False work?"""
+
+    y, x = np.mgrid[10:12, 20:23]
+    x = x.flatten()
+    y = y.flatten()
+    z = (x - 11)**2 + (y - 21)**2
+    ui.load_arrays(1, x, y, z, (2, 3), ui.DataIMG)
+
+    out = tmp_path / "data.dat"
+
+    out.write_text('some text')
+    check_clobber(out, writer)
+
+
 def check_output(out, colnames, rows):
     """Is the output as expected?
 
@@ -717,6 +734,84 @@ def test_save_data_dataimg_fits(tmp_path):
     assert ans.x0 == pytest.approx(xl)
     assert ans.x1 == pytest.approx(yl)
     assert ans.y == pytest.approx(z)
+
+
+@requires_data
+@requires_fits  # assume this means we have WCS too
+@pytest.mark.parametrize("writer", [ui.save_image, ui.save_data])
+def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
+    """Does save_image work for a FITS image with WCS
+
+    We also check the input file, is read in, for fun.
+
+    dmlist reports that this file has
+
+    Block    1: EVENTS_IMAGE                   Image      Int2(316x313)
+
+    Physical Axis Transforms for Image Block EVENTS_IMAGE
+
+    Group# Axis#
+       1   1,2    sky(x) = (+2986.8401) +(+1.0)* ((#1)-(+0.50))
+                     (y)   (+4362.6602)  (+1.0)  ((#2) (+0.50))
+
+    World Coordinate Axis Transforms for Image Block EVENTS_IMAGE
+
+    Group# Axis#
+       1   1,2    EQPOS(RA ) = (+149.8853)[deg] +TAN[(-0.000136667)* (sky(x)-(+4096.50))]
+                       (DEC)   (+2.6079  )           (+0.000136667)  (   (y) (+4096.50))
+
+    """
+
+    from sherpa.astro.io import read_image
+    from sherpa.astro.io.meta import Meta
+    from sherpa.astro.io.wcs import WCS
+
+    # It looks like we don't write out the header info, at least for
+    # pyfits. Probably a bug.
+    #
+    def check_data(d, header=True):
+        assert isinstance(d, ui.DataIMG)
+        assert d.shape == (313, 316)
+        assert d.y.shape == (313 * 316, )
+        assert d.y.sum() == 965
+        assert d.y.max() == 3
+
+        hdr = d.header
+        assert isinstance(hdr, Meta)
+        if header:
+            assert hdr['OBJECT'] == 'CSC'
+            assert hdr['ONTIME'] == pytest.approx(18220.799932122)
+            assert hdr['TSTOP'] == pytest.approx(280770182.77747)
+
+        assert isinstance(d.sky, WCS)
+        assert d.sky.name == 'physical'
+        assert d.sky.type == 'LINEAR'
+        assert d.sky.crval == pytest.approx([2986.84008789, 4362.66015625])
+        assert d.sky.crpix == pytest.approx([0.5, 0.5])
+        assert d.sky.cdelt == pytest.approx([1, 1])
+
+        assert isinstance(d.eqpos, WCS)
+        assert d.eqpos.name == 'world'
+        assert d.eqpos.type == 'WCS'
+        assert d.eqpos.epoch == pytest.approx(2000)
+        assert d.eqpos.equinox == pytest.approx(2000)
+        assert d.eqpos.crval == pytest.approx([149.88533198,   2.60794887])
+        assert d.eqpos.crpix == pytest.approx([4096.5, 4096.5])
+        assert d.eqpos.cdelt * 3600 == pytest.approx([-0.492, 0.492])
+
+
+    infile = make_data_path('acisf08478_000N001_r0043_regevt3_srcimg.fits')
+    ui.load_data(2, infile)
+
+    dorig = ui.get_data(2)
+    check_data(dorig)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    writer(2, outfile, ascii=False)
+
+    ans = read_image(outfile)
+    check_data(ans, header=False)
 
 
 @requires_fits
