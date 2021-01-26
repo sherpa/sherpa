@@ -1062,18 +1062,34 @@ def _wrapobj(obj, wrapper):
 
 # Notebook representation
 #
+def modelcomponents_to_list(model):
+    if hasattr(model, 'parts'):
+        modellist = []
+        for p in model.parts:
+            modellist.extend(modelcomponents_to_list(p))
+        return modellist
+    else:
+        return [model]
+
+
 def html_model(mdl):
     """Construct the HTML to display the model."""
 
     # Note that as this is a specialized table we do not use
     # formatting.html_table but create everything directly.
     #
-    nrows = defaultdict(int)
-    for par in mdl.pars:
-        if par.hidden:
-            continue
-
-        nrows[par.modelname] += 1
+    complist = []
+    nrows = []
+    for comp in modelcomponents_to_list(mdl):
+        this_comp_nrows = 0
+        for par in comp.pars:
+            if par.hidden:
+                continue
+            else:
+                this_comp_nrows +=1
+        if this_comp_nrows > 0:
+            complist.append(comp)
+            nrows.append(this_comp_nrows)
 
     out = '<table class="model">'
     out += '<caption>Expression: {}</caption>'.format(formatting.clean_bracket(mdl.name))
@@ -1084,56 +1100,47 @@ def html_model(mdl):
         out += '<th>{}</th>'.format(col)
 
     out += '</tr></thead><tbody>'
-    seen = set([])
-    mcount = 1
-    for par in mdl.pars:
-        if par.hidden:
-            continue
 
-        def addtd(val):
-            "Use the parameter to convert to HTML"
-            return '<td>{}</td>'.format(par._val_to_html(val))
+    for mcount, (n, comp) in enumerate(zip(nrows, complist)):
+        for i, par in enumerate(comp.pars):
+            style = '' if ((i > 0) or (mcount == 0)) else ' class="block"'
 
-        mname = par.modelname
+            if par.hidden:
+                continue
 
-        style = ''
-        if mname not in seen:
-            if len(seen) > 0:
-                style = ' class="block"'
+            def addtd(val):
+                "Use the parameter to convert to HTML"
+                return '<td>{}</td>'.format(par._val_to_html(val))
 
-        out += '<tr{}>'.format(style)
-        if mname not in seen:
-            cls = "model-" + ("even" if mcount % 2 == 0 else "odd")
-            out += '<th class="{}" scope="rowgroup" '.format(cls)
-            out += 'rowspan={}>{}</th>'.format(nrows[mname], mname)
-            seen.add(mname)
-            mcount += 1
+            out += '<tr{}>'.format(style)
+            if i ==0 :
+                cls = "model-" + ("even" if mcount % 2 == 1 else "odd")
+                out += '<th class="{}" scope="rowgroup" '.format(cls)
+                out += 'rowspan={}>{}</th>'.format(n, comp.name)
 
-        out += '<td>{}</td>'.format(par.name)
+            out += '<td>{}</td>'.format(par.name)
 
-        linked = par.link is not None
-        if linked:
-            out += "<td>linked</td>"
-        else:
-            out += '<td><input disabled type="checkbox"'
-            if not par.frozen:
-                out += ' checked'
-            out += '></input></td>'
+            if par.link is not None:
+                out += "<td>linked</td>"
+            else:
+                out += '<td><input disabled type="checkbox"'
+                if not par.frozen:
+                    out += ' checked'
+                out += '></input></td>'
 
-        out += addtd(par.val)
+            out += addtd(par.val)
 
-        if linked:
-            # 8592 is single left arrow
-            # 8656 is double left arrow
-            #
-            out += '<td colspan=2>&#8656; {}</td>'.format(formatting.clean_bracket(par.link.fullname))
+            if par.link is not None:
+                # 8592 is single left arrow
+                # 8656 is double left arrow
+                #
+                out += '<td colspan=2>&#8656; {}</td>'.format(formatting.clean_bracket(par.link.fullname))
+            else:
+                out += addtd(par.min)
+                out += addtd(par.max)
 
-        else:
-            out += addtd(par.min)
-            out += addtd(par.max)
-
-        out += '<td>{}</td>'.format(par._units_to_html())
-        out += '</tr>'
+            out += '<td>{}</td>'.format(par._units_to_html())
+            out += '</tr>'
 
     out += '</tbody></table>'
 
