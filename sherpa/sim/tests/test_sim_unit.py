@@ -64,7 +64,7 @@ def test_results_repr():
     assert out == '<Likelihood ratio results instance>'
 
 
-def test_results_str():
+def test_results_str(old_numpy_printing):
     """Basic check of string output of LikelihoodRatioResults"""
 
     # We don't care that the results are meaningless, which does make
@@ -78,9 +78,9 @@ def test_results_str():
     out = str(x)
     toks = out.split('\n')
     assert len(toks) == 9
-    assert toks[0].startswith('samples = [1')
-    assert toks[1].startswith('stats   = [[2')
-    assert toks[4].startswith('ratios  = [0')
+    assert toks[0].startswith('samples = [1,')
+    assert toks[1].startswith('stats   = [[ 2.1,')
+    assert toks[4].startswith('ratios  = [ 0.2, ')
     assert toks[5] == 'null    = 12.3'
     assert toks[6] == 'alt     = 14.4'
     assert toks[7] == 'lr      = 0.2'
