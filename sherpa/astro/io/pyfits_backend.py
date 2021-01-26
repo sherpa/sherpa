@@ -37,14 +37,14 @@ References
 
 """
 
+import logging
+import os
+
 import numpy
+from numpy.compat import basestring
 
 from astropy.io import fits
 from astropy.io.fits.column import _VLF
-
-from numpy.compat import basestring
-
-import os
 
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
@@ -52,7 +52,6 @@ import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
 from sherpa.astro.io.meta import Meta
 
-import logging
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
 
@@ -60,7 +59,7 @@ transformstatus = False
 try:
     from sherpa.astro.io.wcs import WCS
     transformstatus = True
-except:
+except ImportError:
     warning('failed to import WCS module; WCS routines will not be ' +
             'available')
 
@@ -69,9 +68,9 @@ __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
            'get_column_data', 'get_ascii_data')
 
 
-def _has_hdu(hdulist, id):
+def _has_hdu(hdulist, name):
     try:
-        hdulist[id]
+        hdulist[name]
     except (KeyError, IndexError):
         return False
     return True
@@ -108,7 +107,7 @@ def _get_meta_data(hdu):
         val = hdu.header[key]
 
         # empty numpy strings are not recognized by load pickle!
-        if type(val) is numpy.str_ and val == '':
+        if isinstance(val, numpy.str_) and val == '':
             val = ''
 
         meta[key] = val
@@ -749,9 +748,9 @@ def get_rmf_data(arg, make_copy=False):
                 # "perfect" RMFs may have mrow as a scalar
                 try:
                     rdata = mrow[start:end]
-                except IndexError:
+                except IndexError as ie:
                     if start != 0 or end != 1:
-                        raise IOErr('bad', 'format', 'MATRIX column formatting')
+                        raise IOErr('bad', 'format', 'MATRIX column formatting') from ie
 
                     rdata = [mrow]
 
@@ -1149,7 +1148,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     for arg in args:
         if not numpy.iterable(arg):
             raise IOErr('noarrayswrite')
-        elif len(arg) != size:
+        if len(arg) != size:
             raise IOErr('arraysnoteq')
 
     if fields is None:
