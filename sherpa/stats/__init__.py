@@ -957,6 +957,10 @@ class WStat(Likelihood):
         exp_bkg = []
         backscales = []
 
+        # Why are we looping over model.parts as it isn't used?
+        # Is it just a way to restrict to only use those
+        # datasets for which we have a model?
+        #
         for dset, mexpr in zip(data.datasets, model.parts):
 
             y = dset.to_fit(staterrfunc=None)[0]
@@ -966,7 +970,7 @@ class WStat(Likelihood):
             try:
                 bids = dset.background_ids
             except AttributeError:
-                raise StatErr('usecstat')
+                raise StatErr('usecstat') from None
 
             nbkg = len(bids)
             if nbkg == 0:
