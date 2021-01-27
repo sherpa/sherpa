@@ -768,7 +768,7 @@ def test_sample_foo_flux_not_a_model(method, make_data_path, clean_astro_ui):
 
     setup_sample(1, make_data_path, fit=False)
     with pytest.raises(AttributeError) as exc:
-         method(lo=0.5, hi=7, num=1, model='x')
+        method(lo=0.5, hi=7, num=1, model='x')
 
     assert str(exc.value) == "'str' object has no attribute 'thawedpars'"
 
@@ -786,7 +786,7 @@ def test_sample_foo_flux_invalid_model(method, make_data_path,
     setup_sample(1, make_data_path, fit=False)
     mdl = ui.create_model_component('powlaw1d', 'p1')
     with pytest.raises(ArgumentErr) as exc:
-         method(lo=0.5, hi=7, num=1, model=mdl)
+        method(lo=0.5, hi=7, num=1, model=mdl)
 
     assert str(exc.value) == "Invalid src: 'model contains term not in fit'"
 
