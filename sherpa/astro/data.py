@@ -35,20 +35,20 @@ from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
 
 # There are currently (Sep 2015) no tests that exercise the code that
-# uses the compile_energy_grid or Region symbols.
+# uses the compile_energy_grid symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
 
+info = logging.getLogger(__name__).info
+warning = logging.getLogger(__name__).warning
+
 regstatus = False
 try:
-    from sherpa.astro.utils import Region, region_mask
+    from sherpa.astro.utils._region import Region
     regstatus = True
 except ImportError:
-    # sherpa.astro.utils will have already generated a warning so
-    # no need to create one here
-    pass
-
-warning = logging.getLogger(__name__).warning
+    warning('failed to import sherpa.astro.utils._region; Region routines ' +
+            'will not be available')
 
 groupstatus = False
 try:
@@ -2649,37 +2649,67 @@ class DataIMG(Data2D):
     get_filter = get_filter_expr
 
     def notice2d(self, val=None, ignore=False):
-        mask = None
+        """Apply a 2D filter.
+
+        Parameters
+        ----------
+        val : str or None, optional
+            The filter to apply. It can be a region string or a
+            filename.
+        ignore : bool, optional
+            If set then the filter should be ignored, not noticed.
+
+        """
+
         ignore = bool_cast(ignore)
-        if val is not None:
 
-            if not regstatus:
-                raise ImportErr('importfailed', 'region', 'notice2d')
-
-            val = str(val).strip()
-            (self._region,
-             mask) = region_mask(self._region, val,
-                                 self.get_x0(), self.get_x1(),
-                                 os.path.isfile(val), ignore)
-            mask = numpy.asarray(mask, dtype=numpy.bool_)
-        else:
-            self._region = None
-
-        if mask is None:
+        # This was originally a bit-more complex, but it has been
+        # simplified.
+        #
+        if val is None:
             self.mask = not ignore
             self._region = None
+            return
 
-        elif not ignore:
+        if not regstatus:
+            raise ImportErr('importfailed', 'region', 'notice2d')
+
+        # Crete the new region
+        #
+        val = str(val).strip()
+        isfile = os.path.isfile(val)
+        reg = Region(val, isfile)
+
+        # Calculate the mask for this region as an "included"
+        # region.
+        #
+        mask = reg.mask(self.get_x0(), self.get_x1())
+        mask = mask.astype(numpy.bool)
+
+        # Apply the new mask to the existing mask.
+        #
+        if not ignore:
             if self.mask is True:
                 self.mask = mask
             else:
                 self.mask |= mask
         else:
+            # Invert the response from region_mask
             mask = ~mask
             if self.mask is False:
                 self.mask = mask
             else:
                 self.mask &= mask
+
+        # Create the new region shape.
+        #
+        if self._region is None:
+            if ignore:
+                reg.invert()
+
+            self._region = reg
+        else:
+            self._region = self._region.combine(reg, ignore)
 
     def get_bounding_mask(self):
         mask = self.mask
