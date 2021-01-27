@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2019, 2020
+#  Copyright (C) 2009, 2015, 2016, 2019, 2020, 2021
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -552,6 +552,14 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     orig_source = session.get_source(id)
     orig_source_vals = orig_source.thawedpars
 
+    logger = logging.getLogger("sherpa")
+    orig_log_level = logger.level
+
+    # only change the log level if it is less than error
+    #
+    if orig_log_level < logging.ERROR:
+        logger.setLevel(logging.ERROR)
+
     try:
 
         softmins = fit.model.thawedparmins
@@ -563,23 +571,18 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
         thawedpars = [par for par in fit.model.pars if not par.frozen]
 
-        logger = logging.getLogger("sherpa")
-        orig_log_level = logger.level
-
         mystat = []
         for nn in range(size):
-            logger.setLevel(logging.ERROR)
             session.set_source(id, orig_source)
-            logger.setLevel(orig_log_level)
             oflx[nn] = mysim[nn, 0]
             for ii in range(len(thawedpars)):
                 val = mysim[nn, ii + 1]
                 session.set_par(thawedpars[ii].fullname, val)
             session.set_source(id, modelcomponent)
-            iflx[nn] = session.calc_energy_flux(lo, hi)
+            iflx[nn] = session.calc_energy_flux(lo=lo, hi=hi, id=id)
             #####################################
             session.set_full_model(id, orig_model)
-            mystat.append(session.calc_stat())
+            mystat.append(session.calc_stat(id))
             #####################################
         oflxiflx = [oflx, iflx]
 
@@ -611,9 +614,10 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     finally:
 
+        # Why do we set both full_model and source here?
+        #
         session.set_full_model(id, orig_model)
         fit.model.thawedpars = orig_model_vals
-
-        logger.setLevel(logging.ERROR)
         session.set_source(id, orig_source)
+
         logger.setLevel(orig_log_level)
