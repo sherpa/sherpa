@@ -1,4 +1,4 @@
-# Copyright 2018, 2020 Smithsonian Astrophysical Observatory
+# Copyright 2018, 2020, 2021 Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
@@ -19,7 +19,9 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import numpy as np
+
 import pytest
 from pytest import approx
 
@@ -32,6 +34,7 @@ from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, \
 from sherpa.utils.err import ModelErr
 from sherpa.utils import neville, linear_interp
 from sherpa.utils import akima
+
 
 @pytest.fixture
 def setup():
@@ -244,7 +247,8 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
     # This is the important part. Note that there is overlap, but
     # the start and end p
     with pytest.raises(ModelErr) as excinfo:
-        regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
+        my_model.regrid([2, 2.5], [2, 2.5])
+
     assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
@@ -299,7 +303,6 @@ def test_regrid_binaryop_1d():
     from sherpa.fit import Fit
     from sherpa.optmethods import LevMar
 
-
     class MyConst1D(RegriddableModel1D):
 
         def __init__(self, name='myconst1d'):
@@ -311,7 +314,6 @@ def test_regrid_binaryop_1d():
             x = args[0]
             self.counter += x.size
             return par[0]
-
 
     class MyGauss(RegriddableModel1D):
 
@@ -327,7 +329,6 @@ def test_regrid_binaryop_1d():
             x = args[0]
             self.counter += x.size
             return ampl * np.exp(-0.5 * (args[0] - pos)**2 / sigma**2)
-
 
     np.random.seed(0)
     leastsq = LeastSq()
@@ -357,7 +358,8 @@ def test_regrid_binaryop_1d():
     assert result.numpoints == x.size
     assert result.statval < 1.0
     assert mygauss.counter == myconst.counter
-    assert (result.nfev + 4) * x_regrid.size  == mygauss.counter
+    assert (result.nfev + 4) * x_regrid.size == mygauss.counter
+
 
 def test_regrid_binaryop_2d():
     y0, x0 = np.mgrid[20:29, 10:20]
@@ -386,12 +388,12 @@ def test_regrid_binaryop_2d():
 
     ans1 = rmdlg(x0, y0).reshape(shape)
     ans2 = rmdlc(x0, y0).reshape(shape)
-    assert (ans1 != truthg).any() == False
-    assert (ans2 != truthc).any() == False
+    assert (ans1 == truthg).all()
+    assert (ans2 == truthc).all()
 
     rmdl = (gmdl + cmdl).regrid(xr1, yr1)
     ans3 = rmdl(x0, y0).reshape(shape)
-    assert (ans3 != truth).any() == False
+    assert (ans3 == truth).all()
 
 
 def test_regrid_call_behavior():
@@ -407,7 +409,6 @@ def test_regrid_call_behavior():
             self.ncalled.append((xlo[0], xlo[-1], xlo.size))
             return self.baseclass.calc(self, pars, xlo, *args, **kwargs)
 
-
     m1 = Wrappable1D(basic.Const1D, 'm1')
     m2 = Wrappable1D(basic.Gauss1D, 'm2')
 
@@ -419,7 +420,8 @@ def test_regrid_call_behavior():
     morig = m1 + m2
     mwrap = morig.regrid(xregrid)
 
-    y = mwrap(xdata)
+    # evaluate the model, we do not check the return value
+    _ = mwrap(xdata)
 
     # Check both components were called with the same grid
     assert m1.ncalled == m2.ncalled
@@ -460,7 +462,7 @@ class MyModel(RegriddableModel1D):
             if p[0] == 0:
                 return [100, ] * len(x)
             else:
-                return [100-p[0]*100,] * len(x)
+                return [100-p[0] * 100, ] * len(x)
         if p[0] == 1:
             return [100, ] * len(x)
         else:
@@ -498,11 +500,11 @@ class MyModel2D(RegriddableModel2D):
             if has_25 == 0:
                 return [100, ] * len(array)
             else:
-                return [100-has_25*100,] * len(array)
+                return [100 - has_25 * 100, ] * len(array)
         if has_25 == 1:
             return [100, ] * len(array)
         else:
-            return [has_25*100, ] * len(array)
+            return [has_25 * 100, ] * len(array)
 
 
 def assert_fit(ui, model, value):

@@ -22,10 +22,10 @@ import os
 import re
 import logging
 
-import pytest
-
 import numpy as np
 from numpy import VisibleDeprecationWarning
+
+import pytest
 
 from sherpa.utils.testing import SherpaTestCase
 
@@ -141,7 +141,7 @@ known_warnings = {
          # I am getting the following from astropy with at least python 2.7 during the conda tests
          r"numpy.ufunc size changed, may indicate binary ",
          ],
-     VisibleDeprecationWarning:
+    VisibleDeprecationWarning:
         [],
 }
 

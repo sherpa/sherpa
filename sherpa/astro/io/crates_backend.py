@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021
 #                Smithsonian Astrophysical Observatory
 #
 #
@@ -18,15 +18,18 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import os.path
+
 import numpy
+
+import pycrates
+
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.astro.utils import resp_init
 from sherpa.astro.io.meta import Meta
-import pycrates
 
-import logging
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
 info = logging.getLogger(__name__).info
@@ -448,7 +451,6 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
     checked for new crates
     """
 
-    filename = ''
     close_dataset = False
     if type(arg) == str:
 
@@ -462,13 +464,11 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
             raise e
 
         close_dataset = True
-        filename = tbl.get_filename()
 
         # Make a copy of the data, since we don't know that pycrates will
         # do something sensible wrt reference counting
     elif isinstance(arg, pycrates.TABLECrate):
         tbl = arg
-        filename = arg.get_filename()
     else:
         raise IOErr('badfile', arg, 'TABLECrate obj')
 

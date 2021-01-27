@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,7 @@ from abc import ABCMeta
 
 import numpy
 
-from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D
+from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, calc_total_error, bool_cast, \
@@ -74,11 +74,10 @@ def _check_dep(array):
 
 def _check_err(array, masktemplate):
     '''Accept array without mask or with a mask that matches the template'''
-    if ((hasattr(array, 'mask') and not hasattr(masktemplate, 'mask')) or
-        (hasattr(array, 'mask') and not numpy.all(array.mask == masktemplate.mask))):
+    if hasattr(array, 'mask') and \
+       (not hasattr(masktemplate, 'mask') or not numpy.all(array.mask == masktemplate.mask)):
         warnings.warn('The mask of {} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.'.format(array))
     return array
-
 
 
 class DataSpace1D(EvaluationSpace1D):
@@ -921,7 +920,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
                 total_model.append(tmp_model)
             return numpy.concatenate(total_model)
         else:
-        # best to make this a different derived class
+            # best to make this a different derived class
             funcs = []
             datasets = []
             for func, data in zip(modelfuncs, self.datasets):

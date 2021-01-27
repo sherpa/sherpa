@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, IOErr, ModelErr, SessionErr
+    IdentifierErr, ModelErr, SessionErr
 
 from sherpa import get_config
 
@@ -11904,7 +11904,7 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentTypeErr('plotargs')
 
         if plotmeth not in ['plot', 'contour']:
-            raise ArgumentErr("Unsupported plotmeth={}",format(plotmeth))
+            raise ArgumentErr("Unsupported plotmeth={}".format(plotmeth))
 
         plots = []
         allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))

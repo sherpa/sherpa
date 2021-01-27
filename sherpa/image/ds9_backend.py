@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,9 +18,11 @@
 #
 
 import time
-from . import DS9
 from os import access, R_OK
+
 from sherpa.utils.err import DS9Err
+
+from . import DS9
 
 imager = DS9.DS9Win(DS9._DefTemplate, False)
 
@@ -95,12 +97,12 @@ def _set_wcs(keys):
     eqpos, sky, name = keys
 
     phys = ''
-    wcs  = "OBJECT = '%s'\n" % name
+    wcs = "OBJECT = '%s'\n" % name
 
     if eqpos is not None:
-        wcrpix  = eqpos.crpix
-        wcrval  = eqpos.crval
-        wcdelt  = eqpos.cdelt
+        wcrpix = eqpos.crpix
+        wcrval = eqpos.crval
+        wcdelt = eqpos.cdelt
 
     if sky is not None:
         pcrpix = sky.crpix
@@ -120,8 +122,7 @@ def _set_wcs(keys):
 
         if eqpos is not None:
             wcdelt = wcdelt * pcdelt
-            wcrpix = ((wcrpix - pcrval) /
-                      pcdelt + pcrpix )
+            wcrpix = (wcrpix - pcrval) / pcdelt + pcrpix
 
     if eqpos is not None:
         # join together all strings with a '\n' between each

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2016, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -43,7 +43,6 @@ class Prior(Likelihood):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-
     def __init__(self, statfunc=None, hyperpars={}, pars={}, name='prior'):
 
         # Posterior hyper-parameters
@@ -68,7 +67,6 @@ class Prior(Likelihood):
 
         Likelihood.__init__(self, name)
 
-
     def __str__(self):
 
         s = self.name
@@ -77,9 +75,8 @@ class Prior(Likelihood):
         s += hfmt % ('-'*5, '-'*4, '-'*5)
         for p in self.hyperpars:
             s += ('\n   %-15s %-6s %12g' %
-                  (p.fullname,'frozen', p.val))
+                  (p.fullname, 'frozen', p.val))
         return s
-
 
     def set_statfunc(self, func):
         self.statfunc = func

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,16 +17,21 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import operator
+
+import numpy
+
+from sherpa.utils.err import ModelErr
 from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
-import numpy, operator
-from sherpa.utils.err import ModelErr
 
-__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator', 'Template')
+__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator',
+           'Template')
 
 
-def create_template_model(modelname, names, parvals, templates, template_interpolator_name='default'):
+def create_template_model(modelname, names, parvals, templates,
+                          template_interpolator_name='default'):
     """
     Create a TemplateModel model class from template input
 
@@ -51,9 +56,9 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
     # Create a list of parameters from input
     pars = []
     for ii, name in enumerate(names):
-        minimum = min(parvals[:,ii])
-        maximum = max(parvals[:,ii])
-        initial = parvals[:,ii][0]
+        minimum = min(parvals[:, ii])
+        maximum = max(parvals[:, ii])
+        initial = parvals[:, ii][0]
         # Initial parameter value is always first parameter value listed
         par = Parameter(modelname, name, initial,
                         minimum, maximum,
@@ -109,7 +114,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
 
     def interpolate(self, point, x_out):
         self._calc_distances(point)
-        if self._distances[0][1]==0:
+        if self._distances[0][1] == 0:
             return self.template_model.templates[self._distances[0][0]]
         k_distances = self._distances[:self.k]
         weights = [(idx, 1/numpy.array(distance)) for idx, distance in k_distances]
@@ -130,7 +135,8 @@ class Template(KNNInterpolator):
 
 class TemplateModel(ArithmeticModel):
 
-    def __init__(self, name='templatemodel', pars=(), parvals=None, templates=None):
+    def __init__(self, name='templatemodel', pars=(), parvals=None,
+                 templates=None):
         self.parvals = parvals if parvals is not None else []
         self.templates = templates if templates is not None else []
         self.index = {}
@@ -148,7 +154,6 @@ class TemplateModel(ArithmeticModel):
         for template in self.templates:
             template.fold(data)
 
-
     def get_x(self):
         p = tuple(par.val for par in self.pars)
         template = self.query(p)
@@ -159,22 +164,21 @@ class TemplateModel(ArithmeticModel):
         template = self.query(p)
         return template.get_y()
 
-
     def query(self, p):
         try:
             return self.index[tuple(p)]
-        except:
+        except KeyError:
             raise ModelErr("Interpolation of template parameters was disabled for this model, but parameter values not in the template library have been requested. Please use gridsearch method and make sure the sequence option is consistent with the template library")
-
 
     @modelCacher1d
     def calc(self, p, x0, x1=None, *args, **kwargs):
         table_model = self.query(p)
 
-        # return interpolated the spectrum according to the input grid (x0, [x1])
+        # return interpolated the spectrum according to the input grid
+        # (x0, [x1])
         return table_model(x0, x1, *args, **kwargs)
 
 
 interpolators = {
-        'default' : (Template, {'k':2, 'order':2})
+    'default': (Template, {'k': 2, 'order': 2})
 }

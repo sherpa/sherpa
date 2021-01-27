@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021
 #            Smithsonian Astrophysical Observatory
 #
 #
@@ -28,7 +28,8 @@ import warnings
 
 import numpy
 
-from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, IntegratedDataSpace2D
+from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
+    IntegratedDataSpace2D
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
@@ -209,7 +210,6 @@ def _extract_fields(obj, stop, summary, open_block=True):
 
     return formatting.html_section(meta, summary=summary,
                                    open_block=open_block)
-
 
 
 def html_pha(pha):
@@ -737,7 +737,7 @@ def img_plot(img):
         im = ax.imshow(y, origin='lower', extent=extent, aspect=aspect)
         fig.colorbar(im, ax=ax)
 
-        if filtered != None:
+        if filtered is not None:
             ax.set_xlim(filtered[0], filtered[2])
             ax.set_ylim(filtered[1], filtered[3])
 
@@ -1315,7 +1315,7 @@ class DataPHA(Data1D):
         if units.startswith('chan'):
             # Note: the names of these routines appear confusing because of the
             #       way group values are used
-            self._to_channel   = self._channel_to_group
+            self._to_channel = self._channel_to_group
             self._from_channel = self._group_to_channel
             units = 'channel'
 

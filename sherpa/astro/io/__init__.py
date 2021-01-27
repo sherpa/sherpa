@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -90,7 +90,7 @@ except ImportError:
                       .format(io_opt))
 
 warning = logging.getLogger(__name__).warning
-info    = logging.getLogger(__name__).info
+info = logging.getLogger(__name__).info
 
 
 __all__ = ('read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
@@ -757,7 +757,7 @@ def write_image(filename, dataset, ascii=True, clobber=False):
 
     """
     data, hdr = _pack_image(dataset)
-    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber )
+    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber)
 
 
 def write_pha(filename, dataset, ascii=True, clobber=False):

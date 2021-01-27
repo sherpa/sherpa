@@ -78,6 +78,7 @@ import numpy
 
 __all__ = ('Akima', 'akima')
 
+
 def interpolate(x, y, x_new, axis=-1, out=None):
     """
     Return interpolated data using Akima's method.
@@ -177,8 +178,7 @@ def interpolate(x, y, x_new, axis=-1, out=None):
     #
     #   Try this to fix bad interpolations below first point
     #
-
-    bins = numpy.maximum(bins,0)
+    bins = numpy.maximum(bins, 0)
 
     bb = bins[0:len(xi)]
     wj = xi - x[bb]
@@ -187,8 +187,10 @@ def interpolate(x, y, x_new, axis=-1, out=None):
 
 ###############################################################################
 
+
 def akima(xout, xin, yin, axis=-1, out=None):
     return interpolate(xin, yin, xout, axis, out)
+
 
 class Akima:
 

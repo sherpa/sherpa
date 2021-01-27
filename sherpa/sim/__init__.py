@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020
+#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -709,14 +709,14 @@ class MCMC(NoNewAttributesAfterInit):
         sampler_kwargs = self._sampler_opt.copy()
         sampler_kwargs['priors'] = priors
 
-        oldthawedpars  = numpy.array(mu)
-        thawedparmins  = fit.model.thawedparhardmins
+        oldthawedpars = numpy.array(mu)
+        thawedparmins = fit.model.thawedparhardmins
         thawedparmaxes = fit.model.thawedparhardmaxes
 
         def calc_stat(proposed_params):
 
             # automatic rejection outside hard limits
-            mins  = sao_fcmp(proposed_params, thawedparmins, _tol)
+            mins = sao_fcmp(proposed_params, thawedparmins, _tol)
             maxes = sao_fcmp(thawedparmaxes, proposed_params, _tol)
             if -1 in mins or -1 in maxes:
                 raise LimitError('Sherpa parameter hard limit exception')
@@ -895,7 +895,7 @@ class ReSampleData(NoNewAttributesAfterInit):
             y_l = data.staterror
             y_h = data.staterror
         else:
-            msg ="{0} {1}".format(ReSampleData.__name__, type(data))
+            msg = "{0} {1}".format(ReSampleData.__name__, type(data))
             raise NotImplementedError(msg)
 
         ny = len(y)
@@ -968,7 +968,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])
-            info('{} : avg = {} , std = {}'.format(name, avg, std, std))
+            info('{} : avg = {} , std = {}'.format(name, avg, std))
             result[name] = pars[name]
 
         return result

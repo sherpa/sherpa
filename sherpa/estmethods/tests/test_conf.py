@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy as np
 import logging
+
+import numpy as np
 
 from sherpa.fit import Fit
 from sherpa.data import Data1D
@@ -29,6 +30,7 @@ from sherpa import ui
 
 logger = logging.getLogger("sherpa")
 
+
 class test_estmethods(SherpaTestCase):
 
     _x = [-13, -5, -3, 2, 7, 12]
@@ -36,15 +38,15 @@ class test_estmethods(SherpaTestCase):
     _e = np.ones(6) * 5
 
     _conf_bench = {
-        'parnames' : ('mdl.c0', 'mdl.c1', 'mdl.c2'),
-        'parvals' : np.array([-9.384889507344322, -2.4169154937347925,
-                              0.47827334261018023]),
-        'parmins' : np.array([-2.917507940156449, -0.250889317129555,
-                              -0.03126766429871808]),
-        'parmaxes' : np.array([2.91750794015645, 0.250889317129555,
-                               0.03126766429871808])
+        'parnames': ('mdl.c0', 'mdl.c1', 'mdl.c2'),
+        'parvals': np.array([-9.384889507344322, -2.4169154937347925,
+                             0.47827334261018023]),
+        'parmins': np.array([-2.917507940156449, -0.250889317129555,
+                             -0.03126766429871808]),
+        'parmaxes': np.array([2.91750794015645, 0.250889317129555,
+                              0.03126766429871808])
         }
-    
+
     def setUp(self):
         # defensive programming (one of the tests has been seen to fail
         # when the whole test suite is run without this)
@@ -53,7 +55,7 @@ class test_estmethods(SherpaTestCase):
         logger.setLevel(logging.ERROR)
         self.data = Data1D('tst', self._x, self._y, self._e)
         self.mdl = Polynom1D('mdl')
-        
+
     def tearDown(self):
         ui.clean()
 
@@ -71,7 +73,7 @@ class test_estmethods(SherpaTestCase):
                                   result.parmins, tol)
         self.assertEqualWithinTol(self._conf_bench['parmaxes'],
                                   result.parmaxes, tol)
-        
+
     def tst_low_level(self, thaw_c1):
         if thaw_c1:
             self.mdl.c1.thaw()
@@ -84,11 +86,11 @@ class test_estmethods(SherpaTestCase):
             f.fit()
         result = f.est_errors()
         self.cmp_results(result)
-        
+
     def tst_ui(self, thaw_c1):
         ui.load_arrays(1, self._x, self._y, self._e)
         ui.set_source(1, ui.polynom1d.mdl)
-        if  thaw_c1:
+        if thaw_c1:
             ui.thaw(mdl.c1)
         ui.thaw(mdl.c2)
         mdl.c2 = 1
@@ -99,7 +101,7 @@ class test_estmethods(SherpaTestCase):
         ui.conf()
         result = ui.get_conf_results()
         self.cmp_results(result)
-        
+
     def test_low_level_True(self):
         self.tst_low_level(True)
 
@@ -110,4 +112,4 @@ class test_estmethods(SherpaTestCase):
         self.tst_ui(True)
 
     def test_ui_False(self):
-        self.tst_ui(False)        
+        self.tst_ui(False)

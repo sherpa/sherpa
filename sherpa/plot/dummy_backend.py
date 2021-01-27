@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,19 +24,19 @@ from sherpa.utils import formatting
 
 
 __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
-           'get_split_plot_defaults','get_confid_point_defaults',
-           'get_plot_defaults','get_point_defaults', 'begin', 'end', 'init',
+           'get_split_plot_defaults', 'get_confid_point_defaults',
+           'get_plot_defaults', 'get_point_defaults', 'begin', 'end', 'init',
            'get_data_plot_defaults', 'get_model_plot_defaults',
            'get_fit_plot_defaults', 'get_resid_plot_defaults',
            'get_ratio_plot_defaults', 'get_contour_defaults',
            'get_data_contour_defaults', 'get_model_contour_defaults',
            'get_fit_contour_defaults', 'get_resid_contour_defaults',
-           'get_ratio_contour_defaults','get_confid_plot_defaults',
+           'get_ratio_contour_defaults', 'get_confid_plot_defaults',
            'get_confid_contour_defaults', 'set_window_redraw', 'set_jointplot',
            'get_histo_defaults', 'get_model_histo_defaults',
            'get_component_plot_defaults', 'get_component_histo_defaults',
-           'vline', 'hline', 'get_scatter_plot_defaults', 'get_cdf_plot_defaults',
-           'get_latex_for_string', 'name')
+           'vline', 'hline', 'get_scatter_plot_defaults',
+           'get_cdf_plot_defaults', 'get_latex_for_string', 'name')
 
 
 lgr = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ set_jointplot = point
 vline = point
 hline = point
 
+
 def get_split_plot_defaults():
     return get_keyword_defaults(set_subplot, 3)
 
@@ -77,14 +78,18 @@ def get_plot_defaults():
 def get_point_defaults():
     return get_keyword_defaults(point, 2)
 
+
 def get_contour_defaults():
     return get_keyword_defaults(contour, 6)
+
 
 def get_histo_defaults():
     return get_keyword_defaults(histo, 6)
 
+
 def get_dummy_defaults():
     return {}
+
 
 get_data_plot_defaults = get_dummy_defaults
 get_model_plot_defaults = get_dummy_defaults
@@ -106,6 +111,7 @@ get_component_plot_defaults = get_dummy_defaults
 get_component_histo_defaults = get_dummy_defaults
 get_scatter_plot_defaults = get_dummy_defaults
 get_cdf_plot_defaults = get_dummy_defaults
+
 
 def get_latex_for_string(txt):
     """Convert to LaTeX form for the dummy back end.
@@ -153,7 +159,7 @@ def as_html(data, fields):
         try:
             val = getattr(data, name)
         except Exception as e:
-            lgr.debug("Skipping field {}: {}",format(name, e))
+            lgr.debug("Skipping field {}: {}".format(name, e))
             continue
 
         meta.append((name, val))

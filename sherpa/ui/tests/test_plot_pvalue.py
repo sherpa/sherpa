@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -66,7 +66,7 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_log_output):
 
     g1.pos = 3.
     ui.freeze(g1.pos)
-    g1.fwhm=0.1
+    g1.fwhm = 0.1
     ui.freeze(g1.fwhm)
 
     ui.fit()

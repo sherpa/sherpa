@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -43,10 +43,10 @@ where the exposure time or background scaling may not be unity.
 
 """
 
-import pytest
-
 import numpy as np
 from numpy.testing import assert_allclose
+
+import pytest
 
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import ARFModelPHA, RMFModelPHA, RSPModelPHA
@@ -477,7 +477,7 @@ def make_arf(energ_lo, energ_hi, specresp=None, exposure=1.0,
         raise DataErr('mismatch', 'energ_lo', 'energ_hi')
 
     if specresp is None:
-            specresp = np.ones(elo.size, dtype=np.float32)
+        specresp = np.ones(elo.size, dtype=np.float32)
     else:
         specresp = np.asarray(specresp)
         if specresp.size != elo.size:

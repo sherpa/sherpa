@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,6 @@ from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
 
-from tempfile import NamedTemporaryFile
 
 @requires_data
 @requires_fits
@@ -39,6 +38,7 @@ def test_mod_fits(make_data_path):
     tmod = ui.get_model_component("tmod")
     assert tmod.name == "xstablemodel.tmod"
 
+
 @requires_fits
 def test_warnings_are_gone_arrays():
     ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
@@ -48,6 +48,7 @@ def test_warnings_are_gone_arrays():
         ui.save_data(1, f.name, ascii=True, clobber=True)
     with NamedTemporaryFile() as f:
         ui.save_data(1, f.name, ascii=False, clobber=True)
+
 
 @requires_fits
 @requires_data
@@ -74,7 +75,7 @@ def assert_staterr(use_errors):
     ui.ignore(None, 3.)
     if use_errors is True:
         assert np.all(ui.get_data("phacounts").get_error() ==
-                  pytest.approx(ui.get_data("pharate").get_error()))
+                      pytest.approx(ui.get_data("pharate").get_error()))
     else:
         assert ui.get_data("phacounts").get_error() is None
         assert ui.get_data("pharate").get_error() is None
@@ -128,8 +129,8 @@ def test_scaling_staterr_pha2(make_data_path, use_errors):
                 use_errors=use_errors)
     ui.copy_data(9, "pharate")
     for n in ['phacounts', 'pharate']:
-            ui.load_arf(n, make_data_path("3c120_meg_-1.arf.gz"))
-            ui.load_rmf(n, make_data_path("3c120_meg_-1.rmf.gz"))
+        ui.load_arf(n, make_data_path("3c120_meg_-1.arf.gz"))
+        ui.load_rmf(n, make_data_path("3c120_meg_-1.rmf.gz"))
     assert_staterr(use_errors)
 
 
@@ -155,68 +156,65 @@ def fake_rmf(outfile):
         out = "{:8s}= {}".format(key, value)
         return out.ljust(80)
 
-    hdr_img = [ hdr('SIMPLE', True),
-                hdr('BITPIX', 8),
-                hdr('NAXIS', 0),
-                hdr('EXTEND', True)
-    ]
+    hdr_img = [hdr('SIMPLE', True),
+               hdr('BITPIX', 8),
+               hdr('NAXIS', 0),
+               hdr('EXTEND', True)]
 
-    hdr_ebounds = [ hdr('XTENSION', 'BINTABLE'),
-                    hdr('BITPIX', 8),
-                    hdr('NAXIS', 2),
-                    hdr('NAXIS1', 10),
-                    hdr('NAXIS2', nchan),
-                    hdr('PCOUNT', 0),
-                    hdr('GCOUNT', 1),
-                    hdr('TFIELDS', 3),
-                    hdr('TTYPE1', 'CHANNEL'),
-                    hdr('TFORM1', 'I'),
-                    hdr('TTYPE2', 'E_MIN'),
-                    hdr('TFORM2', 'E'),
-                    hdr('TTYPE3', 'E_MAX'),
-                    hdr('TFORM3', 'E'),
-                    hdr('EXTNAME', 'EBOUNDS'),
-                    hdr('HDUCLASS', 'OGIP'),
-                    hdr('HDUCLAS1', 'RESPONSE'),
-                    hdr('HDUCLAS2', 'EBOUNDS'),
-                    hdr('HDUVERS', '1.3.0'),
-                    hdr('CHANTYPE', 'PI'),
-                    hdr('DETCHANS', nchan),
-    ]
-
-    hdr_matrix = [ hdr('XTENSION', 'BINTABLE'),
+    hdr_ebounds = [hdr('XTENSION', 'BINTABLE'),
                    hdr('BITPIX', 8),
                    hdr('NAXIS', 2),
-                   hdr('NAXIS1', 18),
+                   hdr('NAXIS1', 10),
                    hdr('NAXIS2', nchan),
                    hdr('PCOUNT', 0),
                    hdr('GCOUNT', 1),
-                   hdr('TFIELDS', 6),
-                   hdr('TTYPE1', 'ENERG_LO'),
-                   hdr('TFORM1', 'E'),
-                   hdr('TTYPE2', 'ENERG_HI'),
+                   hdr('TFIELDS', 3),
+                   hdr('TTYPE1', 'CHANNEL'),
+                   hdr('TFORM1', 'I'),
+                   hdr('TTYPE2', 'E_MIN'),
                    hdr('TFORM2', 'E'),
-                   hdr('TTYPE3', 'N_GRP'),
-                   hdr('TFORM3', 'I'),
-                   hdr('TTYPE4', 'F_CHAN'),
-                   hdr('TFORM4', 'I'),
-                   hdr('TTYPE5', 'N_CHAN'),
-                   hdr('TFORM5', 'I'),
-                   hdr('TTYPE6', 'MATRIX'),
-                   hdr('TFORM6', 'E'),
-                   hdr('EXTNAME', 'MATRIX'),
+                   hdr('TTYPE3', 'E_MAX'),
+                   hdr('TFORM3', 'E'),
+                   hdr('EXTNAME', 'EBOUNDS'),
                    hdr('HDUCLASS', 'OGIP'),
                    hdr('HDUCLAS1', 'RESPONSE'),
-                   hdr('HDUCLAS2', 'RSP_MATRIX'),
-                   hdr('HDUCLAS3', 'REDIST'),
+                   hdr('HDUCLAS2', 'EBOUNDS'),
                    hdr('HDUVERS', '1.3.0'),
                    hdr('CHANTYPE', 'PI'),
-                   hdr('TLMIN4', 1),
-                   hdr('DETCHANS', nchan),
-                   hdr('NUMGRP', nchan),
-                   hdr('NUMELT', nchan),
-                   hdr('LO_THRES', '1E-06')
-    ]
+                   hdr('DETCHANS', nchan)]
+
+    hdr_matrix = [hdr('XTENSION', 'BINTABLE'),
+                  hdr('BITPIX', 8),
+                  hdr('NAXIS', 2),
+                  hdr('NAXIS1', 18),
+                  hdr('NAXIS2', nchan),
+                  hdr('PCOUNT', 0),
+                  hdr('GCOUNT', 1),
+                  hdr('TFIELDS', 6),
+                  hdr('TTYPE1', 'ENERG_LO'),
+                  hdr('TFORM1', 'E'),
+                  hdr('TTYPE2', 'ENERG_HI'),
+                  hdr('TFORM2', 'E'),
+                  hdr('TTYPE3', 'N_GRP'),
+                  hdr('TFORM3', 'I'),
+                  hdr('TTYPE4', 'F_CHAN'),
+                  hdr('TFORM4', 'I'),
+                  hdr('TTYPE5', 'N_CHAN'),
+                  hdr('TFORM5', 'I'),
+                  hdr('TTYPE6', 'MATRIX'),
+                  hdr('TFORM6', 'E'),
+                  hdr('EXTNAME', 'MATRIX'),
+                  hdr('HDUCLASS', 'OGIP'),
+                  hdr('HDUCLAS1', 'RESPONSE'),
+                  hdr('HDUCLAS2', 'RSP_MATRIX'),
+                  hdr('HDUCLAS3', 'REDIST'),
+                  hdr('HDUVERS', '1.3.0'),
+                  hdr('CHANTYPE', 'PI'),
+                  hdr('TLMIN4', 1),
+                  hdr('DETCHANS', nchan),
+                  hdr('NUMGRP', nchan),
+                  hdr('NUMELT', nchan),
+                  hdr('LO_THRES', '1E-06')]
 
     ngrps = np.ones(nchan, dtype=np.int16)
     fchans = np.arange(1, nchan + 1, dtype=np.int16)
@@ -309,4 +307,4 @@ def test_read_ideal_rmf():
     # Multiply by 100 so numbers are close to unity
     expected = 100 * 0.01 * np.asarray([2, 3, 2.5, 2, 2])
     y = 100 * r.eval_model(mdl)
-    assert  y == pytest.approx(expected, rel=2e-6)
+    assert y == pytest.approx(expected, rel=2e-6)

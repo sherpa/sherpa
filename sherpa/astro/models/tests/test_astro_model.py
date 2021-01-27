@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,12 +23,13 @@ import pytest
 
 import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat
-from sherpa.utils.testing import SherpaTestCase
-from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, boolean_to_byte
+from sherpa.models.model import ArithmeticModel, RegriddableModel2D, \
+    RegriddableModel1D, boolean_to_byte
 from sherpa.models.basic import Const
 
 
-EXCLUDED_MODEL_CLASSES = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, Const)
+EXCLUDED_MODEL_CLASSES = (ArithmeticModel, RegriddableModel1D,
+                          RegriddableModel2D, Const)
 
 
 def test_create_and_evaluate():
@@ -57,10 +58,10 @@ def test_create_and_evaluate():
 
         try:
             if m.name.count('2d') or m.name == 'hubblereynolds':
-                pt_out  = m(x, x)
+                pt_out = m(x, x)
                 int_out = m(x, x, x, x)
             else:
-                pt_out  = m(x)
+                pt_out = m(x)
                 int_out = m(x, x)
         except ValueError:
             assert False, "evaluation of model '{}' failed".format(cls)

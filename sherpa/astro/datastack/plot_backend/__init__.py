@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015, 2016, 2019, 2020
+# Copyright (C) 2015, 2016, 2019, 2020, 2021
 #               Smithsonian Astrophysical Observatory
 #
 #
@@ -36,6 +36,7 @@ backend_map = {
 def _update_globals(module):
     globals().update((k, v)
                      for k, v in module.__dict__.items() if k not in globals())
+
 
 try:
     backend_module = import_module("." + backend_map[name], __name__)

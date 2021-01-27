@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -36,8 +36,10 @@ from sherpa.fit import Fit, DataSimulFit, SimulFitModel
 def f1(a, b, c):
     pass
 
+
 def f2(a, b=1, c=2, d=3, e=4):
     pass
+
 
 def f3(a=None, b=1, c=2, d=3, e=4):
     pass
@@ -119,7 +121,7 @@ def test_export_method():
             m()
 
         emsg = "{}() ".format(meth.__name__) + \
-                "missing 1 required positional argument: 'x'"
+            "missing 1 required positional argument: 'x'"
         assert str(exc.value) == emsg
 
     # Check that *args/**kwargs are handled correctly for methods;
@@ -142,7 +144,7 @@ def test_export_method():
         meth(12, 14, 15)
 
     emsg = "kwargs() takes from 1 to 2 positional arguments " + \
-            "but 3 were given"
+        "but 3 were given"
     assert str(exc.value) in emsg
 
     meth = utils.export_method(c.bargs)
@@ -317,20 +319,20 @@ def test_neville2d():
                             (5, 5)
                          ])
 def test_parallel_map(num_tasks, num_segments):
-        f = numpy.sum
-        iterable = [numpy.arange(1, 2 + 2 * i) for i in range(num_segments)]
+    f = numpy.sum
+    iterable = [numpy.arange(1, 2 + 2 * i) for i in range(num_segments)]
 
-        result = list(map(f, iterable))
-        result = numpy.asarray(result)
+    result = list(map(f, iterable))
+    result = numpy.asarray(result)
 
-        pararesult = utils.parallel_map(f, iterable, num_tasks)
+    pararesult = utils.parallel_map(f, iterable, num_tasks)
 
-        assert numpy.asarray(pararesult) == pytest.approx(result)
+    assert numpy.asarray(pararesult) == pytest.approx(result)
 
 
-@pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
-                                            ([], [1], [0,1,2,3,4]),
-                                            ([1], [], [0,1,2,3,4]),
+@pytest.mark.parametrize("los, his, axis", [([], [], [0, 1, 2, 3, 4]),
+                                            ([], [1], [0, 1, 2, 3, 4]),
+                                            ([1], [], [0, 1, 2, 3, 4]),
                                             ([], [], [])])
 def test_filter_bins_empty(los, his, axis):
     """Ensure filter_bins returns None if one input is empty."""
@@ -379,8 +381,7 @@ def test_filter_bins_scalar_array(axval, flag):
                           # Have minimum = maximum = bin value
                           (4, 4, [False, False, False, True, False]),
                           # Have minimum = maximum, not equal to a bin value
-                          (3.1, 3.1, [False, False, False, False, False])
-                         ])
+                          (3.1, 3.1, [False, False, False, False, False])])
 def test_filter_bins_one(lo, hi, res):
     """Can we filter the array between lo and hi?"""
 
@@ -401,11 +402,10 @@ def test_filter_bins_two_none():
 
 
 @pytest.mark.parametrize("lo1, lo2, hi1, hi2, expected",
-                         [ (1.5, 21, 3.6, 44, [False, False, True, False, False]),
-                           (1.5, None, None, 44, [False, True, True, True, False]),
-                           (None, None, None, 44, [True, True, True, True, False]),
-                           (1.5, None, None, None, [False, True, True, True, True])
-                         ])
+                         [(1.5, 21, 3.6, 44, [False, False, True, False, False]),
+                          (1.5, None, None, 44, [False, True, True, True, False]),
+                          (None, None, None, 44, [True, True, True, True, False]),
+                          (1.5, None, None, None, [False, True, True, True, True])])
 def test_filter_bins_two(lo1, lo2, hi1, hi2, expected):
     """Use two different arrays for filtering.
 
@@ -426,7 +426,8 @@ def test_filter_bins_two(lo1, lo2, hi1, hi2, expected):
 def test_filter_bins_unordered():
     """What happens if the array is unordered?"""
 
-    flags = utils.filter_bins((3, ), (8, ), [[1,4,3,7,8,10,5]])
+    flags = utils.filter_bins((3, ), (8, ),
+                              [[1, 4, 3, 7, 8, 10, 5]])
 
     expected = [False, True, True, True, True, False, True]
 
@@ -455,7 +456,7 @@ def test_parallel_map_funcs2():
         return result
 
     def cmp_results(result, tol=1.0e-3):
-        assert(result.succeeded == True)
+        assert result.succeeded
         parvals = (1.7555670572301785, 1.5092728216164186, 4.893136872267538)
         assert result.numpoints == 200
 
@@ -505,8 +506,7 @@ def test_parse_expr_empty(arg):
                           (",2", [(None, None), (2.0, 2.0)]),
                           ("2,", [(2.0, 2.0), (None, None)]),
                           ("2,,3:4", [(2.0, 2.0), (None, None), (3.0, 4.0)]),
-                          (" , :", [(None, None), (None, None)]),
-                         ])
+                          (" , :", [(None, None), (None, None)])])
 def test_parse_expr(arg, expected):
     """Check parse_expr with various conditions
 
@@ -525,15 +525,14 @@ def test_parse_expr(arg, expected):
                           (":2,None:", "lower"),
                           (":2,None:4,5:6", "lower"),
                           (":2,3:None,8:", "upper"),
-                          ("1:2,3:5,None:None", "lower"),
-                         ])
+                          ("1:2,3:5,None:None", "lower")])
 def test_parse_expr_not_num(instr, bound):
 
     with pytest.raises(TypeError) as exc:
         utils.parse_expr(instr)
 
     emsg = "Invalid {} bound 'None'".format(bound)
-    assert  str(exc.value) == emsg
+    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("instr",

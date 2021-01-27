@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -1059,8 +1059,8 @@ class Fit(NoNewAttributesAfterInit):
 
     def calc_thaw_indices(self):
         self.thaw_indices = \
-            tuple([i for i, par in enumerate(self.model.pars) if not \
-                   par.frozen])
+            tuple([i for i, par in enumerate(self.model.pars)
+                   if not par.frozen])
 
     def __setstate__(self, state):
         self.__dict__.update(state)

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import DataPlot, SourcePlot, \
+from sherpa.astro.plot import SourcePlot, \
     DataPHAPlot, ModelPHAHistogram
 from sherpa.astro import plot as aplot
 from sherpa.data import Data1D
@@ -118,8 +118,7 @@ def test_sourceplot():
                           stats.LeastSq(),
                           stats.Cash(),
                           stats.CStat(),
-                          stats.WStat(),
-                         ])
+                          stats.WStat()])
 def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
     from sherpa.astro import io
@@ -140,7 +139,7 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
     pha.ignore(None, 0.5)
     pha.ignore(7.0, None)
 
-    dplot = DataPlot()
+    dplot = DataPHAPlot()
     dplot.prepare(pha, stat=stat)
 
 

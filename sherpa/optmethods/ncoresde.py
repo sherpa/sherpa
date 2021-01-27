@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@ from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.opt import Opt, SimplexRandom
 # from ncoresnm import ncoresNelderMead
 # from opt import Opt, SimplexRandom
-from sherpa.utils import parallel_map, _ncpus, Knuth_close, sao_fcmp
+from sherpa.utils import parallel_map, _ncpus
 
 
 class Key2:
@@ -58,7 +58,7 @@ class Strategy:
 
     def __init__(self, func, npar, npop, sfactor, xprob):
         self.func = func
-        self.npar  = npar
+        self.npar = npar
         self.npop = npop
         self.sfactor = sfactor
         self.xprob = xprob
@@ -125,8 +125,8 @@ class Strategy2(Strategy):
         trial = numpy.array(pop[icurrent][:])
         n = random.randint(0, self.npar - 1)
         for _ in range(self.npar):
-            trial[n] = trial[n] + self.sfactor* (pop[0][n] - trial[n]) + \
-                self.sfactor* (pop[r1][n] - pop[r2][n])
+            trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
+                self.sfactor * (pop[r1][n] - pop[r2][n])
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
@@ -144,7 +144,7 @@ class Strategy3(Strategy):
         trial = numpy.array(pop[icurrent][:])
         n = random.randint(0, self.npar - 1)
         for _ in range(self.npar):
-            trial[n] = pop[0][n]  + \
+            trial[n] = pop[0][n] + \
                 (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
                 self.sfactor
             n = (n + 1) % self.npar
@@ -164,7 +164,7 @@ class Strategy4(Strategy):
         trial = numpy.array(pop[icurrent][:])
         n = random.randint(0, self.npar - 1)
         for _ in range(self.npar):
-            trial[n] = pop[r5][n]  + \
+            trial[n] = pop[r5][n] + \
                 (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
                 self.sfactor
             n = (n + 1) % self.npar
@@ -186,8 +186,8 @@ class Strategy5(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[0][n]  + \
-                    self.sfactor *(pop[r2][n] - pop[r3][n])
+                trial[n] = pop[0][n] + \
+                    self.sfactor * (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
 
@@ -205,7 +205,7 @@ class Strategy6(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[r1][n]  + self.sfactor * \
+                trial[n] = pop[r1][n] + self.sfactor * \
                     (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
@@ -224,8 +224,8 @@ class Strategy7(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] += self.sfactor * ((pop[0][n] - trial[n]) + \
-                                             (pop[r1][n] - pop[r2][n]))
+                trial[n] += self.sfactor * ((pop[0][n] - trial[n]) +
+                                            (pop[r1][n] - pop[r2][n]))
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
 
@@ -243,7 +243,7 @@ class Strategy8(Strategy):
         for counter in range(self.npar):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[0][n]  + \
+                trial[n] = pop[0][n] + \
                     self.sfactor * (pop[r2][n] - pop[r3][n] - pop[r4][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
@@ -263,8 +263,8 @@ class Strategy9(Strategy):
             if random.uniform(0, 1) < self.xprob or \
                     counter == self.npar - 1:
                 trial[n] = pop[r5][n] + \
-                    self.sfactor * (pop[r1][n] +pop[r2][n] - pop[r3][n] - \
-                                         pop[r4][n])
+                    self.sfactor * (pop[r1][n] + pop[r2][n] - pop[r3][n] -
+                                    pop[r4][n])
                 n = (n + 1) % self.npar
         return self.calc(trial, pop)
 
@@ -300,7 +300,7 @@ class MyDifEvo(Opt):
         return
 
     def __call__(self, maxnfev, ftol):
-        
+
         random.seed(self.seed)
         mypop = self.polytope
         npop_1 = self.npop - 1
@@ -333,7 +333,7 @@ class MyDifEvo(Opt):
         if best_trial[-1] < mypop[0][-1]:
             best_trial = self.apply_local_opt(best_trial, index)
         return best_trial
-    
+
     def apply_local_opt(self, arg, index):
         local_opt = self.local_opt[index % len(self.local_opt)]
         result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
@@ -347,19 +347,19 @@ class MyDifEvo(Opt):
             rand = random.randint(start, end)
             result[ii] = self.key2.calc(rand, index)
         return result
-            
+
     def check_convergence(self, mypop, ftol, npar):
         fval_std = numpy.std([col[-1] for col in mypop])
         if fval_std < ftol:
             return True
         return False
 
-    
+
 class ncoresMyDifEvo(MyDifEvo):
 
     def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
                  seed):
-        MyDifEvo.__init__(self, func, xpar,xmin, xmax, npop, sfactor, xprob,
+        MyDifEvo.__init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob,
                           step, seed)
         return
 
@@ -398,18 +398,18 @@ class ncoresMyDifEvo(MyDifEvo):
                     old_fval = tmp_fval
                 else:
                     old_fval = best_fval
-                
+
         best_vertex = self.polytope[0]
         best_par = best_vertex[:-1]
         best_fval = best_vertex[-1]
         return nfev, best_fval, best_par
 
-    
+
 class DifEvo:
 
     def __init__(self):
         pass
-    
+
     def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
                  npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
 
@@ -441,7 +441,7 @@ class ncoresDifEvo:
         if maxnfev is None:
             maxnfev = 8192 * npar
 
-        mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, \
+        mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob,
                                   step, seed)
         return mydifevo(tol, maxnfev, numcores)
 
@@ -449,16 +449,16 @@ class ncoresDifEvo:
 class ncoresDifEvoNelderMead:
 
     def __init__(self):
-        self.ncores_nm = ncoresNelderMead()        
+        self.ncores_nm = ncoresNelderMead()
         return
-    
+
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
                  numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
                  verbose=0):
 
         nfev, nm_fmin, nm_par = \
             self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
-        
+
         npar = len(x)
         if npop is None:
             npop = 12 * npar
@@ -470,7 +470,7 @@ class ncoresDifEvoNelderMead:
         de_nfev, de_fmin, de_par = \
             mydifevo(tol, maxnfev - nfev, step, seed, numcores)
         nfev += de_nfev
-        
+
         if nm_fmin < de_fmin:
             my_fmin = nm_fmin
             my_par = nm_par
@@ -480,7 +480,7 @@ class ncoresDifEvoNelderMead:
         nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol,
                                                   maxnfev - nfev, numcores)
         nfev += nm_nfev
-        
+
         if nm_fmin < my_fmin:
             my_fmin = nm_fmin
             my_par = nm_par
@@ -492,17 +492,17 @@ if '__main__' == __name__:
 
     # from sherpa.optmethods.opt import tst_opt, tst_unc_opt
     from opt import tst_opt, tst_unc_opt
-    
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--difevo', action="store_true",
                         default=False, help='run simple difevo', dest="difevo")
     parser.add_argument('-c', '--combine', action="store_true",
                         default=False, help='run nm & difevo', dest="combine")
-    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True, \
-                      action="store_false", help="do not run tst_unc_opt")
-    parser.add_argument("-o", "--opt", dest="global_func", default=True, \
-                      action="store_false", help="do not run tst_opt")    
+    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True,
+                        action="store_false", help="do not run tst_unc_opt")
+    parser.add_argument("-o", "--opt", dest="global_func", default=True,
+                        action="store_false", help="do not run tst_opt")
     parser.add_argument('-N', action="store", dest="num", default=4, type=int)
 
     options = parser.parse_args()
@@ -529,4 +529,3 @@ if '__main__' == __name__:
             tst_unc_opt(algo, npar)
         if options.global_func:
             tst_opt(algo, npar)
-

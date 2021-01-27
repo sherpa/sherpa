@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Copyright (C) 2017, 2018, 2019, 2020
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021
 #         Smithsonian Astrophysical Observatory
 #
 #
@@ -27,6 +27,8 @@ data - e.g. a larger grid, since the convolution will account
 for signal outside the data range - and then be regridded to
 match the desired grid.
 """
+
+import logging
 import warnings
 
 import numpy as np
@@ -36,7 +38,6 @@ from sherpa.utils.akima import akima
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.utils.err import ModelErr
 
-import logging
 warning = logging.getLogger(__name__).warning
 
 
@@ -393,9 +394,9 @@ class EvaluationSpace2D():
         bool
             True if the axes are integrated, False otherwise.
         """
-        return (not self.is_empty)\
-               and self.x_axis.is_integrated\
-               and self.y_axis.is_integrated
+        return (not self.is_empty) \
+            and self.x_axis.is_integrated \
+            and self.y_axis.is_integrated
 
     @property
     def is_ascending(self):
@@ -452,10 +453,10 @@ class EvaluationSpace2D():
         bool
             True if they overlap, False if not
         """
-        return bool(self.x_axis.start == other.x_axis.start\
-               and self.y_axis.start == other.y_axis.start\
-               and self.x_axis.end == other.x_axis.end\
-               and self.y_axis.end == other.y_axis.end)
+        return bool(self.x_axis.start == other.x_axis.start
+                    and self.y_axis.start == other.y_axis.start
+                    and self.x_axis.end == other.x_axis.end
+                    and self.y_axis.end == other.y_axis.end)
 
     @property
     def grid(self):
@@ -635,7 +636,7 @@ class ModelDomainRegridder1D():
         # join all elements of data_space within
         # eval_spaee to minimize interpolation
         #
-        indices = np.where((data_space > eval_space[0]) & \
+        indices = np.where((data_space > eval_space[0]) &
                            (data_space < eval_space[-1]))
         my_eval_space = np.unique(np.append(eval_space, data_space[indices]))
 
@@ -656,14 +657,14 @@ class ModelDomainRegridder1D():
 
         return y
 
-
     def _evaluate(self, data_space, pars, modelfunc, **kwargs):
         """
         Evaluate the model on the user-defined grid and then interpolate/rebin
         onto the desired grid. This is based on sherpa.models.TableModel
         but is simplified as we do not provide a fold method.
         """
-        kwargs['integrate'] = self.integrate  # Not really sure I need this, but let's be safe
+        # Not really sure I need this, but let's be safe
+        kwargs['integrate'] = self.integrate
 
         eval_space = self.evaluation_space
         if data_space.is_integrated:
@@ -922,9 +923,10 @@ def rebin_no_int(array, dimensions=None, scale=None):
 
     result = np.zeros(dimensions)
     for j, i in itertools.product(*map(range, array.shape)):
-        (J, dj), (I, di) = divmod(j * dimensions[0], array.shape[0]), divmod(i * dimensions[1], array.shape[1])
-        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])), \
-                               divmod(i + 1, array.shape[1] / float(dimensions[1]))
+        (J, dj) = divmod(j * dimensions[0], array.shape[0])
+        (I, di) = divmod(i * dimensions[1], array.shape[1])
+        (J1, dj1) = divmod(j + 1, array.shape[0] / float(dimensions[0]))
+        (I1, di1) = divmod(i + 1, array.shape[1] / float(dimensions[1]))
 
         # Moving to new bin
         # Is this a discrete bin?

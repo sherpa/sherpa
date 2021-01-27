@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,9 +18,11 @@
 #
 
 import numpy
+
 import pytest
 
 from sherpa.utils import akima
+
 
 def test_akima():
     x = numpy.sort(numpy.random.random(10) * 10)
@@ -33,4 +35,3 @@ def test_akima():
         z = akima.interpolate(x, y, xx)
         akima_z = myakima(xx)
         assert akima_z == pytest.approx(z)
-

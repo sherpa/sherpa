@@ -57,6 +57,7 @@ class Formatter(logging.Formatter):
             msg = record.msg
         return msg
 
+
 log = logging.getLogger('sherpa')
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(Formatter())
@@ -66,7 +67,6 @@ log.setLevel(logging.INFO)
 dbg = log.debug
 
 del Formatter, log, handler
-
 
 
 DEFAULT_CITATION = """Please review the Zenodo Sherpa page at
@@ -100,8 +100,8 @@ archivePrefix = {arXiv},
 
 @INPROCEEDINGS{2007ASPC..376..543D,
    author = {{Doe}, S. and {Nguyen}, D. and {Stawarz}, C. and {Refsdal}, B. and
-	{Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and
-	{McDowell}, J. and {Houck}, J. and {Nowak}, M.},
+        {Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and
+        {McDowell}, J. and {Houck}, J. and {Nowak}, M.},
     title = "{Developing Sherpa with Python}",
 booktitle = {Astronomical Data Analysis Software and Systems XVI},
      year = 2007,
@@ -741,12 +741,12 @@ def get_config():
 
     # If NOSHERPARC is set, read in system config file
     # ignore any user config file
-    if (('NOSHERPARC' in os.environ) == True):
+    if 'NOSHERPARC' in os.environ:
         return os.path.join(os.path.dirname(__file__), filename)
 
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
-    if (('SHERPARC' in os.environ) == True):
+    if 'SHERPARC' in os.environ:
         config = os.environ.get('SHERPARC')
         if os.path.isfile(config):
             return config
@@ -828,7 +828,7 @@ def _install_test_deps():
     def install(package_name):
         try:
             subprocess.call([sys.executable, '-m', 'pip', 'install', package_name],
-                               stdout=sys.stdout, stderr=sys.stderr)
+                            stdout=sys.stdout, stderr=sys.stderr)
         except:
             print("""Cannot import pip or install packages with it.
             You need pytest, and possibly pytest-cov, in order to run the tests.

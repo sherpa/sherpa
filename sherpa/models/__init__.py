@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
 #

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020
+#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021
 #         Smithsonian Astrophysical Observatory
 #
 #
@@ -9056,7 +9056,7 @@ class XSzwndabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.WindowE, self.redshift))
 
 
-### New additive and multiplicative models, as of XSPEC 12.7
+# New additive and multiplicative models, as of XSPEC 12.7
 
 
 class XScplinear(XSAdditiveModel):
@@ -9724,7 +9724,7 @@ class XSzigm(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.redshift, self.model, self.lyman_limit))
 
 
-## Here are the seven new additive models from XSPEC 12.7.1
+# Here are the seven new additive models from XSPEC 12.7.1
 
 
 class XSgadem(XSAdditiveModel):
@@ -10440,7 +10440,7 @@ class XSzbabs(XSMultiplicativeModel):
 
     """
 
-    __function__ =  "xszbabs"
+    __function__ = "xszbabs"
 
     def __init__(self, name='zbabs'):
         self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
@@ -11020,7 +11020,7 @@ class XSjet(XSAdditiveModel):
         self.Dco = Parameter(name, 'Dco', 3350.6, 1., 1e8, 1., 1e8,
                              units='Mpc', frozen=True)
         self.log_mdot = Parameter(name, 'log_mdot', -1., -5., 2., -5., 2.,
-                                 units='logL/lEdd')
+                                  units='logL/lEdd')
         self.thetaobs = Parameter(name, 'thetaobs', 3., 0., 90., 0., 90.,
                                   units='deg', frozen=True)
         self.BulkG = Parameter(name, 'BulkG', 13., 1., 100., 1., 100, frozen=True)

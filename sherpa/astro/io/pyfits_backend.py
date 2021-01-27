@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021
 #    Smithsonian Astrophysical Observatory
 #
 #
@@ -37,14 +37,14 @@ References
 
 """
 
+import logging
+import os
+
 import numpy
+from numpy.compat import basestring
 
 from astropy.io import fits
 from astropy.io.fits.column import _VLF
-
-from numpy.compat import basestring
-
-import os
 
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
@@ -52,7 +52,6 @@ import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
 from sherpa.astro.io.meta import Meta
 
-import logging
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
 
@@ -60,7 +59,7 @@ transformstatus = False
 try:
     from sherpa.astro.io.wcs import WCS
     transformstatus = True
-except:
+except ImportError:
     warning('failed to import WCS module; WCS routines will not be ' +
             'available')
 
@@ -69,9 +68,9 @@ __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
            'get_column_data', 'get_ascii_data')
 
 
-def _has_hdu(hdulist, id):
+def _has_hdu(hdulist, name):
     try:
-        hdulist[id]
+        hdulist[name]
     except (KeyError, IndexError):
         return False
     return True
@@ -108,7 +107,7 @@ def _get_meta_data(hdu):
         val = hdu.header[key]
 
         # empty numpy strings are not recognized by load pickle!
-        if type(val) is numpy.str_ and val == '':
+        if isinstance(val, numpy.str_) and val == '':
             val = ''
 
         meta[key] = val
@@ -685,7 +684,7 @@ def get_rmf_data(arg, make_copy=False):
             # QUS: should this actually be an error, rather than just
             #      something that is logged to screen?
             error("Failed to locate TLMIN keyword for F_CHAN" +
-                  " column in RMF file '%s'; "  % filename +
+                  " column in RMF file '%s'; " % filename +
                   'Update the offset value in the RMF data set to' +
                   ' appropriate TLMIN value prior to fitting')
 
@@ -749,9 +748,9 @@ def get_rmf_data(arg, make_copy=False):
                 # "perfect" RMFs may have mrow as a scalar
                 try:
                     rdata = mrow[start:end]
-                except IndexError:
+                except IndexError as ie:
                     if start != 0 or end != 1:
-                        raise IOErr('bad', 'format', 'MATRIX column formatting')
+                        raise IOErr('bad', 'format', 'MATRIX column formatting') from ie
 
                     rdata = [mrow]
 
@@ -819,8 +818,8 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             data['exposure'] = _try_key(hdu, 'EXPOSURE', True, SherpaFloat)
             # data['poisserr'] = _try_key(hdu, 'POISSERR', True, bool)
             data['backfile'] = _try_key(hdu, 'BACKFILE')
-            data['arffile']  = _try_key(hdu, 'ANCRFILE')
-            data['rmffile']  = _try_key(hdu, 'RESPFILE')
+            data['arffile'] = _try_key(hdu, 'ANCRFILE')
+            data['rmffile'] = _try_key(hdu, 'RESPFILE')
 
             # Keywords or columns
             data['backscal'] = _try_col_or_key(hdu, 'BACKSCAL', fix_type=True)
@@ -877,8 +876,8 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             exposure = _try_key(hdu, 'EXPOSURE', True, SherpaFloat)
             # poisserr = _try_key(hdu, 'POISSERR', True, bool)
             backfile = _try_key(hdu, 'BACKFILE')
-            arffile  = _try_key(hdu, 'ANCRFILE')
-            rmffile  = _try_key(hdu, 'RESPFILE')
+            arffile = _try_key(hdu, 'ANCRFILE')
+            rmffile = _try_key(hdu, 'RESPFILE')
 
             # Keywords or columns
             backscal = _try_vec_or_key(hdu, 'BACKSCAL', num, fix_type=True)
@@ -1084,7 +1083,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         cdeltw = data['eqpos'].cdelt
         crpixw = data['eqpos'].crpix
         crvalw = data['eqpos'].crval
-        equin  = data['eqpos'].equinox
+        equin = data['eqpos'].equinox
 
     if data['sky'] is not None:
         cdeltp = data['sky'].cdelt
@@ -1106,7 +1105,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         if data['eqpos'] is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
-            crpixw = ((crpixw - crvalp) / cdeltp + crpixp )
+            crpixw = ((crpixw - crvalp) / cdeltp + crpixp)
 
     if data['eqpos'] is not None:
         _add_keyword(hdrlist, 'MTYPE2', 'EQPOS   ')
@@ -1149,7 +1148,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     for arg in args:
         if not numpy.iterable(arg):
             raise IOErr('noarrayswrite')
-        elif len(arg) != size:
+        if len(arg) != size:
             raise IOErr('arraysnoteq')
 
     if fields is None:

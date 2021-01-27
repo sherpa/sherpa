@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -530,7 +530,7 @@ class LineBroad(RegriddableModel1D):
             vsini = 2. * fwhm * c_km / numpy.sqrt(3.) / self.rest.val
             vs = {'val': vsini,
                   'min': vsini / _guess_ampl_scale,
-                  'max': vsini * _guess_ampl_scale }
+                  'max': vsini * _guess_ampl_scale}
             param_apply_limits(vs, self.vsini, **kwargs)
 
         modampl = norm['val'] * numpy.pi * self.vsini.val * \
@@ -686,7 +686,7 @@ class Voigt1D(RegriddableModel1D):
         self.fwhm_g = Parameter(name, 'fwhm_g', 10, tinyval, hard_min=tinyval)
         self.fwhm_l = Parameter(name, 'fwhm_l', 10, 0, hard_min=0)
         self.pos = Parameter(name, 'pos', 0.0)
-        self.ampl  = Parameter(name, 'ampl', 1.0)
+        self.ampl = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
         return
@@ -776,7 +776,7 @@ class PseudoVoigt1D(RegriddableModel1D):
         self.frac = Parameter(name, 'frac', 0.5, 0, 1, hard_min=0, hard_max=1)
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.pos = Parameter(name, 'pos', 0.0)
-        self.ampl  = Parameter(name, 'ampl', 1.0)
+        self.ampl = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
                                  (self.frac, self.fwhm, self.pos, self.ampl))
         return
@@ -1249,8 +1249,8 @@ class Lorentz2D(RegriddableModel2D):
         self.ypos = Parameter(name, 'ypos', 0)
         self.ellip = Parameter(name, 'ellip', 0, 0, 0.999, 0, 0.9999,
                                frozen=True)
-        self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, -2*numpy.pi,
-                               4*numpy.pi, 'radians',frozen=True)
+        self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi,
+                               -2*numpy.pi, 4*numpy.pi, 'radians', frozen=True)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,

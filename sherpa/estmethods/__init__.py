@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,18 +17,24 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
-_ = numpy.seterr(invalid='ignore')
-
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is_iterable, list_to_open_interval, mysgn, quad_coef, apache_muller, bisection, demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
-
 import logging
-import sherpa.estmethods._est_funcs
 
 try:
     import multiprocessing
-except:
+except ImportError:
     pass
+
+import numpy
+
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
+    is_iterable, list_to_open_interval, mysgn, quad_coef, \
+    demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
+
+import sherpa.estmethods._est_funcs
+
+
+# TODO: this should not be set globally
+_ = numpy.seterr(invalid='ignore')
 
 
 __all__ = ('EstNewMin', 'Covariance', 'Confidence',
@@ -222,7 +228,7 @@ class Confidence(EstMethod):
             # lmdif, need to recalculate stat at end, just
             # like in sherpa/sherpa/fit.py:fit()
             stat = statfunc(fit_pars)[0]
-            #stat = fitfunc(scb, pars, parmins, parmaxes)[2]
+            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
             # thaw model parameter i
             thaw_par(i)
             return stat
@@ -290,7 +296,7 @@ class Projection(EstMethod):
             # lmdif, need to recalculate stat at end, just
             # like in sherpa/sherpa/fit.py:fit()
             stat = statfunc(fit_pars)[0]
-            #stat = fitfunc(scb, pars, parmins, parmaxes)[2]
+            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
             # thaw model parameter i
             thaw_par(i)
             return stat
@@ -323,8 +329,6 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         # parameter values to the exception obj.  These modified
         # parvals determine the new lower statistic.
         raise EstNewMin(pars)
-    except:
-        raise
 
     # Invert matrix, take its square root and multiply by sigma to get
     # parameter uncertainties; parameter uncertainties are the
@@ -465,7 +469,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         return (singlebounds[0][0], singlebounds[1][0], singlebounds[2][0],
                 singlebounds[3], None)
 
-    if len(limit_parnums) < 2 or not _multi or numcores < 2:
+    if numsearched < 2 or not _multi or numcores < 2:
         do_parallel = False
 
     if not do_parallel:
@@ -474,7 +478,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         upper_limits = numpy.array([])
         eflags = numpy.array([], numpy.int)
         nfits = 0
-        for i in range(len(limit_parnums)):
+        for i in range(numsearched):
             singlebounds = func(i, limit_parnums[i])
             lower_limits = append(lower_limits, singlebounds[0])
             upper_limits = append(upper_limits, singlebounds[1])
@@ -645,7 +649,7 @@ class ConfBracket():
                     x = conf_step.covar(dir, iter, step_size, base)
                 elif 1 == iter:
                     x = conf_step.secant(dir, iter, step_size, base)
-                    #x = conf_step.covar( dir, iter, step_size, base )
+                    # x = conf_step.covar( dir, iter, step_size, base )
                 else:
                     x = conf_step.quad(dir, iter, step_size, base, bloginfo)
 
@@ -775,7 +779,7 @@ class ConfRootBracket(ConfRootNone):
             xb = xbfb[0]
             fb = xbfb[1]
             if mysgn(fa) != mysgn(fb):
-                if False == self.open_interval:
+                if not self.open_interval:
                     warn_user_about_open_interval([xa, xb])
                     return (xa + xb) / 2.0
                 else:
@@ -814,7 +818,7 @@ class ConfStep():
         self.ftrial = ftrial
 
     def covar(self, dir, iter, stepsize, base):
-        return self.xtrial[ -1 ] + \
+        return self.xtrial[-1] + \
             ConfBracket.neg_pos[dir] * pow(base, iter) * stepsize
         # return self.xtrial[ 0 ] + \
         #       ConfBracket.neg_pos[ dir ] * pow( base, iter ) * stepsize
@@ -863,8 +867,8 @@ class ConfStep():
         except ZeroDivisionError:
             xroot = None
 
-        if (None != xroot and False == numpy.isnan( xroot )) and \
-                self.is_same_dir(dir, self.xtrial[-1], xroot):
+        if xroot is not None and not numpy.isnan(xroot) and \
+           self.is_same_dir(dir, self.xtrial[-1], xroot):
             return xroot
         else:
             return self.covar(dir, iter, step_size, base)
@@ -894,7 +898,7 @@ class ConfStep():
 
 def trace_fcn(fcn, bloginfo):
 
-    if False == bloginfo.debug:
+    if not bloginfo.debug:
         return fcn
 
     from itertools import chain
@@ -902,7 +906,7 @@ def trace_fcn(fcn, bloginfo):
     def echo(*args, **kwargs):
         '''compact but more details then debugger'''
         name = fcn.__name__
-        str = '%s%s(%s)' % (bloginfo.prefix, fcn.__name__, ", ".join(
+        str = '%s%s(%s)' % (bloginfo.prefix, name, ", ".join(
             list(map(repr, chain(args, list(kwargs.values()))))))
         bloginfo.blogger.info(str)
         return fcn(*args, **kwargs)
@@ -944,7 +948,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         if is_iterable(arg):
             return arg
             # return map( lambda x: my_neg_pos * abs( x - par_at_min ), arg )
-        elif None != arg:
+        elif arg is not None:
             arg -= par_at_min
             return my_neg_pos * abs(arg)
         else:
@@ -1192,7 +1196,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
                 err_q.put(EstNewMin(parvals))
                 return
             except Exception as e:
-                #err_q.put( e.__class__() )
+                # err_q.put( e.__class__() )
                 err_q.put(e)
                 return
 

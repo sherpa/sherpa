@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -46,7 +46,7 @@ from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
     RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf
 from sherpa.fit import Fit
-from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.data import DataPHA, DataRMF
 from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
@@ -1694,7 +1694,7 @@ def test_create_rmf(make_data_path):
     energ = np.arange(0.05, 1.1, 0.05)
     rmflo = energ[:-1]
     rmfhi = energ[1:]
-    fname= make_data_path('test_rmfimg.fits')
+    fname = make_data_path('test_rmfimg.fits')
     datarmf = ui.create_rmf(rmflo, rmfhi, fname=fname)
     assert len(datarmf._fch) == 1039
     assert len(datarmf._nch) == 1039

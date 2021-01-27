@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2011, 2016, 2017, 2018, 2019, 2020, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -122,9 +122,9 @@ class EmissionVoigt(ArithmeticModel):
         raise ModelErr("The EmissionVoigt model has been replaced by Voigt1D")
 
 
-
 # This model sets in edge (in Angstroms) beyond which absorption
 # is a significant feature to the spectrum or SED.
+#
 class AbsorptionEdge(RegriddableModel1D):
     """Optical model of an absorption edge.
 
@@ -292,7 +292,7 @@ class AbsorptionGaussian(RegriddableModel1D):
                              units='angstroms')
         self.ewidth = Parameter(name, 'ewidth', 1.)
         self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
+                               hidden=True)
 
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.ewidth, self.limit))
@@ -312,7 +312,7 @@ class AbsorptionGaussian(RegriddableModel1D):
         y = numpy.ones_like(x)
         sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044 ?
         delta = numpy.abs((x - p[1]) / sigma)
-        ampl  = p[2] / sigma / 2.50662828  # document this constant
+        ampl = p[2] / sigma / 2.50662828  # document this constant
 
         idx = (delta < self.limit.val)
         y[idx] = 1.0 - ampl * numpy.exp(- delta[idx] * delta[idx] / 2.0)
@@ -515,7 +515,7 @@ class OpticalGaussian(RegriddableModel1D):
                              units='angstroms')
         self.tau = Parameter(name, 'tau', 0.5)
         self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
+                               hidden=True)
 
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.tau, self.limit))
@@ -606,7 +606,7 @@ class EmissionGaussian(RegriddableModel1D):
         self.flux = Parameter(name, 'flux', 1.)
         self.skew = Parameter(name, 'skew', 1., tinyval, frozen=True)
         self.limit = Parameter(name, 'limit', 4., alwaysfrozen=True,
-                               hidden=True )
+                               hidden=True)
 
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.pos, self.flux,
@@ -1467,7 +1467,7 @@ class FM(RegriddableModel1D):
         x = 10000. / x
         av = 3.14
 
-        dru = x * x / (p[2] * p[2] * x * x + numpy.power((x - p[1] ), 2.0))
+        dru = x * x / (p[2] * p[2] * x * x + numpy.power((x - p[1]), 2.0))
         dx = x - 5.9
         fuv = 0.5392 * dx * dx + 0.0564 * numpy.power(dx, 3.0)
         ext = av + p[3] + p[4] * x + p[5] * dru

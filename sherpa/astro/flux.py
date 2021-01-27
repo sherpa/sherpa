@@ -607,7 +607,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         for index in range(size):
             samples[index][-1] = mystat[index]
 
-        #samples = numpy.delete( samples, (size), axis=0 )
+        # samples = numpy.delete( samples, (size), axis=0 )
         result.append(samples)
 
         return result

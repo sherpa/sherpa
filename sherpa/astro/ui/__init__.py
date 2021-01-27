@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -39,8 +39,10 @@ _session._add_model_types(sherpa.models.basic)
 _session._add_model_types(sherpa.astro.models)
 _session._add_model_types(sherpa.astro.optical)
 _session._add_model_types(sherpa.models.template)
+
 # To add PSFModel to list -- doesn't inherit from ArithmeticModel
-_session._add_model_types(sherpa.instrument,baselist=(sherpa.models.Model,))
+_session._add_model_types(sherpa.instrument, baselist=(sherpa.models.Model,))
+
 # Get RMFModel, ARFModel in list of models
 _session._add_model_types(sherpa.astro.instrument)
 
@@ -51,8 +53,8 @@ if hasattr(sherpa.astro, 'xspec'):
                                sherpa.astro.xspec.XSConvolutionKernel))
 
     from sherpa.astro.xspec import get_xsabund, get_xscosmo, get_xsxsect, \
-         set_xsabund, set_xscosmo, set_xsxsect, set_xsxset, get_xsxset, \
-         get_xschatter, set_xschatter
+        set_xsabund, set_xscosmo, set_xsxsect, set_xsxset, get_xsxset, \
+        get_xschatter, set_xschatter
     __all__.extend(('get_xsabund', 'get_xschatter', 'get_xscosmo',
                     'get_xsxsect', 'set_xsabund', 'set_xschatter',
                     'set_xscosmo', 'set_xsxsect', 'set_xsxset',

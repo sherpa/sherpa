@@ -24,10 +24,10 @@ import re
 import tempfile
 import logging
 
-import pytest
-
 import numpy
 from numpy.testing import assert_allclose
+
+import pytest
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import RMFModelPHA
@@ -376,7 +376,7 @@ def test_more_ui_string_model_with_rmf(make_data_path):
     assert isinstance(m, RMFModelPHA)
 
 
-#bug #38
+# bug #38
 @requires_fits
 @requires_data
 @requires_group
@@ -1018,7 +1018,7 @@ def test_list_pileup_ids_multi(clean_astro_ui):
     assert ans == [1, "2"]
 
 
-def check_bad_grouping(exp_xlo,exp_xhi, exp_counts, lo1, hi1, lo2, hi2):
+def check_bad_grouping(exp_xlo, exp_xhi, exp_counts, lo1, hi1, lo2, hi2):
     """Common tests from test_grouped_pha_all_badXXX
 
     Sending in two ranges is a bit excessive but easiest
@@ -1115,8 +1115,7 @@ def test_grouped_pha_all_bad_channel(clean_astro_ui):
 @pytest.mark.parametrize("chantype,exp_counts,exp_xlo,exp_xhi,lo1,hi1,lo2,hi2",
                          [("channel", 0.8, 1.0, 6, 0, 7, 2, 6),
                           ("energy", 8.0, 0.1, 0.6, 0.05, 1.0, 0.2, 0.8),
-                          ("wave", 0.03871461, 123.9841874, 20.66403123, 20, 90, 30, 85)
-                         ])
+                          ("wave", 0.03871461, 123.9841874, 20.66403123, 20, 90, 30, 85)])
 def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xlo, exp_xhi, lo1, hi1, lo2, hi2, clean_astro_ui):
     """Helpdesk ticket: low-count data had no valid bins after grouping #790
 

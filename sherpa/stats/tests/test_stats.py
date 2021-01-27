@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,9 @@
 #
 
 import logging
+
 import numpy
+
 import pytest
 
 from sherpa.data import Data1D
@@ -130,7 +132,7 @@ class MyCashWithBkg(UserStat):
         modeldata = data.eval_model_to_fit(model)
 
         fitdata = tofit[0]
-        fvec = modeldata - (fitdata  * numpy.log(modeldata))
+        fvec = modeldata - (fitdata * numpy.log(modeldata))
         weight = kwargs.get('weight')
         if weight is not None:
             fvec = fvec * weight
@@ -199,7 +201,7 @@ class MyCashNoBkg(UserStat):
         modeldata = data.eval_model_to_fit(model)
 
         fitdata = tofit[0]
-        fvec = modeldata - (fitdata  * numpy.log(modeldata))
+        fvec = modeldata - (fitdata * numpy.log(modeldata))
         weight = kwargs.get('weight')
         if weight is not None:
             fvec = fvec * weight
@@ -742,9 +744,9 @@ def test_xspecvar_zero_handling(bexp, yexp, dyexp):
     contains (after three 'header' lines) the data 'x 0.5 y dy'
 
         data foo.fits
-	iplot data
-	wplot foo.dat
-	quit
+        iplot data
+        wplot foo.dat
+        quit
 
     where foo.fits is a fake PHA file set up to have the channel/count
     values used below (a CSC-style PHA file was used so that source

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,9 +32,9 @@ from sherpa.estmethods import Covariance
 from sherpa import sim
 
 
-_max  = numpy.finfo(numpy.float32).max
+_max = numpy.finfo(numpy.float32).max
 _tiny = numpy.finfo(numpy.float32).tiny
-_eps  = numpy.finfo(numpy.float32).eps
+_eps = numpy.finfo(numpy.float32).eps
 
 
 _fit_results_bench = {
@@ -57,16 +57,15 @@ _fit_results_bench = {
 
 _x = numpy.arange(0.1, 10.1, 0.1)
 _y = numpy.array(
-    [ 114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
-      29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
-      52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
-      31, 34, 18, 24, 25, 11, 17, 17, 11,  9,  8,  5,
-       4, 10,  3,  4,  6,  3,  0,  2,  4,  4,  0,  1,
-       2,  0,  3,  3,  0,  2,  1,  2,  3,  0,  1,  0,
-       1,  0,  0,  1,  3,  3,  0,  2,  0,  0,  1,  2,
-       0,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,
-       1,  0,  1,  0
-      ]
+    [114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
+     29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
+     52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
+     31, 34, 18, 24, 25, 11, 17, 17, 11,  9,  8,  5,
+     4, 10,  3,  4,  6,  3,  0,  2,  4,  4,  0,  1,
+     2,  0,  3,  3,  0,  2,  1,  2,  3,  0,  1,  0,
+     1,  0,  0,  1,  3,  3,  0,  2,  0,  0,  1,  2,
+     0,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,
+     1,  0,  1,  0]
     )
 _err = numpy.ones(100) * 0.4
 
@@ -203,10 +202,13 @@ def test_normal_sample(setup):
 def test_normal_sample_correlated(setup):
     sim.normal_sample(setup.fit, num=setup.num, correlate=True)
 
+
 def test_t_sample(setup):
     sim.t_sample(setup.fit, setup.num, setup.dof)
 
+
 def test_lrt(setup):
+    # There is no check of the results
     results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
                                           setup.fit.model, niter=25)
 
@@ -215,20 +217,15 @@ def test_mh(setup):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = Cash()
-    results = setup.fit.fit()
+    setup.fit.fit()
     results = setup.fit.est_errors()
     cov = results.extra_output
 
     mcmc = sim.MCMC()
-
-    samplers = mcmc.list_samplers()
-    priors = mcmc.list_priors()
     for par in setup.fit.model.pars:
         mcmc.set_prior(par, sim.flat)
         prior = mcmc.get_prior(par)
-
-    sampler = mcmc.get_sampler()
-    name = mcmc.get_sampler_name()
+        assert prior.__name__ == 'flat'
 
     mcmc.set_sampler('MH')
 
@@ -243,6 +240,7 @@ def test_mh(setup):
         stats, accept, params = mcmc.get_draws(setup.fit, cov, niter=1e2)
     finally:
         log.setLevel(level)
+
 
 def test_metropolisMH(setup):
 

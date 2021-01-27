@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,7 @@ import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
     ArithmeticFunctionModel, RegridWrappedModel
-from sherpa.models.basic import Box1D, Const1D, Gauss1D, Const2D, \
+from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
 from sherpa.instrument import PSFModel
@@ -35,7 +35,8 @@ import sherpa.astro.ui as ui
 import sherpa.utils
 from sherpa.utils.err import ModelErr
 
-from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, EvaluationSpace2D
+from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
+    EvaluationSpace2D
 
 
 @pytest.fixture(params=[True, False])
@@ -53,8 +54,8 @@ def setup_1d(request):
 
     if return_composite:
         return gmdl + cmdl
-    else:
-        return cmdl
+
+    return cmdl
 
 
 @pytest.mark.parametrize("cls,name",
@@ -435,32 +436,35 @@ def test_regrid1d_error_grid_mismatch_1(setup_1d):
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
 
+
 def test_ui_regrid1d_non_overlapping_not_allowed():
     """Integrated data space must not overlap"""
 
-    ui.dataspace1d(1,100,2,dstype=Data1DInt)
+    ui.dataspace1d(1, 100, 2, dstype=Data1DInt)
     b1 = Box1D()
     ui.set_model(b1)
-    b1.xlow=10
-    b1.xhi=80
-    b1.ampl.max=100
-    grid_hi = np.linspace(2,101,600)
-    grid_lo = np.linspace(1,100,600)
+    b1.xlow = 10
+    b1.xhi = 80
+    b1.ampl.max = 100
+    grid_hi = np.linspace(2, 101, 600)
+    grid_lo = np.linspace(1, 100, 600)
     with pytest.raises(ModelErr) as excinfo:
-        rb1 = b1.regrid(grid_lo,grid_hi)
+        b1.regrid(grid_lo, grid_hi)
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
+
 
 def test_low_level_regrid1d_non_overlapping_not_allowed():
     """Integrated data space must not overlap"""
 
     c = Box1D()
-    lo = np.linspace(1,100,600)
-    hi = np.linspace(2,101,600)
+    lo = np.linspace(1, 100, 600)
+    hi = np.linspace(2, 101, 600)
     with pytest.raises(ModelErr) as excinfo:
         c.regrid(lo, hi)
 
     assert ModelErr.dict['needsint'] in str(excinfo.value)
+
 
 def test_regrid1d_error_grid_mismatch_2(setup_1d):
     """Internal grid is points but given integrated"""
@@ -479,10 +483,9 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
 
 
 @pytest.mark.parametrize("requested",
-                         [ np.arange(1, 7, 0.1),
-                           np.arange(1, 7, 0.05),
-                           np.arange(1, 7, 0.2),
-                       ])
+                         [np.arange(1, 7, 0.1),
+                          np.arange(1, 7, 0.05),
+                          np.arange(1, 7, 0.2)])
 def test_low_level_regrid1d_full_overlap(requested):
     """Base case of test_low_level_regrid1d_partial_overlap
     """
@@ -505,13 +508,12 @@ def test_low_level_regrid1d_full_overlap(requested):
 
 
 @pytest.mark.parametrize("requested",
-                         [ np.arange(2.5, 7, 0.2),
-                           np.arange(1, 5.1, 0.2),
-                           np.arange(2.5, 5.1, 0.2),
-                           np.arange(2.5, 7, 0.075),
-                           np.arange(1, 5.1, 0.075),
-                           np.arange(2.5, 5.1, 0.075)
-                       ])
+                         [np.arange(2.5, 7, 0.2),
+                          np.arange(1, 5.1, 0.2),
+                          np.arange(2.5, 5.1, 0.2),
+                          np.arange(2.5, 7, 0.075),
+                          np.arange(1, 5.1, 0.075),
+                          np.arange(2.5, 5.1, 0.075)])
 def test_low_level_regrid1d_partial_overlap(requested):
     """What happens if there is partial overlap of the grid?
 
@@ -549,10 +551,9 @@ def test_low_level_regrid1d_partial_overlap(requested):
 
 
 @pytest.mark.parametrize("requested, tol",
-                         [ (np.arange(1, 7, 0.1), 1e-7),
-                           (np.arange(1, 7, 0.05), 1e-7),
-                           (np.arange(1, 7, 0.2), 0.02)
-                       ])
+                         [(np.arange(1, 7, 0.1), 1e-7),
+                          (np.arange(1, 7, 0.05), 1e-7),
+                          (np.arange(1, 7, 0.2), 0.02)])
 def test_low_level_regrid1d_int_full_overlap(requested, tol):
     """Base case of test_low_level_regrid1d_int_partial_overlap
     """
@@ -578,16 +579,15 @@ def test_low_level_regrid1d_int_full_overlap(requested, tol):
 
 
 @pytest.mark.parametrize("requested, tol",
-                         [ (np.arange(2.5, 7, 0.075), 0.007),
-                           (np.arange(1, 5.1, 0.075), 0.007),
-                           (np.arange(2.5, 5.1, 0.075), 0.007),
-                           (np.arange(2.5, 7, 0.12), 0.007),
-                           (np.arange(1, 5.1, 0.12), 0.012),
-                           (np.arange(2.5, 5.1, 0.12), 0.007),
-                           (np.arange(2.5, 7, 0.2), 0.02),
-                           (np.arange(1, 5.1, 0.2), 0.02),
-                           (np.arange(2.5, 5.1, 0.2), 0.02)
-                       ])
+                         [(np.arange(2.5, 7, 0.075), 0.007),
+                          (np.arange(1, 5.1, 0.075), 0.007),
+                          (np.arange(2.5, 5.1, 0.075), 0.007),
+                          (np.arange(2.5, 7, 0.12), 0.007),
+                          (np.arange(1, 5.1, 0.12), 0.012),
+                          (np.arange(2.5, 5.1, 0.12), 0.007),
+                          (np.arange(2.5, 7, 0.2), 0.02),
+                          (np.arange(1, 5.1, 0.2), 0.02),
+                          (np.arange(2.5, 5.1, 0.2), 0.02)])
 def test_low_level_regrid1d_int_partial_overlap(requested, tol):
     """What happens if there is partial overlap of the grid?
 
@@ -772,7 +772,9 @@ def test_regrid1d_interpolation(eincr, rincr, margs, setup_1d):
 
     tol, method = margs
     _test_regrid1d_interpolation(rtol=tol, method=method,
-                                 eval_incr=eincr, req_incr=rincr, setup_1d=setup_1d)
+                                 eval_incr=eincr, req_incr=rincr,
+                                 setup_1d=setup_1d)
+
 
 def test_regrid1d_int(setup_1d):
     _test_regrid1d_int(rtol=0.015, setup_1d=setup_1d)
@@ -1079,11 +1081,13 @@ def setup_overlapping_spaces(integrated, x_overlaps, y_overlaps):
         y2 = [-1, -2, -3], None
     return x1, y1, x2, y2, (x_overlaps and y_overlaps)
 
+
 def test_wrong_kwargs():
     xgrid = np.arange(2, 6, 0.1)
     d = Data1D('tst', xgrid, np.ones_like(xgrid))
     mdl = Box1D()
     requested = np.arange(1, 7, 0.1)
     with pytest.raises(TypeError) as excinfo:
-        ygot = d.eval_model(mdl.regrid(requested, fubar='wrong_kwargs'))
+        d.eval_model(mdl.regrid(requested, fubar='wrong_kwargs'))
+
     assert "unknown keyword argument: 'fubar'" in str(excinfo.value)

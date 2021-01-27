@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021
 #        Smithsonian Astrophysical Observatory
 #
 #
@@ -47,7 +47,7 @@ def _assert_userwarning(expected_warnings, observed_warnings):
     expected_warnings_set = set([warning.args for warning in expected_warnings])
     observed_warnings_set = set([warning.message.args for warning in observed_warnings])
 
-    assert  observed_warnings_set == expected_warnings_set
+    assert observed_warnings_set == expected_warnings_set
 
 
 class test_filter_energy_grid(SherpaTestCase):
@@ -73,15 +73,15 @@ class test_filter_energy_grid(SherpaTestCase):
         6.57000017e+00, 9.86960030e+00], np.float)
 
     _emax = np.array([
-        0.2482    , 0.3066    , 0.46720001, 0.56940001, 0.64240003,
-        0.7008    , 0.7446    , 0.78839999, 0.81760001, 0.86140001,
-        0.89060003, 0.949     , 0.9928    , 1.03659999, 1.09500003,
-        1.13880002, 1.19719994, 1.28480005, 1.4016    , 1.47459996,
-        1.60599995, 1.69360006, 1.81040001, 1.898     , 1.9418    ,
+        0.2482, 0.3066, 0.46720001, 0.56940001, 0.64240003,
+        0.7008, 0.7446, 0.78839999, 0.81760001, 0.86140001,
+        0.89060003, 0.949, 0.9928, 1.03659999, 1.09500003,
+        1.13880002, 1.19719994, 1.28480005, 1.4016, 1.47459996,
+        1.60599995, 1.69360006, 1.81040001, 1.898, 1.9418,
         2.02940011, 2.08780003, 2.19000006, 2.27760005, 2.39439988,
         2.58419991, 2.71560001, 2.86159992, 3.08060002, 3.38720012,
-        3.5624001 , 3.796     , 4.02960014, 4.24860001, 4.71579981,
-        5.0223999 , 5.37279987, 5.89839983, 6.57000017, 9.8696003 ,
+        3.5624001, 3.796, 4.02960014, 4.24860001, 4.71579981,
+        5.0223999, 5.37279987, 5.89839983, 6.57000017, 9.8696003,
         14.95040035], np.float)
 
     def setUp(self):
@@ -124,10 +124,10 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         2.00133967, 1.97772908, 1.96379483, 1.93868744, 1.91855776,
         1.89444292, 1.87936974, 1.85819471, 1.84568763, 1.82923627,
         1.78920078, 1.77360916, 1.76206875, 1.74499893, 1.73006463,
-        1.70084822, 1.6883322 , 1.67772949, 1.65171933, 1.63476169,
-        1.59687376, 1.5745424 , 1.55736887, 1.54051399, 1.52546024,
+        1.70084822, 1.6883322, 1.67772949, 1.65171933, 1.63476169,
+        1.59687376, 1.5745424, 1.55736887, 1.54051399, 1.52546024,
         1.50043869, 1.48890531, 1.47329199, 1.46072423, 1.44289041,
-        1.43344045, 1.41616774, 1.40441585, 1.3979584 , 1.38773119,
+        1.43344045, 1.41616774, 1.40441585, 1.3979584, 1.38773119,
         1.37138033, 1.35170007, 1.33725214, 1.33249414, 1.31839108,
         1.30797839, 1.29657102, 1.28310275, 1.26550889, 1.25471842,
         1.24513853, 1.23672664, 1.22944438, 1.21509433, 1.21003771,
@@ -137,15 +137,15 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.82876647, 0.82395256, 0.81865752, 0.81185687, 0.80004948,
         0.79450154, 0.78852075, 0.77920061, 0.77340651, 0.76626247,
         0.76202762, 0.75783074, 0.75413191, 0.74727529, 0.74321008,
-        0.73474538, 0.73166627, 0.72687   , 0.71785438, 0.71488959,
+        0.73474538, 0.73166627, 0.72687, 0.71785438, 0.71488959,
         0.71068853, 0.70199603, 0.69832331, 0.69387686, 0.68788701,
         0.68354762, 0.67847627, 0.67117327, 0.66512167, 0.66175646,
-        0.65620857, 0.6518243 , 0.64605182, 0.64142239, 0.63754696,
+        0.65620857, 0.6518243, 0.64605182, 0.64142239, 0.63754696,
         0.63128632, 0.62478495, 0.62006336, 0.61440694, 0.60915887,
-        0.60591549, 0.60078359, 0.5938406 , 0.59103745, 0.58488411,
+        0.60591549, 0.60078359, 0.5938406, 0.59103745, 0.58488411,
         0.58124125, 0.57883304, 0.57406437, 0.57023615, 0.56442606,
         0.56041539, 0.55701393, 0.55392498, 0.55030966, 0.54346251,
-        0.53728294, 0.53515989, 0.5291304 , 0.52448714, 0.51990861,
+        0.53728294, 0.53515989, 0.5291304, 0.52448714, 0.51990861,
         0.51589233, 0.50996011, 0.50509953, 0.49889025, 0.49512967,
         0.49003205, 0.48888513, 0.48524383, 0.48164544, 0.47720695,
         0.47283325, 0.46916556, 0.46660379, 0.46280268, 0.45925769,
@@ -155,20 +155,20 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.40502119, 0.40400422, 0.40164718, 0.39864835, 0.39584854,
         0.39389083, 0.39130434, 0.38890362, 0.38526753, 0.38292497,
         0.38075879, 0.37891743, 0.37648395, 0.37557775, 0.37347662,
-        0.37154216, 0.36742872, 0.3641032 , 0.36167556, 0.35983625,
+        0.37154216, 0.36742872, 0.3641032, 0.36167556, 0.35983625,
         0.35634032, 0.35248783, 0.35085678, 0.34843227, 0.34669766,
         0.34418666, 0.33912122, 0.33720407, 0.33505177, 0.33279634,
-        0.33081138, 0.32847831, 0.32592943, 0.3111549 ], np.float)
+        0.33081138, 0.32847831, 0.32592943, 0.3111549], np.float)
 
     _emax = np.array([
         3.06803656, 2.39196181, 2.35973215, 2.34076023, 2.30973101,
-        2.2884388 , 2.25861454, 2.22371697, 2.20662117, 2.18140674,
+        2.2884388, 2.25861454, 2.22371697, 2.20662117, 2.18140674,
         2.14317489, 2.12185216, 2.09055495, 2.06256914, 2.04509854,
         2.02788448, 2.00133967, 1.97772908, 1.96379483, 1.93868744,
         1.91855776, 1.89444292, 1.87936974, 1.85819471, 1.84568763,
         1.82923627, 1.78920078, 1.77360916, 1.76206875, 1.74499893,
-        1.73006463, 1.70084822, 1.6883322 , 1.67772949, 1.65171933,
-        1.63476169, 1.59687376, 1.5745424 , 1.55736887, 1.54051399,
+        1.73006463, 1.70084822, 1.6883322, 1.67772949, 1.65171933,
+        1.63476169, 1.59687376, 1.5745424, 1.55736887, 1.54051399,
         1.52546024, 1.50043869, 1.48890531, 1.47329199, 1.46072423,
         1.44289041, 1.43344045, 1.41616774, 1.40441585, 1.3979584,
         1.38773119, 1.37138033, 1.35170007, 1.33725214, 1.33249414,
@@ -176,19 +176,19 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         1.25471842, 1.24513853, 1.23672664, 1.22944438, 1.21509433,
         1.21003771, 1.20401597, 1.19705439, 1.18722582, 0.90194935,
         0.89519638, 0.88912934, 0.88492262, 0.87837797, 0.87366825,
-        0.8689999 , 0.86437255, 0.85693878, 0.84793305, 0.84404182,
+        0.8689999, 0.86437255, 0.85693878, 0.84793305, 0.84404182,
         0.83580172, 0.82876647, 0.82395256, 0.81865752, 0.81185687,
         0.80004948, 0.79450154, 0.78852075, 0.77920061, 0.77340651,
         0.76626247, 0.76202762, 0.75783074, 0.75413191, 0.74727529,
-        0.74321008, 0.73474538, 0.73166627, 0.72687   , 0.71785438,
+        0.74321008, 0.73474538, 0.73166627, 0.72687, 0.71785438,
         0.71488959, 0.71068853, 0.70199603, 0.69832331, 0.69387686,
         0.68788701, 0.68354762, 0.67847627, 0.67117327, 0.66512167,
-        0.66175646, 0.65620857, 0.6518243 , 0.64605182, 0.64142239,
+        0.66175646, 0.65620857, 0.6518243, 0.64605182, 0.64142239,
         0.63754696, 0.63128632, 0.62478495, 0.62006336, 0.61440694,
-        0.60915887, 0.60591549, 0.60078359, 0.5938406 , 0.59103745,
+        0.60915887, 0.60591549, 0.60078359, 0.5938406, 0.59103745,
         0.58488411, 0.58124125, 0.57883304, 0.57406437, 0.57023615,
         0.56442606, 0.56041539, 0.55701393, 0.55392498, 0.55030966,
-        0.54346251, 0.53728294, 0.53515989, 0.5291304 , 0.52448714,
+        0.54346251, 0.53728294, 0.53515989, 0.5291304, 0.52448714,
         0.51990861, 0.51589233, 0.50996011, 0.50509953, 0.49889025,
         0.49512967, 0.49003205, 0.48888513, 0.48524383, 0.48164544,
         0.47720695, 0.47283325, 0.46916556, 0.46660379, 0.46280268,
@@ -198,7 +198,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.40895697, 0.40502119, 0.40400422, 0.40164718, 0.39864835,
         0.39584854, 0.39389083, 0.39130434, 0.38890362, 0.38526753,
         0.38292497, 0.38075879, 0.37891743, 0.37648395, 0.37557775,
-        0.37347662, 0.37154216, 0.36742872, 0.3641032 , 0.36167556,
+        0.37347662, 0.37154216, 0.36742872, 0.3641032, 0.36167556,
         0.35983625, 0.35634032, 0.35248783, 0.35085678, 0.34843227,
         0.34669766, 0.34418666, 0.33912122, 0.33720407, 0.33505177,
         0.33279634, 0.33081138, 0.32847831, 0.32592943], np.float)
@@ -499,8 +499,8 @@ def test_arf_with_zero_energy_elem_replace():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    expected_warnings = [UserWarning("The minimum ENERG_LO in the ARF 'test-arf' was 0 " + \
-           "and has been replaced by {}".format(ethresh))]
+    expected_warnings = [UserWarning("The minimum ENERG_LO in the ARF 'test-arf' was 0 " +
+                                     "and has been replaced by {}".format(ethresh))]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -697,8 +697,8 @@ def test_rmf_with_zero_energy_elem_replace():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    expected_warnings = [UserWarning("The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " + \
-           "and has been replaced by {}".format(ethresh))]
+    expected_warnings = [UserWarning("The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " +
+                                     "and has been replaced by {}".format(ethresh))]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -755,7 +755,6 @@ def test_arf_with_negative_energy_elem_replace():
         create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
 
     _assert_userwarning(expected_warnings, ws)
-
 
 
 def test_rmf_with_negative_energy_elem():
@@ -879,6 +878,7 @@ def test_rmf_get_x_unit():
     actual_rmf_x = rmf.get_x()
     np.testing.assert_array_almost_equal(expected_rmf_x, actual_rmf_x)
 
+
 # https://github.com/sherpa/sherpa/pull/766
 def test_ungroup():
     '''Make sure that ungrouped data can be ungrouped.
@@ -887,9 +887,7 @@ def test_ungroup():
     '''
     session = Session()
     testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
-                                   np.zeros(50),
-                                   bin_lo=1,
-                                   bin_hi=10)
+                       np.zeros(50), bin_lo=1, bin_hi=10)
     session.set_data(1, testdata)
     session.ungroup(1)
     session.group_bins(1, 5)
@@ -902,6 +900,7 @@ def test_ungroup():
     # the grouping
     session.ungroup(1)
     assert not testdata.grouped
+
 
 # https://github.com/sherpa/sherpa/pull/766
 def test_unsubtract():
@@ -1117,12 +1116,15 @@ def test_get_filter_channel_grouped_prefiltered(make_data_path):
     pha.notice(1.0, 7.0)
 
     pha.set_analysis('channel')
-    assert pha.get_filter() == '75:475'  # DOES NOT MATCH 69-480
+
+    # DOES NOT MATCH 69-480
+    assert pha.get_filter() == '75:475'
 
     # What units does ignore use? It appears to be channels.
     pha.ignore(150, 300)
 
-    assert pha.get_filter() == '75,325:475'  #  ODD
+    #  ODD
+    assert pha.get_filter() == '75,325:475'
 
 
 @requires_data
@@ -1195,7 +1197,6 @@ def test_get_filter_group_bug(make_data_path):
     assert len(filters2[0]) == 2
     assert filters2[0][0] == n1 + 1
     assert filters2[0][1] == n2 + 1
-
 
 
 @requires_data
@@ -1411,8 +1412,7 @@ def xfail(*args):
                           (30, 2000, '27:850'),
                           (-5, 350, '9:356'),
                           xfail(-20, -5, ''),
-                          (2000, 3000, ''),
-                         ])
+                          (2000, 3000, '')])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results
 
@@ -1439,8 +1439,7 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (0.7, 2000, '0.6716:12.4100'),
                           (-5, 4.2, '0.1248:4.1391'),
                           xfail(-20, -5, ''),
-                          xfail(2000, 3000, ''),
-                         ])
+                          xfail(2000, 3000, '')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1461,8 +1460,7 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (20, 8000, '20.4628:99.3224'),
                           xfail(-5, 15, '0.9991:14.7688'),
                           xfail(-20, -5, ''),
-                          xfail(8000, 9000, ''),
-                         ])
+                          xfail(8000, 9000, '')])
 def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1483,8 +1481,7 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (30, 2000, '9:19'),
                           (-5, 350, '386:850'),
                           xfail(-20, -5, '9:850'),
-                          (2000, 3000, '9:850'),
-                         ])
+                          (2000, 3000, '9:850')])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1505,8 +1502,7 @@ def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (0.8, 2000, '0.1248:0.7665'),
                           (-5, 3.5, '3.6792:12.4100'),
                           xfail(-20, -5, '0.1248:12.4100'),
-                          xfail(2000, 3000, '0.1248:12.4100'),
-                         ])
+                          xfail(2000, 3000, '0.1248:12.4100')])
 def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1527,8 +1523,7 @@ def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
                           (20, 2000, '0.9991:18.4610'),
                           xfail(-5, 15, '15.4401:99.3224'),
                           xfail(-20, -5, '0.9991:99.3224'),
-                          xfail(2000, 3000, '0.9991:99.3224'),
-                         ])
+                          xfail(2000, 3000, '0.9991:99.3224')])
 def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 

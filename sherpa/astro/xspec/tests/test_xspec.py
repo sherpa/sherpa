@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021
 #         Smithsonian Astrophysical Observatory
 #
 #
@@ -19,8 +19,10 @@
 #
 
 import numpy
-import pytest
 from numpy.testing import assert_allclose, assert_array_equal
+
+import pytest
+
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, \
     requires_fits, requires_xspec
@@ -384,7 +386,7 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     # global symbol is not created, so need to access the component
     tmod = ui.get_model_component('tmod')
     with pytest.raises(ParameterErr) as e:
-        tmod.calc([0., .2, 1., 1.], numpy.arange(1,5))
+        tmod.calc([0., .2, 1., 1.], numpy.arange(1, 5))
     assert 'minimum' in str(e)
 
 
@@ -690,7 +692,7 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert_is_finite(evals2, modelcls, "energy")
     assert_is_finite(wvals2, modelcls, "wavelength")
 
-    emsg = "{} non-contiguous model evaluation " + \
-        "failed: ".format(modelcls)
+    emsg = "{} non-contiguous model evaluation ".format(modelcls) + \
+        "failed: "
     assert_allclose(evals2, wvals2,
                     err_msg=emsg + "energy to wavelength")

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020
+#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021
 #        Smithsonian Astrophysical Observatory
 #
 #
@@ -17,13 +17,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import math
+
+import logging
 import warnings
 
 import numpy
-import logging
 
-from sherpa.astro.data import DataIMG
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, CompositeModel, Model
@@ -88,7 +87,7 @@ class Kernel(NoNewAttributesAfterInit):
         self.kshape = kshape
         self.kernel = None
         self.skshape = None
-        self.norm   = norm
+        self.norm = norm
         self.origin = origin
         self.frozen = frozen
         self.center = center
@@ -720,7 +719,8 @@ class PSFModel(Model):
 
             try:
                 psf_pixel_size = self.kernel.sky.cdelt
-            except AttributeError: # If the kernel does not have a pixel size, issue a warning and keep going
+            except AttributeError:
+                # If the kernel does not have a pixel size, issue a warning and keep going
                 warnings.warn("PSF Image does not have a pixel size. Sherpa will assume the pixel size is the same"
                               "as the data")
                 return self.SAME_RESOLUTION

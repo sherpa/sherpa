@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,12 +28,14 @@ import pytest
 
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
+    ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, \
+    UnaryOpModel
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D
 
 
-def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
+def validate_warning(warning_capturer, parameter_name="norm",
+                     model_name="ParameterCase", actual_name="Ampl", num=1):
     assert num == len(warning_capturer)
     for warning in warning_capturer:
         assert issubclass(warning.category, DeprecationWarning)
@@ -117,9 +119,9 @@ def setup_parametercase():
 
 def setup_composite():
     out = namedtuple('composite', ['m', 'm2', 's', 'x', 'xx'])
-    out.m  = Const1D('m')
+    out.m = Const1D('m')
     out.m2 = Const1D('m2')
-    out.m.c0  = 2
+    out.m.c0 = 2
     out.m2.c0 = 4
     out.s = Sin('s')
     out.x = 1.0
@@ -545,9 +547,10 @@ def test_functionmodel_check():
 
 
 @pytest.mark.parametrize('model,mtype',
-                         [(ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel),
-                          (ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel)
-                         ])
+                         [(ArithmeticConstantModel(23, name='the-23'),
+                           ArithmeticConstantModel),
+                          (ArithmeticFunctionModel(numpy.sin),
+                           ArithmeticFunctionModel)])
 def test_unop_arithmeticxxx(model, mtype):
     """Can we apply a function to an Arithmetic*Model object?
 
@@ -571,9 +574,10 @@ def test_unop_arithmeticxxx(model, mtype):
 
 @pytest.mark.parametrize('model,mtype',
                          [(23, ArithmeticConstantModel),
-                          (ArithmeticConstantModel(23, name='the-23'), ArithmeticConstantModel),
-                          (ArithmeticFunctionModel(numpy.sin), ArithmeticFunctionModel)
-                         ])
+                          (ArithmeticConstantModel(23, name='the-23'),
+                           ArithmeticConstantModel),
+                          (ArithmeticFunctionModel(numpy.sin),
+                           ArithmeticFunctionModel)])
 def test_binop_arithmeticxxx(model, mtype):
     """Can we create and combine Arithmetic*Model objects?"""
 

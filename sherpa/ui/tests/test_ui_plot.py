@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -40,7 +40,7 @@ from sherpa.models import basic
 from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
     DataContour, ModelContour, SourceContour, ResidContour, \
-    RatioContour, FitContour, PSFContour, LRHistogram, \
+    RatioContour, FitContour, LRHistogram, \
     ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot, \
     DataHistogramPlot
 
@@ -1177,7 +1177,7 @@ def test_plot_multiple(session):
                                                  'Ratio of Data to Model'],
                                                 ['y', 'y', 'y', 'y',
                                                  'Data / Model']),
-                                    1):
+                                            1):
 
         assert ax.get_geometry() == (2, 3, i)
         assert ax.get_title() == title
@@ -1572,7 +1572,7 @@ def test_get_cdf_plot_empty(session):
 
     s = session()
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
     for f in ["points", "x", "y", "median", "lower", "upper", "xlabel", "ylabel", "title"]:
         assert getattr(p, f) is None
 
@@ -1638,7 +1638,7 @@ def test_plot_cdf(session):
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     xsort = np.sort(x)
     assert p.points == pytest.approx(x)
@@ -1662,7 +1662,7 @@ def test_plot_cdf_labels_noname(session):
     s.plot_cdf(x, xlabel='a b')
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     assert p.xlabel == 'a b'
     assert p.ylabel == 'p(<=a b)'
@@ -1679,7 +1679,7 @@ def test_plot_cdf_labels(session):
     s.plot_cdf(x, xlabel='a b', name='b a')
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     assert p.xlabel == 'a b'
     assert p.ylabel == 'p(<=a b)'
@@ -1693,7 +1693,7 @@ def test_show_cdf_plot_empty(session):
     s = session()
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 10
@@ -1724,7 +1724,7 @@ def test_show_cdf_plot(session, old_numpy_printing):
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
-    assert isinstance (p, CDFPlot)
+    assert isinstance(p, CDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 10
@@ -1745,7 +1745,7 @@ def test_get_pdf_plot_empty(session):
 
     s = session()
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
     for f in ["points", "xlo", "xhi", "y", "xlabel", "ylabel", "title"]:
         assert getattr(p, f) is None
 
@@ -1760,7 +1760,7 @@ def test_plot_pdf(session):
     s.plot_pdf(x)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     xgrid = np.arange(2, 8.5, 0.5)
 
@@ -1855,7 +1855,7 @@ def test_plot_pdf_labels_noname(session):
     s.plot_pdf(x, xlabel='x^2 x', bins=4)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     assert p.xlo.size == 4
     assert p.xhi.size == 4
@@ -1876,7 +1876,7 @@ def test_plot_pdf_labels(session):
     s.plot_pdf(x, xlabel='x^2 x', name='no name', bins=4)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     assert p.xlo.size == 4
     assert p.xhi.size == 4
@@ -1894,7 +1894,7 @@ def test_show_pdf_plot_empty(session):
     s = session()
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 8
@@ -1923,7 +1923,7 @@ def test_show_pdf_plot(session, old_numpy_printing):
     s.plot_pdf(x, bins=3, normed=False)
 
     p = s.get_pdf_plot()
-    assert isinstance (p, PDFPlot)
+    assert isinstance(p, PDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 8
@@ -2044,7 +2044,6 @@ def test_xxx_plot_recalc(ptype, pclass, y1, y2, session):
 
     assert p.x == pytest.approx([20, 30, 40])
     assert p.y == pytest.approx(y2)
-
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2326,7 +2325,6 @@ def test_pylab_plot_trace_empty_replot(session):
         s.plot_trace(y, replot=True)
 
 
-
 @requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_pylab_plot_trace(session):
@@ -2539,7 +2537,7 @@ def test_ratio_contour_recalc(session):
 
     ygood = np.isfinite(p.y)
     assert ygood.sum() == ygood.size - 1
-    assert ygood[40] == False
+    assert not ygood[40]
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2587,7 +2585,7 @@ def test_resid_contour_recalc(session):
 
     ygood = np.isfinite(p.y)
     assert ygood.sum() == ygood.size - 1
-    assert ygood[40] == False
+    assert not ygood[40]
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2631,7 +2629,7 @@ def test_fit_contour_recalc(session):
     assert pd.x1 == pytest.approx(x1)
     assert pm.x0 == pytest.approx(x0)
     assert pm.x1 == pytest.approx(x1)
-    assert pd.y== pytest.approx(y)
+    assert pd.y == pytest.approx(y)
     # just check the model isn't flat
     assert pm.y.min() < pm.y.max()
 
@@ -2645,7 +2643,7 @@ def test_fit_contour_recalc(session):
     assert pd.x1 == pytest.approx(nx1)
     assert pm.x0 == pytest.approx(nx0)
     assert pm.x1 == pytest.approx(nx1)
-    assert pd.y== pytest.approx(ny)
+    assert pd.y == pytest.approx(ny)
     # just check the model is flat
     assert pm.y.min() == pm.y.max()
 

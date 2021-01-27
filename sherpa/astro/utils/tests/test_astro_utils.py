@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2020
+#  Copyright (C) 2008, 2016, 2018, 2020, 2021
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -35,8 +35,7 @@ SHORTVALS = [100, 249, 601, 1024]
                           (50, 1024),  # hi case
                           (250, 2000),  # 'hidden' lo case
                           (50, 250),  # 'hidden' hi case
-                          (250, 600)  # 'hidden' interval case w/ noticed channels inside
-                         ])
+                          (250, 600)])  # 'hidden' interval case w/ noticed channels inside
 def test_is_in_long(lo, hi):
     assert is_in(LONGVALS, lo, hi)
 

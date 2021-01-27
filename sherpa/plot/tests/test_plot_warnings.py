@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,9 +27,10 @@
 #
 
 import logging
-import pytest
 
 import numpy as np
+
+import pytest
 
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D
@@ -37,9 +38,10 @@ from sherpa.plot import DataPlot, ModelPlot, ResidPlot, RatioPlot, \
     FitPlot, JointPlot
 from sherpa.stats import LeastSq, Cash, Chi2DataVar, Chi2ModVar
 
+
 def example_data():
     """Create a 1D example dataset"""
-    
+
     x = np.array([0, 10, 20])
     y = np.array([10, 20, 40])
     return Data1D('exmp', x, y)
@@ -133,7 +135,7 @@ def test_data_plot_see_errorbar_warnings(caplog, statClass, flag):
         nwarn = 1
     else:
         nwarn = 0
-        
+
     check_for_warning(caplog, nwarn, stat.name)
 
 
@@ -215,7 +217,7 @@ def test_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, fla
         nwarn = 1
     else:
         nwarn = 0
-        
+
     check_for_warning(caplog, nwarn, stat.name)
 
 
@@ -307,7 +309,7 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
         nwarn = 1
     else:
         nwarn = 0
-        
+
     check_for_warning(caplog, nwarn, stat.name)
 
 
@@ -345,7 +347,7 @@ def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass,
     rplot = plotClass()
 
     jplot = JointPlot()
-    
+
     # Internal check: this test requires that either yerrorbars is set
     # to True, or not included, in the plot preferences. So check this
     # assumption.
@@ -373,12 +375,12 @@ def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass,
 
         jplot.plottop(fplot)
         jplot.plotbot(rplot)
-        
+
     if flag:
         nwarn = 2
     else:
         nwarn = 0
-        
+
     check_for_warning(caplog, nwarn, stat.name)
 
 

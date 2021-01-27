@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@ import numpy as np
 from numpy import iterable, array2string, asarray
 
 from sherpa.astro.data import DataPHA
-from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
+from sherpa.plot import FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
 from sherpa.plot import ComponentSourcePlot as _ComponentSourcePlot
 import sherpa.plot
@@ -224,7 +224,7 @@ class SourcePlot(HistogramPlot):
 
     def __init__(self):
         self.units = None
-        self.mask  = None
+        self.mask = None
         HistogramPlot.__init__(self)
         self.title = 'Source'
 
@@ -242,7 +242,7 @@ class SourcePlot(HistogramPlot):
             self.units = "energy"
 
         self.xlabel = data.get_xlabel()
-        self.title  = 'Source Model of %s' % data.name
+        self.title = 'Source Model of %s' % data.name
         self.xlo, self.xhi = data._get_indep(filter=False)
         self.mask = filter_bins((lo,), (hi,), (self.xlo,))
         self.y = src(self.xlo, self.xhi)

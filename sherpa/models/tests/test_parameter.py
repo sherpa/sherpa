@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021
 #                Smithsonian Astrophysical Observatory
 #
 #
@@ -19,6 +19,7 @@
 #
 
 import operator
+
 from numpy import arange
 
 import pytest
@@ -69,7 +70,6 @@ class test_parameter(SherpaTestCase):
             assert gauss.default_val == pos
             assert gauss.default_min == min
             assert gauss.default_max == max
-
 
     class TestParVal(TestParBase):
 

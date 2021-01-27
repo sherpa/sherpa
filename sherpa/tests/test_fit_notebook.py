@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@ from sherpa.data import Data1D, DataSimulFit
 from sherpa.models import SimulFitModel
 from sherpa.models.basic import Const1D
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats  import Chi2, LeastSq
+from sherpa.stats import Chi2, LeastSq
 
 
 def test_statinfo_basic():
@@ -48,7 +48,7 @@ def test_statinfo_basic():
 def test_statinfo_chisq():
     """Fake rstat and qval"""
     s = fit.StatInfoResults('chi2foo', 1.2, 12, None, 10)
-    s.qval= 0.9
+    s.qval = 0.9
     s.rstat = 1.1
     r = s._repr_html_()
 
@@ -232,8 +232,6 @@ def test_errresults():
     assert '<div class="dataname">Statistic</div><div class="dataval">chi2</div>' in r
 
     assert '<tr><td>const1d.c0</td><td>           3</td><td>   -0.562226</td><td>    0.562226</td></tr>' in r
-
-
 
 
 def test_errresults_limits_none():

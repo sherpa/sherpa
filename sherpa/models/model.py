@@ -376,7 +376,7 @@ class Model(NoNewAttributesAfterInit):
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                 doc='The hard maximum values for the thawed parameters.')
+                                  doc='The hard maximum values for the thawed parameters.')
 
     def reset(self):
         """Reset the parameter values."""
@@ -432,8 +432,8 @@ class CompositeModel(Model):
             try:
                 self.is_discrete = self.is_discrete or part.is_discrete
             except:
-                warning("Could not determine whether the model is discrete.\n"+
-                        "This probably means that you have restored a session saved with a previous version of Sherpa.\n"+
+                warning("Could not determine whether the model is discrete.\n" +
+                        "This probably means that you have restored a session saved with a previous version of Sherpa.\n" +
                         "Falling back to assuming that the model is continuous.\n")
                 self.is_discrete = False
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020
+#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020, 2021
 #      Smithsonian Astrophysical Observatory
 #
 #
@@ -86,6 +86,7 @@ WRONG_STAT_MSG = "Fit statistic must be cash, cstat or wstat, not {}"
 WSTAT_ERR_MSG = "No background data has been supplied. Use cstat"
 NO_COVAR_MSG = "covariance has not been performed"
 RIGHT_STATS = {'cash', 'cstat', 'wstat'}
+
 
 @pytest.fixture
 def setup_covar(make_data_path):

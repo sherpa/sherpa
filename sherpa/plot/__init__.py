@@ -24,7 +24,6 @@ A visualization interface to Sherpa
 
 import logging
 import importlib
-import sys
 
 import numpy
 
@@ -534,7 +533,7 @@ class HistogramPlot(Histogram):
         """
 
         if self.xlo is None or self.xhi is None:
-            return  None
+            return None
 
         # As we do not (yet) require NumPy arrays, enforce it.
         xlo = numpy.asarray(self.xlo)

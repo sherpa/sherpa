@@ -22,13 +22,13 @@
 Flux-related tests of the sherpa.astro.ui module.
 """
 
-import pytest
-
 import numpy as np
 
+import pytest
+
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_data, requires_fits, requires_plotting, \
-    requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_plotting, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
     ModelErr, SherpaErr
 import sherpa.astro.utils
@@ -95,7 +95,7 @@ def test_calc_foo_flux_no_bkg(method, make_data_path, clean_astro_ui):
 
     setup_sample(1, make_data_path, fit=False)
     with pytest.raises(ModelErr) as exc:
-         method(lo=0.5, hi=7, bkg_id=1)
+        method(lo=0.5, hi=7, bkg_id=1)
 
     assert str(exc.value) == 'background model 1 for data set 1 has not been set'
 
@@ -673,8 +673,7 @@ def test_sample_foo_flux_invalid_niter(method, niter, id,
                                                      (ArgumentErr, False, [1, 2, None]),
                                                      (ArgumentErr, True, [[0.1, 0.01, 0.02], [0.01, np.nan, 0.05], [0.02, 0.01, 0.08]]),
                                                      (ArgumentErr, False, np.ones(3).reshape(1, 3, 1)),
-                                                     (ArgumentErr, True, np.ones(9).reshape(1, 3, 3))
-                                              ])
+                                                     (ArgumentErr, True, np.ones(9).reshape(1, 3, 3))])
 def test_sample_foo_flux_invalid_scales(method, etype, correlated, scales,
                                         make_data_path, clean_astro_ui):
     """What happens for sample_energy/photon_flux when scales is
@@ -928,7 +927,7 @@ def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
     # The nH value, as it bumps against the lower bound of 0, has
     # been seen to require a larger tolerance than the other parameters.
     #
-    assert np.log10(np.median(nh)) ==  pytest.approx(lnh0, rel=1e-3)
+    assert np.log10(np.median(nh)) == pytest.approx(lnh0, rel=1e-3)
     assert np.median(gamma) == pytest.approx(gamma0, rel=1e-3)
     assert np.log10(np.median(ampl)) == pytest.approx(lampl0, rel=1e-3)
 
@@ -1987,8 +1986,7 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("getfunc,medflux",
                          [(ui.get_photon_flux_hist, 1.276591979716474e-4),
-                          (ui.get_energy_flux_hist, 4.550271338687814e-13),
-                         ])
+                          (ui.get_energy_flux_hist, 4.550271338687814e-13)])
 def test_get_xxx_flux_hist_unabsorbed(getfunc, medflux, make_data_path, clean_astro_ui,
                                       reset_seed, hide_logging):
     """Can we get the histogram data for fluxes (for an unabsorbed flux?)"""

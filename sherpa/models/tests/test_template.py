@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2018, 2021 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,14 +17,15 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
+import numpy
 
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
 from sherpa.utils.testing import SherpaTestCase, requires_data
 from sherpa.utils.err import ModelErr
 from sherpa import ui
-import numpy
-import logging
 
 logger = logging.getLogger("sherpa")
 
@@ -127,7 +128,7 @@ class test_template(SherpaTestCase):
         for ii in range(self.ntemplates):
             t = TableModel()
             g1.fwhm = numpy.random.uniform(0.5, 2.0)
-            g1.pos  = numpy.random.uniform(1.0, 4.5)
+            g1.pos = numpy.random.uniform(1.0, 4.5)
             g1.ampl = numpy.random.uniform(1.0, 50.)
             t.load(coords, g1(coords))
             templates.append(t)

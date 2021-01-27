@@ -1,4 +1,4 @@
-# Copyright (c) 2010, 2014, 2015, 2020 Smithsonian Astrophysical Observatory
+# Copyright (c) 2010, 2014, 2015, 2020, 2021 Smithsonian Astrophysical Observatory
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -214,11 +214,9 @@ functions.
 
 """
 
-__all__ = ['set_template_id', 'DataStack']
-
+import logging
 import sys
 import types
-import logging
 
 from sherpa.astro import ui
 from sherpa.utils.logging import config_logger
@@ -228,6 +226,8 @@ from sherpa.astro.datastack.ds import DataStack
 from .utils import set_template_id
 
 logger = config_logger(__name__)
+
+__all__ = ['set_template_id', 'DataStack']
 
 
 @public
@@ -271,6 +271,7 @@ def set_stack_verbose(verbose=True):
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.WARNING)
+
 
 _always_wrapped = ('load_pha', 'load_arrays', 'load_ascii', 'load_data',
                    'load_bkg')
@@ -343,6 +344,7 @@ def _datastack_wrap(func):
     wrap.__doc__ = doc
     return wrap
 
+
 # The default datastack
 DATASTACK = DataStack()
 
@@ -351,7 +353,7 @@ DATASTACK = DataStack()
 _module = sys.modules[__name__]
 for attr in dir(ui):
     func = getattr(ui, attr)
-    if type(func) == types.FunctionType:
+    if isinstance(func, types.FunctionType):
         setattr(_module, attr, public(_sherpa_ui_wrap(func)))
 
 for funcname in ['clear_stack', 'show_stack', 'get_stack_ids',

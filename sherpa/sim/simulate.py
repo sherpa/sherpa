@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,11 @@
 Classes for PPP simulations
 """
 
+from copy import deepcopy
+import logging
+
+import numpy
+
 from sherpa.stats import Cash, CStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
@@ -29,12 +34,6 @@ from sherpa.utils import parallel_map, poisson_noise, NoNewAttributesAfterInit
 from sherpa.fit import Fit
 from sherpa.sim.sample import NormalParameterSampleFromScaleMatrix
 
-import time
-import numpy
-
-from copy import deepcopy
-
-import logging
 logger = logging.getLogger("sherpa")
 debug = logger.debug
 info = logger.info
@@ -49,23 +48,23 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
     Attributes
     ----------
-    samples : numpy array
-       The parameter samples array for each simulation.
+    ratios : numpy array
+       The likelihood ratio for each simulation.
     stats : numpy array
        The fit statistic for the null and alternative models
        for each simulation. The shape is (nsim, 2).
-    ratios : numpy array
-       The likelihood ratio for each simulation.
-    null : number
-       The fit statistic of the null model on the observed data.
-    alt : number
-       The fit statistic of the alternate model on the observed data.
+    samples : numpy array
+       The parameter samples array for each simulation.
     lr : number
        The likelihood ratio of the observed data for the null and
        alternate models.
     ppp : number
        The p value of the observed data for the null and alternate
        models.
+    null : number
+       The fit statistic of the null model on the observed data.
+    alt : number
+       The fit statistic of the alternate model on the observed data.
 
     """
 
@@ -81,23 +80,24 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         self.alt = float(alt)
         NoNewAttributesAfterInit.__init__(self)
 
-
     def __repr__(self):
         return '<Likelihood ratio results instance>'
-
 
     def __str__(self):
         samples = self.samples
         if self.samples is not None:
-            samples = numpy.array2string(self.samples, separator=',', precision=4, suppress_small=False)
+            samples = numpy.array2string(self.samples, separator=',',
+                                         precision=4, suppress_small=False)
 
         stats = self.stats
         if self.stats is not None:
-            stats = numpy.array2string(self.stats, separator=',', precision=4, suppress_small=False)
+            stats = numpy.array2string(self.stats, separator=',',
+                                       precision=4, suppress_small=False)
 
         ratios = self.ratios
         if self.ratios is not None:
-            ratios = numpy.array2string(self.ratios, separator=',', precision=4, suppress_small=False)
+            ratios = numpy.array2string(self.ratios, separator=',',
+                                        precision=4, suppress_small=False)
 
         output = '\n'.join([
                 'samples = %s' % samples,
@@ -111,7 +111,6 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
         return output
 
-
     def format(self):
         """Convert the object to a string representation for display purposes.
 
@@ -121,7 +120,7 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
            A string representation of the data stored in the object.
 
         """
-        s =  'Likelihood Ratio Test\n'
+        s = 'Likelihood Ratio Test\n'
         s += 'null statistic   =  %s\n' % str(self.null)
         s += 'alt statistic    =  %s\n' % str(self.alt)
         s += 'likelihood ratio =  %s\n' % str(self.lr)
@@ -143,7 +142,9 @@ class LikelihoodRatioTestWorker():
         self.alt_vals = alt_vals
 
     def __call__(self, proposal):
-        return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit, proposal, self.null_vals, self.alt_vals)
+        return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit,
+                                             proposal, self.null_vals,
+                                             self.alt_vals)
 
 
 class LikelihoodRatioTest(NoNewAttributesAfterInit):
@@ -180,11 +181,11 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         # Fake using poisson_noise with null
         fake = poisson_noise(nullfit.data.eval_model(nullfit.model))
 
-                # Set faked data for both nullfit and altfit
+        # Set faked data for both nullfit and altfit
         nullfit.data.set_dep(fake)
 
         # Start the faked fit at initial null best-fit values
-        #nullfit.model.thawedpars = null_vals
+        # nullfit.model.thawedpars = null_vals
 
         # Fit with null model
         nullfr = nullfit.fit()
@@ -194,11 +195,11 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         debug("statistic null = " + repr(null_stat))
 
         # nullfit and altfit BOTH point to same faked dataset
-        assert ( id(nullfit.data) == id(altfit.data) )
+        assert id(nullfit.data) == id(altfit.data)
         assert (nullfit.data.get_dep() == altfit.data.get_dep()).all()
 
         # Start the faked fit at the initial alt best-fit values
-        #altfit.model.thawedpars = alt_vals
+        # altfit.model.thawedpars = alt_vals
 
         debug("proposal: " + repr(proposal))
         debug("alt model")
@@ -218,13 +219,14 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         return [null_stat, alt_stat, LR]
 
-
     @staticmethod
     def run(fit, null_comp, alt_comp, conv_mdl=None,
             stat=None, method=None,
             niter=500, numcores=None):
-        if stat is None:   stat = CStat()
-        if method is None: method = NelderMead()
+        if stat is None:
+            stat = CStat()
+        if method is None:
+            method = NelderMead()
 
         if not isinstance(stat, (Cash, CStat)):
             raise TypeError("Sherpa fit statistic must be Cash or CStat" +
@@ -232,7 +234,7 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         niter = int(niter)
 
-        alt  = alt_comp
+        alt = alt_comp
         null = null_comp
 
         oldaltvals = numpy.array(alt.thawedpars)
@@ -294,10 +296,10 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         statistics = numpy.asarray(statistics)
 
-        pppvalue = numpy.sum( statistics[:,2] > LR ) / (1.0*niter)
+        pppvalue = numpy.sum(statistics[:, 2] > LR) / (1.0 * niter)
 
-        debug('ppp value = '+str(pppvalue))
+        debug('ppp value = ' + str(pppvalue))
 
-        return LikelihoodRatioResults(statistics[:,2], statistics[:,0:2],
+        return LikelihoodRatioResults(statistics[:, 2], statistics[:, 0:2],
                                       samples, LR, pppvalue, null_stat,
                                       alt_stat)

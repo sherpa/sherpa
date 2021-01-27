@@ -1,6 +1,5 @@
-
 #
-#  Copyright (C) 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2018, 2019, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 import numpy
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits,\
@@ -31,8 +32,8 @@ from sherpa.stats import Cash, LeastSq
 from sherpa.fit import Fit
 from sherpa.astro import ui
 
-import logging
 logger = logging.getLogger("sherpa")
+
 
 @requires_data
 @requires_fits
@@ -78,6 +79,7 @@ class test_ARFModelPHA(SherpaTestCase):
         assert result.numpoints == self._fit_using_ARFModelPHA['numpoints']
         assert result.dof == self._fit_using_ARFModelPHA['dof']
 
+
 class test_cache(SherpaTestCase):
 
     _fit_same_poly_bench = {
@@ -118,18 +120,18 @@ class test_cache(SherpaTestCase):
         logger.setLevel(logging.ERROR)
 
         x = numpy.linspace(1.0, 101., num=101)[0::2]
-        y1 = [ 1., 5., 2., 4., 7.,11., 9., 8.,12.,18.,12.,11.,13.,12.,13.,
-               13.,20.,23.,16.,20.,24.,17.,21.,26.,22.,24.,24.,21.,28.,
-               28.,26.,25.,34.,26.,34.,33.,25.,38.,31.,43.,35.,42.,50.,
-               41.,43.,47.,57.,53.,60.,46.,54.]
-        y2 = [ 0., 7., 6., 3., 5., 5., 9.,11.,13., 8.,14.,13.,14.,18.,11.,
-               15.,17.,26., 15.,19.,25.,30.,15.,29.,16.,25.,27.,29.,36.,
-               41.,22.,27.,33.,32.,45.,37.,38.,38.,34.,52.,40.,41.,31.,
-               47.,38.,52.,57.,33.,48.,53.,45.]
-        y3 = [ 1., 2., 4., 2., 5., 8.,15.,10.,13.,10.,16.,10.,13.,12.,16.,
-               17.,17.,20., 23.,16.,25.,22.,19.,31.,26.,24.,21.,29.,36.,
-               30.,33.,30.,37.,27.,36.,32., 42.,44.,39.,30.,40.,33.,39.,
-               49.,56.,47.,46.,35.,63.,40.,57.]
+        y1 = [1., 5., 2., 4., 7., 11., 9., 8., 12., 18., 12., 11., 13., 12., 13.,
+              13., 20., 23., 16., 20., 24., 17., 21., 26., 22., 24., 24., 21., 28.,
+              28., 26., 25., 34., 26., 34., 33., 25., 38., 31., 43., 35., 42., 50.,
+              41., 43., 47., 57., 53., 60., 46., 54.]
+        y2 = [0., 7., 6., 3., 5., 5., 9., 11., 13., 8., 14., 13., 14., 18., 11.,
+              15., 17., 26., 15., 19., 25., 30., 15., 29., 16., 25., 27., 29., 36.,
+              41., 22., 27., 33., 32., 45., 37., 38., 38., 34., 52., 40., 41., 31.,
+              47., 38., 52., 57., 33., 48., 53., 45.]
+        y3 = [1., 2., 4., 2., 5., 8., 15., 10., 13., 10., 16., 10., 13., 12., 16.,
+              17., 17., 20., 23., 16., 25., 22., 19., 31., 26., 24., 21., 29., 36.,
+              30., 33., 30., 37., 27., 36., 32., 42., 44., 39., 30., 40., 33., 39.,
+              49., 56., 47., 46., 35., 63., 40., 57.]
         self.d1 = Data1D('1', x, y1)
         self.d2 = Data1D('2', x, y2)
         self.d3 = Data1D('3', x, y3)
@@ -229,11 +231,9 @@ class test_cache(SherpaTestCase):
         # again not 1
         mdl.c0 = 8
 
-
         # Copy the values from the plot structures, since get_xxx_plot
         # returns the same object so m1.y == m2.y will not note a difference.
         #
-
         d1y = ui.get_data_plot().y.copy()
         m1y = ui.get_model_plot().y.copy()
         s1y = ui.get_source_plot().y.copy()
