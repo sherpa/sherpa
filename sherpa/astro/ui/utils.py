@@ -13250,7 +13250,8 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.13.1
            The `id` parameter is now used if set (previously the
-           default dataset was always used).
+           default dataset was always used). The screen output is now
+           controlled by the Sherpa logging setup.
 
         Parameters
         ----------
@@ -13329,7 +13330,8 @@ class Session(sherpa.ui.utils.Session):
         The summary output displayed by this routine - giving the
         median and confidence ranges - is controlled by the standard
         Sherpa logging instance, and can be hidden by changing the
-        logging to a level greater than "INFO".
+        logging to a level greater than "INFO" (e.g. with
+        sherpa.utils.logging.SherpaVerbosity).
 
         Examples
         --------
@@ -13365,15 +13367,13 @@ class Session(sherpa.ui.utils.Session):
         >>> ans = sample_flux(correlated=True, scales=cmatrix, num=500)
 
         Run sample_flux after changing the logging level, so that the
-        screen output from sample_flux is not displayed. Afterwards
-        the level is set to the "INFO" level (which is the default
-        level for Sherpa):
+        screen output from sample_flux is not displayed. We use the
+        SherpaVerbosity function from sherpa.utils.logging to
+        only change the logging level while runnng sample_flux:
 
-        >>> import logging
-        >>> lgr = logging.getLogger('sherpa')
-        >>> lgr.setLevel(logging.WARN)
-        >>> ans = sample_flux(num=1000, lo=0.5, hi=7)
-        >>> lgr.setLevel(logging.INFO)
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity('WARN'):
+        ...     ans = sample_flux(num=1000, lo=0.5, hi=7)
 
         """
 

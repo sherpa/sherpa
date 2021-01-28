@@ -1547,6 +1547,40 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
 
 @requires_data
 @requires_fits
+def test_sample_flux_nologging(make_data_path, clean_astro_ui,
+                               hide_logging, reset_seed, caplog):
+    """Check the example code (using SherpaVerbosity).
+
+    We just want to check we get no logging output. We don't
+    check anything else.
+    """
+
+    np.random.seed(3704)
+
+    gamma0 = 1.95014
+    ampl0 = 1.77506e-4
+    stat0 = 16.270233678440196
+
+    ui.load_pha(1, make_data_path('3c273.pi'))
+    ui.subtract(1)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+    ui.set_source(1, ui.powlaw1d.p1)
+    ui.fit(1)
+    ui.covar(1)
+
+    assert len(caplog.records) == 0
+
+    scal = ui.get_covar_results().parmaxes
+    with SherpaVerbosity('WARN'):
+        ui.sample_flux(id=1, lo=1, hi=5, num=1,
+                       correlated=False)
+
+    assert len(caplog.records) == 0
+
+
+@requires_data
+@requires_fits
 @requires_xspec
 @pytest.mark.parametrize("method", [ui.sample_energy_flux, ui.sample_photon_flux])
 @pytest.mark.parametrize("correlated,scales3",
