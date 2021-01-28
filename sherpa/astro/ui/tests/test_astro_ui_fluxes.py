@@ -2323,7 +2323,7 @@ def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
     # Note that I am slightly concerned that the background flux has been
     # calculated using the source response, not the background response.
     # This is too hard to identify with this dataset. We need a test which
-    # has drastically different background response (nad maybe exposure
+    # has drastically different background response (and maybe exposure
     # time).
     #
     sflux = ui.calc_energy_flux(id=idval, lo=1, hi=5)
