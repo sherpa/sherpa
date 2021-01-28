@@ -38,6 +38,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
 from sherpa.models.model import SimulFitModel
 
+info = logging.getLogger(__name__).info
 
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
@@ -602,7 +603,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
         msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
-        logger.info(msg)
+        info(msg)
 
     sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
     samples = numpy.concatenate((samples, sampletmp), axis=1)

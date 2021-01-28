@@ -1514,7 +1514,7 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
     assert len(caplog.records) == 2
     msgs = []
     for rec in caplog.record_tuples:
-        assert rec[0] == 'sherpa'  # we use sherpa, not sherpa.astro.flux here
+        assert rec[0] == 'sherpa.astro.flux'
         assert rec[1] == logging.INFO
         msgs.append(rec[2])
 
@@ -1965,7 +1965,7 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
     assert len(caplog.records) == 2
     msgs = []
     for rec in caplog.record_tuples:
-        assert rec[0] == 'sherpa'  # we use sherpa, not sherpa.astro.flux here
+        assert rec[0] == 'sherpa.astro.flux'
         assert rec[1] == logging.INFO
         msgs.append(rec[2])
 
