@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,8 +24,6 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits
-
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, \
@@ -37,6 +35,7 @@ from sherpa.data import Data1D
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, PowLaw1D
 from sherpa import stats
 from sherpa.utils.err import IOErr, PlotErr
+from sherpa.utils.testing import requires_data, requires_fits, requires_pylab
 
 
 def check_sourceplot_energy(sp, factor=0):
@@ -435,12 +434,58 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
     assert np.all(plot.y > 0)
 
     # regression test
+    yexp = np.asarray([15, 16, 15, 15, 15, 16, 16, 15, 15])
+    assert pha.get_dep(filter=True) == pytest.approx(yexp)
+
+    # regression test
     yexp = np.asarray([39.44132393, 68.92072985, 64.39425057,
                        48.69954162, 41.17454851, 88.87982014,
                        74.70504415, 79.22094498, 94.57773635])
     assert plot.y == pytest.approx(yexp)
 
 
+@requires_data
+@requires_fits
+def test_dataphahistogram_wavelength_counts_norm(make_data_path):
+    """Check we use norm=False + rate=counts + wavelength"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.rate = False
+    pha.plot_norm = False
+
+    pha.notice(3, 5)
+
+    plot = aplot.DataPHAPlot()
+    plot.prepare(pha)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'Counts'
+    assert plot.title == 'my-name.pi'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+
+    # can we access the "pseudo" x attribute?
+    assert plot.x[0] > plot.x[-1]
+
+    assert np.all(plot.y > 0)
+
+    # Check that y is as expected
+    yexp = np.asarray([15, 16, 15, 15, 15, 16, 16, 15, 15])
+
+    # regression test
+    assert pha.get_dep(filter=True) == pytest.approx(yexp)
+    assert plot.y == pytest.approx(yexp)
+
+
+@requires_pylab
 @requires_data
 @requires_fits
 def test_modelphahistogram_prepare_wavelength(make_data_path):
@@ -476,6 +521,54 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
 
 @requires_data
 @requires_fits
+def test_modelphahistogram_wavelength_counts_norm(make_data_path):
+    """Check we can use norm=False + rate=counts + wavelength"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.rate = False
+    pha.plot_norm = False
+
+    pha.notice(3, 5)
+
+    mdl = Const1D()
+
+    # not bothered too much about the model (e.g. setting a response)
+    #
+    plot = aplot.ModelPHAHistogram()
+    plot.prepare(pha, mdl)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'Counts'
+    assert plot.title == 'Model'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+    assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.y > 0)
+    assert plot.y.size == 9
+
+    # regression test
+    yexp = np.asarray([13, 9, 10, 15, 21, 12, 16, 16, 15])
+    assert plot.y == pytest.approx(yexp)
+
+    # Now just check this equals the model value: we apply mdl to the
+    # channel grid and then filter and group.
+    #
+    ymodel = mdl(pha.channel)
+    y = pha.apply_filter(ymodel)
+    assert y == pytest.approx(yexp)
+
+
+@requires_pylab
+@requires_data
+@requires_fits
 def test_sourceplot_prepare_wavelength(make_data_path):
     """Check we can use wavelength setting"""
 
@@ -507,6 +600,52 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     assert plot.xlo[0] > plot.xhi[0]
     assert np.all(plot.y > 0)
     assert plot.y.size == 1090
+
+    # The model evaluates to 1 count per bin, so it's easy to sum up
+    assert plot.y == pytest.approx(np.ones(1090))
+
+
+@requires_pylab
+@requires_data
+@requires_fits
+def test_sourceplot_wavelength_counts_norm(make_data_path):
+    """Check we can use norm=False + rate=counts + wavelength
+
+    NOTE: the source plot ignores norm and rate settings!
+    """
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.rate = False
+    pha.plot_norm = False
+
+    pha.notice(3, 5)
+
+    mdl = Const1D()
+
+    # not bothered too much about the model (e.g. setting a response)
+    #
+    plot = aplot.SourcePlot()
+    plot.prepare(pha, mdl)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'f(lambda)  Photons/sec/cm$^2$/Angstrom '
+    assert plot.title == 'Source Model of my-name.pi'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+    assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.y > 0)
+    assert plot.y.size == 1090
+
+    # The model evaluates to 1 count per bin, so it's easy to sum up
+    assert plot.y == pytest.approx(np.ones(1090))
 
 
 def test_pha_data_with_gaps_977():
