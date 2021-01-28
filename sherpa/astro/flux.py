@@ -583,27 +583,6 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
         logger.setLevel(orig_log_level)
 
-        hwidth = confidence / 2
-        result = []
-        for x in [oflx, iflx]:
-            result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
-
-        for lbl, arg in zip(['original model', 'model component'], result):
-            med, usig, lsig = arg
-            msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
-            logger.info(msg)
-
-        sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
-        samples = numpy.concatenate((samples, sampletmp), axis=1)
-
-        for index in range(size):
-            samples[index][-1] = mystat[index]
-
-        # samples = numpy.delete( samples, (size), axis=0 )
-        result.append(samples)
-
-        return result
-
     finally:
 
         # Why do we set both full_model and source here?
@@ -614,3 +593,24 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         session.set_source(id, orig_source)
 
         logger.setLevel(orig_log_level)
+
+    hwidth = confidence / 2
+    result = []
+    for x in [oflx, iflx]:
+        result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
+
+    for lbl, arg in zip(['original model', 'model component'], result):
+        med, usig, lsig = arg
+        msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
+        logger.info(msg)
+
+    sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
+    samples = numpy.concatenate((samples, sampletmp), axis=1)
+
+    for index in range(size):
+        samples[index][-1] = mystat[index]
+
+    # samples = numpy.delete( samples, (size), axis=0 )
+    result.append(samples)
+
+    return result
