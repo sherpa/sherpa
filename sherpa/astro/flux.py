@@ -530,19 +530,14 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
                      confidence):
 
     def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
-        num = len(mysoftmins)
-        for ii in range(num):
-            ii1 = ii + 1
-            tmp = (mysamples[:, ii1] > mysoftmins[ii])
-            selpmasym = mysamples[tmp]
-            tmp = (selpmasym[:, ii1] < mysoftmaxs[ii])
-            mysamples = selpmasym[tmp]
+
+        for i, (pmin, pmax) in enumerate(zip(mysoftmins, mysoftmaxs), 1):
+            parvals = mysamples[:, i]
+            tmp = (parvals > pmin) & (parvals < pmax)
+            mysamples = mysamples[tmp]
+
         return mysamples
 
-    def print_sample_result(title, arg):
-
-        print('%s = %g, + %g, - %g' % (title, arg[0], arg[1] - arg[0],
-                                       arg[0] - arg[2]))
     #
     # For later restoration
     #
@@ -550,7 +545,6 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     orig_model_vals = fit.model.thawedpars
 
     orig_source = session.get_source(id)
-    orig_source_vals = orig_source.thawedpars
 
     logger = logging.getLogger("sherpa")
     orig_log_level = logger.level
@@ -584,22 +578,16 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
             session.set_full_model(id, orig_model)
             mystat.append(session.calc_stat(id))
             #####################################
-        oflxiflx = [oflx, iflx]
 
-        myconfidence = (1.0 - confidence / 100.0) / 2.0
+        hwidth = confidence / 2
         result = []
+        for x in [oflx, iflx]:
+            result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
 
-        for x in oflxiflx:
-            sf = numpy.sort(x)
-            median = numpy.median(sf)
-            upconfidence_index = int((1.0 - myconfidence) * size - 1)
-            loconfidence_index = int(myconfidence * size - 1)
-            upconfidence = sf[upconfidence_index]
-            loconfidence = sf[loconfidence_index]
-            result.append(numpy.array([median, upconfidence, loconfidence]))
-
-        print_sample_result('original model flux', result[0])
-        print_sample_result('model component flux', result[1])
+        for lbl, arg in zip(['original model', 'model component'], result):
+            med, usig, lsig = arg
+            msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
+            print(msg)
 
         sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
         samples = numpy.concatenate((samples, sampletmp), axis=1)

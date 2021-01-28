@@ -29,8 +29,8 @@ import pytest
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_xspec
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IOErr, \
-    ModelErr, SherpaErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IdentifierErr, IOErr, \
+    ModelErr
 import sherpa.astro.utils
 
 
@@ -768,7 +768,7 @@ def test_sample_foo_flux_not_a_model(method, make_data_path, clean_astro_ui):
 
     setup_sample(1, make_data_path, fit=False)
     with pytest.raises(AttributeError) as exc:
-         method(lo=0.5, hi=7, num=1, model='x')
+        method(lo=0.5, hi=7, num=1, model='x')
 
     assert str(exc.value) == "'str' object has no attribute 'thawedpars'"
 
@@ -786,7 +786,7 @@ def test_sample_foo_flux_invalid_model(method, make_data_path,
     setup_sample(1, make_data_path, fit=False)
     mdl = ui.create_model_component('powlaw1d', 'p1')
     with pytest.raises(ArgumentErr) as exc:
-         method(lo=0.5, hi=7, num=1, model=mdl)
+        method(lo=0.5, hi=7, num=1, model=mdl)
 
     assert str(exc.value) == "Invalid src: 'model contains term not in fit'"
 
@@ -1290,7 +1290,6 @@ def test_sample_flux_invalid_model(hide_logging, make_data_path, clean_astro_ui)
     assert res[2].shape == (2, 4)
 
 
-@pytest.mark.xfail  # no error is raised
 @pytest.mark.parametrize("conf", [0, 100.1])
 def test_sample_flux_invalid_confidence(conf):
     """What happens when confidence is outside the range (0, 100]?
@@ -2101,8 +2100,8 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
     elo = fmed - flsig
     ehi = fusig - fmed
     assert fmed == pytest.approx(77.27966775437665)
-    assert elo == pytest.approx(9.86485842683382)
-    assert ehi == pytest.approx(11.40548578502279)
+    assert elo == pytest.approx(9.773389936230018)
+    assert ehi == pytest.approx(11.417501513386611)
 
     # The last column of res[2] is the statistic value for a row -
     # although due to filtering we don't know which row without some
@@ -2210,3 +2209,137 @@ def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
     # No missing values (statistic is set for all bins)
     #
     assert (vals[:, 4] > 0).all()
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, 2])
+def test_sample_flux_pha_bkg_no_source(idval, make_data_path, clean_astro_ui,
+                                       hide_logging, reset_seed):
+    """Can we get the flux for the background fit when there's no source model?"""
+
+    np.random.seed(287241)
+
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.ignore(None, 0.8)
+    ui.ignore(7, None)
+
+    ui.set_bkg_source(idval, ui.powlaw1d.bpl)
+
+    bpl = ui.get_model_component('bpl')
+    bpl.gamma = 0.54
+    bpl.ampl = 6.4e-6
+
+    ui.fit_bkg(idval)
+
+    # At the moment we need a source model (I guess to get the
+    # covariance), so this fails.
+    #
+    with pytest.raises(IdentifierErr) as exc:
+        ui.sample_flux(id=idval, bkg_id=1,
+                       lo=1, hi=5, num=niter,
+                       correlated=False)
+
+    assert str(exc.value) == 'model stack is empty'
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.parametrize("idval", [1, 2])
+def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
+                             hide_logging, reset_seed):
+    """Can we get the flux for the background fit.
+
+    In this case we have a source fit that has also been run,
+    so the error analysis should be fine.
+    """
+
+    ui.set_stat('chi2datavar')
+    ui.set_method('levmar')
+
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+
+    # Need to ungroup so we can use the mask attribute
+    ui.ungroup(idval)
+    ui.ignore(None, 0.8)
+    ui.ignore(7, None)
+
+    d = ui.get_data(idval)
+    b = ui.get_bkg(idval)
+
+    # We need to do it this way (background first)
+    ui.group_counts(num=20, id=idval, bkg_id=1, tabStops=~b.mask)
+    ui.group_counts(num=20, id=idval, tabStops=~d.mask)
+
+    ui.set_bkg_source(idval, ui.powlaw1d.bpl)
+    ui.set_source(idval, ui.xswabs.gabs * ui.powlaw1d.pl)
+
+    bpl = ui.get_model_component('bpl')
+    bpl.gamma = 0.54
+    bpl.ampl = 6.4e-6
+
+    pl = ui.get_model_component('pl')
+    pl.gamma = 2.0
+    pl.ampl = 2e-4
+
+    gabs = ui.get_model_component('gabs')
+    gabs.nh = 0.05
+    gabs.nh.freeze()
+
+    ui.fit_bkg(idval)
+    ui.fit(idval)
+
+    # We don't try to run covar or get the statistic values
+    # (the API doesn't make that easy for background fits).
+    #
+
+    # Use the same seed for both runs.
+    #
+    np.random.seed(287247)
+    bflux1, bflux2, bvals = ui.sample_flux(id=idval, bkg_id=1,
+                                           lo=1, hi=5, num=niter,
+                                           correlated=False)
+
+    np.random.seed(287247)
+    flux1, flux2, vals = ui.sample_flux(id=idval,
+                                        lo=1, hi=5, num=niter,
+                                        correlated=False)
+
+    assert flux2 == pytest.approx(flux1)
+    assert bflux2 == pytest.approx(bflux1)
+
+    assert np.log10(flux1) == pytest.approx([-12.31348652, -12.28200881, -12.34610975])
+    assert np.log10(bflux1) == pytest.approx([-13.15241991, -12.97986006, -13.31382087])
+
+    # Just check that the flux we've got is close to the one calculated by
+    # calc_energy_flux. This is just to test the values we have checked for
+    # the median value of flux1 and bflux1.
+    #
+    # Note that I am slightly concerned that the background flux has been
+    # calculated using the source response, not the background response.
+    # This is too hard to identify with this dataset. We need a test which
+    # has drastically different background response (and maybe exposure
+    # time).
+    #
+    sflux = ui.calc_energy_flux(id=idval, lo=1, hi=5)
+    bflux = ui.calc_energy_flux(id=idval, bkg_id=1, lo=1, hi=5)
+
+    assert np.log10(sflux) == pytest.approx(-12.310733810154623)
+    assert np.log10(bflux) == pytest.approx(-13.110679628882489)
+
+    # The random parameters are assumed to be the same. In reality the
+    # background doesn't need to include the source dataset but that's an
+    # issue to look at later.
+    #
+    assert bvals.shape == (101, 7)
+    assert vals.shape == (101, 7)
+
+    # For the value checks we need to drop the first column, which has the
+    # fluxes.
+    #
+    assert (bvals[:, 1:] == vals[:, 1:]).all()
