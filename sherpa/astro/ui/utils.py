@@ -12990,7 +12990,7 @@ class Session(sherpa.ui.utils.Session):
         each realization, and displays the average and standard
         deviation for each parameter.
 
-        .. versionadded:: 4.12.2
+        .. versionchanged:: 4.12.2
            The samples and statistic keys were added to the return
            value and the parameter values are returned as NumPy arrays
            rather than as lists.
