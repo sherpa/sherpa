@@ -6608,11 +6608,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        type : { 'rate', 'counts' }, optional
+        type : {'rate', 'counts'}, optional
            The units to use on the Y axis of plots.
-        norm : bool, optional
-           Are the Y axis values divided by the bin width (e.g. keV
-           when the analysis setting is energy)?
+        norm : {'none', 'auto', 'channel', 'energy', 'wavelength'}, optional
+           If 'none' then the Y axis values are not normalised by the
+           bin width, othersise the value declares what they should be
+           normalised by. The default is 'auto', which uses the
+           current analysis setting, but a specific type can be chosen
+           whatever the analysis choice.
         factor : int, optional
            The Y axis of plots is multiplied by Energy^factor or
            Wavelength^factor before display.
@@ -6639,7 +6642,7 @@ class Session(sherpa.ui.utils.Session):
         Plot all PHA datasets as counts and do not normalize
         by the bin width:
 
-        >>> set_plot_opt(type='counts', norm=False)
+        >>> set_plot_opt(type='counts', norm='none')
 
         The Y axis for datasets 1 and 2 will by multiplied by kev^2,
         so the datasets will show 'counts/s/keV * keV^2' and
@@ -6647,7 +6650,13 @@ class Session(sherpa.ui.utils.Session):
 
         >>> set_analysis('energy')
         >>> set_plot_opt(id=1, factor=2)
-        >>> set_plot_opt(id=2, factor=2, norm=True)
+        >>> set_plot_opt(id=2, factor=2, norm='none')
+
+        The Y axis will be in units of counts per channel and the
+        X axis has energy units:
+
+        >>> set_analysis('energy')
+        >>> set_plot_opt(norm='channel', type='counts')
 
         """
 
@@ -6670,6 +6679,8 @@ class Session(sherpa.ui.utils.Session):
             if factor < 0:
                 raise ArgumentTypeErr('badarg', 'factor', 'must be 0 or larger')
 
+        # We rely on plot_norm to validate the norm setting
+        #
         if id is None:
             ids = self.list_data_ids()
         else:

@@ -447,7 +447,7 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
 @requires_data
 @requires_fits
 def test_dataphahistogram_wavelength_counts_norm(make_data_path):
-    """Check we use norm=False + rate=counts + wavelength"""
+    """Check we use norm=none + rate=counts + wavelength"""
 
     from sherpa.astro.io import read_pha
 
@@ -458,7 +458,7 @@ def test_dataphahistogram_wavelength_counts_norm(make_data_path):
 
     pha.set_analysis('wave')
     pha.rate = False
-    pha.plot_norm = False
+    pha.plot_norm = 'none'
 
     pha.notice(3, 5)
 
@@ -482,6 +482,52 @@ def test_dataphahistogram_wavelength_counts_norm(make_data_path):
 
     # regression test
     assert pha.get_dep(filter=True) == pytest.approx(yexp)
+    assert plot.y == pytest.approx(yexp)
+
+
+@requires_pylab
+@requires_data
+@requires_fits
+def test_dataphahistogram_wavelength_counts_norm_channel(make_data_path):
+    """Check we use norm=channel + rate=counts + wavelength"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.rate = False
+    pha.plot_norm = 'bin'
+
+    pha.notice(3, 5)
+
+    plot = aplot.DataPHAPlot()
+    plot.prepare(pha)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'Counts/channel'
+    assert plot.title == 'my-name.pi'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+
+    # can we access the "pseudo" x attribute?
+    assert plot.x[0] > plot.x[-1]
+
+    assert np.all(plot.y > 0)
+
+    # Check that y is as expected. The nchans values were calculated
+    # from maxchan - minchan values per group (hence the +1 term).
+    #
+    counts = np.asarray([15, 16, 15, 15, 15, 16, 16, 15, 15])
+    nchans = np.asarray([12, 8, 9, 14, 20, 11, 15, 15, 14]) + 1
+    yexp = counts / nchans
+
+    # regression test
+    assert pha.get_dep(filter=True) == pytest.approx(counts)
     assert plot.y == pytest.approx(yexp)
 
 
@@ -522,7 +568,7 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
 @requires_data
 @requires_fits
 def test_modelphahistogram_wavelength_counts_norm(make_data_path):
-    """Check we can use norm=False + rate=counts + wavelength"""
+    """Check we can use norm=none + rate=counts + wavelength"""
 
     from sherpa.astro.io import read_pha
 
@@ -533,7 +579,7 @@ def test_modelphahistogram_wavelength_counts_norm(make_data_path):
 
     pha.set_analysis('wave')
     pha.rate = False
-    pha.plot_norm = False
+    pha.plot_norm = 'none'
 
     pha.notice(3, 5)
 
@@ -564,6 +610,57 @@ def test_modelphahistogram_wavelength_counts_norm(make_data_path):
     ymodel = mdl(pha.channel)
     y = pha.apply_filter(ymodel)
     assert y == pytest.approx(yexp)
+
+
+@requires_pylab
+@requires_data
+@requires_fits
+def test_modelphahistogram_wavelength_counts_norm_channel(make_data_path):
+    """Check we can use norm=channel + rate=counts + wavelength"""
+
+    from sherpa.astro.io import read_pha
+
+    # could fake a dataset but it's easier to use one
+    infile = make_data_path('3c273.pi')
+    pha = read_pha(infile)
+    pha.name = 'my-name.pi'
+
+    pha.set_analysis('wave')
+    pha.rate = False
+    pha.plot_norm = 'chan'
+
+    pha.notice(3, 5)
+
+    mdl = Const1D()
+
+    # not bothered too much about the model (e.g. setting a response)
+    #
+    plot = aplot.ModelPHAHistogram()
+    plot.prepare(pha, mdl)
+
+    assert plot.xlabel == 'Wavelength (Angstrom)'
+    assert plot.ylabel == 'Counts/channel'
+    assert plot.title == 'Model'
+
+    # data is inverted
+    assert plot.xlo[0] > plot.xlo[-1]
+    assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.y > 0)
+    assert plot.y.size == 9
+
+    # regression test
+    counts = np.asarray([13, 9, 10, 15, 21, 12, 16, 16, 15])
+    nchans = np.asarray([12, 8, 9, 14, 20, 11, 15, 15, 14]) + 1
+    yexp = counts / nchans
+
+    assert plot.y == pytest.approx(yexp)
+
+    # Now just check this equals the model value: we apply mdl to the
+    # channel grid and then filter and group.
+    #
+    ymodel = mdl(pha.channel)
+    y = pha.apply_filter(ymodel)
+    assert y == pytest.approx(counts)
 
 
 @requires_pylab
@@ -609,7 +706,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
 @requires_data
 @requires_fits
 def test_sourceplot_wavelength_counts_norm(make_data_path):
-    """Check we can use norm=False + rate=counts + wavelength
+    """Check we can use norm=none + rate=counts + wavelength
 
     NOTE: the source plot ignores norm and rate settings!
     """
@@ -623,7 +720,7 @@ def test_sourceplot_wavelength_counts_norm(make_data_path):
 
     pha.set_analysis('wave')
     pha.rate = False
-    pha.plot_norm = False
+    pha.plot_norm = 'none'
 
     pha.notice(3, 5)
 

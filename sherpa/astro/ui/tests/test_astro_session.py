@@ -857,7 +857,7 @@ def test_show_data_datapha_no_bkg_no_response():
                   "units          = channel",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = []",
                   "background_ids = []",
                   "",
@@ -881,7 +881,7 @@ def test_show_data_datapha_no_bkg_no_response():
                   "units          = channel",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = []",
                   "background_ids = []"
                  ])
@@ -935,7 +935,7 @@ def test_show_data_datapha_bkg_no_response():
                   "units          = channel",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = []",
                   "background_ids = [1, 2]",
                   "",
@@ -959,7 +959,7 @@ def test_show_data_datapha_bkg_no_response():
                   "units          = channel",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = []",
                   "background_ids = []",
                   "",
@@ -983,7 +983,7 @@ def test_show_data_datapha_bkg_no_response():
                   "units          = channel",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = []",
                   "background_ids = []"
                   ])
@@ -1032,7 +1032,7 @@ def test_show_bkg_datapha_no_response():
                   "units          = channel",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = []",
                   "background_ids = []"
                   ])
@@ -1090,7 +1090,7 @@ def test_show_data_datapha_bkg():
                   "units          = energy",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = [1]",
                   "background_ids = [1]",
                   "",
@@ -1128,7 +1128,7 @@ def test_show_data_datapha_bkg():
                   "units          = energy",
                   "rate           = True",
                   "plot_fac       = 0",
-                  "plot_norm      = True",
+                  "plot_norm      = auto",
                   "response_ids   = [1]",
                   "background_ids = []",
                   "",

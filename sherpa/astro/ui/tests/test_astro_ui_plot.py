@@ -4013,14 +4013,18 @@ def test_set_plot_opt_explicit_astro():
 
 @pytest.mark.parametrize("setting,value",
                          [("factor", 1.0), ("factor", -1), ("factor", "two"),
+                          ("norm", True), ("norm", "dodads"), ("norm", 2),
                           ("type", "RATE"), ("type", True)])
 def test_set_plot_opt_invalid(setting, value):
     """check for invalid values for set_plot_opt.
 
-    We do not check the details of the error message.
+    As we are relying on the data object to throw some of the
+    errors we need to set up a dataset.
+
     """
 
-    # fortunately do not even have to set up a dataset
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+
     with pytest.raises(ArgumentTypeErr):
         ui.set_plot_opt(**{setting: value})
 
@@ -4046,7 +4050,19 @@ def test_set_plot_opt_factor(idval, clean_astro_ui):
 
 
 @pytest.mark.parametrize("idval", [None, "foo"])
-def test_set_plot_opt_norm(idval, clean_astro_ui):
+@pytest.mark.parametrize("norm,ans", [("none", "none"),
+                                      ("AUTO", "auto"),
+                                      ("auto", "auto"),
+                                      ("biN", "channel"),
+                                      ("channel", "channel"),
+                                      ("channels", "channel"),
+                                      ("energ", "energy"),
+                                      ("energy", "energy"),
+                                      ("energies", "energy"),
+                                      ("wave", "wavelength"),
+                                      ("wavelength", "wavelength"),
+                                      ("wavelengths", "wavelength")])
+def test_set_plot_opt_norm(idval, norm, ans, clean_astro_ui):
     """Do PHA plots respect the norm setting?
 
     This does not check that the setting actually does anything.
@@ -4056,13 +4072,13 @@ def test_set_plot_opt_norm(idval, clean_astro_ui):
     d = ui.get_data(idval)
     b = ui.get_bkg(idval)
 
-    assert d.plot_norm
-    assert b.plot_norm
+    assert d.plot_norm == 'auto'
+    assert b.plot_norm == 'auto'
 
-    ui.set_plot_opt(norm=False, id=idval)
+    ui.set_plot_opt(norm=norm, id=idval)
 
-    assert not d.plot_norm
-    assert not b.plot_norm
+    assert d.plot_norm == ans
+    assert b.plot_norm == ans
 
 
 @pytest.mark.parametrize("idval", [None, "foo"])
@@ -4111,7 +4127,7 @@ def test_set_plot_opt_norm_ylabel(idval, plot, clean_astro_ui):
 
     ui.set_analysis('energy')
 
-    ui.set_plot_opt(norm=False, id=idval)
+    ui.set_plot_opt(norm='none', id=idval)
 
     if idval is None:
         plotfunc()
@@ -4127,7 +4143,7 @@ def test_set_plot_opt_norm_ylabel(idval, plot, clean_astro_ui):
 
     assert ylabel == 'Counts/sec'
 
-    ui.set_plot_opt(norm=True, id=idval)
+    ui.set_plot_opt(norm='auto', id=idval)
 
     if idval is None:
         plotfunc()
@@ -4170,7 +4186,7 @@ def test_set_plot_opt_norm_counts_ylabel(idval, plot, clean_astro_ui):
 
     ui.set_analysis('energy')
 
-    ui.set_plot_opt(norm=False, type='counts', id=idval)
+    ui.set_plot_opt(norm='none', type='counts', id=idval)
 
     if idval is None:
         plotfunc()
@@ -4186,7 +4202,7 @@ def test_set_plot_opt_norm_counts_ylabel(idval, plot, clean_astro_ui):
 
     assert ylabel == 'Counts'
 
-    ui.set_plot_opt(norm=True, id=idval)
+    ui.set_plot_opt(norm='auto', id=idval)
 
     if idval is None:
         plotfunc()
