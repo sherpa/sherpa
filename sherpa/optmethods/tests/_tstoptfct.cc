@@ -1818,7 +1818,7 @@ static PyObject *penaltyII( PyObject *self, PyObject *args ) {
 			  CONVERTME(DoubleArray), &xpar ) )
     return NULL;
   npy_intp npar = xpar.get_size( );
-  npy_intp mfct = 65;
+  npy_intp mfct = 2 * npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
@@ -1855,7 +1855,7 @@ static PyObject *powell_badly_scaled( PyObject *self, PyObject *args ) {
 			  CONVERTME(DoubleArray), &xpar ) )
     return NULL;
   npy_intp npar = xpar.get_size( );
-  npy_intp mfct = 2 * npar;
+  npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
