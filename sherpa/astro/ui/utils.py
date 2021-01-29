@@ -13331,7 +13331,7 @@ class Session(sherpa.ui.utils.Session):
         median and confidence ranges - is controlled by the standard
         Sherpa logging instance, and can be hidden by changing the
         logging to a level greater than "INFO" (e.g. with
-        sherpa.utils.logging.SherpaVerbosity).
+        `sherpa.utils.logging.SherpaVerbosity`).
 
         Examples
         --------
@@ -13368,7 +13368,7 @@ class Session(sherpa.ui.utils.Session):
 
         Run sample_flux after changing the logging level, so that the
         screen output from sample_flux is not displayed. We use the
-        SherpaVerbosity function from sherpa.utils.logging to
+        SherpaVerbosity function from `sherpa.utils.logging` to
         only change the logging level while runnng sample_flux:
 
         >>> from sherpa.utils.logging import SherpaVerbosity
