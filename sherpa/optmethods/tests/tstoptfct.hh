@@ -2357,7 +2357,7 @@ namespace tstoptfct {
     for ( int ii = 0; ii < npar; ++ii )
       hi[ ii ] = 1.0e6;
 
-    answer = 9.37629e-6;
+    answer = 2.24997e-5;
 
   }
 
