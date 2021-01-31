@@ -38,6 +38,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
 from sherpa.models.model import SimulFitModel
 
+info = logging.getLogger(__name__).info
 
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
@@ -565,6 +566,8 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
         thawedpars = [par for par in fit.model.pars if not par.frozen]
 
+        logger.setLevel(logging.ERROR)
+
         mystat = []
         for nn in range(size):
             session.set_source(id, orig_source)
@@ -579,33 +582,36 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
             mystat.append(session.calc_stat(id))
             #####################################
 
-        hwidth = confidence / 2
-        result = []
-        for x in [oflx, iflx]:
-            result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
-
-        for lbl, arg in zip(['original model', 'model component'], result):
-            med, usig, lsig = arg
-            msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
-            print(msg)
-
-        sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
-        samples = numpy.concatenate((samples, sampletmp), axis=1)
-
-        for index in range(size):
-            samples[index][-1] = mystat[index]
-
-        # samples = numpy.delete( samples, (size), axis=0 )
-        result.append(samples)
-
-        return result
+        logger.setLevel(orig_log_level)
 
     finally:
 
         # Why do we set both full_model and source here?
         #
+        logger.setLevel(logging.ERROR)
         session.set_full_model(id, orig_model)
         fit.model.thawedpars = orig_model_vals
         session.set_source(id, orig_source)
 
         logger.setLevel(orig_log_level)
+
+    hwidth = confidence / 2
+    result = []
+    for x in [oflx, iflx]:
+        result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
+
+    for lbl, arg in zip(['original model', 'model component'], result):
+        med, usig, lsig = arg
+        msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
+        info(msg)
+
+    sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
+    samples = numpy.concatenate((samples, sampletmp), axis=1)
+
+    for index in range(size):
+        samples[index][-1] = mystat[index]
+
+    # samples = numpy.delete( samples, (size), axis=0 )
+    result.append(samples)
+
+    return result
