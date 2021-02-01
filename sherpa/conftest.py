@@ -143,18 +143,11 @@ known_warnings = {
          # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
          r"numpy.dtype size changed, may indicate binary " +
          r"incompatibility. Expected 96, got 88",
-         # I am getting the following from astropy with at least python 2.7 during the conda tests
-         r"numpy.ufunc size changed, may indicate binary "
+         # See https://github.com/numpy/numpy/pull/432
+         r"numpy.ufunc size changed",
+         # numpy 1.20 shows this in some tests
+         r"numpy.ndarray size changed, may indicate binary "
          ],
-    VisibleDeprecationWarning:
-        [],
-}
-
-# Since Sherpa now requires Python 3.5 at a minumum, the following
-# are always added, but kept as a separate dict and then merged
-# to make it clearer where they came from.
-#
-python3_warnings = {
     ResourceWarning:
         [
             r"unclosed file .*king_kernel.txt.* closefd=True>",
@@ -174,19 +167,9 @@ python3_warnings = {
             r"unclosed file .*/model.dat'.* closefd=True>",
             r"unclosed file .*/resid.out'.* closefd=True>",
         ],
-    RuntimeWarning:
-        [r"invalid value encountered in sqrt",
-         # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
-         r"numpy.dtype size changed, may indicate binary " +
-         r"incompatibility. Expected 96, got 88",
-         # See https://github.com/numpy/numpy/pull/432
-         r"numpy.ufunc size changed",
-         # numpy 1.20 shows this in some tests
-         r"numpy.ndarray size changed, may indicate binary "
-         ],
+    VisibleDeprecationWarning:
+        [],
 }
-known_warnings.update(python3_warnings)
-
 
 if have_astropy:
     astropy_warnings = {
