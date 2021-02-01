@@ -153,7 +153,6 @@ class Session(sherpa.ui.utils.Session):
         self._astrosourceplot = sherpa.astro.plot.SourcePlot()
         self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
         self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
-        self._modelhisto = sherpa.astro.plot.ModelHistogram()
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
         # self._bkgdataplot = sherpa.astro.plot.DataPHAPlot()
@@ -191,6 +190,7 @@ class Session(sherpa.ui.utils.Session):
         # Add PHA plot types. This is ugly.
         #
         self._plot_store['data'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.DataPHAPlot()
+        self._plot_store['model'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ModelHistogram()
 
         self._plot_types['order'] = [self._orderplot]
         self._plot_types['energy'] = [self._energyfluxplot]
@@ -199,7 +199,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['compmodel'].append(self._astrocompmdlplot)
 
         self._plot_types['source'].append(self._astrosourceplot)
-        self._plot_types['model'].append(self._modelhisto)
         self._plot_types['arf'] = [self._arfplot]
         self._plot_types['bkg'] = [self._bkgdataplot]
         self._plot_types['bkgmodel'] = [self._bkgmodelhisto]
@@ -10315,22 +10314,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     # Plotting
     ###########################################################################
-
-    def get_model_plot(self, id=None, recalc=True):
-        try:
-            d = self.get_data(id)
-        except IdentifierErr:
-            return super().get_model_plot(id, recalc=recalc)
-
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._modelhisto
-            if recalc:
-                plotobj.prepare(d, self.get_model(id), self.get_stat())
-            return plotobj
-
-        return super().get_model_plot(id, recalc=recalc)
-
-    get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
 
     # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self, id=None, lo=None, hi=None, recalc=True):

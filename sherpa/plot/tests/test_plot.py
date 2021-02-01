@@ -530,10 +530,10 @@ def test_plot_model_arbitrary_grid_integrated(session):
         ui.set_model(regrid_model)
         ui.plot_model()
 
-        # should this use ui.get_model_plot()?
-        assert ui._modelhistplot.xlo == pytest.approx(x[0])
-        assert ui._modelhistplot.xhi == pytest.approx(x[1])
-        assert ui._modelhistplot.y == pytest.approx(yy)
+        mplot = ui.get_model_plot()
+        assert mplot.xlo == pytest.approx(x[0])
+        assert mplot.xhi == pytest.approx(x[1])
+        assert mplot.y == pytest.approx(yy)
 
     tmp = numpy.arange(1, 5, 1)
     x = tmp[:-1], tmp[1:]

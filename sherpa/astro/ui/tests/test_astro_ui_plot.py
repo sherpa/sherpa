@@ -820,11 +820,6 @@ def check_bkg_fit(plotfunc, isfit=True):
     assert isinstance(dplot, BkgDataPlot)
     assert isinstance(mplot, BkgModelPHAHistogram)
 
-    # check the "source" plots are not set
-    for plot in [ui._session._modelplot]:
-        assert plot.x is None
-        assert plot.y is None
-
     xlabel = 'Channel' if plotfunc == ui.plot_bkg_fit else ''
 
     # check plot basics

@@ -299,9 +299,8 @@ class Session(NoNewAttributesAfterInit):
         self._plot_store = {}
         self._plot_store['data'] = (sherpa.plot.DataPlot(),
                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()}))
-
-        self._modelplot = sherpa.plot.ModelPlot()
-        self._modelhistplot = sherpa.plot.ModelHistogramPlot()
+        self._plot_store['model'] = (sherpa.plot.ModelPlot(),
+                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ModelHistogramPlot()}))
 
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
@@ -343,7 +342,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._plot_types = {
             'data': [], # moved to _plot_store
-            'model': [self._modelplot, self._modelhistplot],
+            'model': [], # moved to _plot_store
             'source': [self._sourceplot, self._sourcehistplot],
             'fit': [self._fitplot],
             'resid': [self._residplot],
@@ -10922,16 +10921,12 @@ class Session(NoNewAttributesAfterInit):
         except IdentifierErr as ie:
             if recalc:
                 raise ie
+
             d = None
 
-        if isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._modelhistplot
-        else:
-            plotobj = self._modelplot
-
+        plotobj = self._get_plotobj('model', d)
         if recalc:
             plotobj.prepare(d, self.get_model(id), self.get_stat())
-
         return plotobj
 
     # also in sherpa.astro.utils (does not copy this docstring)
@@ -11222,11 +11217,14 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_model_plot(id, recalc=False)
+        plotobj = self.get_model_plot(id, recalc=False)
+
+        # Ugly: need a way to identify the preferences.
+        #
         try:
-            return plot.histo_prefs
+            return plotobj.histo_prefs
         except AttributeError:
-            return plot.plot_prefs
+            return plotobj.plot_prefs
 
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.

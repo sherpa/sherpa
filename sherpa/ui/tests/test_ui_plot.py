@@ -289,7 +289,9 @@ def check_model_plot(plot, title='Model', xlabel='x', modelval=35):
 def check_model(xlabel='x'):
     """Check that the model plot has not changed"""
 
-    check_model_plot(ui._session._modelplot,
+    # We use the default plot type here
+    mplot = ui._session._plot_store['model'][0]
+    check_model_plot(mplot,
                      title='Model', xlabel=xlabel)
 
 
@@ -299,7 +301,8 @@ def check_model_changed(xlabel='x'):
     Assumes change_model has been called
     """
 
-    check_model_plot(ui._session._modelplot,
+    mplot = ui._session._plot_store['model'][0]
+    check_model_plot(mplot,
                      title='Model', xlabel=xlabel,
                      modelval=41)
 
@@ -734,14 +737,14 @@ def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc, clean_ui):
     checkfunc()
 
 
-_dplot = (ui.get_data_plot_prefs, "_dataplot", ui.plot_data)
-_mplot = (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)
+_dplot = (ui.get_data_plot_prefs, "data", ui.plot_data)
+_mplot = (ui.get_model_plot_prefs, "model", ui.plot_model)
 
 
 @requires_plotting
-@pytest.mark.parametrize("getprefs,attr,plotfunc",
-                         [pytest.param(*_dplot, marks=pytest.mark.xfail), _mplot])
-def test_prefs_change_session_objects(getprefs, attr, plotfunc, clean_ui):
+@pytest.mark.parametrize("getprefs,ptype,plotfunc",
+                         [_dplot, _mplot])
+def test_prefs_change_session_objects(getprefs, ptype, plotfunc, clean_ui):
     """Is a plot-preference change also reflected in the session object?
 
     This is intended to test an assumption that will be used in the
@@ -749,13 +752,16 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc, clean_ui):
     behavior. The test may be "obvious behavior" given how
     get_data_plot_prefs works, but DJB wanted to ensure this
     behavior/assumption was tested.
+
+    The change to accessing all plot types via _plot_store
+    complicates the logic of this test.
     """
 
     # This has to be retrieved here, rather than passed in in the
     # parametrize list, as the ui._session object is changed by
     # the clean_ui fixture.
     #
-    session = getattr(ui._session, attr)
+    session = ui._session._plot_store[ptype][0]  # use default
 
     # All but the last assert are just to check things are behaving
     # as expected (and stuck into one routine rather than have a
@@ -815,8 +821,9 @@ def test_prefs_change_session_objects_fit(clean_ui):
     # just in case
     #
     dplot = ui._session._plot_store['data'][0]
+    mplot = ui._session._plot_store['model'][0]
     assert dplot.plot_prefs['xlog']
-    assert ui._session._modelplot.plot_prefs['ylog']
+    assert mplot.plot_prefs['ylog']
 
     # Now check that the fit plot has picked up these changes;
     # the simplest way is to check that the data/model plots
@@ -827,7 +834,7 @@ def test_prefs_change_session_objects_fit(clean_ui):
     # equality
     #
     assert plotobj.dataplot is dplot
-    assert plotobj.modelplot is ui._session._modelplot
+    assert plotobj.modelplot is mplot
 
 
 @pytest.mark.parametrize("plotfunc", [ui.plot_cdf, ui.plot_pdf])
