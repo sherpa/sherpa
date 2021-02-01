@@ -114,7 +114,12 @@ known_warnings = {
             # Matplotlib version 2 warnings (from HTML notebook represention)
             #
             r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
-            r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working"
+            r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working",
+
+            # numpy 1.20 bool/float issue
+            r'`np.bool` is a deprecated alias for the builtin `bool`. .*',
+            r'`np.int` is a deprecated alias for the builtin `int`. .*',
+            r'`np.float` is a deprecated alias for the builtin `float`. .*',
         ],
     UserWarning:
         [
@@ -233,13 +238,8 @@ def capture_all_warnings(request, recwarn, pytestconfig):
     pytestconfig injected service for accessing the configuration data
 
     """
-    def known(warning):
-        message = warning.message
-        for known_warning in known_warnings[type(message)]:
-            pattern = re.compile(known_warning)
-            if pattern.match(str(message)):
-                return True
-        return False
+
+    known = check_known_warning
 
     def fin():
         warnings = [w for w in recwarn.list
@@ -264,6 +264,28 @@ def capture_all_warnings(request, recwarn, pytestconfig):
         assert 0 == nwarnings
 
     request.addfinalizer(fin)
+
+
+def check_known_warning(warning):
+    """Return True if this is an "allowed" warning."""
+
+    message = warning.message
+    for known_warning in known_warnings[type(message)]:
+        pattern = re.compile(known_warning)
+        if pattern.match(str(message)):
+            return True
+
+    return False
+
+
+@pytest.fixture
+def is_known_warning():
+    """Returns a function that returns True if this is an "allowed" warning.
+
+    It is not expected that this will see much use.
+    """
+
+    return check_known_warning
 
 
 def pytest_configure(config):
