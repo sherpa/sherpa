@@ -144,7 +144,7 @@ known_warnings = {
          r"numpy.dtype size changed, may indicate binary " +
          r"incompatibility. Expected 96, got 88",
          # I am getting the following from astropy with at least python 2.7 during the conda tests
-         r"numpy.ufunc size changed, may indicate binary ",
+         r"numpy.ufunc size changed, may indicate binary "
          ],
     VisibleDeprecationWarning:
         [],
@@ -180,7 +180,9 @@ python3_warnings = {
          r"numpy.dtype size changed, may indicate binary " +
          r"incompatibility. Expected 96, got 88",
          # See https://github.com/numpy/numpy/pull/432
-         r"numpy.ufunc size changed"
+         r"numpy.ufunc size changed",
+         # numpy 1.20 shows this in some tests
+         r"numpy.ndarray size changed, may indicate binary "
          ],
 }
 known_warnings.update(python3_warnings)
