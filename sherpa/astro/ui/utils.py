@@ -150,7 +150,6 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
-        self._dataphaplot = sherpa.astro.plot.DataPHAPlot()
         self._astrosourceplot = sherpa.astro.plot.SourcePlot()
         self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
         self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
@@ -199,7 +198,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['compsource'].append(self._astrocompsrcplot)
         self._plot_types['compmodel'].append(self._astrocompmdlplot)
 
-        self._plot_types['data'].append(self._dataphaplot)
         self._plot_types['source'].append(self._astrosourceplot)
         self._plot_types['model'].append(self._modelhisto)
         self._plot_types['arf'] = [self._arfplot]

@@ -300,9 +300,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot_store['data'] = (sherpa.plot.DataPlot(),
                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()}))
 
-        self._dataplot = sherpa.plot.DataPlot()
-        self._datahistplot = sherpa.plot.DataHistogramPlot()
-
         self._modelplot = sherpa.plot.ModelPlot()
         self._modelhistplot = sherpa.plot.ModelHistogramPlot()
 
@@ -345,7 +342,7 @@ class Session(NoNewAttributesAfterInit):
         self._regunc = sherpa.plot.RegionUncertainty()
 
         self._plot_types = {
-            'data': [self._dataplot, self._datahistplot],
+            'data': [], # moved to _plot_store
             'model': [self._modelplot, self._modelhistplot],
             'source': [self._sourceplot, self._sourcehistplot],
             'fit': [self._fitplot],

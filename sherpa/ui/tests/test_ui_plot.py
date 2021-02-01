@@ -1049,8 +1049,12 @@ def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     # clean call done by the clean_ui fixture will reset the
     # plot objects).
     #
+    # The attempt is to make this plot-end agnostic, but is
+    # it worth it, as we end up digging around in the internals
+    # of the session object?
+    #
     rprefs = getattr(ui._session, plotobj).plot_prefs
-    dprefs = ui._session._dataplot.plot_prefs
+    dprefs = ui._session._plot_store['data'][0].plot_prefs  # use the default plot
 
     setup_example(None)
 
