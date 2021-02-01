@@ -32,6 +32,7 @@ import string
 import sys
 from configparser import ConfigParser, NoSectionError
 import pydoc
+from collections import UserDict
 
 import numpy
 import numpy.random
@@ -88,6 +89,7 @@ del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 
 
 __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
+           'OrderedByMRO',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'create_expr_integrated',
@@ -4386,3 +4388,63 @@ def send_to_pager(txt, filename=None, clobber=False):
 
     with open(filename, 'w') as fh:
         print(txt, file=fh)
+
+
+# The Python documentation isn't clear on UserDict vs dict usage but I've
+# read stories about the optimisations dict makes which could complicate
+# the code for this class, so stick with UserDict.
+#
+# It is expected that this class is only used with a small number of
+# items, and not used in time-critical places, so it is not optimised
+# for time but readability.
+#
+class OrderedByMRO(UserDict):
+    """Iterating over this dictionary goes from highest to lowest MRO depth.
+
+    It is intended to only store classes and is intended for returnig
+    information specific from the "most specific" class in the store.
+    This replicates the class hierarchy so indicates that something
+    "funky" is going on and maybe you should approach the problem from
+    a different angle!
+
+    Example
+    -------
+
+    With the following dictionary, a user can request the "most
+    relevant" information for an instance, in this case x (assuming
+    it's from the sherpa.data.Data1D hierarchy, although there is no
+    requirement that all objects have a common base class):
+
+    >>> d = OrderedByMRO()
+    >>> d[sherpa.data.Data1D] = "basic info"
+    >>> d[sherpa.data.Data1DInt] = "a bit more specialised"
+    >>> d[sherpa.astro.data.DataPHA] = "even more specialised"
+    >>> for k, v in d.items():
+    ...     if isinstance(x, k):
+    ...         print("found a match")
+    ...         break
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.store = {}
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        try:
+            m = len(key.__mro__)
+        except AttributeError:
+            raise TypeError("Can only store classes")
+
+        super().__setitem__(key, value)
+        self.store[key] = m
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        del self.store[key]
+
+    def __iter__(self):
+        store = list(self.store.items())
+        store = sorted(store, key=lambda x: x[1], reverse=True)
+        keys = [x[0] for x in store]
+        return iter(keys)
