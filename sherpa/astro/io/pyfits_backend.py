@@ -44,6 +44,7 @@ import numpy
 from numpy.compat import basestring
 
 from astropy.io import fits
+from astropy.table import Table
 from astropy.io.fits.column import _VLF
 
 from sherpa.utils.err import IOErr
@@ -979,92 +980,6 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
 
 # Write Functions
-
-def _create_columns(col_names, data):
-
-    collist = []
-    cols = []
-    coldefs = []
-    for name in col_names:
-        coldata = data[name]
-        if coldata is None:
-            continue
-
-        col = fits.Column(name=name.upper(), array=coldata,
-                          format=coldata.dtype.name.upper())
-        cols.append(coldata)
-        coldefs.append(name.upper())
-        collist.append(col)
-
-    return collist, cols, coldefs
-
-
-def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
-                   ascii=False, clobber=False, packup=False):
-
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
-
-    col_names = list(col_names)
-    col_names.remove("name")
-
-    # The code used to create a header containing the
-    # exposure, backscal, and areascal keywords, but this has
-    # since been commented out, and the code has now been
-    # removed.
-
-    collist, cols, coldefs = _create_columns(col_names, data)
-
-    if ascii:
-        set_arrays(filename, cols, coldefs, ascii=ascii,
-                   clobber=clobber)
-        return
-
-    tbl = fits.BinTableHDU.from_columns(fits.ColDefs(collist))
-    tbl.name = 'HISTOGRAM'
-    if packup:
-        return tbl
-    tbl.writeto(filename, overwrite=True)
-
-
-def _create_header(header):
-    """Create a FITS header with the contents of header,
-    the Sherpa representation of the key,value store.
-    """
-
-    hdrlist = fits.Header()
-    for key in header.keys():
-        if header[key] is None:
-            continue
-
-        _add_keyword(hdrlist, key, header[key])
-
-    return hdrlist
-
-
-def set_pha_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False):
-
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
-
-    hdrlist = _create_header(header)
-
-    collist, cols, coldefs = _create_columns(col_names, data)
-
-    if ascii:
-        set_arrays(filename, cols, coldefs, ascii=ascii,
-                   clobber=clobber)
-        return
-
-    pha = fits.BinTableHDU.from_columns(fits.ColDefs(collist),
-                                        header=fits.Header(hdrlist))
-    pha.name = 'SPECTRUM'
-    if packup:
-        return pha
-    pha.writeto(filename, overwrite=True)
-
-
 def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
@@ -1130,40 +1045,39 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
+    set_table_data(filename, args, fields, ascii=ascii, clobber=clobber,
+                   extname=None)
 
-    if ascii:
-        write_arrays(filename, args, fields, clobber=clobber)
-        return
 
-    if not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+def set_pha_data(filename, data, col_names, header=None,
+                 ascii=False, clobber=False, packup=False):
 
-    if not numpy.iterable(args) or len(args) == 0:
-        raise IOErr('noarrayswrite')
+    set_table_data(filename, data, col_names, header=header,
+                   ascii=ascii, clobber=clobber, packup=packup,
+                   extname='SPECTRUM')
 
-    if not numpy.iterable(args[0]):
-        raise IOErr('noarrayswrite')
 
-    size = len(args[0])
-    for arg in args:
-        if not numpy.iterable(arg):
-            raise IOErr('noarrayswrite')
-        if len(arg) != size:
-            raise IOErr('arraysnoteq')
+def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
+                   ascii=False, clobber=False, packup=False,
+                   extname='HISTOGRAM'):
+    tab = Table(data=data, names=col_names)
+    if hdr is not None:
+        tab.meta.update(hdr)
 
-    if fields is None:
-        fields = ['col%i' % (ii + 1) for ii in range(len(args))]
+    if extname is not None:
+        tab.meta['EXTNAME'] = extname
 
-    if len(args) != len(fields):
-        raise IOErr("toomanycols", str(len(fields)), str(len(args)))
+    if packup:
+        return tab
+    else:
+        if ascii is True:
+            form = 'ascii'
+        elif ascii is False:
+            form = 'fits'
+        else:
+            # allows for backend specific options like
+            # `ascii='vo'` or `ascii='ascii.rdb'`
+            form = ascii
 
-    cols = []
-    for val, name in zip(args, fields):
-        col = fits.Column(name=name.upper(),
-                          format=val.dtype.name.upper(),
-                          array=val)
-        cols.append(col)
-
-    tbl = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
-    tbl.name = 'TABLE'
-    tbl.writeto(filename, overwrite=True)
+        tab.write(filename, overwrite=clobber,
+                  format=form)
