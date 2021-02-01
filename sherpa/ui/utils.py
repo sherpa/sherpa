@@ -33,6 +33,7 @@ import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
+from sherpa.utils import OrderedByMRO
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, ModelErr, SessionErr
 
@@ -291,14 +292,13 @@ class Session(NoNewAttributesAfterInit):
         #    default plot object
         #    dictionary of key= datatype value=plot object
         #
-        # where the list type is used in preference to the default plot
-        # object. We should enforce the list so that more-specific
-        # types are given first (or use a
+        # where the dictionary type is used in preference to the default plot
+        # object.
         #
         # TODO: combine with _plot_types
         self._plot_store = {}
         self._plot_store['data'] = (sherpa.plot.DataPlot(),
-                                    {sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()})
+                                    OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()}))
 
         self._dataplot = sherpa.plot.DataPlot()
         self._datahistplot = sherpa.plot.DataHistogramPlot()
@@ -10698,14 +10698,6 @@ class Session(NoNewAttributesAfterInit):
         For PHA datasets with fit we would want a special case (to get
         grouping handled).
 
-        The dictionary used to store the specialised types for a plot
-        should probably use a speialised dictionary type that iterates
-        over items using the inverse of the mro depth (or the negative
-        of the depth order) so that we suold search the
-        most-specialised first, and can exit as soon as a match is
-        found. This requires that we have a common plot type for all
-        plots so that a simple mro depth is a sensible check.
-
         """
 
         # Assume that plot is a valid argument (that is getting a
@@ -10717,19 +10709,14 @@ class Session(NoNewAttributesAfterInit):
         if data is None:
             return default
 
-        depth = None
-        retval = default
-
+        # Rely on the OrderedByMRO iteration order so that as soon as
+        # we find an instance we can stop.
+        #
         for k, v in plots.items():
-            if not isinstance(data, k):
-                continue
+            if isinstance(data, k):
+                return v
 
-            d = len(k.__mro__)
-            if depth is None or d > depth:
-                retval = v
-                depth = d
-
-        return retval
+        return default
 
     def get_data_plot(self, id=None, recalc=True):
         """Return the data used by plot_data.
