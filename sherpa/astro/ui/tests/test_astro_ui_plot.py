@@ -821,7 +821,7 @@ def check_bkg_fit(plotfunc, isfit=True):
     assert isinstance(mplot, BkgModelPHAHistogram)
 
     # check the "source" plots are not set
-    for plot in [ui._session._dataplot, ui._session._modelplot]:
+    for plot in [ui._session._modelplot]:
         assert plot.x is None
         assert plot.y is None
 
