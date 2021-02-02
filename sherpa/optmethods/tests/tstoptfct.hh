@@ -1,8 +1,8 @@
 #ifndef tstoptfct_hh
 #define tstoptfct_hh
 
-// 
-//  Copyright (C) 2007, 2017, 2019, 2020
+//
+//  Copyright (C) 2007, 2017, 2019, 2020, 2021
 //     Smithsonian Astrophysical Observatory
 //
 //
@@ -24,14 +24,14 @@
 
 //
 // J. MORE', B. GARBOW & K. HILLSTROM,
-// "Algorithm 566: Fortran Subroutines for Testing Unconstrained 
+// "Algorithm 566: Fortran Subroutines for Testing Unconstrained
 // Optimization Software.", ACM TOMS, VOL. 7, PAGES 14-41 AND 136-140, 1981
 //
 // The comments on the solutions were taken from the site:
 //
 // http://www.uni-graz.at/imawww/kuntsevich/solvopt/results/moreset.html
 //
-// Jan 2008 D. T. Nguyen 
+// Jan 2008 D. T. Nguyen
 //
 //
 
@@ -99,7 +99,7 @@ namespace tstoptfct {
 	else
 	  wi = vi;
 	fvec[ 15 * ii/3 + jj ] =
-	  yi[ jj ] - ( x[ ii ] + ui / ( vi * x[ ii + 1 ] + wi * x[ ii + 2 ] ) );  
+	  yi[ jj ] - ( x[ ii ] + ui / ( vi * x[ ii + 1 ] + wi * x[ ii + 2 ] ) );
       }
 
   }
@@ -135,12 +135,12 @@ namespace tstoptfct {
 
   }
   //
-  // This function has the only minimum 
+  // This function has the only minimum
   // f( 0.0824106, 1.13304, 2.3437) = 0.00821487
-  // However, at x(1)=0.84066666669332, it becomes flatter and flatter 
-  // as the other two variables (x(2) and x(3)) decrease.  Starting at 
+  // However, at x(1)=0.84066666669332, it becomes flatter and flatter
+  // as the other two variables (x(2) and x(3)) decrease.  Starting at
   // x(2),x(3)=-1.e-10, the gradient equals zero to the extend of a
-  // machine epsilon. 
+  // machine epsilon.
   //
 
   template<typename Real, typename Type>
@@ -149,9 +149,9 @@ namespace tstoptfct {
 
     for ( int ii = 0; ii < npar; ii += 2 ) {
       fvec[ 3*ii/2 ] = 1.5 - x[ ii ] * ( 1.0 - x[ ii + 1 ] );
-      fvec[ 3*ii/2 + 1 ] = 2.25 - x[ ii ] * 
+      fvec[ 3*ii/2 + 1 ] = 2.25 - x[ ii ] *
 	( 1.0 - x[ ii + 1 ] * x[ ii + 1 ] );
-      fvec[ 3*ii/2 + 2 ] = 2.625  - x[ ii ] * 
+      fvec[ 3*ii/2 + 2 ] = 2.625  - x[ ii ] *
 	( 1.0 - x[ ii + 1 ] * x[ ii + 1 ] * x[ ii + 1 ]);
     }
 
@@ -170,7 +170,7 @@ namespace tstoptfct {
   template<typename Real>
   void BealeInit( int npar, int& mfct, Real& answer, Real* x,
 		  Real* lo, Real* hi ) {
-  
+
     if ( npar % 2 )
       throw std::runtime_error( "npar for the Beale func must be even\n" );
 
@@ -208,7 +208,7 @@ namespace tstoptfct {
   template<typename Real>
   void BoothInit( int npar, int& mfct, Real& answer, Real* x,
 		  Real* lo, Real* hi ) {
-  
+
     if ( npar % 2 )
       throw std::runtime_error( "npar for the Beale func must be even\n" );
 
@@ -237,7 +237,7 @@ namespace tstoptfct {
       Real ti = 0.1 * i;
       Real yi = exp( - ti * x[0] ) - 5.0 * exp( -10.0 * ti ) +
 	3.0 * exp( -4.0 * ti );
-      fvec[ i ] = x[2] * exp( - ti * x[0] ) - x[3] * exp( - ti * x[1] ) + 
+      fvec[ i ] = x[2] * exp( - ti * x[0] ) - x[3] * exp( - ti * x[1] ) +
 	x[5] *exp( - ti * x[4] ) - yi;
     }
 
@@ -279,12 +279,12 @@ namespace tstoptfct {
   }
   //
   // This function has the global minimum f( 1, 10, 1, 5, 4, 3 ) = 0.0
-  // if m = 13 and local minimum 
+  // if m = 13 and local minimum
   // f( 1.711416, 17.6831975, 1.16314365, 5.18656, 1.711416,
   //    1.16314365 ) = 0.00565565
-  // at the point , which are known. In addition, the function takes a local 
+  // at the point , which are known. In addition, the function takes a local
   // minimum 0.30636677262479 on the plane
-  // {x1=1.22755594752403; x2>>0; x3=0.83270306333466; x4<<0; x5=x1; x6=x3} 
+  // {x1=1.22755594752403; x2>>0; x3=0.83270306333466; x4<<0; x5=x1; x6=x3}
   //
 
   template<typename Real, typename Type>
@@ -309,7 +309,7 @@ namespace tstoptfct {
 
     }
     answer = 0.0;
-				
+
   }
   //
   // f( 0, 0 ) = 0
@@ -337,7 +337,7 @@ namespace tstoptfct {
 
     }
     answer = 0.0;
-				
+
   }
 
   template<typename Real, typename Type>
@@ -451,7 +451,7 @@ namespace tstoptfct {
     double x0 = x[0];
     double s  = x[1] - ( 5.1/(4.0*M_PI*M_PI) * x0 - 5.0/M_PI) * x0 - 6.0;
     fval = s*s + 10*(1.0 - 1.0/(8.0*M_PI)) * cos(x0) + 10.0;
-    
+
   }
   template<typename Real>
   void BraninInit( int npar, int& mfct, Real& answer, Real* x,
@@ -515,7 +515,7 @@ namespace tstoptfct {
       fvec[ ii - 1 ] += sum;
 
     fvec[ npar - 1 ] = prd - 1.0;
- 
+
   }
   template<typename Real, typename Type>
   void BrownAlmostLinear( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
@@ -531,7 +531,7 @@ namespace tstoptfct {
   template<typename Real>
   void BrownAlmostLinearInit( int npar, int& mfct, Real& answer, Real* x,
 			      Real* lo, Real* hi ) {
-  
+
     mfct = npar;
     for ( int ii = 0; ii < npar; ++ii )
       x[ ii ] = 0.5;
@@ -570,7 +570,7 @@ namespace tstoptfct {
   template<typename Real>
   void BrownBadlyScaledInit( int npar, int& mfct, Real& answer, Real* x,
 			     Real* lo, Real* hi ) {
-  
+
     if ( npar % 2 )
       throw std::runtime_error( "npar for the BrownBadlyScaled func must be even\n" );
 
@@ -738,7 +738,7 @@ namespace tstoptfct {
 
   }
   //
-  // In addition to the global minimum f0=0, this function has a number of 
+  // In addition to the global minimum f0=0, this function has a number of
   // local minima. They are:
   //
   // f( 0.89571637066795, 1.43694322050304, -0.08787533663029;
@@ -769,7 +769,7 @@ namespace tstoptfct {
   // f( 1.82910567383287, -0.10197809329322, -0.57788049656156,
   //    -0.64962654169425, -0.60679005996046, -0.44981389867908,
   //    -0.05474342424961, 0.72306839424618, 1.31937148707469,
-  //    0.23503639006362 ) = 0.39737346895853. 
+  //    0.23503639006362 ) = 0.39737346895853.
   //
 
   template<typename Real, typename Type>
@@ -843,7 +843,7 @@ namespace tstoptfct {
   template<typename Real>
   void ChebyquadInit( int npar, int& mfct, Real& answer, Real* x,
 		      Real* lo, Real* hi ) {
-  
+
     mfct = npar;
     for ( int ii = 0; ii < npar; ++ii )
       x[ ii ] = ( ii + 1.0 ) / ( npar + 1.0 );
@@ -877,7 +877,7 @@ namespace tstoptfct {
 	Real temp = 0.0;
 	for( int t = 0; t < 2; t++ )
 	  temp += mysqr( mt[ i*2+t ] - mt[ j*2+t ] );
-	fval += mysqr( d_mds[ k ] - sqrt( temp ) ); 
+	fval += mysqr( d_mds[ k ] - sqrt( temp ) );
 	k++;
       }
 
@@ -939,7 +939,7 @@ namespace tstoptfct {
   //     dcs(5, 5, ..., 5) = -1 for any k and alpha=5 and npar
   //
   template<typename Real, typename Type>
-  void dcs( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {  
+  void dcs( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
 
   int k=5;
   Real alpha=5.0;
@@ -968,11 +968,11 @@ namespace tstoptfct {
   // decanom( 2, -3, ) = 0.0
   //
   template<typename Real, typename Type>
-  void decanom( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {  
-    
+  void decanom( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
+
     double x0 = x[ 0 ];
     double x1 = x[ 1 ];
-    
+
     double f1 = fabs( (((((((((1.0*x0-20)*x0+180)*x0-960)*x0+3360)*x0-8064)*x0+
 			  13340)*x0-15360)*x0+11520)*x0-5120)*x0+2624 );
     double f2 = fabs( (((1.0*x1+12.0)*x1+54)*x1+108)*x1+81.0 );
@@ -984,8 +984,8 @@ namespace tstoptfct {
   void decanomInit( int npar, int& mfct, Real& answer, Real* x, Real* lo, Real* hi ) {
 
     if ( npar != 2 )
-      throw std::runtime_error( "npar for the dodeccal func must be 2\n" );    
-    Real low=-1.0e3, high=1.0e3;                    
+      throw std::runtime_error( "npar for the dodeccal func must be 2\n" );
+    Real low=-1.0e3, high=1.0e3;
     srand(1);
     for ( int ii = 0; ii < npar; ++ii ) {
       lo[ ii ] = low;
@@ -1001,7 +1001,7 @@ namespace tstoptfct {
   // dodecal(1,2,3) = 0.
   //
   template<typename Real, typename Type>
-  void dodecal( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {  
+  void dodecal( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
     if ( 3 != npar ) {
       ierr = EXIT_FAILURE;
       return;
@@ -1055,7 +1055,7 @@ namespace tstoptfct {
   template<typename Real>
   void DiscreteBoundaryInit( int npar, int& mfct, Real& answer,
 			     Real* x, Real* lo, Real* hi ) {
-  
+
     mfct = npar;
     for ( int ii = 0; ii < npar; ++ii ) {
       Real tj = ii / ( npar + 1.0 );
@@ -1134,8 +1134,8 @@ namespace tstoptfct {
   void DixonPrice( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
 
     fval = 0.0;
-    for ( int ii = 1; ii < npar; ++ii ) 
-      fval += ( ii + 1 ) * mysqr( 2.0 * mysqr( x[ ii ] ) - x[ ii - 1 ] );    
+    for ( int ii = 1; ii < npar; ++ii )
+      fval += ( ii + 1 ) * mysqr( 2.0 * mysqr( x[ ii ] ) - x[ ii - 1 ] );
 
     fval += mysqr( x[ 0 ] - 1.0 );
 
@@ -1153,7 +1153,7 @@ namespace tstoptfct {
   template<typename Real, typename Type>
   void Easom( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
     const Real pi = std::fabs( acos( - 1.0 ) );
-    fval = - cos(x[ 0 ]) * cos(x[ 1 ]) * 
+    fval = - cos(x[ 0 ]) * cos(x[ 1 ]) *
       exp( - mysqr(x[ 0 ]-pi) - mysqr( x[ 1 ] - pi ) );
   }
   template<typename Real>
@@ -1171,7 +1171,7 @@ namespace tstoptfct {
 
   //
   // factor1( 1, 2, 3, ..., npar ) = 0.0
-  // 
+  //
   template<typename Real, typename Type>
   void factor( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
 
@@ -1197,15 +1197,15 @@ namespace tstoptfct {
     answer = 0.0;
   }
 
-  
+
   template<typename Real, typename Type>
   void FreudensteinRoth( int mfct, int npar, Real* x, Real* fvec,
 			 int& ierr, Type xptr ) {
 
     for ( int ii = 0; ii < npar; ii += 2 ) {
-      fvec[ ii ] = - 13.0 + x[ ii ] + 
+      fvec[ ii ] = - 13.0 + x[ ii ] +
 	x[ ii + 1 ] * (( 5.0 - x[ ii + 1 ] ) * x[ ii + 1 ] - 2.0 );
-      fvec[ ii + 1 ] = - 29.0 + x[ ii ] + 
+      fvec[ ii + 1 ] = - 29.0 + x[ ii ] +
 	 x[ ii + 1 ] * (( x[ ii + 1 ] + 1.0 ) * x[ ii + 1 ] - 14.0 );
     }
 
@@ -1299,7 +1299,7 @@ namespace tstoptfct {
   template<typename Real>
   void GaussianInit( int npar, int& mfct, Real& answer, Real* x,
 		     Real* lo, Real* hi ) {
-  
+
     if ( 3 != npar )
       throw std::runtime_error( "npar for the Gaussian func must be 3\n" );
 
@@ -1321,13 +1321,13 @@ namespace tstoptfct {
   template<typename Real, typename Type>
   void GoldsteinPrice( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
 
-    Real x0 = x[0]; 
+    Real x0 = x[0];
     Real x1 = x[1];
     Real x0x1 = x0 * x1;
     Real x1x1 = x1 * x1;
     Real a1 = x0 + x1 + 1;
     Real a12 = mysqr( a1 );
-    
+
     Real a2 = 19 - 14 * x0 + 3 * x0 * x0 - 14 * x1 + 6 * x0x1 + 3 * x1x1;
     Real b1 = 2 * x0 - 3 * x1;
     Real b12 = mysqr( b1 );
@@ -1402,7 +1402,7 @@ namespace tstoptfct {
   template<typename Real>
   void GulfResearchDevelopmentInit( int npar, int& mfct, Real& answer,
 				    Real* x, Real* lo, Real* hi ) {
-  
+
     if ( 3 != npar )
       throw std::runtime_error( "npar for the GulfResearchDevelopment func must be equal to 3\n" );
 
@@ -1423,11 +1423,11 @@ namespace tstoptfct {
   // This function has the global minimum f( 50, 25, 1.5 ) = 0.0
   // and a local minimum at
   // f( 99.89537833835886, 60.61453903025014, 9.16124389236433 ) = 0.038
-  // Additionally, this local minimum is very flat and the minimizer is 
-  // surrounded by a "plateau", where the gradient is zero everywhere and 
+  // Additionally, this local minimum is very flat and the minimizer is
+  // surrounded by a "plateau", where the gradient is zero everywhere and
   // the function equals 0.0385.
   // Another local minimum with exactly the same function value (0.0380) is
-  // reached at the point 
+  // reached at the point
   // f( 201.662589489426; 60.616331504682; 10.224891158489 ) = 0.0380
   //
 
@@ -1546,7 +1546,7 @@ namespace tstoptfct {
 		      Type xptr ) {
 
     for ( int ii = 0; ii < npar; ii += 3 ) {
-      fvec[ ii ] = 10.0 * ( x[ ii + 2 ] - 
+      fvec[ ii ] = 10.0 * ( x[ ii + 2 ] -
 			    10 * mytheta( x[ ii ], x[ ii + 1 ] ) );
       fvec[ ii + 1 ] = 10.0 * ( sqrt( x[ ii ] * x[ ii ] +
 				      x[ ii + 1 ] * x[ ii + 1 ] ) - 1.0 );
@@ -1559,7 +1559,7 @@ namespace tstoptfct {
 
     fval = 0.0;
     for ( int ii = 0; ii < npar; ii += 3 ) {
-      Real a = 10.0 * ( x[ ii + 2 ] - 
+      Real a = 10.0 * ( x[ ii + 2 ] -
 			    10 * mytheta( x[ ii ], x[ ii + 1 ] ) );
       Real b = 10.0 * ( sqrt( x[ ii ] * x[ ii ] +
 				      x[ ii + 1 ] * x[ ii + 1 ] ) - 1.0 );
@@ -1572,12 +1572,12 @@ namespace tstoptfct {
   template<typename Real>
   void HelicalValleyInit( int npar, int& mfct, Real& answer, Real* x,
 			  Real* lo, Real* hi ) {
-  
+
     if ( npar % 3 )
       throw std::runtime_error( "npar for the HelicalValley func must be multiple of 3\n" );
 
     mfct = npar;
-  
+
     for ( int ii = 0; ii < npar; ii += 3 ) {
       x[ ii ] = -1.0;
       x[ ii + 1 ] = 0.0;
@@ -1695,7 +1695,7 @@ namespace tstoptfct {
   template<typename Real>
   void JennrichSampsonInit( int npar, int& mfct, Real& answer, Real* x,
 			    Real* lo, Real* hi ) {
-  
+
     if ( npar % 2 )
       throw std::runtime_error( "npar for the JennrichSampson func must be even\n" );
 
@@ -1716,7 +1716,7 @@ namespace tstoptfct {
   //
   // This function has the global minimum f( 0.257825, 0.257825 ) = 124.362
   // for m = 10, and a local minimum f=259.58019078047 on the plane
-  // x1=0.33148432 
+  // x1=0.33148432
   //
 
 
@@ -1743,7 +1743,7 @@ namespace tstoptfct {
 
   }
   template<typename Real>
-  void JudgeInit( int npar, int& mfct, Real& answer, Real* x, Real* lo, 
+  void JudgeInit( int npar, int& mfct, Real& answer, Real* x, Real* lo,
 		Real* hi, Real low=-1.0e3, Real high=1.0e3 ) {
     srand(1);
     for ( int ii = 0; ii < npar; ++ii ) {
@@ -1794,7 +1794,7 @@ namespace tstoptfct {
 		  0.1000, 0.0833, 0.0714, 0.0625 };
 
     for ( int i = 0; i < mfct; i++ )
-      fvec[ i ] = yi[ i ] - x[ 0 ] * ui[ i ] * 
+      fvec[ i ] = yi[ i ] - x[ 0 ] * ui[ i ] *
 	( ui[ i ] + x[ 1 ] ) / ( ui[ i ] * ( ui[ i ] + x[ 2 ] ) + x[ 3 ] );
 
   }
@@ -1812,7 +1812,7 @@ namespace tstoptfct {
   template<typename Real>
   void KowalikOsborneInit( int npar, int& mfct, Real& answer, Real* x,
 			   Real* lo, Real* hi ) {
-  
+
     if ( 4 != npar )
       throw std::runtime_error( "npar for the KowalikOsborne func must be 4\n" );
 
@@ -1836,7 +1836,7 @@ namespace tstoptfct {
   // f( .192807, 0.191282, 0.123056, 0.136062 ) = 0.000307506
   // and a local minimum at
   // f ( inf, -14.07..., -inf, -inf ) = 1.02734...10^-3
-  // Additionally, it takes a local minimum f=0.00179453906640 on a big flat 
+  // Additionally, it takes a local minimum f=0.00179453906640 on a big flat
   // plateau. The following are the minimum points found on this plateau by
   // SolvOpt:
   // [0.816961, 2045080438, 7189803671, 2927176299],
@@ -1853,7 +1853,7 @@ namespace tstoptfct {
     for (int ii = 0 ; ii <= npar - 2 ; ++ii )
       fval += pow( x[ ii ] - 1.0, 2.0) *
 	( 1.0 + pow( sin( 3.0 * pi * x[ ii + 1 ]), 2.0 ) );
-    fval += pow( sin( 3 * pi * x[ 0 ] ), 2.0 ) + 
+    fval += pow( sin( 3 * pi * x[ 0 ] ), 2.0 ) +
       ( x[ npar-1 ] - 1.0 ) *
       ( 1.0 + pow( sin( 2.0 * pi * x[ npar - 1 ]), 2.0 ) );
 
@@ -1944,7 +1944,7 @@ namespace tstoptfct {
 			int& ierr, Type xptr ) {
 
     Real sum = 0.0;
-    for ( int jj = 1; jj <= npar; ++jj ) 
+    for ( int jj = 1; jj <= npar; ++jj )
       sum += x[ jj - 1 ] * jj;
 
     for ( int ii = 1; ii <= mfct; ++ii )
@@ -1988,7 +1988,7 @@ namespace tstoptfct {
     const int nxm1   = npar - 1;
     const int nfm1   = mfct - 1;
     Real sum = 0.0;
-    for ( int j = 2; j <= nxm1; j++ ) 
+    for ( int j = 2; j <= nxm1; j++ )
       sum += x[ j - 1 ] * j;
 
     fvec[ 0 ] = - 1.0;
@@ -2023,7 +2023,7 @@ namespace tstoptfct {
     for ( int ii = 0; ii < npar; ++ii )
       hi[ ii ] = 1.0e6;
 
-    answer = static_cast< Real>( ( mfct * ( mfct + 3 ) - 6.0 ) / 2.0 / 
+    answer = static_cast< Real>( ( mfct * ( mfct + 3 ) - 6.0 ) / 2.0 /
 				  ( 2.0 * mfct - 3.0 ) );
 
   }
@@ -2100,7 +2100,7 @@ namespace tstoptfct {
   template<typename Real>
   void MeyerInit( int npar, int& mfct, Real& answer, Real* x,
 		  Real* lo, Real* hi ) {
-  
+
     if ( 3 != npar )
       throw std::runtime_error( "npar for the Meyer func must be 3\n" );
 
@@ -2124,7 +2124,7 @@ namespace tstoptfct {
     const Real pi = std::fabs( acos( - 1.0 ) );
     fval = 0.0;
     for ( int ii = 0; ii < npar; ++ii )
-      fval -= sin( x[ ii ] ) * 
+      fval -= sin( x[ ii ] ) *
 	pow( sin( (ii+1) * x[ ii ] * x[ ii ] / pi ), 20.0 );
   }
   template<typename Real>
@@ -2203,11 +2203,11 @@ namespace tstoptfct {
 
   }
   //
-  // This function has the global minimum 
+  // This function has the global minimum
   // f( 0.3754; 1.9358; -1.4647; 0.01287; 0.02212 ) = 5.46489e-5
   // It also has a number of "false" minima which are points of flatness
   // and look like a minimum.
-  // In particular, gradient is approximately zero 
+  // In particular, gradient is approximately zero
   // ( [1.55e-15; 4.2e-11; 4.2e-11; 0; 0] ) everywhere on a big "plateau" at
   // x1=0.62415625, x2~125*10i, x3~-125*10i, where i=0,1,..., and x4>10, x5>10.
   // The function equals 1.10603621875 everywhere on this "plateau"
@@ -2283,7 +2283,7 @@ namespace tstoptfct {
   //
   // f( 1.30997, 0.431459, 0.633631, 0.599303, 0.753915, 0.905575,
   //    1.36504, 4.82482, 2.39882, 4.56887, 5.67537 ) = 0.0401377
-  // 
+  //
 
   template<typename Real, typename Type>
   void Paviani( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
@@ -2298,7 +2298,7 @@ namespace tstoptfct {
     fval -= pow( mul, 0.2 );
   }
   template<typename Real>
-  void PavianiInit( int npar, int& mfct, Real& answer, Real* x, 
+  void PavianiInit( int npar, int& mfct, Real& answer, Real* x,
 		    Real* lo, Real* hi ) {
     if ( 10 != npar )
       throw std::runtime_error( "npar for the PavianiInit func must be 10\n" );
@@ -2357,7 +2357,7 @@ namespace tstoptfct {
     for ( int ii = 0; ii < npar; ++ii )
       hi[ ii ] = 1.0e6;
 
-    answer = 9.37629e-6;
+    answer = 2.24997e-5;
 
   }
 
@@ -2521,7 +2521,7 @@ namespace tstoptfct {
 
     for ( int ii = 0; ii < npar; ++ii )
       hi[ ii ] = 1.0e6;
-    
+
     answer = 0.0;
 
   }
@@ -2531,7 +2531,7 @@ namespace tstoptfct {
 
 
 /*
-  // 
+  //
   // quintic( 2, 2,..., 2, -0.402627941 ) = 0.0
   // quintic( -1, -1,..., -1, -0.402627941 ) = 0.0
   // or any permutation of (2, 2,..., 2, -1, -1, ..., -1, -0.402627941)
@@ -2565,7 +2565,7 @@ namespace tstoptfct {
     for ( int ii = 0; ii < npar; ++ii )
       fval += ( mysqr( x[ ii ] ) - 10.0 * cos( 2 * pi * x[ ii ] ) );
     fval += 10.0 * npar;
-  }  
+  }
   template<typename Real>
   void RastriginInit( int npar, int& mfct, Real& answer, Real* x, Real* lo, Real* hi ) {
     for ( int ii = 0; ii < npar; ++ii ) {
@@ -2582,18 +2582,18 @@ namespace tstoptfct {
   template<typename Real, typename Type>
   void Rosenbrock( int mfct, int npar, Real* x, Real* fvec, int& ierr,
 		   Type xptr ) {
-  
+
     for ( int ii = 0; ii < npar; ii += 2 ) {
 
       fvec[ ii ] = 1.0 - x[ ii ];
       fvec[ ii + 1 ] = 10.0 * ( x[ ii + 1 ] - x[ ii ] * x[ ii ] );
-    
+
     }
 
   }
   template<typename Real, typename Type>
   void Rosenbrock( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
-  
+
     int mfct = npar;
     std::vector< Real> fvec( mfct );
     Rosenbrock( mfct, npar, x, &fvec[0], ierr, 0 );
@@ -2601,7 +2601,7 @@ namespace tstoptfct {
     for ( int ii = mfct - 1; ii >= 0; --ii )
       fval += fvec[ii]*fvec[ii];
 
-  }  
+  }
   template<typename Real>
   void RosenbrockInit( int npar, int& mfct, Real& answer, Real* x,
 		       Real* lo, Real* hi ) {
@@ -2625,14 +2625,14 @@ namespace tstoptfct {
 
   }
   //
-  // This well-known test function becomes very nasty as soon as a point 
+  // This well-known test function becomes very nasty as soon as a point
   // is far from the minimum. The function has a long ravine with very steep
   // walls and almost flat bottom. If x1>108 and x2=x12, the two successive
   // gradients are exactly opposite to each other at a very small possible
   // step size. This means, one cannot reach the bottom because of the finite
-  // accuracy of computer calculations and one cannot calculate a right 
+  // accuracy of computer calculations and one cannot calculate a right
   // direction to go along the ravine. This is why a computer application of
-  // any gradient method may fail to minimize the function. The more so, if 
+  // any gradient method may fail to minimize the function. The more so, if
   // gradients are approximated by the finite differences.
   //
 
@@ -2649,7 +2649,7 @@ namespace tstoptfct {
   void seqpInit( int npar, int& mfct, Real& answer, Real* x, Real* lo,
 		 Real* hi, Real low=-1.0e3, Real high=1.0e3 ) {
     if ( 2 != npar )
-      throw std::runtime_error( "npar for the seqp func must be 2\n" );      
+      throw std::runtime_error( "npar for the seqp func must be 2\n" );
     srand(1);
     for ( int ii = 0; ii < npar; ++ii ) {
       lo[ ii ] = low;
@@ -2859,7 +2859,7 @@ namespace tstoptfct {
     if ( 2 != npar )
       throw std::runtime_error( "npar for the SixHumpCamel func must be 2\n" );
     Real x1=x[ 0 ], x2 = x[ 1 ];
-    fval = 4.0*x1*x1-0.21E1*pow(x1,4.0)+pow(x1,6.0)/3+x1*x2-4.0*x2*x2 
+    fval = 4.0*x1*x1-0.21E1*pow(x1,4.0)+pow(x1,6.0)/3+x1*x2-4.0*x2*x2
       + 4.0*pow(x2,4.0);
   }
   template<typename Real>
@@ -2912,7 +2912,7 @@ namespace tstoptfct {
     lo[ 0 ] = -6.5;
     lo[ 1 ] = -4.5;
     hi[ 0 ] = 6.5;
-    hi[ 1 ] = 4.5;    
+    hi[ 1 ] = 4.5;
     srand(1);
     for ( int ii = 0; ii < npar; ++ii ) {
       double tmp = rand( ) / (RAND_MAX + 1.0);
@@ -2966,7 +2966,7 @@ namespace tstoptfct {
 
   }
   //
-  // This function is known to have the global minimum 
+  // This function is known to have the global minimum
   // f( 0.0429645656464827, 0.043976286943042, 0.0450933996565844;
   //    0.0463389157816542, 0.0477443839560646, 0.0493547352444078;
   //    0.0512373449259557, 0.195209463715277, 0.164977664720328;
@@ -3044,7 +3044,7 @@ namespace tstoptfct {
     }
     fvec[ 29 ] = x[ 0 ];
     fvec[ 30 ] = x[ 1 ] - x[ 0 ] * x[ 0 ] - 1.0;
-    
+
   }
   template<typename Real, typename Type>
   void Watson( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
@@ -3063,11 +3063,11 @@ namespace tstoptfct {
 
     if ( 6 != npar )
       throw std::runtime_error( "npar for the Watson func must be 6\n" );
-    
+
     mfct = 31;
     for ( int ii = 0; ii < npar; ++ii )
       x[ ii ] = 0.0;
-    
+
     for ( int ii = 0; ii < npar; ++ii )
       lo[ ii ] = -1.0e6;
 

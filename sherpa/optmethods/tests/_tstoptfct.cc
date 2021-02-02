@@ -1,5 +1,5 @@
-// 
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,7 @@ static PyObject *Ackley( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Ackley<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -56,7 +56,7 @@ static PyObject *Booth( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Booth<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -77,7 +77,7 @@ static PyObject *Bohachevsky1( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Bohachevsky1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -98,7 +98,7 @@ static PyObject *Bohachevsky2( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Bohachevsky2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -119,7 +119,7 @@ static PyObject *Bohachevsky3( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Bohachevsky3<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -140,7 +140,7 @@ static PyObject *BoxBetts( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::BoxBetts<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -161,7 +161,7 @@ static PyObject *Branin( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Branin<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -182,7 +182,7 @@ static PyObject *Branin2( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Branin2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -203,7 +203,7 @@ static PyObject *Chichinadze( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Chichinadze<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -224,7 +224,7 @@ static PyObject *Cola( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Cola<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -245,7 +245,7 @@ static PyObject *Colville( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Colville<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -266,7 +266,7 @@ static PyObject *dcs( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::dcs<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -287,7 +287,7 @@ static PyObject *decanom( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::decanom<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -308,7 +308,7 @@ static PyObject *dodecal( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::dodecal<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -329,7 +329,7 @@ static PyObject *DixonPrice( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::DixonPrice<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -350,7 +350,7 @@ static PyObject *Easom( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Easom<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -371,7 +371,7 @@ static PyObject *factor( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::factor<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -392,7 +392,7 @@ static PyObject *Func1( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Func1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -413,7 +413,7 @@ static PyObject *GoldsteinPrice( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::GoldsteinPrice<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -434,7 +434,7 @@ static PyObject *Griewank( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Griewank<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -455,7 +455,7 @@ static PyObject *Hansen( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Hansen<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -476,7 +476,7 @@ static PyObject *Hartman6( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Hartman6<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -497,7 +497,7 @@ static PyObject *Himmelblau( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Himmelblau<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -518,7 +518,7 @@ static PyObject *Holzman1( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Holzman1<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -539,7 +539,7 @@ static PyObject *Holzman2( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Holzman2<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -560,7 +560,7 @@ static PyObject *Judge( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Judge<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -581,7 +581,7 @@ static PyObject *Levy( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Levy<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -602,7 +602,7 @@ static PyObject *McCormick( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::McCormick<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -623,7 +623,7 @@ static PyObject *McKinnon( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::McKinnon<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -644,7 +644,7 @@ static PyObject *Michalewicz( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Michalewicz<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -665,7 +665,7 @@ static PyObject *Paviani( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Paviani<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -686,7 +686,7 @@ static PyObject *Rastrigin( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Rastrigin<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -707,7 +707,7 @@ static PyObject *seqp( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::seqp<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -728,7 +728,7 @@ static PyObject *Shekel5( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Shekel5<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -749,7 +749,7 @@ static PyObject *Shekel7( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Shekel7<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -770,7 +770,7 @@ static PyObject *Shekel10( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Shekel10<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -791,7 +791,7 @@ static PyObject *ShekelModified( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::ShekelModified<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -812,7 +812,7 @@ static PyObject *Shubert( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Shubert<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -833,7 +833,7 @@ static PyObject *SixHumpCamel( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::SixHumpCamel<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -854,7 +854,7 @@ static PyObject *Trecanni( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Trecanni<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -875,7 +875,7 @@ static PyObject *Trefethen4( PyObject *self, PyObject *args ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
-  double fval = 0;  
+  double fval = 0;
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Trefethen4<double,void*>( npar, &xpar[0], fval, ierr, NULL );
@@ -899,11 +899,11 @@ static PyObject *bard( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Bard<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-				   NULL );  
+				   NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for bard function" );
       return NULL;
@@ -936,11 +936,11 @@ static PyObject *beale( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Beale<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-				    NULL );  
+				    NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for beale function" );
       return NULL;
@@ -972,11 +972,11 @@ static PyObject *biggs( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Biggs<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-				    NULL );  
+				    NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for biggs function" );
       return NULL;
@@ -1009,11 +1009,11 @@ static PyObject *box3d( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Box3d<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-				    NULL );  
+				    NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for box3d function" );
       return NULL;
@@ -1045,11 +1045,11 @@ static PyObject *broyden_banded( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::BroydenBanded<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					    ierr, NULL );  
+					    ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for broyden_banded function" );
       return NULL;
@@ -1082,11 +1082,11 @@ static PyObject *broyden_tridiagonal( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::BroydenTridiagonal<double,void*>( mfct, npar, &xpar[0],
-						 &fvec[0], ierr, NULL );  
+						 &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for broyden_tridiagonal function" );
       return NULL;
@@ -1119,11 +1119,11 @@ static PyObject *brown_almost_linear( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::BrownAlmostLinear<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-						ierr, NULL );  
+						ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for brown_almost_linear function" );
       return NULL;
@@ -1157,11 +1157,11 @@ static PyObject *brown_badly_scaled( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::BrownBadlyScaled<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					       ierr, NULL );  
+					       ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for brown_badly_scaled function" );
       return NULL;
@@ -1194,11 +1194,11 @@ static PyObject *brown_dennis( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::BrownDennis<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-					  NULL );  
+					  NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for brown_dennis function" );
       return NULL;
@@ -1231,11 +1231,11 @@ static PyObject *chebyquad( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Chebyquad<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-					NULL );  
+					NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for chebyquad function" );
       return NULL;
@@ -1268,10 +1268,10 @@ static PyObject *discrete_boundary( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
-    tstoptfct::DiscreteBoundary<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
+    tstoptfct::DiscreteBoundary<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for discrete_boundary function" );
       return NULL;
@@ -1305,11 +1305,11 @@ static PyObject *discrete_integral( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::DiscreteIntegral<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					       ierr, NULL );  
+					       ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for discrete_integral function" );
       return NULL;
@@ -1343,10 +1343,10 @@ static PyObject *freudenstein_roth( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
-    tstoptfct::FreudensteinRoth<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
+    tstoptfct::FreudensteinRoth<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for freudenstein_roth function" );
       return NULL;
@@ -1379,11 +1379,11 @@ static PyObject *gaussian( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Gaussian<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-				       NULL );  
+				       NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for gaussian function" );
       return NULL;
@@ -1416,11 +1416,11 @@ static PyObject *gulf_research_development( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::GulfResearchDevelopment<double,void*>( mfct, npar, &xpar[0],
-						      &fvec[0], ierr, NULL );  
+						      &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for gulf_research_development function" );
       return NULL;
@@ -1453,11 +1453,11 @@ static PyObject *helical_valley( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::HelicalValley<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					    ierr, NULL );  
+					    ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for helical_valley function" );
       return NULL;
@@ -1490,11 +1490,11 @@ static PyObject *jennrich_sampson( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::JennrichSampson<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					      ierr, NULL );  
+					      ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for jennrich_sampson function" );
       return NULL;
@@ -1528,11 +1528,11 @@ static PyObject *kowalik_osborne( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::KowalikOsborne<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					     ierr, NULL );  
+					     ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for kowalikosborne function" );
       return NULL;
@@ -1566,11 +1566,11 @@ static PyObject *linear_fullrank( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::LinearFullRank<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					     ierr, NULL );  
+					     ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank function" );
       return NULL;
@@ -1604,11 +1604,11 @@ static PyObject *linear_fullrank1( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::LinearFullRank1<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					      ierr, NULL );  
+					      ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank1 function" );
       return NULL;
@@ -1642,10 +1642,10 @@ static PyObject *linear_fullrank0col0rows( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
-    tstoptfct::LinearFullRank0cols0rows<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
+    tstoptfct::LinearFullRank0cols0rows<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for linear_fullrank0col0rows function" );
       return NULL;
@@ -1679,10 +1679,10 @@ static PyObject *meyer( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
-    tstoptfct::Meyer<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
+    tstoptfct::Meyer<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for meyer function" );
       return NULL;
@@ -1714,10 +1714,10 @@ static PyObject *osborne1( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
-    tstoptfct::Osborne1<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
+    tstoptfct::Osborne1<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for osborne1 function" );
       return NULL;
@@ -1750,11 +1750,11 @@ static PyObject *osborne2( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Osborne2<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-				       NULL );  
+				       NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for osborne2 function" );
       return NULL;
@@ -1791,7 +1791,7 @@ static PyObject *osborne2( PyObject *self, PyObject *args ) {
    int ierr = EXIT_SUCCESS;
    {
      tstoptfct::PenaltyI<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-					NULL );  
+					NULL );
      if ( EXIT_SUCCESS != ierr ) {
        PyErr_SetString( PyExc_ValueError, "error returned for penaltyI function" );
        return NULL;
@@ -1818,17 +1818,17 @@ static PyObject *penaltyII( PyObject *self, PyObject *args ) {
 			  CONVERTME(DoubleArray), &xpar ) )
     return NULL;
   npy_intp npar = xpar.get_size( );
-  npy_intp mfct = 65;
+  npy_intp mfct = 2 * npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::PenaltyII<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-					NULL );  
+					NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for penaltyII function" );
       return NULL;
@@ -1855,17 +1855,17 @@ static PyObject *powell_badly_scaled( PyObject *self, PyObject *args ) {
 			  CONVERTME(DoubleArray), &xpar ) )
     return NULL;
   npy_intp npar = xpar.get_size( );
-  npy_intp mfct = 2 * npar;
+  npy_intp mfct = npar;
   if ( EXIT_SUCCESS != fvec.create( 1, &mfct ) ) {
     PyErr_SetString( PyExc_ValueError, "Unable to create 'fvec'" );
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::PowellBadlyScaled<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-						ierr, NULL );  
+						ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for powell_badly_scaled function" );
       return NULL;
@@ -1903,7 +1903,7 @@ static PyObject *powell_singular( PyObject *self, PyObject *args ) {
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::PowellSingular<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					     ierr, NULL );  
+					     ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for powell_singular function" );
       return NULL;
@@ -1937,11 +1937,11 @@ static PyObject *rosenbrock( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Rosenbrock<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr,
-					 NULL );  
+					 NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for rosenbrock function" );
       return NULL;
@@ -1974,11 +1974,11 @@ static PyObject *trigonometric( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::Trigonometric<double,void*>( mfct, npar, &xpar[0], &fvec[0],
-					    ierr, NULL );  
+					    ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for trigonmetric function" );
       return NULL;
@@ -2010,11 +2010,11 @@ static PyObject *variably_dimensioned( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
     tstoptfct::VariablyDimensioned<double,void*>( mfct, npar, &xpar[0],
-						  &fvec[0], ierr, NULL );  
+						  &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for varibly_dimensioned function" );
       return NULL;
@@ -2047,10 +2047,10 @@ static PyObject *watson( PyObject *self, PyObject *args ) {
     return NULL;
   }
   double fval;
-  
+
   int ierr = EXIT_SUCCESS;
   {
-    tstoptfct::Watson<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );  
+    tstoptfct::Watson<double,void*>( mfct, npar, &xpar[0], &fvec[0], ierr, NULL );
     if ( EXIT_SUCCESS != ierr ) {
       PyErr_SetString( PyExc_ValueError, "error returned for watson function" );
       return NULL;
@@ -2144,79 +2144,79 @@ static PyObject *init_optfcn( PyObject *self, PyObject *args ) {
   else if ( 0 == strncmp( &name[0], "Bohachevsky2", name_length ) )
     tstoptfct::Bohachevsky2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Bohachevsky3", name_length ) )
-    tstoptfct::Bohachevsky3Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );  
+    tstoptfct::Bohachevsky3Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "BoxBetts", name_length ) )
     tstoptfct::BoxBettsInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Branin", name_length ) )
-    tstoptfct::BraninInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );    
+    tstoptfct::BraninInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Branin2", name_length ) )
     tstoptfct::Branin2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Chichinadze", name_length ) )
-    tstoptfct::ChichinadzeInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );      
+    tstoptfct::ChichinadzeInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Cola", name_length ) )
     tstoptfct::ColaInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Colville", name_length ) )
-    tstoptfct::ColvilleInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::ColvilleInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "dcs", name_length ) )
-    tstoptfct::dcsInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::dcsInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "decanom", name_length ) )
-    tstoptfct::decanomInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::decanomInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "dodecal", name_length ) )
-    tstoptfct::dodecalInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::dodecalInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "DixonPrice", name_length ) )
-    tstoptfct::DixonPriceInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::DixonPriceInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Easom", name_length ) )
-    tstoptfct::EasomInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::EasomInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "factor", name_length ) )
-    tstoptfct::factorInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::factorInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Func1", name_length ) )
-    tstoptfct::Func1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Func1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "GoldsteinPrice", name_length ) )
-    tstoptfct::GoldsteinPriceInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::GoldsteinPriceInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Griewank", name_length ) )
-    tstoptfct::GriewankInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::GriewankInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Hansen", name_length ) )
-    tstoptfct::HansenInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::HansenInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Hartman6", name_length ) )
-    tstoptfct::Hartman6Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Hartman6Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Himmelblau", name_length ) )
-    tstoptfct::HimmelblauInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::HimmelblauInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Holzman1", name_length ) )
-    tstoptfct::Holzman1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Holzman1Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Holzman2", name_length ) )
-    tstoptfct::Holzman2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Holzman2Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Judge", name_length ) )
-    tstoptfct::JudgeInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::JudgeInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Levy", name_length ) )
-    tstoptfct::LevyInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::LevyInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "McCormick", name_length ) )
-    tstoptfct::McCormickInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::McCormickInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "McKinnon", name_length ) )
-    tstoptfct::McKinnonInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::McKinnonInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Michalewicz", name_length ) )
-    tstoptfct::MichalewiczInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::MichalewiczInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Paviani", name_length ) )
-    tstoptfct::PavianiInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::PavianiInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Rastrigin", name_length ) )
-    tstoptfct::RastriginInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::RastriginInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "seqp", name_length ) )
-    tstoptfct::seqpInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::seqpInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Shekel5", name_length ) )
-    tstoptfct::Shekel5Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Shekel5Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Shekel7", name_length ) )
-    tstoptfct::Shekel7Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Shekel7Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Shekel10", name_length ) )
-    tstoptfct::Shekel10Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Shekel10Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "ShekelModified", name_length ) )
-    tstoptfct::ShekelModifiedInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::ShekelModifiedInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Shubert", name_length ) )
-    tstoptfct::ShubertInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::ShubertInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "SixHumpCamel", name_length ) )
-    tstoptfct::SixHumpCamelInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::SixHumpCamelInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Trecanni", name_length ) )
-    tstoptfct::TrecanniInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::TrecanniInit( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
   else if ( 0 == strncmp( &name[0], "Trefethen4", name_length ) )
-    tstoptfct::Trefethen4Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );        
+    tstoptfct::Trefethen4Init( npar, mfct, answer, &xpar[0], &lo[0], &hi[0] );
     //////////////////////////////////////////////////////////////////////
   else if ( 0 == strncmp( &name[0], "rosenbrock", name_length ) )
     tstoptfct::RosenbrockInit( npar, mfct, answer, &xpar[0],
@@ -2349,7 +2349,7 @@ static PyMethodDef _tstoptfct_methods[] = {
   { "Colville", Colville, METH_VARARGS, "colville function vector" },
   { "dcs", dcs, METH_VARARGS, "dcs function vector" },
   { "decanom", decanom, METH_VARARGS, "decanom function vector" },
-  { "dodecal", dodecal, METH_VARARGS, "dodecal function vector" },              
+  { "dodecal", dodecal, METH_VARARGS, "dodecal function vector" },
   { "DixonPrice", DixonPrice, METH_VARARGS, "DixonPrice function vector" },
   { "Easom", Easom, METH_VARARGS, "Easom function vector" },
   { "factor", factor, METH_VARARGS, "factor function vector" },
@@ -2358,8 +2358,8 @@ static PyMethodDef _tstoptfct_methods[] = {
   { "Griewank", Griewank, METH_VARARGS, "Griewank function vector" },
   { "Hansen", Hansen, METH_VARARGS, "Hansen function vector" },
   { "Hartman6", Hartman6, METH_VARARGS, "Hartman6 function vector" },
-  { "Himmelblau", Himmelblau, METH_VARARGS, "Himmelblau function vector" },      
-  { "Holzman1", Holzman1, METH_VARARGS, "Holzman1 function vector" },      
+  { "Himmelblau", Himmelblau, METH_VARARGS, "Himmelblau function vector" },
+  { "Holzman1", Holzman1, METH_VARARGS, "Holzman1 function vector" },
   { "Holzman2", Holzman2, METH_VARARGS, "Holzman2 function vector" },
   { "Judge", Judge, METH_VARARGS, "Judge function vector" },
   { "Levy", Levy, METH_VARARGS, "Levy function vector" },
@@ -2376,7 +2376,7 @@ static PyMethodDef _tstoptfct_methods[] = {
   { "Shubert", Shubert, METH_VARARGS, "Shubert function vector" },
   { "SixHumpCamel", SixHumpCamel, METH_VARARGS, "SixHumpCamel function vector" },
   { "Trecanni", Trecanni, METH_VARARGS, "Trecanni function vector" },
-    { "Trefethen4", Trefethen4, METH_VARARGS, "Trefethen4 function vector" },      
+    { "Trefethen4", Trefethen4, METH_VARARGS, "Trefethen4 function vector" },
   ////////////////////////////////////////////////////////////////////////
   { "bard", bard, METH_VARARGS, "bard function vector" },
   { "beale", beale, METH_VARARGS, "beale function vector" },

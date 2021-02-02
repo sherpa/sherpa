@@ -64,8 +64,7 @@ def test_freudensteinroth(opt, npar=4):
     tst_opt(opt, _tstoptfct.freudenstein_roth, npar)
 
 
-@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
-                                 minim, montecarlo, neldermead])
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_powell_badly_scaled(opt, npar=2):
     tst_opt(opt, _tstoptfct.powell_badly_scaled, npar)
 
@@ -181,8 +180,7 @@ def test_penaltyI(opt, npar=4):
     tst_opt(opt, _tstoptfct.penaltyI, npar)
 
 
-@pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
-                                 minim, montecarlo, neldermead])
+@pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_penaltyII(opt, npar=4):
     tst_opt(opt, _tstoptfct.penaltyII, npar)
 
