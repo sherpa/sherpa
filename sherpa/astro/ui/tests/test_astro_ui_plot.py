@@ -3611,7 +3611,7 @@ def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
     """Check that set_xlog handling for plot_fit_resid.
 
     What is the X-axis scaling when you call set_xlog(plottype)?
-    We use a rannge of plottypes as the behavior is not always
+    We use a range of plot types as the behavior is not always
     obvious, so let's ensure we test them.
     """
 
