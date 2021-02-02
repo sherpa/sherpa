@@ -10667,11 +10667,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_data_plot(id, recalc=False)
-        try:
-            return plot.histo_prefs
-        except AttributeError:
-            return plot.plot_prefs
+        return self.get_data_plot(id, recalc=False).get_prefs()
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None, recalc=True):
@@ -11017,11 +11013,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_model_plot(id, recalc=False)
-        try:
-            return plot.histo_prefs
-        except AttributeError:
-            return plot.plot_prefs
+        return self.get_model_plot(id, recalc=False).get_prefs()
 
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.
@@ -12019,15 +12011,8 @@ class Session(NoNewAttributesAfterInit):
 
         for key in keys:
             for plot in self._plot_types[key]:
-                # This could be a "line" or "histogram" style plot.
-                #
-                try:
-                    plot.plot_prefs[item] = value
-                except AttributeError:
-                    try:
-                        plot.histo_prefs[item] = value
-                    except AttributeError:
-                        pass
+                prefs = plot.get_prefs()
+                prefs[item] = value
 
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.
@@ -13289,23 +13274,17 @@ class Session(NoNewAttributesAfterInit):
             # plot preferences of plot1, and then check for different
             # types of plot objects.
             #
-            oldval = plot2.plot_prefs['xlog']
-            try:
-                dprefs = plot1.dataplot.histo_prefs
-            except AttributeError:
-                dprefs = plot1.dataplot.plot_prefs
-
-            try:
-                mprefs = plot1.modelplot.histo_prefs
-            except AttributeError:
-                mprefs = plot1.modelplot.plot_prefs
+            prefs2 = plot2.get_prefs()
+            oldval = prefs2['xlog']
+            dprefs = plot1.dataplot.get_prefs()
+            mprefs = plot1.modelplot.get_prefs()
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                prefs2['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            prefs2['xlog'] = oldval
         except:
             sherpa.plot.exceptions()
             raise

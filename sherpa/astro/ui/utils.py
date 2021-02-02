@@ -12435,16 +12435,17 @@ class Session(sherpa.ui.utils.Session):
             # Unlike the plot version we can assume we are dealing
             # with histogram plots here.
             #
-            oldval = plot2.plot_prefs['xlog']
-            dprefs = plot1.dataplot.histo_prefs
-            mprefs = plot1.modelplot.histo_prefs
+            prefs2 = plot2.get_prefs()
+            oldval = prefs2['xlog']
+            dprefs = plot1.dataplot.get_prefs()
+            mprefs = plot1.modelplot.get_prefs()
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                prefs2['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            prefs2['xlog'] = oldval
         except:
             sherpa.plot.exceptions()
             raise
