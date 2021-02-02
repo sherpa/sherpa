@@ -6753,6 +6753,7 @@ class Session(sherpa.ui.utils.Session):
         ignore2d_image : Select the region to exclude from the image viewer.
         notice2d_id : Include a spatial region of a data set.
         notice2d_image : Select the region to include from the image viewer.
+        set_coord : Set the coordinate system to use for image analysis.
 
         Notes
         -----
@@ -6824,6 +6825,11 @@ class Session(sherpa.ui.utils.Session):
         coordinate system for the image, so a pixel may not
         have a width and height of 1.
 
+        The REGION specifier is only supported when using CIAO.
+        Unfortunately you can not combine region shapes using this
+        syntax. That is ``region(s1.reg)+region(s2.reg)`` is not
+        supported.
+
         References
         ----------
 
@@ -6835,13 +6841,14 @@ class Session(sherpa.ui.utils.Session):
         Include the data points that lie within a circle centered
         at 4324.5,3827.5 with a radius of 300:
 
+        >>> set_coord('physical')
         >>> notice2d('circle(4324.5,3827.5,430)')
 
         Read in the filter from the file ``ds9.reg``, using either:
 
         >>> notice2d('ds9.reg')
 
-        or
+        or, when using CIAO,
 
         >>> notice2d('region(ds9.reg)')
 
@@ -6882,11 +6889,12 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image viewer.
         notice2d : Include a spatial region from all data sets.
         notice2d_id : Include a spatial region of a data set.
         notice2d_image : Select the region to include from the image viewer.
-        ignore2d_id : Exclude a spatial region from a data set.
-        ignore2d_image : Select the region to exclude from the image viewer.
+        set_coord : Set the coordinate system to use for image analysis.
 
         Notes
         -----
@@ -6942,6 +6950,7 @@ class Session(sherpa.ui.utils.Session):
         ignore2d_image : Select the region to exclude from the image viewer.
         notice2d : Include a spatial region of all data sets.
         notice2d_image : Select the region to include from the image viewer.
+        set_coord : Set the coordinate system to use for image analysis.
 
         Notes
         -----
@@ -7009,6 +7018,7 @@ class Session(sherpa.ui.utils.Session):
         notice2d : Include a spatial region of all data sets.
         notice2d_id : Include a spatial region from a data set.
         notice2d_image : Select the region to include from the image viewer.
+        set_coord : Set the coordinate system to use for image analysis.
 
         Notes
         -----
@@ -7062,6 +7072,7 @@ class Session(sherpa.ui.utils.Session):
         ignore2d : Exclude a spatial region from an image.
         ignore2d_image : Exclude pixels using the region defined in the image viewer.
         notice2d : Include a spatial region of an image.
+        set_coord : Set the coordinate system to use for image analysis.
 
         Notes
         -----
@@ -7125,6 +7136,7 @@ class Session(sherpa.ui.utils.Session):
         ignore2d : Exclude a spatial region from an image.
         notice2d : Include a spatial region of an image.
         notice2d_image : Include pixels using the region defined in the image viewer.
+        set_coord : Set the coordinate system to use for image analysis.
 
         Notes
         -----
