@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -258,6 +258,18 @@ class Plot(NoNewAttributesAfterInit):
         self.plot_prefs = self.plot_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
 
+    def get_prefs(self):
+        """Return the preferences dictionary.
+
+        The returned value can be edited to change the stored data.
+
+        Returns
+        -------
+        prefs : dict
+
+        """
+        return self.plot_prefs
+
     @staticmethod
     def vline(x, ymin=0, ymax=1,
               linecolor=None, linestyle=None, linewidth=None,
@@ -351,6 +363,18 @@ class Contour(NoNewAttributesAfterInit):
         self.contour_prefs = self.contour_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
 
+    def get_prefs(self):
+        """Return the preferences dictionary.
+
+        The returned value can be edited to change the stored data.
+
+        Returns
+        -------
+        prefs : dict
+
+        """
+        return self.contour_prefs
+
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
         return merge_settings(self.contour_prefs, kwargs)
@@ -383,6 +407,18 @@ class Point(NoNewAttributesAfterInit):
         """
         self.point_prefs = self.point_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
+
+    def get_prefs(self):
+        """Return the preferences dictionary.
+
+        The returned value can be edited to change the stored data.
+
+        Returns
+        -------
+        prefs : dict
+
+        """
+        return self.point_prefs
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -429,6 +465,18 @@ class Histogram(NoNewAttributesAfterInit):
         """
         self.histo_prefs = self.histo_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
+
+    def get_prefs(self):
+        """Return the preferences dictionary.
+
+        The returned value can be edited to change the stored data.
+
+        Returns
+        -------
+        prefs : dict
+
+        """
+        return self.histo_prefs
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -965,6 +1013,19 @@ class SplitPlot(Plot, Contour):
         self.reset(rows, cols)
         Plot.__init__(self)
         Contour.__init__(self)
+
+    # Since Plot and Contour both have get_prefs let's be explicit
+    def get_prefs(self):
+        """Return the preferences dictionary.
+
+        The returned value can be edited to change the stored data.
+
+        Returns
+        -------
+        prefs : dict
+
+        """
+        return self.plot_prefs
 
     def __str__(self):
         return (('rows   = %s\n' +
@@ -1598,7 +1659,7 @@ class ComponentModelPlot(ModelPlot):
 
 class ComponentModelHistogramPlot(ModelHistogramPlot):
 
-    # Is this the correct setting?
+    # TODO: Is this the correct setting? Shouldn't it change histo_prefs?
     plot_prefs = backend.get_component_plot_defaults()
 
     def prepare(self, data, model, stat=None):
@@ -1654,7 +1715,7 @@ class ComponentSourcePlot(SourcePlot):
 
 class ComponentSourceHistogramPlot(SourceHistogramPlot):
 
-    # Is this the correct setting?
+    # TODO: Is this the correct setting? Shouldn't it change histo_prefs?
     plot_prefs = backend.get_component_plot_defaults()
 
     def prepare(self, data, model, stat=None):
@@ -2441,6 +2502,19 @@ class Confidence2D(DataContour, Point):
         self.stat = None
         self.numcores = None
         DataContour.__init__(self)
+
+    # Since DataContour and Point both have get_prefs let's be explicit
+    def get_prefs(self):
+        """Return the preferences dictionary.
+
+        The returned value can be edited to change the stored data.
+
+        Returns
+        -------
+        prefs : dict
+
+        """
+        return self.contour_prefs
 
     def __setstate__(self, state):
         self.__dict__.update(state)

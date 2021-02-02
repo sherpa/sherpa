@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
 from sherpa import plot as sherpaplot
 from sherpa.data import Data1D, Data1DInt
-from sherpa.utils.testing import requires_data, requires_plotting
+from sherpa.utils.testing import requires_data, requires_plotting, requires_pylab
 
 
 _datax = numpy.array(
@@ -154,13 +154,30 @@ def test_ratioplot(setup_plot):
 @pytest.mark.parametrize("plottype", [sherpa.DelchiPlot,
                                       sherpa.RatioPlot,
                                       sherpa.ResidPlot])
-def test_ignore_ylog_prefs(setup_plot, plottype):
+def test_ignore_ylog_prefs_direct(setup_plot, plottype):
     """Do we ignore the ylog preference setting?"""
     tp = plottype()
     tp.plot_prefs['ylog'] = True
     tp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
     tp.plot()
     assert not tp.plot_prefs['ylog']
+
+
+@requires_plotting
+@pytest.mark.parametrize("plottype", [sherpa.DelchiPlot,
+                                      sherpa.RatioPlot,
+                                      sherpa.ResidPlot])
+def test_ignore_ylog_prefs(setup_plot, plottype):
+    """Do we ignore the ylog preference setting?
+
+    Use the get_prefs accessor.
+    """
+    tp = plottype()
+    prefs = tp.get_prefs()
+    prefs['ylog'] = True
+    tp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
+    tp.plot()
+    assert not tp.get_prefs()['ylog']
 
 
 def test_fitplot(setup_plot):
@@ -653,3 +670,32 @@ def test_histogram_empty_x():
 
     dp = sherpaplot.DataHistogramPlot()
     assert dp.x is None
+
+
+@requires_plotting
+@pytest.mark.parametrize("pclass", [sherpaplot.DataPlot,
+                                    sherpaplot.DataHistogramPlot,
+                                    sherpaplot.DataContour,
+                                    sherpaplot.Confidence2D])
+def test_get_prefs_xlog(pclass):
+    """Does get_prefs return a dictionary?
+
+    I don't think this requires a specific backend.
+    """
+
+    prefs = pclass().get_prefs()
+    assert not prefs['xlog']
+
+
+@requires_pylab
+@pytest.mark.parametrize("pclass,setting,value",
+                         [(sherpaplot.Point, 'symbol', None),
+                          (sherpaplot.SplitPlot, 'wspace', 0.3)])
+def test_get_prefs_setting(pclass, setting, value):
+    """Does get_prefs return a dictionary?
+
+    The preferences depend on the specific backend.
+    """
+
+    prefs = pclass().get_prefs()
+    assert prefs[setting] == value
