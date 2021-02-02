@@ -13266,19 +13266,22 @@ class Session(NoNewAttributesAfterInit):
             # plot (i.e. it is assumed that this is a fit plot)
             # use a log scale.
             #
-            # DJB believes that the following preference check is
-            # more-complicated than it needs to be: it should be
-            # sufficient to just use the preferences in the
-            # plot1 and plot2 objects, rather than dig around
-            # in the self.{_data/_model}plot structures (as they
-            # should be the same object), but we do not have enough
-            # tests to check this.
+            # This is complicated by the need to access the individual
+            # plot preferences of plot1, and then check for different
+            # types of plot objects.
             #
             oldval = plot2.plot_prefs['xlog']
-            if (('xlog' in self._dataplot.plot_prefs and
-                 self._dataplot.plot_prefs['xlog']) or
-                ('xlog' in self._modelplot.plot_prefs and
-                 self._modelplot.plot_prefs['xlog'])):
+            try:
+                dprefs = plot1.dataplot.histo_prefs
+            except AttributeError:
+                dprefs = plot1.dataplot.plot_prefs
+
+            try:
+                mprefs = plot1.modelplot.histo_prefs
+            except AttributeError:
+                mprefs = plot1.modelplot.plot_prefs
+
+            if dprefs['xlog'] or mprefs['xlog']:
                 plot2.plot_prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)

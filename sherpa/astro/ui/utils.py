@@ -12442,11 +12442,14 @@ class Session(sherpa.ui.utils.Session):
             self._jointplot.plottop(plot1, overplot=overplot,
                                     clearwindow=clearwindow, **kwargs)
 
+            # Unlike the plot version we can assume we are dealing
+            # with histogram plots here.
+            #
             oldval = plot2.plot_prefs['xlog']
-            if (('xlog' in self._bkgdataplot.histo_prefs and
-                 self._bkgdataplot.histo_prefs['xlog']) or
-                ('xlog' in self._bkgmodelplot.histo_prefs and
-                 self._bkgmodelplot.histo_prefs['xlog'])):
+            dprefs = plot1.dataplot.histo_prefs
+            mprefs = plot1.modelplot.histo_prefs
+
+            if dprefs['xlog'] or mprefs['xlog']:
                 plot2.plot_prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)

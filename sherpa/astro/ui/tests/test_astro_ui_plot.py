@@ -3579,3 +3579,94 @@ def test_set_plot_opt_explicit_astro():
     assert fig.axes[3].get_yscale() == 'linear'
 
     plt.close(fig)
+
+
+def check_plot2_xscale(xscale):
+    """Are there two plots, y-axis linear, x axis set?
+
+    Any test using this needs @requires_pylab
+    """
+
+    from matplotlib import pyplot as plt
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 2
+    assert axes[0].xaxis.get_label().get_text() == ''
+
+    assert axes[0].xaxis.get_scale() == xscale
+    assert axes[0].yaxis.get_scale() == 'linear'
+
+    assert axes[1].xaxis.get_scale() == xscale
+    assert axes[1].yaxis.get_scale() == 'linear'
+
+
+@requires_pylab
+@pytest.mark.parametrize("idval", [None, "bob"])
+@pytest.mark.parametrize("plottype,xscale", [('data', 'log'),
+                                             ('resid', 'log'),
+                                             ('bkg', 'linear'),
+                                             ('bkgresid', 'linear')])
+def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
+    """Check that set_xlog handling for plot_fit_resid.
+
+    What is the X-axis scaling when you call set_xlog(plottype)?
+    We use a range of plot types as the behavior is not always
+    obvious, so let's ensure we test them.
+    """
+
+    setup_example(idval)
+    ui.set_xlog(plottype)
+    ui.plot_fit_resid(idval)
+    check_plot2_xscale(xscale)
+
+
+@requires_pylab
+@pytest.mark.parametrize("idval", [None, "bob"])
+@pytest.mark.parametrize("plottype,xscale", [('data', 'linear'),
+                                             ('resid', 'linear'),
+                                             ('bkg', 'log'),
+                                             ('bkgresid', 'log')])
+def test_plot_bkg_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
+    """Check that set_xlog handling for plot_bkg_fit_resid.
+
+    This logic could be added to test_plot_fit_resid_set_xlog but it
+    would complicate the setup, so we duplicate the code.
+
+    """
+
+    setup_example_bkg_model(idval)
+    ui.set_xlog(plottype)
+    ui.plot_bkg_fit_resid(idval)
+    check_plot2_xscale(xscale)
+
+
+@requires_pylab
+@pytest.mark.parametrize("plot,yscale", [('data', 'linear'),
+                                         ('ratio', 'linear'),
+                                         ('fit', 'linear'),
+                                         ('bkg', 'log'),
+                                         ('bkg_resid', 'linear'),
+                                         ('bkg_fit', 'log')])
+def test_set_ylog_bkg(plot, yscale, clean_astro_ui):
+    """Check y axis after_ylog('bkg').
+
+    The idea is to check how separate the "background" from
+    "non-background" plots are.  I use ylog since other tests have
+    used xlog.
+
+    """
+
+    from matplotlib import pyplot as plt
+
+    setup_example_bkg_model(1)
+    ui.set_ylog('bkg')
+
+    pfunc = getattr(ui, f'plot_{plot}')
+    pfunc()
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 1
+    assert axes[0].xaxis.get_scale() == 'linear'
+    assert axes[0].yaxis.get_scale() == yscale
