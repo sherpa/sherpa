@@ -45,7 +45,7 @@ from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     DataHistogramPlot
 
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
 from sherpa.utils.testing import requires_plotting, requires_pylab
 
 
@@ -1975,6 +1975,26 @@ def test_xxx_plot_nodata(ptype, extraargs, session):
     func = getattr(s, 'get_{}_plot'.format(ptype))
     retval = func(*extraargs, recalc=False)
     assert retval.y is None
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,extraargs",
+                         [('model', []), ('model_component', ['mdl']),
+                          ('source', []), ('source_component', ['mdl'])])
+def test_xxx_plot_nodata_recalc(ptype, extraargs, session):
+    """Basic testing of get_xxx_plot when there's no data and recalc=True"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+    with pytest.raises(IdentifierErr):
+        func(*extraargs)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
