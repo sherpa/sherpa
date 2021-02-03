@@ -110,6 +110,16 @@ jobs:
         fi
         tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
 
+    - name: Cache conda
+      uses: actions/cache@v2
+      env:
+        # Increase this value to reset cache if the hashed file has not changed
+        CACHE_NUMBER: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key:
+          ${{ format('{0}-conda-{1}-{2}', runner.os, env.CACHE_NUMBER, hashFiles(format('etc/environment-{0}.yml', matrix.ostype))) }}
+
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v2
       with:
