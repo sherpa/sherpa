@@ -3,9 +3,7 @@ name: Conda CI
 on: [push, pull_request]
 
 env:
-  sherpa_channel: sherpa
   xspec_channel: "xspec/channel/test"
-  miniconda_loc: ${{ github.workspace }}/miniconda
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
 
 jobs:
