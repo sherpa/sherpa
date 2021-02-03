@@ -713,9 +713,7 @@ def test_region_xxx_validates_invalid_input(ptype, kwargs, setup_confidence):
 @pytest.mark.parametrize("ptype", ['ru', 'rp'])
 @pytest.mark.parametrize("kwargs",
                          [{'min': [0, 0]}, {'max': [120, 1e-3]},
-                          pytest.param({'min': (0, 0)}, marks=pytest.mark.xfail),
-                          pytest.param({'max': (120, 1e-3)}, marks=pytest.mark.xfail),
-                         ])
+                          {'min': (0, 0)}, {'max': (120, 1e-3)}])
 def test_region_xxx_issue_1093(ptype, kwargs, setup_confidence):
     """Using min=(0,20) fails when the min value is < param min (or > param max)
 

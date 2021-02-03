@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -2515,6 +2515,23 @@ class Confidence2D(DataContour, Point):
 
     def _region_init(self, fit, par0, par1):
 
+        # Issue #1093 points out that if min or max is a tuple
+        # we can have a problem, as below the code can assign
+        # to an element of one of them. So ensure we have a list
+        # not a tuple.
+        #
+        if self.min is not None:
+            try:
+                self.min = list(self.min)
+            except TypeError:
+                raise ConfidenceErr('badarg', 'Parameter limits', 'a list') from None
+
+        if self.max is not None:
+            try:
+                self.max = list(self.max)
+            except TypeError:
+                raise ConfidenceErr('badarg', 'Parameter limits', 'a list') from None
+
         self.stat = fit.calc_stat()
         self.xlabel = par0.fullname
         self.ylabel = par1.fullname
@@ -2562,10 +2579,6 @@ class Confidence2D(DataContour, Point):
 
                 if max1 is not None and not numpy.isnan(max1):
                     self.max[1] = par1.val + max1
-
-            # check user limits for errors
-            if numpy.isscalar(self.min) or numpy.isscalar(self.max):
-                raise ConfidenceErr('badarg', 'Parameter limits', 'a list')
 
             for i in [0, 1]:
                 v = (self.max[i] + self.min[i]) / 2.

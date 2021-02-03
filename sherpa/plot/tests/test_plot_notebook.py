@@ -328,7 +328,7 @@ def test_regproj(old_numpy_printing, override_plot_backend):
     assert '<div class="dataname">y</div><div class="dataval">[ 306.854444  282.795953  259.744431  237.699877  216.662291  196.631674\n' in r
 
     assert '<div class="dataname">levels</div><div class="dataval">[  3.606863   7.491188  13.140272]</div>' in r
-    assert '<div class="dataname">min</div><div class="dataval">(-2, -1)</div>' in r
-    assert '<div class="dataname">max</div><div class="dataval">(2, 2)</div>' in r
+    assert '<div class="dataname">min</div><div class="dataval">[-2, -1]</div>' in r
+    assert '<div class="dataname">max</div><div class="dataval">[2, 2]</div>' in r
 
     assert '<div class="dataname">nloop</div><div class="dataval">(10, 20)</div>' in r
