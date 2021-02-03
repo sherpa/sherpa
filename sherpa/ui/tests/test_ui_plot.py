@@ -2651,7 +2651,7 @@ def test_fit_contour_recalc(session):
 @requires_pylab
 @pytest.mark.parametrize("ptype",
                          ["resid", "ratio", "delchi"])
-def test_plot_fit_xxx_pylab(ptype):
+def test_plot_fit_xxx_pylab(ptype, clean_ui):
     """Just ensure we can create a plot_fit_xxx call."""
 
     from matplotlib import pyplot as plt
