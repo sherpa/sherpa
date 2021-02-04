@@ -442,7 +442,7 @@ def sample_flux(fit, data, src,
 
     See Also
     --------
-    calc_flux
+    calc_flux, calc_sample_flux
 
     Notes
     -----
@@ -529,6 +529,85 @@ def sample_flux(fit, data, src,
 
 def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
                      confidence):
+    """Given a set of parameter samples, estimate the flux distribution.
+
+    This is similar to sample_flux but returns values for both the full
+    and component models (which can be the same). The set of parameter
+    samples is searched to remove rows where the parameters lie outside
+    the soft limits, and then this set of rows is used to calculate the
+    flux of the modelcomponent expression (the flux for the full model
+    is taken from the samples argument). The resulting set of fluxes is
+    used to calculate the median and the confidence range.
+
+    .. versionchanged:: 4.13.1
+       The clipping now includes parameters at the soft limits;
+       previously they were excluded which could cause problems with
+       parameters for which we can only calculate an upper limit.
+
+    Parameters
+    ----------
+    id : int or str
+        The dataset identifier. It must exist and have an associated model in
+        session.
+    lo : number or None, optional
+        The lower edge of the dataspace range for the flux calculation.
+        If None then the lower edge of the data grid is used.
+    hi : number or None, optional
+        The upper edge of the dataspace range for the flux calculation.
+        If None then the upper edge of the data grid is used.
+    session : sherpa.ui.utils.Session instance
+        Defines the data, model, and fit.
+    fit : sherpa.fit.Fit instance
+        The fit object. The src parameter is assumed to be a subset of
+        the fit.model expression (to allow for calculating the flux of
+        a model component), and the fit.data object matches the data
+        object. The fit.model argument is expected to include instrumental
+        models (for PHA data sets). These objects can represent
+        simultaneous fits (e.g. sherpa.data.DataSimulFit and
+        sherpa.models.model.SimulFitModel).
+    data : sherpa.data.Data subclass
+        The data object to use. This is not a DataSimulFit instance.
+    samples
+        The output of sample_flux for the data (assumed to have been
+        created with method=calc_energy_flux and clip='hard').
+    modelcomponent : sherpa.models.Arithmetic instance
+        The source model (without instrument response for PHA data) that
+        is used for calculating the flux. This is not a SimulFitModel
+        instance.
+    confidence : number
+        The confidence value to return, as a percentage (0-100).
+
+    Returns
+    -------
+    (fullflux, cptflux, vals)
+       The fullflux and cptflux arrays contain the results for
+       the full source model and the flux of the `modelcomponent`
+       argument (they can be the same). They have three elements
+       and give the median value, upper quartile, and lower
+       quartile values of the flux distribution. The vals array
+       has a shape of ``(num+1, N+2)``, where ``N`` is the number of
+       free parameters and num is the `num` parameter. The rows of
+       this array contain the flux value for the iteration (for
+       the full source model), the parameter values, and then the
+       statistic value for this set of parameters.
+
+    See Also
+    --------
+    calc_flux, calc_sample_flux
+
+    Notes
+    -----
+    This function is in the process of being documented and
+    re-written, as it contains a lot of redundancy and the semantics
+    of some of the options are unclear.
+
+    The summary output displayed by this routine - giving the median
+    and confidence ranges - is controlled by the standard Sherpa
+    logging instance, and can be hidden by changing the logging to a
+    level greater than "INFO" (e.g. with
+    `sherpa.utils.logging.SherpaVerbosity`).
+
+    """
 
     def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
 

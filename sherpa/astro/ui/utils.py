@@ -13258,15 +13258,19 @@ class Session(sherpa.ui.utils.Session):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
-        from a normal distribution, evaluate the model, and sum the
-        model over the given range (the flux). Return the parameter
-        values used, together with the median, upper, and lower
-        quantiles of the flux distribution.
+        from a normal distribution, filter out samples that lie
+        outside the soft limits of the parameters, evaluate the model,
+        and sum the model over the given range (the flux). Return the
+        parameter values used, together with the median, upper, and
+        lower quantiles of the flux distribution.
 
         .. versionchanged:: 4.13.1
            The `id` parameter is now used if set (previously the
            default dataset was always used). The screen output is now
-           controlled by the Sherpa logging setup.
+           controlled by the Sherpa logging setup. The flux
+           calculation no-longer excludes samples at the parameter
+           soft limits, as this could cause an over-estimation of the
+           flux when a parameter is only an upper limit.
 
         Parameters
         ----------
