@@ -13429,7 +13429,7 @@ class Session(sherpa.ui.utils.Session):
                                             bkg_id=bkg_id)
         else:
             samples = self.sample_energy_flux(lo=lo, hi=hi, id=id, num=niter,
-                                              scales=scales,
+                                              scales=scales, clip='hard',
                                               correlated=correlated,
                                               numcores=numcores,
                                               bkg_id=bkg_id)
