@@ -13248,15 +13248,19 @@ class Session(sherpa.ui.utils.Session):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
-        from a normal distribution, evaluate the model, and sum the
-        model over the given range (the flux). Return the parameter
-        values used, together with the median, upper, and lower
-        quantiles of the flux distribution.
+        from a normal distribution, filter out samples that lie
+        outside the soft limits of the parameters, evaluate the model,
+        and sum the model over the given range (the flux). Return the
+        parameter values used, together with the median, upper, and
+        lower quantiles of the flux distribution.
 
         .. versionchanged:: 4.13.1
            The `id` parameter is now used if set (previously the
            default dataset was always used). The screen output is now
-           controlled by the Sherpa logging setup.
+           controlled by the Sherpa logging setup. The flux
+           calculation no-longer excludes samples at the parameter
+           soft limits, as this could cause an over-estimation of the
+           flux when a parameter is only an upper limit.
 
         Parameters
         ----------
@@ -13300,23 +13304,28 @@ class Session(sherpa.ui.utils.Session):
            to convert to erg/cm^2/s. This should not be changed from
            the default value.
         confidence : number, optional
-           The confidence level for the upper and lower quartiles,
-           as a percentage. The default is 68, so as to return
+           The confidence level for the upper and lower values, as a
+           percentage (0 to 100). The default is 68, so as to return
            the one-sigma range.
 
         Returns
         -------
         (fullflux, cptflux, vals)
-           The fullflux and cptflux arrays contain the results for
-           the full source model and the flux of the `modelcomponent`
+           The fullflux and cptflux arrays contain the results for the
+           full source model and the flux of the `modelcomponent`
            argument (they can be the same). They have three elements
-           and give the median value, upper quartile, and lower
-           quartile values of the flux distribution. The vals array
-           has a shape of ``(num+1, N+2)``, where ``N`` is the number of
+           and give the median value, the value containing 100 -
+           confidence/2 of the data, and the fraction containing
+           confidence/2 of the flux distribution. For the default
+           confidence argument of 68 this means the last two give the
+           one-sigma upper and lower bounds. The vals array has a
+           shape of ``(num+1, N+3)``, where ``N`` is the number of
            free parameters and num is the `num` parameter. The rows of
            this array contain the flux value for the iteration (for
-           the full source model), the parameter values, and then the
-           statistic value for this set of parameters.
+           the full source model), the parameter values, a flag
+           indicating whether any parameter in that row was clipped to
+           the hard-limits of the parameter, and the statistic value
+           for this set of parameters.
 
         See Also
         --------
@@ -13419,7 +13428,7 @@ class Session(sherpa.ui.utils.Session):
                                             bkg_id=bkg_id)
         else:
             samples = self.sample_energy_flux(lo=lo, hi=hi, id=id, num=niter,
-                                              scales=scales,
+                                              scales=scales, clip='hard',
                                               correlated=correlated,
                                               numcores=numcores,
                                               bkg_id=bkg_id)

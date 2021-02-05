@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,8 +32,8 @@ from sherpa.astro import ui
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_xspec
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, IdentifierErr, IOErr, \
-    ModelErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, \
+    IdentifierErr, IOErr, ModelErr
 import sherpa.astro.utils
 
 
@@ -1571,7 +1571,6 @@ def test_sample_flux_nologging(make_data_path, clean_astro_ui,
 
     assert len(caplog.records) == 0
 
-    scal = ui.get_covar_results().parmaxes
     with SherpaVerbosity('WARN'):
         ui.sample_flux(id=1, lo=1, hi=5, num=1,
                        correlated=False)
@@ -2040,6 +2039,74 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
     stats = vals[:, -1]
     # assert (stats > 0).all()
     assert (stats > 0).sum() == 81
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_sample_flux_457(make_data_path, clean_astro_ui,
+                         hide_logging, reset_seed):
+    """What happens with upper-bounds?
+
+    The absorption is an upper limit, so check what happens
+    with the filtered data? Issue #457 noted that values at
+    the soft limits were not being included, causing a bias
+    (at least for this situation, when nh=0).
+
+    """
+
+    ui.set_default_id('bob')
+    ui.set_stat('chi2datavar')
+
+    # Try to ensure we get some clipping.
+    #
+    np.random.seed(8077)
+
+    # we want niter to be even so that the returned number of
+    # values (niter+1) is odd, as that makes the median check
+    # easier.
+    #
+    niter = 100
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.subtract()
+    ui.notice(0.5, 6)
+    ui.set_source(ui.xsphabs.gal * ui.powlaw1d.p1)
+    ui.fit()
+    ui.covar()
+    scal = ui.get_covar_results().extra_output
+
+    flux1, flux2, vals = ui.sample_flux(p1, lo=0.5, hi=7, num=niter,
+                                        correlated=True, scales=scal)
+
+    # Values taken from the screen output
+    assert flux1[0] == pytest.approx(7.50199e-13)
+    assert flux1[1] == pytest.approx(7.50199e-13 + 3.64329e-14)
+    assert flux1[2] == pytest.approx(7.50199e-13 - 2.87033e-14)
+
+    assert flux2[0] == pytest.approx(8.19482e-13)
+    assert flux2[1] == pytest.approx(8.19482e-13 + 5.42782e-14)
+    assert flux2[2] == pytest.approx(8.19482e-13 - 6.87875e-14)
+
+    # unabsorbed flux should be >= absorbed.
+    assert np.all(flux2 >= flux1)
+    assert flux1.shape == (3, )
+    assert vals.shape == (niter + 1, 6)
+
+    # How many clipped values are there?
+    #
+    clipped = vals[:, -2] == 1
+    nhs = vals[:, 1]
+    assert (nhs[~clipped] > 0).all()
+    assert (nhs[clipped] == 0).all()
+    assert clipped.sum() == 17
+
+    # Although there are 17 clipped values, they all have a non-zero statistic
+    # as the values have been clipped to the soft limits. So in this case
+    # issue #751 isn't an issue.
+    #
+    stats = vals[:, -1]
+    assert (stats > 0).sum() == (niter + 1)
 
 
 @requires_data
