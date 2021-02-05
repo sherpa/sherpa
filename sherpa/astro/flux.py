@@ -630,16 +630,12 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     softmins = fit.model.thawedparmins
     softmaxs = fit.model.thawedparmaxes
 
-    def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
+    # We have to use columns 1 to n-1 of samples
+    valid = numpy.ones(samples.shape[0], dtype=numpy.bool)
+    for col, pmin, pmax in zip(samples.T[1:-1], softmins, softmaxs):
+        valid &= (col >= pmin) & (col <= pmax)
 
-        for i, (pmin, pmax) in enumerate(zip(mysoftmins, mysoftmaxs), 1):
-            parvals = mysamples[:, i]
-            tmp = (parvals >= pmin) & (parvals <= pmax)
-            mysamples = mysamples[tmp]
-
-        return mysamples
-
-    mysim = simulated_pars_within_ranges(samples, softmins, softmaxs)
+    mysim = samples[valid]
 
     size = len(mysim[:, 0])
     oflx = numpy.zeros(size)  # observed/absorbed flux
