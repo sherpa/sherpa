@@ -45,7 +45,7 @@ from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     DataHistogramPlot
 
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
 from sherpa.utils.testing import requires_plotting, requires_pylab
 
 
@@ -146,9 +146,6 @@ def test_plot_prefs_xxx(session, ptype, arg):
     defaults to 'False'; b) each plot type has this setting; c) we
     do not need to check all settings.
 
-    Some tests fail due to missing plot preferences when there's
-    no plotting backend (e.g. missing 'xlog' settings), so skip
-    these tests in this case.
     """
 
     s = session()
@@ -1958,6 +1955,46 @@ def test_data_plot_recalc(session):
     assert p.xlo == pytest.approx([20, 30, 40])
     assert p.xhi == pytest.approx([25, 40, 60])
     assert p.y == pytest.approx([10, 12, 14])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,extraargs",
+                         [('model', []), ('model_component', ['mdl']),
+                          ('source', []), ('source_component', ['mdl'])])
+def test_xxx_plot_nodata(ptype, extraargs, session):
+    """Basic testing of get_xxx_plot when there's no data"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+    retval = func(*extraargs, recalc=False)
+    assert retval.y is None
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,extraargs",
+                         [('model', []), ('model_component', ['mdl']),
+                          ('source', []), ('source_component', ['mdl'])])
+def test_xxx_plot_nodata_recalc(ptype, extraargs, session):
+    """Basic testing of get_xxx_plot when there's no data and recalc=True"""
+
+    s = session()
+    s._add_model_types(basic)
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+    s.set_source(mdl)
+
+    func = getattr(s, 'get_{}_plot'.format(ptype))
+    with pytest.raises(IdentifierErr):
+        func(*extraargs)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])

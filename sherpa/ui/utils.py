@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -10538,7 +10538,10 @@ class Session(NoNewAttributesAfterInit):
         #
         try:
             is_int = isinstance(self.get_data(id), sherpa.data.Data1DInt)
-        except IdentifierErr:
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+
             is_int = False
 
         if is_int:
@@ -10664,15 +10667,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        plot = self.get_data_plot(id, recalc=False)
         try:
-            d = self.get_data(id)
-            if isinstance(d, sherpa.data.Data1DInt):
-                return self._datahistplot.histo_prefs
-
-        except IdentifierErr:
-            pass
-
-        return self._dataplot.plot_prefs
+            return plot.histo_prefs
+        except AttributeError:
+            return plot.plot_prefs
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None, recalc=True):
@@ -10708,7 +10707,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(d, sherpa.data.Data1DInt):
             plotobj = self._modelhistplot
         else:
@@ -10778,7 +10783,13 @@ class Session(NoNewAttributesAfterInit):
                                 "\n is set for dataset {}.".format(id) +
                                 " You should use get_model_plot instead.")
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(d, sherpa.data.Data1DInt):
             plotobj = self._sourcehistplot
         else:
@@ -10853,7 +10864,13 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(d, sherpa.data.Data1DInt):
             plotobj = self._compmdlhistplot
         else:
@@ -10928,7 +10945,13 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
         elif isinstance(d, sherpa.data.Data1DInt):
@@ -10994,15 +11017,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        plot = self.get_model_plot(id, recalc=False)
         try:
-            d = self.get_data(id)
-            if isinstance(d, sherpa.data.Data1DInt):
-                return self._modelhistplot.histo_prefs
-
-        except IdentifierErr:
-            pass
-
-        return self._modelplot.plot_prefs
+            return plot.histo_prefs
+        except AttributeError:
+            return plot.plot_prefs
 
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.
@@ -11416,7 +11435,7 @@ class Session(NoNewAttributesAfterInit):
         >>> contour_data()
 
         """
-        return self._datacontour.contour_prefs
+        return self.get_data_contour(id, recalc=False).contour_prefs
 
     def get_model_contour(self, id=None, recalc=True):
         """Return the data used by contour_model.
@@ -11562,7 +11581,7 @@ class Session(NoNewAttributesAfterInit):
         >>> contour_model(overcontour=True)
 
         """
-        return self._modelcontour.contour_prefs
+        return self.get_model_contour(id, recalc=False).contour_prefs
 
     def get_fit_contour(self, id=None, recalc=True):
         """Return the data used by contour_fit.
@@ -13614,10 +13633,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # Unlike most plot_xxx routines, get_pdf_plot isn't very
-        # useful here.
-        #
-        plotobj = self._pdfplot
+        plotobj = self.get_pdf_plot()
         if not replot:
             plotobj.prepare(points, bins, normed, xlabel, name)
 
@@ -13685,10 +13701,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # Unlike most plot_xxx routines, get_cdf_plot isn't very
-        # useful here.
-        #
-        plotobj = self._cdfplot
+        plotobj = self.get_cdf_plot()
         if not replot:
             plotobj.prepare(points, xlabel, name)
 
@@ -13763,10 +13776,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # Unlike most plot_xxx routines, get_trace_plot isn't very
-        # useful here.
-        #
-        plotobj = self._traceplot
+        plotobj = self.get_trace_plot()
         if not replot:
             plotobj.prepare(points, xlabel, name)
 
@@ -13838,10 +13848,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # Unlike most plot_xxx routines, get_scatter_plot isn't very
-        # useful here.
-        #
-        plotobj = self._scatterplot
+        plotobj = self.get_scatter_plot()
         if not replot:
             plotobj.prepare(x, y, xlabel, ylabel, name)
 

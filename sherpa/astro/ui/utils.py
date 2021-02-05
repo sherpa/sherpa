@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -10231,34 +10231,6 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    def get_data_plot_prefs(self, id=None):
-
-        try:
-            d = self.get_data(id)
-            if isinstance(d, sherpa.astro.data.DataPHA):
-                return self._dataphaplot.histo_prefs
-
-        except IdentifierErr:
-            pass
-
-        return super().get_data_plot_prefs(id)
-
-    get_data_plot_prefs.__doc__ = sherpa.ui.utils.Session.get_data_plot_prefs.__doc__
-
-    def get_model_plot_prefs(self, id=None):
-
-        try:
-            d = self.get_data(id)
-            if isinstance(d, sherpa.astro.data.DataPHA):
-                return self._modelhisto.histo_prefs
-
-        except IdentifierErr:
-            pass
-
-        return super().get_model_plot_prefs(id)
-
-    get_model_plot_prefs.__doc__ = sherpa.ui.utils.Session.get_model_plot_prefs.__doc__
-
     def get_data_plot(self, id=None, recalc=True):
         try:
             d = self.get_data(id)
@@ -10367,7 +10339,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrosourceplot
             if recalc:
@@ -10414,7 +10392,13 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrocompmdlplot
             if recalc:
@@ -10433,7 +10417,13 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        d = self.get_data(id)
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+            d = None
+
         if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrocompsrcplot
             if recalc:
