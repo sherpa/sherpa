@@ -13528,22 +13528,17 @@ class Session(sherpa.ui.utils.Session):
         if not Xrays:
             raise NotImplementedError("sample_flux(Xrays=False) is currently unsupported")
 
-        ids, fit = self._get_fit(id)
-        data = self.get_data(id)
-        src = None
+        _, fit = self._get_fit(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
-            src = self.get_bkg_source(id, bkg_id)
         else:
-            src = self.get_source(id)
+            data = self.get_data(id)
 
-        if modelcomponent is None:
-            modelcomponent = src
+        if (modelcomponent is not None) and \
+           not isinstance(modelcomponent, sherpa.models.model.Model):
+            raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
         correlated = sherpa.utils.bool_cast(correlated)
-
-        if not isinstance(modelcomponent, sherpa.models.model.Model):
-            raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
         # Why is this +1? The original comment was
         # "num+1 cause sample energy flux is under-reporting its result?"

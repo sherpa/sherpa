@@ -543,10 +543,10 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
        The clipping now includes parameters at the soft limits;
        previously they were excluded which could cause problems with
        parameters for which we can only calculate an upper limit. The
-       id and session arguments have been removed. The statistic value
-       is now returned for each row, even those that were excluded
-       from the flux calculation.
-
+       id and session arguments have been removed and the
+       modelcomponent argument can now be set to None. The statistic
+       value is now returned for each row, even those that were
+       excluded from the flux calculation.
 
     Parameters
     ----------
@@ -569,10 +569,11 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     samples
         The output of sample_flux for the data (assumed to have been
         created with method=calc_energy_flux and clip='hard').
-    modelcomponent : sherpa.models.Arithmetic instance
-        The source model (without instrument response for PHA data) that
-        is used for calculating the flux. This is not a SimulFitModel
-        instance.
+    modelcomponent : sherpa.models.Arithmetic instance or None
+        The source model (without instrument response for PHA data)
+        that is used for calculating the "unabsorbed" flux. This is
+        not a SimulFitModel instance. If None then we just re-use the
+        input flux values (first column of samples).
     confidence : number, optional
        The confidence level for the upper and lower values, as a
        percentage (0 to 100). A value of 68.3 will return the
@@ -636,14 +637,17 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
 
     nrows = samples.shape[0]
     oflx = samples[:, 0]       # observed/absorbed flux
-    iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
+    if modelcomponent is None:
+        iflx = oflx
+    else:
+        iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
 
     mystat = numpy.zeros((nrows, 1), dtype=samples.dtype)
     try:
         for nn in range(nrows):
             # Need to extract the subset that contains the parameters
             fit.model.thawedpars = samples[nn, 1:-1]
-            if valid[nn]:
+            if valid[nn] and modelcomponent is not None:
                 iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
 
             mystat[nn, 0] = fit.calc_stat()
@@ -651,6 +655,9 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     finally:
         fit.model.thawedpars = thawedpars
 
+    # We could avoid calculating the iflx values if modelcomponent is None
+    # but it would complicate the code for essentially no time saving.
+    #
     hwidth = confidence / 2
     result = []
     for flx in [oflx, iflx]:
