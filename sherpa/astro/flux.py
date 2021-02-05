@@ -615,6 +615,21 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     """
 
+    thawedpars = [par for par in fit.model.pars if not par.frozen]
+
+    # Check the number of free parameters agrees with the samples argument,
+    # noting that each row in samples is <flux> + <free pars> + <clip>. This is
+    # a requirement for calling this routine, so is just handled as an
+    # assert (as this is not intended for a user-level routine)
+    #
+    nthawed = len(thawedpars)
+    npars = samples.shape[1] - 2
+    assert nthawed == npars, (nthawed, npars)
+
+    # Remove any row where a parameter lies outside the min/max range
+    softmins = fit.model.thawedparmins
+    softmaxs = fit.model.thawedparmaxes
+
     def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
 
         for i, (pmin, pmax) in enumerate(zip(mysoftmins, mysoftmaxs), 1):
@@ -623,6 +638,12 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
             mysamples = mysamples[tmp]
 
         return mysamples
+
+    mysim = simulated_pars_within_ranges(samples, softmins, softmaxs)
+
+    size = len(mysim[:, 0])
+    oflx = numpy.zeros(size)  # observed/absorbed flux
+    iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
 
     #
     # For later restoration
@@ -642,24 +663,16 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     try:
 
-        softmins = fit.model.thawedparmins
-        softmaxs = fit.model.thawedparmaxes
-        mysim = simulated_pars_within_ranges(samples, softmins, softmaxs)
-
-        size = len(mysim[:, 0])
-        oflx = numpy.zeros(size)  # observed/absorbed flux
-        iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
-        thawedpars = [par for par in fit.model.pars if not par.frozen]
-
         logger.setLevel(logging.ERROR)
 
         mystat = []
         for nn in range(size):
             session.set_source(id, orig_source)
             oflx[nn] = mysim[nn, 0]
-            for ii in range(len(thawedpars)):
-                val = mysim[nn, ii + 1]
-                session.set_par(thawedpars[ii].fullname, val)
+
+            for par, parval in zip(thawedpars, mysim[nn, 1:]):
+                session.set_par(par.fullname, parval)
+
             session.set_source(id, modelcomponent)
             iflx[nn] = session.calc_energy_flux(lo=lo, hi=hi, id=id)
             #####################################
