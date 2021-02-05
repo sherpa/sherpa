@@ -546,7 +546,9 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
        id and session arguments have been removed and the
        modelcomponent argument can now be set to None. The statistic
        value is now returned for each row, even those that were
-       excluded from the flux calculation.
+       excluded from the flux calculation. The information on what
+       rows were excluded is now set, rather than reporting those rows
+       that exceeded the hard parameter limits.
 
     Parameters
     ----------
@@ -594,8 +596,8 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
         parameter. The rows of this array contain the flux value for
         the iteration (for the full source model), the parameter
         values, a flag indicating whether any parameter in that row
-        was clipped to the hard-limits of the parameter, and the
-        statistic value for this set of parameters.
+        was clipped (and so was excluded from the flux calculation),
+        and the statistic value for this set of parameters.
 
     See Also
     --------
@@ -603,10 +605,6 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
 
     Notes
     -----
-    This function is in the process of being documented and
-    re-written, as it contains a lot of redundancy and the semantics
-    of some of the options are unclear.
-
     The summary output displayed by this routine - giving the median
     and confidence ranges - is controlled by the standard Sherpa
     logging instance, and can be hidden by changing the logging to a
@@ -651,6 +649,12 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
                 iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
 
             mystat[nn, 0] = fit.calc_stat()
+
+            # Replace the input "clipped" value (from clip='hard') with
+            # the calculated clip here (essentially clip='soft'),
+            # remembering to invert the flag.
+            #
+            samples[nn, -1] = 0 if valid[nn] else 1
 
     finally:
         fit.model.thawedpars = thawedpars

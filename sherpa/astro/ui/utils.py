@@ -13391,6 +13391,8 @@ class Session(sherpa.ui.utils.Session):
            soft limits, as this could cause an over-estimation of the
            flux when a parameter is only an upper limit. The statistic
            value is now returned for each row, even those that were
+           excluded from the flux calculation. The last-but-one column
+           of the returned `vals` array now records the rows that were
            excluded from the flux calculation.
 
         Parameters
@@ -13454,9 +13456,9 @@ class Session(sherpa.ui.utils.Session):
            free parameters and num is the `num` parameter. The rows of
            this array contain the flux value for the iteration (for
            the full source model), the parameter values, a flag
-           indicating whether any parameter in that row was clipped to
-           the hard-limits of the parameter, and the statistic value
-           for this set of parameters.
+           indicating whether any parameter in that row was clipped
+           (and so was excluded from the flux calculation), and the
+           statistic value for this set of parameters.
 
         See Also
         --------

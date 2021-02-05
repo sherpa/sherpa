@@ -2026,16 +2026,34 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
     assert flsig > fluxes.min()
     assert fusig < fluxes.max()
 
-    # The clip values are not set (since these are set to the hard limits)
+    # The clip values are set.
     #
-    clips = vals[:, -2]
-    assert (clips == 0).all()
+    clipped = vals[:, -2] != 0
+    assert clipped.sum() == 20
 
     # All the statistic values should be set (> 0). This wasn't until #751
     # was addressed.
     #
     stats = vals[:, -1]
     assert (stats > 0).all()
+
+    # We assume that the stats for the clipped values are worse
+    # than for the unclipped values. Unfortunately they are not guaranteed
+    # to not overlap, so all we can do is ensure some simple checks,
+    # such as the minimum values are different.
+    #
+    assert stats[clipped].min() >= stats[~clipped].min()
+
+    # check that the calculated median is the same as the median
+    # we can calculate with the unclipped data. This is for flux1 not
+    # flux2 (although in this test they are the same).
+    #
+    fcalc = np.median(fluxes[~clipped])
+    assert fcalc == pytest.approx(fmed)
+
+    # regression test
+    assert stats[clipped][0] == pytest.approx(51.56646084)
+    assert stats[~clipped][-1] == pytest.approx(22.10377607)
 
 
 @requires_xspec
@@ -2090,17 +2108,15 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
     assert flux1.shape == (3, )
     assert vals.shape == (niter + 1, 6)
 
-    # How many clipped values are there?
+    # Although 17 rows were "hard clipped" (this was found in earlier versions
+    # of the code which returned the hard-clipped setting), there are no
+    # soft-clipped values, which is what vals[:, -2] now reports.
     #
-    clipped = vals[:, -2] == 1
-    nhs = vals[:, 1]
-    assert (nhs[~clipped] > 0).all()
-    assert (nhs[clipped] == 0).all()
-    assert clipped.sum() == 17
+    clipped = vals[:, -2] != 0
+    assert clipped.sum() == 0
 
-    # Although there are 17 clipped values, they all have a non-zero statistic
-    # as the values have been clipped to the soft limits. So in this case
-    # issue #751 isn't an issue.
+    # A check for issue #751 (although this particular case didn't show the
+    # issue as there are no soft-clipped rows).
     #
     stats = vals[:, -1]
     assert (stats > 0).sum() == (niter + 1)
@@ -2243,7 +2259,8 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
     # Ideally the best-fit location is the best fit!
     assert stats.min() >= stat0
 
-    # Check the clip column too
+    # Check the clip column too. This lists the soft-clipped rows,
+    # which for this case is ?
     #
     clips = res[2][:, 3]
     assert (clips == 0).all()
