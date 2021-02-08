@@ -655,11 +655,8 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
                 else:
                     par.set(parval)
 
-            # This will calculate fluxes we do not use (when valid has
-            # False values in it) but the assumption is that this is
-            # a small number of rows.
-            #
-            iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
+            if valid[nn]:
+                iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
 
             mystat[nn, 0] = fit.calc_stat()
 
