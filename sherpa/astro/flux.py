@@ -543,7 +543,10 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
        The clipping now includes parameters at the soft limits;
        previously they were excluded which could cause problems with
        parameters for which we can only calculate an upper limit. The
-       id and session arguments have been removed.
+       id and session arguments have been removed. The statistic value
+       is now returned for each row, even those that were excluded
+       from the flux calculation.
+
 
     Parameters
     ----------
@@ -622,7 +625,7 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     npars = samples.shape[1] - 2
     assert nthawed == npars, (nthawed, npars)
 
-    # Remove any row where a parameter lies outside the min/max range
+    # Identify any row where a parameter lies outside the min/max range
     softmins = fit.model.thawedparmins
     softmaxs = fit.model.thawedparmaxes
 
@@ -631,26 +634,34 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     for col, pmin, pmax in zip(samples.T[1:-1], softmins, softmaxs):
         valid &= (col >= pmin) & (col <= pmax)
 
-    mysim = samples[valid]
-
-    size = len(mysim[:, 0])
-    oflx = numpy.zeros(size)  # observed/absorbed flux
-    iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
+    nrows = samples.shape[0]
+    oflx = samples[:, 0]       # observed/absorbed flux
+    iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
 
     # For later restoration
     #
     orig_model_vals = fit.model.thawedpars
 
-    mystat = []
+    mystat = numpy.zeros((nrows, 1), dtype=samples.dtype)
     try:
-        for nn in range(size):
-            oflx[nn] = mysim[nn, 0]
+        for nn in range(nrows):
+            for par, parval in zip(thawedpars, samples[nn, 1:]):
+                # We have to worry about parameter values lying outside
+                # the soft range here.
+                if parval < par.min:
+                    par.set(par.min)
+                elif parval > par.max:
+                    par.set(par.max)
+                else:
+                    par.set(parval)
 
-            for par, parval in zip(thawedpars, mysim[nn, 1:]):
-                par.set(parval)
-
+            # This will calculate fluxes we do not use (when valid has
+            # False values in it) but the assumption is that this is
+            # a small number of rows.
+            #
             iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
-            mystat.append(fit.calc_stat())
+
+            mystat[nn, 0] = fit.calc_stat()
 
     finally:
         fit.model.thawedpars = orig_model_vals
@@ -658,19 +669,15 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     hwidth = confidence / 2
     result = []
     for flx in [oflx, iflx]:
-        result.append(numpy.percentile(flx, [50, 50 + hwidth, 50 - hwidth]))
+        result.append(numpy.percentile(flx[valid],
+                                       [50, 50 + hwidth, 50 - hwidth]))
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
         msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
         info(msg)
 
-    sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
-    samples = numpy.concatenate((samples, sampletmp), axis=1)
-
-    for index in range(size):
-        samples[index][-1] = mystat[index]
-
+    samples = numpy.concatenate((samples, mystat), axis=1)
     result.append(samples)
 
     return result

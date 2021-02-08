@@ -13260,7 +13260,9 @@ class Session(sherpa.ui.utils.Session):
            controlled by the Sherpa logging setup. The flux
            calculation no-longer excludes samples at the parameter
            soft limits, as this could cause an over-estimation of the
-           flux when a parameter is only an upper limit.
+           flux when a parameter is only an upper limit. The statistic
+           value is now returned for each row, even those that were
+           excluded from the flux calculation.
 
         Parameters
         ----------
