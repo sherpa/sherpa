@@ -2108,15 +2108,12 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
     assert flux1.shape == (3, )
     assert vals.shape == (niter + 1, 6)
 
-    # Although 17 rows were "hard clipped" (this was found in earlier versions
-    # of the code which returned the hard-clipped setting), there are no
-    # soft-clipped values, which is what vals[:, -2] now reports.
+    # There are 17 "clipped" rows.
     #
     clipped = vals[:, -2] != 0
-    assert clipped.sum() == 0
+    assert clipped.sum() == 17
 
-    # A check for issue #751 (although this particular case didn't show the
-    # issue as there are no soft-clipped rows).
+    # A check for issue #751.
     #
     stats = vals[:, -1]
     assert (stats > 0).sum() == (niter + 1)

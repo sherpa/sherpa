@@ -570,7 +570,7 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
         The data object to use. This is not a DataSimulFit instance.
     samples
         The output of sample_flux for the data (assumed to have been
-        created with method=calc_energy_flux and clip='hard').
+        created with method=calc_energy_flux and clip='soft').
     modelcomponent : sherpa.models.Arithmetic instance or None
         The source model (without instrument response for PHA data)
         that is used for calculating the "unabsorbed" flux. This is
@@ -624,14 +624,8 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     npars = samples.shape[1] - 2
     assert nthawed == npars, (nthawed, npars)
 
-    # Identify any row where a parameter lies outside the min/max range
-    softmins = fit.model.thawedparmins
-    softmaxs = fit.model.thawedparmaxes
-
-    # We have to use columns 1 to n-1 of samples
-    valid = numpy.ones(samples.shape[0], dtype=bool)
-    for col, pmin, pmax in zip(samples.T[1:-1], softmins, softmaxs):
-        valid &= (col >= pmin) & (col <= pmax)
+    # Use the clip column from samples (after inverting the logic).
+    valid = samples[:, -1] == 0
 
     nrows = samples.shape[0]
     oflx = samples[:, 0]       # observed/absorbed flux
@@ -648,13 +642,10 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
             if valid[nn] and modelcomponent is not None:
                 iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
 
-            mystat[nn, 0] = fit.calc_stat()
-
-            # Replace the input "clipped" value (from clip='hard') with
-            # the calculated clip here (essentially clip='soft'),
-            # remembering to invert the flag.
+            # Evaluate the full model expression, not just modelcomponent,
+            # to calculate the statistic.
             #
-            samples[nn, -1] = 0 if valid[nn] else 1
+            mystat[nn, 0] = fit.calc_stat()
 
     finally:
         fit.model.thawedpars = thawedpars
