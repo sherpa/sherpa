@@ -614,7 +614,7 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
 
     """
 
-    thawedpars = [par for par in fit.model.pars if not par.frozen]
+    thawedpars = fit.model.thawedpars
 
     # Check the number of free parameters agrees with the samples argument,
     # noting that each row in samples is <flux> + <free pars> + <clip>. This is
@@ -638,30 +638,18 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     oflx = samples[:, 0]       # observed/absorbed flux
     iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
 
-    # For later restoration
-    #
-    orig_model_vals = fit.model.thawedpars
-
     mystat = numpy.zeros((nrows, 1), dtype=samples.dtype)
     try:
         for nn in range(nrows):
-            for par, parval in zip(thawedpars, samples[nn, 1:]):
-                # We have to worry about parameter values lying outside
-                # the soft range here.
-                if parval < par.min:
-                    par.set(par.min)
-                elif parval > par.max:
-                    par.set(par.max)
-                else:
-                    par.set(parval)
-
+            # Need to extract the subset that contains the parameters
+            fit.model.thawedpars = samples[nn, 1:-1]
             if valid[nn]:
                 iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
 
             mystat[nn, 0] = fit.calc_stat()
 
     finally:
-        fit.model.thawedpars = orig_model_vals
+        fit.model.thawedpars = thawedpars
 
     hwidth = confidence / 2
     result = []
