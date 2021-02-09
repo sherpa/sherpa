@@ -39,11 +39,13 @@ from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
-           'ComponentSourcePlot', 'ARFPlot', 'BkgDataPlot',
-           'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
-           'BkgRatioPlot', 'BkgChisqrPlot',
-           'OrderPlot', 'ModelHistogram', 'BkgModelHistogram',
+__all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
+           'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'ARFPlot',
+           'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
+           'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
+           'BkgChisqrPlot', 'BkgSourcePlot',
+           'OrderPlot',
            'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
 
 
