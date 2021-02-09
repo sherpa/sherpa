@@ -19,7 +19,7 @@ or how much information to display whilst optimising a model.
 As an example, the default parameter values for the
 :py:class:`Levenberg-Marquardt <sherpa.optmethods.LevMar>`
 optimiser are::
-  
+
     >>> from sherpa.optmethods.LevMar
     >>> lm = LevMar()
     >>> print(lm)
@@ -47,7 +47,7 @@ Choosing an optimiser
 .. todo::
 
    Need to work on this section.
-   
+
 .. warning::
 
    The following may not correctly represent Sherpa's current capabilities,
@@ -95,7 +95,7 @@ Some points to take away from the discussions in the rest of this document.
   3. Get a feel for the range of values of the target function (in Sherpa this
      is the fit statistic), and the stability of the solution, by starting the
      minimization from several different parameter values.
-     
+
   4. Always check that the minimum "looks right" by visualizing the
      model and the data.
 
@@ -123,7 +123,7 @@ smaller. The routines continue to run until one of the following occurs:
   2. an excessive number of steps have been taken; or
   3. something strange happens to the fit statistic (e.g., it turns out to be
      discontinuous in some horrible way).
-     
+
 This description indicates that for the single-shot routines, there is a
 considerable emphasis on the initial search position, :math:`{\bf x}_0`, being
 reasonable. It may also be apparent that the values of these parameters should
@@ -188,14 +188,14 @@ Bearing this in mind, the single-shot minimizers in Sherpa are listed below:
   important structure; i.e. there should not be too many subsidiary minima.
   The search directions and distances to move are based on the shape of the
   target function near the initial guessed minimum, :math:`{\bf x}_0`,
-  with progressive movement towards the dominant local minimum. Since 
+  with progressive movement towards the dominant local minimum. Since
   this technique uses information about the local curvature of the fit
   statistic as well as its local gradients, the approach tends to stabilize the
   result in somce cases. I regard the techniques implemented in Sherpa as being
   good minimum-refiners for simple local topologies, since more assumptions
   about topology are made than in the NelderMead approach, but bad at
   finding global minima for target functions with complicated topologies.
-  
+
 Scatter-shot techniques
 -----------------------
 
@@ -223,14 +223,14 @@ The routines are listed below:
   subsidiary maxima and minima within the search space. It is intended
   for use with
   :py:class:`template models <sherpa.models.template.TemplateModel>`.
-  
+
 :py:class:`Monte Carlo <sherpa.optmethods.MonCar>`
   This is a simple population based, stochastic function minimizer. At
   each iteration it combines population vectors - each containing a set of
   parameter values - using a weighted difference. This optimiser can
   be used to find solutions to complex search spaces but is not guaranteed
   to find a global minimum. It is over-kill for relatively simple problems.
-  
+
 Summary and best-buy strategies
 ===============================
 
@@ -251,7 +251,7 @@ Optimiser            Type          Speed      Commentary
 NelderMead           single-shot   fast       OK for refining minima
 Levenberg-Marquardt  single-shot   fast       OK for refining minima
 GridSearch           scatter-shot  slow       OK for smooth functions
-Monte Carlo          scatter-shot  very slow  Good in many cases   
+Monte Carlo          scatter-shot  very slow  Good in many cases
 ===================  ============  =========  ======================
 
 Reference/API
@@ -261,3 +261,4 @@ Reference/API
    :maxdepth: 2
 
    optmethods
+   optfcts
