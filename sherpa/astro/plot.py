@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -615,8 +616,8 @@ class FluxHistogram(ModelHistogram):
     def prepare(self, fluxes, bins):
         """Define the histogram plot.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fluxes : numpy array
             The data, stored in a niter by (npar + 2) matrix, where
             each row is an iteration, the first column is the flux for
