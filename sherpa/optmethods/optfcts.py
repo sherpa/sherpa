@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,47 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Optimizing functions.
+
+These functions take a callback, the current set of parameters, the
+minimum and maximum parameter ranges, along with optional arguments,
+and return a tuple containing
+
+    status, parameters, statistic, message, dict
+
+where ``status`` is a boolean indicating whether the optimisation
+succeeded or not, parameters is the list of parameter values at the
+best-fit location, the statistic value at this location, a string
+message - when ``status`` is ``False`` this wil give information on the
+failure - and a dictionary which depends on the optimiser.
+
+The callback should return the current statistic value and an array
+of the statistic value per bin.
+
+Examples
+--------
+
+Fit a constant model to the array of values in ``y``, using a
+least-square statistic:
+
+>>> y = np.asarray([3, 2, 7])
+>>> def cb(pars):
+...     'Least-squares statistic value from fitting a constant model to y'
+...     dy = y - pars[0]
+...     dy *= dy
+...     return (dy.sum(), dy)
+...
+
+This can be evaluated using the `neldermead` optimiser, starting at a
+model value of 1 and bounded to the range 0 to 10000:
+
+>>> res = neldermead(cb, [1], [0], [1e4])
+>>> print(res)
+(True, array([4.]), 14.0, 'Optimization terminated successfully', {'info': True, 'nfev': 98})
+>>> print(f"Best-fit value: {res[1][0]}")
+Best-fit value: 4.0
+
+"""
 
 import random
 
