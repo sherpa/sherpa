@@ -52,13 +52,9 @@ The sherpa.plot module
       RatioContour
       Confidence1D
       Confidence2D
-      IntervalProjectionWorker
       IntervalProjection
-      IntervalUncertaintyWorker
       IntervalUncertainty
-      RegionProjectionWorker
       RegionProjection
-      RegionUncertaintyWorker
       RegionUncertainty
 
    .. rubric:: Functions
