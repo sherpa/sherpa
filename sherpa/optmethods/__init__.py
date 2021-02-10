@@ -24,6 +24,7 @@ The `OptMethod` class provides an interface to a number of optimisers.
 When creating an optimizer an optional name can be added; this name is
 only used in string representations of the class:
 
+>>> from sherpa.optmethods import NelderMead
 >>> opt = NelderMead()
 >>> print(opt)
 name         = simplex
@@ -35,7 +36,7 @@ step         = None
 iquad        = 1
 verbose      = 0
 
-A model is fit by sengdg the ``fit`` method a callback, the starting
+A model is fit by providing the ``fit`` method a callback, the starting
 point (parameter values), and parameter ranges. The callback should
 match::
 
