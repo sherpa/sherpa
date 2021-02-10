@@ -10394,36 +10394,27 @@ class Session(sherpa.ui.utils.Session):
         # - no stat argument and adds lo and hi arguments - which makes it
         # hard to use generic code here.
         #
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        plotobj = self._get_plotobj('source', d)
+        plotobj, data = self._get_plotobj('source', id, recalc=recalc)
         if not recalc:
             return plotobj
 
         src = self.get_source(id)
         try:
-            plotobj.prepare(d, src, lo=lo, hi=hi)
+            plotobj.prepare(data, src, lo=lo, hi=hi)
         except TypeError:
-            plotobj.prepare(d, src, stat=self.get_stat())
+            plotobj.prepare(data, src, stat=self.get_stat())
 
         return plotobj
 
     def get_fit_plot(self, id=None, recalc=True):
 
-        try:
-            d = self._get_pha_data(id)
-        except (ArgumentErr, IdentifierErr):
-            # Try to use the superclass for as much logic as possible
-            return super().get_fit_plot(id, recalc=recalc)
-
-        plotobj = self._get_plotobj('fit', d)
+        plotobj, data = self._get_plotobj('fit', id, recalc=recalc)
         if not recalc:
             return plotobj
+
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            # This repeats some of the calls we have already made
+            return super().get_fit_plot(id, recalc=recalc)
 
         dataobj = self.get_data_plot(id, recalc=recalc)
 
@@ -10431,7 +10422,7 @@ class Session(sherpa.ui.utils.Session):
         #
         # modelobj = self.get_model_plot(id, recalc=recalc)
         modelobj = sherpa.astro.plot.ModelPHAHistogram()
-        modelobj.prepare(d, self.get_model(id), stat=self.get_stat())
+        modelobj.prepare(data, self.get_model(id), stat=self.get_stat())
 
         plotobj.prepare(dataobj, modelobj)
         return plotobj

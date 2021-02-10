@@ -10670,30 +10670,24 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._splitplot
 
-    def _get_plotobj(self, plot, data):
+    def _get_plotobj(self, plot, id, recalc=False):
         """Return the plot object.
 
         Parameters
         ----------
         plot : str
             The plot type
-        data : sherpa.data.Data instance or None
-            The data type. If None then the default plot type is
-            returned.
+        id : int or str
+            The dataset identifier. If there is no dataset identified
+            with this id then the default plot type for the plot
+            option is returned (when recalc is False).
+        recalc : bool, optional
+            If True then the dataset must contain data.
 
         Returns
         -------
-        plotobj : sherpa.plot.Plot instance
-            The plot instance (it may not be a subclass of Plot, need to check)
-
-        Notes
-        -----
-
-        What about complex types like "fit"? Should there be a
-        two-step process that maps "fit" to "data", "model" and then
-        we call these individually, or should there be a special case?
-        For PHA datasets with fit we would want a special case (to get
-        grouping handled).
+        (plotobj, dataobj) : (sherpa.plot.Plot instance, sherpa.data.Data instance or None)
+            The plot instance and the dataobj or None.
 
         """
 
@@ -10703,17 +10697,22 @@ class Session(NoNewAttributesAfterInit):
         #
         (default, plots) = self._plot_store[plot]
 
-        if data is None:
-            return default
+        try:
+            data = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie from None
+
+            return (default, None)
 
         # Rely on the OrderedByMRO iteration order so that as soon as
         # we find an instance we can stop.
         #
         for k, v in plots.items():
             if isinstance(data, k):
-                return v
+                return (v, data)
 
-        return default
+        return (default, data)
 
     def get_data_plot(self, id=None, recalc=True):
         """Return the data used by plot_data.
@@ -10747,17 +10746,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('data', d)
+        plotobj, data = self._get_plotobj('data', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(d, self.get_stat())
+            plotobj.prepare(data, self.get_stat())
         return plotobj
 
     # DOC-TODO: discussion of preferences needs better handling
@@ -10917,17 +10908,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('model', d)
+        plotobj, data = self._get_plotobj('model', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(d, self.get_model(id), self.get_stat())
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     # also in sherpa.astro.utils (does not copy this docstring)
@@ -10993,16 +10976,9 @@ class Session(NoNewAttributesAfterInit):
                                 "\n is set for dataset {}.".format(id) +
                                 " You should use get_model_plot instead.")
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        plotobj = self._get_plotobj('source', d)
+        plotobj, data = self._get_plotobj('source', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(d, self.get_source(id), stat=self.get_stat())
+            plotobj.prepare(data, self.get_source(id), stat=self.get_stat())
 
         return plotobj
 
@@ -11286,15 +11262,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('fit', d)
+        plotobj, _ = self._get_plotobj('fit', id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -11358,19 +11326,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('resid', d)
+        plotobj, data = self._get_plotobj('resid', id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(d, self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_delchi_plot(self, id=None, recalc=True):
@@ -11429,19 +11389,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('delchi', d)
+        plotobj, data = self._get_plotobj('delchi', id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(d, self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
 
@@ -11501,19 +11453,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('chisqr', d)
+        plotobj, data = self._get_plotobj('chisqr', id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(d, self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_ratio_plot(self, id=None, recalc=True):
@@ -11572,19 +11516,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            d = None
-
-        plotobj = self._get_plotobj('ratio', d)
+        plotobj, data = self._get_plotobj('ratio', id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(d, self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_data_contour(self, id=None, recalc=True):
