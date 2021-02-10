@@ -310,6 +310,14 @@ class Session(NoNewAttributesAfterInit):
         self._plot_store['delchi'] = (sherpa.plot.DelchiPlot(), OrderedByMRO())
         self._plot_store['chisqr'] = (sherpa.plot.ChisqrPlot(), OrderedByMRO())
 
+        self._plot_store['psf'] = (sherpa.plot.PSFPlot(), OrderedByMRO())
+        self._plot_store['kernel'] = (sherpa.plot.PSFKernelPlot(), OrderedByMRO())
+        self._plot_store['lr'] = (sherpa.plot.LRHistogram(), None)
+        self._plot_store['pdf'] = (sherpa.plot.PDFPlot(), None)
+        self._plot_store['cdf'] = (sherpa.plot.CDFPlot(), None)
+        self._plot_store['trace'] = (sherpa.plot.TracePlot(), None)
+        self._plot_store['scatter'] = (sherpa.plot.ScatterPlot(), None)
+
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
 
@@ -318,14 +326,6 @@ class Session(NoNewAttributesAfterInit):
 
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
-
-        self._psfplot = sherpa.plot.PSFPlot()
-        self._kernelplot = sherpa.plot.PSFKernelPlot()
-        self._lrplot = sherpa.plot.LRHistogram()
-        self._pdfplot = sherpa.plot.PDFPlot()
-        self._cdfplot = sherpa.plot.CDFPlot()
-        self._traceplot = sherpa.plot.TracePlot()
-        self._scatterplot = sherpa.plot.ScatterPlot()
 
         self._datacontour = sherpa.plot.DataContour()
         self._modelcontour = sherpa.plot.ModelContour()
@@ -350,8 +350,8 @@ class Session(NoNewAttributesAfterInit):
             'ratio': [], # moved to _plot_store
             'delchi': [], # moved to _plot_store
             'chisqr': [], # moved to _plot_store
-            'psf': [self._psfplot],
-            'kernel': [self._kernelplot],
+            'psf': [], # moved to _plot_store
+            'kernel': [], # moved to _plot_store
             'compsource': [self._compsrcplot],
             'compmodel': [self._compmdlplot]
         }
@@ -8651,9 +8651,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        lrplot = self._lrplot
+        plotobj = self._plot_store['lr'][0]
         if not recalc:
-            return lrplot
+            return plotobj
 
         if null_model is None:
             raise TypeError("null model cannot be None")
@@ -8674,9 +8674,9 @@ class Session(NoNewAttributesAfterInit):
         info(results.format())
         self._pvalue_results = results
 
-        lrplot.prepare(ratios=results.ratios, bins=bins,
-                       niter=num, lr=results.lr, ppp=results.ppp)
-        return lrplot
+        plotobj.prepare(ratios=results.ratios, bins=bins,
+                        niter=num, lr=results.lr, ppp=results.ppp)
+        return plotobj
 
     #
     # Sampling functions
@@ -12048,9 +12048,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfplot
+        plotobj, data = self._get_plotobj('psf', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
+            plotobj.prepare(self.get_psf(id), data)
 
         return plotobj
 
@@ -12092,9 +12092,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelplot
+        plotobj, data = self._get_plotobj('kernel', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
+            plotobj.prepare(self.get_psf(id), data)
 
         return plotobj
 
@@ -12212,14 +12212,20 @@ class Session(NoNewAttributesAfterInit):
         plottype = plottype.strip().lower()
         if plottype == 'all':
             for plotinfo in self._plot_store.values():
-                for plot in [plotinfo[0]] + list(plotinfo[1].values()):
+                plots = [plotinfo[0]]
+                if plotinfo[1] is not None:
+                    plots += list(plotinfo[1].values())
+                for plot in plots:
                     set_item(plot)
 
         else:
             # TODO: this should error out if not known.
             if plottype in self._plot_store:
                 plotinfo = self._plot_store[plottype]
-                for plot in [plotinfo[0]] + list(plotinfo[1].values()):
+                plots = [plotinfo[0]]
+                if plotinfo[1] is not None:
+                    plots += list(plotinfo[1].values())
+                for plot in plots:
                     set_item(plot)
 
                 return
@@ -13872,7 +13878,7 @@ class Session(NoNewAttributesAfterInit):
         plot_pdf : Plot the probability density function of an array.
 
         """
-        return self._pdfplot
+        return self._plot_store['pdf'][0]
 
     def plot_cdf(self, points, name="x", xlabel="x",
                  replot=False, overplot=False, clearwindow=True, **kwargs):
@@ -13940,7 +13946,7 @@ class Session(NoNewAttributesAfterInit):
         plot_cdf : Plot the cumulative density function of an array.
 
         """
-        return self._cdfplot
+        return self._plot_store['cdf'][0]
 
     # DOC-TODO: what does xlabel do?
     def plot_trace(self, points, name="x", xlabel="x",
@@ -14015,7 +14021,7 @@ class Session(NoNewAttributesAfterInit):
         plot_trace : Create a trace plot of row number versus value.
 
         """
-        return self._traceplot
+        return self._plot_store['trace'][0]
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
                      replot=False, overplot=False, clearwindow=True, **kwargs):
@@ -14087,7 +14093,7 @@ class Session(NoNewAttributesAfterInit):
         plot_scatter : Create a scatter plot.
 
         """
-        return self._scatterplot
+        return self._plot_store['scatter'][0]
 
     #
     # Contours
