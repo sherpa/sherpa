@@ -245,14 +245,16 @@ compromising the solution. It is probably best if the code rescales the
 parameter range between minimizations, so that a completely different sampling
 of the function near the trial minimum is being made.
 
-===================  ============  =========  ======================
+===================  ============  =========  ==========================
 Optimiser            Type          Speed      Commentary
-===================  ============  =========  ======================
+===================  ============  =========  ==========================
 NelderMead           single-shot   fast       OK for refining minima
-Levenberg-Marquardt  single-shot   fast       OK for refining minima
+Levenberg-Marquardt  single-shot   fast       OK for refining minima,
+                                              should **only** be used
+                                              with chi-square statistics
 GridSearch           scatter-shot  slow       OK for smooth functions
 Monte Carlo          scatter-shot  very slow  Good in many cases
-===================  ============  =========  ======================
+===================  ============  =========  ==========================
 
 Reference/API
 =============
