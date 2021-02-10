@@ -331,7 +331,8 @@ def check_source_changed():
 def check_resid(title='Residuals for example'):
     """Check that the resid plot has not changed"""
 
-    rplot = ui._session._residplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['resid'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -347,7 +348,8 @@ def check_resid_changed(title='Residuals for example'):
     Assumes that change_model has been called
     """
 
-    rplot = ui._session._residplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['resid'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -363,7 +365,8 @@ def check_resid_changed2(title='Residuals for example'):
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui._session._residplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['resid'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -376,7 +379,8 @@ def check_resid_changed2(title='Residuals for example'):
 def check_ratio(title='Ratio of Data to Model for example'):
     """Check that the ratio plot has not changed"""
 
-    rplot = ui._session._ratioplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['ratio'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -393,7 +397,8 @@ def check_ratio_changed():
     Assumes that change_example has been called
     """
 
-    rplot = ui._session._ratioplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['ratio'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == 'Ratio of Data to Model for example'
@@ -410,7 +415,8 @@ def check_ratio_changed2(title='Ratio of Data to Model for example'):
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui._session._ratioplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['ratio'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -424,7 +430,8 @@ def check_ratio_changed2(title='Ratio of Data to Model for example'):
 def check_delchi(title='Sigma Residuals for example'):
     """Check that the delchi plot has not changed"""
 
-    rplot = ui._session._delchiplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['delchi'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -443,7 +450,8 @@ def check_delchi_changed(title='Sigma Residuals for example'):
     Assumes that change_example has been called
     """
 
-    rplot = ui._session._delchiplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['delchi'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -462,7 +470,8 @@ def check_delchi_changed2(title='Sigma Residuals for example'):
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui._session._delchiplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['delchi'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -478,7 +487,8 @@ def check_delchi_changed2(title='Sigma Residuals for example'):
 def check_chisqr():
     """Check that the chisqr plot has not changed"""
 
-    rplot = ui._session._chisqrplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['chisqr'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -497,7 +507,8 @@ def check_chisqr_changed():
     Assumes that change_example has been called
     """
 
-    rplot = ui._session._chisqrplot
+    # We use the default plot type here
+    rplot = ui._session._plot_store['chisqr'][0]
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -1018,8 +1029,8 @@ def test_get_kernel_plot_recalc(session):
 
 @requires_plotting
 @pytest.mark.parametrize("plotobj,plotfunc",
-                         [("_residplot", ui.plot_resid),
-                          ("_delchiplot", ui.plot_delchi)
+                         [("resid", ui.plot_resid),
+                          ("delchi", ui.plot_delchi)
                           ])
 def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?
@@ -1033,7 +1044,7 @@ def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     # clean call done by the clean_ui fixture will reset the
     # plot objects).
     #
-    prefs = getattr(ui._session, plotobj).plot_prefs
+    prefs = ui._session._plot_store[plotobj][0].plot_prefs  # use the default plot
 
     setup_example(None)
 
@@ -1050,8 +1061,8 @@ def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
 
 @requires_plotting
 @pytest.mark.parametrize("plotobj,plotfunc",
-                         [("_residplot", ui.plot_fit_resid),
-                          ("_delchiplot", ui.plot_fit_delchi)
+                         [("resid", ui.plot_fit_resid),
+                          ("delchi", ui.plot_fit_delchi)
                           ])
 def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?"""
@@ -1065,7 +1076,7 @@ def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     # it worth it, as we end up digging around in the internals
     # of the session object?
     #
-    rprefs = getattr(ui._session, plotobj).plot_prefs
+    rprefs = ui._session._plot_store[plotobj][0].plot_prefs  # use the default plot
     dprefs = ui._session._plot_store['data'][0].plot_prefs  # use the default plot
 
     setup_example(None)

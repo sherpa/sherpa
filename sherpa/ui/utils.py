@@ -305,6 +305,11 @@ class Session(NoNewAttributesAfterInit):
                                      OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.SourceHistogramPlot()}))
         self._plot_store['fit'] = (sherpa.plot.FitPlot(), OrderedByMRO())
 
+        self._plot_store['resid'] = (sherpa.plot.ResidPlot(), OrderedByMRO())
+        self._plot_store['ratio'] = (sherpa.plot.RatioPlot(), OrderedByMRO())
+        self._plot_store['delchi'] = (sherpa.plot.DelchiPlot(), OrderedByMRO())
+        self._plot_store['chisqr'] = (sherpa.plot.ChisqrPlot(), OrderedByMRO())
+
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
 
@@ -314,10 +319,6 @@ class Session(NoNewAttributesAfterInit):
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
-        self._residplot = sherpa.plot.ResidPlot()
-        self._delchiplot = sherpa.plot.DelchiPlot()
-        self._chisqrplot = sherpa.plot.ChisqrPlot()
-        self._ratioplot = sherpa.plot.RatioPlot()
         self._psfplot = sherpa.plot.PSFPlot()
         self._kernelplot = sherpa.plot.PSFKernelPlot()
         self._lrplot = sherpa.plot.LRHistogram()
@@ -345,10 +346,10 @@ class Session(NoNewAttributesAfterInit):
             'model': [], # moved to _plot_store
             'source': [], # moved to _plot_store
             'fit': [], # moved to _plot_store
-            'resid': [self._residplot],
-            'ratio': [self._ratioplot],
-            'delchi': [self._delchiplot],
-            'chisqr': [self._chisqrplot],
+            'resid': [], # moved to _plot_store
+            'ratio': [], # moved to _plot_store
+            'delchi': [], # moved to _plot_store
+            'chisqr': [], # moved to _plot_store
             'psf': [self._psfplot],
             'kernel': [self._kernelplot],
             'compsource': [self._compsrcplot],
@@ -11357,10 +11358,19 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._residplot
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
 
+            d = None
+
+        plotobj = self._get_plotobj('resid', d)
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(d, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_delchi_plot(self, id=None, recalc=True):
@@ -11419,11 +11429,21 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._delchiplot
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
 
+            d = None
+
+        plotobj = self._get_plotobj('delchi', d)
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(d, self.get_model(id), self.get_stat())
         return plotobj
+
 
     def get_chisqr_plot(self, id=None, recalc=True):
         """Return the data used by plot_chisqr.
@@ -11481,10 +11501,19 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._chisqrplot
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
 
+            d = None
+
+        plotobj = self._get_plotobj('chisqr', d)
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(d, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_ratio_plot(self, id=None, recalc=True):
@@ -11543,10 +11572,19 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._ratioplot
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
 
+            d = None
+
+        plotobj = self._get_plotobj('ratio', d)
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(d, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_data_contour(self, id=None, recalc=True):
