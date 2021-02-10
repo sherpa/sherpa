@@ -303,6 +303,7 @@ class Session(NoNewAttributesAfterInit):
                                      OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ModelHistogramPlot()}))
         self._plot_store['source'] = (sherpa.plot.SourcePlot(),
                                      OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.SourceHistogramPlot()}))
+        self._plot_store['fit'] = (sherpa.plot.FitPlot(), OrderedByMRO())
 
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
@@ -313,7 +314,6 @@ class Session(NoNewAttributesAfterInit):
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
-        self._fitplot = sherpa.plot.FitPlot()
         self._residplot = sherpa.plot.ResidPlot()
         self._delchiplot = sherpa.plot.DelchiPlot()
         self._chisqrplot = sherpa.plot.ChisqrPlot()
@@ -344,7 +344,7 @@ class Session(NoNewAttributesAfterInit):
             'data': [], # moved to _plot_store
             'model': [], # moved to _plot_store
             'source': [], # moved to _plot_store
-            'fit': [self._fitplot],
+            'fit': [], # moved to _plot_store
             'resid': [self._residplot],
             'ratio': [self._ratioplot],
             'delchi': [self._delchiplot],
@@ -11285,14 +11285,21 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._fitplot
+        try:
+            d = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+
+            d = None
+
+        plotobj = self._get_plotobj('fit', d)
+        if not recalc:
+            return plotobj
 
         dataobj = self.get_data_plot(id, recalc=recalc)
         modelobj = self.get_model_plot(id, recalc=recalc)
-
-        if recalc:
-            plotobj.prepare(dataobj, modelobj)
-
+        plotobj.prepare(dataobj, modelobj)
         return plotobj
 
     def get_resid_plot(self, id=None, recalc=True):

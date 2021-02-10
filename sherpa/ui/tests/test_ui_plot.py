@@ -803,7 +803,8 @@ def test_prefs_change_session_objects_fit(clean_ui):
     about what we expect/want to happen.
     """
 
-    plotobj = ui._session._fitplot
+    # We use the default plot type here
+    plotobj = ui._session._plot_store['fit'][0]
     assert plotobj.dataplot is None
     assert plotobj.modelplot is None
 

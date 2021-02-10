@@ -10415,31 +10415,26 @@ class Session(sherpa.ui.utils.Session):
 
     def get_fit_plot(self, id=None, recalc=True):
 
-        plotobj = self._fitplot
+        try:
+            d = self._get_pha_data(id)
+        except (ArgumentErr, IdentifierErr):
+            # Try to use the superclass for as much logic as possible
+            return super().get_fit_plot(id, recalc=recalc)
+
+        plotobj = self._get_plotobj('fit', d)
         if not recalc:
             return plotobj
 
-        d = self.get_data(id)
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        dataobj = self.get_data_plot(id, recalc=recalc)
 
-            dataobj = self.get_data_plot(id, recalc=recalc)
+        # Unlike the normal fit plot we use a specialised model class.
+        #
+        # modelobj = self.get_model_plot(id, recalc=recalc)
+        modelobj = sherpa.astro.plot.ModelPHAHistogram()
+        modelobj.prepare(d, self.get_model(id), stat=self.get_stat())
 
-            # We don't use get_model_plot as that uses the ungrouped data
-            #    modelobj = self.get_model_plot(id)
-            # but we do want to use a histogram plot, not _modelplot.
-            # modelobj = self._modelplot
-
-            # Should this object be stored in self? There's
-            # no way to get it by API (apart from get_fit_plot).
-            #
-            modelobj = sherpa.astro.plot.ModelPHAHistogram()
-            modelobj.prepare(d, self.get_model(id),
-                             self.get_stat())
-
-            plotobj.prepare(dataobj, modelobj)
-            return plotobj
-
-        return super().get_fit_plot(id, recalc=recalc)
+        plotobj.prepare(dataobj, modelobj)
+        return plotobj
 
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
 
