@@ -301,6 +301,8 @@ class Session(NoNewAttributesAfterInit):
                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()}))
         self._plot_store['model'] = (sherpa.plot.ModelPlot(),
                                      OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ModelHistogramPlot()}))
+        self._plot_store['source'] = (sherpa.plot.SourcePlot(),
+                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.SourceHistogramPlot()}))
 
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
@@ -311,8 +313,6 @@ class Session(NoNewAttributesAfterInit):
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
-        self._sourceplot = sherpa.plot.SourcePlot()
-        self._sourcehistplot = sherpa.plot.SourceHistogramPlot()
         self._fitplot = sherpa.plot.FitPlot()
         self._residplot = sherpa.plot.ResidPlot()
         self._delchiplot = sherpa.plot.DelchiPlot()
@@ -343,7 +343,7 @@ class Session(NoNewAttributesAfterInit):
         self._plot_types = {
             'data': [], # moved to _plot_store
             'model': [], # moved to _plot_store
-            'source': [self._sourceplot, self._sourcehistplot],
+            'source': [], # moved to _plot_store
             'fit': [self._fitplot],
             'resid': [self._residplot],
             'ratio': [self._ratioplot],
@@ -10981,6 +10981,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        # We could rely on get_source error-ing out, but the error
+        # message is slightly different (mentioning get_model rather
+        # than get_model_plot).
+        #
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
@@ -10995,13 +10999,9 @@ class Session(NoNewAttributesAfterInit):
                 raise ie
             d = None
 
-        if isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._sourcehistplot
-        else:
-            plotobj = self._sourceplot
-
+        plotobj = self._get_plotobj('source', d)
         if recalc:
-            plotobj.prepare(d, self.get_source(id), self.get_stat())
+            plotobj.prepare(d, self.get_source(id), stat=self.get_stat())
 
         return plotobj
 

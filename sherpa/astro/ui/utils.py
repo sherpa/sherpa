@@ -150,7 +150,6 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
-        self._astrosourceplot = sherpa.astro.plot.SourcePlot()
         self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
         self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
@@ -191,6 +190,7 @@ class Session(sherpa.ui.utils.Session):
         #
         self._plot_store['data'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.DataPHAPlot()
         self._plot_store['model'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ModelHistogram()
+        self._plot_store['source'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.SourcePlot()
 
         self._plot_types['order'] = [self._orderplot]
         self._plot_types['energy'] = [self._energyfluxplot]
@@ -198,7 +198,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['compsource'].append(self._astrocompsrcplot)
         self._plot_types['compmodel'].append(self._astrocompmdlplot)
 
-        self._plot_types['source'].append(self._astrosourceplot)
         self._plot_types['arf'] = [self._arfplot]
         self._plot_types['bkg'] = [self._bkgdataplot]
         self._plot_types['bkgmodel'] = [self._bkgmodelhisto]
@@ -10391,6 +10390,10 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
+        # The PHA case does not have the same prepare method as other cases
+        # - no stat argument and adds lo and hi arguments - which makes it
+        # hard to use generic code here.
+        #
         try:
             d = self.get_data(id)
         except IdentifierErr as ie:
@@ -10398,13 +10401,17 @@ class Session(sherpa.ui.utils.Session):
                 raise ie
             d = None
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._astrosourceplot
-            if recalc:
-                plotobj.prepare(d, self.get_source(id), lo=lo, hi=hi)
+        plotobj = self._get_plotobj('source', d)
+        if not recalc:
             return plotobj
 
-        return super().get_source_plot(id, recalc=recalc)
+        src = self.get_source(id)
+        try:
+            plotobj.prepare(d, src, lo=lo, hi=hi)
+        except TypeError:
+            plotobj.prepare(d, src, stat=self.get_stat())
+
+        return plotobj
 
     def get_fit_plot(self, id=None, recalc=True):
 

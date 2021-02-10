@@ -310,7 +310,9 @@ def check_model_changed(xlabel='x'):
 def check_source():
     """Check that the source plot has not changed"""
 
-    check_model_plot(ui._session._sourceplot,
+    # We use the default plot type here
+    splot = ui._session._plot_store['source'][0]
+    check_model_plot(splot,
                      title='Source')
 
 
@@ -320,7 +322,9 @@ def check_source_changed():
     Assumes change_model has been called
     """
 
-    check_model_plot(ui._session._sourceplot,
+    # We use the default plot type here
+    splot = ui._session._plot_store['source'][0]
+    check_model_plot(splot,
                      title='Source', modelval=41)
 
 
