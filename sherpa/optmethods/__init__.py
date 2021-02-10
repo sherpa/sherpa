@@ -517,6 +517,8 @@ class LevMar(OptMethod):
        initial step bound is set to the product of `factor` and the
        euclidean norm of diag*x if nonzero, or else to factor itself.
        In most cases, `factor` should be from the interval (.1,100.).
+    numcores : int
+       The number of CPU cores to use. The default is `1`.
     verbose: int
        The amount of information to print during the fit. The default
        is `0`, which means no output.
@@ -581,6 +583,8 @@ class MonCar(OptMethod):
        the weighting_factor, coupled with an increase in the
        population_size, gives a more robust search at the cost of
        efficiency.
+    numcores : int
+       The number of CPU cores to use. The default is `1`.
 
     References
     ----------
