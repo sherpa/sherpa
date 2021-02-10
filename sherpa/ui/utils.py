@@ -305,6 +305,21 @@ class Session(NoNewAttributesAfterInit):
                                      OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.SourceHistogramPlot()}))
         self._plot_store['fit'] = (sherpa.plot.FitPlot(), OrderedByMRO())
 
+        # Note: there is some code that checks if the model is a
+        # sherpa.models.TemplateModel instance and then use a different
+        # plot type. This has been dropped but should it be returned?
+        #
+        # compsource -> sherpa.plot.ComponentTemplateSourcePlot
+        #
+        # The equivalent for compmodel was not supported, that is
+        #
+        # compmodel -> sherpa.plot.ComponentTemplateModelPlot
+        #
+        self._plot_store['compsource'] = (sherpa.plot.ComponentSourcePlot(),
+                                          OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ComponentSourceHistogramPlot()}))
+        self._plot_store['compmodel'] = (sherpa.plot.ComponentModelPlot(),
+                                         OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ComponentModelHistogramPlot()}))
+
         self._plot_store['resid'] = (sherpa.plot.ResidPlot(), OrderedByMRO())
         self._plot_store['ratio'] = (sherpa.plot.RatioPlot(), OrderedByMRO())
         self._plot_store['delchi'] = (sherpa.plot.DelchiPlot(), OrderedByMRO())
@@ -317,15 +332,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot_store['cdf'] = (sherpa.plot.CDFPlot(), None)
         self._plot_store['trace'] = (sherpa.plot.TracePlot(), None)
         self._plot_store['scatter'] = (sherpa.plot.ScatterPlot(), None)
-
-        self._compmdlplot = sherpa.plot.ComponentModelPlot()
-        self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
-
-        self._compsrcplot = sherpa.plot.ComponentSourcePlot()
-        self._compsrchistplot = sherpa.plot.ComponentSourceHistogramPlot()
-
-        # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
-        self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
         self._datacontour = sherpa.plot.DataContour()
         self._modelcontour = sherpa.plot.ModelContour()
@@ -352,8 +358,8 @@ class Session(NoNewAttributesAfterInit):
             'chisqr': [], # moved to _plot_store
             'psf': [], # moved to _plot_store
             'kernel': [], # moved to _plot_store
-            'compsource': [self._compsrcplot],
-            'compmodel': [self._compmdlplot]
+            'compsource': [], # moved to _plot_store
+            'compmodel': [] # moved to _plot_store
         }
 
         self._plot_type_names = {
@@ -11043,21 +11049,9 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        if isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._compmdlhistplot
-        else:
-            plotobj = self._compmdlplot
-
+        plotobj, data = self._get_plotobj('compmodel', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(d, model, self.get_stat())
-
+            plotobj.prepare(data, model, self.get_stat())
         return plotobj
 
     # sherpa.astro.utils version copies this docstring
@@ -11122,23 +11116,9 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        if isinstance(model, sherpa.models.TemplateModel):
-            plotobj = self._comptmplsrcplot
-        elif isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._compsrchistplot
-        else:
-            plotobj = self._compsrcplot
-
+        plotobj, data = self._get_plotobj('compsource', id, recalc=recalc)
         if recalc:
-            plotobj.prepare(d, model, self.get_stat())
-
+            plotobj.prepare(data, model, self.get_stat())
         return plotobj
 
     def get_model_plot_prefs(self, id=None):

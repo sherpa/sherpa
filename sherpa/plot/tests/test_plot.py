@@ -497,8 +497,12 @@ def test_source_component_arbitrary_grid(session):
         ui.set_source(regrid_model)
 
         ui.plot_source_component(regrid_model)
-        assert (ui._compsrcplot.x == x).all()
-        assert ui._compsrcplot.y == pytest.approx(yy)
+
+        # We use the default plot type here.
+        #
+        cplot = ui._plot_store['compsource'][0]
+        assert (cplot.x == x).all()
+        assert cplot.y == pytest.approx(yy)
 
     x = [1, 2, 3]
     y = [1, 2, 3]
@@ -575,10 +579,13 @@ def test_source_component_arbitrary_grid_int(session):
     regrid_model = model.regrid(*re_x)
     ui.plot_source_component(regrid_model)
 
-    # should this use ui.get_source_component_plot()?
-    assert ui._compsrchistplot.xlo == pytest.approx(x[0])
-    assert ui._compsrchistplot.xhi == pytest.approx(x[1])
-    assert ui._compsrchistplot.y == pytest.approx([0.0, 0.0, 0.0])
+    # Since this is Data1DInt then we use one of the options, and not
+    # the default, plot object.
+    #
+    cplot = ui._plot_store['compsource'][1][Data1DInt]
+    assert cplot.xlo == pytest.approx(x[0])
+    assert cplot.xhi == pytest.approx(x[1])
+    assert cplot.y == pytest.approx([0.0, 0.0, 0.0])
 
 
 def test_numpy_histogram_density_vs_normed(clean_astro_ui):

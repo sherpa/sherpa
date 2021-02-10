@@ -150,8 +150,6 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
-        self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
-        self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
         self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
 
         # self._bkgdataplot = sherpa.astro.plot.DataPHAPlot()
@@ -192,11 +190,12 @@ class Session(sherpa.ui.utils.Session):
         self._plot_store['model'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ModelHistogram()
         self._plot_store['source'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.SourcePlot()
 
+        self._plot_store['compsource'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ComponentSourcePlot()
+        self._plot_store['compmodel'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ComponentModelPlot()
+
         self._plot_types['order'] = [self._orderplot]
         self._plot_types['energy'] = [self._energyfluxplot]
         self._plot_types['photon'] = [self._photonfluxplot]
-        self._plot_types['compsource'].append(self._astrocompsrcplot)
-        self._plot_types['compmodel'].append(self._astrocompmdlplot)
 
         self._plot_types['arf'] = [self._arfplot]
         self._plot_types['bkg'] = [self._bkgdataplot]
@@ -10501,15 +10500,12 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
+        # This breaks the logic for handling plots, as we need to
+        # add extra logic along with the class.
+        #
+        plotobj, data = self._get_plotobj("compmodel", id, recalc=recalc)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._astrocompmdlplot
+        if isinstance(data, sherpa.astro.data.DataPHA):
             if recalc:
                 if not has_pha_response(model):
                     try:
@@ -10519,33 +10515,10 @@ class Session(sherpa.ui.utils.Session):
                         # no response
                         pass
 
-                plotobj.prepare(d, model, self.get_stat())
+                plotobj.prepare(data, model, self.get_stat())
             return plotobj
 
         return super().get_model_component_plot(id, model=model, recalc=recalc)
-
-    # copy doc string from sherpa.utils
-    def get_source_component_plot(self, id, model=None, recalc=True):
-        if model is None:
-            id, model = model, id
-        model = self._check_model(model)
-
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._astrocompsrcplot
-            if recalc:
-                plotobj.prepare(d, model, self.get_stat())
-            return plotobj
-
-        return super().get_source_component_plot(id, model=model, recalc=recalc)
-
-    get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id=1, otherids=(), num=500, bins=25, numcores=None,
