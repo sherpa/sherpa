@@ -161,10 +161,6 @@ class Session(sherpa.ui.utils.Session):
         self._bkgresidplot = sherpa.astro.plot.BkgResidPlot()
         self._bkgratioplot = sherpa.astro.plot.BkgRatioPlot()
         self._bkgsourceplot = sherpa.astro.plot.BkgSourcePlot()
-        self._arfplot = sherpa.astro.plot.ARFPlot()
-        self._orderplot = sherpa.astro.plot.OrderPlot()
-        self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
-        self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
         # This is a new dictionary of XSPEC module settings.  It
         # is meant only to be populated by the save function, so
@@ -193,11 +189,12 @@ class Session(sherpa.ui.utils.Session):
         self._plot_store['compsource'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ComponentSourcePlot()
         self._plot_store['compmodel'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ComponentModelPlot()
 
-        self._plot_types['order'] = [self._orderplot]
-        self._plot_types['energy'] = [self._energyfluxplot]
-        self._plot_types['photon'] = [self._photonfluxplot]
+        self._plot_store['order'] = (sherpa.astro.plot.OrderPlot(), None)
+        self._plot_store['energy'] = (sherpa.astro.plot.EnergyFluxHistogram(), None)
+        self._plot_store['photon'] = (sherpa.astro.plot.PhotonFluxHistogram(), None)
+        self._plot_store['arf'] = (sherpa.astro.plot.ARFPlot(), None)
 
-        self._plot_types['arf'] = [self._arfplot]
+        # TODO: remove
         self._plot_types['bkg'] = [self._bkgdataplot]
         self._plot_types['bkgmodel'] = [self._bkgmodelhisto]
         self._plot_types['bkgfit'] = [self._bkgfitplot]
@@ -10581,7 +10578,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._orderplot
+        plotobj = self._plot_store['order'][0]
         if recalc:
             plotobj.prepare(self._get_pha_data(id),
                             self.get_model(id), orders=orders)
@@ -10635,7 +10632,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._arfplot
+        plotobj = self._plot_store['arf'][0]
         if not recalc:
             return plotobj
 
@@ -11333,13 +11330,15 @@ class Session(sherpa.ui.utils.Session):
         ...                          id=1, otherids=(2, 3, 4))
 
         """
+
+        plotobj = self._plot_store['energy'][0]
         if recalc:
-            self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id=id,
+            self._prepare_energy_flux_plot(plotobj, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
                                            otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
-        return self._energyfluxplot
+        return plotobj
 
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
@@ -11468,13 +11467,15 @@ class Session(sherpa.ui.utils.Session):
         ...                          id=1, otherids=(2, 3, 4))
 
         """
+
+        plotobj = self._plot_store['photon'][0]
         if recalc:
-            self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id=id,
+            self._prepare_photon_flux_plot(plotobj, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
                                            scales=scales, model=model,
                                            otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
-        return self._photonfluxplot
+        return plotobj
 
     def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
