@@ -85,13 +85,8 @@ class Session(sherpa.ui.utils.Session):
 
             # return self._default_id
 
-        if not self._valid_id(bkg_id):
-            raise ArgumentTypeErr('intstr')
-        badkeys = self._plot_types.keys() | self._contour_types.keys()
-        if bkg_id in badkeys:
-            raise IdentifierErr('badid', bkg_id)
-
-        return bkg_id
+        # We rely on the validation made by _fix_id
+        return self._fix_id(bkg_id)
 
     def __setstate__(self, state):
         if '_background_sources' not in state:
