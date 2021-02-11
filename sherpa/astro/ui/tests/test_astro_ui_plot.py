@@ -822,7 +822,7 @@ def check_bkg_fit(plotfunc, isfit=True):
     fplot = ui.get_bkg_fit_plot(recalc=False)
     mplot = fplot.modelplot
 
-    dplot = ui._session._plot_store['bkg'][0]
+    dplot = ui._session._plot_store['bkg']()
 
     # Since we are checking the store object, we can just check
     # that the data object matches that stored in the fit
@@ -871,7 +871,7 @@ def check_bkg_resid(plotfunc, isfit=True):
     for pfs, pdname in [([ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi], "bkgdelchi"),
                         ([ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio], "bkgratio"),
                         ([ui.plot_bkg_resid, ui.plot_bkg_fit_resid], "bkgresid")]:
-        pd = ui._session._plot_store[pdname][0]
+        pd = ui._session._plot_store[pdname]()
         if plotfunc in pfs:
             assert plot is None  # a precaution
             plot = pd
@@ -924,11 +924,11 @@ def check_bkg_chisqr(plotfunc, isfit=True):
 
     # check the "other" background plots are not set
     for pdname in ["bkgdelchi", "bkgratio", "bkgresid"]:
-        pd = ui._session._plot_store[pdname][0]
+        pd = ui._session._plot_store[pdname]()
         assert pd.x is None
         assert pd.y is None
 
-    plot = ui._session._plot_store['bkgchisqr'][0]
+    plot = ui._session._plot_store['bkgchisqr']()
     assert plot.x is not None
     assert plot.y is not None
 
@@ -948,16 +948,16 @@ def check_bkg_model(plotfunc, isfit=True):
 
     # check the "other" background plots are not set
     for pdname in ["bkgdelchi", "bkgratio", "bkgresid", "bkgchisqr"]:
-        pd = ui._session._plot_store[pdname][0]
+        pd = ui._session._plot_store[pdname]()
         assert pd.x is None
         assert pd.y is None
 
-    splot = ui._session._plot_store['bkgsource'][0]
+    splot = ui._session._plot_store['bkgsource']()
     assert splot.xlo is None
     assert splot.xhi is None
     assert splot.y is None
 
-    plot = ui._session._plot_store['bkgmodel'][0]
+    plot = ui._session._plot_store['bkgmodel']()
     assert isinstance(plot, BkgModelHistogram)
     assert plot.xlo is not None
     assert plot.xhi is not None
@@ -975,17 +975,17 @@ def check_bkg_source(plotfunc, isfit=True):
 
     # check the "other" background plots are not set
     for pdname in ["bkgdelchi", "bkgratio", "bkgresid", "bkgchisqr"]:
-        pd = ui._session._plot_store[pdname][0]
+        pd = ui._session._plot_store[pdname]()
         assert pd.x is None
         assert pd.y is None
 
     # check the background model is not set
-    bplot = ui._session._plot_store['bkgmodel'][0]
+    bplot = ui._session._plot_store['bkgmodel']()
     assert bplot.xlo is None
     assert bplot.xhi is None
     assert bplot.y is None
 
-    plot = ui._session._plot_store['bkgsource'][0]
+    plot = ui._session._plot_store['bkgsource']()
     assert isinstance(plot, BkgSourcePlot)
     assert plot.xlo is not None
     assert plot.xhi is not None

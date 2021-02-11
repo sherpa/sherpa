@@ -500,7 +500,7 @@ def test_source_component_arbitrary_grid(session):
 
         # We use the default plot type here.
         #
-        cplot = ui._plot_store['compsource'][0]
+        cplot = ui._plot_store['compsource']()
         assert (cplot.x == x).all()
         assert cplot.y == pytest.approx(yy)
 
@@ -582,7 +582,8 @@ def test_source_component_arbitrary_grid_int(session):
     # Since this is Data1DInt then we use one of the options, and not
     # the default, plot object.
     #
-    cplot = ui._plot_store['compsource'][1][Data1DInt]
+    d = ui.get_data(1)
+    cplot = ui._plot_store['compsource'](d)
     assert cplot.xlo == pytest.approx(x[0])
     assert cplot.xhi == pytest.approx(x[1])
     assert cplot.y == pytest.approx([0.0, 0.0, 0.0])

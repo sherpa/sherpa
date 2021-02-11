@@ -24,7 +24,9 @@ from numpy.testing import assert_almost_equal, assert_array_equal, \
 
 import pytest
 
-from sherpa.utils import _utils, OrderedByMRO, is_binary_file, \
+from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.data import Data, Data1D, Data1DInt
+from sherpa.utils import _utils, ObjectStore, OrderedByMRO, is_binary_file, \
     pad_bounding_box, get_fwhm
 from sherpa.utils.testing import requires_data
 
@@ -436,3 +438,51 @@ def test_ordered_by_mro_delete():
     assert list(d.values()) == ["user dict", "ordered dict"]
 
     assert len(d.store) == 2
+
+
+@pytest.mark.parametrize("arg", [None, "x", True, 1.2, ObjectStore(True)])
+def test_object_store_empty(arg):
+    """We are guaranteed the default value!"""
+
+    s = ObjectStore("x x")
+    assert s(arg) == 'x x'
+
+
+def test_object_store_invalid_class():
+    """add must be called correctly."""
+
+    s = ObjectStore("x x")
+    s.add(Data1D, 2)
+    with pytest.raises(TypeError) as te:
+        s.add({}, 3)
+
+    assert str(te.value) == 'Can only store classes'
+
+
+def test_object_store_docstring():
+    """An enhanced test of the docstring example"""
+
+    s = ObjectStore(1)
+    s.add(Data1D, 2)
+    s.add(Data1DInt, 3)
+
+    assert s() == 1
+
+    d = Data('x', [1], [1])
+    assert s(d) == 1
+
+    d = Data1D('x', [1], [1])
+    assert s(d) == 2
+
+    d = Data1DInt('x', [1], [2], [3])
+    assert s(d) == 3
+
+    d = DataPHA('x', [1], [2])
+    assert s(d) == 2
+
+    d = DataIMG('x', [1], [2], [3])
+    assert s(d) == 1
+
+    # This is not related to the object hiearchy
+    d = {}
+    assert s(d) == 1

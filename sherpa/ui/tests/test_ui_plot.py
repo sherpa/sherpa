@@ -241,7 +241,7 @@ def check_example(xlabel='x'):
     """Check that the data plot has not changed"""
 
     # We use the default plot type here
-    dplot = ui._session._plot_store['data'][0]
+    dplot = ui._session._plot_store['data']()
 
     assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
@@ -261,7 +261,7 @@ def check_example_changed(xlabel='x'):
     """
 
     # We use the default plot type here
-    dplot = ui._session._plot_store['data'][0]
+    dplot = ui._session._plot_store['data']()
 
     assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
@@ -290,7 +290,7 @@ def check_model(xlabel='x'):
     """Check that the model plot has not changed"""
 
     # We use the default plot type here
-    mplot = ui._session._plot_store['model'][0]
+    mplot = ui._session._plot_store['model']()
     check_model_plot(mplot,
                      title='Model', xlabel=xlabel)
 
@@ -301,7 +301,7 @@ def check_model_changed(xlabel='x'):
     Assumes change_model has been called
     """
 
-    mplot = ui._session._plot_store['model'][0]
+    mplot = ui._session._plot_store['model']()
     check_model_plot(mplot,
                      title='Model', xlabel=xlabel,
                      modelval=41)
@@ -311,7 +311,7 @@ def check_source():
     """Check that the source plot has not changed"""
 
     # We use the default plot type here
-    splot = ui._session._plot_store['source'][0]
+    splot = ui._session._plot_store['source']()
     check_model_plot(splot,
                      title='Source')
 
@@ -323,7 +323,7 @@ def check_source_changed():
     """
 
     # We use the default plot type here
-    splot = ui._session._plot_store['source'][0]
+    splot = ui._session._plot_store['source']()
     check_model_plot(splot,
                      title='Source', modelval=41)
 
@@ -332,7 +332,7 @@ def check_resid(title='Residuals for example'):
     """Check that the resid plot has not changed"""
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['resid'][0]
+    rplot = ui._session._plot_store['resid']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -349,7 +349,7 @@ def check_resid_changed(title='Residuals for example'):
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['resid'][0]
+    rplot = ui._session._plot_store['resid']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -366,7 +366,7 @@ def check_resid_changed2(title='Residuals for example'):
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['resid'][0]
+    rplot = ui._session._plot_store['resid']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -380,7 +380,7 @@ def check_ratio(title='Ratio of Data to Model for example'):
     """Check that the ratio plot has not changed"""
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['ratio'][0]
+    rplot = ui._session._plot_store['ratio']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -398,7 +398,7 @@ def check_ratio_changed():
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['ratio'][0]
+    rplot = ui._session._plot_store['ratio']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == 'Ratio of Data to Model for example'
@@ -416,7 +416,7 @@ def check_ratio_changed2(title='Ratio of Data to Model for example'):
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['ratio'][0]
+    rplot = ui._session._plot_store['ratio']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -431,7 +431,7 @@ def check_delchi(title='Sigma Residuals for example'):
     """Check that the delchi plot has not changed"""
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['delchi'][0]
+    rplot = ui._session._plot_store['delchi']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -451,7 +451,7 @@ def check_delchi_changed(title='Sigma Residuals for example'):
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['delchi'][0]
+    rplot = ui._session._plot_store['delchi']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -471,7 +471,7 @@ def check_delchi_changed2(title='Sigma Residuals for example'):
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['delchi'][0]
+    rplot = ui._session._plot_store['delchi']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -488,7 +488,7 @@ def check_chisqr():
     """Check that the chisqr plot has not changed"""
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['chisqr'][0]
+    rplot = ui._session._plot_store['chisqr']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -508,7 +508,7 @@ def check_chisqr_changed():
     """
 
     # We use the default plot type here
-    rplot = ui._session._plot_store['chisqr'][0]
+    rplot = ui._session._plot_store['chisqr']()
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -776,7 +776,7 @@ def test_prefs_change_session_objects(getprefs, ptype, plotfunc, clean_ui):
     # parametrize list, as the ui._session object is changed by
     # the clean_ui fixture.
     #
-    session = ui._session._plot_store[ptype][0]  # use default
+    session = ui._session._plot_store[ptype]()  # use default
 
     # All but the last assert are just to check things are behaving
     # as expected (and stuck into one routine rather than have a
@@ -815,7 +815,7 @@ def test_prefs_change_session_objects_fit(clean_ui):
     """
 
     # We use the default plot type here
-    plotobj = ui._session._plot_store['fit'][0]
+    plotobj = ui._session._plot_store['fit']()
     assert plotobj.dataplot is None
     assert plotobj.modelplot is None
 
@@ -836,8 +836,8 @@ def test_prefs_change_session_objects_fit(clean_ui):
     # We have already checked this in previous tests, but
     # just in case
     #
-    dplot = ui._session._plot_store['data'][0]
-    mplot = ui._session._plot_store['model'][0]
+    dplot = ui._session._plot_store['data']()
+    mplot = ui._session._plot_store['model']()
     assert dplot.plot_prefs['xlog']
     assert mplot.plot_prefs['ylog']
 
@@ -1044,7 +1044,7 @@ def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     # clean call done by the clean_ui fixture will reset the
     # plot objects).
     #
-    prefs = ui._session._plot_store[plotobj][0].plot_prefs  # use the default plot
+    prefs = ui._session._plot_store[plotobj]().plot_prefs  # use the default plot
 
     setup_example(None)
 
@@ -1076,8 +1076,8 @@ def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     # it worth it, as we end up digging around in the internals
     # of the session object?
     #
-    rprefs = ui._session._plot_store[plotobj][0].plot_prefs  # use the default plot
-    dprefs = ui._session._plot_store['data'][0].plot_prefs  # use the default plot
+    rprefs = ui._session._plot_store[plotobj]().plot_prefs  # use the default plot
+    dprefs = ui._session._plot_store['data']().plot_prefs  # use the default plot
 
     setup_example(None)
 

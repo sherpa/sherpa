@@ -89,7 +89,7 @@ del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 
 
 __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
-           'OrderedByMRO',
+           'ObjectStore', 'OrderedByMRO',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'create_expr_integrated',
@@ -4388,6 +4388,59 @@ def send_to_pager(txt, filename=None, clobber=False):
 
     with open(filename, 'w') as fh:
         print(txt, file=fh)
+
+
+class ObjectStore:
+    """Allow object hierarchies to map to other objects.
+
+    Given a list of stored (class, value) pairs, allow the
+    most-appropriate value to be returned when given an instance. The
+    intention is that this is used to select from a tree (that is all
+    classes derive from some common ancestor), and outside this use
+    case the store is not guaranteed to work sensibly.
+
+    Parameters
+    ----------
+    default : object
+        The default object to return
+
+    Notes
+    -----
+    Once created and classes added via the `add` method, the store can
+    be queried by calling it, which will return the appropriate value
+    given the called value (or the default if no argument is given).
+
+    Examples
+    --------
+
+    >>> from sherpa import data
+    >>> s = ObjectStore(1)
+    >>> s.add(data.Data1D, 2)
+    >>> s.add(data.Data1DInt, 3)
+    >>> s()
+    1
+    >>> obj = data.Data1DInt('x', [1, 2], [2, 3], [5, 4])
+    >>> s(obj)
+    3
+
+    """
+
+    def __init__(self, default):
+        self.default = default
+        self.store = OrderedByMRO()
+
+    def add(self, cls, value):
+        self.store[cls] = value
+
+    def __call__(self, key=None):
+        if key is None:
+            return self.default
+
+        for k, v in self.store.items():
+            if isinstance(key, k):
+                return v
+
+        return self.default
 
 
 # The Python documentation isn't clear on UserDict vs dict usage but I've

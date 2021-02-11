@@ -33,7 +33,7 @@ import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
-from sherpa.utils import OrderedByMRO
+from sherpa.utils import ObjectStore
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, ModelErr, SessionErr
 
@@ -296,13 +296,13 @@ class Session(NoNewAttributesAfterInit):
         # object.
         #
         self._plot_store = {}
-        self._plot_store['data'] = (sherpa.plot.DataPlot(),
-                                    OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()}))
-        self._plot_store['model'] = (sherpa.plot.ModelPlot(),
-                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ModelHistogramPlot()}))
-        self._plot_store['source'] = (sherpa.plot.SourcePlot(),
-                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.SourceHistogramPlot()}))
-        self._plot_store['fit'] = (sherpa.plot.FitPlot(), OrderedByMRO())
+        self._plot_store['data'] = ObjectStore(sherpa.plot.DataPlot())
+        self._plot_store['data'].add(sherpa.data.Data1DInt, sherpa.plot.DataHistogramPlot())
+        self._plot_store['model'] = ObjectStore(sherpa.plot.ModelPlot())
+        self._plot_store['model'].add(sherpa.data.Data1DInt, sherpa.plot.ModelHistogramPlot())
+        self._plot_store['source'] = ObjectStore(sherpa.plot.SourcePlot())
+        self._plot_store['source'].add(sherpa.data.Data1DInt, sherpa.plot.SourceHistogramPlot())
+        self._plot_store['fit'] = ObjectStore(sherpa.plot.FitPlot())
 
         # Note: there is some code that checks if the model is a
         # sherpa.models.TemplateModel instance and then use a different
@@ -314,23 +314,23 @@ class Session(NoNewAttributesAfterInit):
         #
         # compmodel -> sherpa.plot.ComponentTemplateModelPlot
         #
-        self._plot_store['compsource'] = (sherpa.plot.ComponentSourcePlot(),
-                                          OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ComponentSourceHistogramPlot()}))
-        self._plot_store['compmodel'] = (sherpa.plot.ComponentModelPlot(),
-                                         OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.ComponentModelHistogramPlot()}))
+        self._plot_store['compsource'] = ObjectStore(sherpa.plot.ComponentSourcePlot())
+        self._plot_store['compsource'].add(sherpa.data.Data1DInt, sherpa.plot.ComponentSourceHistogramPlot())
+        self._plot_store['compmodel'] = ObjectStore(sherpa.plot.ComponentModelPlot())
+        self._plot_store['compmodel'].add(sherpa.data.Data1DInt, sherpa.plot.ComponentModelHistogramPlot())
 
-        self._plot_store['resid'] = (sherpa.plot.ResidPlot(), OrderedByMRO())
-        self._plot_store['ratio'] = (sherpa.plot.RatioPlot(), OrderedByMRO())
-        self._plot_store['delchi'] = (sherpa.plot.DelchiPlot(), OrderedByMRO())
-        self._plot_store['chisqr'] = (sherpa.plot.ChisqrPlot(), OrderedByMRO())
+        self._plot_store['resid'] = ObjectStore(sherpa.plot.ResidPlot())
+        self._plot_store['ratio'] = ObjectStore(sherpa.plot.RatioPlot())
+        self._plot_store['delchi'] = ObjectStore(sherpa.plot.DelchiPlot())
+        self._plot_store['chisqr'] = ObjectStore(sherpa.plot.ChisqrPlot())
 
-        self._plot_store['psf'] = (sherpa.plot.PSFPlot(), OrderedByMRO())
-        self._plot_store['kernel'] = (sherpa.plot.PSFKernelPlot(), OrderedByMRO())
-        self._plot_store['lr'] = (sherpa.plot.LRHistogram(), None)
-        self._plot_store['pdf'] = (sherpa.plot.PDFPlot(), None)
-        self._plot_store['cdf'] = (sherpa.plot.CDFPlot(), None)
-        self._plot_store['trace'] = (sherpa.plot.TracePlot(), None)
-        self._plot_store['scatter'] = (sherpa.plot.ScatterPlot(), None)
+        self._plot_store['psf'] = ObjectStore(sherpa.plot.PSFPlot())
+        self._plot_store['kernel'] = ObjectStore(sherpa.plot.PSFKernelPlot())
+        self._plot_store['lr'] = ObjectStore(sherpa.plot.LRHistogram())
+        self._plot_store['pdf'] = ObjectStore(sherpa.plot.PDFPlot())
+        self._plot_store['cdf'] = ObjectStore(sherpa.plot.CDFPlot())
+        self._plot_store['trace'] = ObjectStore(sherpa.plot.TracePlot())
+        self._plot_store['scatter'] = ObjectStore(sherpa.plot.ScatterPlot())
 
         self._datacontour = sherpa.plot.DataContour()
         self._modelcontour = sherpa.plot.ModelContour()
@@ -8654,7 +8654,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_store['lr'][0]
+        plotobj = self._plot_store['lr']()
         if not recalc:
             return plotobj
 
@@ -10698,7 +10698,7 @@ class Session(NoNewAttributesAfterInit):
         # KeyError here is a programmnig error, so no need to
         # raise a 'nicer' error.
         #
-        (default, plots) = self._plot_store[plot]
+        store = self._plot_store[plot]
 
         try:
             data = self.get_data(id)
@@ -10706,16 +10706,9 @@ class Session(NoNewAttributesAfterInit):
             if recalc:
                 raise ie from None
 
-            return (default, None)
+            data = None
 
-        # Rely on the OrderedByMRO iteration order so that as soon as
-        # we find an instance we can stop.
-        #
-        for k, v in plots.items():
-            if isinstance(data, k):
-                return (v, data)
-
-        return (default, data)
+        return (store(data), data)
 
     def get_data_plot(self, id=None, recalc=True):
         """Return the data used by plot_data.
@@ -12195,9 +12188,7 @@ class Session(NoNewAttributesAfterInit):
             # We know ptype is a member of _plot_store
             plotinfo = self._plot_store[ptype]
 
-            plots = [plotinfo[0]]
-            if plotinfo[1] is not None:
-                plots += list(plotinfo[1].values())
+            plots = [plotinfo()] + list(plotinfo.store.values())
             for plot in plots:
                 set_item(plot)
 
@@ -13835,7 +13826,7 @@ class Session(NoNewAttributesAfterInit):
         plot_pdf : Plot the probability density function of an array.
 
         """
-        return self._plot_store['pdf'][0]
+        return self._plot_store['pdf']()
 
     def plot_cdf(self, points, name="x", xlabel="x",
                  replot=False, overplot=False, clearwindow=True, **kwargs):
@@ -13903,7 +13894,7 @@ class Session(NoNewAttributesAfterInit):
         plot_cdf : Plot the cumulative density function of an array.
 
         """
-        return self._plot_store['cdf'][0]
+        return self._plot_store['cdf']()
 
     # DOC-TODO: what does xlabel do?
     def plot_trace(self, points, name="x", xlabel="x",
@@ -13978,7 +13969,7 @@ class Session(NoNewAttributesAfterInit):
         plot_trace : Create a trace plot of row number versus value.
 
         """
-        return self._plot_store['trace'][0]
+        return self._plot_store['trace']()
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
                      replot=False, overplot=False, clearwindow=True, **kwargs):
@@ -14050,7 +14041,7 @@ class Session(NoNewAttributesAfterInit):
         plot_scatter : Create a scatter plot.
 
         """
-        return self._plot_store['scatter'][0]
+        return self._plot_store['scatter']()
 
     #
     # Contours

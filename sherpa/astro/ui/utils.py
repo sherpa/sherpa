@@ -29,7 +29,7 @@ import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _check_type
-from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
+from sherpa.utils import ObjectStore, SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
@@ -170,30 +170,30 @@ class Session(sherpa.ui.utils.Session):
 
         # Add PHA plot types. This is ugly.
         #
-        self._plot_store['data'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.DataPHAPlot()
-        self._plot_store['model'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ModelHistogram()
-        self._plot_store['source'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.SourcePlot()
+        self._plot_store['data'].add(sherpa.astro.data.DataPHA, sherpa.astro.plot.DataPHAPlot())
+        self._plot_store['model'].add(sherpa.astro.data.DataPHA, sherpa.astro.plot.ModelHistogram())
+        self._plot_store['source'].add(sherpa.astro.data.DataPHA, sherpa.astro.plot.SourcePlot())
 
-        self._plot_store['compsource'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ComponentSourcePlot()
-        self._plot_store['compmodel'][1][sherpa.astro.data.DataPHA] = sherpa.astro.plot.ComponentModelPlot()
+        self._plot_store['compsource'].add(sherpa.astro.data.DataPHA, sherpa.astro.plot.ComponentSourcePlot())
+        self._plot_store['compmodel'].add(sherpa.astro.data.DataPHA, sherpa.astro.plot.ComponentModelPlot())
 
-        self._plot_store['order'] = (sherpa.astro.plot.OrderPlot(), None)
-        self._plot_store['energy'] = (sherpa.astro.plot.EnergyFluxHistogram(), None)
-        self._plot_store['photon'] = (sherpa.astro.plot.PhotonFluxHistogram(), None)
-        self._plot_store['arf'] = (sherpa.astro.plot.ARFPlot(), None)
+        self._plot_store['order'] = ObjectStore(sherpa.astro.plot.OrderPlot())
+        self._plot_store['energy'] = ObjectStore(sherpa.astro.plot.EnergyFluxHistogram())
+        self._plot_store['photon'] = ObjectStore(sherpa.astro.plot.PhotonFluxHistogram())
+        self._plot_store['arf'] = ObjectStore(sherpa.astro.plot.ARFPlot())
 
         # BkgDataPlot is currently the same as DataPHAPlot; is it worth
         # keeping?
-        self._plot_store['bkg'] = (sherpa.astro.plot.BkgDataPlot(), None)
-        self._plot_store['bkgmodel'] = (sherpa.astro.plot.BkgModelHistogram(), None)
-        self._plot_store['bkgsource'] = (sherpa.astro.plot.BkgSourcePlot(), None)
+        self._plot_store['bkg'] = ObjectStore(sherpa.astro.plot.BkgDataPlot())
+        self._plot_store['bkgmodel'] = ObjectStore(sherpa.astro.plot.BkgModelHistogram())
+        self._plot_store['bkgsource'] = ObjectStore(sherpa.astro.plot.BkgSourcePlot())
 
-        self._plot_store['bkgratio'] = (sherpa.astro.plot.BkgRatioPlot(), None)
-        self._plot_store['bkgresid'] = (sherpa.astro.plot.BkgResidPlot(), None)
-        self._plot_store['bkgdelchi'] = (sherpa.astro.plot.BkgDelchiPlot(), None)
-        self._plot_store['bkgchisqr'] = (sherpa.astro.plot.BkgChisqrPlot(), None)
+        self._plot_store['bkgratio'] = ObjectStore(sherpa.astro.plot.BkgRatioPlot())
+        self._plot_store['bkgresid'] = ObjectStore(sherpa.astro.plot.BkgResidPlot())
+        self._plot_store['bkgdelchi'] = ObjectStore(sherpa.astro.plot.BkgDelchiPlot())
+        self._plot_store['bkgchisqr'] = ObjectStore(sherpa.astro.plot.BkgChisqrPlot())
 
-        self._plot_store['bkgfit'] = (sherpa.astro.plot.BkgFitPlot(), None)
+        self._plot_store['bkgfit'] = ObjectStore(sherpa.astro.plot.BkgFitPlot())
 
         self._plot_type_names['order'] = 'order'
         # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
@@ -10569,7 +10569,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['order'][0]
+        plotobj = self._plot_store['order']()
         if recalc:
             plotobj.prepare(self._get_pha_data(id),
                             self.get_model(id), orders=orders)
@@ -10623,7 +10623,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['arf'][0]
+        plotobj = self._plot_store['arf']()
         if not recalc:
             return plotobj
 
@@ -10708,7 +10708,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgfit'][0]
+        plotobj = self._plot_store['bkgfit']()
         if not recalc:
             return plotobj
 
@@ -10775,7 +10775,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgmodel'][0]
+        plotobj = self._plot_store['bkgmodel']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -10840,7 +10840,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkg'][0]
+        plotobj = self._plot_store['bkg']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_stat())
@@ -10931,7 +10931,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgsource'][0]
+        plotobj = self._plot_store['bkgsource']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_source(id, bkg_id),
@@ -10988,7 +10988,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgresid'][0]
+        plotobj = self._plot_store['bkgresid']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11045,7 +11045,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgratio'][0]
+        plotobj = self._plot_store['bkgratio']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11103,7 +11103,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgdelchi'][0]
+        plotobj = self._plot_store['bkgdelchi']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11161,7 +11161,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['bkgchisqr'][0]
+        plotobj = self._plot_store['bkgchisqr']()
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11323,7 +11323,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['energy'][0]
+        plotobj = self._plot_store['energy']()
         if recalc:
             self._prepare_energy_flux_plot(plotobj, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
@@ -11460,7 +11460,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._plot_store['photon'][0]
+        plotobj = self._plot_store['photon']()
         if recalc:
             self._prepare_photon_flux_plot(plotobj, lo, hi, id=id,
                                            num=num, bins=bins, correlated=correlated,
