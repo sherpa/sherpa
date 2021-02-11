@@ -815,8 +815,21 @@ def check_bkg_fit(plotfunc, isfit=True):
     (e.g. the pixel display/PNG output).
     """
 
+    # Originally the model plot was stored as an attribute of
+    # the session class, but this has now changed and the only
+    # access is via the bkg_fit plot object.
+    #
+    fplot = ui.get_bkg_fit_plot(recalc=False)
+    mplot = fplot.modelplot
+
     dplot = ui._session._plot_store['bkg'][0]
-    mplot = ui._session._bkgmodelplot
+
+    # Since we are checking the store object, we can just check
+    # that the data object matches that stored in the fit
+    # object.
+    #
+    assert fplot.dataplot == dplot
+
     assert isinstance(dplot, BkgDataPlot)
     assert isinstance(mplot, BkgModelPHAHistogram)
 

@@ -193,10 +193,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_store['bkgdelchi'] = (sherpa.astro.plot.BkgDelchiPlot(), None)
         self._plot_store['bkgchisqr'] = (sherpa.astro.plot.BkgChisqrPlot(), None)
 
-        # TODO: remove
-        self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
-        self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
-        self._plot_types['bkgfit'] = [self._bkgfitplot]
+        self._plot_store['bkgfit'] = (sherpa.astro.plot.BkgFitPlot(), None)
 
         self._plot_type_names['order'] = 'order'
         # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
@@ -10711,7 +10708,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgfitplot
+        plotobj = self._plot_store['bkgfit'][0]
         if not recalc:
             return plotobj
 
@@ -10720,7 +10717,8 @@ class Session(sherpa.ui.utils.Session):
         # We don't use get_bkg_model_plot as that uses the ungrouped data
         # modelobj = self.get_bkg_model_plot(id, bkg_id, recalc=recalc)
 
-        modelobj = self._bkgmodelplot
+        # As with plot_fit we create the plot object for the model here.
+        modelobj = sherpa.astro.plot.BkgModelPHAHistogram()
         modelobj.prepare(self.get_bkg(id, bkg_id),
                          self.get_bkg_model(id, bkg_id),
                          self.get_stat())
