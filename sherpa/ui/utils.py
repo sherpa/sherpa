@@ -332,14 +332,21 @@ class Session(NoNewAttributesAfterInit):
         self._traceplot = sherpa.plot.TracePlot()
         self._scatterplot = sherpa.plot.ScatterPlot()
 
-        self._datacontour = sherpa.plot.DataContour()
-        self._modelcontour = sherpa.plot.ModelContour()
-        self._sourcecontour = sherpa.plot.SourceContour()
-        self._fitcontour = sherpa.plot.FitContour()
-        self._residcontour = sherpa.plot.ResidContour()
-        self._ratiocontour = sherpa.plot.RatioContour()
-        self._psfcontour = sherpa.plot.PSFContour()
-        self._kernelcontour = sherpa.plot.PSFKernelContour()
+        # What objects are used to display the contour plots - e.g.
+        # contour('data') or contour_data(). See also the
+        # _contour_type_names dictionary which defines the actual
+        # mappnig from user command to the key of this dictionary
+        # (which, for contours, is the identity function).
+        #
+        self._contour_store = {}
+        self._contour_store['data'] = sherpa.plot.DataContour()
+        self._contour_store['model'] = sherpa.plot.ModelContour()
+        self._contour_store['source'] = sherpa.plot.SourceContour()
+        self._contour_store['fit'] = sherpa.plot.FitContour()
+        self._contour_store['resid'] = sherpa.plot.ResidContour()
+        self._contour_store['ratio'] = sherpa.plot.RatioContour()
+        self._contour_store['psf'] = sherpa.plot.PSFContour()
+        self._contour_store['kernel'] = sherpa.plot.PSFKernelContour()
 
         self._intproj = sherpa.plot.IntervalProjection()
         self._intunc = sherpa.plot.IntervalUncertainty()
@@ -361,6 +368,17 @@ class Session(NoNewAttributesAfterInit):
             'compmodel': [self._compmdlplot]
         }
 
+        # See also _contour_type_names.
+        #
+        # The keys of this dictionary are used to determine (along
+        # with a similar check of the contour types) what values can not
+        # be used as an identifier. They also define the mapping
+        # from user argument to the plot() command to the
+        # corresponding get_xxx_plot routine. unlike contours we do
+        # have different names - e.g. plot('compsource') is the
+        # same as plot('source_component') and both map to the
+        # get_source_component_plot routine.
+        #
         self._plot_type_names = {
             'data': 'data',
             'model': 'model',
@@ -378,17 +396,16 @@ class Session(NoNewAttributesAfterInit):
             'compmodel': 'model_component',
         }
 
-        self._contour_types = {
-            'data': self._datacontour,
-            'model': self._modelcontour,
-            'source': self._sourcecontour,
-            'fit': self._fitcontour,
-            'resid': self._residcontour,
-            'ratio': self._ratiocontour,
-            'psf': self._psfcontour,
-            'kernel': self._kernelcontour
-        }
-
+        # This is the same as _plot_type_names but for contours.
+        #
+        # The keys of this dictionary are used to determine (along
+        # with a similar check of the plot types) what values can not
+        # be used as an identifier. They also define the mapping
+        # from user argument to the contour() command to the
+        # corresponding get_xxx_contour routine. For contours we
+        # do not support separate names so the key matches the value,
+        # unlike the plot case.
+        #
         self._contour_type_names = {
             'data': 'data',
             'model': 'model',
@@ -11420,7 +11437,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._datacontour
+        plotobj = self._contour_store['data']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
@@ -11518,7 +11535,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._modelcontour
+        plotobj = self._contour_store['model']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11566,7 +11583,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._sourcecontour
+        plotobj = self._contour_store['source']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
         return plotobj
@@ -11668,7 +11685,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._fitcontour
+        plotobj = self._contour_store['fit']
 
         dataobj = self.get_data_contour(id, recalc=recalc)
         modelobj = self.get_model_contour(id, recalc=recalc)
@@ -11721,7 +11738,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._residcontour
+        plotobj = self._contour_store['resid']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11770,7 +11787,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._ratiocontour
+        plotobj = self._contour_store['ratio']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11814,7 +11831,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfcontour
+        plotobj = self._contour_store['psf']
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
@@ -11859,7 +11876,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelcontour
+        plotobj = self._contour_store['kernel']
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
