@@ -295,7 +295,6 @@ class Session(NoNewAttributesAfterInit):
         # where the dictionary type is used in preference to the default plot
         # object.
         #
-        # TODO: combine with _plot_types
         self._plot_store = {}
         self._plot_store['data'] = (sherpa.plot.DataPlot(),
                                     OrderedByMRO({sherpa.data.Data1DInt: sherpa.plot.DataHistogramPlot()}))
@@ -347,21 +346,19 @@ class Session(NoNewAttributesAfterInit):
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
-        self._plot_types = {
-            'data': [], # moved to _plot_store
-            'model': [], # moved to _plot_store
-            'source': [], # moved to _plot_store
-            'fit': [], # moved to _plot_store
-            'resid': [], # moved to _plot_store
-            'ratio': [], # moved to _plot_store
-            'delchi': [], # moved to _plot_store
-            'chisqr': [], # moved to _plot_store
-            'psf': [], # moved to _plot_store
-            'kernel': [], # moved to _plot_store
-            'compsource': [], # moved to _plot_store
-            'compmodel': [] # moved to _plot_store
-        }
-
+        # This defines the mapping from the plot() command to the plot
+        # type:
+        #
+        #   - key gives the "plot type" as used in the plot() call,
+        #     the set_xlog (and related) methods, and it defines the
+        #     set of names that - along with the contour version - can
+        #     not be used as an identifier
+        #
+        #   - value must map to a `get_<value>_plot` method of the
+        #     session class
+        #
+        # Multiple keys can map to the same plot type.
+        #
         self._plot_type_names = {
             'data': 'data',
             'model': 'model',
@@ -12184,44 +12181,24 @@ class Session(NoNewAttributesAfterInit):
                 except AttributeError:
                     pass
 
-        # TODO: once the code has been moved over to using
-        #       _plot_store we can remove the duplication here.
-        #
-        #       The handling of plottype='all' complicates this.
-        #
         plottype = plottype.strip().lower()
+        alltypes = self._plot_store.keys()
         if plottype == 'all':
-            for plotinfo in self._plot_store.values():
-                plots = [plotinfo[0]]
-                if plotinfo[1] is not None:
-                    plots += list(plotinfo[1].values())
-                for plot in plots:
-                    set_item(plot)
-
+            plottypes = alltypes
+        elif plottype not in self._plot_store:
+            vals = str(sorted(list(alltypes)))
+            raise sherpa.utils.err.PlotErr('wrongtype', plottype, vals)
         else:
-            # TODO: this should error out if not known.
-            if plottype in self._plot_store:
-                plotinfo = self._plot_store[plottype]
-                plots = [plotinfo[0]]
-                if plotinfo[1] is not None:
-                    plots += list(plotinfo[1].values())
-                for plot in plots:
-                    set_item(plot)
+            plottypes = [plottype]
 
-                return
+        for ptype in plottypes:
+            # We know ptype is a member of _plot_store
+            plotinfo = self._plot_store[ptype]
 
-        # Still need to support the "old" style access
-        keys = list(self._plot_types.keys())
-
-        if plottype != "all":
-            if plottype not in self._plot_types:
-                raise sherpa.utils.err.PlotErr(
-                    'wrongtype', plottype, str(keys))
-
-            keys = [plottype]
-
-        for key in keys:
-            for plot in self._plot_types[key]:
+            plots = [plotinfo[0]]
+            if plotinfo[1] is not None:
+                plots += list(plotinfo[1].values())
+            for plot in plots:
                 set_item(plot)
 
     def set_xlog(self, plottype="all"):
