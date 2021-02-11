@@ -815,7 +815,7 @@ def check_bkg_fit(plotfunc, isfit=True):
     (e.g. the pixel display/PNG output).
     """
 
-    dplot = ui._session._bkgdataplot
+    dplot = ui._session._plot_store['bkg'][0]
     mplot = ui._session._bkgmodelplot
     assert isinstance(dplot, BkgDataPlot)
     assert isinstance(mplot, BkgModelPHAHistogram)
@@ -855,9 +855,10 @@ def check_bkg_resid(plotfunc, isfit=True):
 
     # check the "other" background plots are not set
     plot = None
-    for pfs, pd in [([ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi], ui._session._bkgdelchiplot),
-                    ([ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio], ui._session._bkgratioplot),
-                    ([ui.plot_bkg_resid, ui.plot_bkg_fit_resid], ui._session._bkgresidplot)]:
+    for pfs, pdname in [([ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi], "bkgdelchi"),
+                        ([ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio], "bkgratio"),
+                        ([ui.plot_bkg_resid, ui.plot_bkg_fit_resid], "bkgresid")]:
+        pd = ui._session._plot_store[pdname][0]
         if plotfunc in pfs:
             assert plot is None  # a precaution
             plot = pd
@@ -909,13 +910,12 @@ def check_bkg_chisqr(plotfunc, isfit=True):
     """Is the background residual displayed?"""
 
     # check the "other" background plots are not set
-    for pd in [ui._session._bkgdelchiplot,
-               ui._session._bkgratioplot,
-               ui._session._bkgresidplot]:
+    for pdname in ["bkgdelchi", "bkgratio", "bkgresid"]:
+        pd = ui._session._plot_store[pdname][0]
         assert pd.x is None
         assert pd.y is None
 
-    plot = ui._session._bkgchisqrplot
+    plot = ui._session._plot_store['bkgchisqr'][0]
     assert plot.x is not None
     assert plot.y is not None
 
@@ -934,18 +934,17 @@ def check_bkg_model(plotfunc, isfit=True):
     """Is the background model displayed?"""
 
     # check the "other" background plots are not set
-    for pd in [ui._session._bkgdelchiplot,
-               ui._session._bkgratioplot,
-               ui._session._bkgresidplot,
-               ui._session._bkgchisqrplot]:
+    for pdname in ["bkgdelchi", "bkgratio", "bkgresid", "bkgchisqr"]:
+        pd = ui._session._plot_store[pdname][0]
         assert pd.x is None
         assert pd.y is None
 
-    assert ui._session._bkgsourceplot.xlo is None
-    assert ui._session._bkgsourceplot.xhi is None
-    assert ui._session._bkgsourceplot.y is None
+    splot = ui._session._plot_store['bkgsource'][0]
+    assert splot.xlo is None
+    assert splot.xhi is None
+    assert splot.y is None
 
-    plot = ui._session._bkgmodelhisto
+    plot = ui._session._plot_store['bkgmodel'][0]
     assert isinstance(plot, BkgModelHistogram)
     assert plot.xlo is not None
     assert plot.xhi is not None
@@ -962,19 +961,18 @@ def check_bkg_source(plotfunc, isfit=True):
     """Is the background source model displayed?"""
 
     # check the "other" background plots are not set
-    for pd in [ui._session._bkgdelchiplot,
-               ui._session._bkgratioplot,
-               ui._session._bkgresidplot,
-               ui._session._bkgchisqrplot]:
+    for pdname in ["bkgdelchi", "bkgratio", "bkgresid", "bkgchisqr"]:
+        pd = ui._session._plot_store[pdname][0]
         assert pd.x is None
         assert pd.y is None
 
     # check the background model is not set
-    assert ui._session._bkgmodelhisto.xlo is None
-    assert ui._session._bkgmodelhisto.xhi is None
-    assert ui._session._bkgmodelhisto.y is None
+    bplot = ui._session._plot_store['bkgmodel'][0]
+    assert bplot.xlo is None
+    assert bplot.xhi is None
+    assert bplot.y is None
 
-    plot = ui._session._bkgsourceplot
+    plot = ui._session._plot_store['bkgsource'][0]
     assert isinstance(plot, BkgSourcePlot)
     assert plot.xlo is not None
     assert plot.xhi is not None
