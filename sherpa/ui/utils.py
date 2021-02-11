@@ -1307,7 +1307,7 @@ class Session(NoNewAttributesAfterInit):
         if not self._valid_id(id):
             raise ArgumentTypeErr('intstr')
 
-        badkeys = self._plot_types.keys() | self._contour_types.keys()
+        badkeys = self._plot_type_names.keys() | self._contour_type_names.keys()
         if id in badkeys:
             raise IdentifierErr('badid', id)
 

@@ -85,7 +85,7 @@ def test_id_checks_session(session, setting):
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
-@pytest.mark.parametrize("setting", ['cdf', 'lr', 'pdf', 'scatter', 'trace'])
+@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace'])
 def test_id_checks_session_unexpected(session, setting):
     """These identifiers are allowed. Should they be?"""
 
@@ -99,7 +99,7 @@ def test_id_checks_session_unexpected(session, setting):
                          [(Session, True), (AstroSession, False)])
 @pytest.mark.parametrize("setting", ['arf', 'bkg', 'bkgchisqr', 'bkgdelchi', 'bkgfit',
                                      'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-                                     'energy', 'order', 'photon'])
+                                     'order'])
 def test_id_checks_astro_session(session, success, setting):
     """Do some common identifiers fail for astro but not default?"""
 
