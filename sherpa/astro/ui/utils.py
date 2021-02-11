@@ -87,7 +87,8 @@ class Session(sherpa.ui.utils.Session):
 
         if not self._valid_id(bkg_id):
             raise ArgumentTypeErr('intstr')
-        if bkg_id in self._plot_types.keys() or bkg_id in self._contour_types.keys():
+        badkeys = self._plot_types.keys() | self._contour_types.keys()
+        if bkg_id in badkeys:
             raise IdentifierErr('badid', bkg_id)
 
         return bkg_id
