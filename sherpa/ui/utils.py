@@ -332,14 +332,18 @@ class Session(NoNewAttributesAfterInit):
         self._plot_store['trace'] = ObjectStore(sherpa.plot.TracePlot())
         self._plot_store['scatter'] = ObjectStore(sherpa.plot.ScatterPlot())
 
-        self._datacontour = sherpa.plot.DataContour()
-        self._modelcontour = sherpa.plot.ModelContour()
-        self._sourcecontour = sherpa.plot.SourceContour()
-        self._fitcontour = sherpa.plot.FitContour()
-        self._residcontour = sherpa.plot.ResidContour()
-        self._ratiocontour = sherpa.plot.RatioContour()
-        self._psfcontour = sherpa.plot.PSFContour()
-        self._kernelcontour = sherpa.plot.PSFKernelContour()
+        # For the contour plots we currently have no specialised cases so we
+        # do not need to go to the effort to use an ObjectStore here.
+        #
+        self._contour_store = {}
+        self._contour_store['data'] = sherpa.plot.DataContour()
+        self._contour_store['model'] = sherpa.plot.ModelContour()
+        self._contour_store['source'] = sherpa.plot.SourceContour()
+        self._contour_store['fit'] = sherpa.plot.FitContour()
+        self._contour_store['resid'] = sherpa.plot.ResidContour()
+        self._contour_store['ratio'] = sherpa.plot.RatioContour()
+        self._contour_store['psf'] = sherpa.plot.PSFContour()
+        self._contour_store['kernel'] = sherpa.plot.PSFKernelContour()
 
         self._intproj = sherpa.plot.IntervalProjection()
         self._intunc = sherpa.plot.IntervalUncertainty()
@@ -374,17 +378,6 @@ class Session(NoNewAttributesAfterInit):
             'model_component': 'model_component',
             'compsource': 'source_component',
             'compmodel': 'model_component',
-        }
-
-        self._contour_types = {
-            'data': self._datacontour,
-            'model': self._modelcontour,
-            'source': self._sourcecontour,
-            'fit': self._fitcontour,
-            'resid': self._residcontour,
-            'ratio': self._ratiocontour,
-            'psf': self._psfcontour,
-            'kernel': self._kernelcontour
         }
 
         self._contour_type_names = {
@@ -11536,7 +11529,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._datacontour
+        plotobj = self._contour_store['data']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
@@ -11634,7 +11627,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._modelcontour
+        plotobj = self._contour_store['model']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11682,7 +11675,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._sourcecontour
+        plotobj = self._contour_store['source']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
         return plotobj
@@ -11784,7 +11777,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._fitcontour
+        plotobj = self._contour_store['fit']
 
         dataobj = self.get_data_contour(id, recalc=recalc)
         modelobj = self.get_model_contour(id, recalc=recalc)
@@ -11837,7 +11830,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._residcontour
+        plotobj = self._contour_store['resid']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11886,7 +11879,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._ratiocontour
+        plotobj = self._contour_store['ratio']
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11930,7 +11923,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfcontour
+        plotobj = self._contour_store['psf']
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
@@ -11975,7 +11968,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelcontour
+        plotobj = self._contour_store['kernel']
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
