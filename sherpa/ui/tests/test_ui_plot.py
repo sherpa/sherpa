@@ -43,7 +43,7 @@ from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
     DataContour, ModelContour, SourceContour, ResidContour, \
     RatioContour, FitContour, LRHistogram, \
     ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot, \
-    DataHistogramPlot
+    DataHistogramPlot, SplitPlot
 
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
@@ -2183,6 +2183,33 @@ def test_get_pvalue_plot(session, caplog):
     check_pvalue(caplog, p)
 
 
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pvalue_requires_null_model(session):
+    """We need a null_model argument"""
+
+    s = session()
+    with pytest.raises(TypeError) as te:
+        # We add conv_model (to an invalid value) to avoid having
+        # to set up a dataset
+        s.plot_pvalue(None, None, conv_model=True)
+
+    assert str(te.value) == 'null model cannot be None'
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_pvalue_requires_alt_model(session):
+    """We need a alt_model argument"""
+
+    s = session()
+    with pytest.raises(TypeError) as te:
+        # We add conv_model (to an invalid value) to avoid having
+        # to set up a dataset. Similarly all we need is null_model
+        # to be set, not that it's set properly
+        s.plot_pvalue(False, None, conv_model=True)
+
+    assert str(te.value) == 'alternative model cannot be None'
+
+
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_plot_pvalue(session, caplog):
@@ -2217,6 +2244,20 @@ def test_plot_pvalue(session, caplog):
 
     p = s.get_pvalue_plot(recalc=False)
     check_pvalue(caplog, p)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_split_plot(session):
+    """Check we can call get_split_plot.
+
+    Limited checking of the result.
+    """
+
+    s = session()
+    splot = s.get_split_plot()
+    assert isinstance(splot, SplitPlot)
+    assert splot.rows == 2
+    assert splot.cols == 1
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
