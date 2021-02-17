@@ -2034,11 +2034,11 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
     clips = vals[:, -2]
     assert (clips == 0).all()
 
-    # All the statistic values should be set (> 0). This is #751.
+    # All the statistic values should be set (> 0). This wasn't until #751
+    # was addressed.
     #
     stats = vals[:, -1]
-    # assert (stats > 0).all()
-    assert (stats > 0).sum() == 81
+    assert (stats > 0).all()
 
 
 @requires_xspec

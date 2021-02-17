@@ -527,7 +527,7 @@ def sample_flux(fit, data, src,
     return numpy.concatenate((vals, numpy.expand_dims(clipped, 1)), axis=1)
 
 
-def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
+def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
                      confidence):
     """Given a set of parameter samples, estimate the flux distribution.
 
@@ -542,21 +542,20 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
     .. versionchanged:: 4.13.1
        The clipping now includes parameters at the soft limits;
        previously they were excluded which could cause problems with
-       parameters for which we can only calculate an upper limit.
+       parameters for which we can only calculate an upper limit. The
+       id and session arguments have been removed. The statistic value
+       is now returned for each row, even those that were excluded
+       from the flux calculation.
+
 
     Parameters
     ----------
-    id : int or str
-        The dataset identifier. It must exist and have an associated model in
-        session.
     lo : number or None, optional
         The lower edge of the dataspace range for the flux calculation.
         If None then the lower edge of the data grid is used.
     hi : number or None, optional
         The upper edge of the dataspace range for the flux calculation.
         If None then the upper edge of the data grid is used.
-    session : sherpa.ui.utils.Session instance
-        Defines the data, model, and fit.
     fit : sherpa.fit.Fit instance
         The fit object. The src parameter is assumed to be a subset of
         the fit.model expression (to allow for calculating the flux of
@@ -615,88 +614,55 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     """
 
-    def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
+    thawedpars = fit.model.thawedpars
 
-        for i, (pmin, pmax) in enumerate(zip(mysoftmins, mysoftmaxs), 1):
-            parvals = mysamples[:, i]
-            tmp = (parvals >= pmin) & (parvals <= pmax)
-            mysamples = mysamples[tmp]
-
-        return mysamples
-
+    # Check the number of free parameters agrees with the samples argument,
+    # noting that each row in samples is <flux> + <free pars> + <clip>. This is
+    # a requirement for calling this routine, so is just handled as an
+    # assert (as this is not intended for a user-level routine)
     #
-    # For later restoration
-    #
-    orig_model = session.get_model(id)
-    orig_model_vals = fit.model.thawedpars
+    nthawed = len(thawedpars)
+    npars = samples.shape[1] - 2
+    assert nthawed == npars, (nthawed, npars)
 
-    orig_source = session.get_source(id)
+    # Identify any row where a parameter lies outside the min/max range
+    softmins = fit.model.thawedparmins
+    softmaxs = fit.model.thawedparmaxes
 
-    logger = logging.getLogger("sherpa")
-    orig_log_level = logger.level
+    # We have to use columns 1 to n-1 of samples
+    valid = numpy.ones(samples.shape[0], dtype=numpy.bool)
+    for col, pmin, pmax in zip(samples.T[1:-1], softmins, softmaxs):
+        valid &= (col >= pmin) & (col <= pmax)
 
-    # only change the log level if it is less than error
-    #
-    if orig_log_level < logging.ERROR:
-        logger.setLevel(logging.ERROR)
+    nrows = samples.shape[0]
+    oflx = samples[:, 0]       # observed/absorbed flux
+    iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
 
+    mystat = numpy.zeros((nrows, 1), dtype=samples.dtype)
     try:
+        for nn in range(nrows):
+            # Need to extract the subset that contains the parameters
+            fit.model.thawedpars = samples[nn, 1:-1]
+            if valid[nn]:
+                iflx[nn] = calc_energy_flux(data, modelcomponent, lo=lo, hi=hi)
 
-        softmins = fit.model.thawedparmins
-        softmaxs = fit.model.thawedparmaxes
-        mysim = simulated_pars_within_ranges(samples, softmins, softmaxs)
-
-        size = len(mysim[:, 0])
-        oflx = numpy.zeros(size)  # observed/absorbed flux
-        iflx = numpy.zeros(size)  # intrinsic/unabsorbed flux
-        thawedpars = [par for par in fit.model.pars if not par.frozen]
-
-        logger.setLevel(logging.ERROR)
-
-        mystat = []
-        for nn in range(size):
-            session.set_source(id, orig_source)
-            oflx[nn] = mysim[nn, 0]
-            for ii in range(len(thawedpars)):
-                val = mysim[nn, ii + 1]
-                session.set_par(thawedpars[ii].fullname, val)
-            session.set_source(id, modelcomponent)
-            iflx[nn] = session.calc_energy_flux(lo=lo, hi=hi, id=id)
-            #####################################
-            session.set_full_model(id, orig_model)
-            mystat.append(session.calc_stat(id))
-            #####################################
-
-        logger.setLevel(orig_log_level)
+            mystat[nn, 0] = fit.calc_stat()
 
     finally:
-
-        # Why do we set both full_model and source here?
-        #
-        logger.setLevel(logging.ERROR)
-        session.set_full_model(id, orig_model)
-        fit.model.thawedpars = orig_model_vals
-        session.set_source(id, orig_source)
-
-        logger.setLevel(orig_log_level)
+        fit.model.thawedpars = thawedpars
 
     hwidth = confidence / 2
     result = []
-    for x in [oflx, iflx]:
-        result.append(numpy.percentile(x, [50, 50 + hwidth, 50 - hwidth]))
+    for flx in [oflx, iflx]:
+        result.append(numpy.percentile(flx[valid],
+                                       [50, 50 + hwidth, 50 - hwidth]))
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
         msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
         info(msg)
 
-    sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
-    samples = numpy.concatenate((samples, sampletmp), axis=1)
-
-    for index in range(size):
-        samples[index][-1] = mystat[index]
-
-    # samples = numpy.delete( samples, (size), axis=0 )
+    samples = numpy.concatenate((samples, mystat), axis=1)
     result.append(samples)
 
     return result
