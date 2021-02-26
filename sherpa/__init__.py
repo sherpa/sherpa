@@ -864,9 +864,15 @@ def _install_test_deps():
 
 
 def clitest():
+    """The sherpa_test endpoint."""
+
     plugins = _install_test_deps()
     import pytest
     import os
-    sherpa_dir = os.path.dirname(__file__)
-    errno = pytest.main([sherpa_dir, '-rs'], plugins=plugins)  # passing the plugins that have been installed "now".
+
+    # Add in command-line arguments to allow configuring the Sherpa tests
+    args = [os.path.dirname(__file__), '-rs'] + sys.argv[1:]
+
+    # passing the plugins that have been installed "now".
+    errno = pytest.main(args, plugins=plugins)
     sys.exit(errno)
