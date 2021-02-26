@@ -27,7 +27,7 @@ from numpy import VisibleDeprecationWarning
 
 import pytest
 
-from sherpa.utils.testing import SherpaTestCase
+from sherpa.utils.testing import get_datadir, set_datadir
 
 try:
     from astropy.io.fits.verify import VerifyWarning
@@ -287,7 +287,7 @@ def pytest_configure(config):
     try:
         path = config.getoption(TEST_DATA_OPTION)
         if path:
-            SherpaTestCase.datadir = path
+            set_datadir(path)
     except ValueError:  # option not defined from command line, no-op
         pass
 
@@ -306,7 +306,7 @@ def test_data_path():
     path : basestring
         The string with the path to the main test data folder.
     """
-    path = SherpaTestCase.datadir
+    path = get_datadir()
 
     if path is None:
         raise RuntimeError("Test needs the requires_data decorator")

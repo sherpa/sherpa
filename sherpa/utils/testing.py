@@ -17,10 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
-import unittest
-import os
 import importlib
+import os
+import unittest
+
+import numpy
 
 from sherpa.utils._utils import sao_fcmp
 
@@ -32,7 +33,14 @@ except ImportError:
 
 
 def _get_datadir():
-    import os
+    """Return the location of the test data files, if installed.
+
+    Returns
+    -------
+    path : str or None
+        The path to the Sherpa test data directory or None.
+    """
+
     try:
         import sherpatest
         datadir = os.path.dirname(sherpatest.__file__)
@@ -41,7 +49,8 @@ def _get_datadir():
             import sherpa
             datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir,
                                    'sherpa-test-data', 'sherpatest')
-            if not os.path.exists(datadir) or not os.listdir(datadir):
+            if not os.path.exists(datadir) or not os.path.isdir(datadir) \
+               or not os.listdir(datadir):
                 # The dir is empty, maybe the submodule was not initialized
                 datadir = None
         except ImportError:
@@ -50,13 +59,49 @@ def _get_datadir():
     return datadir
 
 
+DATADIR = _get_datadir()
+
+
+def set_datadir(datadir):
+    """Set the data directory.
+
+    Parameters
+    ----------
+    datadir : str
+        The name to the data directory. It must exist.
+
+    Raises
+    ------
+    OSError
+        If datadir is not a directory or is empty.
+
+    """
+
+    if not os.path.exists(datadir) or not os.path.isdir(datadir) \
+       or not os.listdir(datadir):
+        raise OSError("datadir={} is empty or not a directory".format(datadir))
+
+    global DATADIR
+    DATADIR = datadir
+
+
+def get_datadir():
+    """Return the data directory.
+
+    Returns
+    -------
+    datadir : str or None
+        The name to the data directory, if it exists.
+
+    """
+
+    return DATADIR
+
+
 class SherpaTestCase(unittest.TestCase):
     """
     Base class for Sherpa unit tests. The use of this class is deprecated in favor of pytest functions.
     """
-
-    # The location of the Sherpa test data (it is optional)
-    datadir = _get_datadir()
 
     def make_path(self, *segments):
         """Add the segments onto the test data location.
@@ -74,9 +119,10 @@ class SherpaTestCase(unittest.TestCase):
            data directory is not set.
 
         """
-        if self.datadir is None:
+        datadir = get_datadir()
+        if datadir is None:
             return None
-        return os.path.join(self.datadir, *segments)
+        return os.path.join(datadir, *segments)
 
     # What is the benefit of this over numpy.testing.assert_allclose(),
     # which was added in version 1.5 of NumPy?
@@ -151,7 +197,7 @@ class SherpaTestCase(unittest.TestCase):
         scriptname = name + "-" + scriptname
         self.locals = {}
         cwd = os.getcwd()
-        os.chdir(self.datadir)
+        os.chdir(get_datadir())
         try:
             with open(scriptname, "rb") as fh:
                 cts = fh.read()
@@ -186,7 +232,7 @@ if HAS_PYTEST:
 
          See PR #391 for why this is a function: https://github.com/sherpa/sherpa/pull/391
          """
-        condition = SherpaTestCase.datadir is None
+        condition = DATADIR is None
         msg = "required test data missing"
         return pytest.mark.skipif(condition, reason=msg)(test_function)
 

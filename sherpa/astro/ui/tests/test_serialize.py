@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -47,7 +48,7 @@ from numpy.testing import assert_array_equal
 
 import pytest
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, \
+from sherpa.utils.testing import get_datadir, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, requires_group
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
@@ -851,8 +852,7 @@ def add_datadir_path(output):
     """Replace any @@ characters by the value of self.datadir,
     making sure that the replacement text does not end in a /."""
 
-    # it would be nice not to use SherpaTestCase
-    dname = SherpaTestCase.datadir
+    dname = get_datadir()
     if dname.endswith('/'):
         dname = dname[:-1]
 
