@@ -54,14 +54,14 @@ jobs:
     - name: Pip Testing Setup - Dependencies
       env:
         NUMPYVER: ${{ matrix.numpy-pkg }}           #: Required: numpy OR '...'
-        FITSBUILD: ${{ matrix.fits-pkg }}                   #: Optional: '' OR '...'
+        FITS: ${{ matrix.fits-pkg }}                   #: Optional: '' OR '...'
         MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }} #: Optional: '' OR '...'
       shell: bash
       run: |
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
-        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} 
+        pip install ${NUMPYVER} ${FITS} ${MATPLOTLIBVER}
         
     - name: Build Sherpa
       run: |

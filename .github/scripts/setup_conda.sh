@@ -15,4 +15,4 @@ if [ -n "${XSPECVER}" ];
 fi
 
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
-conda install --yes ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD}
+conda install --yes ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITS}

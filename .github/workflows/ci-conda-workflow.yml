@@ -133,7 +133,7 @@ jobs:
       env:
         PYTHONVER: ${{ matrix.python-version }}
         NUMPYVER: ${{ matrix.numpy-version }}
-        FITSBUILD: ${{ matrix.fits }}
+        FITS: ${{ matrix.fits }}
         MATPLOTLIBVER: ${{ matrix.matplotlib-version }}
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
