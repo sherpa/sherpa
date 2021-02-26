@@ -83,7 +83,7 @@ def test_set_datadir():
     # Assume the current directory is a reasonable directory to use.
     #
     npath = os.getcwd()
-    assert opath != npath  # just a sanety check
+    assert opath != npath  # just a sanity check
     set_datadir(npath)
 
     assert get_datadir() == npath
