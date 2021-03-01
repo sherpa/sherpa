@@ -59,8 +59,30 @@ def modelCacher1d(func):
         digest = ''
         if use_caching:
 
+            # Up until Sherpa 4.12.2 we used the kwargs to define the
+            # integrate setting, with
+            # boolean_to_byte(kwargs.get('integrate', False)) but
+            # unfortunately this is used in code like
+            #
+            #    @modelCacher1d
+            #    def calc(..):
+            #        kwargs['integrate'] = self.integrate
+            #        return somefunc(... **kwargs)
+            #
+            # and the decorator is applied to calc, which is not
+            # called with a integrate kwarg, rather than the call to
+            # somefunc, which was sent an integrate setting.
+            #
+            try:
+                integrate = cls.integrate
+            except AttributeError:
+                # Rely on the integrate kwarg as there's no
+                # model setting.
+                #
+                integrate = kwargs.get('integrate', False)
+
             data = [numpy.array(pars).tobytes(),
-                    boolean_to_byte(kwargs.get('integrate', False)),
+                    boolean_to_byte(integrate),
                     numpy.asarray(xlo).tobytes()]
             if args:
                 data.append(numpy.asarray(args[0]).tobytes())

@@ -18,6 +18,7 @@
 #
 
 from collections import namedtuple
+import hashlib
 import logging
 import operator
 import warnings
@@ -28,10 +29,10 @@ import pytest
 
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, NestedModel, \
-    UnaryOpModel
+    ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
+    UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
-from sherpa.models.basic import Sin, Const1D, Box1D
+from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -620,3 +621,318 @@ def test_constant_show(value, name, expected):
 
     m = ArithmeticConstantModel(value, name=name)
     assert m.name == expected
+
+
+def check_cache(mdl, expected, x, xhi=None):
+    """Check the cache contents.
+
+    We assume only one value is being cached at a time. The
+    code matches that in sherpa.models.model.modelCacher1d,
+    so all it does is check we are using this method.
+    """
+
+    cache = mdl._cache
+    assert len(cache) == 1
+
+    pars = [p.val for p in mdl.pars]
+    data = [numpy.asarray(pars).tobytes(),
+            b'1' if mdl.integrate else b'0',
+            x.tobytes()]
+    if xhi is not None:
+        data.append(xhi.tobytes())
+
+    token = b''.join(data)
+    digest = hashlib.sha256(token).digest()
+    assert digest in cache
+    assert cache[digest] == pytest.approx(expected)
+
+
+def test_evaluate_no_cache1d():
+    """Check we can turn off cacheing: 1d"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    mdl.integrate = False
+    mdl._use_caching = False
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    expected = 5 + 2 * xgrid
+    assert mdl(xgrid) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+
+def test_evaluate_cache1d():
+    """Check we run with cacheing on: 1d"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    mdl.integrate = False
+    mdl._use_caching = True
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+    check_cache(mdl, expected, xgrid)
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    expected = 5 + 2 * xgrid
+    assert mdl(xgrid) == pytest.approx(expected)
+    check_cache(mdl, expected, xgrid)
+
+
+def test_evaluate_no_cache1dint():
+    """Check we can turn off cacheing: 1dint"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+    xlo, xhi = xgrid[:-1], xgrid[1:]
+
+    mdl = Polynom1D()
+    mdl._use_caching = False
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(5) * 1.5
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    def xval(x):
+        return 5 + 2 * x
+
+    dx = xhi - xlo
+    ylo = xval(xlo)
+    yhi = xval(xhi)
+
+    expected = dx * (yhi + ylo) / 2
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+
+def test_evaluate_cache1dint():
+    """Check we run with cacheing on: 1dint"""
+
+    xgrid = numpy.arange(2, 10, 1.5)
+    xlo, xhi = xgrid[:-1], xgrid[1:]
+
+    mdl = Polynom1D()
+    mdl._use_caching = True
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(5) * 1.5
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    def xval(x):
+        return 5 + 2 * x
+
+    dx = xhi - xlo
+    ylo = xval(xlo)
+    yhi = xval(xhi)
+
+    expected = dx * (yhi + ylo) / 2
+    assert mdl(xlo, xhi) == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+
+def test_evaluate_cache_swap():
+    """Check issue #959 when swapping integrate flag caused problems.
+
+    Note that the problem causing #959 is actually tested in
+    test_evaluate_cache1dint but it's nice to have this
+    separate check in case things change.
+    """
+
+    xgrid = numpy.arange(2, 10, 1.5)
+    xlo, xhi = xgrid[:-1], xgrid[1:]
+
+    mdl = Polynom1D()
+    mdl._use_caching = True
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    mdl.integrate = False
+    expected = 5 + 2 * xlo
+
+    y1 = mdl(xlo, xhi)
+    assert y1 == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+    mdl.integrate = True
+
+    def xval(x):
+        return 5 + 2 * x
+
+    dx = xhi - xlo
+    ylo = xval(xlo)
+    yhi = xval(xhi)
+
+    expected = dx * (yhi + ylo) / 2
+
+    y2 = mdl(xlo, xhi)
+    assert y2 == pytest.approx(expected)
+    check_cache(mdl, expected, xlo, xhi)
+
+
+def test_evaluate_cache_arithmeticconstant():
+    """Check we run with cacheing: ArihmeticConstant"""
+
+    mdl = ArithmeticConstantModel(2.3)
+    assert not hasattr(mdl, '_use_caching')
+
+
+def test_evaluate_cache_unaryop():
+    """UnaryOp has no cache"""
+
+    mdl = Polynom1D()
+    assert hasattr(mdl, '_use_caching')
+
+    fmdl = -mdl
+    assert isinstance(fmdl, UnaryOpModel)
+    assert not hasattr(fmdl, '_use_caching')
+
+
+def test_evaluate_cache_binaryop():
+    """BinaryOp has no cache"""
+
+    mdl = Polynom1D()
+    assert hasattr(mdl, '_use_caching')
+
+    fmdl = mdl + 2
+    assert isinstance(fmdl, BinaryOpModel)
+    assert not hasattr(fmdl, '_use_caching')
+
+
+def test_evaluate_cache_regrid1d():
+    """How about a regridded model?"""
+
+    mdl = Polynom1D()
+
+    x = numpy.arange(2, 20, 0.5)
+    rmdl = mdl.regrid(x)
+
+    assert isinstance(rmdl, RegridWrappedModel)
+    assert not hasattr(rmdl, '_use_caching')
+
+
+class DoNotUseModel(Model):
+    """This is only used to get a integrate-free model.
+
+    ArithmeticModel sets a integrate field, so this is derived
+    from Model. This requires adding some fields from ArithmeticModel
+    to support use with modelCacher1d.
+    """
+
+    # We need this for modelCacher1d
+    _use_caching = True
+    _cache = {}
+    _queue = ['']
+
+    @modelCacher1d
+    def calc(self, p, *args, **kwargs):
+        """p is ignored."""
+
+        return numpy.ones(args[0].size)
+
+
+def test_cache_integrate_fall_through_no_integrate():
+    """Try and test the fall-through of the integrate setting.
+
+    This is a bit contrived.
+    """
+
+    mdl = DoNotUseModel('notme')
+    x = numpy.asarray([2, 3, 7, 100])
+    y = mdl(x)
+
+    expected = [1, 1, 1, 1]
+    assert y == pytest.approx(expected)
+
+    # A simplified version of check_cache (as we have no
+    # integrate setting).
+    #
+    cache = mdl._cache
+    assert len(cache) == 1
+
+    pars = []
+    data = [numpy.asarray(pars).tobytes(),
+            b'0', # not integrated
+            x.tobytes()]
+
+    token = b''.join(data)
+    digest = hashlib.sha256(token).digest()
+    assert digest in cache
+    assert cache[digest] == pytest.approx(expected)
+
+
+def test_cache_integrate_fall_through_integrate_true():
+    """See also test_cache_integrate_fall_through_no_integrate."""
+
+    mdl = DoNotUseModel('notme')
+    x = numpy.asarray([2, 3, 7, 100])
+    y = mdl(x, integrate=True)
+
+    expected = [1, 1, 1, 1]
+    assert y == pytest.approx(expected)
+
+    # A simplified version of check_cache (as we have no
+    # integrate setting).
+    #
+    cache = mdl._cache
+    assert len(cache) == 1
+
+    pars = []
+    data = [numpy.asarray(pars).tobytes(),
+            b'1', # integrated
+            x.tobytes()]
+
+    token = b''.join(data)
+    digest = hashlib.sha256(token).digest()
+    assert digest in cache
+    assert cache[digest] == pytest.approx(expected)
+
+
+def test_cache_integrate_fall_through_integrate_false():
+    """See also test_cache_integrate_fall_through_no_integrate."""
+
+    mdl = DoNotUseModel('notme')
+    x = numpy.asarray([2, 3, 7, 100])
+    y = mdl(x, integrate=False)
+
+    expected = [1, 1, 1, 1]
+    assert y == pytest.approx(expected)
+
+    # A simplified version of check_cache (as we have no
+    # integrate setting).
+    #
+    cache = mdl._cache
+    assert len(cache) == 1
+
+    pars = []
+    data = [numpy.asarray(pars).tobytes(),
+            b'0', # not integrated
+            x.tobytes()]
+
+    token = b''.join(data)
+    digest = hashlib.sha256(token).digest()
+    assert digest in cache
+    assert cache[digest] == pytest.approx(expected)
