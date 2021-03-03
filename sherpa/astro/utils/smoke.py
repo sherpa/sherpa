@@ -136,8 +136,7 @@ class SmokeTest(unittest.TestCase):
         self.y = np.asarray([1, 2, 3])
 
     def tearDown(self):
-        if hasattr(self, "old_level"):
-            logger.setLevel(self._old_level)
+        logger.setLevel(self._old_level)
 
     def test_fit(self):
         """
