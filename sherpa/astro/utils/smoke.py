@@ -127,15 +127,12 @@ class SmokeTest(unittest.TestCase):
         self._old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
 
-        from sherpa.astro import datastack
-        folder = os.path.dirname(datastack.__file__)
-        self.fits = os.path.join(folder, "tests", "data", "acisf07867_000N001_r0002_pha3.fits")
-
         self.x = np.asarray([1, 2, 3])
         self.x2 = self.x + 1
         self.y = np.asarray([1, 2, 3])
 
     def tearDown(self):
+        ui.clean()
         logger.setLevel(self._old_level)
 
     def test_fit(self):
@@ -162,9 +159,26 @@ class SmokeTest(unittest.TestCase):
         This test ensures that the FITS backend can be used to perform basic
         I/O functions.
         """
-        ui.load_pha(self.fits)
+
+        from sherpa.astro import datastack
+        folder = os.path.dirname(datastack.__file__)
+        infile = os.path.join(folder, "tests", "data", "acisf07867_000N001_r0002_pha3.fits")
+
+        ui.load_pha(infile)
         with NamedTemporaryFile() as f:
             ui.save_pha(f.name, ascii=False, clobber=True)
+
+            # And can we read it back in?
+            ui.load_pha(2, f.name)
+
+        # Check the data is the same (note: although counts/channels are integers
+        # we use approximate equality checks here as easier to do).
+        d1 = ui.get_data(1)
+        d2 = ui.get_data(2)
+        assert_almost_equal(d2.channel, d1.channel)
+        assert_almost_equal(d2.counts, d1.counts)
+        assert_almost_equal(d2.exposure, d1.exposure)
+        assert_almost_equal(np.log10(d2.backscal), np.log10(d1.backscal))
 
     @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'), reason="Requires xspec")
     def test_xspec(self):
