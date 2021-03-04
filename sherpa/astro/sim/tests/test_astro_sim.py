@@ -210,7 +210,9 @@ def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
     pmins = np.asarray(covar_results.parmins)
     pmaxs = np.asarray(covar_results.parmaxes)
 
-    fit.model = myabs * mypl
+    # Make sure we add the response
+    rsp = Response1D(fit.data)
+    fit.model = rsp(myabs * mypl)
 
     fit.model.thawedpars = pvals
     fit.model.thawedparmins = pvals + 2 * pmins  # pmins are < 0
