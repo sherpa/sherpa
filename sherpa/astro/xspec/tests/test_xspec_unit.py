@@ -30,6 +30,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_almost_equal
 
+from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
 
@@ -711,6 +712,138 @@ def test_read_xstable_model(make_data_path):
         assert not(p.frozen)
 
 
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_xspec_model_requires_bins(clsname):
+    """Ensure you can not call with a single grid for the energies.
+
+    You used to be able to do this (in Sherpa 4.13 and earlier).
+    """
+
+    from sherpa.astro import xspec
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+
+    with pytest.raises(TypeError) as exc:
+        mdl([0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_xspec_model_requires_bins_low_level(clsname):
+    """Ensure you can not call with a single grid for the energies (calc).
+
+    You used to be able to do this (in Sherpa 4.13 and earlier).
+    """
+
+    from sherpa.astro import xspec
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+
+    with pytest.raises(TypeError) as exc:
+        mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_xspec_model_requires_bins_very_low_level(clsname):
+    """Check we can use a single grid for direct access (_calc).
+
+    This is the flip side to test-xspec_model_requires_bins_low_level
+    """
+
+    from sherpa.astro import xspec
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+
+    # pick a range which does not evaluate to 0 for wabs
+    egrid = np.arange(0.5, 1.0, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    y1 = mdl(elo, ehi)
+    assert y1.size == elo.size
+
+    y2 = mdl._calc([p.val for p in mdl.pars], egrid)
+    assert y2.size == elo.size + 1
+
+    # Scale by the median value so we have values ~ 1 for comparison
+    ymed = np.median(y1)
+    y1 /= ymed
+    y2 /= ymed
+
+    # This should be an exact match, but it's easier done with pytest.approx
+    assert y2[:-1] == pytest.approx(y1)
+
+    # Last element of _calc is 0
+    assert y2[-1] == 0.0
+
+
+@requires_xspec
+def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
+    """Check we can not call a table model with a single grid.
+
+    This used to be supported in Sherpa 4.13 and before.
+    """
+
+    import sherpa.astro.xspec as xs
+
+    ui.load_xstable_model('mdl', make_data_path('xspec-tablemodel-RCS.mod'))
+    mdl = ui.get_model_component('mdl')
+
+    with pytest.raises(TypeError) as exc:
+        mdl([0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
+@requires_xspec
+def test_xspec_convolutionmodel_requires_bin_edges():
+    """Check we can not call a convolution model with a single grid.
+
+    This used to be supported in Sherpa 4.13 and before.
+    """
+
+    import sherpa.astro.xspec as xs
+
+    m1 = xs.XSpowerlaw()
+    m2 = xs.XScflux()
+    mdl = m2(m1)
+
+    with pytest.raises(TypeError) as exc:
+        mdl([0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
+@requires_xspec
+def test_xspec_convolutionmodel_requires_bin_edges_low_level():
+    """Check we can not call a convolution model with a single grid (calc).
+
+    This used to be supported in Sherpa 4.13 and before.
+    """
+
+    import sherpa.astro.xspec as xs
+
+    m1 = xs.XSpowerlaw()
+    m2 = xs.XScflux()
+    mdl = m2(m1)
+
+    with pytest.raises(TypeError) as exc:
+        mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
+
+    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
+    assert str(exc.value) == emsg
+
+
 @requires_data
 @requires_fits
 @requires_xspec
@@ -731,7 +864,9 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     tbl = xspec.read_xstable_model('bar', path)
 
     egrid = np.arange(0.1, 11, 0.01)
-    y = tbl(egrid)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    y = tbl(elo, ehi)
 
     # Several simple regression tests.
     assert y[0] == pytest.approx(0.27216572)
@@ -744,7 +879,7 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     assert y[967] == pytest.approx(minval)
 
     zeros = np.where(y <= 0)
-    assert (zeros[0] == np.arange(968, 1090)).all()
+    assert (zeros[0] == np.arange(968, 1089)).all()
 
 
 @requires_data
@@ -805,6 +940,8 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
 
     # This extends beyond the range of the model grid
     egrid = np.arange(0.1, 17, 1.0)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
 
     # The expected values, evaluated with XSPEC 12.10.1b using
     # C++ code (i.e. not the Sherpa interface).
@@ -826,16 +963,15 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
                        0.997616,
                        0.998104,
                        0.998454,
-                       -1,
-                       0])
+                       -1])
 
     # Note, xspec 12.10.0 should not be seen here as explicitly
     # excluded above.
     xver = xspec.get_xsversion()
     if xver.startswith('12.9.'):
-        yexp[-2] = 1.0
+        yexp[-1] = 1.0
 
-    y = tbl(egrid)
+    y = tbl(elo, ehi)
 
     assert_almost_equal(y, yexp, decimal=6)
 
@@ -915,7 +1051,9 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
 
     lmdl = Const1D()
 
-    grid = np.arange(1, 5)
+    grid = np.arange(1, 6)
+    glo = grid[:-1]
+    ghi = grid[1:]
 
     tbl.tau = lmdl.c0
     lmdl.c0 = 2
@@ -923,14 +1061,14 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     # just a safety check that we can change the parameter via
     # a link and run the model
     assert tbl.tau.val == pytest.approx(2)
-    y2 = tbl(grid)
+    y2 = tbl(glo, ghi)
     assert (y2[:-1] > 0).all()
 
     # Test the fix for #742
     lmdl.c0 = 20
     emsg = 'parameter bar.tau has a maximum of 10'
     with pytest.raises(ParameterErr, match=emsg):
-        tbl(grid)
+        tbl(glo, ghi)
 
 
 @requires_xspec
