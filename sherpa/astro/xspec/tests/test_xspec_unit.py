@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016-2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -682,6 +683,7 @@ def test_read_xstable_model(make_data_path):
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)
     assert tbl.addmodel
+    assert tbl.integrate
 
     assert len(tbl.pars) == 4
     assert tbl.pars[0].name == 'tau'
@@ -760,6 +762,7 @@ def test_create_xspec_multiplicative_model(make_data_path):
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)
     assert not tbl.addmodel
+    assert tbl.integrate
 
     # Apparently we lose the case of the parameter names;
     # should investigate
@@ -928,3 +931,96 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     emsg = 'parameter bar.tau has a maximum of 10'
     with pytest.raises(ParameterErr, match=emsg):
         tbl(grid)
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_integrate_setting(clsname):
+    """Can we change the integrate setting?
+
+    It's not obvious what the integrate setting is meant to do for
+    XSPEC models, so let's check what we can do with it.
+
+    """
+
+    from sherpa.astro import xspec
+
+    egrid = np.arange(0.1, 1.0, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    assert mdl.integrate
+
+    y1 = mdl(elo, ehi)
+
+    mdl.integrate = False
+    assert not mdl.integrate
+
+    y2 = mdl(elo, ehi)
+
+    # Assume the integrate setting is ignored. To ensure we
+    # can test small values use the log of the data, and
+    # as we can have zero values (from xswabs) replace them
+    # with a sentinel value
+    #
+    y1[y1 <= 0] = 1e-10
+    y2[y2 <= 0] = 1e-10
+
+    y1 = np.log10(y1)
+    y2 = np.log10(y2)
+    assert y2 == pytest.approx(y1)
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
+def test_integrate_setting_con(clsname):
+    """Can we change the integrate setting of convolution models.
+
+    This is test_integrate_setting after wrapping the model by a
+    convolution model. At present the convolution model does not have
+    an integrate setting.
+
+    Note that the convolved model doesn't make much sense physically -
+    at least when it's xscflux(xswabs) - but we just care about the
+    evaluation process here.
+
+    """
+
+    from sherpa.astro import xspec
+
+    egrid = np.arange(0.1, 1.0, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    conv = xspec.XScflux()
+    assert conv.integrate
+
+    omdl = getattr(xspec, 'XS{}'.format(clsname))()
+    assert omdl.integrate
+
+    # Convolution models do not have an integrate setting
+    mdl = conv(omdl)
+    with pytest.raises(AttributeError):
+        mdl.integrate
+
+    y1 = mdl(elo, ehi)
+
+    # as mdl does not have an integrate setting, just change
+    # omdl
+    omdl.integrate = False
+    assert not omdl.integrate
+
+    y2 = mdl(elo, ehi)
+
+    # Assume the integrate setting is ignored. To ensure we
+    # can test small values use the log of the data, and
+    # as we can have zero values (from xswabs) replace them
+    # with a sentinel value
+    #
+    y1[y1 <= 0] = 1e-10
+    y2[y2 <= 0] = 1e-10
+
+    y1 = np.log10(y1)
+    y2 = np.log10(y2)
+    assert y2 == pytest.approx(y1)
