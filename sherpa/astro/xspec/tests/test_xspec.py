@@ -338,7 +338,7 @@ def test_xstablemodel_checks_input_length(loadfunc, clean_astro_ui, make_data_pa
 
     # Check when input array is too small (< 2 elements)
     with pytest.raises(TypeError):
-        mdl([0.1])
+        mdl([0.1], [0.2])
 
     # Check when input arrays are not the same size (when the
     # low and high bin edges are given)
