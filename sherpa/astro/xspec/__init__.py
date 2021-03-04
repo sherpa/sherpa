@@ -75,6 +75,7 @@ References
 
 
 import string
+import warnings
 
 import numpy as np
 
@@ -864,7 +865,8 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         nargs = len(args)
         if nargs != 3:
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
-            raise TypeError(emsg)
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
 
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
@@ -994,7 +996,8 @@ class XSTableModel(XSModel):
         nargs = 1 + len(args)
         if nargs != 3:
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
-            raise TypeError(emsg)
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
 
         # The function used depends on XSPEC version and, prior
         # to XSPEC 12.10.1, the type of table.
@@ -1165,7 +1168,8 @@ class XSConvolutionKernel(XSModel):
         nargs = 2 + len(args)
         if nargs != 4:
             emsg = f"calc() requires pars,rhs,lo,hi arguments, sent {nargs} arguments"
-            raise TypeError(emsg)
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
 
         npars = len(self.pars)
         lpars = pars[:npars]
@@ -1297,7 +1301,8 @@ class XSConvolutionModel(CompositeModel, XSModel):
         nargs = 1 + len(args)
         if nargs != 3:
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
-            raise TypeError(emsg)
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
 
         return self.wrapper.calc(p, self.model.calc,
                                  *args, **kwargs)

@@ -724,11 +724,9 @@ def test_xspec_model_requires_bins(clsname):
 
     mdl = getattr(xspec, 'XS{}'.format(clsname))()
 
-    with pytest.raises(TypeError) as exc:
+    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg):
         mdl([0.1, 0.2, 0.3, 0.4])
-
-    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    assert str(exc.value) == emsg
 
 
 @requires_xspec
@@ -743,11 +741,9 @@ def test_xspec_model_requires_bins_low_level(clsname):
 
     mdl = getattr(xspec, 'XS{}'.format(clsname))()
 
-    with pytest.raises(TypeError) as exc:
+    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg):
         mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
-
-    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    assert str(exc.value) == emsg
 
 
 @requires_xspec
@@ -797,11 +793,9 @@ def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
     ui.load_xstable_model('mdl', make_data_path('xspec-tablemodel-RCS.mod'))
     mdl = ui.get_model_component('mdl')
 
-    with pytest.raises(TypeError) as exc:
+    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg):
         mdl([0.1, 0.2, 0.3, 0.4])
-
-    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    assert str(exc.value) == emsg
 
 
 @requires_xspec
@@ -817,11 +811,9 @@ def test_xspec_convolutionmodel_requires_bin_edges():
     m2 = xs.XScflux()
     mdl = m2(m1)
 
-    with pytest.raises(TypeError) as exc:
+    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg):
         mdl([0.1, 0.2, 0.3, 0.4])
-
-    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    assert str(exc.value) == emsg
 
 
 @requires_xspec
@@ -837,11 +829,9 @@ def test_xspec_convolutionmodel_requires_bin_edges_low_level():
     m2 = xs.XScflux()
     mdl = m2(m1)
 
-    with pytest.raises(TypeError) as exc:
+    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg):
         mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
-
-    emsg = 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    assert str(exc.value) == emsg
 
 
 @requires_data
