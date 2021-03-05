@@ -733,11 +733,11 @@ def set_xsstate(state):
             set_xspath_manager(managerpath)
 
 
-def read_xstable_model(modelname, filename):
+def read_xstable_model(modelname, filename, etable=False):
     """Create a XSPEC table model.
 
-    XSPEC additive (atable, [1]_) and multiplicative (mtable, [2]_)
-    table models are supported.
+    XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
+    exponential (etable, [3]_) table models are supported.
 
     Parameters
     ----------
@@ -745,7 +745,10 @@ def read_xstable_model(modelname, filename):
        The identifier for this model component.
     filename : str
        The name of the FITS file containing the data, which should
-       match the XSPEC table model definition [3]_.
+       match the XSPEC table model definition [4]_.
+    etable : bool, optional
+       Set if this is an etable (as there's no way to determine this
+       from the file itself). Defaults to False.
 
     Returns
     -------
@@ -758,7 +761,9 @@ def read_xstable_model(modelname, filename):
 
     .. [2] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-    .. [3] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+    .. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+
+    .. [4] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     Examples
     --------
@@ -768,6 +773,11 @@ def read_xstable_model(modelname, filename):
 
     >>> mdl = read_xstable_model('xmdl', 'bbrefl_1xsolar.fits')
     >>> print(mdl)
+
+    When the file is an etable model the etable parameter must be set:
+
+    >>> emdl = read_xstable_model('xmdl', 'etable.fits', etable=True)
+    >>> print(emdl)
 
     """
 
@@ -798,7 +808,7 @@ def read_xstable_model(modelname, filename):
     nint = int(hdr[hdrkeys[0]])
     return XSTableModel(filename, modelname, *cols,
                         nint=nint, addmodel=addmodel,
-                        addredshift=addredshift)
+                        addredshift=addredshift, etable=etable)
 
 
 # The model classes are added to __all__ at the end of the file
@@ -926,11 +936,16 @@ class XSTableModel(XSModel):
     addmodel : bool
         Is this an additive model (``True``) or multiplicative model
         (``False``)? It should be set to the value of the "ADDMODEL"
-        keyword of the primary header of the input file.
+        keyword of the primary header of the input file. When False
+        the etable keyword is used to distinguish between mtable and
+        etable models.
     addredshift : bool
         If ``True`` then a redshift parameter is added to the parameters.
         It should be set to the value of the "REDSHIFT" keyword of the
         primary header of the input file.
+    etable : bool
+        When addmodel is False this defines whether the file is a
+        mtable model (False, the default) or an etable model (True).
 
     References
     ----------
@@ -942,7 +957,8 @@ class XSTableModel(XSModel):
 
     def __init__(self, filename, name='xstbl', parnames=(),
                  initvals=(), delta=(), mins=(), maxes=(), hardmins=(),
-                 hardmaxes=(), nint=0, addmodel=False, addredshift=False):
+                 hardmaxes=(), nint=0,
+                 addmodel=False, addredshift=False, etable=False):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation + string.whitespace
@@ -973,6 +989,7 @@ class XSTableModel(XSModel):
 
         self.filename = filename
         self.addmodel = addmodel
+        self.etable = etable
 
         if addredshift:
             self.redshift = Parameter(name, 'redshift', 0., 0., 5.,
@@ -1014,7 +1031,7 @@ class XSTableModel(XSModel):
                 raise ParameterErr('edge', self.name, 'maximum', param._hard_max)
 
         if hasattr(_xspec, 'tabint'):
-            tabtype = 'add' if self.addmodel else 'mul'
+            tabtype = 'add' if self.addmodel else 'exp' if self.etable else 'mul'
             return _xspec.tabint(p, *args,
                                  filename=self.filename, tabtype=tabtype)
 

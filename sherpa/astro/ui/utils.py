@@ -9658,12 +9658,17 @@ class Session(sherpa.ui.utils.Session):
 
         return (x, y)
 
-    def load_xstable_model(self, modelname, filename):
+    def load_xstable_model(self, modelname, filename, etable=False):
         """Load a XSPEC table model.
 
-        Create an additive (``atable``, [1]_) or multiplicative
-        (``mtable``, [2]_) XSPEC table model component. These models
-        may have multiple model parameters.
+        Create an additive (``atable``, [1]_), multiplicative
+        (``mtable``, [2]_), or exponential (``etable``, [3]_) XSPEC
+        table model component. These models may have multiple model
+        parameters.
+
+        .. versionchanged:: 4.13.1
+           The etable argument has been added to allow exponential table
+           models to be used.
 
         Parameters
         ----------
@@ -9671,7 +9676,10 @@ class Session(sherpa.ui.utils.Session):
            The identifier for this model component.
         filename : str
            The name of the FITS file containing the data, which should
-           match the XSPEC table model definition [3]_.
+           match the XSPEC table model definition [4]_.
+        etable : bool, optional
+           Set if this is an etable (as there's no way to determine this
+           from the file itself). Defaults to False.
 
         Raises
         ------
@@ -9690,7 +9698,7 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
         NASA's HEASARC site contains a link to community-provided
-        XSPEC table models [4]_.
+        XSPEC table models [5]_.
 
         References
         ----------
@@ -9699,9 +9707,11 @@ class Session(sherpa.ui.utils.Session):
 
         .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-        .. [3] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+        .. [3] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
 
-        .. [4] https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html
+        .. [4] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+
+        .. [5] https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html
 
         Examples
         --------
@@ -9714,6 +9724,10 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(xsphabs.gal * xtbl)
         >>> print(xtbl)
 
+        Load in an XSPEC etable model
+
+        >>> load_xstable_model('etbl', 'etable.mod', etable=True)
+
         """
 
         try:
@@ -9722,7 +9736,7 @@ class Session(sherpa.ui.utils.Session):
             # TODO: what is the best error to raise here?
             raise ImportErr('notsupported', 'XSPEC') from exc
 
-        tablemodel = xspec.read_xstable_model(modelname, filename)
+        tablemodel = xspec.read_xstable_model(modelname, filename, etable=etable)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
