@@ -791,7 +791,7 @@ def test_pha_plot_with_wstat_data(caplog):
     complicates visualization: do we subtract the background from
     the data, add the background to the model, or something else?
 
-    At the moment we do nothing.
+    At the moment we subtract the background.
     """
 
     # Want a non-uniform grid to compare with const1d
@@ -833,8 +833,12 @@ def test_pha_plot_with_wstat_data(caplog):
     assert plt.xlo == pytest.approx(elo)
     assert plt.xhi == pytest.approx(ehi)
 
-    # this is counts/bin-width - aka 1,2,3,4 / 0.1,0.2,0.3,0.2
-    assert plt.y == pytest.approx([10, 10, 10, 20])
+    # this is (counts - bgscale)/bin-width - and
+    # as bgscale = counts/5 thanks to the choice of
+    # backscal - this becomes
+    # 4 * counts / (5 * bin-width)
+    #
+    assert plt.y == pytest.approx([8, 8, 8, 16])
 
     # Check the error which (as there are no zero-count
     # bins) is just sqrt(counts) / bin-width
@@ -850,7 +854,7 @@ def test_pha_plot_with_wstat_model(caplog):
     complicates visualization: do we subtract the background from
     the data, add the background to the model, or something else?
 
-    At the moment we do nothing.
+    At the moment we subtract the background.
     """
 
     # Want a non-uniform grid to compare with const1d
