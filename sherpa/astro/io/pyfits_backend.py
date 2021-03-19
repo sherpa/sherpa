@@ -735,7 +735,7 @@ def get_rmf_data(arg, make_copy=False):
         rowdata = []
         for mrow, ng, ncs in zip(matrix, n_grp, n_chan):
             # Need a RMF which ng>1 to test this with.
-            if ng == 1:
+            if numpy.isscalar(ncs):
                 ncs = [ncs]
 
             start = 0
