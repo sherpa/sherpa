@@ -18,7 +18,7 @@ stages:
 
 .template-linux-conda-build: &template_linux_conda_build
   <<: *template_conda_build
-  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
+  image: registry.gitlab.com/olaurino/sherpa-docker-build:main
   tags:
     - sherpa
 
@@ -62,7 +62,7 @@ conda:
   stage: deploy
   tags:
       - sherpa
-  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
+  image: registry.gitlab.com/olaurino/sherpa-docker-build:main
   dependencies:
       - linux-python3.6-conda-build
       - linux-python3.7-conda-build
@@ -85,23 +85,23 @@ conda:
   script:
       - cd /
       - curl -LO -k http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/master.zip # Hack, gitlab can't checkout the submodule from github
+      - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip # Hack, gitlab can't checkout the submodule from github
       - bash Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda
       - export PATH=~/miniconda/bin:$PATH
       - conda update -qq -y --all
       - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
       - source activate test36
-      - pip install /master.zip
+      - pip install /main.zip
       - sherpa_smoke -f astropy
       - sherpa_test
       - conda create -n test37 --yes -q -c sherpa/label/dev python=3.7 astropy sherpa matplotlib # How to make sure it's the correct version?
       - source activate test37
-      - pip install /master.zip
+      - pip install /main.zip
       - sherpa_smoke -f astropy
       - sherpa_test
       - conda create -n test38 --yes -q -c sherpa/label/dev python=3.8 astropy sherpa matplotlib # How to make sure it's the correct version?
       - source activate test38
-      - pip install /master.zip
+      - pip install /main.zip
       - sherpa_smoke -f astropy
       - sherpa_test
 
@@ -111,21 +111,21 @@ conda:
   stage: test deploy
   script:
     - cd /tmp
-    - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/master.zip
+    - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip
     - conda update -qq -y --all
     - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
     - conda activate test36
-    - pip install master.zip
+    - pip install main.zip
     - sherpa_smoke -f astropy
     - sherpa_test
     - conda create -n test37 --yes -q -c sherpa/label/dev python=3.7 astropy sherpa matplotlib # How to make sure it's the correct version?
     - conda activate test37
-    - pip install master.zip
+    - pip install main.zip
     - sherpa_smoke -f astropy
     - sherpa_test
     - conda create -n test38 --yes -q -c sherpa/label/dev python=3.8 astropy sherpa matplotlib # How to make sure it's the correct version?
     - conda activate test38
-    - pip install master.zip
+    - pip install main.zip
     - sherpa_smoke -f astropy
     - sherpa_test
 

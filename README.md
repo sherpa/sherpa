@@ -48,7 +48,7 @@ Documentation for Sherpa is available at
 [Read The Docs](https://sherpa.readthedocs.io/)
 and also for [Sherpa in CIAO](http://cxc.harvard.edu/sherpa/).
 
-A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/notebooks/SherpaQuickStart.ipynb)
+A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/main/notebooks/SherpaQuickStart.ipynb)
 is included in the `notebooks` folder and can be opened with an `ipython notebook`.
 
 License
