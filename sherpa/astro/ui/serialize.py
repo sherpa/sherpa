@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2019, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -645,16 +645,17 @@ def _save_iter_method(state, fh=None):
         return
 
     _output("\n######### Set Iterative Fitting Method\n", fh)
-    cmd = 'set_iter_method("%s")' % state.get_iter_method_name()
+    meth = state.get_iter_method_name()
+    cmd = f'set_iter_method("{meth}")'
     _output(cmd, fh)
     _output("", fh)
 
     def tostatement(key, val):
-        # TODO: Using .format() returns more decimal places, which
-        # is probably what we want but is a change, so leave
-        # for now.
-        # return 'set_iter_method_opt("{}", {})'.format(key, val)
-        return 'set_iter_method_opt("{}", {})'.format(str(key), str(val))
+        # There was a discussion here about the use of
+        # str(val) vs val - the number of decimal places - but it
+        # turns out for the test we only output integer values
+        # so it makes no difference.
+        return f'set_iter_method_opt("{key}", {val})'
 
     _save_entries(state.get_iter_method_opt(), tostatement, fh)
     _output("", fh)
