@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -95,6 +95,17 @@ def test_psf1d_show():
     check(out, 5, CENTER)
     check(out, 6, RADIAL)
     check(out, 7, NORM)
+
+
+def test_psf1d_no_kernel():
+    """Error out if there's no kernel"""
+
+    m = PSFModel('bob')
+    b = Box1D()
+    with pytest.raises(PSFErr) as exc:
+        m(b)
+
+    assert "PSF kernel has not been set" == str(exc.value)
 
 
 def test_psf1d_fold_no_kernel():
