@@ -10,8 +10,8 @@ function decorator is applied to the
 :py:meth:`~sherpa.models.model.ArithmeticModel.calc` method of
 :py:class:`~sherpa.models.model.ArithmeticModel` models, and this then
 uses the parameter values, evaluation grid, and integrate setting to
-look for a value from the models cache. If found the value is returned,
-otherwise the model is evaluated and the result is cached.
+look for a value from that model's cache. If found the value is returned,
+otherwise the model is evaluated and the result is added to the cache.
 
 Unfortunately it is not always obvious if a model uses caching, or how
 effective it is.
@@ -31,7 +31,7 @@ When is the cache useful?
 At present most 1D models use the cache by default when evaluated
 normally, but not during a fit. It is intended to improve fit
 performance - that is, reduce the time taken to fit a dataset - but
-there has been limited effort to evaluate it's efficiency.
+there has been limited effort to evaluate its efficiency.
 
 Can I turn off this behavior?
 =============================
