@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -411,6 +411,16 @@ def _create_tail_grid(axis_list):
 
 
 class PSFModel(Model):
+    """Convolve a model by another model or data set.
+
+    Notes
+    -----
+    A number of attributes are displayed as parameters, if set, but
+    are not handled as parameters. The attributes are: kernel, size,
+    centre, and origin.
+
+    """
+
     def __init__(self, name='psfmodel', kernel=None):
         self._name = name
         self._size = None
