@@ -19,6 +19,7 @@
 #
 
 
+import functools
 import logging
 import hashlib
 import warnings
@@ -82,6 +83,7 @@ def modelCacher1d(func):
 
     """
 
+    @functools.wraps(func)
     def cache_model(cls, pars, xlo, *args, **kwargs):
         use_caching = cls._use_caching
         cache = cls._cache
@@ -145,8 +147,6 @@ def modelCacher1d(func):
 
         return vals
 
-    cache_model.__name__ = func.__name__
-    cache_model.__doc__ = func.__doc__
     return cache_model
 
 
