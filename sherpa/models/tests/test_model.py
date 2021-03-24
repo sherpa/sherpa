@@ -18,10 +18,16 @@
 #
 
 from collections import namedtuple
-import hashlib
 import logging
 import operator
 import warnings
+
+# Repeat the logic from sherpa/models/model.py
+#
+try:
+    from hashlib import md5 as hashfunc
+except ImportError:
+    from hashlib import sha256 as hashfunc
 
 import numpy
 
@@ -642,7 +648,7 @@ def check_cache(mdl, expected, x, xhi=None):
         data.append(xhi.tobytes())
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -880,7 +886,7 @@ def test_cache_integrate_fall_through_no_integrate():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -907,7 +913,7 @@ def test_cache_integrate_fall_through_integrate_true():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -934,6 +940,6 @@ def test_cache_integrate_fall_through_integrate_false():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)

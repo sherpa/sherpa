@@ -21,7 +21,6 @@
 
 import functools
 import logging
-import hashlib
 import warnings
 
 import numpy
@@ -33,6 +32,16 @@ from sherpa.utils import formatting
 
 from .parameter import Parameter
 
+# What routine do we use for the hash in modelCacher1d?  As we do not
+# need cryptographic security go for a "quick" algorithm, but md5 is
+# not guaranteed to always be present.  There has been no attempt to
+# check the run times of these routines for the expected data sizes
+# they will be used with.
+#
+try:
+    from hashlib import md5 as hashfunc
+except ImportError:
+    from hashlib import sha256 as hashfunc
 
 warning = logging.getLogger(__name__).warning
 
@@ -125,7 +134,7 @@ def modelCacher1d(func):
                 data.append(numpy.asarray(args[0]).tobytes())
 
             token = b''.join(data)
-            digest = hashlib.sha256(token).digest()
+            digest = hashfunc(token).digest()
             if digest in cache:
                 cache_ctr['hits'] += 1
                 cache_ctr['record'].append({'pars': pars, 'hit': True})
