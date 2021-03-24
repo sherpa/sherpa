@@ -85,7 +85,11 @@ def modelCacher1d(func):
     def cache_model(cls, pars, xlo, *args, **kwargs):
         use_caching = cls._use_caching
         cache = cls._cache
+        cache_ctr = cls._cache_ctr
         queue = cls._queue
+
+        # Counts all accesses, even those that do not use the cache.
+        cache_ctr['check'] += 1
 
         digest = ''
         if use_caching:
@@ -121,8 +125,8 @@ def modelCacher1d(func):
             token = b''.join(data)
             digest = hashlib.sha256(token).digest()
             if digest in cache:
-                cache['hits'] += 1
-                cache['record'].append({'pars': pars, 'hit': True})
+                cache_ctr['hits'] += 1
+                cache_ctr['record'].append({'pars': pars, 'hit': True})
                 return cache[digest].copy()
 
         vals = func(cls, pars, xlo, *args, **kwargs)
@@ -134,10 +138,10 @@ def modelCacher1d(func):
 
             # append newest model values to queue
             queue.append(digest)
-            cache['misses'] += 1
             cache[digest] = vals.copy()
 
-            cache['record'].append({'pars': pars, 'hit': False})
+            cache_ctr['misses'] += 1
+            cache_ctr['record'].append({'pars': pars, 'hit': False})
 
         return vals
 
@@ -513,6 +517,7 @@ class CompositeModel(Model):
         pass
 
     def _cache_status(self):
+        """Report the cache status"""
         for p in self.parts:
             try:
                 p._cache_status()
@@ -662,14 +667,17 @@ class ArithmeticModel(Model):
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
         self._queue = ['']
-        self._cache = {'hits': 0, 'misses': 0, 'record': []}
+        self._cache = {}
+        self._cache_ctr = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
         Model.__init__(self, name, pars)
 
     def _cache_status(self):
-        c = self._cache
-        print(" {:30s}  size: {:4d}  ".format(self.name, len(self._queue)) +
-              "hits: {:5d}  misses: {:5d}  ".format(c['hits'], c['misses']) +
-              "nrecords: {:5d}".format(len(c['record'])) # should be same as hits+misses
+        """Report the cache status"""
+        c = self._cache_ctr
+        print(f" {self.name:30s}  size: {len(self._queue):4d}  " +
+              f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
+              f"nrecords: {len(c['record']):5d}  " +
+              f"check={c['check']:5d}"
         )
 
     # Unary operations
@@ -696,7 +704,8 @@ class ArithmeticModel(Model):
             self.__dict__['_queue'] = ['']
 
         if '_cache' not in state:
-            self.__dict__['_cache'] = {'hits': 0, 'misses': 0, 'record': []}
+            self.__dict__['_cache'] = {}
+            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
 
         if 'cache' not in state:
             self.__dict__['cache'] = 5
@@ -707,7 +716,8 @@ class ArithmeticModel(Model):
     def startup(self, cache=False):
         # NOTE: this resets the existing cache
         self._queue = ['']
-        self._cache = {'hits': 0, 'misses': 0, 'record': []}
+        self._cache = {}
+        self._cache_ctr = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
         self._use_caching = cache
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)

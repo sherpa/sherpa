@@ -845,6 +845,7 @@ class DoNotUseModel(Model):
     # We need this for modelCacher1d
     _use_caching = True
     _cache = {}
+    _cache_ctr = {'hits': 0, 'misses': 0, 'check': 0, 'record': []}
     _queue = ['']
 
     @modelCacher1d
