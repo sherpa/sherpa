@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -48,11 +48,9 @@ def evaluates_model(func):
     """
     @wraps(func)
     def run(fit, *args, **kwargs):
-        if 'cache' in kwargs:
-            fit.model.startup(kwargs['cache'])
-            kwargs.pop('cache', None)
-        else:
-            fit.model.startup(True)
+
+        cache = kwargs.pop('cache', True)
+        fit.model.startup(cache=cache)
         result = func(fit, *args, **kwargs)
         fit.model.teardown()
         return result
