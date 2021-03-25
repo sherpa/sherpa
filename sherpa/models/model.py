@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,6 @@ import logging
 import hashlib
 import warnings
 
-from collections import defaultdict
-
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
@@ -45,11 +43,44 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
 
 
 def boolean_to_byte(boolean_value):
+    """Convert a boolean to a byte value.
+
+    Parameters
+    ----------
+    boolean_value : bool
+        The value to convert. If not a boolean then it is
+        treated as `False`.
+
+    Returns
+    -------
+    val : bytes
+        b'1' if `True` otherwise b'0'.
+    """
+
     bmap = {True: b'1', False: b'0'}
     return bmap.get(boolean_value, b'0')
 
 
 def modelCacher1d(func):
+    """A decorater to cache 1D ArithmeticModel evalutions.
+
+    Apply to the `calc` method of a 1D model to allow the model
+    evaluation to be cached. The decision is based on the
+    `_use_caching` attribute of the cache along with the `integrate`
+    setting, the evaluation grid, and parameter values.
+
+    Example
+    -------
+
+    Allow `MyModel` model evaluations to be cached::
+
+        def MyModel(ArithmeticModel):
+            ...
+            @modelCacher1d
+            def calc(self, *args, **kwargs):
+                ...
+
+    """
 
     def cache_model(cls, pars, xlo, *args, **kwargs):
         use_caching = cls._use_caching
@@ -126,13 +157,6 @@ class Model(NoNewAttributesAfterInit):
     pars : sequence of sherpa.parameter.Parameter objects
         The parameters of the model.
 
-    Attributes
-    ----------
-    name : str
-        The name given to the instance.
-    pars : tuple of sherpa.parameter.Parameter objects
-        The parameters of the model instance.
-
     Notes
     -----
     Parameters can be accessed via the ``pars`` attribute, but it is
@@ -143,8 +167,7 @@ class Model(NoNewAttributesAfterInit):
     the variable ``mdl``, then the following can be used to access
     the parameters::
 
-        print("Break frequency = {}".format(mdl.breakfreq))
-
+        print(f"Break frequency = {mdl.breakfreq.val}")
         mdl.norm = 1.2e-3
 
     """
@@ -275,7 +298,7 @@ class Model(NoNewAttributesAfterInit):
 
         See Also
         --------
-        setup
+        startup
         """
         raise NotImplementedError
 
@@ -617,12 +640,14 @@ def _make_binop(op, opstr):
 class ArithmeticModel(Model):
     """Support combining model expressions and caching results."""
 
+    cache = 5
+    """The maximum size of the cache."""
+
     def __init__(self, name, pars=()):
         self.integrate = True
 
         # Model caching ability
-        # queue memory of maximum size
-        self.cache = 5
+        self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
         self._queue = ['']
         self._cache = {}
