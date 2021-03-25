@@ -525,11 +525,19 @@ class CompositeModel(Model):
     def teardown(self):
         pass
 
-    def _cache_status(self):
-        """Report the cache status"""
+    def cache_clear(self):
+        """Clear the cache for each component."""
         for p in self.parts:
             try:
-                p._cache_status()
+                p.cache_clear()
+            except AttributeError:
+                pass
+
+    def cache_status(self):
+        """Display the cache status of each component."""
+        for p in self.parts:
+            try:
+                p.cache_status()
             except AttributeError:
                 pass
 
@@ -675,13 +683,18 @@ class ArithmeticModel(Model):
         # Model caching ability
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
+        self.cache_clear()
+        Model.__init__(self, name, pars)
+
+    def cache_clear(self):
+        """Clear the cache."""
+        # It is not obvious what to set the queue length to
         self._queue = ['']
         self._cache = {}
         self._cache_ctr = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
-        Model.__init__(self, name, pars)
 
-    def _cache_status(self):
-        """Report the cache status"""
+    def cache_status(self):
+        """Display the cache status."""
         c = self._cache_ctr
         print(f" {self.name:30s}  size: {len(self._queue):4d}  " +
               f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
@@ -723,10 +736,7 @@ class ArithmeticModel(Model):
         return FilterModel(self, filter)
 
     def startup(self, cache=False):
-        # NOTE: this resets the existing cache
-        self._queue = ['']
-        self._cache = {}
-        self._cache_ctr = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
+        self.cache_clear()
         self._use_caching = cache
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)
