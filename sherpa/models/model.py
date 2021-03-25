@@ -137,7 +137,6 @@ def modelCacher1d(func):
             digest = hashfunc(token).digest()
             if digest in cache:
                 cache_ctr['hits'] += 1
-                cache_ctr['record'].append({'pars': pars, 'hit': True})
                 return cache[digest].copy()
 
         vals = func(cls, pars, xlo, *args, **kwargs)
@@ -152,7 +151,6 @@ def modelCacher1d(func):
             cache[digest] = vals.copy()
 
             cache_ctr['misses'] += 1
-            cache_ctr['record'].append({'pars': pars, 'hit': False})
 
         return vals
 
@@ -691,14 +689,13 @@ class ArithmeticModel(Model):
         # It is not obvious what to set the queue length to
         self._queue = ['']
         self._cache = {}
-        self._cache_ctr = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
+        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
 
     def cache_status(self):
         """Display the cache status."""
         c = self._cache_ctr
         print(f" {self.name:30s}  size: {len(self._queue):4d}  " +
               f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
-              f"nrecords: {len(c['record']):5d}  " +
               f"check={c['check']:5d}"
         )
 
@@ -727,7 +724,7 @@ class ArithmeticModel(Model):
 
         if '_cache' not in state:
             self.__dict__['_cache'] = {}
-            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'record': [], 'check': 0}
+            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
 
         if 'cache' not in state:
             self.__dict__['cache'] = 5
