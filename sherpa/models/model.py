@@ -18,6 +18,79 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Allow models to be defined and combined.
+
+A single model is defined by the parameters of the model - represented
+as sherpa.models.model.Parameter instances - and the function that
+takes the parameter values along with an array of grid values. The
+main classes are:
+
+ - Model which is the base class and defines most of the interfaces.
+
+ - ArithmeticConstantModel and ArithmeticFunctionModel for representing
+   a constant value or a function.
+
+ - ArithmeticModel is the main base class for deriving user models since
+   it supports combining models (e.g. by addition or multiplication) and
+   a cache to reduce evaluation time at the expense of memory use.
+
+ - RegriddableModel builds on ArithmeticModel to allow a model to be
+   evaluated on a different grid to that requested: most model classes
+   are derived from the 1D and 2D variants of RegriddableModel.
+
+ - CompositeModel which is used to represent a model expression, that
+   is combined models, such as `m1 * (m2 + m3)`
+
+   - UnaryOpModel for model expressions such as `- m1`.
+
+   - BinaryOpModel for model expressions such as `m1 + m2`.
+
+   - NestedModel for applying one model to another.
+
+ - SimulFitModel for fitting multiple models and datasets.
+
+Model cache
+-----------
+
+The ArithmeticModel class and modelCacher1d decorator provide basic
+support for caching one-dimensional model evaluations - that is, to
+avoid re-calculating the model. The idea is to save the results of the
+latest calls to a model and return the values from the cache,
+hopefully saving time at the expense of using more memory. This is
+most effective when the same model is used with multiple datasets
+which all have the same grid.
+
+The _use_caching attribute of the model is used to determine whether
+the cache is used, but this setting can be over-ridden by the startup
+method, which is automatically called by the fit and est_errors
+methods of a sherpa.fit.Fit object.
+
+The cache_clear and cache_status methods of ArithmeticModel and
+CompositeModel allow you to clear the cache and display to the
+standard output the cache status of each model component.
+
+Example
+-------
+
+The following class implements a simple scale model which has a single
+parameter (`scale`) which defaults to 1. It can be used for both
+non-integrated and integrated datasets of any dimensionality (see
+sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
+
+    class ScaleND(ArithmeticModel):
+        '''A constant value per element.'''
+
+        def __init__(self, name='scalend'):
+            self.scale = Parameter(name, 'scale', 1)
+            self.integrate = False
+            pars = (self.scale, )
+            ArithmeticModel.__init__(self, name, pars)
+
+        def calc(self, *args, **kwargs):
+            return self.scale.val * np.ones(len(args[0]))
+
+"""
+
 
 import functools
 import logging
