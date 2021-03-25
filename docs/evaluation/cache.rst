@@ -2,7 +2,7 @@
 Caching model evaluations
 =========================
 
-Sherpa contains a rudimentary system for cacheing the results
+Sherpa contains a rudimentary system for caching the results
 of 1D model evaluations in order to speed up the time to evaluate
 models, at the expense of using more memory.
 The :py:func:`~sherpa.models.model.modelCacher1d`
