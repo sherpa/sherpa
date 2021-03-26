@@ -1026,3 +1026,99 @@ def test_cache_status_multiple(caplog):
     assert toks[0] == 'box1d'
     assert toks[4] == '0'
     assert toks[6] == '0'
+
+
+def test_cache_clear_single(caplog):
+    """Check cache_clear for a single model."""
+
+    p = Polynom1D()
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    p([1, 2, 3])
+    p([1, 2, 3])
+    p([1, 2, 3, 4])
+
+    assert len(p._cache) == 1
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    p.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+
+def test_cache_clear_multiple(caplog):
+    """Check cache_clear for a combined model."""
+
+    p = Polynom1D()
+    b = Box1D()
+    c = Const1D()
+    mdl = c * (p + 2 * b)
+
+    # Ensure one component doesn't use the cache
+    c._use_caching = False
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    assert len(b._cache) == 0
+    assert b._cache_ctr['check'] == 0
+    assert b._cache_ctr['hits'] == 0
+    assert b._cache_ctr['misses'] == 0
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 0
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
+
+    mdl([1, 2, 3])
+    mdl([1, 2, 3])
+    mdl([1, 2, 3, 4])
+
+    assert len(p._cache) == 1
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    assert len(b._cache) == 1
+    assert b._cache_ctr['check'] == 3
+    assert b._cache_ctr['hits'] == 1
+    assert b._cache_ctr['misses'] == 2
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 3
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
+
+    mdl.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    assert len(b._cache) == 0
+    assert b._cache_ctr['check'] == 0
+    assert b._cache_ctr['hits'] == 0
+    assert b._cache_ctr['misses'] == 0
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 0
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
