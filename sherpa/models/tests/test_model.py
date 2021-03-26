@@ -943,3 +943,86 @@ def test_cache_integrate_fall_through_integrate_false():
     digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
+
+
+def test_cache_status_single(caplog):
+    """Check cache_status for a single model."""
+
+    p = Polynom1D()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        p.cache_status()
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == 'sherpa.models.model'
+    assert lvl == logging.INFO
+    toks = msg.split()
+    assert toks[0] == 'polynom1d'
+    assert toks[1] == 'size:'
+    assert toks[2] == '1'
+    assert toks[3] == 'hits:'
+    assert toks[4] == '0'
+    assert toks[5] == 'misses:'
+    assert toks[6] == '0'
+    assert toks[7] == 'check:'
+    assert toks[8] == '0'
+    assert len(toks) == 9
+
+
+def test_cache_status_multiple(caplog):
+    """Check cache_status for a multi-component model.
+
+    Unlike test_cache_syayus_single we also have evaluated the model
+    so we can check that the cache status has changed.
+    """
+
+    # The model expression includes an ArithmeticConstant model (the
+    # term 2) which does not have a cache and so is ignored by
+    # cache_status.
+    #
+    p = Polynom1D()
+    b = Box1D()
+    c = Const1D()
+    mdl = c * (2 * p + b)
+
+    # One model is not cached
+    b._use_caching = False
+
+    mdl([0.1, 0.2, 0.3])
+    mdl([0.1, 0.2, 0.3])
+    mdl([0.1, 0.2, 0.3, 0.4])
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.cache_status()
+
+    assert len(caplog.records) == 3
+
+    tokens = []
+    for lname, lvl, msg in caplog.record_tuples:
+        assert lname == 'sherpa.models.model'
+        assert lvl == logging.INFO
+        toks = msg.split()
+        assert len(toks) == 9
+        assert toks[1] == 'size:'
+        assert toks[2] == '1'
+        assert toks[3] == 'hits:'
+        assert toks[5] == 'misses:'
+        assert toks[7] == 'check:'
+        assert toks[8] == '3'
+
+        tokens.append(toks)
+
+    toks = tokens[0]
+    assert toks[0] == 'const1d'
+    assert toks[4] == '1'
+    assert toks[6] == '2'
+
+    toks = tokens[1]
+    assert toks[0] == 'polynom1d'
+    assert toks[4] == '1'
+    assert toks[6] == '2'
+
+    toks = tokens[2]
+    assert toks[0] == 'box1d'
+    assert toks[4] == '0'
+    assert toks[6] == '0'

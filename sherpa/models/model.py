@@ -116,6 +116,7 @@ try:
 except ImportError:
     from hashlib import sha256 as hashfunc
 
+info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 
@@ -605,7 +606,19 @@ class CompositeModel(Model):
                 pass
 
     def cache_status(self):
-        """Display the cache status of each component."""
+        """Display the cache status of each component.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> mdl.cache_status()
+         xsphabs.gal                size:    5  hits:   715  misses:   158  check=  873
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
         for p in self.parts:
             try:
                 p.cache_status()
@@ -765,12 +778,22 @@ class ArithmeticModel(Model):
         self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
 
     def cache_status(self):
-        """Display the cache status."""
+        """Display the cache status.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> pl.cache_status()
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
         c = self._cache_ctr
-        print(f" {self.name:30s}  size: {len(self._queue):4d}  " +
-              f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
-              f"check={c['check']:5d}"
-        )
+        info(f" {self.name:25s}  size: {len(self._queue):4d}  " +
+             f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
+             f"check: {c['check']:5d}")
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
