@@ -17,6 +17,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import logging
+
 import numpy as np
 
 import pytest
@@ -34,13 +37,146 @@ from sherpa.utils.err import IOErr
 from sherpa.utils.testing import requires_pylab
 
 
-def test_sourceplot():
+def check_sourceplot_energy(sp, rate=True, factor=0):
+    """Check for test_sourceplot/test_sourceplot_channel
+
+    rate determines if the plot is for a "rate" or "counts",
+    although at the moment it does not change anything.
+    """
+
+    assert sp.xlabel == 'Energy (keV)'
+
+    # the following depends on the backend
+    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
+    if factor == 0:
+        assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
+        assert sp.ylabel.endswith('/keV ')
+    elif factor == 1:
+        assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        assert sp.ylabel.find('/keV ') == -1
+    else:
+        raise RuntimeError("unsupported factor")
+
+    assert sp.title == 'Source Model of '
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    assert sp.xlo == pytest.approx(bins[:-1])
+    assert sp.xhi == pytest.approx(bins[1:])
+
+    # The check of the values is just to check that things are going
+    # as expected, rather than a test from first principles.
+    #
+    yexp = np.asarray([9998.300959, 9997.9935414, 9997.63869638,
+                       9997.23070803, 9996.76346026, 9996.2304594, 9995.62486769,
+                       9994.9395488, 9994.16712626, 9993.30005567, 9992.33071112,
+                       9991.25148615, 9990.05490914, 9988.73377265, 9987.28127577,
+                       9985.69117819, 9983.95796409, 9982.07701351, 9980.04477839,
+                       9977.85895997, 9975.51868378, 9973.02466824, 9970.37938236,
+                       9967.58718801, 9964.65446216, 9961.58969431, 9958.40355487,
+                       9955.10893021, 9951.72092088, 9948.25679985, 9944.73592864,
+                       9941.17962987, 9937.6110159, 9934.05477423, 9930.53691143,
+                       9927.08445867, 9923.7251427, 9920.48702778, 9917.39813433,
+                       9914.48604166, 9911.77748224, 9909.29793588, 9907.07123238,
+                       9905.11917118, 9903.4611666, 9902.11392658, 9901.09117249,
+                       9900.40340655, 9900.05773225, 9900.05773225, 9900.40340655,
+                       9901.09117249, 9902.11392658, 9903.4611666, 9905.11917118,
+                       9907.07123238, 9909.29793588, 9911.77748224, 9914.48604166,
+                       9917.39813433, 9920.48702778, 9923.7251427, 9927.08445867,
+                       9930.53691143, 9934.05477423, 9937.6110159, 9941.17962987,
+                       9944.73592864, 9948.25679985, 9951.72092088, 9955.10893021,
+                       9958.40355487, 9961.58969431, 9964.65446216, 9967.58718801,
+                       9970.37938236, 9973.02466824, 9975.51868378, 9977.85895997,
+                       9980.04477839, 9982.07701351, 9983.95796409, 9985.69117819,
+                       9987.28127577, 9988.73377265, 9990.05490914, 9991.25148615,
+                       9992.33071112, 9993.30005567, 9994.16712626, 9994.9395488,
+                       9995.62486769, 9996.2304594, 9996.76346026, 9997.23070803,
+                       9997.63869638, 9997.9935414, 9998.300959, 9998.5662520])
+
+    if factor == 1:
+        yexp *= 0.1
+
+    assert sp.y == pytest.approx(yexp)
+
+
+def check_sourceplot_wavelength(sp, rate=True, factor=0):
+    """Check for test_sourceplot_wavelength.
+
+    See check_sourceplot_energy.
+    """
+
+    assert sp.xlabel == 'Wavelength (Angstrom)'
+
+    if factor == 0:
+        assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
+        assert sp.ylabel.endswith('/Angstrom ')
+    elif factor == 1:
+        assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        assert sp.ylabel.find('/Angstrom ') == -1
+    else:
+        raise RuntimeError("unsupported factor")
+
+    assert sp.title == 'Source Model of '
+
+    # Use the code from DataPHA to convert from keV to Angstroms.
+    #
+    ebins = np.arange(0.1, 10.1, 0.1)
+    lbins = DataPHA._hc / ebins
+    assert sp.xlo == pytest.approx(lbins[:-1])
+    assert sp.xhi == pytest.approx(lbins[1:])
+
+    # Although the same model as check_sourceplot_energy the
+    # interpretation of the model params means that there is no simple
+    # conversion of the values used in that case, so we have a
+    # different set of expected values.
+    #
+    yexp = np.asarray([10000., 10000., 10000., 10000., 10000., 10000.,
+                       9999.99999864, 9999.99949354, 9999.97224156,
+                       9999.55447151, 9996.86451659, 9987.51382359,
+                       9966.695068 , 9933.27750675, 9891.33791156,
+                       9847.93710785, 9809.78226046, 9781.16179805,
+                       9763.58920097, 9756.46908383, 9758.02782873,
+                       9766.08494609, 9778.54263095, 9793.6274431,
+                       9809.96473056, 9826.55998249, 9842.73898966,
+                       9858.07743665, 9872.33534744, 9885.40252063,
+                       9897.25609947, 9907.92910978, 9917.48798344,
+                       9926.01701814, 9933.60797703, 9940.3533812,
+                       9946.34238774, 9951.65843565, 9956.37807112,
+                       9960.57053782, 9964.29784539, 9967.61512156,
+                       9970.57111803, 9973.20878565, 9975.56586528,
+                       9977.67546184, 9979.56658298, 9981.26463295,
+                       9982.79185821, 9984.16774487, 9985.40937017,
+                       9986.5317114, 9987.54791625, 9988.46953851,
+                       9989.30674326, 9990.06848503, 9990.76266241,
+                       9991.39625226, 9991.97542597, 9992.50565038,
+                       9992.99177532, 9993.43810959, 9993.84848703,
+                       9994.22632392, 9994.57466896, 9994.89624683,
+                       9995.19349616, 9995.46860277, 9995.72352864,
+                       9995.96003731, 9996.17971622, 9996.3839962,
+                       9996.57416871, 9996.75140095, 9996.9167492,
+                       9997.07117061, 9997.21553359, 9997.35062702,
+                       9997.47716842, 9997.59581118, 9997.70715101,
+                       9997.81173162, 9997.9100499 , 9998.00256036,
+                       9998.0896793 , 9998.17178835, 9998.24923778,
+                       9998.32234937, 9998.39141906, 9998.45671928,
+                       9998.51850107, 9998.57699596, 9998.63241771,
+                       9998.68496386, 9998.73481709, 9998.78214653,
+                       9998.82710888, 9998.86984944, 9998.91050307])
+
+    if factor == 1:
+        yexp *= (lbins[:-1] - lbins[1:])
+
+    assert sp.y == pytest.approx(yexp)
+
+
+def test_sourceplot(caplog):
 
     bins = np.arange(0.1, 10.1, 0.1)
     data = DataPHA('', np.arange(10), np.ones(10),
                    bin_lo=bins[:-1].copy(),
                    bin_hi=bins[1:].copy())
     data.units = "energy"
+    assert data.rate
+    assert data.plot_fac == 0
 
     # use a model that is "okay" to use with keV bins
     #
@@ -54,43 +190,188 @@ def test_sourceplot():
     m2.ampl = 0.1
 
     sp = SourcePlot()
-    sp.prepare(data, src)
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
 
-    # add in several asserts to check that something has been
-    # added to the object
+    assert len(caplog.records) == 0
+    check_sourceplot_energy(sp)
+
+
+def test_sourceplot_counts(caplog):
+    """test_sourceplot but when rate=False is chosen"""
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "energy"
+    data.rate = False
+
+    # Note that the model evaluation in done in Angstroms
     #
-    assert sp.xlabel == 'Energy (keV)'
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
 
-    # the following depends on the backend
-    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
 
-    assert sp.title == 'Source Model of '
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
 
-    assert sp.xlo == pytest.approx(bins[:-1])
-    assert sp.xhi == pytest.approx(bins[1:])
+    assert len(caplog.records) == 0
+    check_sourceplot_energy(sp, rate=False)
 
-    # The check of the values is just to check that things are going
-    # as expected, so the model values have been adjusted so that
-    # an "integer" check can be used with enough precision to make
-    # sure that the model is being evaluated correctly, but without
-    # a very-high-precision check
+
+def test_sourceplot_fac1(caplog):
+    """Change plot factor to 1 for test_sourceplot"""
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "energy"
+    data.plot_fac = 1
+    assert data.rate
+
+    # use a model that is "okay" to use with keV bins
     #
-    yexp = np.asarray([9998, 9997, 9997, 9997, 9996, 9996, 9995, 9994,
-                       9994, 9993, 9992, 9991, 9990, 9988, 9987, 9985,
-                       9983, 9982, 9980, 9977, 9975, 9973, 9970, 9967,
-                       9964, 9961, 9958, 9955, 9951, 9948, 9944, 9941,
-                       9937, 9934, 9930, 9927, 9923, 9920, 9917, 9914,
-                       9911, 9909, 9907, 9905, 9903, 9902, 9901, 9900,
-                       9900, 9900, 9900, 9901, 9902, 9903, 9905, 9907,
-                       9909, 9911, 9914, 9917, 9920, 9923, 9927, 9930,
-                       9934, 9937, 9941, 9944, 9948, 9951, 9955, 9958,
-                       9961, 9964, 9967, 9970, 9973, 9975, 9977, 9980,
-                       9982, 9983, 9985, 9987, 9988, 9990, 9991, 9992,
-                       9993, 9994, 9994, 9995, 9996, 9996, 9997, 9997,
-                       9997, 9998, 9998])
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
 
-    assert (sp.y.astype(int) == yexp).all()
-    # sp.plot()
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
+
+    assert len(caplog.records) == 0
+    check_sourceplot_energy(sp, factor=1)
+
+
+def test_sourceplot_channels(caplog):
+    """Although we ask for channels we get energy units"""
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "channel"
+
+    # use a model that is "okay" to use with keV bins
+    #
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == 'sherpa.astro.plot'
+    assert lvl == logging.WARN
+    assert msg == 'Channel space is unappropriate for the PHA unfolded source model,\nusing energy.'
+
+    check_sourceplot_energy(sp)
+
+
+def test_sourceplot_wavelength(caplog):
+    """Check we get wavelength units"""
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "wave"
+
+    # Note that the model evaluation in done in Angstroms
+    #
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
+
+    assert len(caplog.records) == 0
+    check_sourceplot_wavelength(sp)
+
+
+def test_sourceplot_wavelength_fac1(caplog):
+    """Change plot factor to 1 for test_sourceplot_wavelength"""
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "wavelength"
+    data.plot_fac = 1
+    assert data.rate
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
+
+    assert len(caplog.records) == 0
+    check_sourceplot_wavelength(sp, factor=1)
+
+
+def test_sourceplot_wavelength_counts(caplog):
+    """test_sourceplot_wavelength but when rate=False is chosen"""
+
+    bins = np.arange(0.1, 10.1, 0.1)
+    data = DataPHA('', np.arange(10), np.ones(10),
+                   bin_lo=bins[:-1].copy(),
+                   bin_hi=bins[1:].copy())
+    data.units = "wave"
+    data.rate = False
+
+    # use a model that is "okay" to use with keV bins
+    #
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src)
+
+    assert len(caplog.records) == 0
+    check_sourceplot_wavelength(sp, rate=False)
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
