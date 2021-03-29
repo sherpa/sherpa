@@ -274,7 +274,7 @@ class SourcePlot(HistogramPlot):
         sqr = to_latex('^2')
 
         self.xlabel = f'{self.units.capitalize()} ({quant})'
-        self.ylabel = '%s  Photons/sec/cm' + sqr + '%s'
+        self.ylabel = f'%s  Photons/sec/cm{sqr}%s'
 
         if data.plot_fac == 0:
             self.y /= xmid
