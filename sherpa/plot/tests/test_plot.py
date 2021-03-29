@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
 from sherpa import plot as sherpaplot
 from sherpa.data import Data1D, Data1DInt
+from sherpa.utils.err import ConfidenceErr
 from sherpa.utils.testing import requires_data, requires_plotting
 
 
@@ -653,3 +654,114 @@ def test_histogram_empty_x():
 
     dp = sherpaplot.DataHistogramPlot()
     assert dp.x is None
+
+
+@pytest.mark.parametrize("cls", [sherpaplot.RegionUncertainty,
+                                 sherpaplot.RegionProjection])
+def test_show_region_xxx(cls):
+    """Are different sequence types handled okay?
+
+    There's no a-priori reason why we choose a particular
+    serialization scheme, so just check we have something tested.
+
+    """
+
+    plot = cls()
+    plot.prepare(nloop=(21, 21), sigma=[1, 1.6])
+    toks = str(plot).split('\n')
+    assert toks[0] == "x0      = None"
+    assert toks[1] == "x1      = None"
+    assert toks[2] == "y       = None"
+    assert toks[3] == "min     = None"
+    assert toks[4] == "max     = None"
+    assert toks[5] == "nloop   = (21, 21)"
+    assert toks[6] == "fac     = 4"
+    assert toks[7] == "delv    = None"
+    assert toks[8] == "log     = (False, False)"
+    assert toks[9] == "sigma   = [1, 1.6]"
+    assert toks[10] == "parval0 = None"
+    assert toks[11] == "parval1 = None"
+    assert toks[12] == "levels  = None"
+    assert len(toks) == 13
+
+
+@pytest.mark.parametrize("ptype", ['ru', 'rp'])
+@pytest.mark.parametrize("kwargs",
+                         [{"min": 2},
+                          #{"min": [1, 2, 3]},   does not check too-many values
+                          {"max": 2},
+                          #{"max": [1, 2, 3]},
+                          {"min": (10, 10), "max": (0, 20)},
+                          {"min": (10, 10), "max": (20, 0)},
+                          {"nloop": 2},
+                          {"nloop": (0, 10)},
+                          {"nloop": (10, 0)},
+                          #{"nloop": [2, 3, 4]},
+                         ])
+def test_region_xxx_validates_invalid_input(ptype, kwargs, setup_confidence):
+    """Do we do some simple checks on invalid inputs."""
+
+    plotobj = getattr(setup_confidence, ptype)
+
+    with pytest.raises(ConfidenceErr):
+        plotobj.prepare(**kwargs)
+        plotobj.calc(setup_confidence.f,
+                     setup_confidence.g1.fwhm,
+                     setup_confidence.g1.ampl)
+
+
+@pytest.mark.parametrize("ptype", ['ru', 'rp'])
+@pytest.mark.parametrize("kwargs",
+                         [{'min': [0, 0]}, {'max': [120, 1e-3]},
+                          {'min': (0, 0)}, {'max': (120, 1e-3)}])
+def test_region_xxx_issue_1093(ptype, kwargs, setup_confidence):
+    """Using min=(0,20) fails when the min value is < param min (or > param max)
+
+    We do not do a lot of testing of the result, we are just primarily
+    checking that the code ran.
+
+    """
+
+    plotobj = getattr(setup_confidence, ptype)
+
+    setup_confidence.g1.fwhm.max = 100
+
+    plotobj.prepare(nloop=(2, 2), **kwargs)
+    plotobj.calc(setup_confidence.f,
+                 setup_confidence.g1.fwhm,
+                 setup_confidence.g1.ampl)
+
+    assert len(plotobj.x0) == 4
+    assert len(plotobj.x1) == 4
+    assert len(plotobj.y) == 4
+
+
+@pytest.mark.parametrize("ptype", ['ru', 'rp'])
+@pytest.mark.parametrize("kwargs",
+                         [{'min': (18, 16), 'max': (19, 17),
+                           'nloop': (2, 2), 'sigma': (1, 1.6)},
+                          {'min': [18, 16], 'max': [19, 17],
+                           'nloop': [2, 2], 'sigma': [1, 1.6]}])
+def test_region_xxx_set_vars(ptype, kwargs, setup_confidence):
+    """Are different sequence types handled okay?
+
+    The idea is to check that using a tuple or a list returns
+    the same answer.
+    """
+
+    plotobj = getattr(setup_confidence, ptype)
+    plotobj.prepare(**kwargs)
+    plotobj.calc(setup_confidence.f,
+                 setup_confidence.g1.fwhm,
+                 setup_confidence.g1.ampl)
+
+    # We just want to check we are using the same data.
+    #
+    assert plotobj.x0 == pytest.approx([18, 19, 18, 19])
+    assert plotobj.x1 == pytest.approx([16, 16, 17, 17])
+
+    # Given that using projection vs uncertainty we can't be exact
+    # in this check, hence the relatively large absolute tolerance.
+    #
+    assert plotobj.y == pytest.approx([36.82967813, 35.94869461,
+                                       35.90482971, 35.85479384], abs=1e-4)
