@@ -36,7 +36,7 @@ suggest using the [AstroPy
 guidelines](http://docs.astropy.org/en/latest/development/codeguide.html); the
 current Sherpa code base is slowly being converted to a single style.
 
-Once you open a pull request (which should be opened against the ``master``
+Once you open a pull request (which should be opened against the ``main``
 branch, not against any of the other branches), please make sure that you
 include the following:
 
@@ -75,7 +75,7 @@ without a failure.
 
 **Git branch**
 
-The changes should be made in a branch which is based off of the ``master``
+The changes should be made in a branch which is based off of the ``main``
 branch of the [Sherpa repository](https://github.com/sherpa/sherpa), and
 should have a descriptive name. For bug fixes, the name should include the
 bug ID and a short description of the bug fix. For new - or updated - 
@@ -85,19 +85,18 @@ Example: fix for [bug #64](https://github.com/sherpa/sherpa/issues/64)
 
     % git remote add upstream https://github.com/sherpa/sherpa
     % git fetch upstream
-    % git checkout -b bug-#64-comparison-to-None upstream/master
+    % git checkout -b bug-#64-comparison-to-None upstream/main
 
 Example: new functionality, such as
 [Setuptools not required](https://github.com/sherpa/sherpa/pull/65)
 
     % git remote add upstream https://github.com/sherpa/sherpa
     % git fetch upstream
-    % git checkout -b setuptools-not-required upstream/master
+    % git checkout -b setuptools-not-required upstream/main
 
 **Software versions**
 
-Development should use Python 3.6 or later (Sherpa does support Python 3.5,
-but this will be dropped soon).
+Development should use Python 3.6 or later.
 
 Ideally, NumPy support should be 1.6 or greater, but please include a comment
 if you need to restrict (or relax) this further.
@@ -107,9 +106,9 @@ dependencies must be highlighted, and should be made optional if at all possible
 
 **Testing**
 
-The Travis Continuous Integration service is used to test all pull requests
+GitHub Actions is used to test all pull requests
 (examples can be found at the [Sherpa
-page](https://travis-ci.org/sherpa/sherpa/)), and these tests must pass
+page](https://github.com/sherpa/sherpa/actions)), and these tests must pass
 before a pull request can be considered for inclusion in Sherpa.
 
 Ideally each pull request will come with new, or updated, tests to check
