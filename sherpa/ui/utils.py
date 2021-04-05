@@ -1264,12 +1264,53 @@ class Session(NoNewAttributesAfterInit):
         return (_is_integer(id) or isinstance(id, string_types))
 
     def _fix_id(self, id):
+        """Validate the dataset id.
+
+        The identifier can be any string or integer except for the
+        plot and contour types that are supported by the `plot` and
+        `contour` methods.
+
+        Parameters
+        ----------
+        id : int or str or None
+            The dataset identifier. If set to None then the default
+            identifier, returned by `get_default_id`, is used.
+
+        Returns
+        -------
+        id : int or str
+            The identifier to use (it will only differ from the input
+            parameter was set to None).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentTypeErr
+            If the identifier was not a string or an integer.
+        sherpa.utils.err.IdentifierErr
+            If the identifier was invalid.
+
+        See Also
+        --------
+        get_default_id, set_default_id
+
+        Notes
+        -----
+        Since there is currently no way to set the default background
+        id of the DataPHA class (e.g. in unpack_pha) we do not use the
+        _default_id setting here.
+
+        """
+
         if id is None:
             return self._default_id
+
         if not self._valid_id(id):
             raise ArgumentTypeErr('intstr')
-        if id in self._plot_types.keys() or id in self._contour_types.keys():
+
+        badkeys = self._plot_type_names.keys() | self._contour_type_names.keys()
+        if id in badkeys:
             raise IdentifierErr('badid', id)
+
         return id
 
     def _get_item(self, id, itemdict, itemdesc, errdesc):

@@ -67,13 +67,43 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def _fix_background_id(self, id, bkg_id):
-        """Check the background id
+        """Validate the background id.
+
+        The identifier has the same restrictions as the dataset
+        identifier.
+
+        Parameters
+        ----------
+        id : int or str or None
+            The dataset identifier. This is only used if bkg_id is
+            None and must refer to a DataPHA dataset.
+        bkg_id : int or str or None
+            The identifier to check. If None then the default backround
+            identifier will be used, taken from the id dataset.
+
+        Returns
+        -------
+        bkg_id : int or str
+            The background identifier to use (it will only differ from
+            the input parameter was set to None).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentTypeErr
+            If the identifier was not a string or an integer.
+        sherpa.utils.err.IdentifierErr
+            If the identifier was invalid.
+
+        See Also
+        --------
+        _fix_id
 
         Notes
         -----
-        Since there is currently no way to set the default
-        background id of the DataPHA class (e.g. in unpack_pha)
-        we do not use the _default_id setting here.
+        Since there is currently no way to set the default background
+        id of the DataPHA class (e.g. in unpack_pha) we do not use the
+        _default_id setting here.
+
         """
 
         if bkg_id is None:
@@ -85,12 +115,8 @@ class Session(sherpa.ui.utils.Session):
 
             # return self._default_id
 
-        if not self._valid_id(bkg_id):
-            raise ArgumentTypeErr('intstr')
-        if bkg_id in self._plot_types.keys() or bkg_id in self._contour_types.keys():
-            raise IdentifierErr('badid', bkg_id)
-
-        return bkg_id
+        # We rely on the validation made by _fix_id
+        return self._fix_id(bkg_id)
 
     def __setstate__(self, state):
         if '_background_sources' not in state:
