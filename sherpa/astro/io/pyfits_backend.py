@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#    Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -39,6 +39,7 @@ References
 
 import logging
 import os
+import warnings
 
 import numpy
 from numpy.compat import basestring
@@ -285,7 +286,20 @@ def open_fits(filename):
        function.
     """
     fname = _infer_and_check_filename(filename)
-    return fits.open(fname)
+
+    # With AstroPy v4.2.1 we start to see warnings when this call
+    # fails (i.e. when the argument is not a FITS file).  This leads
+    # to spurious messages to the user, so we just remove all
+    # warnings. This may need tweaking at some point: ideally we would
+    # only want to hide the warnings when it is not a FITS file but
+    # show them when it is a FITS file.
+    #
+    # Note that this is not thread safe.
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', module='astropy.io.fits')
+        out = fits.open(fname)
+
+    return out
 
 
 def read_table_blocks(arg, make_copy=False):
