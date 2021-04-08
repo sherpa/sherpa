@@ -21,6 +21,8 @@ xspec_root=${CONDA_PREFIX}
 if [ "`uname -s`" == "Darwin" ] ; then
     ds9_os=darwinsierra
 else
+    echo "* installing dev environment"
+
     # install build dependencies
     sudo apt-get update
     sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
@@ -29,7 +31,10 @@ else
     ds9_os=ubuntu14
 fi
 
+echo "* ds9_os=$ds9_os"
+
 download () {
+  echo "* downloading $1"
   wget --quiet $1
   if [[ $? -ne 0 ]]; then
     echo "\n*** Unable to download $1\n"
@@ -46,6 +51,7 @@ download $ds9_base_url/$ds9_os/$ds9_tar
 download  $ds9_base_url/$ds9_os/$xpa_tar
 
 # untar them
+echo "* unpacking ds9/XPA"
 start_dir=$(pwd)
 cd ${CONDA_PREFIX}/bin
 tar xf ${start_dir}/${ds9_tar}
@@ -70,6 +76,8 @@ case "${XSPECVER}" in
       ;;
 esac
 
+echo "* configuring XSPEC"
+
 # Change build configuration
 sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
@@ -81,3 +89,7 @@ sed -i.orig "s|#fftw=local|fftw=local|g" setup.cfg
 sed -i.orig "s|#fftw-include_dirs=build/include|fftw-include_dirs=${CONDA_PREFIX}/include|g" setup.cfg
 sed -i.orig "s|#fftw-lib-dirs=build/lib|fftw-lib-dirs=${CONDA_PREFIX}/lib|g" setup.cfg
 sed -i.orig "s|#fftw-libraries=fftw3|fftw-libraries=fftw3|g" setup.cfg
+
+echo "* START setup.cfg"
+cat setup.cfg
+echo "* END   setup.cfg"
