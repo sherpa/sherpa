@@ -19,7 +19,7 @@ echo "HEADAS=${HEADAS}"
 xspec_root=${CONDA_PREFIX}
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    ds9_os=darwinsierra
+    ds9_os=darwinhighsierra
 else
     echo "* installing dev environment"
 
@@ -28,7 +28,7 @@ else
     sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
-    ds9_os=ubuntu14
+    ds9_os=ubuntu18
 fi
 
 echo "* ds9_os=$ds9_os"
@@ -43,7 +43,7 @@ download () {
 
 ### DS9 and XPA
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.8.2.tar.gz
+ds9_tar=ds9.${ds9_os}.8.2.1.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.20.tar.gz
 
 # Fetch them
