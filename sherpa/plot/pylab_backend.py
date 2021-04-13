@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015, 2017, 2019, 2020, 2021
-#                Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -316,7 +316,6 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
                   color=color,
                   alpha=alpha,
                   linestyle='',
-                  drawstyle=drawstyle,
                   marker=marker,
                   markersize=markersize,
                   markerfacecolor=markerfacecolor,
@@ -446,7 +445,6 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         objs = axes.errorbar(x, y, yerr, xerr,
                              color=color,
                              linestyle=linestyle,
-                             drawstyle=drawstyle,
                              marker=marker,
                              markersize=markersize,
                              markerfacecolor=markerfacecolor,
