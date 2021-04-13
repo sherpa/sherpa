@@ -44,10 +44,11 @@ from sherpa.models.model import ArithmeticModel, \
     ArithmeticConstantModel, BinaryOpModel
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
-    RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf
+    RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf, \
+    PSFModel
 from sherpa.fit import Fit
 from sherpa.astro.data import DataPHA, DataRMF
-from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
+from sherpa.models.basic import Box1D, Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 
@@ -1700,3 +1701,46 @@ def test_create_rmf(make_data_path):
     assert len(datarmf._nch) == 1039
     assert len(datarmf.n_grp) == 900
     assert datarmf._rsp.shape[0] == 380384
+
+
+# Several tests from sherpa/tests/test_instrument.py repeated to check out
+# the astro-version of PSFModel
+#
+def test_psf1d_empty_pars():
+    """What does .pars mean for an empty PSFModel?"""
+
+    m = PSFModel()
+    assert m.pars == ()
+
+
+def test_psf1d_pars():
+    """What does .pars mean for a PSFModel?"""
+
+    b = Box1D()
+    m = PSFModel(kernel=b)
+    assert m.pars == ()
+
+
+def test_psf1d_convolved_pars():
+    """What does .pars mean for a PSFModel applied to a model?"""
+
+    b1 = Box1D('b1')
+    m = PSFModel(kernel=b1)
+    b2 = Box1D('b2')
+    c = m(b2)
+
+    b1.xlow = 1
+    b1.xhi = 10
+    b1.ampl = 0.2
+
+    b2.xlow = 4
+    b2.xhi = 8
+    b2.ampl = 0.4
+
+    bpars = b1.pars + b2.pars
+    assert len(bpars) == 6
+
+    cpars = c.pars
+    assert len(cpars) == 6
+    for bpar, cpar in zip(bpars, cpars):
+        assert cpar == bpar
