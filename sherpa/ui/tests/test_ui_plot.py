@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1110,7 +1111,7 @@ def test_plot_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == ''
     assert ax.xaxis.get_label().get_text() == 'x'
     assert ax.yaxis.get_label().get_text() == 'y'
@@ -1124,7 +1125,7 @@ def test_plot_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == 'Model'
     assert ax.xaxis.get_label().get_text() == 'x'
     assert ax.yaxis.get_label().get_text() == 'y'
@@ -1176,7 +1177,8 @@ def test_plot_multiple(session):
                                                  'Data / Model']),
                                             1):
 
-        assert ax.get_geometry() == (2, 3, i)
+        w = i - 1
+        assert ax.get_subplotspec().get_geometry() == (2, 3, w, w)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x'
         assert ax.yaxis.get_label().get_text() == ylabel
@@ -1223,7 +1225,7 @@ def test_contour_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == ''
     assert ax.xaxis.get_label().get_text() == 'x0'
     assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1237,7 +1239,7 @@ def test_contour_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == 'Model'
     assert ax.xaxis.get_label().get_text() == 'x0'
     assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1284,7 +1286,8 @@ def test_contour_multiple(session):
                                          'Ratio of Data to Model']),
                                     1):
 
-        assert ax.get_geometry() == (2, 3, i)
+        w = i - 1
+        assert ax.get_subplotspec().get_geometry() == (2, 3, w, w)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x0'
         assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1340,7 +1343,8 @@ def test_contour_xxx(plotfunc, title, pcls, session):
                                             ['', 'Residuals']),
                                         1):
 
-            assert ax.get_geometry() == (2, 1, i)
+            w = i - 1
+            assert ax.get_subplotspec().get_geometry() == (2, 1, w, w)
             assert ax.get_title() == title
             assert ax.xaxis.get_label().get_text() == 'x0'
             assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1349,7 +1353,7 @@ def test_contour_xxx(plotfunc, title, pcls, session):
         assert len(fig.axes) == 1
 
         ax = fig.axes[0]
-        assert ax.get_geometry() == (1, 1, 1)
+        assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x0'
         assert ax.yaxis.get_label().get_text() == 'x1'

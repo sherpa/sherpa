@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1232,7 +1233,8 @@ def test_img_contour_function_kwarg(clean_astro_ui, basic_img):
 
     for i, ax in enumerate(axes, 1):
 
-        assert ax.get_geometry() == (2, 2, i)
+        w = i - 1
+        assert ax.get_subplotspec().get_geometry() == (2, 2, w, w)
 
         assert ax.get_xscale() == 'linear'
         assert ax.get_yscale() == 'linear'
