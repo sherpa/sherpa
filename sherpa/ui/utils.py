@@ -4729,10 +4729,10 @@ class Session(NoNewAttributesAfterInit):
         array([5, 7])
 
         """
+        if len(self._data) == 0:
+            raise IdentifierErr("nodatasets")
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr(lo, **kwargs)
-        if self._data.items() == []:
-            raise IdentifierErr("nodatasets")
         for d in self._data.values():
             d.notice(lo, hi, **kwargs)
 
@@ -4816,8 +4816,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kwargs['ignore'] = True
-        if lo is not None and type(lo) in (str, numpy.string_):
-            return self._notice_expr(lo, **kwargs)
         self.notice(lo, hi, **kwargs)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it

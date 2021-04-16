@@ -79,7 +79,6 @@ def test_check_ids_not_none(func):
     assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("func", [ui.notice, ui.ignore])
 @pytest.mark.parametrize("lo,hi", [(1, 5), (1, None), (None, 5), (None, None),
                                    ("1:5", None)])
