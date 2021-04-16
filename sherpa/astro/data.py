@@ -1341,7 +1341,7 @@ class DataPHA(Data1D):
         self._units = units
 
     units = property(_get_units, _set_units,
-                     doc='Units of the independent axis')
+                     doc="Units of the independent axis: one of 'channel', 'energy', 'wavelength'.")
 
     def _get_rate(self):
         return self._rate
@@ -1466,7 +1466,7 @@ class DataPHA(Data1D):
     """The identifier for the response component when not set."""
 
     def set_analysis(self, quantity, type='rate', factor=0):
-        """Return the units used when fitting spectral data.
+        """Set the units used when fitting and plotting spectral data.
 
         Parameters
         ----------
@@ -1493,7 +1493,9 @@ class DataPHA(Data1D):
 
         >>> pha.set_analysis('energy')
 
-        >>> pha.set_analysis('wave', type='counts' factor=1)
+        >>> pha.set_analysis('wave', type='counts', factor=1)
+        >>> pha.units
+        'wavelength'
 
         """
         self.plot_fac = factor
