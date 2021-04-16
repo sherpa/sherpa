@@ -4969,8 +4969,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kwargs['ignore'] = True
-        if lo is not None and type(lo) in (str, numpy.string_):
-            return self._notice_expr_id(ids, lo, **kwargs)
         self.notice_id(ids, lo, hi, **kwargs)
 
     ###########################################################################
