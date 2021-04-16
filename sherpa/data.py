@@ -437,25 +437,24 @@ class Filter():
         if array is None:
             return
 
+        # Note that mask may not be a boolean but an array.
         if self.mask is False:
             raise DataErr('notmask')
 
-        if self.mask is not True:  # mask is not False and not True, so it's something else we'll try to use as an array
-            array = numpy.asarray(array)
-            if array.shape != self.mask.shape:
-                raise DataErr('mismatch', 'mask', 'data array')
-            return array[self.mask]
+        if self.mask is True:
+            return array
 
-        return array
+        array = numpy.asarray(array)
+        if array.shape != self.mask.shape:
+            raise DataErr('mismatch', 'mask', 'data array')
+        return array[self.mask]
 
     def notice(self, mins, maxes, axislist, ignore=False):
         ignore = bool_cast(ignore)
-        if str in [type(min) for min in mins]:
-            raise DataErr('typecheck', 'lower bound')
-        elif str in [type(max) for max in maxes]:
-            raise DataErr('typecheck', 'upper bound')
-        elif str in [type(axis) for axis in axislist]:
-            raise DataErr('typecheck', 'grid')
+        for vals, label in zip([mins, maxes, axislist],
+                               ['lower bound', 'upper bound', 'grid']):
+            if any([isinstance(val, str) for val in vals]):
+                raise DataErr('typecheck', label)
 
         mask = filter_bins(mins, maxes, axislist)
 
