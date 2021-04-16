@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -329,6 +329,15 @@ def make_test_image():
     x1 = x1.flatten()
     y = np.ones(x0.size)
     return DataIMG('d', x0, x1, y, shape=shape)
+
+
+@pytest.fixture
+def make_test_pha():
+    """A simple PHA"""
+
+    chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
+    return DataPHA('p', chans, counts)
 
 
 def test_img_set_coord_invalid(make_test_image):
@@ -780,3 +789,31 @@ def test_img_get_filter_compare_filtering(make_test_image):
     # just check we have some True and False values
     assert maska.min() == 0
     assert maska.max() == 1
+
+
+@pytest.mark.parametrize("requested,expected",
+                         [("bin", "channel"), ("Bin", "channel"),
+                          ("channel", "channel"), ("ChannelS", "channel"),
+                          ("chan", "channel"),
+                          ("energy", "energy"), ("ENERGY", "energy"),
+                          ("Energies", "energy"),
+                          ("WAVE", "wavelength"), ("wavelength", "wavelength"),
+                          ("Wavelengths", "wavelength"),
+                          ("chan This Is Wrong", "channel"),  # should this be an error?
+                          ("WAVEY GRAVY", "wavelength")  # shouls this be an error?
+                          ])
+def test_pha_valid_units(requested, expected, make_test_pha):
+    """Check we can set the units field of a PHA object"""
+    pha = make_test_pha
+    pha.units = requested
+    assert pha.units == expected
+
+
+@pytest.mark.parametrize("invalid", ["Bins", "BINNING", "wavy", "kev", "angstrom"])
+def test_pha_invalid_units(invalid, make_test_pha):
+    """Check we can not set units to an invalid value"""
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.units = invalid
+
+    assert str(de.value) == f"unknown quantity: '{invalid}'"
