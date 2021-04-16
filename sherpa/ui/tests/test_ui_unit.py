@@ -70,11 +70,16 @@ def test_all_has_no_repeated_elements():
 
 
 @pytest.mark.parametrize("func", [ui.notice_id, ui.ignore_id])
-def test_check_ids_not_none(func):
-    """Check they error out when id is None"""
+@pytest.mark.parametrize("lo", [None, 1, "1:5"])
+def test_check_ids_not_none(func, lo):
+    """Check they error out when id is None
+
+    There used to be the potential for different behavior depending
+    if the lo argument was a string or not,hence the check.
+    """
 
     with pytest.raises(ArgumentTypeErr) as exc:
-        func(None)
+        func(None, lo)
 
     assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
 
