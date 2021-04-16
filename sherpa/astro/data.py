@@ -3433,6 +3433,9 @@ class DataPHA(Data1D):
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
+
+        ignore = bool_cast(ignore)
+
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do
         # *not* impose filter on data itself.  (Revision possibly
@@ -3466,7 +3469,6 @@ class DataPHA(Data1D):
             return
 
         # Go on if we are also supposed to filter the source data
-        ignore = bool_cast(ignore)
         if lo is None and hi is None:
             self.quality_filter = None
             self.notice_response(False)
@@ -3479,19 +3481,27 @@ class DataPHA(Data1D):
         # Convert to "group number" (which, for ungrouped data,
         # is just channel number).
         #
-        if lo is not None and type(lo) != str:
+        def convert_limit(x):
+            """Convert the limit to 'group number'.
+
+            x must not be None or a string. The return value is None if
+            the value is invalid (and so should be skipped).
+            """
+
             try:
-                lo = self._to_channel(lo)
+                return self._to_channel(x)
             except DataErr as de:
-                info("Skipping dataset {}: {}".format(self.name,
-                                                      de))
+                info(f"Skipping dataset {self.name}: {de}")
+                return None
+
+        if lo is not None and not isinstance(lo, str):
+            lo = convert_limit(lo)
+            if lo is None:
                 return
-        if hi is not None and type(hi) != str:
-            try:
-                hi = self._to_channel(hi)
-            except DataErr as de:
-                info("Skipping dataset {}: {}".format(self.name,
-                                                      de))
+
+        if hi is not None and not isinstance(hi, str):
+            hi = convert_limit(hi)
+            if hi is None:
                 return
 
         elo, ehi = self._get_ebins()
