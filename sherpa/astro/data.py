@@ -1760,8 +1760,8 @@ class DataPHA(Data1D):
         group = bool_cast(group)
 
         if self.units == 'channel':
-            elo = self.channel - 0.5
-            ehi = self.channel + 0.5
+            elo = self.channel
+            ehi = self.channel + 1
         else:
             arf, rmf = self.get_response(response_id)
             if (self.bin_lo is not None) and (self.bin_hi is not None):
@@ -1779,8 +1779,8 @@ class DataPHA(Data1D):
                 elo = arf.energ_lo
                 ehi = arf.energ_hi
             else:
-                elo = self.channel - 0.5
-                ehi = self.channel + 0.5
+                elo = self.channel
+                ehi = self.channel + 1
 
         # If the data are grouped, then we should group up
         # the energy bins as well.  E.g., if group 1 is

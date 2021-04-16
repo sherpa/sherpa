@@ -1533,14 +1533,16 @@ def test_get_axes_datapha_no_response():
 
     I have noted that it's unclear whether the bin edges are
     1-2, 2-3, 3-4 or 0.5-1.5, 1.5-2.5, 2.5-3.5. Let's test
-    the status quo here.
+    the status quo here. It used to return the latter (bin edges
+    at half-integer values) but in the Sherpa 4.13 development
+    it was changed to use integer values (the former case).
     """
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
     ax = ui.get_axes()
     assert len(ax) == 2
-    assert ax[0] == pytest.approx([0.5, 1.5, 2.5])
-    assert ax[1] == pytest.approx([1.5, 2.5, 3.5])
+    assert ax[0] == pytest.approx([1, 2, 3])
+    assert ax[1] == pytest.approx([2, 3, 4])
 
 
 def test_get_axes_datapha_rmf():
