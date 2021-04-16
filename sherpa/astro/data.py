@@ -1758,28 +1758,29 @@ class DataPHA(Data1D):
     # twice is an error.
     def _get_ebins(self, response_id=None, group=True):
         group = bool_cast(group)
-        arf, rmf = self.get_response(response_id)
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
-        elif rmf is not None:
-            if (rmf.e_min is None) or (rmf.e_max is None):
-                raise DataErr('noenergybins', 'RMF')
-            elo = rmf.e_min
-            ehi = rmf.e_max
-        elif arf is not None:
-            elo = arf.energ_lo
-            ehi = arf.energ_hi
-        else:
-            elo = self.channel - 0.5
-            ehi = self.channel + 0.5
 
         if self.units == 'channel':
             elo = self.channel - 0.5
             ehi = self.channel + 0.5
+        else:
+            arf, rmf = self.get_response(response_id)
+            if (self.bin_lo is not None) and (self.bin_hi is not None):
+                elo = self.bin_lo
+                ehi = self.bin_hi
+                if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
+                    elo = self._hc / self.bin_hi
+                    ehi = self._hc / self.bin_lo
+            elif rmf is not None:
+                if (rmf.e_min is None) or (rmf.e_max is None):
+                    raise DataErr('noenergybins', 'RMF')
+                elo = rmf.e_min
+                ehi = rmf.e_max
+            elif arf is not None:
+                elo = arf.energ_lo
+                ehi = arf.energ_hi
+            else:
+                elo = self.channel - 0.5
+                ehi = self.channel + 0.5
 
         # If the data are grouped, then we should group up
         # the energy bins as well.  E.g., if group 1 is
