@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1420,12 +1420,53 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     last bin (because it gets reset to the limit), which we
     probably do not want (for the low edge, for the upper
     edge we are probably lucky due to < rather than >=).
+
+    The groups are such that the first group has channels
+    1-17 and the last group 677-1024, which have mid-points
+    9 and 850.5, hence the 9:850 as the default filter.
+
+    >>> pha.apply_grouping(pha.channel, pha._min)
+    array([  1.,  18.,  22.,  33.,  40.,  45.,  49.,  52.,  55.,  57.,  60.,
+            62.,  66.,  69.,  72.,  76.,  79.,  83.,  89.,  97., 102., 111.,
+           117., 125., 131., 134., 140., 144., 151., 157., 165., 178., 187.,
+           197., 212., 233., 245., 261., 277., 292., 324., 345., 369., 405.,
+           451., 677.])
+
+    >>> pha.apply_grouping(pha.channel, pha._max)
+    array([  17.,   21.,   32.,   39.,   44.,   48.,   51.,   54.,   56.,
+             59.,   61.,   65.,   68.,   71.,   75.,   78.,   82.,   88.,
+             96.,  101.,  110.,  116.,  124.,  130.,  133.,  139.,  143.,
+            150.,  156.,  164.,  177.,  186.,  196.,  211.,  232.,  244.,
+            260.,  276.,  291.,  323.,  344.,  368.,  404.,  450.,  676.,
+           1024.])
+
     """
 
     from sherpa.astro.io import read_pha
 
     pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('channel')
 
+    pha.notice(lo, hi)
+    assert pha.get_filter() == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, '1:1024'),
+                          (30, 2000, '30:1024'),
+                          (-5, 350, '1:350'),
+                          (-20, -5, ''),
+                          (2000, 3000, '')])
+def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
     pha.set_analysis('channel')
 
     pha.notice(lo, hi)
@@ -1456,6 +1497,27 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, '0.0080:14.9431'),
+                          (0.7, 2000, '0.6935:14.9431'),
+                          (-5, 4.2, '0.0080:4.1975'),
+                          xfail(-20, -5, ''),
+                          xfail(2000, 3000, '')])
+def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
+    pha.set_analysis('energy')
+
+    pha.notice(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
                          [xfail(-5, 8000, '0.9991:99.3224'),
                           (20, 8000, '20.4628:99.3224'),
                           xfail(-5, 15, '0.9991:14.7688'),
@@ -1468,6 +1530,27 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
+    pha.set_analysis('wave')
+
+    pha.notice(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [xfail(-5, 8000, '0.8297:1544.0123'),
+                          (20, 8000, '19.9813:1544.0123'),
+                          xfail(-5, 15, '0.8297:15.0302'),
+                          xfail(-20, -5, ''),
+                          xfail(8000, 9000, '')])
+def test_notice_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
     pha.set_analysis('wave')
 
     pha.notice(lo, hi)
