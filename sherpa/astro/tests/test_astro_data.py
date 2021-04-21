@@ -1401,17 +1401,13 @@ def test_notice_channel_grouping(make_data_path):
     assert pha.get_filter(format='%.4f', group=False) == '69:404'
 
 
-def xfail(*args):
-    return pytest.param(*args, marks=pytest.mark.xfail)
-
-
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, '9:850'),
                           (30, 2000, '27:850'),
                           (-5, 350, '9:356'),
-                          xfail(-20, -5, ''),
+                          (-20, -5, '9'),
                           (2000, 3000, '')])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results
@@ -1479,8 +1475,8 @@ def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
                          [(-5, 2000, '0.1248:12.4100'),
                           (0.7, 2000, '0.6716:12.4100'),
                           (-5, 4.2, '0.1248:4.1391'),
-                          xfail(-20, -5, ''),
-                          xfail(2000, 3000, '')])
+                          (-20, -5, '0.1248'),
+                          (2000, 3000, '12.4100')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1500,8 +1496,8 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
                          [(-5, 2000, '0.0080:14.9431'),
                           (0.7, 2000, '0.6935:14.9431'),
                           (-5, 4.2, '0.0080:4.1975'),
-                          xfail(-20, -5, ''),
-                          xfail(2000, 3000, '')])
+                          (-20, -5, '0.0080'),
+                          (2000, 3000, '14.9431')])
 def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1518,11 +1514,11 @@ def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_dat
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [xfail(-5, 8000, '0.9991:99.3224'),
+                         [(-5, 8000, '99.3224'),
                           (20, 8000, '20.4628:99.3224'),
-                          xfail(-5, 15, '0.9991:14.7688'),
-                          xfail(-20, -5, ''),
-                          xfail(8000, 9000, '')])
+                          (-5, 15, ''),
+                          (-20, -5, '99.3224'),
+                          (8000, 9000, '99.3224')])
 def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1539,11 +1535,11 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [xfail(-5, 8000, '0.8297:1544.0123'),
+                         [(-5, 8000, '1544.0123'),
                           (20, 8000, '19.9813:1544.0123'),
-                          xfail(-5, 15, '0.8297:15.0302'),
-                          xfail(-20, -5, ''),
-                          xfail(8000, 9000, '')])
+                          (-5, 15, ''),
+                          (-20, -5, '1544.0123'),
+                          (8000, 9000, '1544.0123')])
 def test_notice_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1563,7 +1559,7 @@ def test_notice_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_
                          [(-5, 2000, ''),
                           (30, 2000, '9:19'),
                           (-5, 350, '386:850'),
-                          xfail(-20, -5, '9:850'),
+                          (-20, -5, '19:850'),
                           (2000, 3000, '9:850')])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1605,8 +1601,8 @@ def test_ignore_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
                          [(-5, 2000, ''),
                           (0.8, 2000, '0.1248:0.7665'),
                           (-5, 3.5, '3.6792:12.4100'),
-                          xfail(-20, -5, '0.1248:12.4100'),
-                          xfail(2000, 3000, '0.1248:12.4100')])
+                          (-20, -5, '0.2774:12.4100'),
+                          (2000, 3000, '0.1248:8.2198')])
 def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1644,11 +1640,11 @@ def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_dat
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [xfail(-5, 2000, ''),
+                         [(-5, 2000, '0.9991:44.6951'),
                           (20, 2000, '0.9991:18.4610'),
-                          xfail(-5, 15, '15.4401:99.3224'),
-                          xfail(-20, -5, '0.9991:99.3224'),
-                          xfail(2000, 3000, '0.9991:99.3224')])
+                          (-5, 15, '0.9991:99.3224'),
+                          (-20, -5, '0.9991:44.6951'),
+                          (2000, 3000, '0.9991:44.6951')])
 def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
