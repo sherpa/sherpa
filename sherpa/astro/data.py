@@ -1964,13 +1964,19 @@ class DataPHA(Data1D):
         return vals
 
     def _wavelength_to_channel(self, val):
+        """Convert a wavelength to group or channel number.
+
+        Note that values of 0 or less are replaced by a
+        small value (~1e-38).
+
+        """
         tiny = numpy.finfo(numpy.float32).tiny
         vals = numpy.asarray(val)
         if vals.shape == ():
-            if vals == 0.0:
+            if vals <= 0.0:
                 vals = tiny
         else:
-            vals[vals == 0.0] = tiny
+            vals[vals <= 0.0] = tiny
         vals = self._hc / vals
         return self._energy_to_channel(vals)
 
