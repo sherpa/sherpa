@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021
-#         Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -75,6 +75,7 @@ References
 
 
 import string
+import warnings
 
 import numpy as np
 
@@ -848,6 +849,25 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
+        """Calculate the model given the parameters and grid.
+
+        Notes
+        -----
+        XSPEC models must always be evaluated with low and high bin
+        edges. Although supported by the XSPEC model interface the
+        ability to evaluate using an XSPEC-style grid (n+1 values for
+        n bins which we pad with a 0), we do not allow this here since
+        it complicates the handling of the regrid method.
+
+        Keyword arguments are ignored.
+        """
+
+        nargs = len(args)
+        if nargs != 3:
+            emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
+
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
         # rather than in the C++ interface since:
@@ -971,6 +991,14 @@ class XSTableModel(XSModel):
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
+
+        # Note the kwargs is ignored
+        nargs = 1 + len(args)
+        if nargs != 3:
+            emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
+
         # The function used depends on XSPEC version and, prior
         # to XSPEC 12.10.1, the type of table.
         #
@@ -987,16 +1015,15 @@ class XSTableModel(XSModel):
 
         if hasattr(_xspec, 'tabint'):
             tabtype = 'add' if self.addmodel else 'mul'
-            return _xspec.tabint(p,
-                                 filename=self.filename, tabtype=tabtype,
-                                 *args, **kwargs)
+            return _xspec.tabint(p, *args,
+                                 filename=self.filename, tabtype=tabtype)
 
         if self.addmodel:
             func = _xspec.xsatbl
         else:
             func = _xspec.xsmtbl
 
-        return func(p, filename=self.filename, *args, **kwargs)
+        return func(p, *args, filename=self.filename)
 
 
 class XSAdditiveModel(XSModel):
@@ -1132,13 +1159,17 @@ class XSConvolutionKernel(XSModel):
         *args
             The model grid. There should be two arrays (the low and
             high edges of the bin) to make sure the wrapped model is
-            evaluated correctly. One array can be used but this should
-            only be used when the wrapped model only contains XSPEC
-            models.
+            evaluated correctly.
         **kwargs
             At present all additional keyword arguments are dropped.
 
         """
+
+        nargs = 2 + len(args)
+        if nargs != 4:
+            emsg = f"calc() requires pars,rhs,lo,hi arguments, sent {nargs} arguments"
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
 
         npars = len(self.pars)
         lpars = pars[:npars]
@@ -1261,13 +1292,17 @@ class XSConvolutionModel(CompositeModel, XSModel):
         *args
             The model grid. There should be two arrays (the low and
             high edges of the bin) to make sure the wrapped model is
-            evaluated correctly. One array can be used but this should
-            only be used when the wrapped model only contains XSPEC
-            models.
+            evaluated correctly.
         **kwargs
             Additional keyword arguments.
 
         """
+
+        nargs = 1 + len(args)
+        if nargs != 3:
+            emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
 
         return self.wrapper.calc(p, self.model.calc,
                                  *args, **kwargs)
