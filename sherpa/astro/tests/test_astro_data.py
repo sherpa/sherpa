@@ -1719,6 +1719,121 @@ def test_channel_changing_limits(make_data_path):
     assert pha.get_filter(group=False) == expected2
 
 
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1), (20000, 1024)])
+def test_channel_conversion_grouped_invalid(argval, expected, make_data_path):
+    """What happens for channel conversion when argument is too small/large?
+
+    The _to_channel routine is changed when the units are changed.
+    Check what happens when a value exceeds the channel range.
+
+    It would be nice to create a PHA dataset but there's too many
+    moving parts so use a file.
+
+    This behavior is implicitly tested in routines like
+    test_ignore_channel_grouping_outofbounds but here we
+    add an explicit test to check what is happening.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('channel')
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval", [-1, 0, 20000])
+def test_channel_conversion_ungrouped_invalid(argval, make_data_path):
+    """See test_channel_conversion_grouped_invalid"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('channel')
+    pha.ungroup()
+
+    x = pha._to_channel(argval)
+    assert x == argval
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1), (20000, 46)])
+def test_energy_conversion_grouped_invalid(argval, expected, make_data_path):
+    """See test_channel_conversion_grouped_invalid but for energy units."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1), (20000, 1024)])
+def test_energy_conversion_ungrouped_invalid(argval, expected, make_data_path):
+    """See test_energy_conversion_grouped_invalid"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+    pha.ungroup()
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 46), (20000, 1)])
+def test_wave_conversion_grouped_invalid(argval, expected, make_data_path):
+    """See test_channel_conversion_grouped_invalid but for energy units.
+
+    It is not obvious why argval=-1 returns a different value to
+    argval=0.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('wavelen')
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1024), (20000, 1)])
+def test_wave_conversion_ungrouped_invalid(argval, expected, make_data_path):
+    """See test_wave_conversion_grouped_invalid
+
+    It is not obvious why argval=-1 returns a different value to
+    argval=0.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('wavelen')
+    pha.ungroup()
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
 def test_get_background_scale_is_none():
     """We get None when there's no background"""
 
