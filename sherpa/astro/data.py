@@ -3529,10 +3529,57 @@ class DataPHA(Data1D):
             self.quality_filter = None
             self.notice_response(False)
 
+        # When convert_limit is called, any limit that is outside the
+        # supported range (e.g. lo = 0.01 when the response is 0.1 to
+        # 11 keV) will get clamped to the minumum or maximum value.
+        # This is okay when lo is smaller and hi is larger than the
+        # supported values but is a problem when they are both
+        # smaller or larger than the range, since the result is then
+        # that the first or last group would be filtered. It is
+        # therefore necessary to check for this condition.
+        #
+        # This would be easier if _to_channel were to identify that
+        # the range had been (or should be) clamped, but that is a
+        # larger change than I want to implement, so instead we repeat
+        # some of the checks that the _xxx_to_channel methods make to
+        # see what the minimum and maximum allowed values are.
+        #
+        try:
+            elo, ehi = self._get_ebins(group=False)
+        except DataErr as de:
+            info(f"Skipping dataset {self.name}: {de}")
+            return
+
+        if self.units == 'energy':
+            umin = elo[0]
+            umax = ehi[-1]
+        elif self.units == 'wavelength':
+            umin = self._hc / ehi[-1]
+            umax = self._hc / elo[0]
+        else:
+            # assume channel units
+            umin = self.channel[0]
+            umax = self.channel[-1]
+
+        assert umin < umax, (self.units, umin, umax)
+
+        # Finally we can check that the request is not
+        # outside the valid range "on the same side".
+        #
+        if lo is not None and hi is not None:
+            assert lo <= hi, (lo, hi)
+            if hi <= umin:
+                return
+            if lo >= umax:
+                return
+
         # We do not want a "all data are masked out" error to cause
         # this to fail; it should just do nothing (as trying to set
         # a noticed range to include masked-out ranges would also
-        # be ignored).
+        # be ignored). Note that originally this try/except caught
+        # errors like "RMF has no ebounds data", but this is now
+        # caught earlier in the call to _get_ebins, so it is possible
+        # that the check is no-longer needed.
         #
         # Convert to "group number" (which, for ungrouped data,
         # is just channel number).
@@ -3560,7 +3607,11 @@ class DataPHA(Data1D):
             if hi is None:
                 return
 
-        elo, ehi = self._get_ebins()
+        # At this point lo and hi are in "group number".
+        #
+        # When do we need to flip the limits? It is not clear whether
+        # we always need lo <= hi.
+        #
         if ((self.units == "wavelength" and
              elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
             (self.units == "energy" and
