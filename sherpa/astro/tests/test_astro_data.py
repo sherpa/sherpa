@@ -1582,6 +1582,27 @@ def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, ''),
+                          (30, 2000, '1:29'),
+                          (-5, 350, '351:1024'),
+                          (-20, -5, '1:1024'),
+                          (2000, 3000, '1:1024')])
+def test_ignore_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
+    pha.set_analysis('channel')
+
+    pha.ignore(lo, hi)
+    assert pha.get_filter() == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, ''),
                           (0.8, 2000, '0.1248:0.7665'),
                           (-5, 3.5, '3.6792:12.4100'),
                           xfail(-20, -5, '0.1248:12.4100'),
@@ -1593,6 +1614,27 @@ def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
+    pha.set_analysis('energy')
+
+    pha.ignore(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, ''),
+                          (0.8, 2000, '0.0080:0.7811'),
+                          (-5, 3.5, '3.5113:14.9431'),
+                          (-20, -5, '0.0219:14.9431'),
+                          (2000, 3000, '0.0080:14.9285')])
+def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
     pha.set_analysis('energy')
 
     pha.ignore(lo, hi)
@@ -1614,6 +1656,27 @@ def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
+    pha.set_analysis('wave')
+
+    pha.ignore(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, '0.8297:566.1378'),
+                          (20, 2000, '0.8297:19.5220'),
+                          (-5, 15, '0.8297:1544.0123'),
+                          (-20, -5, '0.8297:566.1378'),
+                          (2000, 3000, '0.8297:566.1378')])
+def test_ignore_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
     pha.set_analysis('wave')
 
     pha.ignore(lo, hi)
