@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1200,3 +1201,33 @@ def test_manual_setting_mask():
     with pytest.raises(DataErr) as e:
         d.mask = None
     assert 'True, False, or a mask array' in str(e.value)
+
+
+def test_data_filter_no_data():
+    """Check we get a excludes-all-data error"""
+
+    x = numpy.asarray([1, 2, 5])
+    d = Data1D('x', x, x)
+    assert d.mask
+    d.ignore()
+    assert d.mask is False
+
+    with pytest.raises(DataErr) as de:
+        d.apply_filter([1, 2, 3])
+
+    assert str(de.value) == 'mask excludes all data'
+
+
+@pytest.mark.parametrize("vals", [4, [4], [[2, 3, 4]], [[2, 3], [3, 2]]])
+def test_data_filter_invalid_size(vals):
+    """Check we get a size-mismatch error"""
+
+    x = numpy.asarray([1, 2, 5])
+    d = Data1D('x', x, x)
+    d.ignore(None, 2)
+    assert d.mask == pytest.approx([False, False, True])
+
+    with pytest.raises(DataErr) as de:
+        d.apply_filter(vals)
+
+    assert str(de.value) == 'size mismatch between mask and data array'
