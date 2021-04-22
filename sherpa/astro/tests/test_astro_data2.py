@@ -72,17 +72,15 @@ def test_get_filter_is_empty():
     assert pha.get_filter() == 'No noticed bins'
 
 
-@pytest.mark.xfail
 def test_need_numpy_channels():
-    """We need to convert the  input to NumPy arrrays.
-
-    This should be done in the constructor to DataPHA, but
-    for now error out if not set.
+    """We didn't used to convert channels to a NumPy array which broke
+    this logic - the ignore line would error out due to an operation on
+    self.channel
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     assert pha.get_filter() == '1:3'
-    # This errors out with a TypeError on 'elo = self.channel - 0.5'
+
     pha.ignore()
     assert pha.get_filter() == 'No noticed bins'
 
@@ -168,11 +166,12 @@ def test_288_b():
     assert pha.mask == pytest.approx([True, False, True])
 
 
-@pytest.mark.xfail
 def test_grouping_non_numpy():
-    """Historically the group* calls will fail oddly if y is not numpy
+    """Historically the group* calls would fail oddly if y is not numpy
 
     TypeError: grpNumCounts() Could not parse input arguments, please check input for correct type(s)
+
+    This has now been addressed but the test has been left in.
     """
 
     x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

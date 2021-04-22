@@ -29,7 +29,7 @@ import warnings
 import numpy
 
 from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
-    IntegratedDataSpace2D
+    IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
@@ -1407,6 +1407,10 @@ class DataPHA(Data1D):
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
+
+        channel = _check(channel)
+        counts = _check(counts)
+
         self.channel = channel
         self.counts = counts
         self.bin_lo = bin_lo
