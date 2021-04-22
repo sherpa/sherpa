@@ -1813,7 +1813,6 @@ def test_wave_conversion_grouped_invalid(argval, expected, make_data_path):
     assert x == expected
 
 
-
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("argval,expected", [(-1, 1024), (0, 1024), (20000, 1)])
@@ -1832,6 +1831,55 @@ def test_wave_conversion_ungrouped_invalid(argval, expected, make_data_path):
 
     x = pha._to_channel(argval)
     assert x == expected
+
+
+@requires_data
+@requires_fits
+def test_wave_conversion_multiple(make_data_path):
+    """This is ensure a code path is tested.
+
+    It is similar to test_wave_conversion_[un]grouped_invalid.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.units = 'wavelen'
+
+    xs = pha._to_channel([-10, 2, 0, -12, 12])
+    assert xs == pytest.approx([46, 44, 46, 46, 14])
+
+
+@requires_data
+@requires_fits
+def test_energy_conversion_multiple(make_data_path):
+    """As we do test_wave_conversion_multiple let's do energy."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.units = 'energy'
+
+    xs = pha._to_channel([-10, 2, 0, -12, 4])
+    assert xs == pytest.approx([1, 26, 1, 1, 38])
+
+
+@pytest.mark.parametrize('units', ['bin', 'chan', 'energy', 'wave'])
+def test_pha_get_ebins_internal_no_response(units):
+    """Check that _get_ebins has an unlikely-used path checked.
+
+    It's  not clear what we are meant to return here - i.e. no
+    response but a units value has been set - and maybe there
+    should be an error instead (for non-channel settings).
+    """
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.ones(9, dtype=np.int16)
+    pha = DataPHA('tst', chans, counts)
+    pha.units = units
+    lo, hi = pha._get_ebins()
+    assert lo == pytest.approx(chans)
+    assert hi == pytest.approx(chans + 1)
 
 
 def test_get_background_scale_is_none():
