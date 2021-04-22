@@ -1231,3 +1231,19 @@ def test_data_filter_invalid_size(vals):
         d.apply_filter(vals)
 
     assert str(de.value) == 'size mismatch between mask and data array'
+
+
+@pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
+@pytest.mark.parametrize("ignore", [False, True])
+def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
+    """Check we get an error if lo or hi are strings."""
+
+    xlo = numpy.asarray([1, 2, 5])
+    xhi = numpy.asarray([2, 3, 8])
+    y = numpy.zeros(3)
+    d = Data1D('tmp', xlo, xhi, y)
+    with pytest.raises(DataErr) as de:
+        d.notice(lo, hi, ignore=ignore)
+
+    err = f'strings not allowed in {emsg} bound list'
+    assert str(de.value) == err

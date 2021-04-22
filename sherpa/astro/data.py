@@ -3440,8 +3440,53 @@ class DataPHA(Data1D):
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
+        """Notice or ignore the given range.
+
+        Parameters
+        ----------
+        lo, hi : number or None, optional
+            The range to change. A value of None means the minimum or
+            maximum permitted value. The units of lo and hi are set by
+            the units field.
+        ignore : bool, optional
+            Set to True if the range should be ignored. The default is
+            to notice the range.
+        bkg_id : int or sequence of int or None, optional
+            If not None then apply the filter to the given background
+            dataset or datasets, otherwise change the object and all
+            its background datasets.
+
+        See Also
+        --------
+        get_filter, get_filter_expr, get_mask
+
+        Notes
+        -----
+        If no channels have been ignored then a call to `notice` with
+        `ignore=False` will select just the `lo` to `hi` range, and
+        exclude any channels outside this range. If there has been a
+        filter applied then the range `lo` to `hi` will be added to the
+        range of noticed data (when `ignore=False`).
+
+        So, for an ungrouped PHA file with 1024 channels:
+
+        >>> pha.units = 'channel'
+        >>> pha.get_filter()
+        '1:1024'
+        >>> pha.notice(20, 200)
+        >>> pha.get_filter()
+        '20:200'
+        >>> pha.notice(300, 500)
+        '20:200,300:500'
+
+        """
 
         ignore = bool_cast(ignore)
+
+        for val, label in zip([lo, hi], ['lower', 'upper']):
+            if isinstance(val, str):
+                # match the error seen from other data classes here
+                raise DataErr('typecheck', f'{label} bound')
 
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do
@@ -3501,12 +3546,12 @@ class DataPHA(Data1D):
                 info(f"Skipping dataset {self.name}: {de}")
                 return None
 
-        if lo is not None and not isinstance(lo, str):
+        if lo is not None:
             lo = convert_limit(lo)
             if lo is None:
                 return
 
-        if hi is not None and not isinstance(hi, str):
+        if hi is not None:
             hi = convert_limit(hi)
             if hi is None:
                 return

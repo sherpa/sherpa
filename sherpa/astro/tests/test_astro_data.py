@@ -1874,3 +1874,16 @@ def test_get_background_scale_missing_option(is_bkg, option, expected):
 
     scale = d.get_background_scale()
     assert scale == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
+@pytest.mark.parametrize("ignore", [False, True])
+def test_pha_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
+    """Check we get an error if lo or hi are strings."""
+
+    d = DataPHA('tmp', np.arange(3), np.arange(3))
+    with pytest.raises(DataErr) as de:
+        d.notice(lo, hi, ignore=ignore)
+
+    err = f'strings not allowed in {emsg} bound list'
+    assert str(de.value) == err
