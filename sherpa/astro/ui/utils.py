@@ -3882,7 +3882,7 @@ class Session(sherpa.ui.utils.Session):
             args = [obj.x, obj.y]
             fields = ["X", str(objtype).upper()]
 
-        sherpa.astro.io.write_arrays(filename, args, fields, **kwargs)
+        sherpa.astro.io.write_arrays(filename, args, fields=fields, **kwargs)
 
 # To fix bug report 13536, save many kinds of data to ASCII by default,
 # and let user override if they want FITS (or vice-versa).  The new defaults
@@ -3969,7 +3969,8 @@ class Session(sherpa.ui.utils.Session):
         """
         clobber = sherpa.utils.bool_cast(clobber)
         ascii = sherpa.utils.bool_cast(ascii)
-        sherpa.astro.io.write_arrays(filename, args, fields, ascii, clobber)
+        sherpa.astro.io.write_arrays(filename, args, fields=fields,
+                                     ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different API
     def save_source(self, id, filename=None, bkg_id=None, ascii=False,
@@ -4718,7 +4719,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        sherpa.astro.io.write_pha(filename, d, ascii, clobber)
+        sherpa.astro.io.write_pha(filename, d, ascii=ascii, clobber=clobber)
 
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the grouping scheme to a file.
@@ -4801,7 +4802,8 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('nogrouping', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
-                                     ['CHANNEL', 'GROUPS'], ascii, clobber)
+                                     fields=['CHANNEL', 'GROUPS'], ascii=ascii,
+                                     clobber=clobber)
 
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the quality array to a file.
@@ -4884,7 +4886,8 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('noquality', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
-                                     ['CHANNEL', 'QUALITY'], ascii, clobber)
+                                     fields=['CHANNEL', 'QUALITY'], ascii=ascii,
+                                     clobber=clobber)
 
     # DOC-TODO: setting ascii=True is not supported for crates
     # and in pyfits it seems to just be a 1D array (needs thinking about)
@@ -4953,7 +4956,7 @@ class Session(sherpa.ui.utils.Session):
         _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_image(filename, self.get_data(id),
-                                    ascii, clobber)
+                                    ascii=ascii, clobber=clobber)
 
     # DOC-TODO: the output for an image is "excessive"
     def save_table(self, id, filename=None, ascii=False, clobber=False):
@@ -5022,7 +5025,7 @@ class Session(sherpa.ui.utils.Session):
         _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
-                                    ascii, clobber)
+                                    ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils
     def save_data(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
