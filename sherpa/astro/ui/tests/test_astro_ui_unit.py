@@ -414,7 +414,7 @@ def check_clobber(outpath, func):
     assert new == old
 
 
-@pytest.mark.xfail(reason='fall through does not work')
+@requires_fits
 def test_save_data_data1d_no_clobber(tmp_path):
     """save_data: does clobber=False work? Data1D"""
 
@@ -427,7 +427,6 @@ def test_save_data_data1d_no_clobber(tmp_path):
     check_clobber(out, ui.save_data)
 
 
-@pytest.mark.xfail(reason='fall through does not work')
 @requires_fits
 def test_save_data_datapha_no_clobber(tmp_path):
     """save_data: does clobber=False work? DataPHA"""
@@ -450,7 +449,6 @@ def test_save_data_datapha_no_clobber(tmp_path):
     check_clobber(out, ui.save_data)
 
 
-@pytest.mark.xfail(reason='fall through does not work')
 @requires_fits
 def test_save_pha_no_clobber(tmp_path):
     """save_pha: does clobber=False work?"""
@@ -474,7 +472,7 @@ def test_save_pha_no_clobber(tmp_path):
 
 
 @requires_fits
-@pytest.mark.parametrize("writer", [pytest.param(ui.save_data, marks=pytest.mark.xfail), ui.save_image])
+@pytest.mark.parametrize("writer", [ui.save_data, ui.save_image])
 def test_save_image_no_clobber(writer, tmp_path):
     """save_image: does clobber=False work?"""
 
