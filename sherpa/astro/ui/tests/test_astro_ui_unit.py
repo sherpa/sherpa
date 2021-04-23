@@ -414,6 +414,7 @@ def check_clobber(outpath, func):
     assert new == old
 
 
+@requires_fits
 def test_save_data_data1d_no_clobber(tmp_path):
     """save_data: does clobber=False work? Data1D"""
 
