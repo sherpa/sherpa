@@ -5105,16 +5105,19 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
 
         try:
-            sherpa.astro.io.write_pha(filename, d, ascii, clobber)
+            sherpa.astro.io.write_pha(filename, d, ascii=ascii,
+                                      clobber=clobber)
         except IOErr:
             try:
-                sherpa.astro.io.write_image(filename, d, ascii, clobber)
+                sherpa.astro.io.write_image(filename, d, ascii=ascii,
+                                            clobber=clobber)
             except IOErr:
                 try:
-                    sherpa.astro.io.write_table(filename, d, ascii, clobber)
+                    sherpa.astro.io.write_table(filename, d, ascii=ascii,
+                                                clobber=clobber)
                 except:
                     # If this errors out then so be it
-                    sherpa.io.write_data(filename, d, clobber)
+                    sherpa.io.write_data(filename, d, clobber=clobber)
 
     def pack_pha(self, id=None):
         """Convert a PHA data set into a file structure.
