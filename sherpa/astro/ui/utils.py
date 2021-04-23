@@ -5118,7 +5118,7 @@ class Session(sherpa.ui.utils.Session):
                 try:
                     sherpa.astro.io.write_table(filename, d, ascii=ascii,
                                                 clobber=clobber)
-                except:
+                except IOErr:
                     # If this errors out then so be it
                     sherpa.io.write_data(filename, d, clobber=clobber)
 
