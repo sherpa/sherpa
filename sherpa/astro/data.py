@@ -3487,6 +3487,11 @@ class DataPHA(Data1D):
 
         ignore = bool_cast(ignore)
 
+        # This condition is checked for in the _data_space.filter call
+        # at the end of the method, but it is easier to enforce it
+        # here so we do not need to worry about possible type errors
+        # when comparing string and number values.
+        #
         for val, label in zip([lo, hi], ['lower', 'upper']):
             if isinstance(val, str):
                 # match the error seen from other data classes here
