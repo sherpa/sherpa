@@ -18,9 +18,82 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Allow models to be defined and combined.
 
+A single model is defined by the parameters of the model - represented
+as sherpa.models.model.Parameter instances - and the function that
+takes the parameter values along with an array of grid values. The
+main classes are:
+
+ - Model which is the base class and defines most of the interfaces.
+
+ - ArithmeticConstantModel and ArithmeticFunctionModel for representing
+   a constant value or a function.
+
+ - ArithmeticModel is the main base class for deriving user models since
+   it supports combining models (e.g. by addition or multiplication) and
+   a cache to reduce evaluation time at the expense of memory use.
+
+ - RegriddableModel builds on ArithmeticModel to allow a model to be
+   evaluated on a different grid to that requested: most model classes
+   are derived from the 1D and 2D variants of RegriddableModel.
+
+ - CompositeModel which is used to represent a model expression, that
+   is combined models, such as `m1 * (m2 + m3)`
+
+   - UnaryOpModel for model expressions such as `- m1`.
+
+   - BinaryOpModel for model expressions such as `m1 + m2`.
+
+   - NestedModel for applying one model to another.
+
+ - SimulFitModel for fitting multiple models and datasets.
+
+Model cache
+-----------
+
+The ArithmeticModel class and modelCacher1d decorator provide basic
+support for caching one-dimensional model evaluations - that is, to
+avoid re-calculating the model. The idea is to save the results of the
+latest calls to a model and return the values from the cache,
+hopefully saving time at the expense of using more memory. This is
+most effective when the same model is used with multiple datasets
+which all have the same grid.
+
+The _use_caching attribute of the model is used to determine whether
+the cache is used, but this setting can be over-ridden by the startup
+method, which is automatically called by the fit and est_errors
+methods of a sherpa.fit.Fit object.
+
+The cache_clear and cache_status methods of ArithmeticModel and
+CompositeModel allow you to clear the cache and display to the
+standard output the cache status of each model component.
+
+Example
+-------
+
+The following class implements a simple scale model which has a single
+parameter (`scale`) which defaults to 1. It can be used for both
+non-integrated and integrated datasets of any dimensionality (see
+sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
+
+    class ScaleND(ArithmeticModel):
+        '''A constant value per element.'''
+
+        def __init__(self, name='scalend'):
+            self.scale = Parameter(name, 'scale', 1)
+            self.integrate = False
+            pars = (self.scale, )
+            ArithmeticModel.__init__(self, name, pars)
+
+        def calc(self, *args, **kwargs):
+            return self.scale.val * np.ones(len(args[0]))
+
+"""
+
+
+import functools
 import logging
-import hashlib
 import warnings
 
 import numpy
@@ -32,7 +105,18 @@ from sherpa.utils import formatting
 
 from .parameter import Parameter
 
+# What routine do we use for the hash in modelCacher1d?  As we do not
+# need cryptographic security go for a "quick" algorithm, but md5 is
+# not guaranteed to always be present.  There has been no attempt to
+# check the run times of these routines for the expected data sizes
+# they will be used with.
+#
+try:
+    from hashlib import md5 as hashfunc
+except ImportError:
+    from hashlib import sha256 as hashfunc
 
+info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 
@@ -82,10 +166,15 @@ def modelCacher1d(func):
 
     """
 
+    @functools.wraps(func)
     def cache_model(cls, pars, xlo, *args, **kwargs):
         use_caching = cls._use_caching
         cache = cls._cache
+        cache_ctr = cls._cache_ctr
         queue = cls._queue
+
+        # Counts all accesses, even those that do not use the cache.
+        cache_ctr['check'] += 1
 
         digest = ''
         if use_caching:
@@ -119,8 +208,9 @@ def modelCacher1d(func):
                 data.append(numpy.asarray(args[0]).tobytes())
 
             token = b''.join(data)
-            digest = hashlib.sha256(token).digest()
+            digest = hashfunc(token).digest()
             if digest in cache:
+                cache_ctr['hits'] += 1
                 return cache[digest].copy()
 
         vals = func(cls, pars, xlo, *args, **kwargs)
@@ -134,10 +224,10 @@ def modelCacher1d(func):
             queue.append(digest)
             cache[digest] = vals.copy()
 
+            cache_ctr['misses'] += 1
+
         return vals
 
-    cache_model.__name__ = func.__name__
-    cache_model.__doc__ = func.__doc__
     return cache_model
 
 
@@ -507,6 +597,34 @@ class CompositeModel(Model):
     def teardown(self):
         pass
 
+    def cache_clear(self):
+        """Clear the cache for each component."""
+        for p in self.parts:
+            try:
+                p.cache_clear()
+            except AttributeError:
+                pass
+
+    def cache_status(self):
+        """Display the cache status of each component.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> mdl.cache_status()
+         xsphabs.gal                size:    5  hits:   715  misses:   158  check=  873
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
+        for p in self.parts:
+            try:
+                p.cache_status()
+            except AttributeError:
+                pass
+
 
 class SimulFitModel(CompositeModel):
     """Store multiple models.
@@ -649,9 +767,33 @@ class ArithmeticModel(Model):
         # Model caching ability
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
+        self.cache_clear()
+        Model.__init__(self, name, pars)
+
+    def cache_clear(self):
+        """Clear the cache."""
+        # It is not obvious what to set the queue length to
         self._queue = ['']
         self._cache = {}
-        Model.__init__(self, name, pars)
+        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+
+    def cache_status(self):
+        """Display the cache status.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> pl.cache_status()
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
+        c = self._cache_ctr
+        info(f" {self.name:25s}  size: {len(self._queue):4d}  " +
+             f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
+             f"check: {c['check']:5d}")
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
@@ -678,6 +820,7 @@ class ArithmeticModel(Model):
 
         if '_cache' not in state:
             self.__dict__['_cache'] = {}
+            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
 
         if 'cache' not in state:
             self.__dict__['cache'] = 5
@@ -686,8 +829,7 @@ class ArithmeticModel(Model):
         return FilterModel(self, filter)
 
     def startup(self, cache=False):
-        self._queue = ['']
-        self._cache = {}
+        self.cache_clear()
         self._use_caching = cache
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)

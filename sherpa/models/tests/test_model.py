@@ -18,10 +18,16 @@
 #
 
 from collections import namedtuple
-import hashlib
 import logging
 import operator
 import warnings
+
+# Repeat the logic from sherpa/models/model.py
+#
+try:
+    from hashlib import md5 as hashfunc
+except ImportError:
+    from hashlib import sha256 as hashfunc
 
 import numpy
 
@@ -642,7 +648,7 @@ def check_cache(mdl, expected, x, xhi=None):
         data.append(xhi.tobytes())
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -845,6 +851,7 @@ class DoNotUseModel(Model):
     # We need this for modelCacher1d
     _use_caching = True
     _cache = {}
+    _cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
     _queue = ['']
 
     @modelCacher1d
@@ -879,7 +886,7 @@ def test_cache_integrate_fall_through_no_integrate():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -906,7 +913,7 @@ def test_cache_integrate_fall_through_integrate_true():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -933,6 +940,185 @@ def test_cache_integrate_fall_through_integrate_false():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
+
+
+def test_cache_status_single(caplog):
+    """Check cache_status for a single model."""
+
+    p = Polynom1D()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        p.cache_status()
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == 'sherpa.models.model'
+    assert lvl == logging.INFO
+    toks = msg.split()
+    assert toks[0] == 'polynom1d'
+    assert toks[1] == 'size:'
+    assert toks[2] == '1'
+    assert toks[3] == 'hits:'
+    assert toks[4] == '0'
+    assert toks[5] == 'misses:'
+    assert toks[6] == '0'
+    assert toks[7] == 'check:'
+    assert toks[8] == '0'
+    assert len(toks) == 9
+
+
+def test_cache_status_multiple(caplog):
+    """Check cache_status for a multi-component model.
+
+    Unlike test_cache_syayus_single we also have evaluated the model
+    so we can check that the cache status has changed.
+    """
+
+    # The model expression includes an ArithmeticConstant model (the
+    # term 2) which does not have a cache and so is ignored by
+    # cache_status.
+    #
+    p = Polynom1D()
+    b = Box1D()
+    c = Const1D()
+    mdl = c * (2 * p + b)
+
+    # One model is not cached
+    b._use_caching = False
+
+    mdl([0.1, 0.2, 0.3])
+    mdl([0.1, 0.2, 0.3])
+    mdl([0.1, 0.2, 0.3, 0.4])
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.cache_status()
+
+    assert len(caplog.records) == 3
+
+    tokens = []
+    for lname, lvl, msg in caplog.record_tuples:
+        assert lname == 'sherpa.models.model'
+        assert lvl == logging.INFO
+        toks = msg.split()
+        assert len(toks) == 9
+        assert toks[1] == 'size:'
+        assert toks[2] == '1'
+        assert toks[3] == 'hits:'
+        assert toks[5] == 'misses:'
+        assert toks[7] == 'check:'
+        assert toks[8] == '3'
+
+        tokens.append(toks)
+
+    toks = tokens[0]
+    assert toks[0] == 'const1d'
+    assert toks[4] == '1'
+    assert toks[6] == '2'
+
+    toks = tokens[1]
+    assert toks[0] == 'polynom1d'
+    assert toks[4] == '1'
+    assert toks[6] == '2'
+
+    toks = tokens[2]
+    assert toks[0] == 'box1d'
+    assert toks[4] == '0'
+    assert toks[6] == '0'
+
+
+def test_cache_clear_single(caplog):
+    """Check cache_clear for a single model."""
+
+    p = Polynom1D()
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    p([1, 2, 3])
+    p([1, 2, 3])
+    p([1, 2, 3, 4])
+
+    assert len(p._cache) == 1
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    p.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+
+def test_cache_clear_multiple(caplog):
+    """Check cache_clear for a combined model."""
+
+    p = Polynom1D()
+    b = Box1D()
+    c = Const1D()
+    mdl = c * (p + 2 * b)
+
+    # Ensure one component doesn't use the cache
+    c._use_caching = False
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    assert len(b._cache) == 0
+    assert b._cache_ctr['check'] == 0
+    assert b._cache_ctr['hits'] == 0
+    assert b._cache_ctr['misses'] == 0
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 0
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
+
+    mdl([1, 2, 3])
+    mdl([1, 2, 3])
+    mdl([1, 2, 3, 4])
+
+    assert len(p._cache) == 1
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    assert len(b._cache) == 1
+    assert b._cache_ctr['check'] == 3
+    assert b._cache_ctr['hits'] == 1
+    assert b._cache_ctr['misses'] == 2
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 3
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
+
+    mdl.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    assert len(b._cache) == 0
+    assert b._cache_ctr['check'] == 0
+    assert b._cache_ctr['hits'] == 0
+    assert b._cache_ctr['misses'] == 0
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 0
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
