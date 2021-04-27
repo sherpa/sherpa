@@ -35,6 +35,13 @@ failure - and a dictionary which depends on the optimiser.
 The callback should return the current statistic value and an array
 of the statistic value per bin.
 
+Notes
+-----
+
+Each optimizer has certain classes of problem where it is more, or
+less, successful. For instance, the `neldermead` function should
+only be used with chi-square based statistics.
+
 Examples
 --------
 

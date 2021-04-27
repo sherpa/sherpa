@@ -44,6 +44,13 @@ match::
 
 and return the statistic value to minimise.
 
+Notes
+-----
+
+Each optimizer has certain classes of problem where it is more, or
+less, successful. For instance, the `NelderMead` class should
+only be used with chi-square based statistics.
+
 Examples
 --------
 
