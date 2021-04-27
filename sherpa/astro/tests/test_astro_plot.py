@@ -54,6 +54,13 @@ def check_sourceplot_energy(sp, rate=True, factor=0):
     elif factor == 1:
         assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
         assert sp.ylabel.find('/keV ') == -1
+    elif factor == 2:
+        # This says E^2 f(E) ... but the exact format depends on
+        # the back end
+        assert sp.ylabel.startswith('E')
+        assert sp.ylabel.find('^2') != -1
+        assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
+        assert sp.ylabel.find('/keV ') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -94,6 +101,8 @@ def check_sourceplot_energy(sp, rate=True, factor=0):
 
     if factor == 1:
         yexp *= 0.1
+    elif factor == 2:
+        yexp *= 0.01
 
     assert sp.y == pytest.approx(yexp)
 
@@ -111,6 +120,13 @@ def check_sourceplot_wavelength(sp, rate=True, factor=0):
         assert sp.ylabel.endswith('/Angstrom ')
     elif factor == 1:
         assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        assert sp.ylabel.find('/Angstrom ') == -1
+    elif factor == 2:
+        # This says lmabda^2 f(lambda) ... but the exact format depends on
+        # the back end
+        assert sp.ylabel.startswith('lambda')
+        assert sp.ylabel.find('^2') != -1
+        assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
         assert sp.ylabel.find('/Angstrom ') == -1
     else:
         raise RuntimeError("unsupported factor")
@@ -164,6 +180,8 @@ def check_sourceplot_wavelength(sp, rate=True, factor=0):
 
     if factor == 1:
         yexp *= (lbins[:-1] - lbins[1:])
+    elif factor == 2:
+        yexp *= (lbins[:-1] - lbins[1:])**2
 
     assert sp.y == pytest.approx(yexp)
 
@@ -226,15 +244,16 @@ def test_sourceplot_counts(caplog):
     check_sourceplot_energy(sp, rate=False)
 
 
-def test_sourceplot_fac1(caplog):
-    """Change plot factor to 1 for test_sourceplot"""
+@pytest.mark.parametrize("factor", [1, 2])
+def test_sourceplot_facn(factor, caplog):
+    """Change plot factor for test_sourceplot"""
 
     bins = np.arange(0.1, 10.1, 0.1)
     data = DataPHA('', np.arange(10), np.ones(10),
                    bin_lo=bins[:-1].copy(),
                    bin_hi=bins[1:].copy())
     data.units = "energy"
-    data.plot_fac = 1
+    data.plot_fac = factor
     assert data.rate
 
     # use a model that is "okay" to use with keV bins
@@ -253,7 +272,7 @@ def test_sourceplot_fac1(caplog):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_energy(sp, factor=1)
+    check_sourceplot_energy(sp, factor=factor)
 
 
 def test_sourceplot_channels(caplog):
@@ -317,15 +336,16 @@ def test_sourceplot_wavelength(caplog):
     check_sourceplot_wavelength(sp)
 
 
-def test_sourceplot_wavelength_fac1(caplog):
-    """Change plot factor to 1 for test_sourceplot_wavelength"""
+@pytest.mark.parametrize("factor", [1, 2])
+def test_sourceplot_wavelength_facn(factor, caplog):
+    """Change plot factor for test_sourceplot_wavelength"""
 
     bins = np.arange(0.1, 10.1, 0.1)
     data = DataPHA('', np.arange(10), np.ones(10),
                    bin_lo=bins[:-1].copy(),
                    bin_hi=bins[1:].copy())
     data.units = "wavelength"
-    data.plot_fac = 1
+    data.plot_fac = factor
     assert data.rate
 
     m1 = Const1D('bgnd')
@@ -342,7 +362,7 @@ def test_sourceplot_wavelength_fac1(caplog):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_wavelength(sp, factor=1)
+    check_sourceplot_wavelength(sp, factor=factor)
 
 
 def test_sourceplot_wavelength_counts(caplog):
