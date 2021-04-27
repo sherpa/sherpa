@@ -34,7 +34,6 @@ from sherpa.data import Data1D
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D
 from sherpa import stats
 from sherpa.utils.err import IOErr
-from sherpa.utils.testing import requires_pylab
 
 
 def check_sourceplot_energy(sp, rate=True, factor=0):
@@ -464,7 +463,6 @@ def test_plot_fail_with_non_pha(ptype):
     assert str(exc.value) == "data set 'tst' does not contain a PHA spectrum"
 
 
-@requires_pylab
 @requires_data
 @requires_fits
 def test_dataphahistogram_prepare_wavelength(make_data_path):
@@ -503,7 +501,6 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
     assert plot.y == pytest.approx(yexp)
 
 
-@requires_pylab
 @requires_data
 @requires_fits
 def test_modelphahistogram_prepare_wavelength(make_data_path):
@@ -537,7 +534,6 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
     assert plot.y.size == 9
 
 
-@requires_pylab
 @requires_data
 @requires_fits
 def test_sourceplot_prepare_wavelength(make_data_path):
@@ -561,7 +557,9 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     plot.prepare(pha, mdl)
 
     assert plot.xlabel == 'Wavelength (Angstrom)'
-    assert plot.ylabel == 'f(lambda)  Photons/sec/cm$^2$/Angstrom '
+    assert plot.ylabel.startswith('f(lambda)  Photons/sec/cm')
+    assert plot.ylabel.find('^2') != -1
+    assert plot.ylabel.endswith('/Angstrom ')
     assert plot.title == 'Source Model of my-name.pi'
 
     # data is inverted
