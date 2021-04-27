@@ -739,8 +739,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
     R. Mead [1]_, is a direct search method of optimization for
-    finding local minimum of an objective function of several
-    variables. The implementation of Nelder-Mead Simplex algorithm is
+    finding a local minimum of an objective function of several
+    variables. The implementation of the Nelder-Mead Simplex algorithm is
     a variation of the algorithm outlined in [2]_ and [3]_. As noted,
     terminating the simplex is not a simple task:
 
