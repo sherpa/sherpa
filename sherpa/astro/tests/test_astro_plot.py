@@ -28,7 +28,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro.plot import SourcePlot, \
-    DataPHAPlot, ModelPHAHistogram
+    DataPHAPlot, ModelPHAHistogram, EnergyFluxHistogram, PhotonFluxHistogram
 from sherpa.astro import plot as aplot
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D
@@ -630,3 +630,76 @@ def test_pha_model_with_gaps_977():
     # before #977 is fixed.
     #
     assert (xlo[1:] == xhi[:-1]).all()
+
+
+@pytest.mark.parametrize("energy,cls",
+                         [(True, EnergyFluxHistogram),
+                          (False, PhotonFluxHistogram)])
+def test_str_flux_histogram_empty(energy, cls):
+    """Check str of an empty flux histogram"""
+
+    obj = cls()
+    out = str(obj).split('\n')
+
+    assert out[0] == 'modelvals = None'
+    assert out[1] == 'clipped = None'
+    assert out[2] == 'flux = None'
+    assert out[3] == 'xlo    = None'
+    assert out[4] == 'xhi    = None'
+    assert out[5] == 'y      = None'
+
+    # the exact text depends on the plot backend
+    if energy:
+        assert out[6].startswith('xlabel = Energy flux ')
+        assert out[8] == 'title  = Energy flux distribution'
+    else:
+        assert out[6].startswith('xlabel = Photon flux ')
+        assert out[8] == 'title  = Photon flux distribution'
+
+    assert out[7] == 'ylabel = Frequency'
+    assert out[9].startswith('histo_prefs = ')
+
+    assert len(out) == 10
+
+
+@pytest.mark.parametrize("energy,cls",
+                         [(True, EnergyFluxHistogram),
+                          (False, PhotonFluxHistogram)])
+def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
+    """Check str of a flux histogram"""
+
+    # First column is flux, next two are pars, and the
+    # last column is a clipped column.
+    #
+    args = np.asarray([[1.0, 0.1, 1.1, 1],
+                       [1.5, 0.2, 1.1, 1],
+                       [2.0, 1.0, 2.0, 0],
+                       [0.5, 0.4, 0.9, 1]])
+
+    obj = cls()
+    obj.prepare(args, 3)
+
+    out = str(obj).split('\n')
+    print(out)
+
+    # lines 1-4 are the modelvals array;assume they are
+    # displayed correctly
+    assert out[0] == 'modelvals = [[ 0.1, 1.1],'
+    assert out[4] == 'clipped = [ 1., 1., 0., 1.]'
+    assert out[5] == 'flux = [ 1. , 1.5, 2. , 0.5]'
+    assert out[6] == 'xlo    = [ 0.5  , 0.875, 1.25 , 1.625]'
+    assert out[7] == 'xhi    = [ 0.875, 1.25 , 1.625, 2.   ]'
+    assert out[8] == 'y      = [ 1., 1., 1., 1.]'
+
+    # the exact text depends on the plot backend
+    if energy:
+        assert out[9].startswith('xlabel = Energy flux ')
+        assert out[11] == 'title  = Energy flux distribution'
+    else:
+        assert out[9].startswith('xlabel = Photon flux ')
+        assert out[11] == 'title  = Photon flux distribution'
+
+    assert out[10] == 'ylabel = Frequency'
+    assert out[12].startswith('histo_prefs = ')
+
+    assert len(out) == 13
