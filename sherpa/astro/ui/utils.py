@@ -5722,11 +5722,15 @@ class Session(sherpa.ui.utils.Session):
     def load_multi_arfs(self, id, filenames, resp_ids=None):
         """Load multiple ARFs for a PHA data set.
 
-        A grating observation - such as a Chandra HETG data set - may
-        require multiple responses. This function lets the multiple
-        ARFs for such a data set be loaded with one command. The
-        `load_arf` function can instead be used to load them in
-        individually.
+        A grating observation - such as a Chandra LETGS data set - may
+        require multiple responses if the detector has insufficient energy
+        resolution to sort the photons into orders. In this case, the
+        extracted spectrum will contain the signal from more than one
+        diffraction orders.
+
+        This function lets the multiple ARFs for such a data set be
+        loaded with one command. The `load_arf` function can instead
+        be used to load them in individually.
 
         Parameters
         ----------
@@ -5761,16 +5765,16 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Load two ARFs into the default data set, using response ids of
-        1 and 2 for 'm1.arf' and 'p1.arf' respectively:
+        Load three ARFs into the default data set, using response ids of
+        1, 2, and 3 for the LETG/HRC-S orders 1, 2, and 3 respectively:
 
-        >>> arfs = ['m1.arf', 'p1.arf']
-        >>> load_multi_arfs(arfs, [1,2])
+        >>> arfs = ['leg_p1.arf', 'leg_p2.arf', 'leg_p3.arf']
+        >>> load_multi_arfs(arfs, [1, 2, 3])
 
         Load in the ARFs to the data set with the identifier
         'lowstate':
 
-        >>> load_multi_arfs('lowstate', arfs, [1,2])
+        >>> load_multi_arfs('lowstate', arfs, [1, 2, 3])
 
         """
 # if type(filenames) not in (list, tuple):
@@ -6186,11 +6190,15 @@ class Session(sherpa.ui.utils.Session):
     def load_multi_rmfs(self, id, filenames, resp_ids=None):
         """Load multiple RMFs for a PHA data set.
 
-        A grating observation - such as a Chandra HETG data set - may
-        require multiple responses. This function lets the multiple
-        RMFs for such a data set be loaded with one command. The
-        `load_rmf` function can instead be used to load them in
-        individually.
+        A grating observation - such as a Chandra LETGS data set - may
+        require multiple responses if the detector has insufficient energy
+        resolution to sort the photons into orders. In this case, the
+        extracted spectrum will contain the signal from more than one
+        diffraction orders.
+
+        This function lets the multiple RMFs for such a data set be loaded
+        with one command. The `load_rmf` function can instead be used
+        to load them in individually.
 
         Parameters
         ----------
@@ -6225,16 +6233,16 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Load two RMFs into the default data set, using response ids of
-        1 and 2 for 'm1.rmf' and 'p1.rmf' respectively:
+        Load three ARFs into the default data set, using response ids of
+        1, 2, and 3 for the LETG/HRC-S orders 1, 2, and 3 respectively:
 
-        >>> rmfs = ['m1.rmf', 'p1.rmf']
-        >>> load_multi_rmfs(rmfs, [1,2])
+        >>> arfs = ['leg_p1.rmf', 'leg_p2.rmf', 'leg_p3.rmf']
+        >>> load_multi_rmfs(rmfs, [1, 2, 3])
 
         Load in the RMFs to the data set with the identifier
         'lowstate':
 
-        >>> load_multi_rmfs('lowstate', rmfs, [1,2])
+        >>> load_multi_rmfs('lowstate', rmfs, [1, 2, 3])
 
         """
 # if type(filenames) not in (list, tuple):
