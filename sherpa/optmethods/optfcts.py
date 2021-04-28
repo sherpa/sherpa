@@ -753,7 +753,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     "For any non-derivative method, the issue of termination is
     problematical as well as highly sensitive to problem scaling.
-    Since gradient information is unavailable, it is probably
+    Since gradient information is unavailable, it is provably
     impossible to verify closeness to optimality simply by sampling f
     at a finite number of points.  Most implementations of direct
     search methods terminate based on two criteria intended to reflect
