@@ -42,6 +42,11 @@ The sherpa.plot module
       SourceHistogramPlot
       ComponentModelHistogramPlot
       ComponentSourceHistogramPlot
+      ScatterPlot
+      TracePlot
+      CDFPlot
+      PDFPlot
+      LRHistogram
       SplitPlot
       JointPlot
       Point

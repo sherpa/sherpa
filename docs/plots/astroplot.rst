@@ -13,7 +13,6 @@ The sherpa.astro.plot module
 
       ChisqrPlot
       BkgChisqrPlot
-      DataPlot
       BkgDataPlot
       DelchiPlot
       BkgDelchiPlot
@@ -28,7 +27,6 @@ The sherpa.astro.plot module
       OrderPlot
       SourcePlot
       BkgSourcePlot
-      ModelPlot
       RatioPlot
       BkgRatioPlot
       ResidPlot
@@ -37,5 +35,5 @@ The sherpa.astro.plot module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::  ChisqrPlot BkgChisqrPlot DataPlot BkgDataPlot DelchiPlot BkgDelchiPlot FitPlot BkgFitPlot HistogramPlot ARFPlot ModelPHAHistogram ModelHistogram BkgModelPHAHistogram BkgModelHistogram OrderPlot SourcePlot BkgSourcePlot ModelPlot RatioPlot BkgRatioPlot ResidPlot BkgResidPlot
+.. inheritance-diagram::  ChisqrPlot BkgChisqrPlot BkgDataPlot DelchiPlot BkgDelchiPlot FitPlot BkgFitPlot HistogramPlot ARFPlot ModelPHAHistogram ModelHistogram BkgModelPHAHistogram BkgModelHistogram OrderPlot SourcePlot BkgSourcePlot RatioPlot BkgRatioPlot ResidPlot BkgResidPlot
    :parts: 1

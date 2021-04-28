@@ -91,6 +91,8 @@ __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'PSFPlot', 'PSFContour', 'begin', 'end', 'exceptions', 'backend',
            'SourcePlot', 'SourceContour', 'Histogram',
            'HistogramPlot', 'ModelHistogramPlot', 'SourceHistogramPlot',
+           'ScatterPlot', 'TracePlot', 'PDFPlot', 'CDFPlot',
+           'LRHistogram',
            'plotter')
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
