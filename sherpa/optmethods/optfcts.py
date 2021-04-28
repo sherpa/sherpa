@@ -29,7 +29,7 @@ and return a tuple containing
 where ``status`` is a boolean indicating whether the optimisation
 succeeded or not, parameters is the list of parameter values at the
 best-fit location, the statistic value at this location, a string
-message - when ``status`` is ``False`` this wil give information on the
+message - when ``status`` is ``False`` this will give information on the
 failure - and a dictionary which depends on the optimiser.
 
 The callback should return the current statistic value and an array
@@ -753,7 +753,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     "For any non-derivative method, the issue of termination is
     problematical as well as highly sensitive to problem scaling.
-    Since gradient information is unavailable, it is provably
+    Since gradient information is unavailable, it is probably
     impossible to verify closeness to optimality simply by sampling f
     at a finite number of points.  Most implementations of direct
     search methods terminate based on two criteria intended to reflect
