@@ -35,7 +35,7 @@ from . import _modelfcts
 __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
            'LineBroad', 'Lorentz1D', 'Voigt1D', 'PseudoVoigt1D', 'NormBeta1D', 'Schechter',
            'Beta2D', 'DeVaucouleurs2D', 'HubbleReynolds', 'Lorentz2D',
-           'JDPileup', 'MultiResponseSumModel', 'Sersic2D', 'Disk2D',
+           'JDPileup', 'Sersic2D', 'Disk2D',
            'Shell2D')
 
 
@@ -1387,10 +1387,6 @@ class JDPileup(RegriddableModel1D):
                            frame_time, alpha, g0, num_regions, psf_frac, model)
         self._results = out[1:]
         return out[0]
-
-
-class MultiResponseSumModel(ArithmeticModel):
-    pass
 
 
 class Sersic2D(RegriddableModel2D):

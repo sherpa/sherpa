@@ -45,8 +45,8 @@ def test_create_and_evaluate():
            clsobj in EXCLUDED_MODEL_CLASSES:
             continue
 
-        # These have a very different interface than the others
-        if cls in ('JDPileup', 'MultiResponseSumModel'):
+        # This has a very different interface than the others
+        if cls == 'JDPileup':
             continue
 
         m = clsobj()
