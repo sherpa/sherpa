@@ -8677,9 +8677,10 @@ class Session(sherpa.ui.utils.Session):
         expresion is evaluated for each channel to create the expectation
         values, which is then passed to a Poisson random number generator
         to determine the observed number of counts per channel. Any
-        background component is scaled by appropriate terms (exsposure
-        time, area scaling, and the backscal value) before adding to the
-        simulated date. That is, the background component is not simulated.
+        background component is scaled by appropriate terms (exposure
+        time, area scaling, and the backscal value) before is is passed to
+        a Poisson random number generator. The simulated background is
+        added to the simulated data.
 
         Examples
         --------
