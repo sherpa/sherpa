@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -38,11 +39,13 @@ from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
-           'ComponentSourcePlot', 'ARFPlot', 'BkgDataPlot',
-           'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
-           'BkgRatioPlot', 'BkgChisqrPlot',
-           'OrderPlot', 'ModelHistogram', 'BkgModelHistogram',
+__all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
+           'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'ARFPlot',
+           'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
+           'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
+           'BkgChisqrPlot', 'BkgSourcePlot',
+           'OrderPlot',
            'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
 
 
@@ -615,8 +618,8 @@ class FluxHistogram(ModelHistogram):
     def prepare(self, fluxes, bins):
         """Define the histogram plot.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fluxes : numpy array
             The data, stored in a niter by (npar + 2) matrix, where
             each row is an iteration, the first column is the flux for
