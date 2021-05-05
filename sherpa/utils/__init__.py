@@ -1902,8 +1902,8 @@ def dataspace2d(dim):
         raise TypeError("dimensions should be > 0, found dim0 %s dim1 %s"
                         % (dim[0], dim[1]))
 
-    x0 = numpy.arange(dim[0], dtype=numpy.float) + 1.0
-    x1 = numpy.arange(dim[1], dtype=numpy.float) + 1.0
+    x0 = numpy.arange(dim[0], dtype=float) + 1.0
+    x1 = numpy.arange(dim[1], dtype=float) + 1.0
 
     x0, x1 = numpy.meshgrid(x0, x1)
     shape = tuple(x0.shape)

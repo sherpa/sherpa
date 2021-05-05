@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2017, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2017, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -41,8 +42,8 @@ __all__ = ('Parameter', 'CompositeParameter', 'ConstantParameter',
 # hugeval = 1.0e+38
 #
 # Use FLT_TINY and FLT_MAX
-tinyval = numpy.float(numpy.finfo(numpy.float32).tiny)
-hugeval = numpy.float(numpy.finfo(numpy.float32).max)
+tinyval = float(numpy.finfo(numpy.float32).tiny)
+hugeval = float(numpy.finfo(numpy.float32).max)
 
 
 def _make_set_limit(name):

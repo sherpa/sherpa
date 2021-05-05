@@ -1153,7 +1153,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         def __init__(self, func, fvec, pars):
             self.func = func
             self.fvec = fvec
-            epsmch = numpy.float_(numpy.finfo(numpy.float).eps)
+            epsmch = numpy.float_(numpy.finfo(float).eps)
             self.eps = numpy.sqrt(max(epsmch, epsfcn))
             self.h = self.calc_h(pars)
             self.pars = numpy.copy(pars)

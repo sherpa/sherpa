@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -45,7 +45,7 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
 
-DBL_EPSILON = numpy.finfo(numpy.float).eps
+DBL_EPSILON = numpy.finfo(float).eps
 
 
 class Box1D(RegriddableModel1D):
@@ -1962,7 +1962,7 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
 class Integrate1D(RegriddableModel1D):
 
     def __init__(self, name='integrate1d'):
-        tol = numpy.finfo(float).eps
+        tol = numpy.finfo(float).eps  # should this be DBL_EPSILON?
         self.epsabs = Parameter(name, 'epsabs', tol, alwaysfrozen=True)
         self.epsrel = Parameter(name, 'epsrel', 0, alwaysfrozen=True)
         self.maxeval = Parameter(name, 'maxeval', 10000, alwaysfrozen=True)

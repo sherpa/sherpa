@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -219,7 +219,7 @@ from sherpa.optmethods import LevMar
 info = logging.getLogger("sherpa").info
 _log = logging.getLogger("sherpa")
 
-_tol = numpy.finfo(numpy.float).eps
+_tol = numpy.finfo(float).eps
 
 string_types = (str, )
 
