@@ -11,48 +11,63 @@ The sherpa.plot module
    .. autosummary::
       :toctree: api
 
-      Confidence1D
-      IntervalProjection
-      IntervalUncertainty
-      Confidence2D
-      RegionProjection
-      RegionUncertainty
-      Contour
-      DataContour
-      PSFContour
-      FitContour
-      ModelContour
-      RatioContour
-      ResidContour
-      SourceContour
-      Histogram
       Plot
-      DataPlot
-      PSFPlot
-      FitPlot
-      ModelPlot
-      ChisqrPlot
-      ComponentModelPlot
-      DelchiPlot
-      RatioPlot
-      ResidPlot
-      SourcePlot
-      ComponentSourcePlot
+      Contour
+      Point
+      Histogram
+      HistogramPlot
+      DataHistogramPlot
       ModelHistogramPlot
       SourceHistogramPlot
-      ComponentModelHistogramPlot
-      ComponentSourceHistogramPlot
-      ScatterPlot
-      TracePlot
-      CDFPlot
       PDFPlot
+      CDFPlot
       LRHistogram
       SplitPlot
       JointPlot
-      Point
+      DataPlot
+      TracePlot
+      ScatterPlot
+      PSFKernelPlot
+      DataContour
+      PSFKernelContour
+      ModelPlot
+      ComponentModelPlot
+      ComponentModelHistogramPlot
+      ComponentTemplateModelPlot
+      SourcePlot
+      ComponentSourcePlot
+      ComponentSourceHistogramPlot
+      ComponentTemplateSourcePlot
+      PSFPlot
+      ModelContour
+      PSFContour
+      SourceContour
+      FitPlot
+      FitContour
+      DelchiPlot
+      ChisqrPlot
+      ResidPlot
+      ResidContour
+      RatioPlot
+      RatioContour
+      Confidence1D
+      Confidence2D
+      IntervalProjection
+      IntervalUncertainty
+      RegionProjection
+      RegionUncertainty
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: api
+
+      begin
+      end
+      exceptions
 
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::   Confidence1D IntervalProjection IntervalUncertainty Confidence2D RegionProjection RegionUncertainty Contour DataContour PSFContour FitContour ModelContour RatioContour ResidContour SourceContour Histogram Plot DataPlot PSFPlot FitPlot ModelPlot ChisqrPlot ComponentModelPlot DelchiPlot RatioPlot ResidPlot SourcePlot ComponentSourcePlot ModelHistogramPlot SourceHistogramPlot ComponentModelHistogramPlot ComponentSourceHistogramPlot SplitPlot JointPlot Point
+.. inheritance-diagram::   Plot Contour Point Histogram HistogramPlot DataHistogramPlot ModelHistogramPlot SourceHistogramPlot PDFPlot CDFPlot LRHistogram SplitPlot JointPlot DataPlot TracePlot ScatterPlot PSFKernelPlot DataContour PSFKernelContour ModelPlot ComponentModelPlot ComponentModelHistogramPlot ComponentTemplateModelPlot SourcePlot ComponentSourcePlot ComponentSourceHistogramPlot ComponentTemplateSourcePlot PSFPlot ModelContour PSFContour SourceContour FitPlot FitContour DelchiPlot ChisqrPlot ResidPlot ResidContour RatioPlot RatioContour Confidence1D Confidence2D IntervalProjectionWorker IntervalProjection IntervalUncertaintyWorker IntervalUncertainty RegionProjectionWorker RegionProjection RegionUncertaintyWorker RegionUncertainty
    :parts: 1
