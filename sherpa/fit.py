@@ -703,7 +703,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Get tolerance, max number of iterations from the
         # dictionary for Primini's method
         tol = self.itermethod_opts['tol']
-        if type(tol) != int and type(tol) != np.float:
+        if type(tol) != int and type(tol) != float:
             raise SherpaErr(
                 "'tol' value for Primini's method must be a number")
         maxiters = self.itermethod_opts['maxiters']
@@ -835,7 +835,7 @@ class IterFit(NoNewAttributesAfterInit):
             raise SherpaErr("'maxiters' must be one or greater")
 
         hrej = self.itermethod_opts['hrej']
-        if type(hrej) != int and type(hrej) != np.float:
+        if type(hrej) != int and type(hrej) != float:
             raise SherpaErr(
                 "'hrej' value for sigma rejection method must be a number")
         if hrej <= 0:
@@ -844,7 +844,7 @@ class IterFit(NoNewAttributesAfterInit):
         lrej = self.itermethod_opts['lrej']
         # FIXME: [OL] There are more reliable ways of checking if an object
         # is (not) a number.
-        if type(lrej) != int and type(lrej) != np.float:
+        if type(lrej) != int and type(lrej) != float:
             raise SherpaErr(
                 "'lrej' value for sigma rejection method must be a number")
         if lrej <= 0:
