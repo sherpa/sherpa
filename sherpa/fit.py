@@ -27,7 +27,7 @@ from functools import wraps
 import numpy as np
 
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, any, int
+    ones_like, isnan, isinf, any
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
