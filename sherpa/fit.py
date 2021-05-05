@@ -24,8 +24,10 @@ import signal
 
 from functools import wraps
 
+import numpy as np
+
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, any, int
+    ones_like, isnan, isinf, any, int
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -701,7 +703,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Get tolerance, max number of iterations from the
         # dictionary for Primini's method
         tol = self.itermethod_opts['tol']
-        if type(tol) != int and type(tol) != float:
+        if type(tol) != int and type(tol) != np.float:
             raise SherpaErr(
                 "'tol' value for Primini's method must be a number")
         maxiters = self.itermethod_opts['maxiters']
@@ -722,7 +724,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Keep record of current and previous statistics;
         # when these are within some tolerace, Primini's method
         # is done.
-        previous_stat = float32(finfo(float32).max)
+        previous_stat = np.float32(np.finfo(np.float32).max)
         current_stat = statfunc(pars)[0]
         nfev = 0
         iters = 0
@@ -833,7 +835,7 @@ class IterFit(NoNewAttributesAfterInit):
             raise SherpaErr("'maxiters' must be one or greater")
 
         hrej = self.itermethod_opts['hrej']
-        if type(hrej) != int and type(hrej) != float:
+        if type(hrej) != int and type(hrej) != np.float:
             raise SherpaErr(
                 "'hrej' value for sigma rejection method must be a number")
         if hrej <= 0:
@@ -842,7 +844,7 @@ class IterFit(NoNewAttributesAfterInit):
         lrej = self.itermethod_opts['lrej']
         # FIXME: [OL] There are more reliable ways of checking if an object
         # is (not) a number.
-        if type(lrej) != int and type(lrej) != float:
+        if type(lrej) != int and type(lrej) != np.float:
             raise SherpaErr(
                 "'lrej' value for sigma rejection method must be a number")
         if lrej <= 0:
@@ -1254,7 +1256,7 @@ class Fit(NoNewAttributesAfterInit):
 
         # check if any parameter values are at boundaries,
         # and warn user.
-        tol = finfo(float32).eps
+        tol = np.finfo(np.float32).eps
         param_warnings = ""
         for par in self.model.pars:
             if not par.frozen:
