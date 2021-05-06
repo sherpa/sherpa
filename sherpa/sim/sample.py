@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -340,7 +341,7 @@ class ParameterSample(NoNewAttributesAfterInit):
         """
 
         niter = samples.shape[0]
-        clipped = numpy.zeros(niter, dtype=numpy.bool)
+        clipped = numpy.zeros(niter, dtype=bool)
         if clip == 'none':
             return clipped
 

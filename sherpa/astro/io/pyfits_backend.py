@@ -757,7 +757,7 @@ def get_rmf_data(arg, make_copy=False):
                 # n_chan can be an unsigned integer. Adding a Python
                 # integer to a NumPy unsigned integer appears to return
                 # a float.
-                end = start + numpy.int(nc)
+                end = start + int(nc)
 
                 # "perfect" RMFs may have mrow as a scalar
                 try:

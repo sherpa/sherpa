@@ -1400,7 +1400,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
         #
-        mask = numpy.asarray(mask, dtype=numpy.bool)
+        mask = numpy.asarray(mask, dtype=bool)
 
         # Ensure that the vals and mask array match: the number of
         # mask=True elements should equal the number of input values.
@@ -1605,7 +1605,7 @@ def quantile(sorted_array, f):
     n = sorted_array.size
 
     q = (n - 1) * f
-    i = numpy.int(numpy.floor(q))
+    i = int(numpy.floor(q))
     delta = q - i
 
     return (1.0 - delta) * sorted_array[i] + delta * sorted_array[i + 1]
