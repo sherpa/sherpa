@@ -172,12 +172,8 @@ def test_read_pha_fails_rmf(make_data_path):
     assert emsg in str(excinfo.value)
 
 
-def validate_replacement_warning(ws, rtype, label, is_known_warning):
+def validate_replacement_warning(ws, rtype, label):
     """Check that there is one expected warning."""
-
-    # Filter out the "allowed" warnings.
-    #
-    ws = [w for w in ws if not is_known_warning(w)]
 
     assert len(ws) == 1
     w = ws[0]
@@ -190,7 +186,7 @@ def validate_replacement_warning(ws, rtype, label, is_known_warning):
 
 @requires_data
 @requires_fits
-def test_read_arf(make_data_path, is_known_warning):
+def test_read_arf(make_data_path):
     """Can we read in a Swift ARF."""
 
     infile = make_data_path(ARFFILE)
@@ -199,7 +195,7 @@ def test_read_arf(make_data_path, is_known_warning):
         warnings.simplefilter("always")
         arf = io.read_arf(infile)
 
-    validate_replacement_warning(ws, 'ARF', infile, is_known_warning)
+    validate_replacement_warning(ws, 'ARF', infile)
 
     assert isinstance(arf, DataARF)
 
@@ -267,7 +263,7 @@ def test_read_arf_fails_rmf(make_data_path):
 
 @requires_data
 @requires_fits
-def test_read_rmf(make_data_path, is_known_warning):
+def test_read_rmf(make_data_path):
     """Can we read in a Swift RMF."""
 
     infile = make_data_path(RMFFILE)
@@ -276,7 +272,7 @@ def test_read_rmf(make_data_path, is_known_warning):
         warnings.simplefilter("always")
         rmf = io.read_rmf(infile)
 
-    validate_replacement_warning(ws, 'RMF', infile, is_known_warning)
+    validate_replacement_warning(ws, 'RMF', infile)
 
     assert isinstance(rmf, DataRMF)
 
@@ -367,7 +363,7 @@ def test_read_rmf_fails_arf(make_data_path):
 
 @requires_data
 @requires_fits
-def test_can_use_swift_data(make_data_path, is_known_warning):
+def test_can_use_swift_data(make_data_path):
     """A basic check that we can read in and use the Swift data.
 
     Unlike the previous tests, that directly access the io module,
@@ -388,14 +384,14 @@ def test_can_use_swift_data(make_data_path, is_known_warning):
         warnings.simplefilter("always")
         ui.load_rmf(rmffile)
 
-    validate_replacement_warning(ws, 'RMF', rmffile, is_known_warning)
+    validate_replacement_warning(ws, 'RMF', rmffile)
 
     arffile = make_data_path(ARFFILE)
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
         ui.load_arf(arffile)
 
-    validate_replacement_warning(ws, 'ARF', arffile, is_known_warning)
+    validate_replacement_warning(ws, 'ARF', arffile)
 
     assert ui.get_analysis() == 'energy'
 

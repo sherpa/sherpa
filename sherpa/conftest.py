@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021
-#                Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -116,10 +116,6 @@ known_warnings = {
             r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
             r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working",
 
-            # numpy 1.20 bool/float issue
-            r'`np.bool` is a deprecated alias for the builtin `bool`. .*',
-            r'`np.int` is a deprecated alias for the builtin `int`. .*',
-            r'`np.float` is a deprecated alias for the builtin `float`. .*',
         ],
     UserWarning:
         [
