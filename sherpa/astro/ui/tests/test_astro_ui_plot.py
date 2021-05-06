@@ -2800,7 +2800,7 @@ def test_data1dint_plot_model(cls, plottype, extraargs, title):
 
     # Check for nan
     #
-    good = np.ones(11, dtype=np.bool)
+    good = np.ones(11, dtype=bool)
     good[6] = False
     assert np.isfinite(xplot) == pytest.approx(good)
     assert np.isfinite(yplot) == pytest.approx(good)

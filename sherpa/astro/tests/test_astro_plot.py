@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -88,7 +89,7 @@ def test_sourceplot():
                        9993, 9994, 9994, 9995, 9996, 9996, 9997, 9997,
                        9997, 9998, 9998])
 
-    assert (sp.y.astype(np.int) == yexp).all()
+    assert (sp.y.astype(int) == yexp).all()
     # sp.plot()
 
 

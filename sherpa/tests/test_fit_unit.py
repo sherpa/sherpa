@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -260,9 +261,9 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi,
     # The channel starts at 1 just to follow the expected PHA
     # behavior, but it should not matter here.
     #
-    channels = np.arange(1, 6, dtype=np.int)
-    src_counts = np.asarray([14, 15, 11, 3, 8], dtype=np.int)
-    bg_counts = np.asarray([2, 0, 2, 3, 4], dtype=np.int)
+    channels = np.arange(1, 6, dtype=int)
+    src_counts = np.asarray([14, 15, 11, 3, 8], dtype=int)
+    bg_counts = np.asarray([2, 0, 2, 3, 4], dtype=int)
 
     # TODO: can add a grouping flag; if given use a larger set of bins and set
     # up grouping
@@ -1385,7 +1386,7 @@ def test_fit_calc_stat_wstat_grouped_single(flo, fhi, expected):
     """
 
     nbins = 20
-    channels = np.arange(1, nbins + 1, dtype=np.int)
+    channels = np.arange(1, nbins + 1, dtype=int)
     src_counts = (10 + 5 * np.sin(channels / 2.0)).astype(np.int8)
     bg_counts = np.ones(nbins, dtype=np.int8)
 

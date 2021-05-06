@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -287,7 +287,7 @@ def test_416_c():
 
     # the second grouped bin has a quality of 2 as
     # it only contains 1 count
-    quality = np.zeros(10, dtype=np.int)
+    quality = np.zeros(10, dtype=int)
     quality[5] = 2
     assert pha.quality == pytest.approx(quality)
 
@@ -605,7 +605,7 @@ def test_img_get_bounding_mask_filtered(make_test_image):
     ans = d.get_bounding_mask()
     print(np.where(ans[0]))
 
-    mask = np.zeros(5 * 7, dtype=np.bool)
+    mask = np.zeros(5 * 7, dtype=bool)
     for i in [3,  8,  9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24,
               25, 26, 31]:
         mask[i] = True
@@ -687,13 +687,13 @@ def check_ignore_ignore(d):
     shape1 = 'ellipse(4260,3840,3,2,0)'
     d.notice2d(shape1, ignore=True)
 
-    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(np.bool)
+    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1)
 
     shape2 = 'rect(4258,3830,4264,3841)'
     d.notice2d(shape2, ignore=True)
 
-    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(np.bool)
+    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1 & mask2)
 
     shape2 = shape2.replace('rect', 'rectangle')
@@ -707,13 +707,13 @@ def check_ignore_ignore2(d):
     shape1 = 'ellipse(4260,3840,3,2,0)'
     d.notice2d(shape1, ignore=True)
 
-    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(np.bool)
+    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1)
 
     shape2 = 'rect(4258,3830,4264,3841)'
     d.notice2d(shape2, ignore=True)
 
-    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(np.bool)
+    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1 & mask2)
 
     shape2 = shape2.replace('rect', 'rectangle')
