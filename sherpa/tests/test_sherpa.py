@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020
-#          Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -109,7 +109,7 @@ def test_todo_version_fail(tmpdir):
     cts = citefile.read_text('utf-8').split('\n')
     assert cts[0].startswith('You are using Sherpa ')
     assert cts[1] == ''
-    assert cts[2] == 'There was a problem retireving the data from Zenodo:'
+    assert cts[2] == 'There was a problem retrieving the data from Zenodo:'
     assert cts[3] == 'Zenodo has no information for version 4.7.0.'
     assert cts[4] == ''
     assert cts[5] == 'Please review the Zenodo Sherpa page at'
