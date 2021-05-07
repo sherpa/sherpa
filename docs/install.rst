@@ -387,8 +387,8 @@ be used when building and installing Sherpa.
 
      CFLAGS='-Wno-implicit-function-declaration'
 
-   (Note that on MacOS, "gcc" is usally just an alias to Clang. Unless
-   you specifically intall a gcc from a different source, you are
+   (Note that on MacOS, "gcc" is usually just an alias to Clang. Unless
+   you specifically install a gcc from a different source, you are
    likely to run into this problem, even if you believe that your
    compiler is invoked with `gcc`.)
 
