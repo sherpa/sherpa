@@ -84,7 +84,7 @@ Citing Sherpa
 -------------
 
 Information on citing Sherpa can be found from the
-`CITATION document <https://github.com/sherpa/sherpa/blob/master/CITATION>`_
+`CITATION document <https://github.com/sherpa/sherpa/blob/main/CITATION>`_
 in the Sherpa repository, or from the
 `Sherpa Zenodo page <https://doi.org/10.5281/zenodo.593753>`_.
 
@@ -167,7 +167,7 @@ or from
 either a release version,
 such as the
 `4.10.0 <https://github.com/sherpa/sherpa/tree/4.10.0>`_ tag,
-or the ``master`` branch (which is not guaranteed to be stable).
+or the ``main`` branch (which is not guaranteed to be stable).
 
 For example::
 
