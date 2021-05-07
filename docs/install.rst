@@ -84,7 +84,7 @@ Citing Sherpa
 -------------
 
 Information on citing Sherpa can be found from the
-`CITATION document <https://github.com/sherpa/sherpa/blob/master/CITATION>`_
+`CITATION document <https://github.com/sherpa/sherpa/blob/main/CITATION>`_
 in the Sherpa repository, or from the
 `Sherpa Zenodo page <https://doi.org/10.5281/zenodo.593753>`_.
 
@@ -167,7 +167,7 @@ or from
 either a release version,
 such as the
 `4.10.0 <https://github.com/sherpa/sherpa/tree/4.10.0>`_ tag,
-or the ``master`` branch (which is not guaranteed to be stable).
+or the ``main`` branch (which is not guaranteed to be stable).
 
 For example::
 
@@ -377,6 +377,21 @@ be used when building and installing Sherpa.
      export PYTHON_LDFLAGS=' '
 
    That is, the variable is set to a space, not the empty string.
+
+.. note::
+
+   Additionally, if you are building with Clang version 12, you will
+   encounter build issues in the region area related to an implicit
+   declaration. If so, pre-pending the following to your pip install
+   or python setup.py install line should resolve the build issues::
+
+     CFLAGS='-Wno-implicit-function-declaration'
+
+   (Note that on MacOS, "gcc" is usally just an alias to Clang. Unless
+   you specifically intall a gcc from a different source, you are
+   likely to run into this problem, even if you believe that your
+   compiler is invoced with `gcc`.)
+
 
 A standard installation
 ^^^^^^^^^^^^^^^^^^^^^^^
