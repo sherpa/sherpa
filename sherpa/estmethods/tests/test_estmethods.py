@@ -165,6 +165,8 @@ def test_projection_failures4():
                              freeze_par, thaw_par, report_progress, get_par_name)
 
 
+# Unlike projection, covariance does not have a "parallel" option.
+#
 def test_covar():
     standard = numpy.array([[0.4935702,  0.06857833, numpy.nan],
                             [0.06857833, 0.26405554, numpy.nan],
@@ -184,11 +186,17 @@ def test_covar():
     assert results[1] == pytest.approx(expected)
 
 
-def test_projection():
+# There is no guarantee we can run with parallel=True but try to do so.
+#
+@pytest.mark.parametrize("parallel", [True, False])
+def test_projection(parallel):
     standard_elo = numpy.array([-0.39973743, -0.26390339, -2.08784716])
     standard_ehi = numpy.array([0.39580942,  0.26363223,  2.08789851])
 
     proj = Projection()
+    proj.parallel = parallel
+    assert proj.parallel == parallel
+
     results = proj.compute(stat, fitter, fittedpars,
                            minpars, maxpars,
                            hardminpars, hardmaxpars,
