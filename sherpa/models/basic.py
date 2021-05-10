@@ -1962,7 +1962,7 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
 class Integrate1D(RegriddableModel1D):
 
     def __init__(self, name='integrate1d'):
-        tol = numpy.finfo(float).eps  # should this be DBL_EPSILON?
+        tol = DBL_EPSILON
         self.epsabs = Parameter(name, 'epsabs', tol, alwaysfrozen=True)
         self.epsrel = Parameter(name, 'epsrel', 0, alwaysfrozen=True)
         self.maxeval = Parameter(name, 'maxeval', 10000, alwaysfrozen=True)
