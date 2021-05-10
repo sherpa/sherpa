@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -3079,7 +3079,7 @@ class NumDerivFowardPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
@@ -3144,7 +3144,7 @@ class NumDerivCentralPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
@@ -4058,7 +4058,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
         xc = xa
         fc = fa
-        DBL_EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
+        DBL_EPSILON = numpy.finfo(numpy.float32).eps
         while nfev[0] < maxfev:
 
             prev_step = xb - xa
