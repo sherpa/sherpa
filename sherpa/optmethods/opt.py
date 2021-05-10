@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -126,8 +127,7 @@ class Opt:
 
         def func_bounds_wrapper(x, *args):
             if self._outside_limits(x, xmin, xmax):
-                FUNC_MAX = np.float_(np.finfo(np.float_).max)
-                return FUNC_MAX
+                return np.finfo(np.float_).max
             return func(x, *args)
 
         return func_bounds_wrapper

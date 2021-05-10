@@ -724,7 +724,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Keep record of current and previous statistics;
         # when these are within some tolerace, Primini's method
         # is done.
-        previous_stat = np.float32(np.finfo(np.float32).max)
+        previous_stat = np.finfo(np.float32).max
         current_stat = statfunc(pars)[0]
         nfev = 0
         iters = 0
