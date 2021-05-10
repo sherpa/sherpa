@@ -351,11 +351,10 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # simpler inv function for inverting matrices does not appear to
     # have the same issue.
 
-    invfunc = numpy.linalg.inv
     inv_info = None
 
     try:
-        inv_info = invfunc(info)
+        inv_info = numpy.linalg.inv(info)
 
     except numpy.linalg.linalg.LinAlgError:
         # catch the SVD exception and exit gracefully
@@ -363,14 +362,8 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         inv_info[:] = numpy.nan
 
     except:
-        # Compatibility with pre-0.9.8 numpy
-        if hasattr(numpy.linalg, 'pinv'):
-            invfunc = numpy.linalg.pinv
-        else:
-            invfunc = numpy.linalg.generalized_inverse
-
         try:
-            inv_info = invfunc(info)
+            inv_info = numpy.linalg.pinv(info)
         except numpy.linalg.linalg.LinAlgError:
             # catch the SVD exception and exit gracefully
             inv_info = numpy.zeros_like(info)
