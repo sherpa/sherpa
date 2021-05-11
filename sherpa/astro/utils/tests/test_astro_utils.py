@@ -17,10 +17,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+import numpy as np
 import pytest
 
-from sherpa.astro.utils import is_in
+from sherpa.astro.utils import is_in, compile_energy_grid
 
 LONGVALS = [100, 249, 400, 450, 500, 601, 1024]
 SHORTVALS = [100, 249, 601, 1024]
@@ -43,3 +43,13 @@ def test_is_in_long(lo, hi):
 def test_not_in_short():
     # 'hidden' interval case w/ *no* noticed channels inside
     assert not is_in(SHORTVALS, 250, 600)
+
+
+def test_compile_energy_grid():
+    '''This test just executes the doc string. Once we activate doctests,
+    this test can be removed.'''
+    elo, ehi, htable = compile_energy_grid([([1, 3, 5], [3, 5, 7]),
+                                            ([0, 1, 2], [1, 2, 3])])
+    assert np.all(elo == [0, 1, 2, 3, 5])
+    assert np.all(ehi == [1, 2, 3, 5, 7])
+    assert np.all(htable[0][0] == [1, 3, 4])
