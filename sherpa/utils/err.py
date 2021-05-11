@@ -279,7 +279,7 @@ class IOErr(SherpaErr):
             'badarray': "'%s' must be a Numpy array, list, or tuple",
             'notascii': "file '%s' does not appear to be ASCII",
             'noparamcols': 'No parameter columns found in %s',
-            'wrongcolnumber': "Received wrong number of column names: %s, required: %s",
+            'wrongcolnumber': "Expected %d columns but found %d",
             'reqcol': "Required column '%s' not found in %s",
             'badcol': "unable to read required column %s from file",
             'badimg': 'unable to read required image %s from file',
