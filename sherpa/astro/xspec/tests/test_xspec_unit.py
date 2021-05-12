@@ -782,6 +782,8 @@ def test_xspec_model_requires_bins_very_low_level(clsname):
 
 
 @requires_xspec
+@requires_data
+@requires_fits
 def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
     """Check we can not call a table model with a single grid.
 
