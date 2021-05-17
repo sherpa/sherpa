@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2010, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2010, 2020, 2021
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -57,7 +58,32 @@ static PyMethodDef ModelFcts[] = {
   MODELFCT2D( poly2d, 9 ),
 
   PY_MODELFCT1D_INT((char*)"integrate1d",
-		 (char*)"integrate user functions\n\nExample:\n int_array = integrate1d(func, param_array, xlo_array, xhi_array)" ),
+		 (char*)"Integrate a one-dimensional model.\n\n"
+		    "Parameters\n"
+		    "----------\n"
+		    "model : callable\n"
+		    "    The model to evaluate, which is called with the model\n"
+		    "    parameters and the array of x values, returning the array\n"
+		    "    of model values.\n"
+		    "pars : array\n"
+		    "    The parameter values for the model.\n"
+		    "xlo, xhi : array\n"
+		    "    The bin edges, which must match in size and have xhi_i > xlo_i\n"
+		    "errflag : int, optional\n"
+		    "    Currently unused.\n"
+		    "epsabs : number, optional\n"
+		    "    The maximum absolute difference. The default is the 64-bit\n"
+		    "    float epsilon.\n"
+		    "epsrel : number, optional\n"
+		    "    The maximum relative difference. The default is 0.0.\n"
+		    "maxeval : int, optional\n"
+		    "    The maximum bumber of evaluations. The default is 10000.\n"
+		    "logger : callable or None, optional\n"
+                    "    If set and an error was reported then this function will be\n"
+		    "    called with the error message as the argument.\n\n"
+		    "Examples\n"
+		    "--------\n"
+		    ">>> ans = integrate1d(func, pars, xlo, xhi)\n" ),
 
   { NULL, NULL, 0, NULL }
 
