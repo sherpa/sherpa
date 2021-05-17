@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1926,6 +1926,46 @@ class UserModel(ArithmeticModel):
 
 
 class Integrator1D(CompositeModel, RegriddableModel1D):
+    """Integrate a one-dimensional model.
+
+    It is expected that instances of this class are created by the
+    `Integrate1D` class and not directly.
+
+    Attributes
+    ----------
+    model
+        The model to be evaluated.
+    otherargs
+        Currently unused.
+    otherkwargs
+        Used to pass extra parameters to the integrator (currently
+        `epsabs`, `epsrel`, `maxeval`, `errflag`, and `logger`).
+
+    Raises
+    ------
+    sherpa.utils.err.ModelErr
+        The model was evaluated on a "point" grid.
+
+    See Also
+    --------
+    Integrate1D
+
+    Examples
+    --------
+
+    Numericaly integrate the Gauss1D model across the bins defined by
+    xlo and xhi, using an absolute tolerance of 1e-5. Note that the
+    Gauss1D model is used as an example here, since it can be used
+    directly to evaluate the integrated signal, as shown in the last
+    line (creating the ytrue value).
+
+    >>> from sherpa.models.basic import Gauss1D, Integrator1D
+    >>> gmdl = Gauss1D()
+    >>> imdl = Integrator1D(gmdl, epsabs=1e-5)
+    >>> y = imdl(xlo, xhi)
+    >>> ytrue = gmdl(xlo, xhi)
+
+    """
 
     @staticmethod
     def wrapobj(obj):
@@ -1959,7 +1999,76 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
                                       p, xlo, xhi, **self.otherkwargs)
 
 
+# DOC note: we do not expose Integrator1D by default so it is not
+# mentioned as a See Also link here.
+#
 class Integrate1D(RegriddableModel1D):
+    """Integrate a model across each bin (one dimensional).
+
+    Numerically integrate a one-dimensional model across each bin of a
+    "histogram" dataset - that is one with low and high edges for each
+    bin. The model to be integrated is supplied as an input to this
+    model and any attribute changes must be made before this.
+
+    Attributes
+    ----------
+    epsabs
+        The maximum absolute difference allowed when integrating the
+        model. This parameter is always frozen.
+    epsrel
+        The maximum relative difference allowed when integrating the
+        model. This parameter is always frozen.
+    maxeval
+        The maximum number of iterations allowed per bin.  This
+        parameter is always frozen.
+
+    Notes
+    -----
+    If `imdl` is an instance of `Integrate1D` and `omdl` the model to
+    integrate, then `imdl(omdl)` creates the integrated form. Note
+    that changes to the `Integrate1D` parameters - such as `epsabs` -
+    must be made before creating this integrated form.
+
+    Examples
+    --------
+
+    The Gauss1D is used as an example here since it - as can most Sherpa
+    models - already be used with an histogram dataset. The evaluation
+    of the `gmdl` instance is first on a "point" grid, so is evaluated
+    at x=-10, x=0, and x=10, and then for a "histogram" grid where
+    the model is summed up for the bins x=-10 to 0, x=0 to 10, and
+    x=10 to 20. The integrated version (imdl) is compared to this for
+    the "histogram" case and gets the same result (to the precision of
+    the screen output). Note that the tolerance for the integration:
+
+    - was changed from the default (tolerance for 64-bit float) to
+      the 32-bit float tolerance (to avoid a warning message when
+      evaluating mdl);
+
+    - and must be changed before being applied to the model to
+      integrate (gmdl) in this case.
+
+    >>> import numpy as np
+    >>> from sherpa.models.basic import Gauss1D, Integrate1D
+    >>> imdl = Integrate1D(name='imdl')
+    >>> imdl.epsabs = np.finfo(np.float32).eps
+    >>> gmdl = Gauss1D(name='gmdl')
+    >>> mdl = imdl(gmdl)
+    >>> print(mdl)
+    integrate1d(gauss1d.gmdl)
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gmdl.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       gmdl.pos     thawed            0 -3.40282e+38  3.40282e+38
+       gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
+    >>> print(gmdl([-10, 0, 10]))
+    [0.0625 1.     0.0625]
+    >>> print(gmdl([-10, 0, 10], [0, 10, 20]))
+    [5.2237033  5.2237033  0.09861859]
+    >>> print(mdl([-10, 0, 10], [0, 10, 20]))
+    [5.2237033  5.2237033  0.09861859]
+
+    """
 
     def __init__(self, name='integrate1d'):
         tol = numpy.finfo(float).eps
