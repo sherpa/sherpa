@@ -1,5 +1,264 @@
 Release Notes
 
+Sherpa 4.13.1
+=============
+This release of Sherpa includes various documentation updates,  bug fixes, and infrastructure changes. The default branch in github has been migrated from master to main.
+
+* documentation changes:
+    * updates to documentation for TableModel, Notice2D, cache support for evaluating models, and low level optimization code
+    * jupyter notebook uopdates 
+* Infrastructure Changes:
+    * the master branch has been migrated from master to main
+    * updates to support numpy 1.20
+    * updates to support astropy 4.2.1
+    * updates to support matplotlib 3.4
+    * test infrastructure clean up and updates
+* bug fixes:
+    * fix an issue with cache evaluation on 1D models using integrated bins
+    * fix for aarch64 build issue
+    * fix to sherpa citation command
+    * fix to honor clearwindow setting for plot_source
+    * fix errors from save_data when the output file exists
+    * fix build issues using gcc 7.3 with -Werror=format-security compilation flag
+    * fix for reg_proj and reg_unc erroring out when the min or max arguments are tuples rather than lists
+
+Details
+-------
+
+#754 - sample_flux now returns statistic values for each row
+    The sample_flux command now returns a statistic value for each iteration, 
+    even if those rows are not used in the reported flux distribution. Fixes #751.
+
+#769 - add basic cache tracking
+    Adds the cache_status and cache_clear methods to models for verifying the 
+    cache behavior (this is only expected to be used in rare cases). The cache 
+    code has seen documentation improvements.
+
+#946 - rework stats tests
+    Update the stats tests to use pytest.
+
+#960 - Fix model evaluation when changing the integrate setting (fix #958)
+    Fixes an issue with cache evaluation on 1D models using integrated bins and 
+    the user has changed the integrate setting of the model.
+
+#978 - Use C99 def for INFINITY, NAN, isfinite and isnan to build on aarch64 (fix issue #970)
+    Use the math constants (IFINITIY, NAN) and funcs (isfinite, isnan, signbit) 
+    from a C99 compliant compiler if the compiler option -std=c99 or greater is 
+    used, otherwise use the quantities as defined by the library.
+
+#991 - lint changes
+    Applies a number of flake8-reported warnings to the code base (e.g. excessive 
+    or missing spaces and new lines).
+
+#1000 - Improve sherpa.citation (fix #994 #987)
+    Fixes the sherpa.citation() command with its default argument (issue #994) and 
+    adds release 4.12.2 to the hard-coded list of releases. A typo in a warning 
+    message was fixed (#987).
+
+#1001 - Allow command-line arguments for sherpa_test
+    Allow command-line arguments to be passed to the sherpa_test script. This allows 
+    running optional tests (e.g. the --runzenodo argument) and to configure the 
+    pytest configuration (e.g. to run coverage checks with --cov sherpa).
+
+#1002 - Fix error with clobber=False for paging - issue #996
+    Fix an error with clobber=False when the output file exists for several paging 
+    commands (e.g. show_data and sherpa.citation). Instead of getting a Sherpa IOErr 
+    being raised a NameError was being raised.
+
+#1003 - Fix serialization of iter method data - issue #997
+    If set_iter_fit_method has been called with a value other than 'none' then the 
+    output of save_all would be incorrect for the options for the iter-fit method.
+
+#1004-  flake8 F811 - fix repeated test names
+    Clean up of several test files to fix repeated test names.
+
+#1005 - Add explicit get/set_datadir routines to sherpa.utils.testing
+    Internal changes to how the test data directory location is set and queried, 
+    including removing direct support from SherpaTestCase. Added tests for some 
+    of this functionality, and updated several test files to remove SherpaTestCase 
+    or use the new datadir functionality.
+
+#1008 - rm warning msgs, fix issue #980
+    Fix the compiler warning messages, by defining kwlist to be static const then 
+    use the C++ const_cast to remove the const to conform to PyArg_ParseTupleAnd
+    Keywords prototype
+
+#1012 - Tests: allow test_ui tests to be run with pytest-xdist
+    Allow the tests to be run with pytest-xdist.
+
+#1016 - Jupyter notebook representation not ideal if model components don't have unique names  - issue: #1013
+    Fix an error in the HTML display of a model (used in the notebook) when two 
+    model components have the same name.
+
+#1017 - reword remark on normalization of Lorentz function
+    Updated the comments pertaining to Lorentz function for clarity
+
+#1018 - Fix ShekelModifiedInit missing init par vals
+    This PR fixes the missing initial fitted parameter values for the 
+    ShekelModifiedInit function. A fix for issue #1011
+
+#1028 - Update region lib code to correct build issues with gcc 7.3.0 compile
+    Corrects issue building with gcc 7.3.0+ compilers with the 
+    -Werror=format-security compilation flag
+
+#1034 - Add contextmanager and docs on how to control the output level of sherpa
+    Sherpa uses logging for much of its output, this adds a docs and a context 
+    manager for controlling the output level for a particular piece of code.
+
+#1039 - Add docs for basic.TableModel
+    Added missing documentation for TableModel class 
+
+#1049 - CI: pip submodule test to report coverage
+    Report the coverage data from the pip CI run. This only changes the GitHub 
+    Actions runs.
+
+#1053 - Release 4.13.0
+    Updates to support the 4.13.0 release
+
+#1054 - Post 4.13.0 updates
+    Updates the Zenodo DOI reference in the README.md to include 4.13.0.
+
+#1057 - Fix plot_source clearwindow setting
+    The plot_source function was ignoring the clearwindow parameter (always using 
+    True) in calls to plot_source for non-PHA data. This was only for 
+    sherpa.astro.ui.plot_source (so sherpa.ui.plot_source did not have this problem).
+
+#1058 - Store the opstr of model combinations (unary and binary)
+    Store the operator string as well as the operator when creating the unary and 
+    binary operator expressions for models.
+
+#1062 - Minor code cleanup of sherpa.astro.ui.utils
+    The sherpa.astro.ui.utils module has seen a number of minor clean-ups, addressing 
+    pylint-reported issues.
+
+#1067 - Improve testing of sherpa.astro.ui.utils
+    Improve coverage of the sherpa.astro.ui.utils and require pytest 3.9.0 or later 
+    for testing Sherpa.
+
+#1068 - clean up typos in sherpa/plot code
+    Fixed several typos noticed while reviewing plot related fix for #1057
+
+#1072 - Update load_data to match load_pha for PHA2 data
+    Ensure that load_data behaves like load_pha when given a PHA2 dataset.
+
+#1076 - sample_flux now uses the id argument
+    The sample_flux routine now uses the id argument rather than always using the 
+    data from the default dataset. Fixes #752
+
+#1078 - Add error checking for exceptional cases for sample_flux
+    Ensure that sample_flux errors out if the Xrays argument is False (as this code 
+    path is currently broken) or if the confidence argument is invalid.
+
+#1082 - Improve documentation for notice2d
+    Minor improvements to the documentation of notice2d and ignore2d set of commands. 
+    Fixes #1059
+
+#1086 - Use the logging infrastructure for sample_flux output
+    The screen output from sample_flux is now generated by the Sherpa logger and 
+    so can be hidden by the user if required.
+
+#1088 - Allow two optimization test to pass
+    Address an issue in the optimization tests that meant two tests were failing. 
+    This only changes the test code and makes no change to the behavior of the 
+    optimizers.
+
+#1092- Numpy 1.20 warnings
+    Avoid test failures due to new warnings added by NumPy 1.20
+
+#1094 - Cleanup multi-plot code
+    Rework the code that handles the plot_fit_xxx and plot_bkg_fit_xxx calls. 
+    There should be no user-visible changes.
+
+#1096 - Reduce direct access to plot objects
+    Changes to the internals of the plot code, to access information via methods 
+    rather than direct access, which improves encapsulation and reduces code 
+    repetition.
+
+#1098 - Bump DS9 version to 8.2 for CI
+    Bump DS9 version used in CI tests from 8.1 to 8.2.
+
+#1100 - Address reg_proj and reg_unc failures (fix #1093)
+    Calls to reg_proj and reg_unc could error out when the min or max arguments 
+    were set to tuples rather than lists. The code now converts these attributes 
+    to lists, which can result in changes to the string output of the objects (use 
+    of '[]' brackets rather than '()'). Fixes #1093
+
+#1101 - Address upper limit issues with sample_flux (fix #457)
+    sample_flux no-longer excludes samples at the parameter bounds (soft) when 
+    calculating the flux distribution. This could lead to an over-estimation of 
+    the flux for upper limits (Fix #457).
+
+#1104 - Add basic documentation for the low-level optimization code
+    Add and update documentation on the interfaces used by the low-level 
+    optimization code. Ensure that the plot classes are fully included in the 
+    documentation.
+
+#1105 - Consolidate and harmonize the validation of dataset identifiers
+    Simplify the code used to validate dataset identifiers. Several names can 
+    no-longer be used as an identifier ('astrocompmodel', 'astrocompsource', 
+    'astrodata', 'astromodel', 'astrosource', 'model_component', and 
+    'source_component') and two can now be used ('energy' and 'photon').
+
+#1108 - Read RMFs where N_CHAN is an array
+    Allow the pyfits backend to read a wider range of RMF files
+
+#1111 - Minor test updates
+    Minor updates to the test code, including a small enhancement to the tests run by 
+    the smoke_test command.
+
+#1112: XSPEC: require model evaluation to be sent low and high grid values
+    XSPEC model classes must now be evaluated with bin edges - that is with 
+    low,high bins. The support for sending in a single grid and treating it a 
+    consecutive set of bins has been marked as deprecated from the model class 
+    interface. This feature is still supported for anyone evaluating the models 
+    directly from the sherpa.astro.xspec._xspec module or via the _calc method.
+
+#1116: Add parameter-based tests for the PSF model
+    Adds several tests of edge-case handling of parameters for PSF convolution models.
+
+#1117 - Docs: improve cache discussion and documentation
+    Improve the discussion of the cache support when evaluating models.
+
+#1120 - Switch default branch to main
+    Change the default branch from master to main. Also  includes minor documentation 
+    updates (CONTRIBUTING.md updates to switch to main, to reference GitHub Actions 
+    instead of Travis, and to remove a note about Python 3.5 support).
+
+#1121- Hide AstroPy 4.2.1 FITS-related warnings
+    astropy.io.fits.open now creates warning messages about invalid FITS structures 
+    when given a non-FITS file. This updated hides those warning messages since 
+    routines such as sherpa.astro.io.load_data attempts to open files (including ascii 
+    files) as FITS. 
+
+#1122 - Update ds9 download
+    Update DS9 tests to use ubuntu18 and darwinhighsierra as ubuntu14 and darwinsierra 
+    are no longer supported. The DS9 version has been bumped from 8.2 to 8.2.1 as this 
+    is the latest version.
+
+#1125: Support Matplotlib 3.4
+    Matplotlib 3.4 changes how the drawstyle argument is handled in some functions. 
+    This change removes the use of this argument for those functions.
+
+#1126 - Tweak plot docs
+  Adds a new notebook that shows off a number of plots created with matplotlib and 
+  exports the ScatterPlot, TracePlot, CDFPlot, PDFPlot, and LRHistogram classes from 
+  sherpa.plot.
+
+#1130: Fix save_data when the output file exists
+    Fix problems when save_data is used with clobber=False but the output file already 
+    exists. Fixes #1071
+
+#1132 - Update XQuartz for GH Actions workflow
+    Updates the xQuartz download location and version for the GitHub Actions Conda tests
+
+#1139 - Fix typo in Zenodo test that made it fail
+    Fixed a typo in the zenodo test which gets only run via the --runzenodo flag 
+
+#1142 - Add instruction for source build on Mac
+    Add instruction for source building on Mac that were previously only part of the 
+    internal release notes.
+
+
 Sherpa 4.13.0
 =============
 
