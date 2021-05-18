@@ -1954,10 +1954,10 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
     --------
 
     Numericaly integrate the Gauss1D model across the bins defined by
-    xlo and xhi, using an absolute tolerance of 1e-5. Note that the
-    Gauss1D model is used as an example here, since it can be used
-    directly to evaluate the integrated signal, as shown in the last
-    line (creating the ytrue value).
+    xlo and xhi, using an absolute tolerance of 1e-5. Note that you
+    would not use this in practice, since the Gauss1D model already
+    supports integrated bins, but it does allow us to compare the two
+    approaches (the `y` and `ytrue` arrays).
 
     >>> from sherpa.models.basic import Gauss1D, Integrator1D
     >>> gmdl = Gauss1D()
@@ -2027,46 +2027,53 @@ class Integrate1D(RegriddableModel1D):
     If `imdl` is an instance of `Integrate1D` and `omdl` the model to
     integrate, then `imdl(omdl)` creates the integrated form. Note
     that changes to the `Integrate1D` parameters - such as `epsabs` -
-    must be made before creating this integrated form.
+    must be made before creating this integrated form. For example, to
+    change the absolute tolerance to a value appropriate for 32-bit
+    floats:
+
+    >>> imdl = Integrate1D(name='imdl')
+    >>> imdl.epsabs = np.finfo(np.float32).eps
+    >>> mdl = imdl(omdl)
 
     Examples
     --------
 
-    The Gauss1D is used as an example here since it - as can most Sherpa
-    models - already be used with an histogram dataset. The evaluation
-    of the `gmdl` instance is first on a "point" grid, so is evaluated
-    at x=-10, x=0, and x=10, and then for a "histogram" grid where
-    the model is summed up for the bins x=-10 to 0, x=0 to 10, and
-    x=10 to 20. The integrated version (imdl) is compared to this for
-    the "histogram" case and gets the same result (to the precision of
-    the screen output). Note that the tolerance for the integration:
+    The Integrate1D model lets you use a one-dimensional model which
+    can only be evaluated at a point in a case where the dataset has a
+    low and high edge for the independent axis - such as a Data1DInt
+    object. The Scale1D model is used as an example of a model which
+    only evaluates at a point (as it always returns the scale value),
+    but in actual code you should use the Const1D model rather than
+    apply Integrate1D to Scale1D. The evaluation of the `smdl`
+    instance returns the `c0` parameter value (set to 10) at each
+    point, whereas the `mdl` instance integrates this across each bin,
+    and so returning the bin width times `c0` for each bin. Note that
+    the tolerance for the integration:
 
     - was changed from the default (tolerance for 64-bit float) to
       the 32-bit float tolerance (to avoid a warning message when
       evaluating mdl);
 
     - and must be changed before being applied to the model to
-      integrate (gmdl) in this case.
+      integrate (smdl) in this case.
 
     >>> import numpy as np
-    >>> from sherpa.models.basic import Gauss1D, Integrate1D
+    >>> from sherpa.models.basic import Scale1D, Integrate1D
+    >>> xlo, xhi = [2, 5, 8], [4, 8, 12]
     >>> imdl = Integrate1D(name='imdl')
     >>> imdl.epsabs = np.finfo(np.float32).eps
-    >>> gmdl = Gauss1D(name='gmdl')
-    >>> mdl = imdl(gmdl)
+    >>> smdl = Scale1D(name='smdl')
+    >>> mdl = imdl(smdl)
+    >>> smdl.c0 = 10
     >>> print(mdl)
-    integrate1d(gauss1d.gmdl)
+    integrate1d(smdl)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       gmdl.fwhm    thawed           10  1.17549e-38  3.40282e+38
-       gmdl.pos     thawed            0 -3.40282e+38  3.40282e+38
-       gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
-    >>> print(gmdl([-10, 0, 10]))
-    [0.0625 1.     0.0625]
-    >>> print(gmdl([-10, 0, 10], [0, 10, 20]))
-    [5.2237033  5.2237033  0.09861859]
-    >>> print(mdl([-10, 0, 10], [0, 10, 20]))
-    [5.2237033  5.2237033  0.09861859]
+       smdl.c0      thawed           10 -3.40282e+38  3.40282e+38
+    >>> print(smdl(xlo, xhi))
+    [10. 10. 10.]
+    >>> print(mdl(xlo, xhi))
+    [20. 30. 40.]
 
     """
 
