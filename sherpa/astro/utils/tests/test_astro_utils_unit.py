@@ -146,12 +146,8 @@ def test_range_overlap_1dint_ascending(lo, hi, expected, reverse):
     assert got == pytest.approx(expected)
 
 
-def _test_do_group_invalid_scheme():
-    """Check we error out and not segfault if the name is unknown.
-
-    Unfortunately this can cause a segfault, so we do not
-    run it.
-    """
+def test_do_group_invalid_scheme():
+    """Check we error out and not segfault if the name is unknown."""
 
     with pytest.raises(ValueError) as ve:
         do_group([1, 2, 3], [1, 1, 1], 'foo')

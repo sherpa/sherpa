@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2009, 2017  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2009, 2017, 2021
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -77,7 +78,7 @@ namespace sherpa { namespace astro { namespace utils {
     FloatArrayType response;
     long len_counts;
     unsigned int offset;
-    
+
     if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&lI",
 			    (converter)convert_to_array< FloatArrayType >,
 			    &source,
@@ -96,12 +97,12 @@ namespace sherpa { namespace astro { namespace utils {
     //
     // The rmf_fold function will validate argument sizes
     //
-    
+
     npy_intp dim = npy_intp( len_counts );
     FloatArrayType counts;
     if ( EXIT_SUCCESS != counts.zeros( 1, &dim ) )
       return NULL;
-    
+
     if ( EXIT_SUCCESS != rmf_fold( source.get_size(), &source[0],
 				   num_groups.get_size(), &num_groups[0],
 				   first_chan.get_size(), &first_chan[0],
@@ -109,7 +110,7 @@ namespace sherpa { namespace astro { namespace utils {
 				   response.get_size(), &response[0],
 				   counts.get_size(), &counts[0],
 				   npy_uintp(offset))) {
-      
+
       PyErr_SetString( PyExc_ValueError,
 		       (char*)"RMF data is invalid or inconsistent" );
       return NULL;
@@ -117,27 +118,27 @@ namespace sherpa { namespace astro { namespace utils {
     }
 
     return counts.return_new_ref();
-    
+
   }
-      
+
   template <typename FloatArrayType, typename IntArrayType>
   PyObject* do_group( PyObject* self, PyObject* args )
   {
-    
+
     FloatArrayType data;
     FloatArrayType grouped;
     IntArrayType group;
     const char* type;
-    
+
     if ( !PyArg_ParseTuple( args, (char*)"O&O&s",
 			    (converter)convert_to_array< FloatArrayType >,
 			    &data,
 			    (converter)convert_to_array< IntArrayType >,
 			    &group,
 			    &type))
-      
+
     return NULL;
-    
+
     if ( data.get_size() != group.get_size() ) {
       ostringstream err;
       err << "input array sizes do not match, "
@@ -145,29 +146,36 @@ namespace sherpa { namespace astro { namespace utils {
       PyErr_SetString( PyExc_TypeError, err.str().c_str() );
       return NULL;
     }
-    
-    if( EXIT_SUCCESS != _do_group(data.get_size(), data,
-				  group.get_size(), group,
-				  grouped, type) ) {
-      PyErr_SetString( PyExc_ValueError,
-		       (char*)"group data is invalid or inconsistent" );
+
+    try {
+      if( EXIT_SUCCESS != _do_group(data.get_size(), data,
+				    group.get_size(), group,
+				    grouped, type) ) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"group data is invalid or inconsistent" );
+	return NULL;
+      }
+    } catch ( std::out_of_range& e ) {
+      ostringstream err;
+      err << "unsupported group function: " << type;
+      PyErr_SetString( PyExc_ValueError, err.str().c_str() );
       return NULL;
     }
-    
+
   return grouped.return_new_ref();
-  
+
   }
 
-  
+
   template <typename FloatArrayType>
   PyObject* shrink_specresp( PyObject* self, PyObject* args )
   {
-    
+
     FloatArrayType specresp;
     FloatArrayType arf_lo;
     FloatArrayType rmf_lo;
     FloatArrayType result;
-    
+
     if ( !PyArg_ParseTuple( args, (char*)"O&O&O&",
 			    (converter)convert_to_array< FloatArrayType >,
 			    &specresp,
@@ -175,9 +183,9 @@ namespace sherpa { namespace astro { namespace utils {
 			    &arf_lo,
 			    (converter)convert_to_array< FloatArrayType >,
 			    &rmf_lo))
-      
+
     return NULL;
-    
+
     if ( specresp.get_size() != arf_lo.get_size() ) {
       ostringstream err;
       err << "input array sizes do not match, "
@@ -196,7 +204,7 @@ namespace sherpa { namespace astro { namespace utils {
     if ( EXIT_SUCCESS != result.create( rmf_lo.get_ndim(),
 					rmf_lo.get_dims() ) )
       return NULL;
-    
+
     if( EXIT_SUCCESS != _shrink_specresp( specresp,
 					  arf_lo,
 					  arf_lo.get_size(),
@@ -207,9 +215,9 @@ namespace sherpa { namespace astro { namespace utils {
 		       (char*)"shrinking effective area failed" );
       return NULL;
     }
-    
+
   return result.return_new_ref();
-  
+
   }
 
   template <typename FloatArrayType, typename IntArrayType,
@@ -221,22 +229,22 @@ namespace sherpa { namespace astro { namespace utils {
     IntArrayType f_chan;
     IntArrayType n_chan;
     FloatArrayType matrix;
-    
+
     BoolArray mask;
     vector<FloatType> resp_buf;
     vector<IntType> f_buf;
     vector<IntType> n_buf;
     vector<IntType> grp_buf;
-    
+
     FloatArrayType resp;
     IntArrayType grp;
     IntArrayType fchan;
     IntArrayType nchan;
-    
+
     npy_intp gdims[1];
     npy_intp rdims[1];
     npy_intp cdims[1];
-    
+
     unsigned int offset;
 
     if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&I",
@@ -277,17 +285,17 @@ namespace sherpa { namespace astro { namespace utils {
 		       (char*)"response filter failed" );
       return NULL;
     }
-    
+
     gdims[0] = npy_intp(grp_buf.size());
     rdims[0] = npy_intp(resp_buf.size());
     cdims[0] = npy_intp(f_buf.size());
 
     if( EXIT_SUCCESS != resp.create( 1, rdims ))
       return NULL;
-    
+
     if( EXIT_SUCCESS != fchan.create( 1, cdims ))
       return NULL;
-    
+
     if( EXIT_SUCCESS != nchan.create( 1, cdims ))
       return NULL;
 
@@ -302,7 +310,7 @@ namespace sherpa { namespace astro { namespace utils {
       fchan[ii] = f_buf[ii];
       nchan[ii] = n_buf[ii];
     }
-    
+
     for(int ii = 0; ii < rdims[0]; ++ii)
       resp[ii] = resp_buf[ii];
 
@@ -312,10 +320,10 @@ namespace sherpa { namespace astro { namespace utils {
 			 nchan.return_new_ref(),
 			 resp.return_new_ref(),
 			 mask.return_new_ref());
-    
+
   }
 
- 
+
   static PyObject* _expand_grouped_mask(PyObject* self, PyObject* args) {
 
     BoolArray mask;
@@ -354,20 +362,20 @@ namespace sherpa { namespace astro { namespace utils {
   template <typename FloatArrayType, typename IntArrayType,
 	    typename IntType, typename FloatType>
   PyObject* _resp_init(PyObject* self, PyObject* args) {
-    
+
     IntArrayType n_grp;
     IntArrayType f_chan;
     IntArrayType n_chan;
     FloatArrayType matrix;
-    
+
     vector<FloatType> resp_buf;
     vector<IntType> f_buf;
     vector<IntType> n_buf;
-     
+
     FloatArrayType resp;
     IntArrayType nchan;
     IntArrayType fchan;
-    
+
     npy_intp rdims[1];
     npy_intp cdims[1];
     unsigned int chan_width;
@@ -418,12 +426,12 @@ namespace sherpa { namespace astro { namespace utils {
       kk = chn;
       ll = res;
       while( num_groups > 0 ) {
-	
+
 	if ( kk >= len_num_chans ) {
 	  PyErr_SetString( PyExc_TypeError, (char*) "Input response has more groups than channels" );
 	  return NULL;
 	}
-	
+
 	num_chans = n_chan[ kk ];
 
 	// Fill f_chan and n_chan
@@ -436,7 +444,7 @@ namespace sherpa { namespace astro { namespace utils {
 	    PyErr_SetString( PyExc_TypeError, (char*) "Input response arrays are inconsistent" );
 	    return NULL;
 	  }
-	  
+
 	  // Fill matrix with zero elements
 	  resp_buf.push_back( matrix[ ll ] );
 	  ll++;
@@ -455,10 +463,10 @@ namespace sherpa { namespace astro { namespace utils {
 
     if( EXIT_SUCCESS != resp.create( 1, rdims ))
       return NULL;
-    
+
     if( EXIT_SUCCESS != fchan.create( 1, cdims ))
       return NULL;
-    
+
     if( EXIT_SUCCESS != nchan.create( 1, cdims ))
       return NULL;
 
@@ -466,7 +474,7 @@ namespace sherpa { namespace astro { namespace utils {
       fchan[ii] = f_buf[ii];
       nchan[ii] = n_buf[ii];
     }
-    
+
     for(npy_intp ii = 0; ii < rdims[0]; ++ii)
       resp[ii] = resp_buf[ii];
 
@@ -484,7 +492,7 @@ namespace sherpa { namespace astro { namespace utils {
     DataType hi;
     int size;
     bool val;
-    
+
     if ( !PyArg_ParseTuple( args, (char*)"O&II",
 			    (converter)convert_to_contig_array< ArrayType >,
 			    &chans, &lo, &hi) )
@@ -499,20 +507,57 @@ namespace sherpa { namespace astro { namespace utils {
 }  }  } /* namespace utils, namespace astro, namespace sherpa */
 
 static PyMethodDef UtilsFcts[] = {
-  
+
   FCTSPEC( arf_fold, sherpa::astro::utils::arf_fold< SherpaFloatArray > ),
   FCTSPEC( rmf_fold, (sherpa::astro::utils::rmf_fold< SherpaFloatArray,
 		      SherpaUIntArray >) ),
 
-  FCTSPEC( do_group, (sherpa::astro::utils::do_group<
-		      SherpaFloatArray, IntArray>) ),
-  
+  { (char*) "do_group",
+    (PyCFunction)(sherpa::astro::utils::do_group<SherpaFloatArray, IntArray>),
+    METH_VARARGS,
+    (char*) "Group the array using OGIP standards.\n\n"
+    "Parameters\n"
+    "----------\n"
+    "data : array_like\n"
+    "    The data to group.\n"
+    "group : array_like\n"
+    "    The OGIP grouping data: 1 indicates the start of a group and\n"
+    "    -1 continues the group. See [1]_ and [2]_.\n"
+    "name : {'sum', '_sum_sq', '_max', '_min', '_middle', '_make_groups'}\n"
+    "    The grouping scheme to combine values within a group.\n\n"
+    "Returns\n"
+    "-------\n"
+    "grouped : array\n"
+    "    The grouped data. It will be smaller than data unless group only\n"
+    "    contains 1's.\n\n"
+    "References\n"
+    "----------\n\n"
+    ".. [1] \"The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)\", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html\n\n"
+    ".. [2] \"The Calibration Requirements for Spectral Analysis Addendum: Changes log\", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html\n\n"
+    "Examples\n"
+    "--------\n\n"
+    "Group the aray [1, 2, 3, 4, 5, 6] into groups of length 2, 1, and 3,\n"
+    "using different grouping schemes:\n\n"
+    ">>> data = [1, 2, 3, 4, 5, 6]\n"
+    ">>> group = [1, -1, 1, 1, -1, -1]\n"
+    ">>> do_group(data, group, '_make_groups')\n"
+    "[1, 2, 3]\n"
+    ">>> do_group(data, group, 'sum')\n"
+    "[3, 3, 15]\n"
+    ">>> do_group(data, group, '_min')\n"
+    "[1, 3, 4]\n"
+    ">>> do_group(data, group, '_max')\n"
+    "[2, 3, 6]\n"
+    ">>> do_group(data, group, '_middle')\n"
+    "[1.5, 3. , 5. ]\n"
+  },
+
   FCTSPEC( shrink_effarea, (sherpa::astro::utils::shrink_specresp<
 			    SherpaFloatArray >) ),
-  
+
   FCTSPEC( filter_resp, (sherpa::astro::utils::filter_resp< SherpaFloatArray,
 			 SherpaUIntArray, SherpaUInt, SherpaFloat >)),
-  
+
   FCTSPEC( expand_grouped_mask, sherpa::astro::utils::_expand_grouped_mask),
 
   FCTSPEC( resp_init, (sherpa::astro::utils::_resp_init< SherpaFloatArray,
