@@ -8678,7 +8678,7 @@ class Session(sherpa.ui.utils.Session):
         values, which is then passed to a Poisson random number generator
         to determine the observed number of counts per channel. Any
         background component is scaled by appropriate terms (exposure
-        time, area scaling, and the backscal value) before is is passed to
+        time, area scaling, and the backscal value) before it is passed to
         a Poisson random number generator. The simulated background is
         added to the simulated data.
 
