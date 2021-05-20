@@ -77,7 +77,7 @@ static PyMethodDef ModelFcts[] = {
 		    "epsrel : number, optional\n"
 		    "    The maximum relative difference. The default is 0.0.\n"
 		    "maxeval : int, optional\n"
-		    "    The maximum bumber of evaluations. The default is 10000.\n"
+		    "    The maximum number of evaluations. The default is 10000.\n"
 		    "logger : callable or None, optional\n"
                     "    If set and an error was reported then this function will be\n"
 		    "    called with the error message as the argument.\n\n"
