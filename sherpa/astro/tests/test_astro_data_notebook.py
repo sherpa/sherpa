@@ -132,7 +132,7 @@ def test_pha_real(subtract, group, make_data_path, override_plot_backend):
 
     r = d._repr_html_()
 
-    check(r, 'PHA', '3c273.pi', 'COUNTS', nmeta=10)
+    check(r, 'PHA', '3c273.pi', 'COUNTS', nmeta=11)
 
     assert '<div class="dataval">2000-01-10T06:47:15</div>' in r
     assert '<div class="dataname">Background</div>' in r
