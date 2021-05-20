@@ -1,4 +1,4 @@
-// 
+//
 //  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 //
 //
@@ -80,7 +80,7 @@ namespace sherpa { namespace astro { namespace utils {
 
   template <typename ConstIntType, typename ConstFloatType,
 	    typename FloatType, typename IndexType, typename UIndexType>
-  int rmf_fold( IndexType len_source, const ConstFloatType *source, 
+  int rmf_fold( IndexType len_source, const ConstFloatType *source,
 		IndexType len_num_groups, const ConstIntType *num_groups,
 		IndexType len_first_chan, const ConstIntType *first_chan,
 		IndexType len_num_chans, const ConstIntType *num_chans,
@@ -90,7 +90,7 @@ namespace sherpa { namespace astro { namespace utils {
   {
 
     //int flag = 0;
-    if ( ( len_num_groups != len_source ) || 
+    if ( ( len_num_groups != len_source ) ||
 	 ( len_first_chan != len_num_chans ))
       return EXIT_FAILURE;
 
@@ -135,14 +135,14 @@ namespace sherpa { namespace astro { namespace utils {
     FloatType *counts_tmp = counts;
 
     for ( ii = 0; ii < len_source; ii++ ) {
-      
+
       // ii is the current energy bin
       source_bin_ii = source[ ii ];
 
       current_num_groups = num_groups[ ii ];
 
       while( current_num_groups ) {
-	
+
 	if ( ( IndexType(first_chan_tmp - first_chan) >= len_num_chans ) ||
 	     ( UIndexType(*first_chan_tmp) < offset ) )
 	  return EXIT_FAILURE;
@@ -150,12 +150,12 @@ namespace sherpa { namespace astro { namespace utils {
 	current_num_chans = *num_chans_tmp;
 	first_chan_tmp++;
 	num_chans_tmp++;
-	
+
 	if ( ( (IndexType(counts_tmp-counts) + current_num_chans) > len_counts )
 	     ||
 	     ( (IndexType(resp_tmp-resp) + current_num_chans) > len_response ) )
 	  return EXIT_FAILURE;
-	
+
 	while ( current_num_chans ) {
 
 	  *counts_tmp += *resp_tmp * source_bin_ii;
@@ -169,7 +169,7 @@ namespace sherpa { namespace astro { namespace utils {
       }
 
     } // end for ii
-    
+
     return EXIT_SUCCESS;
 
   }
@@ -180,21 +180,21 @@ namespace sherpa { namespace astro { namespace utils {
 
     IntType lochan = noticed_chans[0],
             hichan = noticed_chans[size-1];
-    
+
     // assumes that noticed_chans is sorted
     if( lo < lochan && hi > hichan )
       return true;
-    
+
     if( binary_search( noticed_chans, noticed_chans + size, lo ) )
       return true;
-    
+
     if( binary_search( noticed_chans, noticed_chans + size, hi ) )
       return true;
-    
+
     // consider the case of fragmented channels
     if( lochan < lo && lo < hichan && hi > hichan )
       return true;
-    
+
     if( lochan < hi && hi < hichan && lo < lochan )
       return true;
 
@@ -206,14 +206,14 @@ namespace sherpa { namespace astro { namespace utils {
 					  noticed_chans + size, lo );
       if( idx == (noticed_chans + size) )
 	return false;
-      
+
       // determine if any 'middle' channels are noticed in hidden interval
       if( *idx < hi )
 	return true;
     }
-    
+
     return false;
-    
+
 //     for( IndexType ii = 0; ii < size; ++ii ) {
 //       IntType chan = noticed_chans[ ii ];
 //       if( lo <= chan && chan <= hi )
@@ -241,22 +241,22 @@ namespace sherpa { namespace astro { namespace utils {
     IndexType response_counter = 0, group_counter = 0;
     IntType current_num_chans = 0, current_chan = 0,
       current_num_groups = 0, lo = 0, hi = 0;
-    
+
     for( IndexType ii = 0; ii < len_num_groups; ++ii ) {
-      
+
       current_num_groups = n_grp[ ii ];
-     
+
       IntType ngrp = 0;
- 
+
       while( current_num_groups > 0 ) {
-	
+
 	if ( ( group_counter >= len_num_chans ) ||
 	     ( f_chan[ group_counter ] < (IntType)offset ) )
 	  return EXIT_FAILURE;
-	
+
 	current_num_chans = n_chan[ group_counter ];
 	current_chan = f_chan[ group_counter ] ;
-	
+
 	if ( response_counter + (IndexType)current_num_chans > len_response )
 	  return EXIT_FAILURE;
 
@@ -265,7 +265,7 @@ namespace sherpa { namespace astro { namespace utils {
 	if(!offset)
 	  lo++;
 	hi = lo + current_num_chans;
-	
+
 	if( is_in( noticed_chans, len_not_chans, lo, hi ) ) {
 	  fch.push_back( current_chan );
 	  nch.push_back( current_num_chans );
@@ -284,21 +284,21 @@ namespace sherpa { namespace astro { namespace utils {
 
 	group_counter++;
 	current_num_groups--;
-	
+
       } // end while
-      
+
       if( ngrp > 0 )
 	grp.push_back( ngrp );
-      
+
     } // end for ii
-    
+
     return EXIT_SUCCESS;
   }
 
   template <typename ConstFloatArrayType, typename IndexType>
   void _sum(const ConstFloatArrayType& data, IndexType start,
 	    IndexType stop, SherpaFloat& val) {
-    
+
     val = 0.0;
     for( IndexType ii = start; ii < stop; ii++ )
       val += data[ii];
@@ -307,22 +307,22 @@ namespace sherpa { namespace astro { namespace utils {
   template <typename ConstFloatArrayType, typename IndexType>
   void _sum_sq(const ConstFloatArrayType& data, IndexType start,
 	       IndexType stop, SherpaFloat& val) {
-    
+
     val = 0.0;
     for( IndexType ii = start; ii < stop; ii++ )
       val += ( data[ii] * data[ii] );
-    
+
     val = sqrt( val );
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>  
+  template <typename ConstFloatArrayType, typename IndexType>
   void _max(const ConstFloatArrayType& data, IndexType start,
 		 IndexType stop, SherpaFloat& val) {
 
     SherpaFloat max = data[start];
     for( IndexType ii = start; ii < stop - 1; ii++ )
       max = std::max( max, data[ ii + 1 ] );
-    
+
     val = max;
   }
 
@@ -333,14 +333,14 @@ namespace sherpa { namespace astro { namespace utils {
     SherpaFloat min = data[start];
     for( IndexType ii = start; ii < stop - 1; ii++ )
       min = std::min( min, data[ ii + 1 ] );
-    
+
     val = min;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>  
+  template <typename ConstFloatArrayType, typename IndexType>
   void _middle(const ConstFloatArrayType& data, IndexType start,
 	       IndexType stop, SherpaFloat& val) {
-    
+
     SherpaFloat min = data[start];
     SherpaFloat max = data[start];
     for( IndexType ii = start; ii < stop - 1; ii++ ) {
@@ -349,7 +349,7 @@ namespace sherpa { namespace astro { namespace utils {
     }
     val = MID( min, max );
   }
-  
+
   template <typename ConstFloatArrayType, typename FloatArrayType,
 	    typename ConstIntArrayType, typename IndexType>
   int _do_group( IndexType len_data, const ConstFloatArrayType& data,
@@ -359,18 +359,24 @@ namespace sherpa { namespace astro { namespace utils {
 
     typedef void (*fptr)( const ConstFloatArrayType&, IndexType, IndexType,
 			  SherpaFloat&);
-    string func(type);
+    string funcname(type);
     map<string, fptr> funcs;
     SherpaFloat val;
-    
+    fptr func = _sum;
+
     funcs["sum"] = _sum;
     funcs["_sum_sq"] = _sum_sq;
     funcs["_max"] = _max;
     funcs["_min"] = _min;
     funcs["_middle"] = _middle;
 
+    if ( funcname != "_make_groups" ) {
+      // An invalid function will raise std::out_of_range
+      func = funcs.at(funcname);
+    }
+
     vector< IndexType > pick_pts;
-    
+
     for( IndexType ii = 0; ii < len_group; ii++ )
       //if( group[ ii ] == 1 )
       // include channels where grouping == 0 so the filter will catch large
@@ -382,33 +388,33 @@ namespace sherpa { namespace astro { namespace utils {
     npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
     if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
       return EXIT_FAILURE;
-    
+
     for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
       IndexType start = pick_pts[ ii ];
       IndexType stop = pick_pts[ ii + 1 ];
-      
+
       if ( stop > len_data )
 	return EXIT_FAILURE;
 
-      if ( func == "_make_groups" ) {
+      if ( funcname == "_make_groups" ) {
 	grouped[ ii ] = data[0] + (SherpaFloat) ii;
 	continue;
       }
-      
-      funcs[func]( data, start, stop, val );
+
+      func( data, start, stop, val );
       grouped[ ii ] = val;
-      
+
     } // end ii
-    
+
     return EXIT_SUCCESS;
-    
+
   }
 
 
   static double interpolate( double x, double x0, double x1,
 		      double y0, double y1, double tol ) {
     double m;
-    
+
     if( 0 == sao_fcmp( x1, x0, tol ) )
       m = 0.0;
     else
@@ -417,30 +423,30 @@ namespace sherpa { namespace astro { namespace utils {
     if( 0 == sao_fcmp( x, x0, tol ) &&
 	0 == sao_fcmp( x, x1, tol ) )
       return ((y0 + y1)/2.0);
-    
+
     if( 0 == sao_fcmp( x, x0, tol ) )
       return y0;
-    
+
     if( 0 == sao_fcmp( x, x1, tol ) )
       return y1;
-    
-    else 
+
+    else
       return (y0 + (x-x0)*m);
   }
-    
+
   template <typename FloatArrayType, typename IndexType>
   int _shrink_specresp( FloatArrayType& specresp, FloatArrayType& arf_lo,
 			IndexType len_arf,
 			FloatArrayType& rmf_lo, FloatArrayType& result,
 			IndexType len_rmf ) {
-    
+
     int ii = 0, jj;
     double tol = DBL_EPSILON;
 
     for( jj = 0; jj < len_rmf; ++jj ) {
 
       switch ( sao_fcmp( rmf_lo[ jj ], arf_lo[ ii ], tol ) ) {
-	
+
       case 0:
 	// case where rmf_lo[ jj ] == arf_lo[ ii ]
 	result[jj] = specresp[ii];
@@ -448,14 +454,14 @@ namespace sherpa { namespace astro { namespace utils {
 
 	if( ii == len_arf )
 	  return EXIT_SUCCESS;
-	
+
 	break;
 
       case 1:
 	// case where rmf_lo[ jj ] > arf_lo[ ii ]
 	int res;
 	while( (res = sao_fcmp( rmf_lo[ jj ], arf_lo[ ii ], tol )) == 1 ) {
-	  ii++;	  
+	  ii++;
 	  if( ii == len_arf )
 	    return EXIT_SUCCESS;
 	}
@@ -483,18 +489,18 @@ namespace sherpa { namespace astro { namespace utils {
 	else {
 	  return EXIT_FAILURE;
 	}
-	break;	
-	
+	break;
+
       default:
       	// rmf_lo[ jj ] < arf_lo[ ii ] or sao_fcmp failed
 	return EXIT_FAILURE;
-	
+
       }
     }
-    
+
     return EXIT_SUCCESS;
-  } 
-  
+  }
+
 
 }  }  } /* namespace utils, namespace astro, namespace sherpa */
 
