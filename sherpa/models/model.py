@@ -49,6 +49,149 @@ main classes are:
 
  - SimulFitModel for fitting multiple models and datasets.
 
+Creating a model
+----------------
+
+Models can be created with an optional name, which is useful for
+identifying a component in an expression:
+
+    >>> from sherpa.models.basic import Gauss1D
+    >>> m1 = Gauss1D()
+    >>> m2 = Gauss1D('gmdl')
+    >>> print(m1)
+    gauss1d
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gauss1d.fwhm thawed           10  1.17549e-38  3.40282e+38
+       gauss1d.pos  thawed            0 -3.40282e+38  3.40282e+38
+       gauss1d.ampl thawed            1 -3.40282e+38  3.40282e+38
+
+    >>> print(m2)
+    gmdl
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gmdl.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       gmdl.pos     thawed            0 -3.40282e+38  3.40282e+38
+       gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
+
+Changing parameters
+-------------------
+
+The parameters are the model values that control the output of the
+model. A particular model has a fixed set of parameters that can
+be inspected with print or the pars attribute:
+
+    >>> print(m2)
+    gmdl
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gmdl.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       gmdl.pos     thawed            0 -3.40282e+38  3.40282e+38
+       gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
+
+    >>> print(m2.pars)
+    (<Parameter 'fwhm' of model 'gmdl'>, <Parameter 'pos' of model 'gmdl'>, <Parameter 'ampl' of model 'gmdl'>)
+
+The parameters are instances of the sherpa.models.parameter.Parameter
+class:
+
+    >>> print(m2.fwhm)
+    val         = 10.0
+    min         = 1.1754943508222875e-38
+    max         = 3.4028234663852886e+38
+    units       =
+    frozen      = False
+    link        = None
+    default_val = 10.0
+    default_min = 1.1754943508222875e-38
+    default_max = 3.4028234663852886e+38
+
+    >>> print(m2.fwhm.val)
+    10.0
+
+Setting the model parameter does not require going through the val
+attribute as you can say:
+
+    >>> m2.fwhm = 20
+
+Model evaluation
+----------------
+
+With a sherpa.data.Data instance a model can be evaluated with the
+eval_model method of the object. For example:
+
+    >>> import numpy as np
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.models.basic import Gauss1D
+    >>> x = np.asarray([4000, 4100, 4250, 4300, 4400])
+    >>> y = np.asarray([10, 20, 50, 40, 30])
+    >>> d = Data1D('example', x, y)
+    >>> mdl = Gauss1D()
+    >>> mdl.pos = 4200
+    >>> mdl.fwhm = 200
+    >>> mdl.ampl = 50
+    >>> ymdl1 = d.eval_model(mdl)
+    >>> print(ymdl1)
+    [ 3.125      25.         42.04482076 25.          3.125     ]
+
+The model can also be evaluated directly with the independent axis
+values:
+
+    >>> ymdl2 = mdl(x)
+    >>> print(ymdl2)
+    [ 3.125      25.         42.04482076 25.          3.125     ]
+
+Integrated bins
+===============
+
+If given the low and high edges of the bins then the model will - if
+supported - evaluate the integral of the model across the bins:
+
+    >>> xlo = np.asarray([4180, 4190, 4195, 4200, 4210])
+    >>> xhi = np.asarray([4190, 4194, 4200, 4210, 4220])
+    >>> y = mdl(xlo, xhi)
+    >>> print(y)
+    [491.98725233 199.0964993  249.85566938 498.847153   491.98725233]
+
+Note that the bins are expected to be in ascending order and do not
+overlap, but they do not need to be consecutive.
+
+The behavior of a model when given low and high edges depends on
+whether the model is written to support this mode - that is,
+integrating the model across the bin - and the setting of the
+integrate flag of the model. The Gauss1D model does support an
+integrated mode, so switching the integrate flag will change the model
+output:
+
+    >>> print(mdl.integrate)
+    True
+    >>> mdl.integrate = False
+    >>> y2 = mdl(xlo, xhi)
+    >>> print(y2)
+    [48.63274737 49.65462477 49.91343163 50.         49.65462477]
+
+The behavior when the integrate flag is False depends on the model but
+it normally just uses the low edge, as shown for the Gauss1D case:
+
+    >>> y3 = mdl(xlo)
+    >>> print(y2 == y3)
+    [ True  True  True  True  True]
+
+Direct access
+=============
+
+The calc method of a model can also be used to evaluate the model, and
+this requires a list of the parameters and the independent axes:
+
+    >>> pars = [200, 4200, 50]
+    >>> y4 = mdl.calc(pars, x)
+    >>> y5 = mdl.calc(pars, xlo, xhi)
+
+The parameter order matches the pars attribute of the model:
+
+    >>> print([p.fullname for p in mdl.pars])
+    ['gauss1d.fwhm', 'gauss1d.pos', 'gauss1d.ampl']
+
 Model cache
 -----------
 

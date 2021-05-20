@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -38,7 +39,8 @@ from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
-from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D
+from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D, Scale1D, \
+    Integrate1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -627,6 +629,106 @@ def test_constant_show(value, name, expected):
 
     m = ArithmeticConstantModel(value, name=name)
     assert m.name == expected
+
+
+def test_integrate1d_show_no_model():
+    """Check Integrate1D show"""
+
+    imdl = Integrate1D()
+    out = str(imdl).split('\n')
+    assert out[0] == 'integrate1d'
+    assert out[3].strip().startswith('integrate1d.epsabs frozen ')
+    assert out[4].strip().startswith('integrate1d.epsrel frozen ')
+    assert out[5].strip().startswith('integrate1d.maxeval frozen ')
+    assert len(out) == 6
+
+
+def test_integrate1d_show_model():
+    """Check Integrate1D show when applied to a model
+
+    Note that we do not show the integrate1d settings in this version.
+    """
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+
+    out = str(mdl).split('\n')
+    assert out[0] == 'integrate1d(scale1d)'
+    assert out[3].strip().startswith('scale1d.c0   thawed ')
+    assert len(out) == 4
+
+
+def test_integrate1d_fail_not_integrated():
+    """Check Integrate1D requires an integrated grid"""
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+    with pytest.raises(ModelErr) as exc:
+        mdl([1.1, 1.2, 1.3, 1.4])
+
+    assert str(exc.value).startswith('A non-overlapping integrated grid is required ')
+
+
+def test_integrate1d_basic(caplog):
+    """Check Integrate1D works
+
+    There is no documentation on how it's supposed to work, so
+    this is more a "this currently works, let's hope it continues
+    to do so" approach than a test from first principles.
+    """
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+    bmdl.c0 = 4
+
+    xlo = numpy.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
+    xhi = numpy.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
+
+    # I don't know what the rule is for creating this warning, but
+    # check we see it.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        y = mdl(xlo, xhi)
+
+    expected = 4 * numpy.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
+    assert y == pytest.approx(expected)
+
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.models.basic'
+    assert lvl == logging.WARNING
+    assert msg.startswith('Gauss-Kronrod integration failed with tolerance ')
+
+
+def test_integrate1d_basic_epsabs(caplog):
+    """Check Integrate1D works
+
+    This time adjust epsabs so that we don't get the Gauss-Kronrod
+    warning.
+    """
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+    bmdl.c0 = 4
+    imdl.epsabs = numpy.finfo(numpy.float32).eps
+
+    xlo = numpy.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
+    xhi = numpy.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
+
+    # I don't know what the rule is for creating this warning, but
+    # check we see it.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        y = mdl(xlo, xhi)
+
+    expected = 4 * numpy.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
+    assert y == pytest.approx(expected)
+
+    assert len(caplog.records) == 0
 
 
 def check_cache(mdl, expected, x, xhi=None):

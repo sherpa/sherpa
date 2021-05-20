@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1926,6 +1926,46 @@ class UserModel(ArithmeticModel):
 
 
 class Integrator1D(CompositeModel, RegriddableModel1D):
+    """Integrate a one-dimensional model.
+
+    It is expected that instances of this class are created by the
+    `Integrate1D` class and not directly.
+
+    Attributes
+    ----------
+    model
+        The model to be evaluated.
+    otherargs
+        Currently unused.
+    otherkwargs
+        Used to pass extra parameters to the integrator (currently
+        `epsabs`, `epsrel`, `maxeval`, `errflag`, and `logger`).
+
+    Raises
+    ------
+    sherpa.utils.err.ModelErr
+        The model was evaluated on a "point" grid.
+
+    See Also
+    --------
+    Integrate1D
+
+    Examples
+    --------
+
+    Numericaly integrate the Gauss1D model across the bins defined by
+    xlo and xhi, using an absolute tolerance of 1e-5. Note that you
+    would not use this in practice, since the Gauss1D model already
+    supports integrated bins, but it does allow us to compare the two
+    approaches (the `y` and `ytrue` arrays).
+
+    >>> from sherpa.models.basic import Gauss1D, Integrator1D
+    >>> gmdl = Gauss1D()
+    >>> imdl = Integrator1D(gmdl, epsabs=1e-5)
+    >>> y = imdl(xlo, xhi)
+    >>> ytrue = gmdl(xlo, xhi)
+
+    """
 
     @staticmethod
     def wrapobj(obj):
@@ -1959,7 +1999,83 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
                                       p, xlo, xhi, **self.otherkwargs)
 
 
+# DOC note: we do not expose Integrator1D by default so it is not
+# mentioned as a See Also link here.
+#
 class Integrate1D(RegriddableModel1D):
+    """Integrate a model across each bin (one dimensional).
+
+    Numerically integrate a one-dimensional model across each bin of a
+    "histogram" dataset - that is one with low and high edges for each
+    bin. The model to be integrated is supplied as an input to this
+    model and any attribute changes must be made before this.
+
+    Attributes
+    ----------
+    epsabs
+        The maximum absolute difference allowed when integrating the
+        model. This parameter is always frozen.
+    epsrel
+        The maximum relative difference allowed when integrating the
+        model. This parameter is always frozen.
+    maxeval
+        The maximum number of iterations allowed per bin.  This
+        parameter is always frozen.
+
+    Notes
+    -----
+    If `imdl` is an instance of `Integrate1D` and `omdl` the model to
+    integrate, then `imdl(omdl)` creates the integrated form. Note
+    that changes to the `Integrate1D` parameters - such as `epsabs` -
+    must be made before creating this integrated form. For example, to
+    change the absolute tolerance to a value appropriate for 32-bit
+    floats:
+
+    >>> imdl = Integrate1D(name='imdl')
+    >>> imdl.epsabs = np.finfo(np.float32).eps
+    >>> mdl = imdl(omdl)
+
+    Examples
+    --------
+
+    The Integrate1D model lets you use a one-dimensional model which
+    can only be evaluated at a point in a case where the dataset has a
+    low and high edge for the independent axis - such as a Data1DInt
+    object. The Scale1D model is used as an example of a model which
+    only evaluates at a point (as it always returns the scale value),
+    but in actual code you should use the Const1D model rather than
+    apply Integrate1D to Scale1D. The evaluation of the `smdl`
+    instance returns the `c0` parameter value (set to 10) at each
+    point, whereas the `mdl` instance integrates this across each bin,
+    and so returning the bin width times `c0` for each bin. Note that
+    the tolerance for the integration:
+
+    - was changed from the default (tolerance for 64-bit float) to
+      the 32-bit float tolerance (to avoid a warning message when
+      evaluating mdl);
+
+    - and must be changed before being applied to the model to
+      integrate (smdl) in this case.
+
+    >>> import numpy as np
+    >>> from sherpa.models.basic import Scale1D, Integrate1D
+    >>> xlo, xhi = [2, 5, 8], [4, 8, 12]
+    >>> imdl = Integrate1D(name='imdl')
+    >>> imdl.epsabs = np.finfo(np.float32).eps
+    >>> smdl = Scale1D(name='smdl')
+    >>> mdl = imdl(smdl)
+    >>> smdl.c0 = 10
+    >>> print(mdl)
+    integrate1d(smdl)
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       smdl.c0      thawed           10 -3.40282e+38  3.40282e+38
+    >>> print(smdl(xlo, xhi))
+    [10. 10. 10.]
+    >>> print(mdl(xlo, xhi))
+    [20. 30. 40.]
+
+    """
 
     def __init__(self, name='integrate1d'):
         tol = numpy.finfo(float).eps
