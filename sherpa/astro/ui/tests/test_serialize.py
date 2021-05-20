@@ -961,11 +961,12 @@ def restore():
     try:
         exec(output)
         success = True
-        e = "no exception"
+        exc = "no exception"
     except Exception as e:
         success = False
+        exc = str(e)
 
-    assert success, "exception={}".format(e)
+    assert success, "exception={}".format(exc)
 
 
 def setup_pha_basic(make_data_path):

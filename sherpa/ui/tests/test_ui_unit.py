@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +28,7 @@ sherpa/astro/ui/tests/test_astro_ui_unit.py
 import pytest
 
 from sherpa import ui
-from sherpa.utils.err import ArgumentTypeErr
+from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
 
 
 # This is part of #397
@@ -69,10 +70,31 @@ def test_all_has_no_repeated_elements():
 
 
 @pytest.mark.parametrize("func", [ui.notice_id, ui.ignore_id])
-def test_check_ids_not_none(func):
-    """Check they error out when id is None"""
+@pytest.mark.parametrize("lo", [None, 1, "1:5"])
+def test_check_ids_not_none(func, lo):
+    """Check they error out when id is None
+
+    There used to be the potential for different behavior depending
+    if the lo argument was a string or not,hence the check.
+    """
 
     with pytest.raises(ArgumentTypeErr) as exc:
-        func(None)
+        func(None, lo)
 
     assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
+
+
+@pytest.mark.parametrize("func", [ui.notice, ui.ignore])
+@pytest.mark.parametrize("lo,hi", [(1, 5), (1, None), (None, 5), (None, None),
+                                   ("1:5", None)])
+def test_filter_no_data_is_an_error(func, lo, hi, clean_ui):
+    """Does applying a filter lead to an error?
+
+    This test was added because it was noted that an update for Python 3
+    had lead to an error state not being reached.
+    """
+
+    with pytest.raises(IdentifierErr) as ie:
+        func(lo, hi)
+
+    assert str(ie.value) == 'No data sets found'

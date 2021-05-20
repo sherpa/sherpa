@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1401,18 +1401,14 @@ def test_notice_channel_grouping(make_data_path):
     assert pha.get_filter(format='%.4f', group=False) == '69:404'
 
 
-def xfail(*args):
-    return pytest.param(*args, marks=pytest.mark.xfail)
-
-
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, '9:850'),
                           (30, 2000, '27:850'),
                           (-5, 350, '9:356'),
-                          xfail(-20, -5, ''),
-                          (2000, 3000, '')])
+                          (-20, -5, '9:850'),
+                          (2000, 3000, '9:850')])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results
 
@@ -1420,12 +1416,53 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     last bin (because it gets reset to the limit), which we
     probably do not want (for the low edge, for the upper
     edge we are probably lucky due to < rather than >=).
+
+    The groups are such that the first group has channels
+    1-17 and the last group 677-1024, which have mid-points
+    9 and 850.5, hence the 9:850 as the default filter.
+
+    >>> pha.apply_grouping(pha.channel, pha._min)
+    array([  1.,  18.,  22.,  33.,  40.,  45.,  49.,  52.,  55.,  57.,  60.,
+            62.,  66.,  69.,  72.,  76.,  79.,  83.,  89.,  97., 102., 111.,
+           117., 125., 131., 134., 140., 144., 151., 157., 165., 178., 187.,
+           197., 212., 233., 245., 261., 277., 292., 324., 345., 369., 405.,
+           451., 677.])
+
+    >>> pha.apply_grouping(pha.channel, pha._max)
+    array([  17.,   21.,   32.,   39.,   44.,   48.,   51.,   54.,   56.,
+             59.,   61.,   65.,   68.,   71.,   75.,   78.,   82.,   88.,
+             96.,  101.,  110.,  116.,  124.,  130.,  133.,  139.,  143.,
+            150.,  156.,  164.,  177.,  186.,  196.,  211.,  232.,  244.,
+            260.,  276.,  291.,  323.,  344.,  368.,  404.,  450.,  676.,
+           1024.])
+
     """
 
     from sherpa.astro.io import read_pha
 
     pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('channel')
 
+    pha.notice(lo, hi)
+    assert pha.get_filter() == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, '1:1024'),
+                          (30, 2000, '30:1024'),
+                          (-5, 350, '1:350'),
+                          (-20, -5, '1:1024'),
+                          (2000, 3000, '1:1024')])
+def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
     pha.set_analysis('channel')
 
     pha.notice(lo, hi)
@@ -1438,8 +1475,8 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
                          [(-5, 2000, '0.1248:12.4100'),
                           (0.7, 2000, '0.6716:12.4100'),
                           (-5, 4.2, '0.1248:4.1391'),
-                          xfail(-20, -5, ''),
-                          xfail(2000, 3000, '')])
+                          (-20, -5, '0.1248:12.4100'),
+                          (2000, 3000, '0.1248:12.4100')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1456,11 +1493,32 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [xfail(-5, 8000, '0.9991:99.3224'),
+                         [(-5, 2000, '0.0080:14.9431'),
+                          (0.7, 2000, '0.6935:14.9431'),
+                          (-5, 4.2, '0.0080:4.1975'),
+                          (-20, -5, '0.0080:14.9431'),
+                          (2000, 3000, '0.0080:14.9431')])
+def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
+    pha.set_analysis('energy')
+
+    pha.notice(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 8000, '0.9991:99.3224'),
                           (20, 8000, '20.4628:99.3224'),
-                          xfail(-5, 15, '0.9991:14.7688'),
-                          xfail(-20, -5, ''),
-                          xfail(8000, 9000, '')])
+                          (-5, 15, '0.9991:14.7688'),
+                          (-20, -5, '0.9991:99.3224'),
+                          (8000, 9000, '99.3224')])
 def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1477,10 +1535,31 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 8000, '0.8297:1544.0123'),
+                          (20, 8000, '19.9813:1544.0123'),
+                          (-5, 15, '0.8297:15.0302'),
+                          (-20, -5, '0.8297:1544.0123'),
+                          (8000, 9000, '1544.0123')])
+def test_notice_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
+    pha.set_analysis('wave')
+
+    pha.notice(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, ''),
                           (30, 2000, '9:19'),
                           (-5, 350, '386:850'),
-                          xfail(-20, -5, '9:850'),
+                          (-20, -5, '9:850'),
                           (2000, 3000, '9:850')])
 def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1499,10 +1578,31 @@ def test_ignore_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
                          [(-5, 2000, ''),
+                          (30, 2000, '1:29'),
+                          (-5, 350, '351:1024'),
+                          (-20, -5, '1:1024'),
+                          (2000, 3000, '1:1024')])
+def test_ignore_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
+    pha.set_analysis('channel')
+
+    pha.ignore(lo, hi)
+    assert pha.get_filter() == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, ''),
                           (0.8, 2000, '0.1248:0.7665'),
                           (-5, 3.5, '3.6792:12.4100'),
-                          xfail(-20, -5, '0.1248:12.4100'),
-                          xfail(2000, 3000, '0.1248:12.4100')])
+                          (-20, -5, '0.1248:12.4100'),
+                          (2000, 3000, '0.1248:12.4100')])
 def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1519,11 +1619,32 @@ def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [xfail(-5, 2000, ''),
+                         [(-5, 2000, ''),
+                          (0.8, 2000, '0.0080:0.7811'),
+                          (-5, 3.5, '3.5113:14.9431'),
+                          (-20, -5, '0.0080:14.9431'),
+                          (2000, 3000, '0.0080:14.9431')])
+def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
+    pha.set_analysis('energy')
+
+    pha.ignore(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, ''),
                           (20, 2000, '0.9991:18.4610'),
-                          xfail(-5, 15, '15.4401:99.3224'),
-                          xfail(-20, -5, '0.9991:99.3224'),
-                          xfail(2000, 3000, '0.9991:99.3224')])
+                          (-5, 15, '15.4401:99.3224'),
+                          (-20, -5, '0.9991:99.3224'),
+                          (2000, 3000, '0.9991:44.6951')])
 def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1531,6 +1652,27 @@ def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
+    pha.set_analysis('wave')
+
+    pha.ignore(lo, hi)
+    assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("lo,hi,expected",
+                         [(-5, 2000, ''),
+                          (20, 2000, '0.8297:19.5220'),
+                          (-5, 15, '15.3010:1544.0123'),
+                          (-20, -5, '0.8297:1544.0123'),
+                          (2000, 3000, '0.8297:566.1378')])
+def test_ignore_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
+    """Check what happens with silly results"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.ungroup()
     pha.set_analysis('wave')
 
     pha.ignore(lo, hi)
@@ -1577,6 +1719,169 @@ def test_channel_changing_limits(make_data_path):
     assert pha.get_filter(group=False) == expected2
 
 
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1), (20000, 1024)])
+def test_channel_conversion_grouped_invalid(argval, expected, make_data_path):
+    """What happens for channel conversion when argument is too small/large?
+
+    The _to_channel routine is changed when the units are changed.
+    Check what happens when a value exceeds the channel range.
+
+    It would be nice to create a PHA dataset but there's too many
+    moving parts so use a file.
+
+    This behavior is implicitly tested in routines like
+    test_ignore_channel_grouping_outofbounds but here we
+    add an explicit test to check what is happening.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('channel')
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval", [-1, 0, 20000])
+def test_channel_conversion_ungrouped_invalid(argval, make_data_path):
+    """See test_channel_conversion_grouped_invalid"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('channel')
+    pha.ungroup()
+
+    x = pha._to_channel(argval)
+    assert x == argval
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1), (20000, 46)])
+def test_energy_conversion_grouped_invalid(argval, expected, make_data_path):
+    """See test_channel_conversion_grouped_invalid but for energy units."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1), (0, 1), (20000, 1024)])
+def test_energy_conversion_ungrouped_invalid(argval, expected, make_data_path):
+    """See test_energy_conversion_grouped_invalid"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+    pha.ungroup()
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 46), (0, 46), (20000, 1)])
+def test_wave_conversion_grouped_invalid(argval, expected, make_data_path):
+    """See test_channel_conversion_grouped_invalid but for energy units.
+
+    It is not obvious why argval=-1 returns a different value to
+    argval=0.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('wavelen')
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("argval,expected", [(-1, 1024), (0, 1024), (20000, 1)])
+def test_wave_conversion_ungrouped_invalid(argval, expected, make_data_path):
+    """See test_wave_conversion_grouped_invalid
+
+    It is not obvious why argval=-1 returns a different value to
+    argval=0.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('wavelen')
+    pha.ungroup()
+
+    x = pha._to_channel(argval)
+    assert x == expected
+
+
+@requires_data
+@requires_fits
+def test_wave_conversion_multiple(make_data_path):
+    """This is ensure a code path is tested.
+
+    It is similar to test_wave_conversion_[un]grouped_invalid.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.units = 'wavelen'
+
+    xs = pha._to_channel([-10, 2, 0, -12, 12])
+    assert xs == pytest.approx([46, 44, 46, 46, 14])
+
+
+@requires_data
+@requires_fits
+def test_energy_conversion_multiple(make_data_path):
+    """As we do test_wave_conversion_multiple let's do energy."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.units = 'energy'
+
+    xs = pha._to_channel([-10, 2, 0, -12, 4])
+    assert xs == pytest.approx([1, 26, 1, 1, 38])
+
+
+@pytest.mark.parametrize('units', ['bin', 'chan', 'energy', 'wave'])
+def test_pha_get_ebins_internal_no_response(units):
+    """Check that _get_ebins has an unlikely-used path checked.
+
+    It's  not clear what we are meant to return here - i.e. no
+    response but a units value has been set - and maybe there
+    should be an error instead (for non-channel settings).
+    """
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.ones(9, dtype=np.int16)
+    pha = DataPHA('tst', chans, counts)
+    pha.units = units
+    lo, hi = pha._get_ebins()
+    assert lo == pytest.approx(chans)
+    assert hi == pytest.approx(chans + 1)
+
+
 def test_get_background_scale_is_none():
     """We get None when there's no background"""
 
@@ -1617,3 +1922,47 @@ def test_get_background_scale_missing_option(is_bkg, option, expected):
 
     scale = d.get_background_scale()
     assert scale == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
+@pytest.mark.parametrize("ignore", [False, True])
+def test_pha_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
+    """Check we get an error if lo or hi are strings."""
+
+    d = DataPHA('tmp', np.arange(3), np.arange(3))
+    with pytest.raises(DataErr) as de:
+        d.notice(lo, hi, ignore=ignore)
+
+    err = f'strings not allowed in {emsg} bound list'
+    assert str(de.value) == err
+
+
+def test_pha_creation_warns_about_non_numpy_channel():
+    """What happens if the channel array is not a NumPy array?
+
+    At the moment there is no warning for the independent axis.
+    """
+
+    chans = [1, 2, 3]
+    counts = np.ones(3)
+    with pytest.warns(UserWarning, match=r'Converting array \[1, 2, 3\] to numpy array\.'):
+        d = DataPHA('tmp', chans, counts)
+
+    assert isinstance(d.x, np.ndarray)
+    assert isinstance(d.channel, np.ndarray)
+
+    assert d.channel == pytest.approx(chans)
+
+
+def test_pha_creation_warns_about_non_numpy_counts():
+    """What happens if the counts array is not a NumPy array?"""
+
+    chans = np.asarray([1, 2, 3])
+    counts = [1, 0, 1]
+    with pytest.warns(UserWarning, match=r'Converting array \[1, 0, 1\] to numpy array\.'):
+        d = DataPHA('tmp', chans, counts)
+
+    assert isinstance(d.y, np.ndarray)
+    assert isinstance(d.counts, np.ndarray)
+
+    assert d.counts == pytest.approx(counts)

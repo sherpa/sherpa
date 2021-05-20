@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -72,17 +72,15 @@ def test_get_filter_is_empty():
     assert pha.get_filter() == 'No noticed bins'
 
 
-@pytest.mark.xfail
 def test_need_numpy_channels():
-    """We need to convert the  input to NumPy arrrays.
-
-    This should be done in the constructor to DataPHA, but
-    for now error out if not set.
+    """We didn't used to convert channels to a NumPy array which broke
+    this logic - the ignore line would error out due to an operation on
+    self.channel
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     assert pha.get_filter() == '1:3'
-    # This errors out with a TypeError on 'elo = self.channel - 0.5'
+
     pha.ignore()
     assert pha.get_filter() == 'No noticed bins'
 
@@ -168,11 +166,12 @@ def test_288_b():
     assert pha.mask == pytest.approx([True, False, True])
 
 
-@pytest.mark.xfail
 def test_grouping_non_numpy():
-    """Historically the group* calls will fail oddly if y is not numpy
+    """Historically the group* calls would fail oddly if y is not numpy
 
     TypeError: grpNumCounts() Could not parse input arguments, please check input for correct type(s)
+
+    This has now been addressed but the test has been left in.
     """
 
     x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -329,6 +328,15 @@ def make_test_image():
     x1 = x1.flatten()
     y = np.ones(x0.size)
     return DataIMG('d', x0, x1, y, shape=shape)
+
+
+@pytest.fixture
+def make_test_pha():
+    """A simple PHA"""
+
+    chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
+    return DataPHA('p', chans, counts)
 
 
 def test_img_set_coord_invalid(make_test_image):
@@ -780,3 +788,31 @@ def test_img_get_filter_compare_filtering(make_test_image):
     # just check we have some True and False values
     assert maska.min() == 0
     assert maska.max() == 1
+
+
+@pytest.mark.parametrize("requested,expected",
+                         [("bin", "channel"), ("Bin", "channel"),
+                          ("channel", "channel"), ("ChannelS", "channel"),
+                          ("chan", "channel"),
+                          ("energy", "energy"), ("ENERGY", "energy"),
+                          ("Energies", "energy"),
+                          ("WAVE", "wavelength"), ("wavelength", "wavelength"),
+                          ("Wavelengths", "wavelength"),
+                          ("chan This Is Wrong", "channel"),  # should this be an error?
+                          ("WAVEY GRAVY", "wavelength")  # shouls this be an error?
+                          ])
+def test_pha_valid_units(requested, expected, make_test_pha):
+    """Check we can set the units field of a PHA object"""
+    pha = make_test_pha
+    pha.units = requested
+    assert pha.units == expected
+
+
+@pytest.mark.parametrize("invalid", ["Bins", "BINNING", "wavy", "kev", "angstrom"])
+def test_pha_invalid_units(invalid, make_test_pha):
+    """Check we can not set units to an invalid value"""
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.units = invalid
+
+    assert str(de.value) == f"unknown quantity: '{invalid}'"

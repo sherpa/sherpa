@@ -29,7 +29,7 @@ import warnings
 import numpy
 
 from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
-    IntegratedDataSpace2D
+    IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
@@ -1341,7 +1341,7 @@ class DataPHA(Data1D):
         self._units = units
 
     units = property(_get_units, _set_units,
-                     doc='Units of the independent axis')
+                     doc="Units of the independent axis: one of 'channel', 'energy', 'wavelength'.")
 
     def _get_rate(self):
         return self._rate
@@ -1407,6 +1407,10 @@ class DataPHA(Data1D):
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
+
+        channel = _check(channel)
+        counts = _check(counts)
+
         self.channel = channel
         self.counts = counts
         self.bin_lo = bin_lo
@@ -1466,7 +1470,7 @@ class DataPHA(Data1D):
     """The identifier for the response component when not set."""
 
     def set_analysis(self, quantity, type='rate', factor=0):
-        """Return the units used when fitting spectral data.
+        """Set the units used when fitting and plotting spectral data.
 
         Parameters
         ----------
@@ -1493,7 +1497,9 @@ class DataPHA(Data1D):
 
         >>> pha.set_analysis('energy')
 
-        >>> pha.set_analysis('wave', type='counts' factor=1)
+        >>> pha.set_analysis('wave', type='counts', factor=1)
+        >>> pha.units
+        'wavelength'
 
         """
         self.plot_fac = factor
@@ -1756,28 +1762,29 @@ class DataPHA(Data1D):
     # twice is an error.
     def _get_ebins(self, response_id=None, group=True):
         group = bool_cast(group)
-        arf, rmf = self.get_response(response_id)
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
-        elif rmf is not None:
-            if (rmf.e_min is None) or (rmf.e_max is None):
-                raise DataErr('noenergybins', 'RMF')
-            elo = rmf.e_min
-            ehi = rmf.e_max
-        elif arf is not None:
-            elo = arf.energ_lo
-            ehi = arf.energ_hi
-        else:
-            elo = self.channel - 0.5
-            ehi = self.channel + 0.5
 
         if self.units == 'channel':
-            elo = self.channel - 0.5
-            ehi = self.channel + 0.5
+            elo = self.channel
+            ehi = self.channel + 1
+        else:
+            arf, rmf = self.get_response(response_id)
+            if (self.bin_lo is not None) and (self.bin_hi is not None):
+                elo = self.bin_lo
+                ehi = self.bin_hi
+                if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
+                    elo = self._hc / self.bin_hi
+                    ehi = self._hc / self.bin_lo
+            elif rmf is not None:
+                if (rmf.e_min is None) or (rmf.e_max is None):
+                    raise DataErr('noenergybins', 'RMF')
+                elo = rmf.e_min
+                ehi = rmf.e_max
+            elif arf is not None:
+                elo = arf.energ_lo
+                ehi = arf.energ_hi
+            else:
+                elo = self.channel
+                ehi = self.channel + 1
 
         # If the data are grouped, then we should group up
         # the energy bins as well.  E.g., if group 1 is
@@ -1961,13 +1968,19 @@ class DataPHA(Data1D):
         return vals
 
     def _wavelength_to_channel(self, val):
+        """Convert a wavelength to group or channel number.
+
+        Note that values of 0 or less are replaced by a
+        small value (~1e-38).
+
+        """
         tiny = numpy.finfo(numpy.float32).tiny
         vals = numpy.asarray(val)
         if vals.shape == ():
-            if vals == 0.0:
+            if vals <= 0.0:
                 vals = tiny
         else:
-            vals[vals == 0.0] = tiny
+            vals[vals <= 0.0] = tiny
         vals = self._hc / vals
         return self._energy_to_channel(vals)
 
@@ -3431,6 +3444,59 @@ class DataPHA(Data1D):
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
+        """Notice or ignore the given range.
+
+        Parameters
+        ----------
+        lo, hi : number or None, optional
+            The range to change. A value of None means the minimum or
+            maximum permitted value. The units of lo and hi are set by
+            the units field.
+        ignore : bool, optional
+            Set to True if the range should be ignored. The default is
+            to notice the range.
+        bkg_id : int or sequence of int or None, optional
+            If not None then apply the filter to the given background
+            dataset or datasets, otherwise change the object and all
+            its background datasets.
+
+        See Also
+        --------
+        get_filter, get_filter_expr, get_mask
+
+        Notes
+        -----
+        If no channels have been ignored then a call to `notice` with
+        `ignore=False` will select just the `lo` to `hi` range, and
+        exclude any channels outside this range. If there has been a
+        filter applied then the range `lo` to `hi` will be added to the
+        range of noticed data (when `ignore=False`).
+
+        So, for an ungrouped PHA file with 1024 channels:
+
+        >>> pha.units = 'channel'
+        >>> pha.get_filter()
+        '1:1024'
+        >>> pha.notice(20, 200)
+        >>> pha.get_filter()
+        '20:200'
+        >>> pha.notice(300, 500)
+        '20:200,300:500'
+
+        """
+
+        ignore = bool_cast(ignore)
+
+        # This condition is checked for in the _data_space.filter call
+        # at the end of the method, but it is easier to enforce it
+        # here so we do not need to worry about possible type errors
+        # when comparing string and number values.
+        #
+        for val, label in zip([lo, hi], ['lower', 'upper']):
+            if isinstance(val, str):
+                # match the error seen from other data classes here
+                raise DataErr('typecheck', f'{label} bound')
+
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do
         # *not* impose filter on data itself.  (Revision possibly
@@ -3464,35 +3530,93 @@ class DataPHA(Data1D):
             return
 
         # Go on if we are also supposed to filter the source data
-        ignore = bool_cast(ignore)
         if lo is None and hi is None:
             self.quality_filter = None
             self.notice_response(False)
 
+        # When convert_limit is called, any limit that is outside the
+        # supported range (e.g. lo = 0.01 when the response is 0.1 to
+        # 11 keV) will get clamped to the minumum or maximum value.
+        # This is okay when lo is smaller and hi is larger than the
+        # supported values but is a problem when they are both
+        # smaller or larger than the range, since the result is then
+        # that the first or last group would be filtered. It is
+        # therefore necessary to check for this condition.
+        #
+        # This would be easier if _to_channel were to identify that
+        # the range had been (or should be) clamped, but that is a
+        # larger change than I want to implement, so instead we repeat
+        # some of the checks that the _xxx_to_channel methods make to
+        # see what the minimum and maximum allowed values are.
+        #
+        try:
+            elo, ehi = self._get_ebins(group=False)
+        except DataErr as de:
+            info(f"Skipping dataset {self.name}: {de}")
+            return
+
+        if self.units == 'energy':
+            umin = elo[0]
+            umax = ehi[-1]
+        elif self.units == 'wavelength':
+            umin = self._hc / ehi[-1]
+            umax = self._hc / elo[0]
+        else:
+            # assume channel units
+            umin = self.channel[0]
+            umax = self.channel[-1]
+
+        assert umin < umax, (self.units, umin, umax)
+
+        # Finally we can check that the request is not
+        # outside the valid range "on the same side".
+        #
+        if lo is not None and hi is not None:
+            assert lo <= hi, (lo, hi)
+            if hi <= umin:
+                return
+            if lo >= umax:
+                return
+
         # We do not want a "all data are masked out" error to cause
         # this to fail; it should just do nothing (as trying to set
         # a noticed range to include masked-out ranges would also
-        # be ignored).
+        # be ignored). Note that originally this try/except caught
+        # errors like "RMF has no ebounds data", but this is now
+        # caught earlier in the call to _get_ebins, so it is possible
+        # that the check is no-longer needed.
         #
         # Convert to "group number" (which, for ungrouped data,
         # is just channel number).
         #
-        if lo is not None and type(lo) != str:
+        def convert_limit(x):
+            """Convert the limit to 'group number'.
+
+            x must not be None or a string. The return value is None if
+            the value is invalid (and so should be skipped).
+            """
+
             try:
-                lo = self._to_channel(lo)
+                return self._to_channel(x)
             except DataErr as de:
-                info("Skipping dataset {}: {}".format(self.name,
-                                                      de))
-                return
-        if hi is not None and type(hi) != str:
-            try:
-                hi = self._to_channel(hi)
-            except DataErr as de:
-                info("Skipping dataset {}: {}".format(self.name,
-                                                      de))
+                info(f"Skipping dataset {self.name}: {de}")
+                return None
+
+        if lo is not None:
+            lo = convert_limit(lo)
+            if lo is None:
                 return
 
-        elo, ehi = self._get_ebins()
+        if hi is not None:
+            hi = convert_limit(hi)
+            if hi is None:
+                return
+
+        # At this point lo and hi are in "group number".
+        #
+        # When do we need to flip the limits? It is not clear whether
+        # we always need lo <= hi.
+        #
         if ((self.units == "wavelength" and
              elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
             (self.units == "energy" and
