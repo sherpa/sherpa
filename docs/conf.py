@@ -273,8 +273,8 @@ source_suffix = '.rst'
 #
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
-master_doc = 'index'
+# The main toctree document.
+main_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
@@ -343,7 +343,7 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 # Graphviz based on values from AstroPy - see
-# https://github.com/astropy/sphinx-astropy/blob/master/sphinx_astropy/conf/v1.py
+# https://github.com/astropy/sphinx-astropy/blob/main/sphinx_astropy/conf/v1.py
 #
 graphviz_output_format = "svg"
 
@@ -508,7 +508,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Sherpa.tex', 'Sherpa Documentation',
+    (main_doc, 'Sherpa.tex', 'Sherpa Documentation',
      'Chandra X-ray Center', 'manual'),
 ]
 
@@ -550,7 +550,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'sherpa', 'Sherpa Documentation',
+    (main_doc, 'sherpa', 'Sherpa Documentation',
      [author], 1)
 ]
 
@@ -565,7 +565,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Sherpa', 'Sherpa Documentation',
+    (main_doc, 'Sherpa', 'Sherpa Documentation',
      author, 'Sherpa',
      'Sherpa is a modeling and fitting environment for Python.',
      'Miscellaneous'),
