@@ -45,8 +45,13 @@ sherpa_smoke ${smokevars} || exit 1
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     cd $HOME;
-    conda install -yq pytest-cov codecov;
+    # In #1001 we added '--cov sherpa --cov-report term' options to
+    # sherpa_test but this is run outside of the git repository and
+    # so it seems to cause problems for the coverage checking (as it
+    # can't identify what build is in use). It is not-at-all clear
+    # if it is possible to "add" the commit identifier to the data,
+    # so we no-longer run coverage here.
+    #
     # This automatically picks up the sherpatest modile when TEST==package
-    sherpa_test --cov sherpa --cov-report term || exit 1;
-    codecov;
+    sherpa_test || exit 1;
 fi
