@@ -52,6 +52,6 @@ if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     # if it is possible to "add" the commit identifier to the data,
     # so we no-longer run coverage here.
     #
-    # This automatically picks up the sherpatest modile when TEST==package
+    # This automatically picks up the sherpatest module when TEST==package
     sherpa_test || exit 1;
 fi
