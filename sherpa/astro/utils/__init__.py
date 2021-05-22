@@ -110,10 +110,10 @@ def compile_energy_grid(arglist):
     in_elo = numpy.setdiff1d(elo, ehi)
     in_ehi = numpy.setdiff1d(ehi, elo)
     if len(in_elo) > 1:
-        ehi = numpy.concatenate((ehi, in_elo[-(len(in_elo) - 1):]))
+        ehi = numpy.concatenate((ehi, in_elo[1:]))
         ehi.sort()
     if len(in_ehi) > 1:
-        elo = numpy.concatenate((elo, in_ehi[0:len(in_ehi) - 1]))
+        elo = numpy.concatenate((elo, in_ehi[:- 1]))
         elo.sort()
 
     # determine index intervals using binary search in large src model

@@ -53,3 +53,14 @@ def test_compile_energy_grid():
     assert np.all(elo == [0, 1, 2, 3, 5])
     assert np.all(ehi == [1, 2, 3, 5, 7])
     assert np.all(htable[0][0] == [1, 3, 4])
+
+
+def test_compile_energy_grid_3inputs():
+    '''Test more than two input grids'''
+    elo, ehi, htable = compile_energy_grid([([1, 3, 5], [3, 5, 7]),
+                                            ([0, 1, 2], [1, 2, 3]),
+                                            ([0.5, 5.5, 7.5], [5.5, 7.5, 9])])
+    assert np.allclose(elo, [0., 0.5, 1., 2., 3., 5., 5.5, 7., 7.5])
+    assert np.allclose(ehi, [0.5, 1., 2., 3., 5., 5.5, 7., 7.5, 9.])
+    assert np.all(htable[0][0] == [2, 4, 5])
+    assert np.all(htable[2][1] == [5, 7, 8])
