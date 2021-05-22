@@ -27,6 +27,60 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
+from sherpa.astro.io import print_meta
+
+
+def test_str_singleton():
+    """stringification: single value"""
+
+    store = {}
+
+    # Could loop over this, but a bit easier to check the string
+    # output this way.
+    #
+    store['key'] = ""
+    assert print_meta(store) == '\n key           = '
+
+    store['key'] = "  "
+    assert print_meta(store) == '\n key           =   '
+
+    store['key'] = " a string "
+    assert print_meta(store) == '\n key           =  a string '
+
+    store['key'] = 23
+    assert print_meta(store) == '\n key           = 23'
+
+    store['key'] = 23.0
+    assert print_meta(store) == '\n key           = 23.0'
+
+    store['key'] = False
+    assert print_meta(store) == '\n key           = False'
+
+    # Now some special cases
+    for val in [None, "None", "NONE", "none"]:
+        store['key'] = val
+        assert print_meta(store) == ''
+
+
+@requires_fits
+def test_str_multi():
+    """Multiple keys are displayed as expected"""
+
+    from sherpa.astro.io.meta import Meta
+    store = Meta()
+    store['Xkey'] = 'X X'
+    store['xkey'] = ' y  y'
+    store['a'] = 23
+    store['INFILE'] = 'none'
+    store['outfile'] = '/tmp/b.fits'
+
+    lines = str(store).split('\n')
+    assert len(lines) == 5
+    assert lines[0] == ''
+    assert lines[1] == ' Xkey          = X X'
+    assert lines[2] == ' a             = 23'
+    assert lines[3] == ' outfile       = /tmp/b.fits'
+    assert lines[4] == ' xkey          =  y  y'
 
 
 @requires_data

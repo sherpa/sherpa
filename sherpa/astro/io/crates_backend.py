@@ -28,7 +28,7 @@ import pycrates
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.astro.utils import resp_init
-from sherpa.astro.io.meta import Meta
+
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -153,7 +153,7 @@ def _get_meta_data(crate):
     """
     checked for new crates
     """
-    meta = Meta()
+    meta = {}
     names = pycrates.get_key_names(crate)
     if names is not None and numpy.iterable(names):
         for name in names:

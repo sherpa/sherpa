@@ -889,3 +889,15 @@ def read_table_blocks(arg, make_copy=False):
     """
 
     return backend.read_table_blocks(arg, make_copy=make_copy)
+
+
+def print_meta(meta):
+    s = ['']
+    for val, name in meta.items():
+
+        if val is None or str(val).lower() == 'none':
+            continue
+
+        s.append(' %-13s = %s' % (name, val))
+
+    return '\n'.join(s)

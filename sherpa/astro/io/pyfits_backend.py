@@ -51,7 +51,7 @@ from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
-from sherpa.astro.io.meta import Meta
+
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -103,7 +103,7 @@ def _require_key(hdu, name, fix_type=False, dtype=SherpaFloat):
 
 
 def _get_meta_data(hdu):
-    meta = Meta()
+    meta = {}
     for key in dict(hdu.header.items()).keys():
         val = hdu.header[key]
 
