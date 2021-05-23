@@ -104,8 +104,7 @@ def _require_key(hdu, name, fix_type=False, dtype=SherpaFloat):
 
 def _get_meta_data(hdu):
     meta = {}
-    for key in dict(hdu.header.items()).keys():
-        val = hdu.header[key]
+    for key, val in hdu.header.items():
 
         # empty numpy strings are not recognized by load pickle!
         if isinstance(val, numpy.str_) and val == '':

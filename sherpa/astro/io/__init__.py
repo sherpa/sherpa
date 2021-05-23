@@ -893,7 +893,7 @@ def read_table_blocks(arg, make_copy=False):
 
 def print_meta(meta):
     s = ['']
-    for val, name in meta.items():
+    for name, val in meta.items():
 
         if val is None or str(val).lower() == 'none':
             continue

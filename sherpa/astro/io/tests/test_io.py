@@ -66,8 +66,7 @@ def test_str_singleton():
 def test_str_multi():
     """Multiple keys are displayed as expected"""
 
-    from sherpa.astro.io.meta import Meta
-    store = Meta()
+    store = {}
     store['Xkey'] = 'X X'
     store['xkey'] = ' y  y'
     store['a'] = 23

@@ -23,60 +23,54 @@
 # requires_fits decorator. The import could be done at the top of the
 # file (within a check for ImportError) but leave as is.
 #
+from sherpa.astro.io import print_meta
 
-from sherpa.utils.testing import requires_fits
 
-
-@requires_fits
 def test_str_singleton():
     """stringification: single value"""
-
-    from sherpa.astro.io.meta import Meta
-    store = Meta()
+    store = {}
 
     # Could loop over this, but a bit easier to check the string
     # output this way.
     #
     store['key'] = ""
-    assert str(store) == '\n key           = '
+    assert print_meta(store) == '\n key           = '
 
     store['key'] = "  "
-    assert str(store) == '\n key           =   '
+    assert print_meta(store) == '\n key           =   '
 
     store['key'] = " a string "
-    assert str(store) == '\n key           =  a string '
+    assert print_meta(store) == '\n key           =  a string '
 
     store['key'] = 23
-    assert str(store) == '\n key           = 23'
+    assert print_meta(store) == '\n key           = 23'
 
     store['key'] = 23.0
-    assert str(store) == '\n key           = 23.0'
+    assert print_meta(store) == '\n key           = 23.0'
 
     store['key'] = False
-    assert str(store) == '\n key           = False'
+    assert print_meta(store) == '\n key           = False'
 
     # Now some special cases
     for val in [None, "None", "NONE", "none"]:
         store['key'] = val
-        assert str(store) == ''
+        assert print_meta(store) == ''
 
 
-@requires_fits
 def test_str_multi():
     """Multiple keys are displayed as expected"""
 
-    from sherpa.astro.io.meta import Meta
-    store = Meta()
+    store = {}
     store['Xkey'] = 'X X'
     store['xkey'] = ' y  y'
     store['a'] = 23
     store['INFILE'] = 'none'
     store['outfile'] = '/tmp/b.fits'
 
-    lines = str(store).split('\n')
+    lines = print_meta(store).split('\n')
     assert len(lines) == 5
     assert lines[0] == ''
     assert lines[1] == ' Xkey          = X X'
-    assert lines[2] == ' a             = 23'
-    assert lines[3] == ' outfile       = /tmp/b.fits'
-    assert lines[4] == ' xkey          =  y  y'
+    assert lines[2] == ' xkey          =  y  y'
+    assert lines[3] == ' a             = 23'
+    assert lines[4] == ' outfile       = /tmp/b.fits'

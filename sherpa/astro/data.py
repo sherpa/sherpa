@@ -148,8 +148,7 @@ def make_metadata(header, items):
     Parameters
     ----------
     header : dict-like
-        The header. Expected to be a sherpa.astro.io.meta.Meta
-        object but just needs to act like a dictionary.
+        The header.
     items : list of (str, str)
         The keys to display (in order), if set. The first element
         is the key name, and the second is the label in the header

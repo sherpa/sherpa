@@ -31,11 +31,6 @@ from sherpa.astro.instrument import create_delta_rmf
 from sherpa.utils.testing import requires_data, requires_fits
 
 
-# This was meant to be a sherpa.astro.io.meta.Meta object,
-# but that requires a valid io_pkg setting. Fortunately
-# it isn't needed.
-#
-# TEST_HEADER = Meta()
 TEST_HEADER = {}
 TEST_HEADER['OBJECT'] = 'The best object'
 TEST_HEADER['TELESCOP'] = 'Chandra'
