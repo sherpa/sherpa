@@ -427,6 +427,7 @@ def test_save_data_data1d_no_clobber(tmp_path):
     check_clobber(out, ui.save_data)
 
 
+@requires_fits
 def test_save_data_datapha_no_clobber(tmp_path):
     """save_data: does clobber=False work? DataPHA"""
 
