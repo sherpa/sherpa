@@ -2507,6 +2507,15 @@ class DataPHA(Data1D):
             return data
 
         if len(data) != len(self.counts):
+            # Two possible error cases here:
+            # - mask is None, in which case the apply_grouping call will
+            #   fail with a TypeError
+            # - mask is not None but the filter does not match the data
+            #   size, which causes a ValueError from the assignment below
+            # Both could be caught here, but there used to be an attempt
+            # to do this (for the first case) which has been commented out
+            # since the initial git commit, so leave as is.
+            #
             counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
             mask = self.get_mask()
             if mask is not None:
