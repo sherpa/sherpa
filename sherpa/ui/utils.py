@@ -6435,7 +6435,8 @@ class Session(NoNewAttributesAfterInit):
                                                require_floats=False)
 
         if len(names) > len(cols):
-            raise sherpa.utils.err.IOErr('toomanycols')
+            raise sherpa.utils.err.IOErr('wrongnumcols',
+                                         len(cols), len(names))
 
         names = [name.strip().lower() for name in names]
 
@@ -6482,7 +6483,7 @@ class Session(NoNewAttributesAfterInit):
                 tm.ampl.freeze()
                 templates.append(tm)
             else:
-                raise sherpa.utils.err.IOErr('toomanycols', str(tnames), '2')
+                raise sherpa.utils.err.IOErr('wrongnumcols', 2, len(tnames))
 
         assert(len(templates) == parvals.shape[0])
 

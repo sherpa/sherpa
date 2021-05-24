@@ -1329,7 +1329,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         fields = ['col%i' % (ii + 1) for ii in range(len(args))]
 
     if len(args) != len(fields):
-        raise IOErr('toomanycols', str(len(fields)), str(len(args)))
+        raise IOErr('wrongnumcols', len(args), len(fields))
 
     for val, name in zip(args, fields):
         _set_column(tbl, name, val)
