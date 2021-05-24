@@ -2539,12 +2539,7 @@ class DataPHA(Data1D):
 
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]
-        grouped_data = do_group(filtered_data, groups, groupfunc.__name__)
-
-        if data is self.channel and groupfunc is self._make_groups:
-            return numpy.arange(1, len(grouped_data) + 1, dtype=int)
-
-        return grouped_data
+        return do_group(filtered_data, groups, groupfunc.__name__)
 
     def ignore_bad(self):
         """Exclude channels marked as bad.
