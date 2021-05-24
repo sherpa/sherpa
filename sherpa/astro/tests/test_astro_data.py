@@ -1751,17 +1751,18 @@ def test_channel_changing_limits(make_data_path):
     #
     pha.notice(60, 350)
 
+    expected0 = '60:350'
     expected1 = '60:356'
     expected2 = '60:368'
     assert pha.get_filter() == expected1
     assert pha.get_filter(group=False) == expected2
 
-    # We now return the full filter range of the
-    # group, even when group=False.
+    # We now return the requested range as there's no grouping
+    # to expand it.
     #
     pha.ungroup()
-    assert pha.get_filter() == expected2
-    assert pha.get_filter(group=False) == expected2
+    assert pha.get_filter() == expected0
+    assert pha.get_filter(group=False) == expected0
 
     # We go back to the original filter
     pha.group()
@@ -1955,8 +1956,8 @@ def test_energy_filter_notice_ignore_ungrouped(make_data_path):
     assert pha.mask == pytest.approx(pha.get_mask())
 
     expected = np.zeros(1024, dtype=bool)
-    expected[32:68] = True
-    expected[139:676] = True
+    expected[34:68] = True
+    expected[137:480] = True
     assert pha.get_mask() == pytest.approx(expected)
 
 
@@ -2009,14 +2010,13 @@ def test_energy_filter_roundtrip(make_data_path):
 
     pha.ungroup()
     f2 = pha.get_filter()
-    assert f2 == '0.474500000477:0.985500007868,2.036700010300:9.862299919128'
+    assert f2 == '0.503699988127:0.985500007868,2.007500052452:7.000699996948'
 
     pha.group()
     f3 = pha.get_filter()
     assert f3 == expected
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_energy_filter_ordering(make_data_path):

@@ -1284,17 +1284,13 @@ class DataPHA(Data1D):
         if self._grouped == val:
             return
 
-        # As the grouping status is being changed, we need to reset the mask
-        # to be correct size, while still noticing groups within the filter
-        #
-        if numpy.iterable(self.mask):
-            old_filter = self.get_filter(group=val)
-            self._grouped = val
-            self.ignore()
-            for vals in parse_expr(old_filter):
-                self.notice(*vals)
-
         self._grouped = val
+
+        # Apply the existing filters, recreating the list as we go along.
+        # This used to obly be done if self.mask was set but now rely
+        # on the filter store to determine what needs to be re-evaluated.
+        #
+        self._filter_recreate()
 
     grouped = property(_get_grouped, _set_grouped,
                        doc='Are the data grouped?')
@@ -1441,6 +1437,13 @@ class DataPHA(Data1D):
         self._plot_fac = 0
         self.units = 'channel'
         self.quality_filter = None
+        # Track the requested noticed/ignored data range, so that it
+        # can be re-created when swaping between grouped and ungrouped
+        # data.
+        #
+        # We start off with an explicit "notice everything" call, as this
+        # means less special cases. At least, that's the hope.
+        self._filter_store = [(None, None, 'channel', False)]
         Data1D.__init__(self, name, channel, counts, staterror, syserror)
 
     def __str__(self):
@@ -1454,6 +1457,68 @@ class DataPHA(Data1D):
         finally:
             self._fields = old
         return ss
+
+    def _filter_add(self, lo, hi, ignore):
+        """Store the current filter setting.
+
+        The requested range is stored so that the mask can be
+        re-created if the grouping scheme changes.
+
+        Parameters
+        ----------
+        lo, hi : number or None
+            The filter range (using the current units setting).
+        ignore : bool
+            True if this is an ignore.
+
+        Notes
+        -----
+        If the filter removes or adds all channels - which requires
+        both `lo` and `hi` to be `None` - then the state is reset.
+        This avoids excessive memory use and having to re-run filter
+        commands that have no effect. Ideally this would also include
+        explicit ranges that exceed the valid range, but that would
+        require also sending in the evaluated channel ranges which
+        does not fit with the current design.
+
+        """
+
+        # If the range is undefined then we can remove any exisiting
+        # store, since we either have all-data noticed or no-data
+        # noticed.
+        #
+        store = (lo, hi, self.units, ignore)
+        if lo is None and hi is None:
+            self._filter_store = [store]
+        else:
+            self._filter_store.append(store)
+
+    def _filter_recreate(self):
+        """Re-apply the current set of filters.
+
+        This is intended to be used if the grouping has been changed:
+        that is turning on or off the grouping or the grouping scheme
+        has changed. It will attempt to create the overall filter
+        as close to the user-requested range as possible.
+
+        """
+
+        # The _filter_store array is designed so that it starts with
+        # either a "notice all" or "ignore all" command. Therefore
+        # when we create it the first notice call will clear the
+        # _filter_store list, resulting in the list being rebuilt.
+        # We could avoid doing this but by going through notice we
+        # aim to keep al the invariants.
+        #
+        ounits = self.units
+        ostore = self._filter_store[:]
+        try:
+            for lo, hi, units, ignore in ostore:
+                self.units = units
+                self.notice(lo, hi, ignore)
+
+        finally:
+            self.units = ounits
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -3539,9 +3604,15 @@ class DataPHA(Data1D):
             return
 
         # Go on if we are also supposed to filter the source data
+        # TODO: should this worry about the ignore setting?
         if lo is None and hi is None:
             self.quality_filter = None
             self.notice_response(False)
+
+        # Add the requested filter setting, *before* it is converted
+        # into a channel range.
+        #
+        self._filter_add(lo, hi, ignore)
 
         # When convert_limit is called, any limit that is outside the
         # supported range (e.g. lo = 0.01 when the response is 0.1 to
