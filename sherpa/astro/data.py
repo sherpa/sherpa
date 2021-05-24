@@ -1427,6 +1427,11 @@ class DataPHA(Data1D):
         self.areascal = areascal
         self.header = header
         self._grouped = (grouping is not None)
+        # _original_groups is set False if the grouping is changed via
+        # the _dynamic_groups method. This is currently only used by the
+        # serialization code (sherpa.astro.ui.serialize) to determine
+        # whether to write out the grouping data.
+        #
         self._original_groups = True
         self._subtracted = False
         self._response_ids = []
