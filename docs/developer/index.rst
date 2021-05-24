@@ -25,10 +25,32 @@ describes several ways to build Sherpa from source, but one
 particularly comfortable way is described in detail in the next
 section.
 
+Pull requests
+=============
+
+We welcome pull requests on
+`github <https://github.com/sherpa/sherpa/issues/>`_.
+
+For each pull request, a set of continuous integration tests is run
+automatically, including a build of the documentation on readthedocs.
+
+Skip the continuous integration
+-------------------------------
+
+Sometimes a PR is still in development and known to fail the tests or
+simply does not touch any code, because it only modifies docstrings
+and the documentation. In that case, `[skip ci]` can be added to the
+commit message to prevent running the github actions tests to save
+time, energy, and limited free recources.
+
+
+How do I ...
+============
+
 .. _source-install-with-conda:
 
 Install from source in conda
-============================
+----------------------------
 
 Conda can be used to install all the dependencies for Sherpa.
 
@@ -115,9 +137,6 @@ can be activated and Sherpa can be build from source.
 
    That is, the variable is set to a space, not the empty string.
 
-
-How do I ...
-============
 
 Update the Zenodo citation information
 --------------------------------------

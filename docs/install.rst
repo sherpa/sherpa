@@ -551,12 +551,3 @@ provides a number of data files in ASCII and :term:`FITS` formats. This is
 only useful when developing Sherpa, since the package is large. It
 will automatically be picked up by the ``sherpa_test`` script
 once it is installed.
-
-Testing the documentation with Travis
--------------------------------------
-
-There is a documentation build included as part of the Travis-CI test suite,
-but it is not set up to do much validation. That is, you need to do something
-quite severe to break this build. Please see
-`issue 491 <https://github.com/sherpa/sherpa/issues/491>`_
-for more information.
