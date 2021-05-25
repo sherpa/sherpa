@@ -541,14 +541,23 @@ class OrderPlot(ModelHistogram):
         if not self.use_default_colors and len(self.colors) != len(self.orders):
             raise PlotErr('ordercolors', len(self.orders), len(self.colors))
 
-        old_filter = parse_expr(data.get_filter())
-        old_group = data.grouped
+        ounits = data.units
+        ostate = data._filter_store[:]
+        ogroup = data.grouped
 
         try:
-            if old_group:
+            if ogroup:
+                data.units = 'channel'
+                new_filter = parse_expr(data.get_filter(group=False))
+
+                # We do not want to combine with the _filter_store
+                # settings here, so ensure we have all channels selected.
+                data.notice()
                 data.ungroup()
-                for interval in old_filter:
+                for interval in new_filter:
                     data.notice(*interval)
+
+                data.units = ounits
 
             self.xlo = []
             self.xhi = []
@@ -581,11 +590,13 @@ class OrderPlot(ModelHistogram):
                 self.y.append(y)
 
         finally:
-            if old_group:
-                data.ignore()
+            if ogroup:
+                data.units = ounits
                 data.group()
-                for interval in old_filter:
-                    data.notice(*interval)
+
+                # Recreate the filter
+                data._filter_store = ostate
+                data._filter_recreate()
 
         self.title = 'Model Orders %s' % str(self.orders)
 

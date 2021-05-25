@@ -536,8 +536,5 @@ def test_plot_order_multi(make_data_path, clean_astro_ui):
     # How does the overall model plot y values compare to the three
     # orders?
     #
-    # Unfortunately the selected groups are different so can not
-    # directly compare.
-    #
-    # y = oplot.y[0] + oplot.y[1] + oplot.y[2]
-    # assert y == pytest.approx(mplot.y)
+    y = oplot.y[0] + oplot.y[1] + oplot.y[2]
+    assert y == pytest.approx(mplot.y)
