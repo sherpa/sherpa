@@ -587,17 +587,20 @@ class OrderPlot(ModelHistogram):
                 data._filter_store = ostate
                 data.group()
 
-        self.title = 'Model Orders %s' % str(self.orders)
+        self.title = f'Model Orders {self.orders}'
 
         if len(self.xlo) != len(self.y):
             raise PlotErr("orderarrfail")
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         default_color = self.histo_prefs['linecolor']
-        count = 0
+        first = True
         for xlo, xhi, y, color in \
                 zip(self.xlo, self.xhi, self.y, self.colors):
-            if count != 0:
+            if first:
+                # QUS: why do we not set linecolor to color here?
+                first = False
+            else:
                 overplot = True
                 self.histo_prefs['linecolor'] = color
 
@@ -606,7 +609,6 @@ class OrderPlot(ModelHistogram):
                            xlabel=self.xlabel, ylabel=self.ylabel,
                            overplot=overplot, clearwindow=clearwindow,
                            **kwargs)
-            count += 1
 
         self.histo_prefs['linecolor'] = default_color
 
