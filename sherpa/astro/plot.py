@@ -179,32 +179,61 @@ class ModelPHAHistogram(HistogramPlot):
 class ModelHistogram(ModelPHAHistogram):
     """Plot a model for a PHA dataset with no grouping.
 
-    The model is drawn at the native resolution of
-    the instrument response, or ungrouped channels.
-    The model is filtered to the minimum and maximum
-    of the PHA dataset but any ignored ranges within
-    this are ignored.
+    The model is drawn at the native resolution of the instrument
+    response, or ungrouped channels, using the same set of channels as
+    used in the (potentially grouped) data set.
+
     """
 
     def prepare(self, data, model, stat=None):
 
-        old_filter = parse_expr(data.get_filter())
-        old_group = data.grouped
-        new_filter = parse_expr(data.get_filter(group=False))
-        try:
-            if old_group:
-                data.ungroup()
-                for interval in new_filter:
-                    data.notice(*interval)
+        # If the data is ungrouped this is easy.
+        #
+        if not data.grouped:
+            super().prepare(data, model, stat=stat)
+            return
 
+        # Safety check that the filtering doesn't change anything
+        # (see #1024)
+        #
+        old_filter1 = parse_expr(data.get_filter())
+
+        # We want to use the channel range that the grouped data
+        # uses, not the requested filter range, as the latter is
+        # going to use less channels in the un-grouped range.
+        # This means we can not just ungroup and then call
+        # _filter_recreate, but instead we have to identify the
+        # channel range and then apply just that range. Finally
+        # we have to restore the previous filter range (the
+        # _filter_store array).
+        #
+        ounits = data.units
+        ostate = data._filter_store[:]
+        try:
+            data.units = 'channel'
+            new_filter = parse_expr(data.get_filter(group=False))
+
+            # We do not want to combine with the _filter_store
+            # settings here, so ensure we have all channels selected.
+            data.notice()
+            data.ungroup()
+            for interval in new_filter:
+                data.notice(*interval)
+
+            data.units = ounits
             super().prepare(data, model, stat=stat)
 
         finally:
-            if old_group:
-                data.ignore()
-                data.group()
-                for interval in old_filter:
-                    data.notice(*interval)
+            data.units = ounits
+            data.group()
+
+            # Recreate the filter
+            data._filter_store = ostate
+            data._filter_recreate()
+
+        # temporary check for #1024 being fixed
+        old_filter2 = parse_expr(data.get_filter())
+        assert old_filter1 == old_filter2, (old_filter1, old_filter2)
 
 
 class SourcePlot(HistogramPlot):

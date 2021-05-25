@@ -3695,7 +3695,6 @@ def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
     assert f == '0.775000000000:1.210000000000'
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 @requires_plotting
