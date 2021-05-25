@@ -193,11 +193,6 @@ class ModelHistogram(ModelPHAHistogram):
             super().prepare(data, model, stat=stat)
             return
 
-        # Safety check that the filtering doesn't change anything
-        # (see #1024)
-        #
-        old_filter1 = parse_expr(data.get_filter())
-
         # We want to use the channel range that the grouped data
         # uses, not the requested filter range, as the latter is
         # going to use less channels in the un-grouped range.
@@ -229,10 +224,6 @@ class ModelHistogram(ModelPHAHistogram):
             # Recalculate the filtering
             data._filter_store = ostate
             data.group()
-
-        # temporary check for #1024 being fixed
-        old_filter2 = parse_expr(data.get_filter())
-        assert old_filter1 == old_filter2, (old_filter1, old_filter2)
 
 
 class SourcePlot(HistogramPlot):
