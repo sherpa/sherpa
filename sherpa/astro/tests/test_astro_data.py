@@ -1249,7 +1249,7 @@ def test_grouping_filter(analysis, make_data_path):
     # test_grouping_filtering_binning.
     #
     pha.group_width(50)
-    dep = np.array([213, 136,  79,  47,  47,  29,  27, 18])
+    dep = np.array([136,  79,  47,  47,  29,  27, 18])
     assert pha.get_dep(filter=True) == pytest.approx(dep)
 
 
@@ -1306,7 +1306,7 @@ def test_grouping_filtering_binning(analysis, make_data_path):
     #   i=20  14.6000 - 14.9504
     #
     expected = np.zeros(21, dtype=bool)
-    expected[1:9] = True
+    expected[2:9] = True
     assert (pha.mask == expected).all()
 
     # For the ungrouped-data we have, selecting
@@ -1334,7 +1334,7 @@ def test_grouping_filtering_binning(analysis, make_data_path):
     #   i=480   7.0080 -  7.0226
     #
     expected = np.zeros(1024, dtype=bool)
-    expected[50:450] = True
+    expected[100:450] = True
     assert (pha.get_mask() == expected).all()
 
 

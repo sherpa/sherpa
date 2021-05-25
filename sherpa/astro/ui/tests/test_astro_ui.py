@@ -418,19 +418,19 @@ def test_bug38_filtering_grouping(make_data_path):
 
     pha.group_width(40)
 
-    assert pha.get_filter(group=True, format='%.4f') == '0.8760:2.6280,3.7960:6.7160'
-    assert pha.get_filter(group=False, format='%.4f') == '0.5913:2.9127,3.5113:7.0007'
+    assert pha.get_filter(group=True, format='%.4f') == '0.8760:2.6280,4.3800:6.1320'
+    assert pha.get_filter(group=False, format='%.4f') == '0.5913:2.9127,4.0953:6.4167'
 
     assert pha.mask.size == 26
-    assert pha.mask.sum() == 10
+    assert pha.mask.sum() == 8
     assert pha.mask[1:5].all()
-    assert pha.mask[6:12].all()
+    assert pha.mask[7:11].all()
 
     # get the ungrouped mask
     mask = pha.get_mask()
-    assert mask.sum() == 10 * 40
+    assert mask.sum() == 8 * 40
     assert mask[40:200].all()
-    assert mask[240:480].all()
+    assert mask[280:440].all()
 
     # check filtered bins
     elo_all, ehi_all = pha._get_ebins(group=False)

@@ -1295,6 +1295,48 @@ class DataPHA(Data1D):
     grouped = property(_get_grouped, _set_grouped,
                        doc='Are the data grouped?')
 
+    def _get_grouping(self):
+        return self._grouping
+
+    def _set_grouping(self, val):
+        if val is None:
+            # Should we clear the quality array too?
+            self._grouping = None
+            if self.grouped:
+                self.grouped = False
+
+            return
+
+        # We should have more validation of quantities in the DataPHA
+        # case, so add some basic ones here. The chosen errors could
+        # well be changed; this is a first pass.
+        #
+        if self.channel is None:
+            # Technically we could have grouping with no channels but
+            # it doesn't make much sense (DJB is hoping to change __init__
+            # to require channel and counts to be set).
+            #
+            raise DataErr('ogip-error', 'dataset', self.name,
+                          'has no channels')
+
+        val = numpy.asarray(val)
+        try:
+            if len(self.channel) != len(val):
+                raise DataErr('mismatch', 'channel', 'grouping')
+        except TypeError:
+            # if val is a scalar
+            raise DataErr('mismatch', 'channel', 'grouping')
+
+        self._grouping = val
+
+        # Recreate the filter if the grouping is set.
+        #
+        if self.grouped:
+            self._filter_recreate()
+
+    grouping = property(_get_grouping, _set_grouping,
+                        doc='The grouping scheme.')
+
     def _get_subtracted(self):
         return self._subtracted
 
@@ -1416,12 +1458,19 @@ class DataPHA(Data1D):
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.quality = quality
-        self.grouping = grouping
+
+        # We do not want to trigger thelogic in _set_grouping here,
+        # so access the _grouping attribute rather than grouping.
+        self._grouping = grouping
         self.exposure = exposure
         self.backscal = backscal
         self.areascal = areascal
         self.header = header
+
+        # We do not want to trigger the logic in _set_grouped here,
+        # so access the _grouped attribute rather than grouped.
         self._grouped = (grouping is not None)
+
         # _original_groups is set False if the grouping is changed via
         # the _dynamic_groups method. This is currently only used by the
         # serialization code (sherpa.astro.ui.serialize) to determine
@@ -2485,22 +2534,9 @@ class DataPHA(Data1D):
             if kwargs[key] is None:
                 kwargs.pop(key)
 
-        old_filter = self.get_filter(group=False)
-        do_notice = numpy.iterable(self.mask)
-
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()
         self._original_groups = False
-
-        if do_notice:
-            # self.group() above has cleared the filter if applicable
-            # No, that just sets a flag.  So manually clear filter
-            # here
-            self.ignore()
-            for vals in parse_expr(old_filter):
-                self.notice(*vals)
-
-        # warning('grouping flags have changed, noticing all bins')
 
     # Have to move this check here; as formerly written, reference
     # to pygroup functions happened *before* checking groupstatus,

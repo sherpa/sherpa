@@ -843,7 +843,6 @@ def test_pha_grouping_changed_no_filter_1160(make_test_pha):
     assert d4 == pytest.approx([1, 2, 3])
 
 
-@pytest.mark.xfail
 def test_pha_grouping_changed_filter_1160(make_test_pha):
     """What happens when the grouping is changed?
 
@@ -869,3 +868,33 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     pha.grouping = [1, 1, -1, 1]
     d4 = pha.get_dep(filter=True)
     assert d4 == pytest.approx([2, 3])
+
+
+def test_pha_remove_grouping(make_test_pha):
+    """Check we can remove the grouping array."""
+
+    pha = make_test_pha
+    assert pha.grouping is None
+    assert not pha.grouped
+
+    pha.grouping = [1, -1, 1, -1]
+    assert not pha.grouped
+    pha.grouped = True
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([3, 3])
+
+    pha.grouping = None
+    assert not pha.grouped
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([1, 2, 0, 3])
+
+
+@pytest.mark.parametrize("grouping", [True, [1, 1], np.ones(10)])
+def test_pha_grouping_size(grouping, make_test_pha):
+    """Check we error out if grouping has the wrong size"""
+
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.grouping = grouping
+
+    assert str(de.value) == 'size mismatch between channel and grouping'
