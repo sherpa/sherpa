@@ -225,11 +225,10 @@ class ModelHistogram(ModelPHAHistogram):
 
         finally:
             data.units = ounits
-            data.group()
 
-            # Recreate the filter
+            # Recalculate the filtering
             data._filter_store = ostate
-            data._filter_recreate()
+            data.group()
 
         # temporary check for #1024 being fixed
         old_filter2 = parse_expr(data.get_filter())
@@ -592,11 +591,10 @@ class OrderPlot(ModelHistogram):
         finally:
             if ogroup:
                 data.units = ounits
-                data.group()
 
-                # Recreate the filter
+                # Recalculate the filtering
                 data._filter_store = ostate
-                data._filter_recreate()
+                data.group()
 
         self.title = 'Model Orders %s' % str(self.orders)
 
