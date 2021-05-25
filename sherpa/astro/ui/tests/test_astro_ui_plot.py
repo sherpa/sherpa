@@ -3692,3 +3692,45 @@ def test_set_ylog_bkg(plot, yscale, clean_astro_ui):
     assert len(axes) == 1
     assert axes[0].xaxis.get_scale() == 'linear'
     assert axes[0].yaxis.get_scale() == yscale
+
+
+@requires_plotting
+def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
+    """Check if issue #1024 is fixed.
+
+    The problem was that the PHA model plot was resetting the
+    range so that the notice call ended up not changing anything.
+    Unfortunately this does not show up in the "manual" case,
+    because the data is not grouped, so you have to rely on
+    test_pha_model_plot_filter_range_1024.
+    """
+
+    setup_example(None)
+    ui.set_analysis('energy')
+
+    ui.plot_model()
+    ui.notice(0.77, 1.125)
+
+    f = ui.get_filter()
+    assert f == '0.775000000000:1.210000000000'
+
+
+@pytest.mark.xfail
+@requires_fits
+@requires_data
+@requires_plotting
+def test_pha_model_plot_filter_range_1024(make_data_path, clean_astro_ui):
+    """Check if issue #1024 is fixed.
+
+    Unlike test_pha_model_plot_fitler_range_manual_1024
+    this test does show issue #1024.
+    """
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_source(ui.powlaw1d.pl)
+
+    ui.plot_model()
+    ui.notice(0.5, 5)
+
+    f = ui.get_filter()
+    assert f == '0.518300011754:4.869099855423'
