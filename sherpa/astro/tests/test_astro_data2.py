@@ -816,3 +816,56 @@ def test_pha_invalid_units(invalid, make_test_pha):
         pha.units = invalid
 
     assert str(de.value) == f"unknown quantity: '{invalid}'"
+
+
+def test_pha_grouping_changed_no_filter_1160(make_test_pha):
+    """What happens when the grouping is changed?
+
+    See also test_pha_grouping_changed_filter_1160
+    """
+
+    pha = make_test_pha
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([1, 2, 0, 3])
+
+    # grouping set but not grouped
+    pha.grouping = [1, 1, 1, 1]
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([1, 2, 0, 3])
+
+    # now grouped
+    pha.grouped = True
+    d3 = pha.get_dep(filter=True)
+    assert d3 == pytest.approx([1, 2, 0, 3])
+
+    pha.grouping = [1, 1, -1, 1]
+    d4 = pha.get_dep(filter=True)
+    assert d4 == pytest.approx([1, 2, 3])
+
+
+@pytest.mark.xfail
+def test_pha_grouping_changed_filter_1160(make_test_pha):
+    """What happens when the grouping is changed?
+
+    See also test_pha_grouping_changed_filter_1160
+    """
+
+    pha = make_test_pha
+    pha.notice(2, 5)
+
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([2, 0, 3])
+
+    # grouping set but not grouped
+    pha.grouping = [1, 1, 1, 1]
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([2, 0, 3])
+
+    # now grouped
+    pha.grouped = True
+    d3 = pha.get_dep(filter=True)
+    assert d3 == pytest.approx([2, 0, 3])
+
+    pha.grouping = [1, 1, -1, 1]
+    d4 = pha.get_dep(filter=True)
+    assert d4 == pytest.approx([2, 3])
