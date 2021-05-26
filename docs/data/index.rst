@@ -125,12 +125,12 @@ Sherpa supports filtering data sets; that is, temporarily removing
 parts of the data (perhaps because there are problems, or to help
 restrict parameter values).
 
-The :py:attr:`~sherpa.data.BaseData.mask` attribute indicates
+The :py:attr:`~sherpa.data.Data.mask` attribute indicates
 whether a filter has been applied: if it returns ``True`` then
 no filter is set, otherwise it is a bool array
 where ``False`` values indicate those elements that are to be
-ignored. The :py:meth:`~sherpa.data.BaseData.ignore` and
-:py:meth:`~sherpa.data.BaseData.notice` methods are used to
+ignored. The :py:meth:`~sherpa.data.Data.ignore` and
+:py:meth:`~sherpa.data.Data.notice` methods are used to
 define the ranges to exclude or include. For example, the following
 hides those values where the independent axis values are between
 21.2 and 22.8::
@@ -143,7 +143,7 @@ After this, a fit to the data will ignore these values, as shown
 below, where the number of degrees of freedom of the first fit,
 which uses the filtered data, is three less than the fit to the
 full data set (the call to
-:py:meth:`~sherpa.data.BaseData.notice` removes the filter since
+:py:meth:`~sherpa.data.Data.notice` removes the filter since
 no arguments were given)::
 
     >>> from sherpa.models import Polynom1D
@@ -158,6 +158,62 @@ no arguments were given)::
 
     >>> print("Degrees of freedom: {} vs {}".format(res1.dof, res2.dof))
     Degrees of freedom: 35 vs 38
+
+.. _filter_reset:
+
+Resetting the filter
+--------------------
+
+The :py:meth:`~sherpa.data.Data.notice` method can be used to
+reset the filter - that is, remove all filters - by calling with no
+arguments (or, equivalently, with two `None` arguments).
+
+The first filter call
+---------------------
+
+When a data set is created no filter is applied, which is treated
+as a special case (this also holds if the
+:ref:`filters have been reset <filter_reset>`).
+The first call to :py:meth:`~sherpa.data.Data.notice`
+will restrict the data to just the requested range, and subsequent
+calls will add the new data. This means that
+
+    >>> d1.notice(25, 27)
+    >>> d1.notice(30, 35)
+
+will restrict the data to the ranges 25-27 and then add in the range
+30-35.
+
+The edges of a filter
+---------------------
+
+Mathematically the two sets of commands below should select the same
+range, but it can behave slightly different for values at the edge
+of the filter (or within the edge bins for :py:class:`~sherpa.data.Data1DInt`
+objects):
+
+    >>> d1.notice(25, 35)
+    >>> d1.ignore(29, 31)
+
+    >>> d1.notice(25, 29)
+    >>> d1.notice(31, 35)
+
+Enhanced filtering
+------------------
+
+Certain data classes - in particular :py:class:`sherpa.astro.data.DataIMG`
+and :py:class:`sherpa.astro.data.DataPHA` - extend and enhance the
+filtering capabilities to:
+
+- allow filters to use different units (logical and physical for
+  :py:class:`~sherpa.astro.data.DataIMG` and channels, energies,
+  or wavelengths for :py:class:`~sherpa.astro.data.DataPHA`;
+
+- filtering with geometric shapes (regions) for
+  :py:class:`~sherpa.astro.data.DataIMG`;
+
+- and dynamically re-binning the data to enhance the signal-to-noise
+  of the data for :py:class:`~sherpa.astro.data.DataPHA`.
 
 .. todo::
 
