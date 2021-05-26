@@ -1279,7 +1279,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
 
 def create_delta_rmf(rmflo, rmfhi, offset=1,
                      e_min=None, e_max=None, ethresh=None,
-                     name='delta-rmf'):
+                     name='delta-rmf', header=None):
     """Create an ideal RMF.
 
     The RMF has a unique mapping from channel to energy, in
@@ -1287,6 +1287,10 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     mapping is monotonic, and there are no gaps.
 
     .. versionadded:: 4.10.1
+
+    .. versionchanged:: 4.13.2
+
+       Added header keyword
 
     Parameters
     ----------
@@ -1309,6 +1313,8 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
         zero-energy bins are replaced.
     name : str, optional
         The name of the RMF data set
+    header : dict
+        Header for the created RMF
 
     Returns
     -------
@@ -1333,7 +1339,7 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
                                      f_chan=f_chan, matrix=matrix,
                                      offset=offset,
                                      e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh)
+                                     ethresh=ethresh, header=header)
 
 
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,

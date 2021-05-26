@@ -953,7 +953,7 @@ class DataARF(DataOgipResponse):
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.exposure = exposure
-        self.header = header
+        self.header = {} if header is None else header
         self.ethresh = ethresh
         energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
         self._lo, self._hi = energ_lo, energ_hi
@@ -1067,7 +1067,7 @@ class DataRMF(DataOgipResponse):
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
-                 header={}, ethresh=None):
+                 header=None, ethresh=None):
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         if offset < 0:
@@ -1078,7 +1078,7 @@ class DataRMF(DataOgipResponse):
         self.detchans = detchans
         self.e_min = e_min
         self.e_max = e_max
-        self.header = header
+        self.header = {} if header is None else header
         self.n_grp = n_grp
         self.f_chan = f_chan
         self.n_chan = n_chan
@@ -1408,7 +1408,7 @@ class DataPHA(Data1D):
 
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
-                 exposure=None, backscal=None, areascal=None, header={}):
+                 exposure=None, backscal=None, areascal=None, header=None):
 
         channel = _check(channel)
         counts = _check(counts)
@@ -1422,7 +1422,7 @@ class DataPHA(Data1D):
         self.exposure = exposure
         self.backscal = backscal
         self.areascal = areascal
-        self.header = header
+        self.header = {} if header is None else header
         self._grouped = (grouping is not None)
         self._original_groups = True
         self._subtracted = False
@@ -3871,11 +3871,11 @@ class DataIMG(Data2D):
 
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
-                 header={}):
+                 header=None):
         self.sky = sky
         self.eqpos = eqpos
         self.coord = coord
-        self.header = header
+        self.header = {} if header is None else header
         self._region = None
         Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
 
@@ -4257,12 +4257,12 @@ class DataIMGInt(DataIMG):
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
-                 coord='logical', header={}):
+                 coord='logical', header=None):
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
         self.coord = coord
-        self.header = header
+        self.header = {} if header is None else header
         self.shape = shape
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
