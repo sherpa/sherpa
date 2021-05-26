@@ -424,7 +424,7 @@ def test_save_data_data1d_no_clobber(tmp_path):
     outfile = str(out)
 
     out.write_text('some text')
-    check_clobber(out, ui.save_data)
+    check_clobber(outfile, ui.save_data)
 
 
 @requires_fits
@@ -432,14 +432,7 @@ def test_save_data_datapha_no_clobber(tmp_path):
     """save_data: does clobber=False work? DataPHA"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    ui.get_data().header = {}
-
     out = tmp_path / "data.dat"
-
     out.write_text('some text')
     check_clobber(out, ui.save_data)
 
@@ -449,12 +442,6 @@ def test_save_pha_no_clobber(tmp_path):
     """save_pha: does clobber=False work?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    ui.get_data().header = {}
-
     out = tmp_path / "data.dat"
 
     out.write_text('some text')
@@ -806,12 +793,6 @@ def test_save_data_datapha(tmp_path):
     """Does save_data work for DataPHA?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    ui.get_data().header = {}
-
     out = tmp_path / "data.dat"
     outfile = str(out)
     ui.save_data(outfile)
@@ -826,12 +807,6 @@ def test_save_pha(tmp_path):
     """Does save_pha work for DataPHA?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    ui.get_data().header = {}
-
     out = tmp_path / "data.dat"
     outfile = str(out)
     ui.save_pha(outfile)
