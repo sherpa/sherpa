@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,46 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Tools for creating, storing, inspecting, and manipulating data sets
+"""Tools for creating, storing, inspecting, and manipulating data sets.
+
+The main classes for representing data sets are :py:class:`Data1D`,
+:py:class:`Data1DInt`, and :py:class:`Data2D`, to handle (x, y), (xlo,
+xhi, y), and (x1, x2, y) data, although there are also
+more-specialized cases, such as :py:class:`Data1DAsymmetricErrs`. These
+classes build on the :py:class:`Data` class, which supports dynamic
+filtering of data - to select a subset of the data range - as well as
+data access and model evaluation to match the data range.
+
+The :py:class:`Filter` class is used to handle data filtering - that
+is, to combine filters such as selecting the range a to b (`notice`)
+and hiding the range c to d (`ignore`). This is used with the
+:py:class:`DataSpace1D` and :py:class:`DataSpace2D` classes to handle
+evaluating models on different grids to the data, and then converting
+back to the data space, whether by rebinnnig or interpolation.
+
+Notebook support
+----------------
+
+The Data objects support for Jupyter notebooks, and will display a
+table of information highlighting the relevant data. Examples can
+be found at [NoteBook]_.
+
+References
+----------
+
+.. [NoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+
+Examples
+--------
+
+Create a data set representing the independent axis (`x`) and
+dependent axis (`y`) then filter to select only those values between
+500-520 and 530-700:
+
+>>> d1 = Data1D('example', x, y)
+>>> d1.notice(500, 700)
+>>> d1.ignore(520, 530)
+
 """
 import warnings
 from abc import ABCMeta

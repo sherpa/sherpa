@@ -18,8 +18,74 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Classes for storing, inspecting, and manipulating astronomical data sets
+"""Classes for storing, inspecting, and manipulating astronomical data sets.
+
+The two types of Astronomical data supported in this module are
+two-dimensional images (:py:class:`DataIMG`) and X-ray spectra
+(:py:class:`DataPHA`), along with associated response information
+(:py:class:`DataARF` and :py:class:`DataRMF`). These objects can be
+constructed directly or read from :term:`FITS` files using the
+:py:mod:`sherpa.astro.io` routines.
+
+Both types of data extend the capabilities of the
+:py:class:`sherpa.data.Data` class:
+
+- using geometric shapes (regions) to filter images;
+
+- support different units for filtering images (logical, physical, and
+  :term:`WCS`), depending on the available metadata;
+
+- support different analysis units for filtering and display for
+  :term:`PHA` files (channels, energy, and wavelengths);
+
+- dynamically re-bin PHA data to improve the signal to noise (grouping
+  and quality);
+
+- and automatically support one or more spectra that define the
+  background for the observation (for PHA files) that can then be
+  subtracted from the data or a background model fit to them.
+
+Notes
+-----
+
+Some functionality depends on the presence of the region and grouping
+Sherpa modules, which are optional components of Sherpa.
+
+Notebook support
+----------------
+
+The Data objects support for Jupyter notebooks, and will display a
+table of information highlighting the relevant data and, for some
+classes, SVG images. Examples can be found at [AstroNoteBook]_.
+
+References
+----------
+
+.. [AstroNoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+
+Examples
+--------
+
+Read in a 2D dataset from the file 'clus.fits' and then filter it to
+only use those pixels that lie within 45 units from the physical
+coordinate 3150,4515:
+
+>>> from sherpa.astro.io import read_image
+>>> img = read_image('clus.fits')
+>>> img.set_coord('physical')
+>>> img.notice2d('circle(3150,4515,45)')
+
+Read in a PHA dataset from the file 'src.pi', subtract the data,
+filter to only use the data 0.5 to 7 keV, and re-group the data within
+this range to have at least 20 counts per group:
+
+>>> from sherpa.astro.io import read_pha
+>>> pha = read_pha('src.pi')
+>>> pha.subtract()
+>>> pha.set_analysis('energy')
+>>> pha.notice(0.5, 7)
+>>> pha.group_counts(20, tabStops=~pha.mask)
+
 """
 
 import os.path
