@@ -516,6 +516,48 @@ parent classes to match. This was not attempted as it would require
 significantly-larger changes to Sherpa (but this change could still be
 made in the future).
 
+.. _pha_filter:
+
+PHA Filtering
+-------------
+
+Filtering of a :py:class:`~sherpa.astro.data.DataPHA` object has two
+complications compared to :py:class:`~sherpa.data.Data1D` objects:
+
+- the independent axis can be referred to in channel units (normally 1
+  to the maximum number of channels), energy units (e.g. 0.5 to 7
+  keV), or wavelength units (e.g. 20 to 22 Angstroms);
+
+- each channel has a width of 1, so channel filters - which are
+  generally going to be integer values - map exactly, but each channel
+  has a finite width in the derived units (that is, energy or
+  wavelength) so multiple values will map to the same channel;
+
+- the data can be dynamically grouped via the
+  :py:attr:`~sherpa.astro.data.DataPHA.grouping` attribute, normally set
+  by methods like :py:meth:`~sherpa.astro.data.DataPHA.group_counts` and
+  controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
+  which means that the desired filter, when mapped to channel units,
+  is likely to end up partially overlapping the first and last groups,
+
+This means that a :py:meth:`~sherpa.astro.data.DataPHA.notice` or
+:py:meth:`~sherpa.astro.data.DataPHA.ignore` call has to convert from
+the units of the input - which is defined by the
+:py:attr:`~sherpa.astro.data.DataPHA.units` attribute, changeable with
+:py:attr:`~sherpa.astro.data.DataPHA.set_analysis` - to the "group
+number" which then gets sent to the
+:py:attr:`~sherpa.data.Data._data_space` attribute to track
+the filter.
+
+One result is that the :py:attr:`~sherpa.data.Data.mask` attribute
+will now depend on the grouping scheme. The
+:py:attr:`~sherpa.astro.data.DataPHA.get_mask` method can be used to
+calculate a mask for all channels (e.g. the ungrouped data).
+
+There are complications to this from the quality concept introduced
+by the OGIP grouping scheme, which I have not been able to fully
+trace through in the code.
+
 .. _model_combination:
 
 Combining model expressions
