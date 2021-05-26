@@ -567,10 +567,7 @@ def get_image_data(arg, make_copy=False):
                 'CUNIT1', 'CUNIT2', 'EQUINOX']
 
         for key in keys:
-            try:
-                data['header'].pop(key)
-            except KeyError:
-                pass
+            data['header'].pop(key, None)
 
     finally:
         hdu.close()
@@ -622,7 +619,7 @@ def get_arf_data(arg, make_copy=False):
         data['bin_lo'] = _try_col(hdu, 'BIN_LO', fix_type=True)
         data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
         data['header'] = _get_meta_data(hdu)
-        data['header'].pop('EXPOSURE')
+        data['header'].pop('EXPOSURE', None)
 
     finally:
         arf.close()
@@ -685,7 +682,7 @@ def get_rmf_data(arg, make_copy=False):
             data['matrix'] = hdu.data.field('MATRIX')
 
         data['header'] = _get_meta_data(hdu)
-        data['header'].pop('DETCHANS')
+        data['header'].pop('DETCHANS', None)
 
         # Beginning of non-Chandra RMF support
         fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
@@ -867,10 +864,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             data['quality'] = _try_col(hdu, 'QUALITY', SherpaInt)
             data['header'] = _get_meta_data(hdu)
             for key in keys:
-                try:
-                    data['header'].pop(key)
-                except KeyError:
-                    pass
+                data['header'].pop(key, None)
 
             if data['syserror'] is not None:
                 # SYS_ERR is the fractional systematic error
@@ -974,10 +968,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
                 data['header']['TG_SRCID'] = srcid
 
                 for key in keys:
-                    try:
-                        data['header'].pop(key)
-                    except KeyError:
-                        pass
+                    data['header'].pop(key, None)
 
                 if syserr is not None:
                     # SYS_ERR is the fractional systematic error
