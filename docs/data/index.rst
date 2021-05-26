@@ -9,9 +9,6 @@ necessary metadata. Although the design of Sherpa supports
 multiple-dimensional data sets, the current classes only
 support one- and two-dimensional data sets.
 
-Overview
-========
-
 The following modules are assumed to have been imported::
 
     >>> import numpy as np
@@ -21,7 +18,7 @@ The following modules are assumed to have been imported::
     >>> from sherpa import data
 
 Names
------
+=====
 
 The first argument to any of the Data classes is the name
 of the data set. This is used for display purposes only,
@@ -32,7 +29,7 @@ can be changed at any time.
 .. _independent-axis:
 
 The independent axis
---------------------
+====================
 
 The independent axis - or axes - of a data set define the
 grid over which the model is to be evaluated. It is referred
@@ -47,14 +44,14 @@ representation used by Sherpa is often a flattened - i.e.
 one-dimensional - version.
 
 The dependent axis
-------------------
+==================
 
 This refers to the data being fit, and is referred to as ``y``.
 
 .. _data_unbinned:
-   
+
 Unbinned data
-^^^^^^^^^^^^^
+-------------
 
 Unbinned data sets - defined by classes which do not end in
 the name ``Int`` - represent point values; that is, the the data
@@ -73,11 +70,14 @@ Examples of unbinned data classes are
     y         = Float64[40]
     staterror = None
     syserror  = None
+    >>> plt.plot(d.x, d.y, 'o')
+
+.. image:: ../_static/data/data1d.png
 
 .. _data_binned:
-   
+
 Binned data
-^^^^^^^^^^^
+-----------
 
 Binned data sets represent values that are defined over a range,
 such as a histogram.
@@ -102,10 +102,13 @@ size compares to the scale over which the model changes.
     y         = Int64[10]
     staterror = None
     syserror  = None
-    >>> plt.bar(d2.xlo, d2.y, d2.xhi - d2.xlo);
+    >>> plt.clf()
+    >>> plt.bar(d2.xlo, d2.y, d2.xhi - d2.xlo, align='edge')
+
+.. image:: ../_static/data/data1dint.png
 
 Errors
-------
+======
 
 There is support for both statistical and systematic
 errors by either using the ``staterror`` and ``syserror``
@@ -116,7 +119,7 @@ parameters when creating the data object, or by changing the
 .. _data_filter:
 
 Filtering data
---------------
+==============
 
 Sherpa supports filtering data sets; that is, temporarily removing
 parts of the data (perhaps because there are problems, or to help
@@ -134,7 +137,7 @@ hides those values where the independent axis values are between
 
     >>> d1.ignore(21.2, 22.8)
     >>> d1.x[np.invert(d1.mask)]
-    array([ 21.5,  22. ,  22.5])
+    array([21.5, 22. , 22.5])
 
 After this, a fit to the data will ignore these values, as shown
 below, where the number of degrees of freedom of the first fit,
@@ -157,7 +160,7 @@ no arguments were given)::
     Degrees of freedom: 35 vs 38
 
 .. todo::
-   
+
    It's a bit confusing since not always clear where a given
    attribute or method is defined. There's also get_filter/get_filter_expr
    to deal with. Also filter/apply_filter.
@@ -165,7 +168,7 @@ no arguments were given)::
 .. _data_visualize:
 
 Visualizing a data set
-----------------------
+======================
 
 The data objects contain several methods which can be used to
 visualize the data, but do not provide any direct plotting
@@ -177,8 +180,8 @@ preferred approach is to use the classes defined in the
 :py:mod:`sherpa.plot` module, which are described in the
 :doc:`visualization section <../plots/index>`:
 
-    >>> from sherpa.plot import DataPlot
-    >>> pdata = DataPlot()
+    >>> from sherpa.plot import DataHistogramPlot
+    >>> pdata = DataHistogramPlot()
     >>> pdata.prepare(d2)
     >>> pdata.plot()
 
@@ -186,13 +189,25 @@ preferred approach is to use the classes defined in the
 
 Although the data represented by ``d2`` is
 a histogram, the values are displayed at the center of the bin.
-   
+Plot preferences can be changed in the `plot` call:
+
+    >>> pdata.plot(linestyle='solid', marker='')
+
+.. image:: ../_static/data/data_int_line_to_plot.png
+
+.. note::
+
+   The supported options depend on the plot backend (although
+   at present only :term:`matplotlib` is supported).
+
 The plot objects automatically handle any
 :ref:`filters <data_filter>`
 applied to the data, as shown below.
 
 ::
 
+    >>> from sherpa.plot import DataPlot
+    >>> pdata = DataPlot()
     >>> d1.ignore(25, 30)
     >>> d1.notice(26, 27)
     >>> pdata.prepare(d1)
@@ -211,7 +226,7 @@ applied to the data, as shown below.
    :py:meth:`~sherpa.plot.DataPlot.prepare` is made.
 
 ::
-   
+
     >>> d1.notice()
 
 At this point, a call to ``pdata.plot()`` would re-create the previous
@@ -219,7 +234,7 @@ plot, even though the filter has been removed from the underlying
 data object.
 
 Evaluating a model
-------------------
+==================
 
 The :py:meth:`~sherpa.data.Data.eval_model` and
 :py:meth:`~sherpa.data.Data.eval_model_to_fit`
