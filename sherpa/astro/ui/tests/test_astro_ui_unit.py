@@ -424,7 +424,7 @@ def test_save_data_data1d_no_clobber(tmp_path):
     outfile = str(out)
 
     out.write_text('some text')
-    check_clobber(outfile, ui.save_data)
+    check_clobber(out, ui.save_data)
 
 
 @requires_fits
