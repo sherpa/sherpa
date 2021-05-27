@@ -3675,19 +3675,46 @@ class DataPHA(Data1D):
                 self.get_ylabel())
 
     def group(self):
-        "Group the data according to the data set's grouping scheme"
+        """Group the data according to the data set's grouping scheme.
+
+        This sets the grouping flag which means that the value of the
+        grouping attribute will be used when accessing data values. This
+        can be called even if the grouping attribute is empty.
+
+        See Also
+        --------
+        ungroup
+        """
         self.grouped = True
 
     def ungroup(self):
-        "Ungroup the data"
+        """Remove any data grouping.
+
+        This un-sets the grouping flag which means that the grouping
+        attribute will not be used when accessing data values.
+
+        See Also
+        --------
+        group
+        """
         self.grouped = False
 
     def subtract(self):
-        "Subtract the background data"
+        """Subtract the background data.
+
+        See Also
+        --------
+        unsubtract
+        """
         self.subtracted = True
 
     def unsubtract(self):
-        "Remove background subtraction"
+        """Remove background subtraction.
+
+        See Also
+        --------
+        subtract
+        """
         self.subtracted = False
 
 
