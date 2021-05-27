@@ -198,6 +198,8 @@ objects):
     >>> d1.notice(25, 29)
     >>> d1.notice(31, 35)
 
+.. _filter_enhance:
+
 Enhanced filtering
 ------------------
 
@@ -311,6 +313,19 @@ any :ref:`filtering <data_filter>` applied to the data.
     >>> plt.legend(loc=2)
 
 .. image:: ../_static/data/data_eval_model.png
+
+Astronomy data
+==============
+
+.. toctree::
+   :maxdepth: 2
+   :name: data_detailed
+
+   pha
+
+.. todo::
+
+   Want an image section.
 
 Reference/API
 =============
