@@ -347,7 +347,7 @@ def test_filter_bins_scalar_array_empty():
     """Edge case: do we care about this result?"""
 
     f = utils.filter_bins([1], [2], [[]])
-    assert f.dtype == numpy.bool
+    assert f.dtype == bool
     assert len(f) == 0
 
 
@@ -574,15 +574,15 @@ def test_create_expr_empty():
 
 def test_create_expr_empty_mask():
     """What happens if the mask is all masked out"""
-    mask = numpy.zeros(5, dtype=numpy.bool)
+    mask = numpy.zeros(5, dtype=bool)
 
     out = utils.create_expr([], mask)
     assert out == ""
 
 
 @pytest.mark.parametrize("mask",
-                         [numpy.zeros(5, dtype=numpy.bool),
-                          numpy.ones(2, dtype=numpy.bool)])
+                         [numpy.zeros(5, dtype=bool),
+                          numpy.ones(2, dtype=bool)])
 def test_create_expr_mask_size_error(mask):
     """What happens when the mask][True] and vals arrays have different sizes?
 
@@ -617,7 +617,7 @@ def test_create_expr_mask():
     """Simple test of create_expr with an identity mask."""
 
     chans = numpy.arange(1, 10, dtype=numpy.int16)
-    mask = numpy.ones(9, dtype=numpy.bool)
+    mask = numpy.ones(9, dtype=bool)
     out = utils.create_expr(chans, mask)
     assert out == "1-9"
 
@@ -634,7 +634,7 @@ def test_create_expr_mask_delim():
     """Simple test of create_expr with an identity mask."""
 
     chans = numpy.arange(1, 10, dtype=numpy.int16)
-    mask = numpy.ones(9, dtype=numpy.bool)
+    mask = numpy.ones(9, dtype=bool)
     out = utils.create_expr(chans, mask, delim='::')
     assert out == "1::9"
 
@@ -810,7 +810,7 @@ def test_create_expr_mask_drop():
 def test_create_expr_mask_singlebin(idx):
     """mask all the things (but leave one bin)"""
 
-    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt = numpy.zeros(19, dtype=bool)
     filt[idx] = True
 
     vals = numpy.arange(19) * 0.01 + 0.4
@@ -822,7 +822,7 @@ def test_create_expr_mask_singlebin(idx):
 def test_create_expr_mask_singlebins():
     """several single bin"""
 
-    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt = numpy.zeros(19, dtype=bool)
     filt[0] = True
     filt[2] = True
     filt[16] = True

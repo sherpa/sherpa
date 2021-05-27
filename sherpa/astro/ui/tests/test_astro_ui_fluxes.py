@@ -110,13 +110,13 @@ def test_calc_flux_pha_bin_edges(clean_astro_ui):
     faked data that is made to make the behavior "obvious".
     """
 
-    chans = np.arange(1, 11, 1, dtype=np.int)
-    counts = np.zeros(chans.size, dtype=np.int)
+    chans = np.arange(1, 11, 1, dtype=int)
+    counts = np.zeros(chans.size, dtype=int)
 
     # "perfect" response
     energies = np.arange(1, 12, 1)
     elo, ehi = energies[:-1], energies[1:]
-    flat = np.ones(chans.size, dtype=np.int)
+    flat = np.ones(chans.size, dtype=int)
 
     d = ui.DataPHA('example', chans, counts)
     arf = ui.create_arf(elo, ehi, flat)
@@ -181,13 +181,13 @@ def test_calc_flux_pha_density_bin_edges(clean_astro_ui):
     faked data that is made to make the behavior "obvious".
     """
 
-    chans = np.arange(1, 11, 1, dtype=np.int)
-    counts = np.zeros(chans.size, dtype=np.int)
+    chans = np.arange(1, 11, 1, dtype=int)
+    counts = np.zeros(chans.size, dtype=int)
 
     # "perfect" response
     energies = np.arange(1, 12, 1)
     elo, ehi = energies[:-1], energies[1:]
-    flat = np.ones(chans.size, dtype=np.int)
+    flat = np.ones(chans.size, dtype=int)
 
     d = ui.DataPHA('example', chans, counts)
     arf = ui.create_arf(elo, ehi, flat)

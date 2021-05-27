@@ -70,7 +70,7 @@ class test_filter_energy_grid(SherpaTestCase):
         2.71560001e+00, 2.86159992e+00, 3.08060002e+00, 3.38720012e+00,
         3.56240010e+00, 3.79600000e+00, 4.02960014e+00, 4.24860001e+00,
         4.71579981e+00, 5.02239990e+00, 5.37279987e+00, 5.89839983e+00,
-        6.57000017e+00, 9.86960030e+00], np.float)
+        6.57000017e+00, 9.86960030e+00], float)
 
     _emax = np.array([
         0.2482, 0.3066, 0.46720001, 0.56940001, 0.64240003,
@@ -82,7 +82,7 @@ class test_filter_energy_grid(SherpaTestCase):
         2.58419991, 2.71560001, 2.86159992, 3.08060002, 3.38720012,
         3.5624001, 3.796, 4.02960014, 4.24860001, 4.71579981,
         5.0223999, 5.37279987, 5.89839983, 6.57000017, 9.8696003,
-        14.95040035], np.float)
+        14.95040035], float)
 
     def setUp(self):
         self.old_level = logger.getEffectiveLevel()
@@ -158,7 +158,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.37154216, 0.36742872, 0.3641032, 0.36167556, 0.35983625,
         0.35634032, 0.35248783, 0.35085678, 0.34843227, 0.34669766,
         0.34418666, 0.33912122, 0.33720407, 0.33505177, 0.33279634,
-        0.33081138, 0.32847831, 0.32592943, 0.3111549], np.float)
+        0.33081138, 0.32847831, 0.32592943, 0.3111549], float)
 
     _emax = np.array([
         3.06803656, 2.39196181, 2.35973215, 2.34076023, 2.30973101,
@@ -201,7 +201,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.37347662, 0.37154216, 0.36742872, 0.3641032, 0.36167556,
         0.35983625, 0.35634032, 0.35248783, 0.35085678, 0.34843227,
         0.34669766, 0.34418666, 0.33912122, 0.33720407, 0.33505177,
-        0.33279634, 0.33081138, 0.32847831, 0.32592943], np.float)
+        0.33279634, 0.33081138, 0.32847831, 0.32592943], float)
 
     def setUp(self):
         self.pha = DataPHA('', np.arange(204, dtype=float) + 1.,
@@ -1030,7 +1030,7 @@ def test_pha_mask_filtered(infile, size, nset, make_data_path):
     pha.notice(0.5, 7)
     pha.ignore(2, 3)
 
-    assert pha.mask.dtype == np.bool
+    assert pha.mask.dtype == bool
     assert pha.mask.size == size
     assert pha.mask.sum() == nset
 
@@ -1279,11 +1279,11 @@ def test_grouping_filtering_binning(analysis, make_data_path):
     assert (pha.grouping == expected).all()
 
     # This is based on the energy results
-    expected = np.zeros(21, dtype=np.bool)
+    expected = np.zeros(21, dtype=bool)
     expected[1:9] = True
     assert (pha.mask == expected).all()
 
-    expected = np.zeros(1024, dtype=np.bool)
+    expected = np.zeros(1024, dtype=bool)
     expected[50:450] = True
     assert (pha.get_mask() == expected).all()
 
@@ -1358,7 +1358,7 @@ def test_notice_energy_grouping(make_data_path):
     # channels 69 - 404, which maps to indices 68,..,403
     # or 68:404.
     #
-    mask = np.zeros(1024, dtype=np.bool)
+    mask = np.zeros(1024, dtype=bool)
     mask[68:404] = True
 
     assert pha.get_mask() == pytest.approx(mask)
@@ -1388,7 +1388,7 @@ def test_notice_channel_grouping(make_data_path):
 
     # This now creates the expected range.
     #
-    mask = np.zeros(1024, dtype=np.bool)
+    mask = np.zeros(1024, dtype=bool)
     mask[68:404] = True
 
     assert pha.get_mask() == pytest.approx(mask)

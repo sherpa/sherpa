@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -38,7 +39,7 @@ logger = logging.getLogger("sherpa")
 debug = logger.debug
 info = logger.info
 
-_tol = numpy.finfo(numpy.float).eps
+_tol = numpy.finfo(float).eps
 
 __all__ = ('LikelihoodRatioTest', 'LikelihoodRatioResults')
 

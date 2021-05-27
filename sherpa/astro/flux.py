@@ -630,7 +630,7 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     softmaxs = fit.model.thawedparmaxes
 
     # We have to use columns 1 to n-1 of samples
-    valid = numpy.ones(samples.shape[0], dtype=numpy.bool)
+    valid = numpy.ones(samples.shape[0], dtype=bool)
     for col, pmin, pmax in zip(samples.T[1:-1], softmins, softmaxs):
         valid &= (col >= pmin) & (col <= pmax)
 

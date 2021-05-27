@@ -93,9 +93,7 @@ EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
 # has exceeded parameter boundaries.  All the optimizers expect double
 # precision arguments, so we use numpy.float_ instead of SherpaFloat.
 #
-# As of numpy 0.9.5, 'max' is a 0-D array, which seems like a bug.
-#
-FUNC_MAX = numpy.float_(numpy.finfo(numpy.float_).max)
+FUNC_MAX = numpy.finfo(numpy.float_).max
 
 
 def _check_args(x0, xmin, xmax):
@@ -1153,7 +1151,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         def __init__(self, func, fvec, pars):
             self.func = func
             self.fvec = fvec
-            epsmch = numpy.float_(numpy.finfo(numpy.float).eps)
+            epsmch = numpy.finfo(float).eps
             self.eps = numpy.sqrt(max(epsmch, epsfcn))
             self.h = self.calc_h(pars)
             self.pars = numpy.copy(pars)

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -423,7 +424,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     #  searched on
     upper_limits = numpy.array([])        # Upper limits for parameters
     #  searched on
-    eflags = numpy.array([], numpy.int)   # Fail status after search for
+    eflags = numpy.array([], int)         # Fail status after search for
     # each parameter
     nfits = 0                             # Total number of fits
 
@@ -476,7 +477,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         append = numpy.append
         lower_limits = numpy.array([])
         upper_limits = numpy.array([])
-        eflags = numpy.array([], numpy.int)
+        eflags = numpy.array([], int)
         nfits = 0
         for i in range(numsearched):
             singlebounds = func(i, limit_parnums[i])

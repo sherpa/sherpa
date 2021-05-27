@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#            Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -3971,7 +3971,7 @@ class DataIMG(Data2D):
         # region.
         #
         mask = reg.mask(self.get_x0(), self.get_x1())
-        mask = mask.astype(numpy.bool)
+        mask = mask.astype(bool)
 
         # Apply the new mask to the existing mask.
         #

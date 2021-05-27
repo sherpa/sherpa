@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1400,7 +1400,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
         #
-        mask = numpy.asarray(mask, dtype=numpy.bool)
+        mask = numpy.asarray(mask, dtype=bool)
 
         # Ensure that the vals and mask array match: the number of
         # mask=True elements should equal the number of input values.
@@ -1605,7 +1605,7 @@ def quantile(sorted_array, f):
     n = sorted_array.size
 
     q = (n - 1) * f
-    i = numpy.int(numpy.floor(q))
+    i = int(numpy.floor(q))
     delta = q - i
 
     return (1.0 - delta) * sorted_array[i] + delta * sorted_array[i + 1]
@@ -1902,8 +1902,8 @@ def dataspace2d(dim):
         raise TypeError("dimensions should be > 0, found dim0 %s dim1 %s"
                         % (dim[0], dim[1]))
 
-    x0 = numpy.arange(dim[0], dtype=numpy.float) + 1.0
-    x1 = numpy.arange(dim[1], dtype=numpy.float) + 1.0
+    x0 = numpy.arange(dim[0], dtype=float) + 1.0
+    x1 = numpy.arange(dim[1], dtype=float) + 1.0
 
     x0, x1 = numpy.meshgrid(x0, x1)
     shape = tuple(x0.shape)
@@ -3079,7 +3079,7 @@ class NumDerivFowardPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
@@ -3144,7 +3144,7 @@ class NumDerivCentralPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
@@ -4058,7 +4058,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
         xc = xa
         fc = fa
-        DBL_EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
+        DBL_EPSILON = numpy.finfo(numpy.float32).eps
         while nfev[0] < maxfev:
 
             prev_step = xb - xa
