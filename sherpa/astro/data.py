@@ -33,7 +33,7 @@ from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
-    create_expr, parse_expr, bool_cast, rebin, filter_bins
+    create_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
 
 # There are currently (Sep 2015) no tests that exercise the code that
@@ -1281,12 +1281,13 @@ class DataPHA(Data1D):
             raise DataErr('nogrouping', self.name)
 
         if self._grouped == val:
+            # TODO: check if this is sensible
             return
 
         self._grouped = val
 
         # Apply the existing filters, recreating the list as we go along.
-        # This used to obly be done if self.mask was set but now rely
+        # This used to only be done if self.mask was set but now rely
         # on the filter store to determine what needs to be re-evaluated.
         #
         self._filter_recreate()
@@ -1558,7 +1559,7 @@ class DataPHA(Data1D):
         # when we create it the first notice call will clear the
         # _filter_store list, resulting in the list being rebuilt.
         # We could avoid doing this but by going through notice we
-        # aim to keep al the invariants.
+        # aim to keep all the invariants.
         #
         ounits = self.units
         ostore = self._filter_store[:]
