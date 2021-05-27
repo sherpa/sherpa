@@ -26,9 +26,11 @@ informational messages are no longer displayed:
   >>> sherpalog = logging.getLogger('sherpa')
   >>> sherpalog.setLevel('WARNING')
 
-Sherpa also provides a context manager to change the logging level
-only for a specific portion of the code. This can be used, e.g., to
-hide the long default output printed after fitting a model:
+Sherpa also provides a context manager -
+:py:class:`~sherpa.utils.logging.SherpaVerbosity` - to change the
+logging level only for a specific portion of the code. This can be
+used, e.g., to hide the long default output printed after fitting a
+model:
 
   >>> from sherpa.utils.logging import SherpaVerbosity
   >>> import numpy as np
@@ -38,7 +40,7 @@ hide the long default output printed after fitting a model:
   >>> with SherpaVerbosity('WARNING'):
   ...    ui.fit("mydata")
 
- 
+
 Reference/API
 =============
 
@@ -47,6 +49,7 @@ Reference/API
 
    sherpa
    err
+   logging
    utils
    testing
    io
