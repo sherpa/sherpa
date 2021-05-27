@@ -908,7 +908,7 @@ def test_xmmrgs_notice(make_data_path):
     session.set_analysis('wave')
     session.notice(18.8, 19.2)
     dat = session.get_data()
-    assert len(dat.get_dep(filter=True)) == 40
+    assert len(dat.get_dep(filter=True)) == 41
 
     dat.ignore(10, 19.)
     assert len(dat.get_dep(filter=True)) == 20
