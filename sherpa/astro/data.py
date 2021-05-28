@@ -1833,15 +1833,15 @@ class DataPHA(Data1D):
         if self.units == 'channel':
             elo = self.channel
             ehi = self.channel + 1
+        elif (self.bin_lo is not None) and (self.bin_hi is not None):
+            elo = self.bin_lo
+            ehi = self.bin_hi
+            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
+                elo = self._hc / self.bin_hi
+                ehi = self._hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
-            if (self.bin_lo is not None) and (self.bin_hi is not None):
-                elo = self.bin_lo
-                ehi = self.bin_hi
-                if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                    elo = self._hc / self.bin_hi
-                    ehi = self._hc / self.bin_lo
-            elif rmf is not None:
+            if rmf is not None:
                 if (rmf.e_min is None) or (rmf.e_max is None):
                     raise DataErr('noenergybins', 'RMF')
                 elo = rmf.e_min
