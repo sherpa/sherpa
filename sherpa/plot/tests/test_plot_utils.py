@@ -43,4 +43,4 @@ def test_histrogram_line():
                                             2., 2., 1., 1., 0.]))
         assert np.all(np.ma.masked_invalid(y2) ==
                       np.ma.masked_invalid([0.,  0.,  2.5,  2.5, np.nan,  5.,
-                                            7.5, 7.5, 7.5, 10., 10.]))
+                                            5., 7.5, 7.5, 10., 10.]))
