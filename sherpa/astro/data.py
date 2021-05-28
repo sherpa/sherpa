@@ -1857,6 +1857,11 @@ class DataPHA(Data1D):
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 
+        # apply_grouping applies a quality filter to the output
+        # but if we get here then there is no equivalent. This
+        # is likely confusing, at best, but we don't have good
+        # tests to check what we should be doing.
+        #
         return (elo, ehi)
 
     def get_indep(self, filter=True):
