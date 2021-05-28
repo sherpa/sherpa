@@ -41,7 +41,7 @@ Sometimes a PR is still in development and known to fail the tests or
 simply does not touch any code, because it only modifies docstrings
 and the documentation. In that case, `[skip ci]` can be added to the
 commit message to prevent running the github actions tests to save
-time, energy, and limited recources.
+time, energy, and limited resources.
 
 Run tests locally
 -----------------
@@ -53,7 +53,7 @@ installed in development mode with ``pip``::
 
 "Development mode" means that the tests will pick up changes in the
 Python source files without running ``pip`` again (which can take some
-time). Only if you change the C code, you will have to explicitly run
+time). Only if you change the C++ code, you will have to explicitly run
 the installation again to see the changes in the tests. After the installation,
 ``pytest`` can run all the tests. In the sherpa root directory call::
 
@@ -70,7 +70,7 @@ module, one might expect tests for this module to be the most likely to fail::
 Once everything looks good, you can do a final run of the entire test suite. A
 second option useful for develoment is ``--pdb`` which drops into the
 `interactive Python debugger <https://docs.python.org/3/library/pdb.html>`_
-when a test fails so that you can move up and down the stac and inspect the
+when a test fails so that you can move up and down the stack and inspect the
 value of individual variables.
 
 The test suite can be sped up by running tests in parallel. After installing
