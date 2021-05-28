@@ -82,6 +82,18 @@ the `pytest-xdist <https://pypi.org/project/pytest-xdist>`_ module
 will autoselect the number of cores, an explicit number can also be given
 (``pytest -n 4``).
 
+Test coverage can be included as part of the tests by installing the
+`coverage <https://coverage.readthedocs.io/en/latest/index.html>`_
+(``pip install coverage``) and
+`pytest-cov <https://pypi.org/project/pytest-cov/>`_ packages
+(``pip install pytest-cov``). Adding the ``--cov=sherpa`` option to the test
+run allows us to generate a coverage report after that::
+
+  pytest --cov=sherpa
+  coverage html -d report
+
+The report is in ``report/index.html``, which links to individual
+files and shows exactly which lines were excuted while running the tests.
 
 
 How do I ...
