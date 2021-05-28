@@ -83,6 +83,13 @@ def _check_hist_bins(xlo, xhi):
     have xlo/xhi in decreasing order, since the lo/hi values still
     hold.
     """
+    if len(xlo) != len(xhi):
+        # Not a Sherpa specific error, because this is more for developers.
+        raise ValueError('Input arrays must have same length.')
+    # Nothing to compare if input arrays are empty.
+    if len(xlo) == 0:
+        return xlo, xhi
+
     # Technically idx should be 0 or 1, with no -1 values. We
     # do not enforce this. What we do is to take all bins that
     # appear similar (sao_fcmp==0) and set the xlo[i+1] bin
@@ -97,7 +104,6 @@ def _check_hist_bins(xlo, xhi):
     if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
         xlo, xhi = xhi, xlo
     equal = sao_fcmp(xlo[1:], xhi[:-1], _tol)
-    print(equal)
     idx, = np.where(equal == 0)
     xlo[idx + 1] = xhi[idx]
 

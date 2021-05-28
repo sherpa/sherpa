@@ -846,14 +846,7 @@ def test_check_hist_bins():
     xlo = np.arange(5, dtype=float)
     xhi = xlo + 1
     xhi[2] = 2.9999999
-    out1, out2 = _check_hist_bins(xlo.copy(), xhi.copy())
-    assert np.all(out1[1:] == out2[:-1])
-
-    out1, out2 = _check_hist_bins(xhi.copy(), xlo.copy())
-    assert np.all(out1[1:] == out2[:-1])
-
-    out2, out1 = _check_hist_bins(xlo.copy()[::-1], xhi.copy()[::-1])
-    assert np.all(out1[1:] == out2[:-1])
-
-    out2, out1 = _check_hist_bins(xhi.copy()[::-1], xlo.copy()[::-1])
-    assert np.all(out1[1:] == out2[:-1])
+    for x1, x2 in [(xlo, xhi), (xhi, xlo),
+                   (xlo[::-1], xhi[::-1]), (xlo[::-1], xhi[::-1])]:
+        out1, out2 = _check_hist_bins(x1.copy(), x2.copy())
+        assert np.all(out1[1:] == out2[:-1])

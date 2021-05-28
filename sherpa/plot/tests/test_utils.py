@@ -19,7 +19,7 @@
 #
 import numpy as np
 
-from sherpa.plot.utils import histrogram_line
+from sherpa.plot.utils import histogram_line
 
 
 def test_histrogram_line():
@@ -29,7 +29,7 @@ def test_histrogram_line():
     y = np.arange(5) / .4
 
     for xlo, xhi in [(xlow, xhigh), (xhigh, xlow)]:
-        x, y2 = histrogram_line(xlo, xhi, y)
+        x, y2 = histogram_line(xlo, xhi, y)
         assert np.all(np.ma.masked_invalid(x) ==
                       np.ma.masked_invalid([0., 1., 1., 2., 2., 2.9,
                                             np.nan, 3., 4., 4., 5.]))
@@ -37,7 +37,7 @@ def test_histrogram_line():
                       np.ma.masked_invalid([0.,  0.,  2.5,  2.5,  5.,  5.,
                                             np.nan, 7.5, 7.5, 10., 10.]))
 
-        x, y2 = histrogram_line(xlo[::-1], xhi[::-1], y)
+        x, y2 = histogram_line(xlo[::-1], xhi[::-1], y)
         assert np.all(np.ma.masked_invalid(x) ==
                       np.ma.masked_invalid([5., 4., 4., 3., np.nan, 2.9,
                                             2., 2., 1., 1., 0.]))
