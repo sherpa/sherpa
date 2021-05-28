@@ -1761,13 +1761,65 @@ class DataPHA(Data1D):
 
         return newarf
 
-    # The energy bins can be grouped or ungrouped.  By default,
-    # they should be grouped if the data are grouped.  There are
-    # certain contexts (e.g., plotting) where we will retrieve the
-    # energy bins, and later filter the data; but filtering
-    # is automatically followed by grouping.  Grouping the data
-    # twice is an error.
     def _get_ebins(self, response_id=None, group=True):
+        """Return the low and high edges of the independent axis.
+
+        This method is badly named as it will return values in
+        either channel or energy units, depending on the units
+        setting and the associated response information.
+
+        Parameters
+        ----------
+        response_id : int or None, optional
+            The response to use when units are not "channel". The
+            default is to use the default response identifier.
+        group : bool, optional
+            Should the current grouping setting be applied. This is
+            only used if the "grouped" attribute is set.
+
+        Returns
+        -------
+        lo, hi : ndarray
+            The low and high edges of each bin, in either channels or
+            keV: energy is used if the units setting is not energy and
+            a response (RMF or ARF) is loaded, otherwise channels are
+            used. If the group flag is set and the data set is grouped
+            then it uses the grouping settings, otherwise the data is
+            for each channel. No filtering is applied.
+
+        Examples
+        --------
+
+        >>> pha.ungroup()
+        >>> pha.units = 'channel'
+        >>> clo, chi = pha._get_ebins()
+        >>> (clo == pha.channel).all()
+        True
+        >>> (chi == clo + 1).all()
+        True
+
+        >>> pha.units = 'energy'
+        >>> elo, ehi = pha._get_ebins()
+        >>> elo.size == pha.channel.size
+        True
+        >>> elo[0:5]
+        array([0.00146, 0.0146 , 0.0292 , 0.0438 , 0.0584 ])
+        >>> (elo[1:] == ehi[:-1]).all()
+        True
+
+        >>> pha.group()
+        >>> glo, ghi = pha._get_ebins()
+        >>> glo[0:5]
+        array([0.00146   , 0.2482    , 0.3066    , 0.46720001, 0.56940001])
+
+        Note that the returned units are energy even if units is set
+        to "wavelength":
+
+        >>> pha.units = 'wave'
+        >>> wlo, whi = pha._get_ebins()
+        >>> (wlo == glo).all()
+
+        """
         group = bool_cast(group)
 
         if self.units == 'channel':
@@ -1793,10 +1845,6 @@ class DataPHA(Data1D):
                 elo = self.channel
                 ehi = self.channel + 1
 
-        # If the data are grouped, then we should group up
-        # the energy bins as well.  E.g., if group 1 is
-        # channels 1-5, then the energy boundaries for the
-        # *group* should be elo[0], ehi[4].
         if self.grouped and group:
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
