@@ -1281,7 +1281,9 @@ class DataPHA(Data1D):
             raise DataErr('nogrouping', self.name)
 
         if self._grouped == val:
-            # TODO: check if this is sensible
+            # The _set_grouping call recognizes when the grouping array
+            # is changed and _filter_recreate is called, so we can
+            # do nothing here if the grouped setting is unchanged.
             return
 
         self._grouped = val
