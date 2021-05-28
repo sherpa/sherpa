@@ -1764,9 +1764,13 @@ class DataPHA(Data1D):
     def _get_ebins(self, response_id=None, group=True):
         """Return the low and high edges of the independent axis.
 
-        This method is badly named as it will return values in
-        either channel or energy units, depending on the units
-        setting and the associated response information.
+        This method is badly named as it will return values in either
+        channel or energy units, depending on the units setting and
+        the associated response information. It also returns the
+        approximation of the mapping from channel space to energy -
+        that is the E_MIN and E_MAX columns from the RMF EBOUNDS block
+        rather than from the ENERG_LO and ENERG_HI columns from the
+        MATRIX block.
 
         Parameters
         ----------
@@ -1786,6 +1790,10 @@ class DataPHA(Data1D):
             used. If the group flag is set and the data set is grouped
             then it uses the grouping settings, otherwise the data is
             for each channel. No filtering is applied.
+
+        See Also
+        --------
+        _get_indep
 
         Examples
         --------
@@ -1858,6 +1866,65 @@ class DataPHA(Data1D):
         return (self.channel,)
 
     def _get_indep(self, filter=False):
+        """Return the low and high edges of the independent axis.
+
+        Unlike _get_ebins, this returns values in the "native" space
+        of the response - i.e. for a RMF, it returns the bounds from
+        the MATRIX rather than EBOUNDS extension of the RMF - and not
+        the approximation used in _get_ebins.
+
+        Parameters
+        ----------
+        filter : bool, optional
+            It is not clear what this option means.
+
+        Returns
+        -------
+        lo, hi : ndarray
+            The low and high edges of each bin, in either keV or
+            Angstroms.
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+            The data set does not contain a response.
+
+        See Also
+        --------
+        _get_ebins
+
+        Notes
+        -----
+        If the PHA file contains multiple responses then they aare
+        combined to create the overall grid.
+
+        Examples
+        --------
+
+        >>> pha.units = 'energy'
+        >>> elo, eho = pha._get_indep()
+        >>> elo.shape
+        (1090,)
+        >>> pha.channel.shape
+        (1024,)
+        >>> elo[0:5]
+        array([0.1 , 0.11, 0.12, 0.13, 0.14])
+        >>> ehi[0:5]
+        array([0.11      , 0.12      , 0.13      , 0.14      , 0.15000001])
+        >>> (elo[1:] == ehi[:-1]).all()
+        True
+
+        >>> pha.units = 'wave'
+        >>> wlo, who = pha._get_indep()
+        >>> wlo[0:4]
+        array([112.71289825, 103.32015848,  95.37245534,  88.56013348])
+        >>> whi[0:4]
+        array([123.98418555, 112.71289825, 103.32015848,  95.37245534])
+        >>> (wlo[:-1] == whi[1:]).all()
+        True
+
+        """
+
         if (self.bin_lo is not None) and (self.bin_hi is not None):
             elo = self.bin_lo
             ehi = self.bin_hi
@@ -1890,6 +1957,8 @@ class DataPHA(Data1D):
                 energylist.append((lo, hi))
 
             if len(energylist) > 1:
+                # TODO: This is only tested by test_eval_multi_xxx and not with
+                # actual (i.e. real world) data
                 elo, ehi, lookuptable = compile_energy_grid(energylist)
             elif (not energylist or
                   (len(energylist) == 1 and
