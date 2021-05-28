@@ -23,6 +23,8 @@ import logging
 
 import pytest
 
+import numpy as np
+
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -132,3 +134,99 @@ def test_filter_bad_notice_361(make_data_path):
     ui.notice(0.5, 8.0)
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['0.5-8.0'])
+
+
+@requires_fits
+@requires_data
+def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
+    """Check behavior when the data is ungrouped.
+
+    This is a test of the current behavior, to check that
+    values still hold. It may be necessary to change this
+    test if we change the quality handling.
+    """
+
+    infile = make_data_path('q1127_src1_grp30.pi')
+    ui.load_pha(infile)
+    pha = ui.get_data()
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    assert ui.get_dep().shape == (439, )
+    ui.ungroup()
+    assert ui.get_dep().shape == (1024, )
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    ui.ignore_bad()
+    assert ui.get_dep().shape == (1024, )
+    assert pha.quality_filter is None
+
+    expected = np.ones(1024, dtype=bool)
+    expected[996:1025] = False
+    assert pha.mask == pytest.approx(expected)
+
+    # At this point we've changed the mask array so Sherpa thinks
+    # we've applied a filter, so a notice is not going to change
+    # anything. See issue #1169
+    #
+    ui.notice(0.5, 7)
+    assert pha.mask == pytest.approx(expected)
+
+    # We need to ignore to change the mask.
+    #
+    ui.ignore(None, 0.5)
+    ui.ignore(7, None)
+    expected[0:35] = False
+    expected[479:1025] = False
+    assert pha.mask == pytest.approx(expected)
+
+
+@requires_fits
+@requires_data
+def test_filter_bad_grouped(make_data_path, clean_astro_ui):
+    """Check behavior when the data is grouped.
+
+    This is a test of the current behavior, to check that
+    values still hold. It may be necessary to change this
+    test if we change the quality handling.
+    """
+
+    infile = make_data_path('q1127_src1_grp30.pi')
+    ui.load_pha(infile)
+    pha = ui.get_data()
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    assert ui.get_dep().shape == (439, )
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    # The last group is marked as quality=2 and so calling
+    # ignore_bad means we lose that group.
+    #
+    ui.ignore_bad()
+    assert ui.get_dep().shape == (438, )
+    assert pha.mask is True
+
+    expected = np.ones(1024, dtype=bool)
+    expected[996:1025] = False
+    assert pha.quality_filter == pytest.approx(expected)
+
+    # What happens when we filter the data? Unlike #1169
+    # we do change the noticed range.
+    #
+    ui.notice(0.5, 7)
+    assert pha.quality_filter == pytest.approx(expected)
+
+    # The mask has been filtered to remove the bad channels
+    # (this is grouped data)
+    expected = np.ones(438, dtype=bool)
+    expected[0:15] = False
+    expected[410:438] = False
+    assert pha.mask == pytest.approx(expected)
+
+    expected = np.ones(996, dtype=bool)
+    expected[0:34] = False
+    expected[481:996] = False
+    assert pha.get_mask() == pytest.approx(expected)
