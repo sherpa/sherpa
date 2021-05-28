@@ -268,7 +268,17 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     # We need to identify non-consecutive bins, as a nan needs
     # to be added between the segments.
     #
-    idxs, = numpy.where(xhi[:-1] != xlo[1:])
+    # deal with xhi <-> xlo switches. Those can occor when converting
+    # from energy to wavelength
+    if xlo[0] > xhi[0]:
+        xlo, xhi = xhi, xlo
+    # Deal with reversed order. Can happen when converting from energy
+    # to wavelength, or if input PHA is not ordered in increasing energy.
+    if xhi[0] > xhi[-1]:
+        idxs, = numpy.where(xlo[:-1] != xhi[1:])
+    else:
+        idxs, = numpy.where(xhi[:-1] != xlo[1:])
+
     if idxs.size > 0:
         idxs = 2 * (idxs + 1)
         nans = [numpy.nan] * idxs.size
