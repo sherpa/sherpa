@@ -1233,7 +1233,6 @@ class DataPHA(Data1D):
     syserror
     bin_lo
     bin_hi
-    grouping
     quality
     exposure
     backscal
@@ -1335,7 +1334,9 @@ class DataPHA(Data1D):
             self._filter_recreate()
 
     grouping = property(_get_grouping, _set_grouping,
-                        doc='The grouping scheme.')
+                        doc='The grouping scheme.\n\nAn array, matching the ' +
+                        'channels attribute, where a 1 means the start\n' +
+                        'of a group and -1 continues the previous group.')
 
     def _get_subtracted(self):
         return self._subtracted
