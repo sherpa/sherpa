@@ -1788,10 +1788,10 @@ def test_plot_pdf_replot_no_data(session):
     x = np.asarray([2, 8, 4, 6])
 
     # check on the error so we know when the code has changed
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(TypeError) as exc:
         s.plot_pdf(x, replot=True)
 
-    assert str(exc.value) == "'NoneType' object has no attribute 'size'"
+    assert "'NoneType' has no len" in str(exc.value)
 
 
 @requires_pylab
