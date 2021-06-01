@@ -1761,27 +1761,87 @@ class DataPHA(Data1D):
 
         return newarf
 
-    # The energy bins can be grouped or ungrouped.  By default,
-    # they should be grouped if the data are grouped.  There are
-    # certain contexts (e.g., plotting) where we will retrieve the
-    # energy bins, and later filter the data; but filtering
-    # is automatically followed by grouping.  Grouping the data
-    # twice is an error.
     def _get_ebins(self, response_id=None, group=True):
+        """Return the low and high edges of the independent axis.
+
+        This method is badly named as it will return values in either
+        channel or energy units, depending on the units setting and
+        the associated response information. When the response
+        includes a RMF then it returns the approximation of the
+        mapping from channel space to energy - that is the E_MIN and
+        E_MAX columns from the RMF EBOUNDS block rather than from the
+        ENERG_LO and ENERG_HI columns from the MATRIX block.
+
+        Parameters
+        ----------
+        response_id : int or None, optional
+            The response to use when units are not "channel". The
+            default is to use the default response identifier.
+        group : bool, optional
+            Should the current grouping setting be applied. This is
+            only used if the "grouped" attribute is set.
+
+        Returns
+        -------
+        lo, hi : ndarray
+            The low and high edges of each bin, in either channels or
+            keV: energy is used unless the units setting is channel or
+            there is no associated response. If the group flag is set
+            and the data set is grouped then it uses the grouping
+            settings, otherwise the data is for each channel. No
+            filtering is applied.
+
+        See Also
+        --------
+        _get_indep
+
+        Examples
+        --------
+
+        >>> pha.ungroup()
+        >>> pha.units = 'channel'
+        >>> clo, chi = pha._get_ebins()
+        >>> (clo == pha.channel).all()
+        True
+        >>> (chi == clo + 1).all()
+        True
+
+        >>> pha.units = 'energy'
+        >>> elo, ehi = pha._get_ebins()
+        >>> elo.size == pha.channel.size
+        True
+        >>> elo[0:5]
+        array([0.00146, 0.0146 , 0.0292 , 0.0438 , 0.0584 ])
+        >>> (elo[1:] == ehi[:-1]).all()
+        True
+
+        >>> pha.group()
+        >>> glo, ghi = pha._get_ebins()
+        >>> glo[0:5]
+        array([0.00146   , 0.2482    , 0.3066    , 0.46720001, 0.56940001])
+
+        Note that the returned units are energy even if units is set
+        to "wavelength":
+
+        >>> pha.units = 'wave'
+        >>> wlo, whi = pha._get_ebins()
+        >>> (wlo == glo).all()
+
+        """
         group = bool_cast(group)
 
         if self.units == 'channel':
             elo = self.channel
             ehi = self.channel + 1
+        elif (self.bin_lo is not None) and (self.bin_hi is not None):
+            elo = self.bin_lo
+            ehi = self.bin_hi
+            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
+                elo = self._hc / self.bin_hi
+                ehi = self._hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
-            if (self.bin_lo is not None) and (self.bin_hi is not None):
-                elo = self.bin_lo
-                ehi = self.bin_hi
-                if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                    elo = self._hc / self.bin_hi
-                    ehi = self._hc / self.bin_lo
-            elif rmf is not None:
+            if rmf is not None:
                 if (rmf.e_min is None) or (rmf.e_max is None):
                     raise DataErr('noenergybins', 'RMF')
                 elo = rmf.e_min
@@ -1793,14 +1853,15 @@ class DataPHA(Data1D):
                 elo = self.channel
                 ehi = self.channel + 1
 
-        # If the data are grouped, then we should group up
-        # the energy bins as well.  E.g., if group 1 is
-        # channels 1-5, then the energy boundaries for the
-        # *group* should be elo[0], ehi[4].
         if self.grouped and group:
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 
+        # apply_grouping applies a quality filter to the output
+        # but if we get here then there is no equivalent. This
+        # is likely confusing, at best, but we don't have good
+        # tests to check what we should be doing.
+        #
         return (elo, ehi)
 
     def get_indep(self, filter=True):
@@ -1810,6 +1871,65 @@ class DataPHA(Data1D):
         return (self.channel,)
 
     def _get_indep(self, filter=False):
+        """Return the low and high edges of the independent axis.
+
+        Unlike _get_ebins, this returns values in the "native" space
+        of the response - i.e. for a RMF, it returns the bounds from
+        the MATRIX rather than EBOUNDS extension of the RMF - and not
+        the approximation used in _get_ebins.
+
+        Parameters
+        ----------
+        filter : bool, optional
+            It is not clear what this option means.
+
+        Returns
+        -------
+        lo, hi : ndarray
+            The low and high edges of each bin, in either keV or
+            Angstroms.
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+            The data set does not contain a response.
+
+        See Also
+        --------
+        _get_ebins
+
+        Notes
+        -----
+        If the PHA file contains multiple responses then they are
+        combined to create the overall grid.
+
+        Examples
+        --------
+
+        >>> pha.units = 'energy'
+        >>> elo, eho = pha._get_indep()
+        >>> elo.shape
+        (1090,)
+        >>> pha.channel.shape
+        (1024,)
+        >>> elo[0:5]
+        array([0.1 , 0.11, 0.12, 0.13, 0.14])
+        >>> ehi[0:5]
+        array([0.11      , 0.12      , 0.13      , 0.14      , 0.15000001])
+        >>> (elo[1:] == ehi[:-1]).all()
+        True
+
+        >>> pha.units = 'wave'
+        >>> wlo, who = pha._get_indep()
+        >>> wlo[0:4]
+        array([112.71289825, 103.32015848,  95.37245534,  88.56013348])
+        >>> whi[0:4]
+        array([123.98418555, 112.71289825, 103.32015848,  95.37245534])
+        >>> (wlo[:-1] == whi[1:]).all()
+        True
+
+        """
+
         if (self.bin_lo is not None) and (self.bin_hi is not None):
             elo = self.bin_lo
             ehi = self.bin_hi
@@ -1842,6 +1962,8 @@ class DataPHA(Data1D):
                 energylist.append((lo, hi))
 
             if len(energylist) > 1:
+                # TODO: This is only tested by test_eval_multi_xxx and not with
+                # actual (i.e. real world) data
                 elo, ehi, lookuptable = compile_energy_grid(energylist)
             elif (not energylist or
                   (len(energylist) == 1 and
@@ -3675,19 +3797,46 @@ class DataPHA(Data1D):
                 self.get_ylabel())
 
     def group(self):
-        "Group the data according to the data set's grouping scheme"
+        """Group the data according to the data set's grouping scheme.
+
+        This sets the grouping flag which means that the value of the
+        grouping attribute will be used when accessing data values. This
+        can be called even if the grouping attribute is empty.
+
+        See Also
+        --------
+        ungroup
+        """
         self.grouped = True
 
     def ungroup(self):
-        "Ungroup the data"
+        """Remove any data grouping.
+
+        This un-sets the grouping flag which means that the grouping
+        attribute will not be used when accessing data values.
+
+        See Also
+        --------
+        group
+        """
         self.grouped = False
 
     def subtract(self):
-        "Subtract the background data"
+        """Subtract the background data.
+
+        See Also
+        --------
+        unsubtract
+        """
         self.subtracted = True
 
     def unsubtract(self):
-        "Remove background subtraction"
+        """Remove background subtraction.
+
+        See Also
+        --------
+        subtract
+        """
         self.subtracted = False
 
 
