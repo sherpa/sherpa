@@ -8729,15 +8729,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
         id = self._fix_id(id)
-        d = sherpa.astro.data.DataPHA('', None, None)
+
         if id in self._data:
             d = self._get_pha_data(id)
         else:
-            # Make empty header OGIP compliant
-            # And add appropriate values to header from input values
-            d.header = dict(HDUCLASS="OGIP", HDUCLAS1="SPECTRUM",
-                            HDUCLAS2="TOTAL", HDUCLAS3="TYPE:I",
-                            HDUCLAS4="COUNT", HDUVERS="1.1.0")
+            d = sherpa.astro.data.DataPHA('', None, None)
             self.set_data(id, d)
 
         if rmf is None:

@@ -1285,6 +1285,8 @@ class DataPHA(Data1D):
     backscal : scalar or array or None, optional
     areascal : scalar or array or None, optional
     header : dict or None, optional
+        If ``None`` the header will be pre-populated with a minimal set of
+        keywords that would be found in an OGIP compliant PHA I file.
 
     Attributes
     ----------
@@ -1487,7 +1489,15 @@ class DataPHA(Data1D):
         self.exposure = exposure
         self.backscal = backscal
         self.areascal = areascal
-        self.header = {} if header is None else header
+        if header is None:
+            self.header = {'HDUCLASS': "OGIP", 'HDUCLAS1': "SPECTRUM",
+                           'HDUCLAS2': "TOTAL", 'HDUCLAS3': "TYPE:I",
+                           'HDUCLAS4': "COUNT", 'HDUVERS': "1.2.1",
+                           'TELESCOP': "UNKNOWN", 'INTRUME': "UNKNOWN",
+                           "FILTER": "UNKNOWN", "POISSERR": True}
+
+        else:
+            self.header = header
         self._grouped = (grouping is not None)
         # _original_groups is set False if the grouping is changed via
         # the _dynamic_groups method. This is currently only used by the
