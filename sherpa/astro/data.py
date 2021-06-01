@@ -3760,7 +3760,7 @@ class DataPHA(Data1D):
         else:
             # assume channel units
             umin = min(self.channel[0], self.channel[-1])
-            umax = max(self.channel[1], self.channel[-1])
+            umax = max(self.channel[0], self.channel[-1])
 
         assert umin < umax, (self.units, umin, umax)
 

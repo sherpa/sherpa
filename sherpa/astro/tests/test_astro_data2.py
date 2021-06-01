@@ -887,28 +887,20 @@ def test_pha_reverse_sorted():
     assert len(d.get_dep(filter=True)) == 3
 
 
-@pytest.fixture
-def read_test_image(make_data_path):
-    from sherpa.astro.io import read_image
-    filename = 'acisf07999_000N001_r0035_regevt3_srcimg.fits'
-    d = read_image(make_data_path(filename))
-    d.name = 'test.img'
-    return d
-
-
 @requires_fits
 @requires_data
 def test_xmmrgs_notice(make_data_path):
     '''Test that notice and ignore works on XMMRGS dataset, which is
     ordered in increasing wavelength, not energy'''
-    from sherpa.astro.ui.utils import Session
-    session = Session()
-    session.load_data(make_data_path('xmmrgs/P0112880201R1S004SRSPEC1003.FTZ'))
-    session.load_rmf(make_data_path('xmmrgs/P0112880201R1S004RSPMAT1003.FTZ'))
-    session.set_analysis('wave')
-    session.notice(18.8, 19.2)
-    dat = session.get_data()
+    from sherpa.astro.io import read_pha, read_rmf
+    dat = read_pha(make_data_path('xmmrgs/P0112880201R1S004SRSPEC1003.FTZ'))
+    rmf = read_rmf(make_data_path('xmmrgs/P0112880201R1S004RSPMAT1003.FTZ'))
+    dat.set_rmf(rmf)
+    dat.units = 'wave'
+    dat.notice(18.8, 19.2)
     assert len(dat.get_dep(filter=True)) == 41
+    assert dat.get_filter(format='%.2f') == '19.20:18.80'
 
     dat.ignore(10, 19.)
     assert len(dat.get_dep(filter=True)) == 20
+    assert dat.get_filter(format='%.2f') == '19.20:19.01'
