@@ -136,7 +136,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 3.6, 3.7, 3.8
+* Python versions: 3.7, 3.8, 3.9
 * Python packages: ``setuptools``, ``numpy``
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these

@@ -3,7 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
-![Python version](https://img.shields.io/badge/Python-3.6,3.7,3.8-green.svg?style=flat)
+![Python version](https://img.shields.io/badge/Python-3.7,3.8,3.9-green.svg?style=flat)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
@@ -16,7 +16,7 @@
   - [Building from source](#building-from-source)
 - [History](#history)
   - [Release History](#release-history)
-  
+
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
@@ -71,7 +71,7 @@ documentation, and should be read if the following is not sufficient.
 It is strongly recommended that some form of *virtual environment* is
 used with Sherpa.
 
-Sherpa is tested against Python versions 3.6, 3.7, and 3.8.
+Sherpa is tested against Python versions 3.7, 3.8, and 3.9.
 
 The last version of Sherpa which supported Python 2.7 is
 [Sherpa 4.11.1](https://doi.org/10.5281/zenodo.3358134).
@@ -80,7 +80,7 @@ Using Anaconda
 --------------
 
 Sherpa is provided for both Linux and macOS operating systems running
-Python 3.6, 3.7, and 3.8. It can be installed with the `conda`
+Python 3.7, 3.8, and 3.9. It can be installed with the `conda`
 package manager by saying
 
     $ conda install -c sherpa sherpa
@@ -124,7 +124,7 @@ Release History
 
 4.12.2: 27 October 2020 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4141888.svg)](https://doi.org/10.5281/zenodo.4141888)
 
-4.12.1: 14 July 2020 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3944985.svg)](https://doi.org/10.5281/zenodo.3944985) 
+4.12.1: 14 July 2020 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3944985.svg)](https://doi.org/10.5281/zenodo.3944985)
 
 4.12.0: 30 January 2020 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3631574.svg)](https://doi.org/10.5281/zenodo.3631574)
 
@@ -147,4 +147,3 @@ Release History
 4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](https://doi.org/10.5281/zenodo.49832)
 
 4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](https://doi.org/10.5281/zenodo.45243)
-
