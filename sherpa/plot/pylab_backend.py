@@ -17,7 +17,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
 import io
 import logging
 
@@ -28,6 +27,7 @@ from matplotlib import pyplot as plt
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import ArgumentErr, NotImplementedErr
 from sherpa.utils import formatting
+from sherpa.plot.utils import histogram_line
 
 
 __all__ = ('clear_window', 'point', 'plot', 'histo', 'contour', 'set_subplot',
@@ -246,47 +246,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
 
     if linecolor is not None:
         logger.warning("The linecolor attribute ({}) is unused.".format(linecolor))
-
-    # Draw the data as a histogram, manually creating the lines
-    # from the low to high edge of each bin. An alternative
-    # would be to create RectanglePatches, one for each bin,
-    # but I don't want each bin to go down to 0. I do not find
-    # the existing drawstyle options to be sufficient.
-    #
-    # See https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays#5347492
-    # for interleaving arrays.
-    #
-    def intersperse(a, b):
-        out = numpy.empty((a.size + b.size, ), dtype=a.dtype)
-        out[0::2] = a
-        out[1::2] = b
-        return out
-
-    x = intersperse(xlo, xhi)
-    y2 = intersperse(y, y)
-
-    # We need to identify non-consecutive bins, as a nan needs
-    # to be added between the segments.
-    #
-    # deal with xhi <-> xlo switches. Those can occor when converting
-    # from energy to wavelength
-    if xlo[0] > xhi[0]:
-        xlo, xhi = xhi, xlo
-    # Deal with reversed order. Can happen when converting from energy
-    # to wavelength, or if input PHA is not ordered in increasing energy.
-    if xhi[0] > xhi[-1]:
-        idxs, = numpy.where(xlo[:-1] != xhi[1:])
-    else:
-        idxs, = numpy.where(xhi[:-1] != xlo[1:])
-
-    if idxs.size > 0:
-        idxs = 2 * (idxs + 1)
-        nans = [numpy.nan] * idxs.size
-
-        # ensure the arrays are floats so we can add nan values
-        #
-        x = numpy.insert(x.astype(numpy.float64), idxs, nans)
-        y2 = numpy.insert(y2.astype(numpy.float64), idxs, nans)
+    x, y2 = histogram_line(xlo, xhi, y)
 
     # Note: this handles clearing the plot if needed.
     #

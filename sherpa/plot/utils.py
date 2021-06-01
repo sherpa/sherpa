@@ -26,7 +26,7 @@ def intersperse(a, b):
     '''Interleave two arrays a and b
 
     See https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays#5347492
-    # for interleaving arrays.
+    for interleaving arrays.
     '''
     out = np.empty((a.size + b.size, ), dtype=a.dtype)
     out[0::2] = a
