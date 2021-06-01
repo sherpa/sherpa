@@ -1900,7 +1900,7 @@ class DataPHA(Data1D):
 
         Notes
         -----
-        If the PHA file contains multiple responses then they aare
+        If the PHA file contains multiple responses then they are
         combined to create the overall grid.
 
         Examples
