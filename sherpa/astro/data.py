@@ -1766,11 +1766,11 @@ class DataPHA(Data1D):
 
         This method is badly named as it will return values in either
         channel or energy units, depending on the units setting and
-        the associated response information. It also returns the
-        approximation of the mapping from channel space to energy -
-        that is the E_MIN and E_MAX columns from the RMF EBOUNDS block
-        rather than from the ENERG_LO and ENERG_HI columns from the
-        MATRIX block.
+        the associated response information. When the response
+        includes a RMF then it returns the approximation of the
+        mapping from channel space to energy - that is the E_MIN and
+        E_MAX columns from the RMF EBOUNDS block rather than from the
+        ENERG_LO and ENERG_HI columns from the MATRIX block.
 
         Parameters
         ----------
@@ -1785,11 +1785,11 @@ class DataPHA(Data1D):
         -------
         lo, hi : ndarray
             The low and high edges of each bin, in either channels or
-            keV: energy is used if the units setting is not energy and
-            a response (RMF or ARF) is loaded, otherwise channels are
-            used. If the group flag is set and the data set is grouped
-            then it uses the grouping settings, otherwise the data is
-            for each channel. No filtering is applied.
+            keV: energy is used unless the units setting is channel or
+            there is no associated response. If the group flag is set
+            and the data set is grouped then it uses the grouping
+            settings, otherwise the data is for each channel. No
+            filtering is applied.
 
         See Also
         --------
