@@ -80,7 +80,10 @@ the `pytest-xdist <https://pypi.org/project/pytest-xdist>`_ module
   pytest -n auto
 
 will autoselect the number of cores, an explicit number can also be given
-(``pytest -n 4``).
+(``pytest -n 4``). Note that if you have :term:`DS9` and :term:`XPA`
+installed then it is possible that the DS9 tests may fail when running
+tests in parallel (since multiple tests can end up over-writing the
+DS9 data before it can be checked).
 
 Test coverage can be included as part of the tests by installing the
 `coverage <https://coverage.readthedocs.io/en/latest/index.html>`_

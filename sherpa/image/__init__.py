@@ -17,6 +17,20 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Support image display with an external display tool.
+
+At present the only supported application is DS9 [DS9]_, which is
+connected to via XPA [XPA]_.
+
+References
+----------
+
+..  [DS9] SAOImageDS9, "An image display and visualization tool for astronomical data", https://ds9.si.edu/
+
+..  [XPA] "The XPA Messaging System", https://hea-www.harvard.edu/saord/xpa/
+
+"""
+
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, bool_cast
 
