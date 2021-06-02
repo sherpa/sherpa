@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -40,10 +40,9 @@ __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',
            'ResidImage', 'PSFImage', 'PSFKernelImage', 'SourceImage',
            'ComponentModelImage', 'ComponentSourceImage')
 
-__metaclass__ = type
-
 
 class Image(NoNewAttributesAfterInit):
+    """Base class for sending image data to an external viewer."""
 
     def __init__(self):
         NoNewAttributesAfterInit.__init__(self)
