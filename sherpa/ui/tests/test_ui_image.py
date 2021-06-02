@@ -225,13 +225,14 @@ def test_get_model_component_image_with_convolution(session):
     assert obj.eqpos is None
     assert obj.sky is None
 
-    # Note that the convolution component is NOT applied
-    # to the data!
-    y = d.eval_model(m.parts[0]).reshape((9, 9))
+    # Note that the convolution component is applied
+    # to the data.
+    psf = s.get_model_component('psf')
+    y = d.eval_model(psf(m.parts[0])).reshape((9, 9))
     assert obj.y == pytest.approx(y)
 
     # sanity check
-    assert y[3, 3] == pytest.approx(100.0)
+    assert y[3, 3] == pytest.approx(42.25302)
 
 
 @requires_ds9

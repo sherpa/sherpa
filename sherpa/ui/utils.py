@@ -15617,6 +15617,11 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
+        # Ensure the convolution models get applied
+        is_source = self._get_model_status(id)[1]
+        model = self._add_convolution_models(id, self.get_data(id),
+                                             model, is_source)
+
         self._prepare_imageobj(id, self._mdlcompimage, model=model)
         return self._mdlcompimage
 
