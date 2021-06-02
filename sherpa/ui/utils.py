@@ -400,15 +400,17 @@ class Session(NoNewAttributesAfterInit):
             'kernel': 'kernel',
         }
 
-        self._dataimage = sherpa.image.DataImage()
-        self._modelimage = sherpa.image.ModelImage()
-        self._sourceimage = sherpa.image.SourceImage()
-        self._ratioimage = sherpa.image.RatioImage()
-        self._residimage = sherpa.image.ResidImage()
-        self._psfimage = sherpa.image.PSFImage()
-        self._kernelimage = sherpa.image.PSFKernelImage()
-        self._mdlcompimage = sherpa.image.ComponentModelImage()
-        self._srccompimage = sherpa.image.ComponentSourceImage()
+        self._image_types = {
+            'data': sherpa.image.DataImage(),
+            'model': sherpa.image.ModelImage(),
+            'source': sherpa.image.SourceImage(),
+            'ratio': sherpa.image.RatioImage(),
+            'resid': sherpa.image.ResidImage(),
+            'psf': sherpa.image.PSFImage(),
+            'kernel': sherpa.image.PSFKernelImage(),
+            'model_component': sherpa.image.ComponentModelImage(),
+            'source_component': sherpa.image.ComponentSourceImage()
+        }
 
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
@@ -15409,21 +15411,6 @@ class Session(NoNewAttributesAfterInit):
     # Basic imaging
     ###########################################################################
 
-    def _prepare_imageobj(self, id, imageobj, model=None):
-        if(isinstance(imageobj, sherpa.image.ComponentModelImage) or
-                isinstance(imageobj, sherpa.image.ComponentSourceImage)):
-            imageobj.prepare_image(self.get_data(id), model)
-        elif (isinstance(imageobj, sherpa.image.PSFImage) or
-              isinstance(imageobj, sherpa.image.PSFKernelImage)):
-            imageobj.prepare_image(self.get_psf(id), self.get_data(id))
-        elif isinstance(imageobj, sherpa.image.DataImage):
-            imageobj.prepare_image(self.get_data(id))
-        elif isinstance(imageobj, sherpa.image.SourceImage):
-            imageobj.prepare_image(self.get_data(id), self.get_source(id))
-        else:
-            imageobj.prepare_image(self.get_data(id), self.get_model(id))
-        return imageobj
-
     #
     # Image object access
     #
@@ -15466,8 +15453,10 @@ class Session(NoNewAttributesAfterInit):
         (150, 175)
 
         """
-        self._prepare_imageobj(id, self._dataimage)
-        return self._dataimage
+        imageobj = self._image_types['data']
+        data = self.get_data(id)
+        imageobj.prepare_image(data)
+        return imageobj
 
     def get_model_image(self, id=None):
         """Return the data used by image_model.
@@ -15512,8 +15501,12 @@ class Session(NoNewAttributesAfterInit):
         >>> resid = dinfo.y - minfo.y
 
         """
-        self._prepare_imageobj(id, self._modelimage)
-        return self._modelimage
+        imageobj = self._image_types['model']
+        data = self.get_data(id)
+        model = self.get_model(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
+
 
     # DOC-TODO: it looks like get_source_image doesn't raise DataErr with
     # a non-2D data set
@@ -15557,8 +15550,12 @@ class Session(NoNewAttributesAfterInit):
         (150, 175)
 
         """
-        self._prepare_imageobj(id, self._sourceimage)
-        return self._sourceimage
+        imageobj = self._image_types['source']
+        data = self.get_data(id)
+        source = self.get_source(id)
+        imageobj.prepare_image(data, source)
+        return imageobj
+
 
     def get_model_component_image(self, id, model=None):
         """Return the data used by image_model_component.
@@ -15622,8 +15619,10 @@ class Session(NoNewAttributesAfterInit):
         model = self._add_convolution_models(id, self.get_data(id),
                                              model, is_source)
 
-        self._prepare_imageobj(id, self._mdlcompimage, model=model)
-        return self._mdlcompimage
+        imageobj = self._image_types['model_component']
+        data = self.get_data(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_source_component_image(self, id, model=None):
         """Return the data used by image_source_component.
@@ -15682,8 +15681,10 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
-        self._prepare_imageobj(id, self._srccompimage, model=model)
-        return self._srccompimage
+        imageobj = self._image_types['source_component']
+        data = self.get_data(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_ratio_image(self, id=None):
         """Return the data used by image_ratio.
@@ -15722,8 +15723,11 @@ class Session(NoNewAttributesAfterInit):
         >>> rinfo = get_ratio_image()
 
         """
-        self._prepare_imageobj(id, self._ratioimage)
-        return self._ratioimage
+        imageobj = self._image_types['ratio']
+        data = self.get_data(id)
+        model = self.get_model(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_resid_image(self, id=None):
         """Return the data used by image_resid.
@@ -15762,8 +15766,11 @@ class Session(NoNewAttributesAfterInit):
         >>> rinfo = get_resid_image()
 
         """
-        self._prepare_imageobj(id, self._residimage)
-        return self._residimage
+        imageobj = self._image_types['resid']
+        data = self.get_data(id)
+        model = self.get_model(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_psf_image(self, id=None):
         """Return the data used by image_psf.
@@ -15799,8 +15806,11 @@ class Session(NoNewAttributesAfterInit):
         (175, 200)
 
         """
-        self._prepare_imageobj(id, self._psfimage)
-        return self._psfimage
+        imageobj = self._image_types['psf']
+        psf = self.get_psf(id)
+        data = self.get_data(id)
+        imageobj.prepare_image(psf, data)
+        return imageobj
 
     def get_kernel_image(self, id=None):
         """Return the data used by image_kernel.
@@ -15836,16 +15846,15 @@ class Session(NoNewAttributesAfterInit):
         (51, 51)
 
         """
-        self._prepare_imageobj(id, self._kernelimage)
-        return self._kernelimage
+        imageobj = self._image_types['kernel']
+        psf = self.get_psf(id)
+        data = self.get_data(id)
+        imageobj.prepare_image(psf, data)
+        return imageobj
 
     #
     # Images
     #
-
-    def _image(self, id, imageobj, shape, newframe, tile, model=None):
-        self._prepare_imageobj(id, imageobj, model).image(
-            shape, newframe, tile)
 
     def image_data(self, id=None, newframe=False, tile=False):
         """Display a data set in the image viewer.
@@ -15907,8 +15916,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_data('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._dataimage, None,
-                    newframe, tile)
+        imageobj = self.get_data_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     def image_model(self, id=None, newframe=False, tile=False):
         """Display the model for a data set in the image viewer.
@@ -15979,8 +15988,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_model('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._modelimage, None,
-                    newframe, tile)
+        imageobj = self.get_model_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     def image_source_component(self, id, model=None, newframe=False,
                                tile=False):
@@ -16057,13 +16066,8 @@ class Session(NoNewAttributesAfterInit):
         ...                        tile=True)
 
         """
-        if model is None:
-            id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
-
-        self._image(id, self._srccompimage, None, newframe, tile, model=model)
+        imageobj = self.get_source_component_image(id, model)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     def image_model_component(self, id, model=None, newframe=False, tile=False):
         """Display a component of the model in the image viewer.
@@ -16140,17 +16144,8 @@ class Session(NoNewAttributesAfterInit):
         ...                       tile=True)
 
         """
-        if model is None:
-            id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
-
-        is_source = self._get_model_status(id)[1]
-        model = self._add_convolution_models(id, self.get_data(id),
-                                             model, is_source)
-
-        self._image(id, self._mdlcompimage, None, newframe, tile, model=model)
+        imageobj = self.get_model_component_image(id, model)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     def image_source(self, id=None, newframe=False, tile=False):
         """Display the source expression for a data set in the image viewer.
@@ -16220,7 +16215,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_source('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._sourceimage, None, newframe, tile)
+        imageobj = self.get_source_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     # DOC-TODO: does newframe make sense here?
     def image_fit(self, id=None, newframe=True, tile=True, deleteframes=True):
@@ -16287,16 +16283,16 @@ class Session(NoNewAttributesAfterInit):
         >>> image_xpaset('frame 2')
 
         """
-        self._prepare_imageobj(id, self._dataimage)
-        self._prepare_imageobj(id, self._modelimage)
-        self._prepare_imageobj(id, self._residimage)
+        data = self.get_data_image(id)
+        model = self.get_model_image(id)
+        resid = self.get_resid_image(id)
         deleteframes = sherpa.utils.bool_cast(deleteframes)
         if deleteframes is True:
             sherpa.image.Image.open()
             sherpa.image.Image.delete_frames()
-        self._dataimage.image(None, False, tile)
-        self._modelimage.image(None, newframe, tile)
-        self._residimage.image(None, newframe, tile)
+        data.image(None, False, tile)
+        model.image(None, newframe, tile)
+        resid.image(None, newframe, tile)
 
     def image_resid(self, id=None, newframe=False, tile=False):
         """Display the residuals (data - model) for a data set in the image viewer.
@@ -16367,8 +16363,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_resid('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._residimage, None,
-                    newframe, tile)
+        imageobj = self.get_resid_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     def image_ratio(self, id=None, newframe=False, tile=False):
         """Display the ratio (data/model) for a data set in the image viewer.
@@ -16426,8 +16422,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_ratio()
 
         """
-        self._image(id, self._ratioimage, None,
-                    newframe, tile)
+        imageobj = self.get_ratio_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self, id=None, newframe=False, tile=False):
@@ -16482,7 +16478,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_psf(2)
 
         """
-        self._image(id, self._psfimage, None, newframe, tile)
+        imageobj = self.get_psf_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
     # DOC-TODO: where to point to for PSF/kernel discussion/description
@@ -16539,7 +16536,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_kernel(2)
 
         """
-        self._image(id, self._kernelimage, None, newframe, tile)
+        imageobj = self.get_kernel_image(id)
+        imageobj.image(shape=None, newframe=newframe, tile=tile)
 
     # Manage these functions (open, close, delete frames, regions, XPA)
     # through unbound functions of the Image class--always talking to
