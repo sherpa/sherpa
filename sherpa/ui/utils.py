@@ -15917,7 +15917,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_data_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_model(self, id=None, newframe=False, tile=False):
         """Display the model for a data set in the image viewer.
@@ -15989,7 +15989,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_model_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_source_component(self, id, model=None, newframe=False,
                                tile=False):
@@ -16067,7 +16067,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_source_component_image(id, model)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_model_component(self, id, model=None, newframe=False, tile=False):
         """Display a component of the model in the image viewer.
@@ -16145,7 +16145,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_model_component_image(id, model)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_source(self, id=None, newframe=False, tile=False):
         """Display the source expression for a data set in the image viewer.
@@ -16216,7 +16216,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_source_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: does newframe make sense here?
     def image_fit(self, id=None, newframe=True, tile=True, deleteframes=True):
@@ -16364,7 +16364,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_resid_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_ratio(self, id=None, newframe=False, tile=False):
         """Display the ratio (data/model) for a data set in the image viewer.
@@ -16423,7 +16423,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_ratio_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self, id=None, newframe=False, tile=False):
@@ -16479,7 +16479,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_psf_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
     # DOC-TODO: where to point to for PSF/kernel discussion/description
@@ -16537,7 +16537,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         imageobj = self.get_kernel_image(id)
-        imageobj.image(shape=None, newframe=newframe, tile=tile)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # Manage these functions (open, close, delete frames, regions, XPA)
     # through unbound functions of the Image class--always talking to
