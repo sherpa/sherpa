@@ -35,6 +35,7 @@ from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
+from sherpa.astro import hc
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
@@ -1837,8 +1838,8 @@ class DataPHA(Data1D):
             elo = self.bin_lo
             ehi = self.bin_hi
             if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
+                elo = hc / self.bin_hi
+                ehi = hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
             if rmf is not None:
@@ -1937,8 +1938,8 @@ class DataPHA(Data1D):
                 if self.units == 'wavelength':
                     return (elo, ehi)
 
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
+                elo = hc / self.bin_hi
+                ehi = hc / self.bin_lo
 
         else:
             energylist = []
@@ -1974,8 +1975,8 @@ class DataPHA(Data1D):
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
-            lo = self._hc / ehi
-            hi = self._hc / elo
+            lo = hc / ehi
+            hi = hc / elo
 
         return (lo, hi)
 
@@ -2083,8 +2084,6 @@ class DataPHA(Data1D):
 
         return numpy.asarray(res, SherpaFloat)
 
-    _hc = 12.39841874  # nist.gov in [keV-Angstrom]
-
     def _channel_to_wavelength(self, val, group=True, response_id=None):
         tiny = numpy.finfo(numpy.float32).tiny
         vals = numpy.asarray(self._channel_to_energy(val, group, response_id))
@@ -2093,7 +2092,7 @@ class DataPHA(Data1D):
                 vals = tiny
         else:
             vals[vals == 0.0] = tiny
-        vals = self._hc / vals
+        vals = hc / vals
         return vals
 
     def _wavelength_to_channel(self, val):
@@ -2110,7 +2109,7 @@ class DataPHA(Data1D):
                 vals = tiny
         else:
             vals[vals <= 0.0] = tiny
-        vals = self._hc / vals
+        vals = hc / vals
         return self._energy_to_channel(vals)
 
     default_background_id = 1
@@ -3302,7 +3301,7 @@ class DataPHA(Data1D):
             if self.units == 'energy':
                 ebin = ehi - elo
             elif self.units == 'wavelength':
-                ebin = self._hc / elo - self._hc / ehi
+                ebin = hc / elo - hc / ehi
             elif self.units == 'channel':
                 ebin = ehi - elo
             else:
@@ -3688,8 +3687,8 @@ class DataPHA(Data1D):
             umin = elo[0]
             umax = ehi[-1]
         elif self.units == 'wavelength':
-            umin = self._hc / ehi[-1]
-            umax = self._hc / elo[0]
+            umin = hc / ehi[-1]
+            umax = hc / elo[0]
         else:
             # assume channel units
             umin = self.channel[0]
@@ -3767,8 +3766,8 @@ class DataPHA(Data1D):
         elo = self.apply_filter(elo, self._min)
         ehi = self.apply_filter(ehi, self._max)
         if self.units == "wavelength":
-            lo = self._hc / ehi
-            hi = self._hc / elo
+            lo = hc / ehi
+            hi = hc / elo
             elo = lo
             ehi = hi
         cnt = self.get_dep(True)

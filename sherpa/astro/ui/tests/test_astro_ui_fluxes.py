@@ -35,6 +35,7 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, \
     IdentifierErr, IOErr, ModelErr
 import sherpa.astro.utils
+from sherpa.astro import hc, charge_e
 
 
 def fail(*arg):
@@ -137,8 +138,6 @@ def test_calc_flux_pha_bin_edges(clean_astro_ui):
     pflux = ui.calc_photon_flux(2.6, 7.8)
     eflux = ui.calc_energy_flux(2.6, 7.8)
 
-    enscale = sherpa.astro.utils._charge_e
-
     # Left in as notes:
     #
     # This are the true values. Given that the edge bins (should be)
@@ -163,7 +162,7 @@ def test_calc_flux_pha_bin_edges(clean_astro_ui):
     scale = np.asarray([0.0, 0.4, 1.0, 1.0, 1.0, 1.0, 0.8, 0, 0.0, 0.0])
     expected_pflux = (ymdl * scale).sum()
 
-    emid = enscale * (elo + ehi) / 2
+    emid = charge_e * (elo + ehi) / 2
     expected_eflux = (emid * ymdl * scale).sum()
 
     assert pflux == pytest.approx(expected_pflux)
@@ -208,15 +207,13 @@ def test_calc_flux_pha_density_bin_edges(clean_astro_ui):
     pdens = ui.calc_photon_flux(2.6)
     edens = ui.calc_energy_flux(2.6)
 
-    enscale = sherpa.astro.utils._charge_e
-
     # Evaluate the model over the bin 2-3 keV; since the grid
     # has a width of 1 keV we do not need to divide by the bin
     # width when calculating the density.
     #
     ymdl = pl([2], [3])
     expected_pdens = ymdl.sum()
-    expected_edens = enscale * 2.5 * expected_pdens
+    expected_edens = charge_e * 2.5 * expected_pdens
 
     # Prior to fixing #619, Sherpa returns 0 for both densities
     #
@@ -323,7 +320,7 @@ def test_calc_flux_pha(id, lo, hi, make_data_path, clean_astro_ui):
     assert eflux == pytest.approx(eflux_exp, rel=1e-4)
 
 
-# The lo/hi range which match in the different settings; using _hc
+# The lo/hi range which match in the different settings; using hc
 # to convert from keV to Angstroms is a bit low-level.
 #
 # The energy-to-channel conversion was done by filtering in energy
@@ -335,7 +332,7 @@ def test_calc_flux_pha(id, lo, hi, make_data_path, clean_astro_ui):
                          [(None, None, 'wave', None, None),
                           (None, None, 'channel', None, None),
                           (0.5, 7.0, 'wave',
-                           ui.DataPHA._hc / 7.0, ui.DataPHA._hc / 0.5),
+                           hc / 7.0, hc / 0.5),
                           fail(0.5, 7.0, 'channel', 35, 480)  # issue 619 see also 308
                          ])
 def test_calc_flux_pha_analysis(elo, ehi, setting, lo, hi, make_data_path, clean_astro_ui):

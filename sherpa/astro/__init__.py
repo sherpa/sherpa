@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,4 +17,5 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-# Nothing in here yet
+hc = 12.39841874  # nist.gov in [keV-Angstrom]
+charge_e = 1.60217653e-09  # elementary charge [ergs] 1 keV, nist.gov

@@ -36,6 +36,7 @@ from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
+from sherpa.astro import hc
 
 warning = logging.getLogger(__name__).warning
 
@@ -134,8 +135,8 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
         self.xlo = data.apply_filter(elo, data._min)
         self.xhi = data.apply_filter(ehi, data._max)
         if data.units == 'wavelength':
-            self.xlo = data._hc / self.xlo
-            self.xhi = data._hc / self.xhi
+            self.xlo = hc / self.xlo
+            self.xhi = hc / self.xhi
 
         _check_hist_bins(self)
 
@@ -170,8 +171,8 @@ class ModelPHAHistogram(HistogramPlot):
         self.xlo = data.apply_filter(elo, data._min)
         self.xhi = data.apply_filter(ehi, data._max)
         if data.units == 'wavelength':
-            self.xlo = data._hc / self.xlo
-            self.xhi = data._hc / self.xhi
+            self.xlo = hc / self.xlo
+            self.xhi = hc / self.xhi
 
         _check_hist_bins(self)
 
@@ -395,8 +396,8 @@ class ARFPlot(HistogramPlot):
                 raise PlotErr('notpha', data.name)
             if data.units == "wavelength":
                 self.xlabel = 'Wavelength (Angstrom)'
-                self.xlo = data._hc / self.xlo
-                self.xhi = data._hc / self.xhi
+                self.xlo = hc / self.xlo
+                self.xhi = hc / self.xhi
 
 
 class BkgDataPlot(DataPHAPlot):
@@ -538,8 +539,8 @@ class OrderPlot(ModelHistogram):
                 xlo = data.apply_filter(elo, data._min)
                 xhi = data.apply_filter(ehi, data._max)
                 if data.units == 'wavelength':
-                    xlo = data._hc / xlo
-                    xhi = data._hc / xhi
+                    xlo = hc / xlo
+                    xhi = hc / xhi
             else:
                 xhi = xlo + 1.
 
