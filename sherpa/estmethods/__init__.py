@@ -351,11 +351,10 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # simpler inv function for inverting matrices does not appear to
     # have the same issue.
 
-    invfunc = numpy.linalg.inv
     inv_info = None
 
     try:
-        inv_info = invfunc(info)
+        inv_info = numpy.linalg.inv(info)
 
     except numpy.linalg.linalg.LinAlgError:
         # catch the SVD exception and exit gracefully
@@ -363,14 +362,8 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         inv_info[:] = numpy.nan
 
     except:
-        # Compatibility with pre-0.9.8 numpy
-        if hasattr(numpy.linalg, 'pinv'):
-            invfunc = numpy.linalg.pinv
-        else:
-            invfunc = numpy.linalg.generalized_inverse
-
         try:
-            inv_info = invfunc(info)
+            inv_info = numpy.linalg.pinv(info)
         except numpy.linalg.linalg.LinAlgError:
             # catch the SVD exception and exit gracefully
             inv_info = numpy.zeros_like(info)
@@ -413,20 +406,10 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                tol, maxiters, remin, limit_parnums, stat_cb, fit_cb,
                report_progress, get_par_name, do_parallel, numcores):
-    i = 0                                 # Iterate through parameters
-    #  to be searched on
-    numsearched = len(limit_parnums)      # Number of parameters to be
-    #  searched on (*not* number
-    #  of thawed parameters, just
-    #  number we are searching on
-    #  (i.e., len(limit_parnums))
-    lower_limits = numpy.array([])        # Lower limits for parameters
-    #  searched on
-    upper_limits = numpy.array([])        # Upper limits for parameters
-    #  searched on
-    eflags = numpy.array([], int)         # Fail status after search for
-    # each parameter
-    nfits = 0                             # Total number of fits
+
+    # Number of parameters to be searched on (*not* number of thawed
+    # parameters, just number we are searching on)
+    numsearched = len(limit_parnums)
 
     # _est_funcs.projection can be called on any subset of the thawed
     # parameters.  So we made a change here to call _est_funcs.projection
@@ -441,9 +424,6 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # upon exiting the while loop, constructing a new tuple to return.
     # SMD 03/17/2009
 
-    # Keep references to numpy.append, _est_funcs.projection, because
-    # we call these functions every time through the loop.
-    append = numpy.append
     proj_func = _est_funcs.projection
 
     def func(i, singleparnum, lock=None):
@@ -474,17 +454,17 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         do_parallel = False
 
     if not do_parallel:
-        append = numpy.append
-        lower_limits = numpy.array([])
-        upper_limits = numpy.array([])
-        eflags = numpy.array([], int)
+        lower_limits = numpy.zeros(numsearched)
+        upper_limits = numpy.zeros(numsearched)
+        eflags = numpy.zeros(numsearched, dtype=int)
         nfits = 0
-        for i in range(numsearched):
-            singlebounds = func(i, limit_parnums[i])
-            lower_limits = append(lower_limits, singlebounds[0])
-            upper_limits = append(upper_limits, singlebounds[1])
-            eflags = append(eflags, singlebounds[2])
+        for i, pnum in enumerate(limit_parnums):
+            singlebounds = func(i, pnum)
+            lower_limits[i] = singlebounds[0]
+            upper_limits[i] = singlebounds[1]
+            eflags[i] = singlebounds[2]
             nfits = nfits + singlebounds[3]
+
         return (lower_limits, upper_limits, eflags, nfits, None)
 
     return parallel_est(func, limit_parnums, pars, numcores)
