@@ -95,6 +95,7 @@ def test_rmf(header, override_plot_backend):
     check(r, 'RMF', 'delta-rmf', 'MATRIX', nmeta=nmeta)
 
 
+
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
 def test_pha(header, override_plot_backend):
     d = data.DataPHA('x x',

@@ -8983,9 +8983,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
 
         # Add any convolution components from the sherpa.ui layer
-        model = \
-            sherpa.ui.utils.Session._add_convolution_models(self, id, data,
-                                                            model, is_source)
+        model = super()._add_convolution_models(id, data, model, is_source)
 
         # If we don't need to deal with DataPHA issues we can return
         if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
