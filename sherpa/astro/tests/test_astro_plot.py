@@ -121,7 +121,7 @@ def check_sourceplot_wavelength(sp, rate=True, factor=0):
         assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
         assert sp.ylabel.find('/Angstrom ') == -1
     elif factor == 2:
-        # This says lmabda^2 f(lambda) ... but the exact format depends on
+        # This says lambda^2 f(lambda) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('lambda')
         assert sp.ylabel.find('^2') != -1
