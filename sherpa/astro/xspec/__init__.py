@@ -739,6 +739,10 @@ def read_xstable_model(modelname, filename, etable=False):
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
 
+    .. versionchanged:: 4.13.2
+       The etable argument has been added to allow exponential table
+       models to be used.
+
     Parameters
     ----------
     modelname : str
@@ -908,6 +912,10 @@ class XSTableModel(XSModel):
     as a table model [1]_. This class provides a low-level
     way to access this functionality. A simpler interface is provided
     by ``read_xstable_model`` and ``sherpa.astro.ui.load_xstable_model``.
+
+    .. versionchanged:: 4.13.2
+       The etable argument has been added to allow exponential table
+       models to be used.
 
     Parameters
     ----------

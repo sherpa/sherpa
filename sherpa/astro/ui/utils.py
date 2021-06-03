@@ -9666,7 +9666,7 @@ class Session(sherpa.ui.utils.Session):
         table model component. These models may have multiple model
         parameters.
 
-        .. versionchanged:: 4.13.1
+        .. versionchanged:: 4.13.2
            The etable argument has been added to allow exponential table
            models to be used.
 
