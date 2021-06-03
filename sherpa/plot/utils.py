@@ -17,6 +17,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+'''Helper functions for plotting
+
+This module contains a few helper functions for reformatting arrays in ways
+that facilitate easier plotting.
+'''
+
 import numpy as np
 
 __all__ = ('intersperse', 'histogram_line')
@@ -25,6 +31,28 @@ __all__ = ('intersperse', 'histogram_line')
 def intersperse(a, b):
     '''Interleave two arrays a and b
 
+    Parameters
+    ----------
+    a, b : array
+        Two arrys to interleave. The numbe of elements in the two arrays cannot
+        differ by more than one.
+
+    Returns
+    -------
+    out : array
+        array that interleaves the input arrays
+
+    Example
+    -------
+
+    >>> import numpy as np
+    >>> a = np.arange(5)
+    >>> b = np.arange(10, 14)
+    >>> intersperse(a, b)
+    array([ 0, 10,  1, 11,  2, 12,  3, 13,  4])
+
+    Notes
+    -----
     See https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays#5347492
     for interleaving arrays.
     '''
@@ -63,11 +91,9 @@ def histogram_line(xlo, xhi, y):
     '''
     if (len(xlo) != len(xhi)) or (len(y) != len(xlo)):
         raise ValueError('All input arrays have to have the same length.')
-    # Deal with xhi <-> xlo switches. Those can occor when converting
-    # from energy to wavelength
     # Deal with reversed order. Can happen when converting from energy
     # to wavelength, or if input PHA is not ordered in increasing energy.
-    # But is both are happening at the same time, need to switch twice, which
+    # But if both are happening at the same time, need to switch twice, which
     # is a no-op. So, we get to use the elusive Python XOR operator.
     if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
         xlo, xhi = xhi, xlo

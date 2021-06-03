@@ -271,3 +271,4 @@ Reference/API
    plot
    astroplot
    image
+   utils

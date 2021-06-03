@@ -26,17 +26,11 @@ import pytest
 
 from sherpa.utils.testing import requires_data, requires_fits
 
-<<<<<<< HEAD
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, \
     DataPHAPlot, ModelPHAHistogram, OrderPlot, \
-    EnergyFluxHistogram, PhotonFluxHistogram
-=======
-from sherpa.astro.data import DataPHA
-from sherpa.astro.plot import SourcePlot, DataPHAPlot, ModelPHAHistogram,\
-    EnergyFluxHistogram, PhotonFluxHistogram, _check_hist_bins
->>>>>>> Plots with reversed grid (e.g. wavelength) would always show
+    EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
