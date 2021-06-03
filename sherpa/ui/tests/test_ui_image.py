@@ -18,9 +18,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Basic tests of the miage functionality in sherpa.ui. The hope is that we
+"""Basic tests of the image functionality in sherpa.ui. The hope is that we
 can run some tests even without DS9/XPA available. Although tests are
-run sith both the base and Astro session classes, there's no tests of
+run with both the base and Astro session classes, there's no tests of
 Astro-specific functionality (e.g. DataIMG).
 
 Notes
