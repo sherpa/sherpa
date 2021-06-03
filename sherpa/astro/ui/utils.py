@@ -9012,14 +9012,7 @@ class Session(sherpa.ui.utils.Session):
         """
 
         pileup_model = self._pileup_models.get(id)
-        if pileup_model is not None:
-            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
-        elif len(pha._responses) > 1:
-            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
-        else:
-            resp = sherpa.astro.instrument.Response1D(pha)
-
-        return resp
+        return pha.get_full_response(pileup_model)
 
     def get_response(self, id=None, bkg_id=None):
         """Return the response information applied to a PHA data set.
