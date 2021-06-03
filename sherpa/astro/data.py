@@ -3612,7 +3612,7 @@ class DataPHA(Data1D):
 
         # Ensure the data is in ascending order for create_expr.
         #
-        if self.units == 'wavelength':
+        if len(x) > 0 and x[-1] < x[0]:
             x = x[::-1]
             mask = mask[::-1]
 

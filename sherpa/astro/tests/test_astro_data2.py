@@ -899,8 +899,8 @@ def test_xmmrgs_notice(make_data_path):
     dat.units = 'wave'
     dat.notice(18.8, 19.2)
     assert len(dat.get_dep(filter=True)) == 41
-    assert dat.get_filter(format='%.2f') == '19.20:18.80'
+    assert dat.get_filter(format='%.2f') == '18.80:19.20'
 
     dat.ignore(10, 19.)
     assert len(dat.get_dep(filter=True)) == 20
-    assert dat.get_filter(format='%.2f') == '19.20:19.01'
+    assert dat.get_filter(format='%.2f') == '19.01:19.20'
