@@ -36,11 +36,10 @@ from sherpa import stats
 from sherpa.utils.err import IOErr
 
 
-def check_sourceplot_energy(sp, rate=True, factor=0):
+def check_sourceplot_energy(sp, factor=0):
     """Check for test_sourceplot/test_sourceplot_channel
 
-    rate determines if the plot is for a "rate" or "counts",
-    although at the moment it does not change anything.
+    Note that the rate setting does not change these tests.
     """
 
     assert sp.xlabel == 'Energy (keV)'
@@ -106,7 +105,7 @@ def check_sourceplot_energy(sp, rate=True, factor=0):
     assert sp.y == pytest.approx(yexp)
 
 
-def check_sourceplot_wavelength(sp, rate=True, factor=0):
+def check_sourceplot_wavelength(sp, factor=0):
     """Check for test_sourceplot_wavelength.
 
     See check_sourceplot_energy.
@@ -240,7 +239,7 @@ def test_sourceplot_counts(caplog):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_energy(sp, rate=False)
+    check_sourceplot_energy(sp)
 
 
 @pytest.mark.parametrize("factor", [1, 2])
@@ -390,7 +389,7 @@ def test_sourceplot_wavelength_counts(caplog):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_wavelength(sp, rate=False)
+    check_sourceplot_wavelength(sp)
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
