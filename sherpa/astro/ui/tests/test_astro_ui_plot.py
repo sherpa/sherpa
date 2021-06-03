@@ -1786,8 +1786,11 @@ def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     assert mplot3.y == pytest.approx(mplot1.y)
 
 
-def validate_flux_histogram(fhist):
-    """Limited checks for test_pha1_plot_foo_flux/test_pha1_get_foo_flux_hist"""
+def validate_flux_histogram(fhist, energy):
+    """Limited checks for test_pha1_plot_foo_flux/test_pha1_get_foo_flux_hist
+
+    histtype is 'Photon' or 'Energy'
+    """
 
     assert fhist is not None
     assert isinstance(fhist, FluxHistogram)
@@ -1807,16 +1810,33 @@ def validate_flux_histogram(fhist):
     assert fmin == pytest.approx(fhist.xlo[0])
     assert fmax == pytest.approx(fhist.xhi[-1])
 
+    # Check labels. The label depends on the plot backend through the
+    # use of LaTeX.
+    #
+    if energy:
+        assert fhist.xlabel.startswith('Energy flux (ergs cm')
+    else:
+        assert fhist.xlabel.startswith('Photon flux (Photons cm')
+
+    assert fhist.xlabel.find(' sec') > 20
+    assert fhist.xlabel.endswith(')')
+
+    assert fhist.ylabel == 'Frequency'
+    if energy:
+        assert fhist.title == 'Energy flux distribution'
+    else:
+        assert fhist.title == 'Photon flux distribution'
+
 
 @requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("plotfunc,getfunc",
-                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
-                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
+@pytest.mark.parametrize("energy,plotfunc,getfunc",
+                         [(True, ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic_pha1):
+def test_pha1_plot_foo_flux(energy, plotfunc, getfunc, correlated, clean_astro_ui, basic_pha1):
     """Can we call plot_energy/photon_flux and then the get_ func (recalc=False)
 
     We extend the basic_pha1 test by including an XSPEC
@@ -1848,17 +1868,17 @@ def test_pha1_plot_foo_flux(plotfunc, getfunc, correlated, clean_astro_ui, basic
     # and bins arguments have been changed from their default values).
     #
     res = getfunc(recalc=False)
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
 
 @requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("plotfunc,getfunc",
-                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
-                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
-def test_pha1_plot_foo_flux_recalc(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+@pytest.mark.parametrize("energy,plotfunc,getfunc",
+                         [(True, ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_recalc(energy, plotfunc, getfunc, clean_astro_ui, basic_pha1):
     """Just check we can call recalc on the routine
 
     """
@@ -1882,17 +1902,17 @@ def test_pha1_plot_foo_flux_recalc(plotfunc, getfunc, clean_astro_ui, basic_pha1
     # and bins arguments have been changed from their default values).
     #
     res = getfunc(recalc=False)
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
 
 @requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
-                                     ui.get_photon_flux_hist])
+@pytest.mark.parametrize("energy,getfunc", [(True, ui.get_energy_flux_hist),
+                                            (False, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_pha1_get_foo_flux_hist(getfunc, correlated, clean_astro_ui, basic_pha1):
+def test_pha1_get_foo_flux_hist(energy, getfunc, correlated, clean_astro_ui, basic_pha1):
     """Can we call get_energy/photon_flux_hist?
 
     See test_pha1_plot_foo_flux.
@@ -1911,7 +1931,7 @@ def test_pha1_get_foo_flux_hist(getfunc, correlated, clean_astro_ui, basic_pha1)
     # number of iterations.
     #
     res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=correlated)
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
 
 @requires_plotting
@@ -2144,10 +2164,10 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("plotfunc,getfunc",
-                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
-                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
-def test_pha1_plot_foo_flux_soft(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+@pytest.mark.parametrize("energy,plotfunc,getfunc",
+                         [(True, ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_soft(energy, plotfunc, getfunc, clean_astro_ui, basic_pha1):
     """Check we can send clip=soft
     """
 
@@ -2169,7 +2189,7 @@ def test_pha1_plot_foo_flux_soft(plotfunc, getfunc, clean_astro_ui, basic_pha1):
     # and bins arguments have been changed from their default values).
     #
     res = getfunc(recalc=False)
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
     # check we have clip information and assume at least one bin is
     # clipped (expect ~ 40 of 200 from testing this)
@@ -2185,10 +2205,10 @@ def test_pha1_plot_foo_flux_soft(plotfunc, getfunc, clean_astro_ui, basic_pha1):
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("plotfunc,getfunc",
-                         [(ui.plot_energy_flux, ui.get_energy_flux_hist),
-                          (ui.plot_photon_flux, ui.get_photon_flux_hist)])
-def test_pha1_plot_foo_flux_none(plotfunc, getfunc, clean_astro_ui, basic_pha1):
+@pytest.mark.parametrize("energy, plotfunc,getfunc",
+                         [(True, ui.plot_energy_flux, ui.get_energy_flux_hist),
+                          (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
+def test_pha1_plot_foo_flux_none(energy, plotfunc, getfunc, clean_astro_ui, basic_pha1):
     """Check we can send clip=none
 
     Copy of test_pha1_plot_foo_flux_none
@@ -2212,7 +2232,7 @@ def test_pha1_plot_foo_flux_none(plotfunc, getfunc, clean_astro_ui, basic_pha1):
     # and bins arguments have been changed from their default values).
     #
     res = getfunc(recalc=False)
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
     # check we have clip information but that it's all zeros
     clip = res.clipped
@@ -2227,9 +2247,9 @@ def test_pha1_plot_foo_flux_none(plotfunc, getfunc, clean_astro_ui, basic_pha1):
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
-                                     ui.get_photon_flux_hist])
-def test_pha1_get_foo_flux_soft(getfunc, clean_astro_ui, basic_pha1):
+@pytest.mark.parametrize("energy,getfunc", [(True, ui.get_energy_flux_hist),
+                                            (False, ui.get_photon_flux_hist)])
+def test_pha1_get_foo_flux_soft(energy, getfunc, clean_astro_ui, basic_pha1):
     """Can we send clip=soft?
     """
 
@@ -2243,7 +2263,7 @@ def test_pha1_get_foo_flux_soft(getfunc, clean_astro_ui, basic_pha1):
 
     res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=False,
                   clip='soft')
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
     # check we have clip information and assume at least one bin is
     # clipped (expect ~ 40 of 200 from testing this)
@@ -2259,9 +2279,9 @@ def test_pha1_get_foo_flux_soft(getfunc, clean_astro_ui, basic_pha1):
 @requires_fits
 @requires_data
 @requires_xspec
-@pytest.mark.parametrize("getfunc", [ui.get_energy_flux_hist,
-                                     ui.get_photon_flux_hist])
-def test_pha1_get_foo_flux_none(getfunc, clean_astro_ui, basic_pha1):
+@pytest.mark.parametrize("energy, getfunc", [(True, ui.get_energy_flux_hist),
+                                             (False, ui.get_photon_flux_hist)])
+def test_pha1_get_foo_flux_none(energy, getfunc, clean_astro_ui, basic_pha1):
     """Can we send clip=none?
 
     Copy of test_pha1_get_foo_flux_soft
@@ -2277,7 +2297,7 @@ def test_pha1_get_foo_flux_none(getfunc, clean_astro_ui, basic_pha1):
 
     res = getfunc(lo=0.5, hi=2, num=200, bins=20, correlated=False,
                   clip='none')
-    validate_flux_histogram(res)
+    validate_flux_histogram(res, energy)
 
     # check we have clip information and all are 0
     clip = res.clipped

@@ -105,9 +105,8 @@ def calc_errors(ys):
     return Chi2Gehrels.calc_staterror(ys)
 
 
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_fit_plot(idval):
+def test_get_fit_plot(idval, clean_ui):
     """Basic testing of get_fit_plot
     """
 
@@ -603,10 +602,9 @@ _plot_change_opts = [(p['plot'], p['change'], p['check_changed'])
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("pfunc, checkfunc", _plot_opts)
-def test_plot_xxx(idval, pfunc, checkfunc):
+def test_plot_xxx(idval, pfunc, checkfunc, clean_ui):
     """Can we call a plot_xxx routine?
 
     There is limited testing that the plot call worked (this
@@ -640,10 +638,9 @@ def test_plot_xxx(idval, pfunc, checkfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_replot_opts)
-def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
+def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc, clean_ui):
     """Can we plot, change data, plot with replot and see no difference?
 
     Parameters
@@ -685,10 +682,9 @@ def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_change_opts)
-def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc):
+def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc, clean_ui):
     """Can we plot, change data, plot and see a difference?
 
     Unlike test_plot_xxx_replot, this does not set replot to True,
@@ -737,10 +733,9 @@ _mplot = (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("getprefs,attr,plotfunc",
                          [_dplot, _mplot])
-def test_prefs_change_session_objects(getprefs, attr, plotfunc):
+def test_prefs_change_session_objects(getprefs, attr, plotfunc, clean_ui):
     """Is a plot-preference change also reflected in the session object?
 
     This is intended to test an assumption that will be used in the
@@ -783,8 +778,7 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-def test_prefs_change_session_objects_fit():
+def test_prefs_change_session_objects_fit(clean_ui):
     """Is plot-preference change reflected in the fitplot session object?
 
     This is test_prefs_change_session_objects but for the _fitplot
@@ -1004,12 +998,11 @@ def test_get_kernel_plot_recalc(session):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("plotobj,plotfunc",
                          [("_residplot", ui.plot_resid),
                           ("_delchiplot", ui.plot_delchi)
                           ])
-def test_plot_resid_ignores_ylog(plotobj, plotfunc):
+def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?
 
     Note that plot_chisqr is not included in support for ignoring
@@ -1037,12 +1030,11 @@ def test_plot_resid_ignores_ylog(plotobj, plotfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("plotobj,plotfunc",
                          [("_residplot", ui.plot_fit_resid),
                           ("_delchiplot", ui.plot_fit_delchi)
                           ])
-def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc):
+def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?"""
 
     # access it this way to ensure have access to the actual
@@ -2703,6 +2695,7 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui):
 
     fig = plt.gcf()
     axes = fig.axes
+
     assert len(axes) == 2
     assert axes[0].xaxis.get_label().get_text() == ''
 
@@ -2723,7 +2716,7 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui):
 @requires_pylab
 @pytest.mark.parametrize("ptype",
                          ["resid", "ratio", "delchi"])
-def test_plot_fit_xxx_overplot_pylab(ptype, caplog):
+def test_plot_fit_xxx_overplot_pylab(ptype, caplog, clean_ui):
     """Just ensure we can create a plot_fit_xxx(overplot=True) call."""
 
     from matplotlib import pyplot as plt

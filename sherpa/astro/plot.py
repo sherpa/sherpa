@@ -245,9 +245,17 @@ class SourcePlot(HistogramPlot):
             self.units = "energy"
 
         self.xlabel = data.get_xlabel()
-        self.title = 'Source Model of %s' % data.name
+        self.title = f'Source Model of {data.name}'
         self.xlo, self.xhi = data._get_indep(filter=False)
+
+        # Why do we not apply the mask at the end of prepare?
+        #
         self.mask = filter_bins((lo,), (hi,), (self.xlo,))
+
+        # The source model is assumed to not contain an instrument model,
+        # and so it evaluates the expected number of photons/cm^2/s in
+        # each bin (or it can be thought of as a 1 second exposure).
+        #
         self.y = src(self.xlo, self.xhi)
         prefix_quant = 'E'
         quant = 'keV'
@@ -265,23 +273,21 @@ class SourcePlot(HistogramPlot):
 
         sqr = to_latex('^2')
 
-        self.xlabel = '%s (%s)' % (self.units.capitalize(), quant)
-        self.ylabel = '%s  Photons/sec/cm' + sqr + '%s'
+        self.xlabel = f'{self.units.capitalize()} ({quant})'
+        self.ylabel = f'%s  Photons/sec/cm{sqr}%s'
 
         if data.plot_fac == 0:
             self.y /= xmid
-            self.ylabel = self.ylabel % ('f(%s)' % prefix_quant,
-                                         '/%s ' % quant)
+            self.ylabel = self.ylabel % (f'f({prefix_quant})',
+                                         f'/{quant} ')
 
         elif data.plot_fac == 1:
-            self.ylabel = self.ylabel % ('%s f(%s)' % (prefix_quant,
-                                                       prefix_quant), '')
+            self.ylabel = self.ylabel % (f'{prefix_quant} f({prefix_quant})', '')
 
         elif data.plot_fac == 2:
             self.y *= xmid
-            self.ylabel = self.ylabel % ('%s%s f(%s)' % (prefix_quant, sqr,
-                                                         prefix_quant),
-                                         ' %s ' % quant)
+            self.ylabel = self.ylabel % (f'{prefix_quant}{sqr} f({prefix_quant})',
+                                         f' {quant} ')
         else:
             raise PlotErr('plotfac', 'Source', data.plot_fac)
 
@@ -610,9 +616,9 @@ class FluxHistogram(ModelHistogram):
             flux = array2string(asarray(self.flux), separator=',',
                                 precision=4, suppress_small=False)
 
-        return '\n'.join(['modelvals = {}'.format(vals),
-                          'clipped = {}'.format(clip),
-                          'flux = {}'.format(flux),
+        return '\n'.join([f'modelvals = {vals}',
+                          f'clipped = {clip}',
+                          f'flux = {flux}',
                           ModelHistogram.__str__(self)])
 
     def prepare(self, fluxes, bins):
@@ -648,8 +654,7 @@ class EnergyFluxHistogram(FluxHistogram):
     def __init__(self):
         FluxHistogram.__init__(self)
         self.title = "Energy flux distribution"
-        self.xlabel = "Energy flux (ergs cm{} sec{})".format(
-            to_latex('^{-2}'), to_latex('^{-1}'))
+        self.xlabel = f"Energy flux (ergs cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
         self.ylabel = "Frequency"
 
 
@@ -659,6 +664,5 @@ class PhotonFluxHistogram(FluxHistogram):
     def __init__(self):
         FluxHistogram.__init__(self)
         self.title = "Photon flux distribution"
-        self.xlabel = "Photon flux (Photons cm{} sec{})".format(
-            to_latex('^{-2}'), to_latex('^{-1}'))
+        self.xlabel = f"Photon flux (Photons cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
         self.ylabel = "Frequency"
