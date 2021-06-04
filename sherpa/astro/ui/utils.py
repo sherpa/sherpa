@@ -40,6 +40,7 @@ from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
+from sherpa.astro import fake
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -8798,38 +8799,10 @@ class Session(sherpa.ui.utils.Session):
         # Calculate the source model, and take a Poisson draw based on
         # the source model.  That becomes the simulated data.
         m = self.get_model(id)
-        d.counts = sherpa.utils.poisson_noise(d.eval_model(m))
 
-        # Add in background counts:
-        #  -- Scale each background properly given data's
-        #     exposure time, BACKSCAL and AREASCAL
-        #  -- Take average of scaled backgrounds
-        #  -- Take a Poisson draw based on the average scaled background
-        #  -- Add that to the simulated data counts
-        #
-        # Adding background counts is OPTIONAL, only done if user sets
-        # "bkg" argument to fake_pha.  The reason is that the user could
-        # well set a "source" model that does include a background
-        # component.  In that case users should have the option to simulate
-        # WITHOUT background counts being added in.
-        #
-        # If bkg is not None, then backgrounds were previously updated
-        # above, so it is OK to use "bkg is not None" as the condition
-        # here.
-        if bkg is not None:
-            nbkg = len(d.background_ids)
-            b = 0
-            for bkg_id in d.background_ids:
-                # we do (probably) want to filter and group the scale array
-                b += d.get_background_scale(bkg_id) * \
-                    d.get_background(bkg_id).counts
-
-            if nbkg > 0:
-                b = b / nbkg
-                b_poisson = sherpa.utils.poisson_noise(b)
-                d.counts = d.counts + b_poisson
-
+        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None)
         d.name = 'faked'
+
 
     ###########################################################################
     # PSF
@@ -9341,7 +9314,7 @@ class Session(sherpa.ui.utils.Session):
         if not is_source:
             return src
 
-        # The background response is set bu the DataPHA.set_background
+        # The background response is set by the DataPHA.set_background
         # method (copying one over, if it does not exist), which means
         # that the only way to get to this point is if the user has
         # explicitly deleted the background response. In this case

@@ -176,7 +176,9 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
     # is summing the counts (to average over the randomness)
     # and then a simple check
     #
-    assert faked.counts.sum() > 200
+    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
+    # This is more likely to fail by chance, but still very unlikely
+    assert faked.counts[1] > faked.counts[0]
 
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
@@ -230,6 +232,8 @@ def test_fake_pha_add_background(id, clean_astro_ui):
     predicted_by_bkg = (1000/200) * (0.1/0.4) * bcounts
     assert (faked.counts > predicted_by_source).all()
     assert (faked.counts > predicted_by_bkg).all()
+    # This is more likely to fail by chance, but still very unlikely
+    assert faked.counts[1] > faked.counts[0]
 
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
@@ -277,4 +281,6 @@ def test_fake_pha_no_data(id, clean_astro_ui):
     # is summing the counts (to average over the randomness)
     # and then a simple check
     #
-    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 10000)
+    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
+    # This is more likely to fail by chance, but still very unlikely
+    assert faked.counts[1] > faked.counts[0]
