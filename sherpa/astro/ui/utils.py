@@ -9008,7 +9008,6 @@ class Session(sherpa.ui.utils.Session):
            model has been associated with the data set.
 
         """
-
         pileup_model = self._pileup_models.get(id)
         return pha.get_full_response(pileup_model)
 

@@ -19,6 +19,8 @@
 
 """Support multiple background components for a PHA dataset.
 
+Functions in this module might also be useful without the presence of a
+background.
 """
 
 from collections import defaultdict
@@ -46,7 +48,7 @@ def add_response(session, id, data, model):
     Parameters
     ----------
     session : sherpa.astro.ui.utils.Session instance
-    id : int ot str
+    id : int or str
         The identifier for the dataset.
     data : sherpa.astro.data.DataPHA instance
         The dataset (may be a background dataset).
@@ -61,20 +63,58 @@ def add_response(session, id, data, model):
         background components.
 
     """
-
+    id = session._fix_id(id)
     # QUS: if this gets used to generate the response for the
     #      background then how does it pick up the correct response
     #      (ie when fit_bkg is used). Or does that get generated
     #      by a different code path?
-
-    resp = session._get_response(id, data)
-    if data.subtracted:
-        return resp(model)
-
+    pileup_model = session._pileup_models.get(id)
     bkg_srcs = session._background_sources.get(id, {})
-    if len(bkg_srcs) == 0:
-        return resp(model)
+    return get_response_for_pha(data, model, bkg_srcs, pileup_model, id)
 
+
+def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
+    """Create the response model describing the source and model.
+
+    Include any background components and apply the response
+    model for the dataset.
+
+    This is essentially the object-oriented version of
+    `shera.astro.background.add_response`.
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataPHA instance
+        The dataset (may be a background dataset).
+    model : sherpa.models.model.ArithmeticModel instance
+        The model (without response or background components)
+        to match to data.
+    bkg_srcs : dict
+        Keys in the dictionary need to be the background ids in the dataset
+        ``data``, and the values are the corresponsing source models.
+    pileup_model : None or `sherpa.astro.models.JDPileup` instance
+        Pileup model for the dataset if needed, or ``None`` for no pileup
+        model.
+    id : string
+        A string to label the dataset in warning messages. If this is set
+        ``None`` the name of the dataset it used. Thus paramters is mainly
+        needed if this function is called from the UI layer, where datasets and
+        models have ids that are not stored in an attibute of the dataset
+        itself.
+
+    Returns
+    -------
+    fullmodel : sherpa.models.model.ArithmeticModel
+        The model including the necessary response models and
+        background components.
+
+    """
+    if id is None:
+        id = data.name
+
+    resp = data.get_full_response(pileup_model)
+    if data.subtracted or (len(bkg_srcs) == 0):
+        return resp(model)
     # At this point we have background one or more background
     # components that need to be added to the overall model.
     # If the scale factors are all scalars then we can return
