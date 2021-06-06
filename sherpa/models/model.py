@@ -114,6 +114,17 @@ attribute as you can say:
 
     >>> m2.fwhm = 20
 
+Accessing parameter values
+==========================
+
+The model class is set up so that any attribute access is case
+insensitive, so the following are all ways to change the ``fwhm``
+parameter:
+
+    >>> m2.fwhm = 10
+    >>> m2.FWHM = 10
+    >>> m2.FwHm = 10
+
 Model evaluation
 ----------------
 
@@ -584,7 +595,13 @@ class Model(NoNewAttributesAfterInit):
                 p._val = v
 
     thawedpars = property(_get_thawed_pars, _set_thawed_pars,
-                          doc='Access to the thawed parameters of the model')
+                          doc='The thawed parameters of the model.\n\n' +
+                          'Get or set the thawed parameters of the model as a list of\n' +
+                          'numbers. If there are no thawed parameters then [] is used.\n' +
+                          'The ordering matches that of the pars attribute.\n\n' +
+                          'See Also\n' +
+                          '--------\n' +
+                          'thawedparmaxes, thawedparmins\n')
 
     def _get_thawed_par_mins(self):
         return [p.min for p in self.pars if not p.frozen]
@@ -613,7 +630,14 @@ class Model(NoNewAttributesAfterInit):
                 p._min = v
 
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
-                             doc='Access to the minimum limits for the thawed parameters')
+                             doc='The minimum limits of the thawed parameters.\n\n' +
+                             'Get or set the minimum limits of the thawed parameters\n' +
+                             'of the model as a list of numbers. If there are no\n' +
+                             'thawed parameters then [] is used. The ordering matches\n' +
+                             'that of the pars attribute.\n\n' +
+                             'See Also\n' +
+                             '--------\n' +
+                             'thawedpars, thawedarhardmins, thawedparmaxes\n')
 
     def _get_thawed_par_maxes(self):
         return [p.max for p in self.pars if not p.frozen]
@@ -642,22 +666,40 @@ class Model(NoNewAttributesAfterInit):
                 p._max = v
 
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
-                              doc='Access to the maximum limits for the thawed parameters')
+                              doc='The maximum limits of the thawed parameters.\n\n' +
+                              'Get or set the maximum limits of the thawed parameters\n' +
+                              'of the model as a list of numbers. If there are no\n' +
+                              'thawed parameters then [] is used. The ordering matches\n' +
+                              'that of the pars attribute.\n\n' +
+                              'See Also\n' +
+                              '--------\n' +
+                              'thawedpars, thawedarhardmaxes, thawedparmins\n')
 
     def _get_thawed_par_hardmins(self):
         return [p.hard_min for p in self.pars if not p.frozen]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
-                                 doc='The hard minimum values for the thawed parameters.')
+                                 doc='The hard minimum values for the thawed parameters.\n\n' +
+                                 'See Also\n' +
+                                 '--------\n' +
+                                 'thawedparhardmaxes, thawedparmins\n')
 
     def _get_thawed_par_hardmaxes(self):
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                  doc='The hard maximum values for the thawed parameters.')
+                                  doc='The hard maximum values for the thawed parameters.\n\n' +
+                                  'See Also\n' +
+                                  '--------\n' +
+                                  'thawedparhardmins, thawedparmaxes\n')
 
     def reset(self):
-        """Reset the parameter values."""
+        """Reset the parameter values.
+
+        Restores each parameter to the last value it was set to.
+        This allows the parameters to be easily reset after a
+        fit.
+        """
 
         for p in self.pars:
             p.reset()
