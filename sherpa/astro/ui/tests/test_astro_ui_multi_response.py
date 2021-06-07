@@ -157,8 +157,9 @@ def make_rmf2():
     return rmf1, rmf2, dset
 
 
+@pytest.mark.parametrize("set_arf", [ui.set_arf, ui.load_arf])
 @pytest.mark.parametrize("id", [None, 1, "three"])
-def test_set_multi_arfs(id, clean_astro_ui):
+def test_set_multi_arfs(id, set_arf, clean_astro_ui):
 
     arf1, arf2, dset = make_arf2()
 
@@ -166,10 +167,10 @@ def test_set_multi_arfs(id, clean_astro_ui):
     d = ui.get_data(id=id)
     assert d.response_ids == []
 
-    ui.set_arf(id=id, arf=arf1, resp_id=1)
+    set_arf(id, arf1, 1)
     assert d.response_ids == [1]
 
-    ui.set_arf(id=id, arf=arf2, resp_id=2)
+    set_arf(id, arf2, 2)
     assert d.response_ids == [1, 2]
 
 
@@ -189,8 +190,9 @@ def test_set_multi_arfs_reorder(id, clean_astro_ui):
     assert d.response_ids == [2, 1]
 
 
+@pytest.mark.parametrize("set_rmf", [ui.set_rmf, ui.load_rmf])
 @pytest.mark.parametrize("id", [None, 1, "three"])
-def test_set_multi_rmfs(id, clean_astro_ui):
+def test_set_multi_rmfs(id, set_rmf, clean_astro_ui):
 
     rmf1, rmf2, dset = make_rmf2()
 
@@ -198,10 +200,10 @@ def test_set_multi_rmfs(id, clean_astro_ui):
     d = ui.get_data(id=id)
     assert d.response_ids == []
 
-    ui.set_rmf(id=id, rmf=rmf1, resp_id=1)
+    set_rmf(id, rmf1, 1)
     assert d.response_ids == [1]
 
-    ui.set_rmf(id=id, rmf=rmf2, resp_id=2)
+    set_rmf(id, rmf2, 2)
     assert d.response_ids == [1, 2]
 
 
@@ -267,13 +269,14 @@ def check_eval_multi_arf():
     assert mplot.y[600] == pytest.approx(ymid)
 
 
-def test_eval_multi_arf(clean_astro_ui):
+@pytest.mark.parametrize("set_arf", [ui.set_arf, ui.load_arf])
+def test_eval_multi_arf(set_arf, clean_astro_ui):
     """See also test_eval_multi_arf_reorder"""
 
     arf1, arf2, dset = make_arf2()
     ui.set_data(1, dset)
-    ui.set_arf(id=1, arf=arf1, resp_id=1)
-    ui.set_arf(id=1, arf=arf2, resp_id=2)
+    set_arf(1, arf1, 1)
+    set_arf(1, arf2, 2)
 
     check_eval_multi_arf()
 
@@ -344,13 +347,14 @@ def check_eval_multi_rmf():
     assert mplot.y[968:988] == pytest.approx(is_high)
 
 
-def test_eval_multi_rmf(clean_astro_ui):
+@pytest.mark.parametrize("set_rmf", [ui.set_rmf, ui.load_rmf])
+def test_eval_multi_rmf(set_rmf, clean_astro_ui):
     """See also test_eval_multi_rmf_reorder"""
 
     rmf1, rmf2, dset = make_rmf2()
     ui.set_data(1, dset)
-    ui.set_rmf(id=1, rmf=rmf1, resp_id=1)
-    ui.set_rmf(id=1, rmf=rmf2, resp_id=2)
+    set_rmf(1, rmf1, 1)
+    set_rmf(1, rmf2, 2)
 
     check_eval_multi_rmf()
 

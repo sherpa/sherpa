@@ -5480,11 +5480,13 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        arg
+        arg :
            Identify the ARF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
            use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
+           If ``arg`` is already a `sherpa.astro.instrument.ARF1D` instance
+           it is returned unchanged.
 
         Returns
         -------
@@ -5525,7 +5527,13 @@ class Session(sherpa.ui.utils.Session):
         >>> arf = unpack_arf(hdus)
 
         """
-        return sherpa.astro.instrument.ARF1D(sherpa.astro.io.read_arf(arg))
+        if isinstance(arg, sherpa.astro.instrument.ARF1D):
+            return arg
+        elif isinstance(arg, sherpa.astro.data.DataARF):
+            return sherpa.astro.instrument.ARF1D(arg)
+        else:
+            arg = sherpa.astro.instrument.ARF1D(sherpa.astro.io.read_arf(arg))
+        return arg
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
@@ -5545,7 +5553,8 @@ class Session(sherpa.ui.utils.Session):
            Identify the ARF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
            use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
-           or a list of AstroPy HDU objects.
+           or a list of AstroPy HDU objects or a
+           `sherpa.astro.instrument.ARF1D` instance.
         resp_id : int or str, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
@@ -5676,7 +5685,8 @@ class Session(sherpa.ui.utils.Session):
            Identify the ARF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
            use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
-           or a list of AstroPy HDU objects.
+           or a list of AstroPy HDU objects or a
+           `sherpa.astro.instrument.ARF1D` instance.
 
         See Also
         --------
@@ -5737,8 +5747,8 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        filenames : iterable of str
-           An array of file names.
+        filenames : iterable
+           An array of file names or `sherpa.astro.instrument.ARF1D` instances.
         resp_ids : iterable of int or str
            The identifiers for the ARF within this data set.
            The length should match the filenames argument.
@@ -5958,6 +5968,8 @@ class Session(sherpa.ui.utils.Session):
            representing the data to use, as used by the I/O backend in
            use by Sherpa: a ``RMFCrateDataset`` for crates, as used by
            CIAO, or a list of AstroPy HDU objects.
+           If arg is already a `sherpa.astro.instrument.RMF1D` instance,
+           it will be returned unchanged.
 
         Returns
         -------
@@ -5998,7 +6010,13 @@ class Session(sherpa.ui.utils.Session):
         >>> rmf = unpack_rmf(hdus)
 
         """
-        return sherpa.astro.instrument.RMF1D(sherpa.astro.io.read_rmf(arg))
+        if isinstance(arg, sherpa.astro.instrument.RMF1D):
+            return arg
+        elif isinstance(arg, sherpa.astro.data.DataRMF):
+            return sherpa.astro.instrument.RMF1D(arg)
+        else:
+            arg = sherpa.astro.instrument.RMF1D(sherpa.astro.io.read_rmf(arg))
+        return arg
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
@@ -6018,7 +6036,8 @@ class Session(sherpa.ui.utils.Session):
            Identify the RMF: a file name, or a data structure
            representing the data to use, as used by the I/O
            backend in use by Sherpa: a ``RMFCrateDataset`` for
-           crates, as used by CIAO, or an AstroPy ``HDUList`` object.
+           crates, as used by CIAO, or an AstroPy ``HDUList`` object or
+           a `sherpa.astro.instrument.RMF1D` instance.
         resp_id : int or str, optional
            The identifier for the RMF within this data set, if there
            are multiple responses.
@@ -6144,7 +6163,8 @@ class Session(sherpa.ui.utils.Session):
            Identify the RMF: a file name, or a data structure
            representing the data to use, as used by the I/O
            backend in use by Sherpa: a ``RMFCrateDataset`` for
-           crates, as used by CIAO, or an AstroPy ``HDUList`` object.
+           crates, as used by CIAO, or an AstroPy ``HDUList`` object or a
+           `sherpa.astro.instrument.RMF1D` instance.
 
         See Also
         --------
@@ -6205,8 +6225,8 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        filenames : iterable of str
-           An array of file names.
+        filenames : iterable
+           An array of file names or `sherpa.astro.instrument.RMF1D` instances.
         resp_ids : iterable of int or str
            The identifiers for the RMF within this data set.
            The length should match the filenames argument.
@@ -8642,10 +8662,10 @@ class Session(sherpa.ui.utils.Session):
            exists then it is assumed to contain a PHA data set and the
            counts will be over-written.
         arf : filename or ARF object
-           The name of the ARF, or an ARF data object (e.g.  as
+           The name of the ARF, or an ARF data object (e.g. as
            returned by `get_arf` or `unpack_arf`).
         rmf : filename or RMF object
-           The name of the RMF, or an RMF data object (e.g.  as
+           The name of the RMF, or an RMF data object (e.g. as
            returned by `get_arf` or `unpack_arf`).
         exposure : number
            The exposure time, in seconds.
