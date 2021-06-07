@@ -1130,9 +1130,9 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     Parameters
     ----------
     lhs : Model instance
-        The left-hand sides of the expression.
+        The left-hand side of the expression.
     rhs : Model instance
-        The right-hand sides of the expression.
+        The right-hand side of the expression.
     op : function reference
         The ufunc which combines two array values.
     opstr : str
