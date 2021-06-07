@@ -8642,12 +8642,14 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to create. If it already
            exists then it is assumed to contain a PHA data set and the
            counts will be over-written.
-        arf : filename or ARF object
+        arf : filename or ARF object or list of filenames
            The name of the ARF, or an ARF data object (e.g.  as
-           returned by `get_arf` or `unpack_arf`).
-        rmf : filename or RMF object
+           returned by `get_arf` or `unpack_arf`). A list of filenames
+           can be passed in for instruments that require multile ARFs.
+        rmf : filename or RMF object or list of filenames
            The name of the RMF, or an RMF data object (e.g.  as
-           returned by `get_arf` or `unpack_arf`).
+           returned by `get_arf` or `unpack_arf`).  A list of filenames
+           can be passed in for instruments that require multile RMFs.
         exposure : number
            The exposure time, in seconds.
         backscal : number, optional
@@ -8752,6 +8754,37 @@ class Session(sherpa.ui.utils.Session):
             else:
                 raise IOErr("filenotfound", arf)
 
+        for resp_id in d.response_ids:
+            d.delete_response(resp_id)
+
+        # Get one rmf for testing the channel number
+        # This would be a lot simpler if I could just raise the
+        # incombatiblersp error on the OO layer (that happens, but the id
+        # is not in the error messaage).
+        if numpy.iterable(rmf):
+            rmf0 = self.unpack_rmf(rmf[0])
+        else:
+            rmf0 = rmf
+
+        if d.channel is None:
+            d.channel = sao_arange(1, rmf0.detchans)
+
+        else:
+            if len(d.channel) != rmf0.detchans:
+                raise DataErr('incompatibleresp', rmf.name, str(id))
+
+        # at this point, we can be sure that arf is not a string, because
+        # if it was, it went through load_Arf alreayd above.
+        if numpy.iterable(arf):
+            self.load_multi_arfs(id, arf, range(len(arf)))
+        else:
+            self.set_arf(id, arf)
+
+        if numpy.iterable(rmf):
+            self.load_multi_rmfs(id, rmf, range(len(rmf)))
+        else:
+            self.set_rmf(id, rmf)
+
         d.exposure = exposure
 
         if backscal is not None:
@@ -8763,13 +8796,6 @@ class Session(sherpa.ui.utils.Session):
         if quality is not None:
             d.quality = quality
 
-        if d.channel is None:
-            d.channel = sao_arange(1, rmf.detchans)
-
-        else:
-            if len(d.channel) != rmf.detchans:
-                raise DataErr('incompatibleresp', rmf.name, str(id))
-
         if grouping is not None:
             d.grouping = grouping
 
@@ -8778,14 +8804,6 @@ class Session(sherpa.ui.utils.Session):
                 d.group()
             else:
                 d.ungroup()
-
-        for resp_id in d.response_ids:
-            d.delete_response(resp_id)
-
-        if arf is not None:
-            self.set_arf(id, arf)
-
-        self.set_rmf(id, rmf)
 
         # Update background here.  bkg contains a new background;
         # delete the old background (if any) and add the new background
@@ -8800,7 +8818,8 @@ class Session(sherpa.ui.utils.Session):
         # the source model.  That becomes the simulated data.
         m = self.get_model(id)
 
-        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None)
+        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
+                      id=str(id))
         d.name = 'faked'
 
 

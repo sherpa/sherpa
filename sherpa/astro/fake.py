@@ -28,7 +28,7 @@ __all__ = ('fake_pha', )
 
 def fake_pha(data, model,
              is_source=True, pileup_model=None,
-             add_bkgs=False, bkg_models={}):
+             add_bkgs=False, bkg_models={}, id=None):
     """Simulate a PHA data set from a model.
 
     This function replaces the counts in a PHA dataset with simulated counts
@@ -78,7 +78,9 @@ def fake_pha(data, model,
 
         For all background ids not listed in this dictionary, the
         counts will be drawn from the PHA data of the background data set.
-
+    id : str
+        String with id number if called fomr UI layer. This is only used for
+        certain error messages.
 
         Examples
         --------
@@ -118,7 +120,7 @@ def fake_pha(data, model,
 
     if is_source:
         model = get_response_for_pha(data, model, bkg_srcs={},
-                                     pileup_model=pileup_model, id=None)
+                                     pileup_model=pileup_model, id=id)
 
     # Get one RMF. Hopefully all of them have the same number of
     # channels, but that sanity check should really be done elsewhere.
@@ -152,7 +154,7 @@ def fake_pha(data, model,
                 bkg_pha = data.get_background(bkg_id)
                 bkg_model = bkg_models[bkg_id]
                 if is_source:
-                    bkg_model = get_response_for_pha(bkg_pha, bkg_model)
+                    bkg_model = get_response_for_pha(bkg_pha, bkg_model, id=id)
 
                 # Exposure in background could differ from exposure in
                 # source. But need to set here so eval_model works

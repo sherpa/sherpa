@@ -26,8 +26,9 @@ import numpy as np
 
 import pytest
 
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
-from sherpa.utils.err import DataErr,IOErr
+from sherpa.utils.err import DataErr, IOErr
 
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
@@ -99,10 +100,11 @@ def test_fake_pha_incompatible_rmf(id, clean_astro_ui):
     ebins = np.asarray([1.1, 1.2, 1.4, 1.6, 1.8, 2.0])
     elo = ebins[:-1]
     ehi = ebins[1:]
+    arf = ui.create_arf(elo, ehi)
     rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
 
     with pytest.raises(DataErr) as exc:
-        ui.fake_pha(id, None, rmf, 1000.0)
+        ui.fake_pha(id, arf, rmf, 1000.0)
 
     id = 1 if id is None else id
     emsg = f"RMF 'delta-rmf' is incompatible with PHA dataset '{id}'"
@@ -284,3 +286,60 @@ def test_fake_pha_no_data(id, clean_astro_ui):
     assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
     # This is more likely to fail by chance, but still very unlikely
     assert faked.counts[1] > faked.counts[0]
+
+
+@requires_fits
+@requires_data
+def test_fake_pha_file(make_data_path, clean_astro_ui):
+    '''Test fake_pha using real input file.
+
+    Note that HEG orders -1 and +1 should really be treated spearately,
+    but for this test we just need two files to load.
+    '''
+    ui.set_source("gauss1d.g1")
+    g1 = ui.get_source()
+    g1.pos = 3
+    g1.FWHM = .5
+
+    ui.fake_pha(None,
+                make_data_path('3c120_heg_-1.arf.gz'),
+                make_data_path('3c120_heg_-1.rmf.gz'),
+                 1000.)
+    data = ui.get_data()
+    # Even with noise, maximum should be close to 3 keV
+    assert np.isclose(data.get_x()[np.argmax(data.counts)], 3., atol=.2)
+
+    # This is not a test from first principles, but at least a check of
+    # the current behaviour
+    assert data.counts.sum() > 5000
+    assert data.counts.sum() < 10000
+
+
+@requires_fits
+@requires_data
+def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
+    '''Test fake_pha using multiple real input files.
+
+    Note that HEG orders -1 and +1 should really be treated spearately,
+    but for this test we just need two files to load.
+    '''
+    ui.set_source("gauss1d.g1")
+    g1 = ui.get_source()
+    g1.pos = 3
+    g1.FWHM = .5
+
+
+    ui.fake_pha(None,
+                [make_data_path('3c120_heg_-1.arf.gz'),
+                 make_data_path('3c120_heg_1.arf.gz')],
+                [make_data_path('3c120_heg_-1.rmf.gz'),
+                 make_data_path('3c120_heg_1.rmf.gz')],
+                500.)
+    data = ui.get_data()
+    # Even with noise, maximum should be close to 3 keV
+    assert np.isclose(data.get_x()[np.argmax(data.counts)], 3., atol=.2)
+
+    # This is not a test from first principles, but at least a check of
+    # the current behaviour
+    assert data.counts.sum() > 5000
+    assert data.counts.sum() < 10000
