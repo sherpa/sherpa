@@ -23,7 +23,7 @@ that are common in the `sherpa.astro` module, e.g. from energy to wavelength.
 '''
 
 hc = 12.39841874  # nist.gov in [keV-Angstrom]
-"""The product of Plank constant (h) and speed of light (c) using values from nist.gov in units appropriate for converting between keV and Angstroms."""
+"""The product of Planck constant (h) and speed of light (c) using values from nist.gov in units appropriate for converting between keV and Angstroms."""
 
 charge_e = 1.60217653e-09
 '''elementary charge from nist.gov in units appropriate for converting between keV and erg.'''
