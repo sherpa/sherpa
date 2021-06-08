@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  Copyright (C) 2017, 2018, 2019, 2020, 2021
-#         Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -468,6 +468,7 @@ class ModelDomainRegridder1D():
 
     @property
     def grid(self):
+        """The grid of the associated evaluation space."""
         return self.evaluation_space.grid
 
     @grid.setter
@@ -485,8 +486,8 @@ class ModelDomainRegridder1D():
     def calc(self, pars, modelfunc, *args, **kwargs):
         """Evaluate and regrid a model
 
-        Evaluate the model on the internal grid and then
-        interpolate onto the desired grid.
+        Evaluate the model on the internal grid and then interpolate
+        onto the desired grid.
 
         Parameters
         ----------
@@ -512,6 +513,7 @@ class ModelDomainRegridder1D():
         It is not clear yet whether the restriction on grid type (i.e.
         must match between the requested grid and the intenal grid
         whether it is integrated or non-integrated) is too restrictive.
+
         """
 
         if self.evaluation_space.is_empty:  # Simply pass through
