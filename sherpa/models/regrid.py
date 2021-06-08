@@ -414,7 +414,7 @@ class ModelDomainRegridder1D():
     evaluation_space : object or None, optional
     name : str, optional
         The default name is 'regrid1d'.
-    interp : function reference, optional
+    interp : callable, optional
         The interpolation function: it should accept three arrays: the
         output x values and the x, y values to interpolate, and return
         the interpolated y values. The default is to use
@@ -422,7 +422,7 @@ class ModelDomainRegridder1D():
 
     Attributes
     ----------
-    method : function reference
+    method : callable
         The function that interpolates the data from the internal grid
         onto the requested grid. The default is akima. This is *only*
         used for point grids, as integrated grids use a simple
