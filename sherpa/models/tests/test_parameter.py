@@ -371,3 +371,27 @@ def test_link_parameter_evaluation():
     emsg = 'parameter powlaw1d.gamma has a maximum of 10'
     with pytest.raises(ParameterErr, match=emsg):
         mdl(grid)
+
+
+@pytest.mark.parametrize("attr", ["val", "link"])
+def test_link_manual(attr):
+    """Check out parameter linking. Use .val or .link"""
+
+    p = Parameter('model', 'eta', 2)
+    q = Parameter('other', 'bob', 3)
+
+    assert p.link is None
+    assert q.link is None
+
+    assert p.val == 2
+    assert q.val == 3
+
+    setattr(p, attr, 2 * q)
+    assert p.val == 6
+
+    assert q.link is None
+    assert isinstance(p.link, BinaryOpParameter)
+    assert isinstance(p.link.parts[0], ConstantParameter)
+    assert p.link.parts[0].val == 2
+    assert isinstance(p.link.parts[1], Parameter)
+    assert p.link.parts[1] is q
