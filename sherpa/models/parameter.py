@@ -20,9 +20,170 @@
 
 """Support for model parameter values.
 
-Parameter creation, evaluation, and combination are normally
-done as part of the model interface provided by
+Parameter creation, evaluation, and combination are normally done as
+part of the model interface provided by
 sherpa.models.model.ArithmeticModel.
+
+In the following the p variable corresponds to
+
+    >>> from sherpa.models.parameter import Parameter
+    >>> p = Parameter('model', 'eta', 2)
+    >>> print(p)
+    val         = 2.0
+    min         = -3.4028234663852886e+38
+    max         = 3.4028234663852886e+38
+    units       =
+    frozen      = False
+    link        = None
+    default_val = 2.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+Naming
+------
+The first two arguments to a parameter are the model name and then the
+parameter name, so `"model"` and `"eta"` here. They are used to
+display the `name` and `fullname` attributes:
+
+    >>> p.name
+    'eta'
+    >>> p.fullname
+    'model.eta'
+
+A units field can be attached to the parameter, but this is used purely
+for screen output by the sherpa.models.model.ArithmeticModel class and
+is not used when changing or evaluating the parameter.
+
+Changing parameter values
+-------------------------
+The `val` attribute is used to retrieve or change the parameter value:
+
+    >>> p.val
+    2.0
+    >>> p.val = 3
+
+Parameter limts
+---------------
+
+The parameter is forced to lie within the `min` and `max` attributes
+of the parameter (known as the "soft" limits). The default values
+for these are the 32-bit floating point maximum value, and it's
+negative:
+
+    >>> p.max
+    3.4028234663852886e+38
+    >>> p.min
+    -3.4028234663852886e+38
+
+Setting a value outside this range will raise a sherpa.utils.err.ParameterErr
+
+    >>> p.val = 1e40
+    ParameterErr: parameter model.eta has a maximum of 3.40282e+38
+
+These limits can be changed, as shown below, but they must lie
+within the `hard_min` to `hard_max` range of the parameter (the
+"hard" limits), which can not be changed:
+
+    >>> p.min = 0
+    >>> p.max = 10
+
+Freezing and thawing
+--------------------
+When fitting a model expression it is useful to be able to restrict
+the fit to a subset of parameters. This is done by only selecting
+those parameters which are not "frozen". This can be indicated by
+calling the `freeze` and `thaw` methods, or changing the `frozen`
+attribute directly:
+
+    >>> p.frozen
+    False
+    >>> p.freeze()
+    >>> p.frozen
+    True
+    >>> p.thaw()
+    >>> p.frozen
+    False
+
+Note that the `frozen` flag is used to indicate what parameters to
+vary in a fit, but it is still possible to directly change a parameter
+value when it is frozen:
+
+    >>> p.freeze()
+    >>> p.val = 6
+    >>> print(p)
+    val         = 6.0
+    min         = 0.0
+    max         = 10.0
+    units       =
+    frozen      = True
+    link        = None
+    default_val = 6.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+Changing multiple settings at once
+----------------------------------
+The `set` method should be used when multiple settings need to be
+changed at once, as it allows for changes to both the value and
+limits, such as changing the value to be 20 and the limits to 8 to 30:
+
+    >>> p.val = 20
+    ParameterErr: parameter model.eta has a maximum of 10
+    >>> p.set(val=20, min=8, max=30)
+    >>> print(p)
+    val         = 20.0
+    min         = 8.0
+    max         = 30.0
+    units       =
+    frozen      = True
+    link        = None
+    default_val = 20.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+Linking parameters
+------------------
+A parameter can be "linked" to another parameter, in which case the
+value of the parameter is calculated based on the link expression,
+such as being twice the other parameter:
+
+    >>> q = Parameter('other', 'beta', 4)
+    >>> p.val = 2 * p
+    >>> print(p)
+    val         = 8.0
+    min         = 8.0
+    max         = 30.0
+    units       =
+    frozen      = True
+    link        = (2 * other.beta)
+    default_val = 8.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+The `link` attribute stores the expression:
+
+    >>> p.link
+    <BinaryOpParameter '(2 * other.beta)'>
+
+If the linked expression ends up to the parameters limits being
+violated then a ParameterErr will be raised whenever the parameter
+value is requested. For this example, p must lie between 8 and 30 and
+so changing parameter q to a value of 3 will cause an error, but only
+when parameter p is checked:
+
+    >>> q.val = 3
+    >>> print(p)
+    ParameterErr: parameter model.eta has a minimum of 8
+    >>> p.val
+    ParameterErr: parameter model.eta has a minimum of 8
+
+Resetting a parameter
+---------------------
+The `reset` method is used to restore the parameter value and soft
+limits to a known state. The idea is that if the values were changed
+in a fit then `reset` will change them back to the values before a
+fit.
+
 """
 
 import logging
