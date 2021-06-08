@@ -624,7 +624,7 @@ class UnaryOpParameter(CompositeParameter):
     op : function reference
         The ufunc to apply to the parameter value.
     opstr : str
-        The symbol used to represemt the operator.
+        The symbol used to represent the operator.
 
     See Also
     --------
@@ -654,7 +654,7 @@ class BinaryOpParameter(CompositeParameter):
     op : function reference
         The ufunc to apply to the two parameter values.
     opstr : str
-        The symbol used to represemt the operator.
+        The symbol used to represent the operator.
 
     See Also
     --------

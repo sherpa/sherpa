@@ -373,7 +373,7 @@ class EvaluationSpace2D():
     def grid(self):
         """The grid representation of the space.
 
-        The x and y arrays in the grid are one-dimentional
+        The x and y arrays in the grid are one-dimensional
         representations of the meshgrid obtained from the x and y axis
         arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
 
