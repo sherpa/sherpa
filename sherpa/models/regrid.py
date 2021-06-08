@@ -244,7 +244,7 @@ class EvaluationSpace1D():
         return self.x_axis.overlaps(other.x_axis)
 
     def __contains__(self, other):
-        """Is `other` contained in the boundaries of this space?
+        """Are all elements of other within the range (start, end) of this space?
 
         Parameters
         ----------
