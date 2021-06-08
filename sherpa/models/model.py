@@ -680,6 +680,10 @@ class Model(NoNewAttributesAfterInit):
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
                                  doc='The hard minimum values for the thawed parameters.\n\n' +
+                                 'The minimum and maximum range of the parameters can be\n' +
+                                 'changed with thawedparmins and thawedparmaxes but only\n' +
+                                 'within the range given by thawedparhardmins\n' +
+                                 'to thawparhardmaxes.\n\n' +
                                  'See Also\n' +
                                  '--------\n' +
                                  'thawedparhardmaxes, thawedparmins\n')
@@ -689,6 +693,10 @@ class Model(NoNewAttributesAfterInit):
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
                                   doc='The hard maximum values for the thawed parameters.\n\n' +
+                                 'The minimum and maximum range of the parameters can be\n' +
+                                 'changed with thawedparmins and thawedparmaxes but only\n' +
+                                 'within the range given by thawedparhardmins\n' +
+                                 'to thawparhardmaxes.\n\n' +
                                   'See Also\n' +
                                   '--------\n' +
                                   'thawedparhardmins, thawedparmaxes\n')
