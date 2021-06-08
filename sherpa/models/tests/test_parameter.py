@@ -222,13 +222,13 @@ def test_complex_expression():
 
 def setUp_link():
     src1 = Gauss1D()
-    src1.pos = 4
     src2 = Gauss1D()
-    src2.pos = 5
+    src1.pos.set(val=4, min=-10, max=10)
+    src2.pos.set(val=5, min=-20, max=20)
     return src1, src2
 
 
-def tst_pos(gauss, pos, minval=-hugeval, maxval=hugeval, frozen=False,
+def tst_pos(gauss, pos, minval, maxval, frozen=False,
             link=None):
     assert gauss.val == pos
     assert gauss.min == minval
@@ -237,10 +237,21 @@ def tst_pos(gauss, pos, minval=-hugeval, maxval=hugeval, frozen=False,
     if gauss.link is None or link is None:
         assert gauss.link == link
     else:
-        tst_pos(gauss.link, pos)
+        # These two asserts are just to point out that
+        # the values we check against here are different
+        # to the input values.
+        #
+        assert minval == -10
+        assert maxval == 10
+        tst_pos(gauss.link, pos, -20, 20)
     assert gauss.default_val == pos
-    assert gauss.default_min == minval
-    assert gauss.default_max == maxval
+
+    # Note: these are not minval/maxval but the defaults.
+    # How, where, and why are they set?
+    # assert gauss.default_min == minval
+    # assert gauss.default_max == maxval
+    assert gauss.default_min == -hugeval
+    assert gauss.default_max == hugeval
 
 
 def tst_unlink(src1, src2):
@@ -248,22 +259,19 @@ def tst_unlink(src1, src2):
     # since we send in the parameter values.
     #
     src1.pos.unlink()
-    tst_pos(src1.pos, src1.pos.default_val,
-            minval=src1.pos.min, maxval=src1.pos.max)
+    tst_pos(src1.pos, src1.pos.default_val, -10, 10)
 
     src2.pos.unlink()
-    tst_pos(src2.pos, 5, minval=src2.pos.min,
-            maxval=src2.pos.max)
+    tst_pos(src2.pos, 5, -20, 20)
 
 
 def test_link_setup():
-    """Just ensures we run the same test as originally.
-
-    These tests are not particularly meaningful.
+    """Just ensures we run the same test as was in the original
+    version of the tests.
     """
     src1, src2 = setUp_link()
-    tst_pos(src1.pos, 4)
-    tst_pos(src2.pos, 5)
+    tst_pos(src1.pos, 4, -10, 10)
+    tst_pos(src2.pos, 5, -20, 20)
 
 
 def test_link_unlink_val():
@@ -277,8 +285,8 @@ def test_link_unlink_val_low_level():
     src1.pos.val = src2.pos.val
     src1.pos.link = src2.pos
 
-    tst_pos(src1.pos, 5, frozen=True, link=src1.pos)
-    tst_pos(src2.pos, 5)
+    tst_pos(src1.pos, 5, -10, 10, frozen=True, link=src1.pos)
+    tst_pos(src2.pos, 5, -20, 20)
 
     tst_unlink(src1, src2)
 
@@ -288,8 +296,8 @@ def test_link_unlink_val_ui():
 
     ui.link(src1.pos, src2.pos)
 
-    tst_pos(src1.pos, 5, frozen=True, link=src1.pos)
-    tst_pos(src2.pos, 5)
+    tst_pos(src1.pos, 5, -10, 10, frozen=True, link=src1.pos)
+    tst_pos(src2.pos, 5, -20, 20)
 
     tst_unlink(src1, src2)
 
