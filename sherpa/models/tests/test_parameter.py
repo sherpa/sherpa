@@ -220,70 +220,78 @@ def test_complex_expression():
     assert cmplx.val == (3 * p + p2) / (p ** 3.2)
 
 
-class ParVal:
+def setUp_link():
+    src1 = Gauss1D()
+    src1.pos = 4
+    src2 = Gauss1D()
+    src2.pos = 5
+    return src1, src2
 
-    def __init__(self, pos1, pos2):
-        self.src1 = Gauss1D()
-        self.src1.pos = pos1
-        self.src1_pos = pos1
-        self.src2 = Gauss1D()
-        self.src2.pos = pos2
-        self.src2_pos = pos2
-        self.tst_pos(self.src1.pos, self.src1_pos)
-        self.tst_pos(self.src2.pos, self.src2_pos)
 
-    def tst_unlink(self):
-        self.src1.pos.unlink()
-        self.tst_pos(self.src1.pos, self.src1.pos.default_val,
-                     minval=self.src1.pos.min, maxval=self.src1.pos.max)
-        self.src2.pos.unlink()
-        self.tst_pos(self.src2.pos, self.src2_pos, minval=self.src2.pos.min,
-                     maxval=self.src2.pos.max)
+def tst_pos(gauss, pos, minval=-hugeval, maxval=hugeval, frozen=False,
+            link=None):
+    assert gauss.val == pos
+    assert gauss.min == minval
+    assert gauss.max == maxval
+    assert gauss.frozen == frozen
+    if gauss.link is None or link is None:
+        assert gauss.link == link
+    else:
+        tst_pos(gauss.link, pos)
+    assert gauss.default_val == pos
+    assert gauss.default_min == minval
+    assert gauss.default_max == maxval
 
-    def tst_pos(self, gauss, pos, minval=-hugeval, maxval=hugeval, frozen=False,
-                link=None):
-        assert gauss.val == pos
-        assert gauss.min == minval
-        assert gauss.max == maxval
-        assert gauss.frozen == frozen
-        if gauss.link is None or link is None:
-            assert gauss.link == link
-        else:
-            self.tst_pos(gauss.link, pos)
-        assert gauss.default_val == pos
-        assert gauss.default_min == minval
-        assert gauss.default_max == maxval
 
-    def tst(self):
-        self.tst_pos(self.src1.pos, self.src2_pos, frozen=True,
-                     link=self.src1.pos)
-        self.tst_pos(self.src2.pos, self.src2_pos)
+def tst_unlink(src1, src2):
+    # Are the min/max checks in tst_pos really adding anything
+    # since we send in the parameter values.
+    #
+    src1.pos.unlink()
+    tst_pos(src1.pos, src1.pos.default_val,
+            minval=src1.pos.min, maxval=src1.pos.max)
 
-    def tst_low_level_val_link(self):
-        self.src1.pos.val = self.src2.pos.val
-        self.src1.pos.link = self.src2.pos
-        self.tst()
-        self.tst_unlink()
+    src2.pos.unlink()
+    tst_pos(src2.pos, 5, minval=src2.pos.min,
+            maxval=src2.pos.max)
 
-    def tst_ui_val_link(self):
-        ui.link(self.src1.pos, self.src2.pos)
-        self.tst()
-        self.tst_unlink()
+
+def test_link_setup():
+    """Just ensures we run the same test as originally.
+
+    These tests are not particularly meaningful.
+    """
+    src1, src2 = setUp_link()
+    tst_pos(src1.pos, 4)
+    tst_pos(src2.pos, 5)
 
 
 def test_link_unlink_val():
-    tst = ParVal(4, 5)
-    tst.tst_unlink()
+    src1, src2 = setUp_link()
+    tst_unlink(src1, src2)
 
 
 def test_link_unlink_val_low_level():
-    tst = ParVal(4, 5)
-    tst.tst_low_level_val_link()
+    src1, src2 = setUp_link()
+
+    src1.pos.val = src2.pos.val
+    src1.pos.link = src2.pos
+
+    tst_pos(src1.pos, 5, frozen=True, link=src1.pos)
+    tst_pos(src2.pos, 5)
+
+    tst_unlink(src1, src2)
 
 
 def test_link_unlink_val_ui():
-    tst = ParVal(4, 5)
-    tst.tst_ui_val_link()
+    src1, src2 = setUp_link()
+
+    ui.link(src1.pos, src2.pos)
+
+    tst_pos(src1.pos, 5, frozen=True, link=src1.pos)
+    tst_pos(src2.pos, 5)
+
+    tst_unlink(src1, src2)
 
 
 def test_link_parameter_setting():
