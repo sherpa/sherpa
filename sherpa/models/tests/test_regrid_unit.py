@@ -1093,7 +1093,6 @@ def test_wrong_kwargs():
     assert "unknown keyword argument: 'fubar'" in str(excinfo.value)
 
 
-@pytest.mark.xfail
 def test_interp_method_is_callable():
     """Check that method is callable."""
     rmdl = ModelDomainRegridder1D()

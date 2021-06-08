@@ -420,14 +420,6 @@ class ModelDomainRegridder1D():
         the interpolated y values. The default is to use
         sherpa.utils.akima.akima.
 
-    Attributes
-    ----------
-    method : callable
-        The function that interpolates the data from the internal grid
-        onto the requested grid. The default is akima. This is *only*
-        used for point grids, as integrated grids use a simple
-        rebinning scheme.
-
     Examples
     --------
 
@@ -455,6 +447,24 @@ class ModelDomainRegridder1D():
         self.evaluation_space = evaluation_space if evaluation_space is not None else EvaluationSpace1D()
 
         self.method = kwargs.get("interp", akima)
+
+    @property
+    def method(self):
+        """Interpolate the data from the internal to requested grid.
+
+        This is *only* used for point grids, as integrated grids use a
+        simple rebinning scheme. The default is
+        sherpa.utils.akima.akima.  The callable should accept `(xout,
+        xin, yin)` arguments and interpolate the `(xin, yin)` data
+        onto the `xout` grid, returning the interpolated data.
+        """
+        return self._method
+
+    @method.setter
+    def method(self, method):
+        if not callable(method):
+            raise TypeError(f"method argument '{repr(method)}' is not callable")
+        self._method = method
 
     @property
     def grid(self):
