@@ -48,6 +48,7 @@ from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     PSFModel
 from sherpa.fit import Fit
 from sherpa.astro.data import DataPHA, DataRMF
+from sherpa.astro import hc
 from sherpa.models.basic import Box1D, Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
@@ -1042,7 +1043,7 @@ def test_rspmodelpha_delta_call_wave():
     # Angstroms, so the bin width to multiply by is
     # Angstroms, not keV.
     #
-    dl = (DataPHA._hc / elo) - (DataPHA._hc / ehi)
+    dl = (hc / elo) - (hc / ehi)
     expected = constant * specresp * dl
 
     out = wrapped([4, 5])

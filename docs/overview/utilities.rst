@@ -53,4 +53,5 @@ Reference/API
    utils
    testing
    io
+   astro
    astro_io

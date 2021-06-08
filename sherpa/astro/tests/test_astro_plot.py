@@ -30,6 +30,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.plot import SourcePlot, \
     DataPHAPlot, ModelPHAHistogram, EnergyFluxHistogram, PhotonFluxHistogram
 from sherpa.astro import plot as aplot
+from sherpa.astro import hc
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D
 from sherpa import stats
@@ -134,7 +135,7 @@ def check_sourceplot_wavelength(sp, factor=0):
     # Use the code from DataPHA to convert from keV to Angstroms.
     #
     ebins = np.arange(0.1, 10.1, 0.1)
-    lbins = DataPHA._hc / ebins
+    lbins = hc / ebins
     assert sp.xlo == pytest.approx(lbins[:-1])
     assert sp.xhi == pytest.approx(lbins[1:])
 
