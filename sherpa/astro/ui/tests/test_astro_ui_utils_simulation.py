@@ -343,3 +343,62 @@ def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
     # the current behaviour
     assert data.counts.sum() > 5000
     assert data.counts.sum() < 10000
+
+
+def test_fake_pha_background_model(clean_astro_ui):
+    """Check we can add a background component.
+
+    See also test_fake_pha_basic.
+
+    For simplicity we use perfect responses.
+    """
+    id = 'qwerty'
+    channels = np.arange(1, 4, dtype=np.int16)
+    counts = np.ones(3, dtype=np.int16)
+    bcounts = 100 * counts
+
+    ui.load_arrays(id, channels, counts, ui.DataPHA)
+    ui.set_exposure(id, 100)
+    ui.set_backscal(id, 0.1)
+
+    bkg = ui.DataPHA('bkg', channels, bcounts,
+                     exposure=200, backscal=0.4)
+
+    ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    arf = ui.create_arf(elo, ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    mdl = ui.create_model_component('const1d', 'mdl')
+    mdl.c0 = 0
+    bkgmdl = ui.create_model_component('const1d', 'mdl')
+    bkgmdl.c0 = 2
+    ui.set_source(id, mdl)
+    ui.set_bkg(id, bkg)
+    ui.set_bkg_source(id, bkgmdl)
+    ui.set_arf(id, arf, bkg_id=1)
+    ui.set_rmf(id, rmf, bkg_id=1)
+
+    ui.fake_pha(id, arf, rmf, 1000.0, bkg='model')
+
+    faked = ui.get_data(id)
+    assert faked.exposure == pytest.approx(1000.0)
+    assert (faked.channel == channels).all()
+
+    # check we've faked counts (the scaling is such that it is
+    # very improbable that this condition will fail)
+    assert (faked.counts > counts).all()
+
+    # For reference the predicted source signal is
+    #    [200, 400, 400]
+    # and the background signal is
+    #    [125, 125, 125]
+    # so, even with randomly drawn values, the following
+    # checks should be robust.
+    #
+    predicted_by_source = 1000 * mdl(elo, ehi)
+    predicted_by_bkg = (1000/200) * (0.1/0.4) * bcounts
+    assert (faked.counts > predicted_by_source).all()
+    assert (faked.counts > predicted_by_bkg).all()
+    # This is more likely to fail by chance, but still very unlikely

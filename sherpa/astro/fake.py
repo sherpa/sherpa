@@ -24,8 +24,6 @@ from sherpa.astro.background import get_response_for_pha
 __all__ = ('fake_pha', )
 
 
-# UI version should set bkgmodel if they exisit and bkg=None
-
 def fake_pha(data, model,
              is_source=True, pileup_model=None,
              add_bkgs=False, bkg_models={}, id=None):

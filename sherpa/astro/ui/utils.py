@@ -41,6 +41,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.astro import fake
+from sherpa.astro.data import DataPHA
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -8636,6 +8637,11 @@ class Session(sherpa.ui.utils.Session):
            dataset identifier is used, rather than creating a
            completely new dataset.
 
+        .. versionchanged:: 4.13.2
+           Multiple ARFs and RMFs can now be used for the simulation.
+           Furthermore, background models can be specified instead of
+           background `~sherpa.stro.data.DataPHA` datasets.
+
         Parameters
         ----------
         id : int or str
@@ -8668,7 +8674,11 @@ class Session(sherpa.ui.utils.Session):
            If left empty, then only the source emission is simulated.
            If set to a PHA data object, then the counts from this data
            set are scaled appropriately and added to the simulated
-           source signal.
+           source signal. To use background model, set ``bkg="model"`. In that
+           case a background dataset with ``bkg_id=1`` has to be set before
+           calling ``fake_pha``. That background dataset needs to include
+           the data itself (not used in this function), the background model,
+           and the response.
 
         Raises
         ------
@@ -8730,6 +8740,19 @@ class Session(sherpa.ui.utils.Session):
         ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
 
+        Sometimes, the background dataset is noisy because there are not
+        enough photons in the background region. In this case, the background
+        model can be used to generate the photons that the background
+        contributes to the source spectrum. To do this, a background model
+        must be passed in. This model is then convolved with the ARF and RMF
+        (which must be set before) of the default background data set:
+
+        >>> set_bkg_source('sim', 'const1d.con1')
+        >>> load_arf('sim', 'bkg.arf.fits', bkg_id=1)
+        >>> load_rmf('sim', 'bkg_rmf.fits', bkg_id=1)
+        >>> fake_pha('sim', arf, rmf, texp, backscal=bscal, bkg='model',
+        ...          grouping=grp, quality=qual, grouped=True)
+        >>> save_pha('sim', 'sim.pi')
         """
         id = self._fix_id(id)
 
@@ -8809,17 +8832,21 @@ class Session(sherpa.ui.utils.Session):
         # delete the old background (if any) and add the new background
         # to the simulated data set, BEFORE simulating data, and BEFORE
         # adding scaled background counts to the simulated data.
+        bkg_models = {}
         if bkg is not None:
-            for bkg_id in d.background_ids:
-                d.delete_background(bkg_id)
-            self.set_bkg(id, bkg)
+            if bkg == 'model':
+                bkg_models={1: self.get_bkg_source(id)}
+            else:
+                for bkg_id in d.background_ids:
+                    d.delete_background(bkg_id)
+                self.set_bkg(id, bkg)
 
         # Calculate the source model, and take a Poisson draw based on
         # the source model.  That becomes the simulated data.
         m = self.get_model(id)
 
         fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
-                      id=str(id))
+                      id=str(id), bkg_models=bkg_models)
         d.name = 'faked'
 
 
