@@ -220,7 +220,7 @@ def test_complex_expression():
     assert cmplx.val == (3 * p + p2) / (p ** 3.2)
 
 
-class ParBase:
+class ParVal:
 
     def __init__(self, pos1, pos2):
         self.src1 = Gauss1D()
@@ -235,30 +235,24 @@ class ParBase:
     def tst_unlink(self):
         self.src1.pos.unlink()
         self.tst_pos(self.src1.pos, self.src1.pos.default_val,
-                     min=self.src1.pos.min, max=self.src1.pos.max)
+                     minval=self.src1.pos.min, maxval=self.src1.pos.max)
         self.src2.pos.unlink()
-        self.tst_pos(self.src2.pos, self.src2_pos, min=self.src2.pos.min,
-                     max=self.src2.pos.max)
+        self.tst_pos(self.src2.pos, self.src2_pos, minval=self.src2.pos.min,
+                     maxval=self.src2.pos.max)
 
-    def tst_pos(self, gauss, pos, min=-hugeval, max=hugeval, frozen=False,
-                link=None, link_min=None, link_max=None):
+    def tst_pos(self, gauss, pos, minval=-hugeval, maxval=hugeval, frozen=False,
+                link=None):
         assert gauss.val == pos
-        assert gauss.min == min
-        assert gauss.max == max
+        assert gauss.min == minval
+        assert gauss.max == maxval
         assert gauss.frozen == frozen
         if gauss.link is None or link is None:
             assert gauss.link == link
         else:
             self.tst_pos(gauss.link, pos)
         assert gauss.default_val == pos
-        assert gauss.default_min == min
-        assert gauss.default_max == max
-
-
-class ParVal(ParBase):
-
-    def __init__(self, pos1, pos2):
-        ParBase.__init__(self, pos1, pos2)
+        assert gauss.default_min == minval
+        assert gauss.default_max == maxval
 
     def tst(self):
         self.tst_pos(self.src1.pos, self.src2_pos, frozen=True,
