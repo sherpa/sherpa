@@ -10840,7 +10840,6 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None, recalc=True):
         """Return the data used to create the model-component plot.
 
@@ -12621,8 +12620,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
-    #           but does the astro version support a bkg_id parameter?
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the model for a data set.
@@ -12630,6 +12627,10 @@ class Session(NoNewAttributesAfterInit):
         This function evaluates and plots a component of the model
         expression for a data set, including any instrument response.
         Use `plot_source_component` to display without any response.
+
+        .. versionchanged :: 4.13.2
+           For PHA data, the response model is now automatically added
+           by the routine unless the model contains a response.
 
         Parameters
         ----------
@@ -12688,6 +12689,14 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit('jet')
         >>> plot_model_component('jet', pl, overplot=True)
         >>> plot_model_component('core', pl, overplot=True)
+
+        For PHA data sets the response is automatically added, but it
+        can also be explicitly included, which will create the same
+        plot:
+
+        >>> plot_model_component(pl)
+        >>> rsp = get_response()
+        >>> plot_model_component(rsp(pl))
 
         """
 

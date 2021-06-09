@@ -27,7 +27,7 @@ import numpy
 
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
-    create_non_delta_rmf
+    create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _argument_type_error, _check_type
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
@@ -10431,8 +10431,75 @@ class Session(sherpa.ui.utils.Session):
 
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
 
-    # copy doc string from sherpa.utils
     def get_model_component_plot(self, id, model=None, recalc=True):
+        """Return the data used to create the model-component plot.
+
+        .. versionchanged :: 4.13.2
+           For PHA data, the response model is now automatically added
+           by the routine unless the model contains a response.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to use (the name, if a string).
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_model_component` (or `get_model_component_plot`)
+           are returned, otherwise the data is re-generated.
+
+        Returns
+        -------
+        instance
+           An object representing the data used to create the plot by
+           `plot_model_component`. The return value depends on the
+           data set (e.g. PHA, 1D binned, or 1D un-binned).
+
+        See Also
+        --------
+        get_model_plot : Return the data used to create the model plot.
+        plot_model : Plot the model for a data set.
+        plot_model_component : Plot a component of the model for a data set.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
+        Examples
+        --------
+
+        Return the plot data for the ``pl`` component used in the
+        default data set:
+
+        >>> cplot = get_model_component_plot(pl)
+
+        Return the full source model (``fplot``) and then for the
+        components ``gal * pl`` and ``gal * gline``, for the data set
+        'jet':
+
+        >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
+        >>> set_source('jet', fmodel)
+        >>> fit('jet')
+        >>> fplot = get_model('jet')
+        >>> plot1 = get_model_component_plot('jet', pl*gal)
+        >>> plot2 = get_model_component_plot('jet', gline*gal)
+
+        For PHA data sets the response is automatically added, but it
+        can also be manually specified. In the following plot1 and
+        plot2 contain the same data:
+
+        >>> plot1 = get_model_component_plot(pl)
+        >>> rsp = get_response()
+        >>> plot2 = get_model_component_plot(rsp(pl))
+
+        """
         if model is None:
             id, model = model, id
         model = self._check_model(model)
@@ -10447,12 +10514,18 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrocompmdlplot
             if recalc:
+                if not has_pha_response(model):
+                    try:
+                        rsp = self.get_response(id)  # TODO: bkg_id?
+                        model = rsp(model)
+                    except DataErr:
+                        # no response
+                        pass
+
                 plotobj.prepare(d, model, self.get_stat())
             return plotobj
 
         return super().get_model_component_plot(id, model=model, recalc=recalc)
-
-    get_model_component_plot.__doc__ = sherpa.ui.utils.Session.get_model_component_plot.__doc__
 
     # copy doc string from sherpa.utils
     def get_source_component_plot(self, id, model=None, recalc=True):

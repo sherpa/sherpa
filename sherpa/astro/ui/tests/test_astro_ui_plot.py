@@ -1279,28 +1279,9 @@ def test_pha1_get_model_component_plot_add_response(clean_astro_ui, basic_pha1):
     # not use a string.
     #
     mplot = ui.get_model_component_plot('pl')
-
-    # Note that these tests are similar to check_pha1_model_component_plot
-    assert isinstance(mplot, ComponentModelPlot)
-    assert mplot.title == 'Model component: powlaw1d.pl'
-
-    # This may change if we change the filtering/grouping code
-    # Note that the model is evaluated on the un-grouped data.
-    #
-    assert len(mplot.xlo) == 644
-    assert mplot.xlo[0] == pytest.approx(0.467200)
-    assert mplot.xlo[-1] == pytest.approx(9.85500)
-    assert mplot.xhi[0] == pytest.approx(0.481800)
-    assert mplot.xhi[-1] == pytest.approx(9.869600)
-
-    # The y values are currently pl(channels) / bin width / time
-    # for the selected channel range.
-    #
-    chans = np.arange(33, 677)
-    yexp = pl(chans)
-    dy = mplot.xhi - mplot.xlo
-    texp = 38564.608926889
-    assert mplot.y == pytest.approx(yexp / dy / texp)
+    rsp = ui.get_response()
+    mdl = rsp(pl)
+    check_pha1_model_component_plot(mplot, mdl)
 
 
 @requires_fits
