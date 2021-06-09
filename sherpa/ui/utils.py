@@ -10900,9 +10900,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -10981,9 +10979,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -15610,9 +15606,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         # Ensure the convolution models get applied
         is_source = self._get_model_status(id)[1]
@@ -15677,9 +15671,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         imageobj = self._image_types['source_component']
         data = self.get_data(id)

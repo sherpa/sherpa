@@ -10435,9 +10435,7 @@ class Session(sherpa.ui.utils.Session):
     def get_model_component_plot(self, id, model=None, recalc=True):
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -10460,9 +10458,7 @@ class Session(sherpa.ui.utils.Session):
     def get_source_component_plot(self, id, model=None, recalc=True):
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
