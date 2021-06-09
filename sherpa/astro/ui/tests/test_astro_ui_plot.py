@@ -1266,9 +1266,6 @@ def check_pha1_model_component_plot(mplot, mdl):
 def test_pha1_get_model_component_plot_add_response(clean_astro_ui, basic_pha1):
     """Do we automatically add in the response? See issue #1020
 
-    At the moment we do not. Ideally we'd get the y values used
-    by test_pha1_get_model_component_plot_with_response.
-
     Note that this test does not need requires_plotting since
     we don't use anything that requires the plot backend.
     """
