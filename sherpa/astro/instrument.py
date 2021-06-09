@@ -1441,3 +1441,57 @@ def calc_grp_chan_matrix(fname):
     except sherpa.utils.err.IOErr as ioerr:
         print(ioerr)
         raise ioerr
+
+
+def has_pha_response(model):
+    """Does the model contain a PHA response?
+
+    Parameters
+    ----------
+    model : Model instance
+        The model expression to check.
+
+    Returns
+    -------
+    flag : bool
+        True if there is a PHA response included anywhere in the
+        expression.
+
+    Examples
+    --------
+
+    >>> rsp = Response1D(pha)
+    >>> m1 = Gauss1D()
+    >>> m2 = PowLaw1D()
+    >>> has_pha_response(m1)
+    False
+    >>> has_pha_response(rsp(m1))
+    True
+    >>> has_pha_response(m1 + m2)
+    False
+    >>> has_pha_response(rsp(m1 + m2))
+    True
+    >>> has_pha_response(m1 + rsp(m2))
+    True
+
+    """
+
+    # The following check should probably include ResponseNestedModel
+    # but it's not obvious if this is currently used.
+    #
+    def wanted(c):
+        return isinstance(c, (RSPModel, ARFModel, RMFModel))
+
+    if wanted(model):
+        return True
+
+    # This check relies on a composite class like the RSPModel is
+    # included in the __iter__ method (see CompositeModel._get_parts)
+    # otherwise the following would have had to be a recursive call
+    # to has_pha_instance.
+    #
+    for cpt in model:
+        if wanted(cpt):
+            return True
+
+    return False

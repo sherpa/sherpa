@@ -872,6 +872,10 @@ class CompositeModel(Model):
             assert (p is not self), (("'%s' object holds a reference to " +
                                       "itself") % type(self).__name__)
 
+            # Including itself seems a bit strange if it's a CompositeModel
+            # but is used by sherpa.astro.instrument.has_pha_instance (and
+            # possibly elsewhere).
+            #
             parts.append(p)
             if isinstance(p, CompositeModel):
                 parts.extend(p._get_parts())

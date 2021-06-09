@@ -45,11 +45,11 @@ from sherpa.models.model import ArithmeticModel, \
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
     RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf, \
-    PSFModel
+    PSFModel, has_pha_response
 from sherpa.fit import Fit
 from sherpa.astro.data import DataPHA, DataRMF
 from sherpa.astro import hc
-from sherpa.models.basic import Box1D, Const1D, Polynom1D, PowLaw1D
+from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 
@@ -1745,3 +1745,38 @@ def test_psf1d_convolved_pars():
     assert len(cpars) == 6
     for bpar, cpar in zip(bpars, cpars):
         assert cpar == bpar
+
+
+def test_has_pha_response():
+    """Check the examples from the docstring"""
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf()
+    specresp = create_non_delta_specresp()
+    adata = create_arf(rdata.energ_lo,
+                       rdata.energ_hi,
+                       specresp,
+                       exposure=exposure)
+
+    nchans = rdata.e_min.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_arf(adata)
+    pha.set_rmf(rdata)
+
+    rsp = Response1D(pha)
+    m1 = Gauss1D()
+    m2 = PowLaw1D()
+
+    assert not has_pha_response(m1)
+    assert has_pha_response(rsp(m1))
+    assert not has_pha_response(m1 + m2)
+    assert has_pha_response(rsp(m1 + m2))
+    assert has_pha_response(m1 + rsp(m2))
+
+    # reflexivity check
+    assert has_pha_response(rsp(m1) + m2)
+    assert has_pha_response(rsp(m1) + rsp(m2))
