@@ -165,11 +165,12 @@ The `link` attribute stores the expression:
     >>> p.link
     <BinaryOpParameter '(2 * other.beta)'>
 
-If the linked expression ends up to the parameters limits being
-violated then a ParameterErr will be raised whenever the parameter
-value is requested. For this example, p must lie between 8 and 30 and
-so changing parameter q to a value of 3 will cause an error, but only
-when parameter p is checked:
+A ParameterErr exception will be raised whenever the linked expression
+is evaluated and the result lies outside the parameters soft limits
+(the `min` to `max` range). For this example, p must lie between 8 and
+30 and so changing parameter q to a value of 3 will cause an error,
+but only when parameter p is checked, not when the related parameter
+(here q) is changed:
 
     >>> q.val = 3
     >>> print(p)
