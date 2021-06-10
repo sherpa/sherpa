@@ -25,29 +25,29 @@ as sherpa.models.model.Parameter instances - and the function that
 takes the parameter values along with an array of grid values. The
 main classes are:
 
- - Model which is the base class and defines most of the interfaces.
+* Model which is the base class and defines most of the interfaces.
 
- - ArithmeticConstantModel and ArithmeticFunctionModel for representing
-   a constant value or a function.
+* ArithmeticConstantModel and ArithmeticFunctionModel for representing
+  a constant value or a function.
 
- - ArithmeticModel is the main base class for deriving user models since
-   it supports combining models (e.g. by addition or multiplication) and
-   a cache to reduce evaluation time at the expense of memory use.
+* ArithmeticModel is the main base class for deriving user models since
+  it supports combining models (e.g. by addition or multiplication) and
+  a cache to reduce evaluation time at the expense of memory use.
 
- - RegriddableModel builds on ArithmeticModel to allow a model to be
-   evaluated on a different grid to that requested: most model classes
-   are derived from the 1D and 2D variants of RegriddableModel.
+* RegriddableModel builds on ArithmeticModel to allow a model to be
+  evaluated on a different grid to that requested: most model classes
+  are derived from the 1D and 2D variants of RegriddableModel.
 
- - CompositeModel which is used to represent a model expression, that
-   is combined models, such as `m1 * (m2 + m3)`
+* CompositeModel which is used to represent a model expression, that
+  is combined models, such as `m1 * (m2 + m3)`
 
-   - UnaryOpModel for model expressions such as `- m1`.
+  * UnaryOpModel for model expressions such as `- m1`.
 
-   - BinaryOpModel for model expressions such as `m1 + m2`.
+  * BinaryOpModel for model expressions such as `m1 + m2`.
 
-   - NestedModel for applying one model to another.
+  * NestedModel for applying one model to another.
 
- - SimulFitModel for fitting multiple models and datasets.
+* SimulFitModel for fitting multiple models and datasets.
 
 Creating a model
 ----------------
