@@ -539,7 +539,7 @@ complications compared to :py:class:`~sherpa.data.Data1D` objects:
   controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
   which means that the desired filter, when mapped to channel units,
   is likely to end up partially overlapping the first and last groups,
-  which means that `notice(a, b)` and `ignore(None, a); ignore(b, None)`
+  which means that ``notice(a, b)`` and ``ignore(None, a); ignore(b, None)``
   are not guaranteed to select the same range;
 
 * and there is the concept of the
