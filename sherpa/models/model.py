@@ -125,6 +125,47 @@ parameter:
     >>> m2.FWHM = 10
     >>> m2.FwHm = 10
 
+Linking parameters
+------------------
+
+One parameter can be made to reference one or more other parameters, a
+process called "linking". The lniked is no-longer considered a free
+parameter in a fit since it's value is derived from the other
+parameters. This link can be a simple one-to-one case, such as
+ensuring the fwhm parameter of one model is the same as the other:
+
+    >>> m2.fwhm = m1.fwhm
+
+It can be more complex, such as ensuring the position of one line
+is a fixed distance from another:
+
+    >>> l2.pos = l1.pos + 23.4
+
+It can even include multiple parameters:
+
+    >>> l3.ampl = (l1.ampl + l2.ampl) / 2
+
+Requesting the parameter value will return the evaluated expression,
+and the expression is stored in the link attribute:
+
+    >>> l1.ampl = 10
+    >>> l2.ampl = 12
+    >>> l3.ampl.val
+    11.0
+    >>> l3.ampl.link
+    <BinaryOpParameter '((l1.ampl + l2.ampl) / 2)'>
+
+The string representation of the model changes for linked parameters
+to indicate the expression:
+
+    >>> print(l3)
+    l3
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       l3.fwhm      thawed           10  1.17549e-38  3.40282e+38
+       l3.pos       thawed            0 -3.40282e+38  3.40282e+38
+       l3.ampl      linked           11 expr: ((l1.ampl + l2.ampl) / 2)
+
 Model evaluation
 ================
 
@@ -202,6 +243,37 @@ The parameter order matches the pars attribute of the model:
 
     >>> print([p.fullname for p in mdl.pars])
     ['gauss1d.fwhm', 'gauss1d.pos', 'gauss1d.ampl']
+
+Model expressions
+=================
+
+The CompositeModel class is the base class for creating model
+expressions - that is the overall model that is combined of one or
+more model objects along with possible numeric terms, such as a
+model containing two gaussians and a polynomial:
+
+    >>> from sherpa.models.basic import Gauss1D, Polynom1D
+    >>> l1 = Gauss1D('l1')
+    >>> l2 = Gauss1D('l2')
+    >>> l1.pos = 5
+    >>> l2.pos = 20
+    >>> l2.ampl = l1.ampl
+    >>> c = Polynom1D('c')
+    >>> mdl = l1 + (0.5 * l2) + c
+
+The resulting model can be evaluated just like an individual
+component:
+
+    >>> x = np.arange(-10, 40, 2)
+    >>> y = mdl(x)
+
+This model is written so that the amplitude of the `l2` component is
+half the `l1` component by linking the two `ampl` parameters and then
+including a scaling factor in the model expression for `l2`. An
+alternative would have been to include this scaling factor in the link
+expression:
+
+    >>> l2.ampl = l1.ampl / 2
 
 Model cache
 ===========
@@ -716,6 +788,9 @@ class Model(NoNewAttributesAfterInit):
 class CompositeModel(Model):
     """Represent a model with composite parts.
 
+    This is the base class for representing expressions that combine
+    multiple models and values.
+
     Parameters
     ----------
     name : str
@@ -726,6 +801,27 @@ class CompositeModel(Model):
     Attributes
     ----------
     parts : sequence of Model
+
+    Notes
+    -----
+    Composite models can be iterated through to find their
+    components:
+
+       >>> l1 = Gauss1D('l1')
+       >>> l2 = Gauss1D('l2')
+       >>> b = Polynom1D('b')
+       >>> mdl = l1 + (0.5 * l2) + b
+       >>> mdl
+       <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
+       >>> for cpt in mdl:
+       ...     print(type(c))
+       ...
+       <class 'BinaryOpModel'>
+       <class 'sherpa.models.basic.Gauss1D'>
+       <class 'BinaryOpModel'>
+       <class 'ArithmeticConstantModel'>
+       <class 'sherpa.models.basic.Gauss1D'>
+       <class 'sherpa.models.basic.Polynom1D'>
 
     """
 
