@@ -83,7 +83,7 @@ PHA FITS file::
 
 .. note::
 
-   The :py:mod:`sherpa.astro.io` module requires a FITS backend
+   The :py:mod:`sherpa.astro.io` module requires that a FITS backend
    is available. The :term:`Astropy` package can be used for this.
 
 As well as reading in the data it has also automatically loaded in
@@ -188,7 +188,7 @@ can visualize the data with::
 
 .. note::
 
-   The :py:mod:`sherpa.astro.plot` module requires a plotting backend
+   The :py:mod:`sherpa.astro.plot` module requires that a plotting backend
    is available. The :term:`matplotlib` package can be used for this.
 
    The default plot style has been adjusted to also include the
