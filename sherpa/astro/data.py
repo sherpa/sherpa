@@ -75,7 +75,7 @@ coordinate 3150,4515:
 >>> img.set_coord('physical')
 >>> img.notice2d('circle(3150,4515,45)')
 
-Read in a PHA dataset from the file 'src.pi', subtract the data,
+Read in a PHA dataset from the file 'src.pi', subtract the background,
 filter to only use the data 0.5 to 7 keV, and re-group the data within
 this range to have at least 20 counts per group:
 

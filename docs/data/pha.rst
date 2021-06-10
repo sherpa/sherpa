@@ -21,7 +21,7 @@ to the standard Sherpa data class. These are:
   the source region and this can either be subtracted from the data
   or a separate model fit to it;
 
-- analysis can be done using one of three "coordinates" - `"channel",
+- analysis can be done using one of three "coordinates" - `"channel"`,
   `"energy"`, or `"wavelength"` - that control the plot appearance and
   units for the :py:meth:`~sherpa.astro.data.DataPHA.notice` and
   :py:meth:`~sherpa.astro.data.DataPHA.ignore` calls;
@@ -34,7 +34,7 @@ to the standard Sherpa data class. These are:
 
 The :ref:`model_evaluate_example_pha` section of the
 :doc:`model evaluation <../evaluation/index>` page shows how many
-of these features works, while below we focus on an overview of
+of these features work, while below we focus on an overview of
 these changes.
 
 The following imports have been made::
@@ -88,7 +88,7 @@ PHA FITS file::
 
 As well as reading in the data it has also automatically loaded in
 the background data and response information (:term:`ARF` and :term:`RMF`)
-that are set in this files FITS metdata::
+that are set in this file's FITS metdata::
 
   >>> print(pha.get_background())
   name           = 3c273_bg.pi
@@ -163,7 +163,7 @@ created::
   background_ids = []
 
 The units used to analyse the data depend on whether the response
-information has been loaded: for the data loaded from disk (``pha``)
+information has been loaded. For the data loaded from disk (``pha``)
 it is energy units::
 
   >>> print(pha.units)
@@ -243,7 +243,7 @@ method::
 .. note::
 
    Each channel covers a finite energy range, and so when determining what
-   value tio display, the :py:meth:`~sherpa.astro.data.DataPHA.get_filter` call
+   value to display, the :py:meth:`~sherpa.astro.data.DataPHA.get_filter` call
    uses the mid-point of each bin. This means that the full range covered
    by the filter is actually larger than displayed (see
    `issue #1129 <https://github.com/sherpa/sherpa/issues/1129>`_ for more
@@ -410,7 +410,7 @@ representing the background region.
 
    In this example the background data has the same exposure time
    as the source, which is often the case (the source and background
-   spectra are extracted from the same event file), but this does
+   spectra are extracted from the same event file), but this does not
    need to hold.
 
 Often all that is done is to subtract the background from the source data,
