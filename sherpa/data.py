@@ -33,7 +33,7 @@ is, to combine filters such as selecting the range a to b (`notice`)
 and hiding the range c to d (`ignore`). This is used with the
 :py:class:`DataSpace1D` and :py:class:`DataSpace2D` classes to handle
 evaluating models on different grids to the data, and then converting
-back to the data space, whether by rebinnnig or interpolation.
+back to the data space, whether by rebinnig or interpolation.
 
 Notebook support
 ----------------
