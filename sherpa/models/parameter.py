@@ -735,12 +735,34 @@ class Parameter(NoNewAttributesAfterInit):
 class CompositeParameter(Parameter):
     """Represent a parameter with composite parts.
 
+    This is the base class for representing expressions that combine
+    multiple parameters and values.
+
     Parameters
     ----------
     name : str
         The name for the collection.
     parts : sequence of Parameter objects
         The parameters.
+
+    Notes
+    -----
+    Composite parameters can be iterated through to find their
+    components:
+
+       >>> p = Parameter('m', 'p', 2)
+       >>> q = Parameter('m', 'q', 4)
+       >>> c = (p + q) / 2
+       >>> c
+       <BinaryOpParameter '((m.p + m.q) / 2)'>
+       >>> for cpt in c:
+       ...     print(type(cpt))
+       ...
+       <class 'BinaryOpParameter'>
+       <class 'Parameter'>
+       <class 'Parameter'>
+       <class 'ConstantParameter'>
+
     """
 
     def __init__(self, name, parts):
