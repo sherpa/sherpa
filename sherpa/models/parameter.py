@@ -40,7 +40,8 @@ In the following the p variable corresponds to
     default_max = 3.4028234663852886e+38
 
 Naming
-------
+======
+
 The first two arguments to a parameter are the model name and then the
 parameter name, so `"model"` and `"eta"` here. They are used to
 display the `name` and `fullname` attributes:
@@ -55,7 +56,8 @@ for screen output by the sherpa.models.model.ArithmeticModel class and
 is not used when changing or evaluating the parameter.
 
 Changing parameter values
--------------------------
+=========================
+
 The `val` attribute is used to retrieve or change the parameter value:
 
     >>> p.val
@@ -63,7 +65,7 @@ The `val` attribute is used to retrieve or change the parameter value:
     >>> p.val = 3
 
 Parameter limts
----------------
+===============
 
 The parameter is forced to lie within the `min` and `max` attributes
 of the parameter (known as the "soft" limits). The default values
@@ -88,7 +90,8 @@ within the `hard_min` to `hard_max` range of the parameter (the
     >>> p.max = 10
 
 Freezing and thawing
---------------------
+====================
+
 When fitting a model expression it is useful to be able to restrict
 the fit to a subset of parameters. This is done by only selecting
 those parameters which are not "frozen". This can be indicated by
@@ -122,7 +125,8 @@ value when it is frozen:
     default_max = 3.4028234663852886e+38
 
 Changing multiple settings at once
-----------------------------------
+==================================
+
 The `set` method should be used when multiple settings need to be
 changed at once, as it allows for changes to both the value and
 limits, such as changing the value to be 20 and the limits to 8 to 30:
@@ -142,7 +146,8 @@ limits, such as changing the value to be 20 and the limits to 8 to 30:
     default_max = 3.4028234663852886e+38
 
 Linking parameters
-------------------
+==================
+
 A parameter can be "linked" to another parameter, in which case the
 value of the parameter is calculated based on the link expression,
 such as being twice the other parameter:
@@ -179,7 +184,8 @@ but only when parameter p is checked, not when the related parameter
     ParameterErr: parameter model.eta has a minimum of 8
 
 Resetting a parameter
----------------------
+=====================
+
 The `reset` method is used to restore the parameter value and soft
 limits to a known state. The idea is that if the values were changed
 in a fit then `reset` will change them back to the values before a
