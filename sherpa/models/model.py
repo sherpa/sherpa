@@ -50,7 +50,7 @@ main classes are:
 * SimulFitModel for fitting multiple models and datasets.
 
 Creating a model
-----------------
+================
 
 Models can be created with an optional name, which is useful for
 identifying a component in an expression:
@@ -75,7 +75,7 @@ identifying a component in an expression:
        gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
 
 Changing parameters
--------------------
+===================
 
 The parameters are the model values that control the output of the
 model. A particular model has a fixed set of parameters that can
@@ -115,7 +115,7 @@ attribute as you can say:
     >>> m2.fwhm = 20
 
 Accessing parameter values
-==========================
+--------------------------
 
 The model class is set up so that any attribute access is case
 insensitive, so the following are all ways to change the ``fwhm``
@@ -126,7 +126,7 @@ parameter:
     >>> m2.FwHm = 10
 
 Model evaluation
-----------------
+================
 
 With a sherpa.data.Data instance a model can be evaluated with the
 eval_model method of the object. For example:
@@ -153,7 +153,7 @@ values:
     [ 3.125      25.         42.04482076 25.          3.125     ]
 
 Integrated bins
-===============
+---------------
 
 If given the low and high edges of the bins then the model will - if
 supported - evaluate the integral of the model across the bins:
@@ -189,7 +189,7 @@ it normally just uses the low edge, as shown for the Gauss1D case:
     [ True  True  True  True  True]
 
 Direct access
-=============
+-------------
 
 The calc method of a model can also be used to evaluate the model, and
 this requires a list of the parameters and the independent axes:
@@ -204,7 +204,7 @@ The parameter order matches the pars attribute of the model:
     ['gauss1d.fwhm', 'gauss1d.pos', 'gauss1d.ampl']
 
 Model cache
------------
+===========
 
 The ArithmeticModel class and modelCacher1d decorator provide basic
 support for caching one-dimensional model evaluations - that is, to
@@ -224,7 +224,7 @@ CompositeModel allow you to clear the cache and display to the
 standard output the cache status of each model component.
 
 Example
--------
+=======
 
 The following class implements a simple scale model which has a single
 parameter (`scale`) which defaults to 1. It can be used for both
