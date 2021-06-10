@@ -651,21 +651,21 @@ def check_output(out, colnames, rows):
 
     """
 
-    from sherpa.astro.io import backend
+    from sherpa.astro import io
 
     lines = out.split('\n')
     assert len(lines) > 2
 
     cols = ' '.join(colnames)
-    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
         assert lines[0] == "#TEXT/SIMPLE"
         assert lines[1] == f"# {cols}"
         lines = lines[2:]
-    elif backend.__name__ == 'sherpa.astro.io.pyfits_backend':
+    elif io.backend.__name__ == 'sherpa.astro.io.pyfits_backend':
         assert lines[0] == f"#{cols}"
         lines = lines[1:]
     else:
-        raise RuntimeError(f"UNKNOWN I/O BACKEND: {backend.__name__}")
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
 
     assert lines[-1] == ""
     lines = lines[:-1]
@@ -766,7 +766,7 @@ def test_save_data_data1dint_fits(tmp_path):
 def test_save_data_data2d(tmp_path):
     """Does save_data work for Data2D?"""
 
-    from sherpa.astro.io import backend
+    from sherpa.astro import io
 
     y, x = np.mgrid[20:22, 10:13]
     x = x.flatten()
@@ -782,7 +782,7 @@ def test_save_data_data2d(tmp_path):
 
     # the output depends on the backend, and neither seems ideal
     #
-    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
         expected = ["#TEXT/SIMPLE", "# X0 X1 Y SHAPE"]
         s = [2, 3, 0, 0, 0, 0]
         for xi, yi, zi, si in zip(x, y, z, s):
@@ -790,10 +790,10 @@ def test_save_data_data2d(tmp_path):
 
         expected = "\n".join(expected) + "\n"
 
-    elif backend.__name__ == 'sherpa.astro.io.pyfits_backend':
+    elif io.backend.__name__ == 'sherpa.astro.io.pyfits_backend':
         expected = "\n".join([str(zz) for zz in z]) + "\n"
     else:
-        raise RuntimeError(f"UNKNOWN I/O BACKEND: {backend.__name__}")
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
 
     assert cts == expected
 
@@ -830,8 +830,8 @@ def test_save_data_dataimg(tmp_path):
     """Does save_data work for DataIMG? ASCII"""
 
     # Can not write out an ASCII image with crates
-    from sherpa.astro.io import backend
-    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+    from sherpa.astro import io
+    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
         pytest.skip('ASCII not supported for images with pycrates')
 
     y, x = np.mgrid[0:2, 0:3]
@@ -1267,8 +1267,8 @@ def test_save_resid_dataimg(tmp_path):
     """Residual, DataIMG, ASCII"""
 
     # Can not write out an ASCII image with crates
-    from sherpa.astro.io import backend
-    if backend.__name__ == 'sherpa.astro.io.crates_backend':
+    from sherpa.astro import io
+    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
         pytest.skip('ASCII not supported for images with pycrates')
 
     y, x = np.mgrid[10:12, 20:23]

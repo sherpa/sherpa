@@ -821,7 +821,7 @@ class Session(sherpa.ui.utils.Session):
         dataset = None
         try:
             dataset = sherpa.astro.io.read_arrays(*args)
-        except AttributeError:
+        except NotImplementedError:
             # if the astro backend is not set, fall back on io module version.
             dataset = sherpa.io.read_arrays(*args)
         return dataset

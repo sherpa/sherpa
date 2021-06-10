@@ -1,10 +1,10 @@
-# SHERPA_VERSION 4.12.2
+# SHERPA_VERSION 4.14.1
 [options]
 # Plotting packages available- pylab
 plot_pkg   : pylab
 
-# IO packages available- pyfits, crates
-io_pkg     : pyfits
+# IO packages (space separated list) in the order they will be tried
+io_pkg     : crates pyfits dummy
 
 [statistics]
 # If true, use truncation value in Cash, C-stat
@@ -33,7 +33,7 @@ level      : 10000
 # smaller than the threshold size, all the elements are printed out.
 # (This setting makes no change to the actual array, but merely
 # governs how the array is represented when a copy of the array is
-# converted to a string.)  
+# converted to a string.)
 #
 # The default threshold size is 1000.  Here, the threshold size is
 # changed to a much larger value as Sherpa often deals with large
@@ -49,10 +49,10 @@ numcores : None
 [multiprocessing]
 # Define the method by which the multiprocessing package starts
 # parallel processes. Sherpa requires the "fork" method in order to
-# utilize multiprocessing to improve performance and pass all tests. 
-# However, on MacOSX there are known issues with using "fork" that 
-# prompted a change in the multiprocessing default to be "spawn" on 
+# utilize multiprocessing to improve performance and pass all tests.
+# However, on MacOSX there are known issues with using "fork" that
+# prompted a change in the multiprocessing default to be "spawn" on
 # MacOSX. Expert users may consider changing this value to either
-# "spawn" or "default", where the latter will use the 
+# "spawn" or "default", where the latter will use the
 # platform-specific start method of the multiprocessing package.
 multiprocessing_start_method: fork
