@@ -380,7 +380,7 @@ class EvaluationSpace2D():
         Returns
         -------
         tuple
-            A two (x, y) or 4 (x, y, xhi, yhi) tuple.
+            A two element (x, y) or 4 element (x, y, xhi, yhi) tuple.
 
         """
         x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
