@@ -521,7 +521,7 @@ made in the future).
 PHA Filtering
 -------------
 
-Filtering of a :py:class:`~sherpa.astro.data.DataPHA` object has two
+Filtering of a :py:class:`~sherpa.astro.data.DataPHA` object has four
 complications compared to :py:class:`~sherpa.data.Data1D` objects:
 
 - the independent axis can be referred to in channel units (normally 1
@@ -539,6 +539,12 @@ complications compared to :py:class:`~sherpa.data.Data1D` objects:
   controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
   which means that the desired filter, when mapped to channel units,
   is likely to end up partially overlapping the first and last groups,
+  which means that `notice(a, b)` and `ignore(None, a); ignore(b, None)`
+  are not guaranteed to select the same range;
+
+- and there is the concept of the
+  :py:attr:`~sherpa.astro.data.DataPHA.quality` array, which defines whether
+  channels should either always be, or can temporarily be, ignored.
 
 This means that a :py:meth:`~sherpa.astro.data.DataPHA.notice` or
 :py:meth:`~sherpa.astro.data.DataPHA.ignore` call has to convert from
