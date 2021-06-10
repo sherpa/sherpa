@@ -54,9 +54,10 @@ Sherpa modules, which are optional components of Sherpa.
 Notebook support
 ----------------
 
-The Data objects support for Jupyter notebooks, and will display a
-table of information highlighting the relevant data and, for some
-classes, SVG images. Examples can be found at [AstroNoteBook]_.
+The Data objects support the rich display protocol of IPython, with
+HTML display of a table of information highlighting the relevant data
+and, for some classes, SVG images. Examples can be found at
+[AstroNoteBook]_.
 
 References
 ----------

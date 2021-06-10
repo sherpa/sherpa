@@ -38,9 +38,9 @@ back to the data space, whether by rebinnnig or interpolation.
 Notebook support
 ----------------
 
-The Data objects support for Jupyter notebooks, and will display a
-table of information highlighting the relevant data. Examples can
-be found at [NoteBook]_.
+The Data objects support the rich display protocol of IPython, with
+HTML display of a table of information highlighting the relevant data.
+Examples can be found at [NoteBook]_.
 
 References
 ----------
