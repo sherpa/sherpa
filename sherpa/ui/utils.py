@@ -335,7 +335,7 @@ class Session(NoNewAttributesAfterInit):
         # What objects are used to display the contour plots - e.g.
         # contour('data') or contour_data(). See also the
         # _contour_type_names dictionary which defines the actual
-        # mappnig from user command to the key of this dictionary
+        # mapping from user command to the key of this dictionary
         # (which, for contours, is the identity function).
         #
         self._contour_store = {}
