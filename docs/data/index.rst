@@ -207,14 +207,14 @@ Certain data classes - in particular :py:class:`sherpa.astro.data.DataIMG`
 and :py:class:`sherpa.astro.data.DataPHA` - extend and enhance the
 filtering capabilities to:
 
-- allow filters to use different units (logical and physical for
+* allow filters to use different units (logical and physical for
   :py:class:`~sherpa.astro.data.DataIMG` and channels, energies,
   or wavelengths for :py:class:`~sherpa.astro.data.DataPHA`;
 
-- filtering with geometric shapes (regions) for
+* filtering with geometric shapes (regions) for
   :py:class:`~sherpa.astro.data.DataIMG`;
 
-- and dynamically re-binning the data to enhance the signal-to-noise
+* and dynamically re-binning the data to enhance the signal-to-noise
   of the data for :py:class:`~sherpa.astro.data.DataPHA`.
 
 .. todo::

@@ -27,12 +27,12 @@ https://cxc.harvard.edu/sherpa/ web site.
 The :py:class:`~sherpa.ui.utils.Session` object provides methods
 that allow you to:
 
-- load data
-- set the model
-- change the statistic and optimiser
-- fit
-- calculate errors
-- visualize the results
+* load data
+* set the model
+* change the statistic and optimiser
+* fit
+* calculate errors
+* visualize the results
 
 These are the same stages as described in the
 :ref:`getting started <getting-started>` section, but the

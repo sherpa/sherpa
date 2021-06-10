@@ -189,13 +189,13 @@ The ``sherpa/conftest.py`` file contains general-purpose testing
 routines, fixtures, and configuration support for the test suite.
 To add a new command-line option:
 
- - add to the ``pytest_addoption`` routine, to add the option;
+* add to the ``pytest_addoption`` routine, to add the option;
 
- - add to ``pytest_collection_modifyitems`` if the option adds
-   a new mark;
+* add to ``pytest_collection_modifyitems`` if the option adds
+  a new mark;
 
- - and add support in ``pytest_configure``, such as registering
-   a new mark.
+* and add support in ``pytest_configure``, such as registering
+  a new mark.
 
 Update the XSPEC bindings?
 --------------------------
@@ -496,14 +496,14 @@ the class hierarchy included 1D- and 2D- specific classes, but there
 was still no check on model expressions. This section describes the
 current way that models are checked:
 
-- the :py:class:`sherpa.models.model.Model` class defines a
+* the :py:class:`sherpa.models.model.Model` class defines a
   :py:attr:`sherpa.models.model.Model.ndim` attribute, which is set
   to ``None`` by default.
-- the :py:class:`sherpa.models.model.RegriddableModel1D` and
+* the :py:class:`sherpa.models.model.RegriddableModel1D` and
   :py:class:`sherpa.models.model.RegriddableModel2D` classes set
   this attribute to 1 or 2, respectively (most user-callable classes
   are derived from one of these two classes).
-- the :py:class:`sherpa.models.model.CompositeModel` class checks
+* the :py:class:`sherpa.models.model.CompositeModel` class checks
   the ``ndim`` attribute for the components it is given (the
   ``parts`` argument) and checks that they all have the same
   ``ndim`` value (ignoring those models whose dimensionality
@@ -524,16 +524,16 @@ PHA Filtering
 Filtering of a :py:class:`~sherpa.astro.data.DataPHA` object has four
 complications compared to :py:class:`~sherpa.data.Data1D` objects:
 
-- the independent axis can be referred to in channel units (normally 1
+* the independent axis can be referred to in channel units (normally 1
   to the maximum number of channels), energy units (e.g. 0.5 to 7
   keV), or wavelength units (e.g. 20 to 22 Angstroms);
 
-- each channel has a width of 1, so channel filters - which are
+* each channel has a width of 1, so channel filters - which are
   generally going to be integer values - map exactly, but each channel
   has a finite width in the derived units (that is, energy or
   wavelength) so multiple values will map to the same channel;
 
-- the data can be dynamically grouped via the
+* the data can be dynamically grouped via the
   :py:attr:`~sherpa.astro.data.DataPHA.grouping` attribute, normally set
   by methods like :py:meth:`~sherpa.astro.data.DataPHA.group_counts` and
   controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
@@ -542,7 +542,7 @@ complications compared to :py:class:`~sherpa.data.Data1D` objects:
   which means that `notice(a, b)` and `ignore(None, a); ignore(b, None)`
   are not guaranteed to select the same range;
 
-- and there is the concept of the
+* and there is the concept of the
   :py:attr:`~sherpa.astro.data.DataPHA.quality` array, which defines whether
   channels should either always be, or can temporarily be, ignored.
 
@@ -572,9 +572,9 @@ Combining model expressions
 Models can be combined in several ways (for models derived from the
 :py:class:`sherpa.models.model.ArithmeticModel` class):
 
-- a unary operator, taking advantage of the ``__neg__`` and
+* a unary operator, taking advantage of the ``__neg__`` and
   ``__abs__`` special methods of a class;
-- a binary operator, using the ``__add__``, ``__sub__``, ``__mul__``,
+* a binary operator, using the ``__add__``, ``__sub__``, ``__mul__``,
   ``__div__``, ``__floordiv__``, ``__truediv__``, ``__mod__`` and ``__pow__``
   methods.
 
@@ -619,11 +619,11 @@ The plotting routines, such as
 :py:meth:`~sherpa.ui.utils.Session.plot_fit`,
 follow the same scheme:
 
-- The plot object is retrieved by the appropriate ``get_xxx_plot`` routine,
+* The plot object is retrieved by the appropriate ``get_xxx_plot`` routine,
   such as :py:meth:`~sherpa.ui.utils.Session.get_data_plot` and
   :py:meth:`~sherpa.ui.utils.Session.get_fit_plot`.
 
-- These ``get_xxx_plot`` calls retrieve the correct plot object -
+* These ``get_xxx_plot`` calls retrieve the correct plot object -
   which is normally a sub-class of :py:class:`~sherpa.plot.Plot`
   or :py:class:`~sherpa.plot.Histogram` - from the session object.
 
@@ -651,7 +651,7 @@ follow the same scheme:
   so they can be set and returned even without Matplotlib
   installed.
 
-- Once the plot object has been retrieved, is is sent to a plotting
+* Once the plot object has been retrieved, is is sent to a plotting
   routine - :py:meth:`sherpa.ui.utils.Session._plot` - which calls
   the ``plot`` method of the object, passing
   through the plot options. It is at this point that the plot

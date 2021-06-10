@@ -5,31 +5,31 @@ Analyzing PHA data
 As mentioned in :ref:`filter_enhance`, PHA datasets add extra features
 to the standard Sherpa data class. These are:
 
-- creating a PHA data set requires significantly more metadata than
+* creating a PHA data set requires significantly more metadata than
   other data classes, which is automatically handled when reading the
   data from a FITS file that follows the :term:`OGIP` standards, but
   have to be explicitly set when creating a :py:class:`~sherpa.astro.data.DataPHA`
   object;
 
-- the :py:class:`sherpa.astro.data.DataPHA` class is derived from
+* the :py:class:`sherpa.astro.data.DataPHA` class is derived from
   :py:class:`sherpa.data.Data1D`, since the "raw" data being fit is
   channel number and counts, but much analysis requires an "integrated"
   data set;
 
-- a source region can also have one or more associated background
+* a source region can also have one or more associated background
   regions which provide an estimate of the background contamination in
   the source region and this can either be subtracted from the data
   or a separate model fit to it;
 
-- analysis can be done using one of three "coordinates" - `"channel"`,
+* analysis can be done using one of three "coordinates" - `"channel"`,
   `"energy"`, or `"wavelength"` - that control the plot appearance and
   units for the :py:meth:`~sherpa.astro.data.DataPHA.notice` and
   :py:meth:`~sherpa.astro.data.DataPHA.ignore` calls;
 
-- data can be dynamically regrouped to change the signal-to-noise
+* data can be dynamically regrouped to change the signal-to-noise
   during the analysis;
 
-- and model evaluation uses classes related to the :term:`ARF` and
+* and model evaluation uses classes related to the :term:`ARF` and
   :term:`RMF` to convert between channels and energies.
 
 The :ref:`model_evaluate_example_pha` section of the
@@ -251,10 +251,10 @@ method::
 
 The reason for this change is two fold:
 
-- as mentioned, each channel has a finite energy range, so the selected energy
+* as mentioned, each channel has a finite energy range, so the selected energy
   range is unlikely to exactly match the requested range,
 
-- and thanks to grouping, the selected channel is unlikely to fall at the
+* and thanks to grouping, the selected channel is unlikely to fall at the
   start (for the low limit) and end (for the high limit) values for the
   groups, so this further changes the selected limit range.
 
