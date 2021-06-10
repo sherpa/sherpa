@@ -23,6 +23,7 @@ warning = logging.getLogger(__name__).warning
 from sherpa.astro.background import *
 from sherpa.astro.data import *
 from sherpa.astro.instrument import *
+from sherpa.astro.fake import *
 from sherpa.astro.flux import *
 
 try:

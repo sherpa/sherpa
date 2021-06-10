@@ -12,3 +12,4 @@ The sherpa.astro.background module
       :toctree: api
 
       add_response
+      get_response_for_pha

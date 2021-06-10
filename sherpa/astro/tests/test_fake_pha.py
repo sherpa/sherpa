@@ -120,6 +120,7 @@ def test_fake_pha_basic(has_bkg, is_source):
         assert data.counts.sum() < 50
         assert data.counts.sum() > 1
 
+
 def test_fake_pha_background_pha():
     '''Sample from background pha'''
     data = DataPHA('any', channels, counts, exposure=1000.)

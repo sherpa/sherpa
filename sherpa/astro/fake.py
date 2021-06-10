@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2021 MIT
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+'''Simulate PHA datasets
+
+This module contains the epynoumous function used to simulate
+`~sherpa.astro.data.DataPHA` datasets.
+'''
 import numpy as np
 import sherpa
 from sherpa.utils.err import DataErr

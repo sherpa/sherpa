@@ -152,12 +152,20 @@ is used to show the grid used by
 Handling PHA datasets
 =====================
 
-:term:`PHA` data is more complicated than other data types in Sherpa because
-of the need to convert between the units used by the model (energy
-or wavelength) and the units of the data (channel). As a user you
-will generally be thinking in keV or Angstroms, but the
-:py:class:`~sherpa.astro.data.DataPHA` class has to convert to
-channel units internally.
+.. _data_pha:
+
+X-ray data (`~sherpa.astro.data.DataPHA`)
+=========================================
+
+:term:`PHA` data is more complicated than other data types in Sherpa
+because of the need to convert between the units used by the model
+(energy or wavelength) and the units of the data (channel). As a user
+you will generally be thinking in keV or Angstroms, but the
+:py:class:`~sherpa.astro.data.DataPHA` class has to convert to channel
+units internally. The :term:`PHA` data format is mainly used for
+astronomical X-ray observatories, such as `Chandra
+<https://cxc.harvard.edu/>`, `XMM-Newton
+<https://sci.esa.int/web/xmm-newton>` or about a dozen other missions.
 
 First we will load in a PHA dataset, along with its response
 files (:term:`ARF` and :term:`RMF`), and have a look at how we can
@@ -300,6 +308,11 @@ For now we want to make sure we complete our analysis in
 energy units::
 
    >>> pha.set_analysis('energy')
+   >>> pha.notice(0.3, 7)
+   >>> tabs = ~pha.mask
+   >>> pha.group_counts(20, tabStops=tabs)
+
+
 
 We can finally think about evaluating a model. To start with
 we look at a physically-motivated model - an
@@ -517,3 +530,18 @@ earlier doesn't group the model to match the data)::
 
 Note that this example has not tried to subtract the background
 or fit it!
+
+Reference/API
+=============
+
+.. todo::
+
+   There are a bunch of methods that seem out of place;
+   e.g. Data1D has get_x0 even though it's not ND!
+
+.. toctree::
+   :maxdepth: 2
+   :name: api_data
+
+   data
+   astrodata

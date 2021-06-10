@@ -8835,7 +8835,7 @@ class Session(sherpa.ui.utils.Session):
         bkg_models = {}
         if bkg is not None:
             if bkg == 'model':
-                bkg_models={1: self.get_bkg_source(id)}
+                bkg_models = {1: self.get_bkg_source(id)}
             else:
                 for bkg_id in d.background_ids:
                     d.delete_background(bkg_id)

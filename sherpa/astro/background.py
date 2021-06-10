@@ -33,7 +33,7 @@ from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import ModelErr
 
 
-__all__ = ('add_response', )
+__all__ = ('add_response', 'get_response_for_pha')
 
 
 warning = logging.getLogger(__name__).warning
@@ -91,15 +91,15 @@ def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
         to match to data.
     bkg_srcs : dict
         Keys in the dictionary need to be the background ids in the dataset
-        ``data``, and the values are the corresponsing source models.
+        ``data``, and the values are the corresponding source models.
     pileup_model : None or `sherpa.astro.models.JDPileup` instance
         Pileup model for the dataset if needed, or ``None`` for no pileup
         model.
     id : string
         A string to label the dataset in warning messages. If this is set
-        ``None`` the name of the dataset it used. Thus paramters is mainly
+        ``None`` the name of the dataset it used. Thus parameters is mainly
         needed if this function is called from the UI layer, where datasets and
-        models have ids that are not stored in an attibute of the dataset
+        models have ids that are not stored in an attribute of the dataset
         itself.
 
     Returns
