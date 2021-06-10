@@ -31,7 +31,7 @@ from sherpa.plot.utils import histogram_line
 
 
 __all__ = ('clear_window', 'point', 'plot', 'histo', 'contour', 'set_subplot',
-           'init', 'get_split_plot_defaults', 'get_plot_defaults', 'begin',
+           'get_split_plot_defaults', 'get_plot_defaults', 'begin',
            'end', 'get_data_plot_defaults', 'get_model_plot_defaults',
            'exceptions', 'get_fit_plot_defaults', 'get_resid_plot_defaults',
            'get_ratio_plot_defaults', 'get_contour_defaults',
@@ -49,10 +49,6 @@ __all__ = ('clear_window', 'point', 'plot', 'histo', 'contour', 'set_subplot',
 name = 'pylab'
 
 logger = logging.getLogger(__name__)
-
-
-def init():
-    pass
 
 
 def begin():

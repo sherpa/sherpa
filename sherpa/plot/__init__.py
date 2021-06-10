@@ -26,6 +26,28 @@ Sherpa configuration file. Note that the plot objects can be created,
 and used, even when there is no available plot backend, it is just
 that no graphical display will be created.
 
+Which backend is used?
+----------------------
+
+When this module is first imported, Sherpa tries to import the
+backends installed with Sherpa in the order listed in
+`sherpa.plot.try_backends`. The first module that imports
+successfully is set as the active backend. The following command prints the
+name and the location on disk of that module::
+
+   >>> import sherpa import plot
+   >>> print(plot.backend)
+
+Change the backend
+------------------
+
+After the initial import, the backend can be changed by loading one of
+the plotting backends shipped with sherpa (or any other module that
+provides the same interface):
+
+  >>> import sherpa.plot.pylab_backend
+  >>> plot.backend = sherpa.plot.pylab_backend
+
 """
 
 import logging
@@ -39,8 +61,6 @@ from sherpa.utils.err import PlotErr, StatErr, ConfidenceErr
 from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
-from sherpa import get_config
-from configparser import ConfigParser
 
 lgr = logging.getLogger(__name__)
 warning = lgr.warning
@@ -48,45 +68,24 @@ warning = lgr.warning
 # TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
 
-config = ConfigParser()
-config.read(get_config())
 
-# Choose the dummy backend as the default backend
-plot_opt = config.get('options', 'plot_pkg', fallback='none')
-plot_opt = str(plot_opt).strip().lower() + '_backend'
-if plot_opt == 'matplotlib_backend':
-    plot_opt = 'pylab_backend'
+try_backends = ['pylab_backend', 'dummy_backend']
+'''List of plotting backends installed with Sherpa.
 
-if plot_opt == 'none_backend':
-    plot_opt = 'dummy_backend'
+Modules will be imported in order until one imports successfully.'''
 
-try:
-    backend = importlib.import_module('.' + plot_opt, package='sherpa.plot')
-except ImportError:
-    # if the user inputs a malformed backend or it is not found,
-    # give a useful warning and fall back on dummy_backend of noops
-    if plot_opt == 'chips_backend':
-        warning('chips is not supported in CIAO 4.12+, falling back to matplotlib.')
-        warning('Please consider updating your $HOME/.sherpa.rc file to suppress this warning.')
-        plot_opt = 'pylab_backend'
+backend = None
+'''Currently active backend module for plotting.'''
 
+if backend is None:
+    for plot_opt in try_backends:
         try:
-            backend = importlib.import_module('.' + plot_opt, package='sherpa.plot')
+            backend = importlib.import_module('.' + plot_opt,
+                                              package='sherpa.plot')
+            break
         except ImportError:
-            warning('failed to import sherpa.plot.%s;' % plot_opt +
-                    ' plotting routines will not be available')
-            from . import dummy_backend as backend
+            pass
 
-            plot_opt = 'dummy_backend'
-    else:
-        warning('failed to import sherpa.plot.%s;' % plot_opt +
-                ' plotting routines will not be available')
-        from . import dummy_backend as backend
-        plot_opt = 'dummy_backend'
-
-backend.init()
-
-plotter = backend
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'HistogramPlot', 'DataHistogramPlot',
@@ -111,7 +110,8 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'Confidence1D', 'Confidence2D',
            'IntervalProjection', 'IntervalUncertainty',
            'RegionProjection', 'RegionUncertainty',
-           'begin', 'end', 'exceptions', 'backend', 'plotter')
+           'begin', 'end', 'exceptions',
+           'backend', 'try_backends')
 
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
