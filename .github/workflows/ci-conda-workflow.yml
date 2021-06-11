@@ -110,23 +110,19 @@ jobs:
 
     - name: Build Sherpa
       env:
-        PYTHON_LDFLAGS: " " 
-        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "_sysconfigdata_x86_64_conda_cos6_linux_gnu"
+        PYTHON_LDFLAGS: " "
+        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "${{ runner.os == 'linux' && '_sysconfigdata_x86_64_conda_cos6_linux_gnu' || '_sysconfigdata_x86_64_apple_darwin13_4_0' }}" 
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        if [ `uname -s` == "linux" ] ; then
-            #To be removed when we can get to the latest Python builds
-            export _CONDA_PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata_x86_64_conda_cos6_linux_gnu"
-            echo " _CONDA_PYTHON_SYSCONFIGDATA_NAME=$_CONDA_PYTHON_SYSCONFIGDATA_NAME"
-        fi
         python setup.py ${{ matrix.install-type }}
 
     - name: Tests
       env:
         TEST: ${{ matrix.test-data }}
         XSPECVER: ${{ matrix.xspec-version }}
-        FITS: ${{ matrix.fits }} 
+        FITS: ${{ matrix.fits }}
+        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "${{ runner.os == 'linux' && '_sysconfigdata_x86_64_conda_cos6_linux_gnu' || '_sysconfigdata_x86_64_apple_darwin13_4_0' }}" 
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
