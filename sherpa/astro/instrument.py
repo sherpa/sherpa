@@ -1240,10 +1240,6 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
 
     .. versionadded:: 4.10.1
 
-    .. versionchanged:: 4.13.2
-
-       Added header keyword
-
     Parameters
     ----------
     elo, ehi : numpy.ndarray
@@ -1295,10 +1291,6 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     mapping is monotonic, and there are no gaps.
 
     .. versionadded:: 4.10.1
-
-    .. versionchanged:: 4.13.2
-
-       Added header keyword
 
     Parameters
     ----------
