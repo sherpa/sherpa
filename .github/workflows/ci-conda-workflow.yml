@@ -114,9 +114,10 @@ jobs:
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        if [ ${{ runner.os }} == "linux" ] ; then
+        if [ ${runner.os } == "linux" ] ; then
             #To be removed when we can get to the latest Python builds
             export _CONDA_PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata_x86_64_conda_cos6_linux_gnu"
+            echo " _CONDA_PYTHON_SYSCONFIGDATA_NAME=$ _CONDA_PYTHON_SYSCONFIGDATA_NAME"
         fi
         python setup.py ${{ matrix.install-type }}
 
