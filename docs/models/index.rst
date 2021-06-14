@@ -452,11 +452,11 @@ method which calls reset on the thawed parameters. This can be used to
 :ref:`change the starting point of a fit <change_fit_starting_point>`
 to see how robust the optimiser is by:
 
-- explicitly setting parameter values (or using the default values)
-- fit the data
-- call reset
-- change one or more parameters
-- refit
+* explicitly setting parameter values (or using the default values)
+* fit the data
+* call reset
+* change one or more parameters
+* refit
 
 
 Inspecting models and parameters
