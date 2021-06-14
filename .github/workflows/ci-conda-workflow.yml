@@ -27,9 +27,18 @@ jobs:
           - name: Linux Minimum Setup 
             os: ubuntu-latest
             python-version: 3.8
-            numpy-version: 1.17
+            numpy-version: 1.18
             install-type: develop 
             test-data: none
+
+          - name: Linux Full Build (Python 3.9)
+            os: ubuntu-latest
+            python-version: 3.9
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.11.1
 
           - name: Linux Full Build (Python 3.8)
             os: ubuntu-latest 
@@ -43,26 +52,16 @@ jobs:
           - name: Linux Full Build (Python 3.7)
             os: ubuntu-latest
             python-version: 3.7
-            numpy-version: 1.15
+            numpy-version: 1.19
             install-type: install
             fits: astropy
             test-data: submodule 
             matplotlib-version: 3
             xspec-version: 12.10.1s
 
-          - name: Linux Full Build (Python 3.6)
-            os: ubuntu-latest
-            python-version: 3.6
-            numpy-version: 1.11
-            install-type: install
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 2
-            xspec-version: 12.10.1s
-
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: 3.6 
+            python-version: 3.9 
             install-type: install
             test-data: package
             matplotlib-version: 2
@@ -70,6 +69,7 @@ jobs:
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
             python-version: 3.7
+            numpy-version: 1.18
             install-type: develop 
             fits: astropy
             test-data: none
