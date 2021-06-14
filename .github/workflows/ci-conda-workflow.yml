@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   sherpa_channel: sherpa
-  xspec_channel: "xspec/channel/test"
+  xspec_channel: "xspec/label/dev"
   miniconda_loc: ${{ github.workspace }}/miniconda
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
 
@@ -111,7 +111,6 @@ jobs:
     - name: Build Sherpa
       env:
         PYTHON_LDFLAGS: " "
-        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "${{ runner.os == 'linux' && '_sysconfigdata_x86_64_conda_cos6_linux_gnu' || '_sysconfigdata_x86_64_apple_darwin13_4_0' }}" 
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
@@ -122,7 +121,6 @@ jobs:
         TEST: ${{ matrix.test-data }}
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }}
-        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "${{ runner.os == 'linux' && '_sysconfigdata_x86_64_conda_cos6_linux_gnu' || '_sysconfigdata_x86_64_apple_darwin13_4_0' }}" 
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
