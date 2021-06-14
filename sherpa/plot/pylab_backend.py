@@ -42,7 +42,8 @@ __all__ = ('clear_window', 'point', 'plot', 'histo', 'contour', 'set_subplot',
            'get_model_histo_defaults', 'get_histo_defaults',
            'get_component_plot_defaults', 'get_component_histo_defaults',
            'vline', 'hline', 'get_scatter_plot_defaults',
-           'get_cdf_plot_defaults', 'get_latex_for_string', 'name')
+           'get_cdf_plot_defaults', 'get_latex_for_string', 'name',
+           'initialize_plot', 'select_plot')
 
 
 # Name of the backend
@@ -831,3 +832,43 @@ as_html_fit = as_html_plot
 as_html_fitcontour = as_html_contour
 as_html_contour1d = as_html_plot
 as_html_contour2d = as_html_contour
+
+# Needed for datastack plotting wrapper
+
+
+def initialize_plot(dataset, ids):
+    """Create the plot window or figure for the given dataset.
+
+    Parameters
+    ----------
+    dataset : str or int
+       The dataset.
+    ids : array_like
+       The identifier array from the DataStack object.
+
+    See Also
+    --------
+    select_plot
+
+    """
+    plt.figure(ids.index(dataset['id']) + 1)
+
+
+def select_plot(dataset, ids):
+    """Select the plot window or figure for the given dataset.
+
+    The plot for this dataset is assumed to have been created.
+
+    Parameters
+    ----------
+    dataset : str or int
+       The dataset.
+    ids : array_like
+       The identifier array from the DataStack object.
+
+    See Also
+    --------
+    initialize_plot
+
+    """
+    plt.figure(ids.index(dataset['id']) + 1)

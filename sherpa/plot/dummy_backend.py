@@ -43,7 +43,8 @@ __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
            'get_histo_defaults', 'get_model_histo_defaults',
            'get_component_plot_defaults', 'get_component_histo_defaults',
            'vline', 'hline', 'get_scatter_plot_defaults',
-           'get_cdf_plot_defaults', 'get_latex_for_string', 'name')
+           'get_cdf_plot_defaults', 'get_latex_for_string', 'name',
+           'initialize_plot', 'select_plot')
 
 
 lgr = logging.getLogger(__name__)
@@ -75,6 +76,8 @@ set_jointplot = point
 
 vline = point
 hline = point
+initialize_plot = point
+select_plot = point
 
 
 def get_split_plot_defaults():
