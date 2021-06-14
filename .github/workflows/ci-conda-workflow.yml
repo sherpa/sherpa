@@ -64,7 +64,7 @@ jobs:
             python-version: 3.9 
             install-type: install
             test-data: package
-            matplotlib-version: 2
+            matplotlib-version: 3
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
