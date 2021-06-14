@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,20 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+"""Support image display with an external display tool.
+
+At present the only supported application is DS9 [DS9]_, which is
+connected to via XPA [XPA]_.
+
+References
+----------
+
+..  [DS9] SAOImageDS9, "An image display and visualization tool for astronomical data", https://ds9.si.edu/
+
+..  [XPA] "The XPA Messaging System", https://hea-www.harvard.edu/saord/xpa/
+
+"""
 
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, bool_cast
@@ -40,10 +54,9 @@ __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',
            'ResidImage', 'PSFImage', 'PSFKernelImage', 'SourceImage',
            'ComponentModelImage', 'ComponentSourceImage')
 
-__metaclass__ = type
-
 
 class Image(NoNewAttributesAfterInit):
+    """Base class for sending image data to an external viewer."""
 
     def __init__(self):
         NoNewAttributesAfterInit.__init__(self)
