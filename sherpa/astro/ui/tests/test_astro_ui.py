@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1196,7 +1196,7 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
     name, lvl, msg = caplog.record_tuples[0]
     assert name == 'sherpa.astro.data'
     assert lvl == logging.INFO
-    assert msg.startswith('Skipping dataset /')
+    assert msg.startswith('Skipping dataset ')
     assert msg.endswith('/3c273_bg.pi: mask excludes all data')
 
 
