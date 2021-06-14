@@ -25,7 +25,6 @@ from sherpa.utils import send_to_pager
 from sherpa.astro import ui
 from .utils import load_error_msg, load_wrapper, model_wrapper, \
     simple_wrapper, fit_wrapper, plot_wrapper
-from . import plot_backend as backend
 
 logger = config_logger(__name__)
 
@@ -558,14 +557,6 @@ class DataStack():
     plot_fit = plot_wrapper(ui.plot_fit)
     plot_order = plot_wrapper(ui.plot_order)
     plot_source = plot_wrapper(ui.plot_source)
-    plot_savefig = backend.plot_savefig
-    plot_xlabel = backend.plot_xlabel
-    plot_ylabel = backend.plot_ylabel
-    plot_title = backend.plot_title
-    plot_xlim = backend.plot_xlim
-    plot_ylim = backend.plot_ylim
-    plot_set_xscale = backend.plot_set_xscale
-    plot_set_yscale = backend.plot_set_yscale
 
     def _get_dataid(self):
         if self.getitem_ids:

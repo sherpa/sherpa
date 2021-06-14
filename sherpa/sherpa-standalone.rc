@@ -1,7 +1,7 @@
 # SHERPA_VERSION 4.14.1
 [options]
 # Plotting packages available- pylab
-plot_pkg   : pylab
+plot_pkg   : pylab dummy
 
 # IO packages (space separated list) in the order they will be tried
 io_pkg     : crates pyfits dummy

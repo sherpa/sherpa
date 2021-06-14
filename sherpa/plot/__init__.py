@@ -49,7 +49,7 @@ provides the same interface):
   >>> plot.backend = sherpa.plot.pylab_backend
 
 """
-
+from configparser import ConfigParser
 import logging
 import importlib
 
@@ -61,6 +61,9 @@ from sherpa.utils.err import PlotErr, StatErr, ConfidenceErr
 from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
+from sherpa import get_config
+config = ConfigParser()
+config.read(get_config())
 
 lgr = logging.getLogger(__name__)
 warning = lgr.warning
@@ -68,23 +71,19 @@ warning = lgr.warning
 # TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
 
-
-try_backends = ['pylab_backend', 'dummy_backend']
-'''List of plotting backends installed with Sherpa.
-
-Modules will be imported in order until one imports successfully.'''
+plot_opt = config.get('options', 'plot_pkg', fallback='dummy')
+plot_opt = [o.strip().lower() + '_backend' for o in plot_opt.split()]
 
 backend = None
 '''Currently active backend module for plotting.'''
 
-if backend is None:
-    for plot_opt in try_backends:
-        try:
-            backend = importlib.import_module('.' + plot_opt,
+for plottry in plot_opt:
+    try:
+        backend = importlib.import_module('.' + plottry,
                                               package='sherpa.plot')
-            break
-        except ImportError:
-            pass
+        break
+    except ImportError:
+        pass
 
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
@@ -111,7 +110,7 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'IntervalProjection', 'IntervalUncertainty',
            'RegionProjection', 'RegionUncertainty',
            'begin', 'end', 'exceptions',
-           'backend', 'try_backends')
+           'backend')
 
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')

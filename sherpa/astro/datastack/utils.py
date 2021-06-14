@@ -22,8 +22,7 @@ import re
 from sherpa.utils import public
 from sherpa.utils.logging import config_logger
 import sherpa
-
-from . import plot_backend as backend
+from sherpa import plot as shplot
 
 logger = config_logger(__name__)
 
@@ -236,9 +235,9 @@ def plot_wrapper(func):
         kwargs
            The keyword arguments to the function.
         """
-        backend.initialize_backend()
+        shplot.backend.initialize_backend()
         for dataset in self.filter_datasets():
-            backend.initialize_plot(dataset, self.ids)
+            shplot.backend.initialize_plot(dataset, self.ids)
             func(dataset['id'], *args, **kwargs)
 
     plot.__name__ = func.__name__
