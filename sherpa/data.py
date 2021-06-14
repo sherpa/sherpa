@@ -1720,16 +1720,16 @@ def html_data1d(data):
     If have matplotlib then plot the data, otherwise summarize it.
     """
 
-    from sherpa.plot import DataPlot, backend
+    from sherpa import plot
 
     dtype = type(data).__name__
 
-    plotter = DataPlot()
+    plotter = plot.DataPlot()
     plotter.prepare(data)
 
     summary = f'{dtype} Plot'
     try:
-        out = backend.as_html_plot(plotter, summary)
+        out = plot.backend.as_html_plot(plotter, summary)
     except AttributeError:
         out = None
 
@@ -1776,16 +1776,16 @@ def html_data1dint(data):
     If have matplotlib then plot the data, otherwise summarize it.
     """
 
-    from sherpa.plot import DataHistogramPlot, backend
+    from sherpa import plot
 
     dtype = type(data).__name__
 
-    plotter = DataHistogramPlot()
+    plotter = plot.DataHistogramPlot()
     plotter.prepare(data)
 
     summary = f'{dtype} Plot'
     try:
-        out = backend.as_html_plot(plotter, summary)
+        out = plot.backend.as_html_plot(plotter, summary)
     except AttributeError:
         out = None
 
