@@ -28,10 +28,7 @@ import numpy as np
 from numpy import iterable, array2string, asarray
 
 from sherpa.astro.data import DataPHA
-from sherpa.plot import FitPlot, DelchiPlot, ResidPlot, \
-    RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
-from sherpa.plot import ComponentSourcePlot as _ComponentSourcePlot
-import sherpa.plot
+from sherpa import plot as shplot
 from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
@@ -126,13 +123,13 @@ def to_latex(txt):
        plotting backend to display as LaTeX.
     """
 
-    return backend.get_latex_for_string(txt)
+    return shplot.backend.get_latex_for_string(txt)
 
 
-class DataPHAPlot(sherpa.plot.DataHistogramPlot):
+class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
-    histo_prefs = sherpa.plot.get_data_hist_prefs()
+    histo_prefs = shplot.get_data_hist_prefs()
 
     def prepare(self, data, stat=None):
 
@@ -145,7 +142,7 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
 
         if stat is not None:
             yerrorbars = self.histo_prefs.get('yerrorbars', True)
-            self.yerr = sherpa.plot.calculate_errors(data, stat, yerrorbars)
+            self.yerr = shplot.calculate_errors(data, stat, yerrorbars)
 
         self.title = data.name
 
@@ -165,17 +162,17 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
         self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
 
 
-class ModelPHAHistogram(HistogramPlot):
+class ModelPHAHistogram(shplot.HistogramPlot):
     """Plot a model for a PHA dataset.
 
     The filtering and grouping from the PHA datset
     are used to create the bins for the model.
     """
 
-    histo_prefs = backend.get_model_histo_defaults()
+    histo_prefs = shplot.backend.get_model_histo_defaults()
 
     def __init__(self):
-        HistogramPlot.__init__(self)
+        super().__init__()
         self.title = 'Model'
 
     def prepare(self, data, model, stat=None):
@@ -257,7 +254,7 @@ class ModelHistogram(ModelPHAHistogram):
             data.mask = old_mask
 
 
-class SourcePlot(HistogramPlot):
+class SourcePlot(shplot.HistogramPlot):
     """Create 1D plots of unconcolved model values.
 
     Attributes
@@ -273,12 +270,12 @@ class SourcePlot(HistogramPlot):
 
     """
 
-    histo_prefs = backend.get_model_histo_defaults()
+    histo_prefs = shplot.backend.get_model_histo_defaults()
 
     def __init__(self):
         self.units = None
         self.mask = None
-        HistogramPlot.__init__(self)
+        super().__init__()
         self.title = 'Source'
 
     def prepare(self, data, src, lo=None, hi=None):
@@ -351,15 +348,15 @@ class SourcePlot(HistogramPlot):
             xhi = self.xhi[self.mask]
             y = self.y[self.mask]
 
-        Histogram.plot(self, xlo, xhi, y, title=self.title,
-                       xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow,
-                       **kwargs)
+        shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
+                              xlabel=self.xlabel, ylabel=self.ylabel,
+                              overplot=overplot, clearwindow=clearwindow,
+                              **kwargs)
 
 
-class ComponentModelPlot(_ComponentSourcePlot, ModelHistogram):
+class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 
-    histo_prefs = backend.get_component_histo_defaults()
+    histo_prefs = shplot.backend.get_component_histo_defaults()
 
     def __init__(self):
         ModelHistogram.__init__(self)
@@ -372,16 +369,16 @@ class ComponentModelPlot(_ComponentSourcePlot, ModelHistogram):
         self.title = 'Model component: %s' % model.name
 
     def _merge_settings(self, kwargs):
-        return sherpa.plot.merge_settings(self.histo_prefs, kwargs)
+        return shplot.merge_settings(self.histo_prefs, kwargs)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         ModelHistogram.plot(self, overplot=overplot,
                             clearwindow=clearwindow, **kwargs)
 
 
-class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
+class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
 
-    histo_prefs = backend.get_component_histo_defaults()
+    histo_prefs = shplot.backend.get_component_histo_defaults()
 
     def __init__(self):
         SourcePlot.__init__(self)
@@ -394,14 +391,14 @@ class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
         self.title = 'Source model component: %s' % model.name
 
     def _merge_settings(self, kwargs):
-        return sherpa.plot.merge_settings(self.histo_prefs, kwargs)
+        return shplot.merge_settings(self.histo_prefs, kwargs)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         SourcePlot.plot(self, overplot=overplot,
                         clearwindow=clearwindow, **kwargs)
 
 
-class ARFPlot(HistogramPlot):
+class ARFPlot(shplot.HistogramPlot):
     """Create plots of the ancillary response file (ARF).
 
     Attributes
@@ -417,7 +414,7 @@ class ARFPlot(HistogramPlot):
 
     """
 
-    histo_prefs = backend.get_model_histo_defaults()
+    histo_prefs = shplot.backend.get_model_histo_defaults()
 
     def prepare(self, arf, data=None):
         """Fill the fields given the ARF.
@@ -484,48 +481,40 @@ class BkgModelHistogram(ModelHistogram):
         self.title = 'Background Model Contribution'
 
 
-class BkgFitPlot(FitPlot):
+class BkgFitPlot(shplot.FitPlot):
     "Derived class for creating plots of background counts with fitted model"
-    def __init__(self):
-        FitPlot.__init__(self)
+    pass
 
 
-class BkgDelchiPlot(DelchiPlot):
+class BkgDelchiPlot(shplot.DelchiPlot):
     "Derived class for creating background plots of 1D delchi chi ((data-model)/error)"
-    def __init__(self):
-        DelchiPlot.__init__(self)
+    pass
 
 
-class BkgResidPlot(ResidPlot):
+class BkgResidPlot(shplot.ResidPlot):
     "Derived class for creating background plots of 1D residual (data-model)"
-    def __init__(self):
-        ResidPlot.__init__(self)
 
     def prepare(self, data, model, stat):
-        ResidPlot.prepare(self, data, model, stat)
+        super().prepare(data, model, stat)
         self.title = 'Residuals of %s - Bkg Model' % data.name
 
 
-class BkgRatioPlot(RatioPlot):
+class BkgRatioPlot(shplot.RatioPlot):
     "Derived class for creating background plots of 1D ratio (data:model)"
-    def __init__(self):
-        RatioPlot.__init__(self)
 
     def prepare(self, data, model, stat):
-        RatioPlot.prepare(self, data, model, stat)
+        super().prepare(data, model, stat)
         self.title = 'Ratio of %s : Bkg Model' % data.name
 
 
-class BkgChisqrPlot(ChisqrPlot):
+class BkgChisqrPlot(shplot.ChisqrPlot):
     "Derived class for creating background plots of 1D chi**2 ((data-model)/error)**2"
-    def __init__(self):
-        ChisqrPlot.__init__(self)
+    pass
 
 
 class BkgSourcePlot(SourcePlot):
     "Derived class for plotting the background unconvolved source model"
-    def __init__(self):
-        SourcePlot.__init__(self)
+    pass
 
 
 class OrderPlot(ModelHistogram):
@@ -538,7 +527,7 @@ class OrderPlot(ModelHistogram):
         self.orders = None
         self.colors = None
         self.use_default_colors = True
-        ModelHistogram.__init__(self)
+        super().__init__()
 
     def prepare(self, data, model, orders=None, colors=None):
         self.orders = data.response_ids
@@ -629,10 +618,10 @@ class OrderPlot(ModelHistogram):
                 self.histo_prefs['linecolor'] = color
 
             # Note: the user settings are sent to each plot
-            Histogram.plot(self, xlo, xhi, y, title=self.title,
-                           xlabel=self.xlabel, ylabel=self.ylabel,
-                           overplot=overplot, clearwindow=clearwindow,
-                           **kwargs)
+            shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
+                                  xlabel=self.xlabel, ylabel=self.ylabel,
+                                  overplot=overplot, clearwindow=clearwindow,
+                                  **kwargs)
             count += 1
 
         self.histo_prefs['linecolor'] = default_color
@@ -648,7 +637,7 @@ class FluxHistogram(ModelHistogram):
         self.modelvals = None
         self.clipped = None
         self.flux = None
-        ModelHistogram.__init__(self)
+        super.__init__()
 
     def __str__(self):
         vals = self.modelvals
@@ -704,7 +693,7 @@ class EnergyFluxHistogram(FluxHistogram):
     "Derived class for creating 1D energy flux distribution plots"
 
     def __init__(self):
-        FluxHistogram.__init__(self)
+        super().__init__()
         self.title = "Energy flux distribution"
         self.xlabel = f"Energy flux (ergs cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
         self.ylabel = "Frequency"
@@ -714,7 +703,7 @@ class PhotonFluxHistogram(FluxHistogram):
     "Derived class for creating 1D photon flux distribution plots"
 
     def __init__(self):
-        FluxHistogram.__init__(self)
+        super().__init__()
         self.title = "Photon flux distribution"
         self.xlabel = f"Photon flux (Photons cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
         self.ylabel = "Frequency"
