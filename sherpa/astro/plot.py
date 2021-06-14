@@ -516,8 +516,8 @@ class OrderPlot(ModelHistogram):
                 self.colors.append(top_color)
                 top_color = hex(int(top_color, 16) - jump)
 
-        if not self.use_default_colors and len(colors) != len(orders):
-            raise PlotErr('ordercolors', len(orders), len(colors))
+        if not self.use_default_colors and len(self.colors) != len(self.orders):
+            raise PlotErr('ordercolors', len(self.orders), len(self.colors))
 
         old_filter = parse_expr(data.get_filter())
         old_group = data.grouped
@@ -547,6 +547,8 @@ class OrderPlot(ModelHistogram):
             for order in self.orders:
                 self.xlo.append(xlo)
                 self.xhi.append(xhi)
+                # QUS: why check that response_ids > 2 and not 1 here?
+                #
                 if len(data.response_ids) > 2:
                     if order < 1 or order > len(model.rhs.orders):
                         raise PlotErr('notorder', order)

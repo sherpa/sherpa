@@ -26,15 +26,17 @@ import pytest
 
 from sherpa.utils.testing import requires_data, requires_fits
 
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataARF, DataPHA
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, \
-    DataPHAPlot, ModelPHAHistogram, EnergyFluxHistogram, PhotonFluxHistogram
+    DataPHAPlot, ModelPHAHistogram, OrderPlot, \
+    EnergyFluxHistogram, PhotonFluxHistogram
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
-from sherpa.models.basic import Const1D, Gauss1D, Polynom1D
+from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, PowLaw1D
 from sherpa import stats
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import IOErr, PlotErr
 
 
 def check_sourceplot_energy(sp, factor=0):
@@ -721,3 +723,110 @@ def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
     assert out[12].startswith('histo_prefs = ')
 
     assert len(out) == 13
+
+
+# Based on sherpa/astro/ui/tests/test_astro_plot.py
+#
+_data_chan = np.linspace(1, 10, 10, dtype=np.int8)
+_data_counts = np.asarray([0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
+                          dtype=np.int8)
+
+_arf = np.asarray([0.8, 0.8, 0.9, 1.0, 1.1, 1.1, 0.7, 0.6, 0.6, 0.6])
+
+# Using a "perfect" RMF, in that there's a one-to-one mapping
+# from channel to energy. I use a non-uniform grid to make
+# it obvious when the bin width is being used: when using a
+# constant bin width like 0.1 keV the factor of 10 is too easy
+# to confuse for other terms.
+#
+_energies = np.linspace(0.5, 1.5, 11)
+_energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1., 1.1, 1.12, 1.3, 1.4, 1.5])
+_energies_lo = _energies[:-1]
+_energies_hi = _energies[1:]
+
+
+def example_pha_data():
+    """Create an example data set."""
+
+    etime = 1201.0
+    d = DataPHA('example', _data_chan.copy(),
+                _data_counts.copy(),
+                exposure=etime,
+                backscal=0.2)
+
+    a = DataARF('example-arf',
+                _energies_lo.copy(),
+                _energies_hi.copy(),
+                _arf.copy(),
+                exposure=etime)
+
+    r = create_delta_rmf(_energies_lo.copy(),
+                         _energies_hi.copy(),
+                         e_min=_energies_lo.copy(),
+                         e_max=_energies_hi.copy(),
+                         offset=1, name='example-rmf')
+
+    d.set_arf(a)
+    d.set_rmf(r)
+    return d
+
+
+@pytest.mark.parametrize("orders", [None, [1]])
+def test_orderplot_checks_colors_explicit_orders(orders):
+    """Check we raise a PlotErr.
+
+    We check both the default orders setting (None) and an explicit
+    setting as, when writing this test, I found an error in the
+    handling of the None case.
+
+    """
+
+    oplot = OrderPlot()
+
+    pha = example_pha_data()
+    model = PowLaw1D('example-pl')
+
+    with pytest.raises(PlotErr) as pe:
+        oplot.prepare(pha, model, orders=orders, colors=['green', 'orange'])
+
+    assert str(pe.value) == "orders list length '1' does not match colors list length '2'"
+
+
+def test_orderplot_check_title():
+    """Is the title set?"""
+
+    oplot = OrderPlot()
+
+    pha = example_pha_data()
+    model = PowLaw1D('example-pl')
+
+    assert oplot.title is 'Model'
+    oplot.prepare(pha, model)
+    assert oplot.title == 'Model Orders [1]'
+
+
+def test_orderplot_check_range():
+    """Are the x/y values as expected?
+
+    Note that this is not a proper test as the dataset only
+    contains a single response. However, the code is not
+    clear as what is meant to happen with multiple responses
+    so do not spend too much time on this test here.
+    """
+
+    oplot = OrderPlot()
+
+    pha = example_pha_data()
+    model = Const1D('example-mdl')
+
+    oplot.prepare(pha, model, orders=[2])
+    assert len(oplot.xlo) == 1
+    assert len(oplot.xhi) == 1
+    assert len(oplot.y) == 1
+
+    assert oplot.xlo[0] == pytest.approx(np.arange(1, 11))
+    assert oplot.xhi[0] == pytest.approx(np.arange(2, 12))
+
+    # constant model / exposure time
+    yexp = np.ones(10) / 1201
+    assert oplot.y[0] == pytest.approx(yexp)

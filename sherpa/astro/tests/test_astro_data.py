@@ -1245,6 +1245,9 @@ def test_grouping_filter(analysis, make_data_path):
                     15, 16, 16, 15, 15, 16, 16, 15, 16, 15])
     assert pha.get_dep(filter=True) == pytest.approx(dep)
 
+    # The group mapping for group_width of 50 is listed in
+    # test_grouping_filtering_binning.
+    #
     pha.group_width(50)
     dep = np.array([213, 136,  79,  47,  47,  29,  27, 18])
     assert pha.get_dep(filter=True) == pytest.approx(dep)
@@ -1270,19 +1273,66 @@ def test_grouping_filtering_binning(analysis, make_data_path):
     pha.set_analysis(analysis)
     pha.group_width(50)
 
-    # We expect 1, 49 * -1, repeated and then the
-    # last bin.
+    # We expect 1, 49 * -1, repeated and then the last bin.
     #
     gbin = [1] + [-1] * 49
     gend = [1] + [-1] * 23
     expected = np.concatenate((np.tile(gbin, 20), gend))
     assert (pha.grouping == expected).all()
 
-    # This is based on the energy results
+    # This is based on the energy results. The grouping has
+    # energy ranges:
+    #
+    #   i= 0   0.0015 -  0.7300
+    #   i= 1   0.7300 -  1.4600
+    #   i= 2   1.4600 -  2.1900
+    #   i= 3   2.1900 -  2.9200
+    #   i= 4   2.9200 -  3.6500
+    #   i= 5   3.6500 -  4.3800
+    #   i= 6   4.3800 -  5.1100
+    #   i= 7   5.1100 -  5.8400
+    #   i= 8   5.8400 -  6.5700
+    #   i= 9   6.5700 -  7.3000
+    #   i=10   7.3000 -  8.0300
+    #   i=11   8.0300 -  8.7600
+    #   i=12   8.7600 -  9.4900
+    #   i=13   9.4900 - 10.2200
+    #   i=14  10.2200 - 10.9500
+    #   i=15  10.9500 - 11.6800
+    #   i=16  11.6800 - 12.4100
+    #   i=17  12.4100 - 13.1400
+    #   i=18  13.1400 - 13.8700
+    #   i=19  13.8700 - 14.6000
+    #   i=20  14.6000 - 14.9504
+    #
     expected = np.zeros(21, dtype=bool)
     expected[1:9] = True
     assert (pha.mask == expected).all()
 
+    # For the ungrouped-data we have, selecting
+    # a few ranges related to how the code could
+    # work:
+    #
+    #   i=49   0.7154 -  0.7300
+    #   i=50   0.7300 -  0.7446
+    #   i=51   0.7446 -  0.7592
+    #   ...
+    #   i=68   0.9928 -  1.0074
+    #   i=69   1.0074 -  1.0220
+    #   i=70   1.0220 -  1.0366
+    #   ...
+    #   i=99   1.4454 -  1.4600
+    #   i=100   1.4600 -  1.4746
+    #   i=101   1.4746 -  1.4892
+    #   ...
+    #   i=448   6.5408 -  6.5554
+    #   i=449   6.5554 -  6.5700
+    #   i=450   6.5700 -  6.5846
+    #   ...
+    #   i=478   6.9788 -  6.9934
+    #   i=479   6.9934 -  7.0080
+    #   i=480   7.0080 -  7.0226
+    #
     expected = np.zeros(1024, dtype=bool)
     expected[50:450] = True
     assert (pha.get_mask() == expected).all()
@@ -1848,6 +1898,153 @@ def test_wave_conversion_multiple(make_data_path):
 
     xs = pha._to_channel([-10, 2, 0, -12, 12])
     assert xs == pytest.approx([46, 44, 46, 46, 14])
+
+
+@requires_data
+@requires_fits
+def test_energy_filter_notice_ignore(make_data_path):
+    """Add a simple check of notice/ignore handling.
+
+    This may be tested elsewhere  notice then ignore - but make
+    sure we have it covered.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+
+    pha.notice(0.5, 7)
+    pha.ignore(1, 2)
+
+    # Use pytest.approx to make it an easy check, and as values are True/False
+    # it should be sufficient.
+    #
+    expected = np.zeros(46, dtype=bool)
+    expected[3:13] = True
+    expected[26:45] = True
+    assert pha.mask == pytest.approx(expected)
+
+    # This is now the ungrouped mask
+    expected = np.zeros(1024, dtype=bool)
+    expected[32:68] = True
+    expected[139:676] = True
+    assert pha.get_mask() == pytest.approx(expected)
+
+
+@requires_data
+@requires_fits
+def test_energy_filter_notice_ignore_ungrouped(make_data_path):
+    """Add a simple check of notice/ignore handling.
+
+    This may be tested elsewhere  notice then ignore - but make
+    sure we have it covered.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+
+    pha.notice(0.5, 7)
+    pha.ignore(1, 2)
+
+    pha.ungroup()
+
+    # Check the two masks are the same
+    assert pha.mask == pytest.approx(pha.get_mask())
+
+    expected = np.zeros(1024, dtype=bool)
+    expected[32:68] = True
+    expected[139:676] = True
+    assert pha.get_mask() == pytest.approx(expected)
+
+
+@requires_data
+@requires_fits
+def test_energy_filter_ungrouped_notice_ignore_ungrouped(make_data_path):
+    """Add a simple check of notice/ignore handling.
+
+    This is similar to test_energy_filter_notice_ignore_ungrouped
+    but calls ungroup first.
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.set_analysis('energy')
+
+    pha.ungroup()
+
+    pha.notice(0.5, 7)
+    pha.ignore(1, 2)
+
+    # Check the two masks are the same
+    assert pha.mask == pytest.approx(pha.get_mask())
+
+    expected = np.zeros(1024, dtype=bool)
+    expected[34:68] = True
+    expected[137:480] = True
+    assert pha.get_mask() == pytest.approx(expected)
+
+
+@requires_data
+@requires_fits
+def test_energy_filter_roundtrip(make_data_path):
+    """If you ungroup and then group you should get back the original filter."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+
+    fall = pha.get_filter()
+    assert fall == '0.124829999695:12.410000324249'
+
+    pha.notice(0.5, 7)
+    pha.ignore(1, 2)
+
+    expected = '0.518300011754:0.970899999142,2.058600068092:8.219800233841'
+    f1 = pha.get_filter()
+    assert f1 == expected
+
+    pha.ungroup()
+    f2 = pha.get_filter()
+    assert f2 == '0.474500000477:0.985500007868,2.036700010300:9.862299919128'
+
+    pha.group()
+    f3 = pha.get_filter()
+    assert f3 == expected
+
+
+@pytest.mark.xfail
+@requires_data
+@requires_fits
+def test_energy_filter_ordering(make_data_path):
+    """If you ungroup then filter or filter than ungroup you should get back the same filter."""
+
+    from sherpa.astro.io import read_pha
+
+    infile = make_data_path('3c273.pi')
+    pha1 = read_pha(infile)
+    pha2 = read_pha(infile)
+
+    pha2.ungroup()
+    for pha in [pha1, pha2]:
+        pha.notice(0.5, 6)
+        pha.ignore(1.1, 1.2)
+        pha.ignore(4, 4.1)
+
+    pha1.ungroup()
+
+    assert pha1.get_filter() == pha2.get_filter()
+
+    mask1 = pha1.mask
+    mask2 = pha2.mask
+    assert mask1 == pytest.approx(mask2)
+
+    mask1 = pha1.get_mask()
+    mask2 = pha2.get_mask()
+    assert mask1 == pytest.approx(mask2)
 
 
 @requires_data

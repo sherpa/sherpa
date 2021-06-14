@@ -1269,8 +1269,9 @@ class DataPHA(Data1D):
     .. [2] Private communication with Keith Arnaud
 
     """
-    _fields = ("name", "channel", "counts", "bin_lo", "bin_hi", "grouping", "quality",
-               "exposure", "backscal", "areascal")
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
+               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
+               'background_ids')
 
     def _get_grouped(self):
         return self._grouped
@@ -1408,10 +1409,6 @@ class DataPHA(Data1D):
     background_ids = property(_get_background_ids, _set_background_ids,
                               doc='IDs of defined background data sets')
 
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
-               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
-               'background_ids')
-
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
@@ -1430,6 +1427,11 @@ class DataPHA(Data1D):
         self.areascal = areascal
         self.header = header
         self._grouped = (grouping is not None)
+        # _original_groups is set False if the grouping is changed via
+        # the _dynamic_groups method. This is currently only used by the
+        # serialization code (sherpa.astro.ui.serialize) to determine
+        # whether to write out the grouping data.
+        #
         self._original_groups = True
         self._subtracted = False
         self._response_ids = []
