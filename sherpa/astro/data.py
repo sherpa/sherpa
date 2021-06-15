@@ -216,8 +216,7 @@ def make_metadata(header, items):
     Parameters
     ----------
     header : dict-like
-        The header. Expected to be a sherpa.astro.io.meta.Meta
-        object but just needs to act like a dictionary.
+        The header.
     items : list of (str, str)
         The keys to display (in order), if set. The first element
         is the key name, and the second is the label in the header
@@ -354,24 +353,23 @@ def html_pha(pha):
     # Display a subset of header values
     # - maybe don't display the FITLER if NONE
     # - how about RESPFILE / PHAFILE
-    if pha.header is not None:
-        meta = make_metadata(pha.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('GRATING', 'Grating type'),
-                              ('ORDER', 'Diffraction order'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the PHA'),
-                              ('CHANTYPE', 'The channel type'),
-                              ('HDUCLAS2', 'Data stored'),
-                              ('HDUCLAS3', 'Data format'),
-                              ('HDUCLAS4', 'PHA format')])
+    meta = make_metadata(pha.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('GRATING', 'Grating type'),
+                          ('ORDER', 'Diffraction order'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the PHA'),
+                          ('CHANTYPE', 'The channel type'),
+                          ('HDUCLAS2', 'Data stored'),
+                          ('HDUCLAS3', 'Data format'),
+                          ('HDUCLAS4', 'PHA format')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(pha, ls)
 
@@ -510,21 +508,20 @@ def html_arf(arf):
     # Display a subset of header values
     # - maybe don't display the FITLER if NONE
     # - how about RESPFILE / PHAFILE
-    if arf.header is not None:
-        meta = make_metadata(arf.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('GRATING', 'Grating type'),
-                              ('ORDER', 'Diffraction order'),
-                              ('TG_M', 'Diffraction order'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the ARF')])
+    meta = make_metadata(arf.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('GRATING', 'Grating type'),
+                          ('ORDER', 'Diffraction order'),
+                          ('TG_M', 'Diffraction order'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the ARF')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(arf, ls)
 
@@ -570,23 +567,22 @@ def html_rmf(rmf):
 
     # Display a subset of header values
     # - how about PHAFILE
-    if rmf.header is not None:
-        meta = make_metadata(rmf.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('GRATING', 'Grating type'),
-                              ('ORDER', 'Diffraction order'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the RMF'),
-                              ('CHANTYPE', 'The channel type'),
-                              ('LO_THRES', 'The minimum probability threshold'),
-                              ('HDUCLAS3', 'Matrix contents')])
+    meta = make_metadata(rmf.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('GRATING', 'Grating type'),
+                          ('ORDER', 'Diffraction order'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the RMF'),
+                          ('CHANTYPE', 'The channel type'),
+                          ('LO_THRES', 'The minimum probability threshold'),
+                          ('HDUCLAS3', 'Matrix contents')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(rmf, ls)
 
@@ -665,20 +661,19 @@ def html_img(img):
         ls.append(formatting.html_section(meta,
                                           summary='Coordinates: {}'.format(img.eqpos.name)))
 
-    if img.header is not None:
-        meta = make_metadata(img.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('OBSERVER', 'Observer'),
-                              ('EXPOSURE', 'Exposure time'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the image')])
+    meta = make_metadata(img.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('OBSERVER', 'Observer'),
+                          ('EXPOSURE', 'Exposure time'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the image')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(img, ls)
 
@@ -1026,7 +1021,7 @@ class DataARF(DataOgipResponse):
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.exposure = exposure
-        self.header = header
+        self.header = {} if header is None else header
         self.ethresh = ethresh
         energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
         self._lo, self._hi = energ_lo, energ_hi
@@ -1049,7 +1044,7 @@ class DataARF(DataOgipResponse):
 
     def __setstate__(self, state):
         if 'header' not in state:
-            self.header = None
+            self.header = {}
         self.__dict__.update(state)
 
         if '_specresp' not in state:
@@ -1151,7 +1146,7 @@ class DataRMF(DataOgipResponse):
         self.detchans = detchans
         self.e_min = e_min
         self.e_max = e_max
-        self.header = header
+        self.header = {} if header is None else header
         self.n_grp = n_grp
         self.f_chan = f_chan
         self.n_chan = n_chan
@@ -1184,7 +1179,7 @@ class DataRMF(DataOgipResponse):
 
     def __setstate__(self, state):
         if 'header' not in state:
-            self.header = None
+            self.header = {}
         self.__dict__.update(state)
 
     def _validate(self, name, energy_lo, energy_hi, ethresh):
@@ -1492,7 +1487,7 @@ class DataPHA(Data1D):
         self.exposure = exposure
         self.backscal = backscal
         self.areascal = areascal
-        self.header = header
+        self.header = {} if header is None else header
         self._grouped = (grouping is not None)
         # _original_groups is set False if the grouping is changed via
         # the _dynamic_groups method. This is currently only used by the
@@ -1540,7 +1535,7 @@ class DataPHA(Data1D):
         self._set_units(state['_units'])
 
         if 'header' not in state:
-            self.header = None
+            self.header = {}
         self.__dict__.update(state)
 
     primary_response_id = 1
@@ -3948,7 +3943,7 @@ class DataIMG(Data2D):
         self.sky = sky
         self.eqpos = eqpos
         self.coord = coord
-        self.header = header
+        self.header = {} if header is None else header
         self._region = None
         Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
 
@@ -3991,7 +3986,7 @@ class DataIMG(Data2D):
         # self.__dict__['_get_world']=(lambda : None)
 
         if 'header' not in state:
-            self.header = None
+            self.header = {}
 
         self.__dict__.update(state)
 
@@ -4335,7 +4330,7 @@ class DataIMGInt(DataIMG):
         self.sky = sky
         self.eqpos = eqpos
         self.coord = coord
-        self.header = header
+        self.header = {} if header is None else header
         self.shape = shape
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 

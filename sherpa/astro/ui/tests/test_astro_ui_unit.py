@@ -431,20 +431,8 @@ def test_save_data_data1d_no_clobber(tmp_path):
 def test_save_data_datapha_no_clobber(tmp_path):
     """save_data: does clobber=False work? DataPHA"""
 
-    # This import requires an I/O backend hence it is done here
-    #
-    from sherpa.astro.io.meta import Meta
-
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    hdr = Meta()
-    ui.get_data().header = hdr
-
     out = tmp_path / "data.dat"
-
     out.write_text('some text')
     check_clobber(out, ui.save_data)
 
@@ -453,18 +441,7 @@ def test_save_data_datapha_no_clobber(tmp_path):
 def test_save_pha_no_clobber(tmp_path):
     """save_pha: does clobber=False work?"""
 
-    # This import requires an I/O backend hence it is done here
-    #
-    from sherpa.astro.io.meta import Meta
-
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    hdr = Meta()
-    ui.get_data().header = hdr
-
     out = tmp_path / "data.dat"
 
     out.write_text('some text')
@@ -761,7 +738,6 @@ def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
     """
 
     from sherpa.astro.io import read_image
-    from sherpa.astro.io.meta import Meta
     from sherpa.astro.io.wcs import WCS
 
     # It looks like we don't write out the header info, at least for
@@ -775,7 +751,7 @@ def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
         assert d.y.max() == 3
 
         hdr = d.header
-        assert isinstance(hdr, Meta)
+        assert isinstance(hdr, dict)
         if header:
             assert hdr['OBJECT'] == 'CSC'
             assert hdr['ONTIME'] == pytest.approx(18220.799932122)
@@ -816,18 +792,7 @@ def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
 def test_save_data_datapha(tmp_path):
     """Does save_data work for DataPHA?"""
 
-    # This import requires an I/O backend hence it is done here
-    #
-    from sherpa.astro.io.meta import Meta
-
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    hdr = Meta()
-    ui.get_data().header = hdr
-
     out = tmp_path / "data.dat"
     outfile = str(out)
     ui.save_data(outfile)
@@ -841,18 +806,7 @@ def test_save_data_datapha(tmp_path):
 def test_save_pha(tmp_path):
     """Does save_pha work for DataPHA?"""
 
-    # This import requires an I/O backend hence it is done here
-    #
-    from sherpa.astro.io.meta import Meta
-
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-
-    # The code requires DataPHA to have a "valid" header so
-    # fake one. Ideally we would not require it.
-    #
-    hdr = Meta()
-    ui.get_data().header = hdr
-
     out = tmp_path / "data.dat"
     outfile = str(out)
     ui.save_pha(outfile)

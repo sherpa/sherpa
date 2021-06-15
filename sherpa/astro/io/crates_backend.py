@@ -28,7 +28,7 @@ import pycrates
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.astro.utils import resp_init
-from sherpa.astro.io.meta import Meta
+
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -153,7 +153,7 @@ def _get_meta_data(crate):
     """
     checked for new crates
     """
-    meta = Meta()
+    meta = {}
     names = pycrates.get_key_names(crate)
     if names is not None and numpy.iterable(names):
         for name in names:
@@ -685,10 +685,7 @@ def get_image_data(arg, make_copy=True, fix_type=True):
 #            'WCSTY1P', 'WCSTY2P']
 
     for key in keys:
-        try:
-            data['header'].pop(key)
-        except KeyError:
-            pass
+        data['header'].pop(key, None)
 
     if close_dataset:
         close_crate_dataset(img.get_dataset())
@@ -739,7 +736,7 @@ def get_arf_data(arg, make_copy=True):
     data['bin_hi'] = _try_col(arf, 'BIN_HI', make_copy, fix_type=True)
     data['exposure'] = _try_key(arf, 'EXPOSURE', dtype=SherpaFloat)
     data['header'] = _get_meta_data(arf)
-    data['header'].pop('EXPOSURE')
+    data['header'].pop('EXPOSURE', None)
 
     if close_dataset:
         close_crate_dataset(arf.get_dataset())
@@ -845,7 +842,7 @@ def get_rmf_data(arg, make_copy=True):
         ebounds = rmfdataset.get_crate(3)
 
     data['header'] = _get_meta_data(rmf)
-    data['header'].pop('DETCHANS')
+    data['header'].pop('DETCHANS', None)
 
     channel = None
     if ebounds is not None:
@@ -985,10 +982,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
         data['header'] = _get_meta_data(pha)
         for key in keys:
-            try:
-                data['header'].pop(key)
-            except KeyError:
-                pass
+            data['header'].pop(key, None)
 
         # Columns
 
@@ -1142,10 +1136,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
             data['header']['TG_SRCID'] = srcid
 
             for key in keys:
-                try:
-                    data['header'].pop(key)
-                except KeyError:
-                    pass
+                data['header'].pop(key, None)
 
             datasets.append(data)
 

@@ -51,7 +51,7 @@ from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
-from sherpa.astro.io.meta import Meta
+
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -103,9 +103,8 @@ def _require_key(hdu, name, fix_type=False, dtype=SherpaFloat):
 
 
 def _get_meta_data(hdu):
-    meta = Meta()
-    for key in dict(hdu.header.items()).keys():
-        val = hdu.header[key]
+    meta = {}
+    for key, val in hdu.header.items():
 
         # empty numpy strings are not recognized by load pickle!
         if isinstance(val, numpy.str_) and val == '':
@@ -568,10 +567,7 @@ def get_image_data(arg, make_copy=False):
                 'CUNIT1', 'CUNIT2', 'EQUINOX']
 
         for key in keys:
-            try:
-                data['header'].pop(key)
-            except KeyError:
-                pass
+            data['header'].pop(key, None)
 
     finally:
         hdu.close()
@@ -623,7 +619,7 @@ def get_arf_data(arg, make_copy=False):
         data['bin_lo'] = _try_col(hdu, 'BIN_LO', fix_type=True)
         data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
         data['header'] = _get_meta_data(hdu)
-        data['header'].pop('EXPOSURE')
+        data['header'].pop('EXPOSURE', None)
 
     finally:
         arf.close()
@@ -686,7 +682,7 @@ def get_rmf_data(arg, make_copy=False):
             data['matrix'] = hdu.data.field('MATRIX')
 
         data['header'] = _get_meta_data(hdu)
-        data['header'].pop('DETCHANS')
+        data['header'].pop('DETCHANS', None)
 
         # Beginning of non-Chandra RMF support
         fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
@@ -868,10 +864,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             data['quality'] = _try_col(hdu, 'QUALITY', SherpaInt)
             data['header'] = _get_meta_data(hdu)
             for key in keys:
-                try:
-                    data['header'].pop(key)
-                except KeyError:
-                    pass
+                data['header'].pop(key, None)
 
             if data['syserror'] is not None:
                 # SYS_ERR is the fractional systematic error
@@ -975,10 +968,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
                 data['header']['TG_SRCID'] = srcid
 
                 for key in keys:
-                    try:
-                        data['header'].pop(key)
-                    except KeyError:
-                        pass
+                    data['header'].pop(key, None)
 
                 if syserr is not None:
                     # SYS_ERR is the fractional systematic error

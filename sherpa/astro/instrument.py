@@ -1234,7 +1234,8 @@ class PSFModel(_PSFModel):
         return dataset
 
 
-def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-arf'):
+def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
+               name='user-arf', header=None):
     """Create an ARF.
 
     .. versionadded:: 4.10.1
@@ -1256,6 +1257,8 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
         zero-energy bins are replaced.
     name : str, optional
         The name of the ARF data set
+    header : dict
+        Header for the created ARF
 
     Returns
     -------
@@ -1269,7 +1272,8 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
     if specresp is None:
         specresp = numpy.ones(elo.size, dtype=numpy.float32)
 
-    return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp, exposure=exposure, ethresh=ethresh)
+    return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp,
+                   exposure=exposure, ethresh=ethresh, header=header)
 
 
 # Notes for create*rmf:
@@ -1279,7 +1283,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
 
 def create_delta_rmf(rmflo, rmfhi, offset=1,
                      e_min=None, e_max=None, ethresh=None,
-                     name='delta-rmf'):
+                     name='delta-rmf', header=None):
     """Create an ideal RMF.
 
     The RMF has a unique mapping from channel to energy, in
@@ -1309,6 +1313,8 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
         zero-energy bins are replaced.
     name : str, optional
         The name of the RMF data set
+    header : dict
+        Header for the created RMF
 
     Returns
     -------
@@ -1333,12 +1339,12 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
                                      f_chan=f_chan, matrix=matrix,
                                      offset=offset,
                                      e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh)
+                                     ethresh=ethresh, header=header)
 
 
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                          e_min=None, e_max=None, ethresh=None,
-                         name='delta-rmf'):
+                         name='delta-rmf', header=None):
     """
     Create a RMF using a matrix from a file.
 
@@ -1372,6 +1378,8 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         zero-energy bins are replaced.
     name : str
         The name of the RMF data set
+    header : dict
+        Header for the created RMF
 
     Returns
     -------
@@ -1404,7 +1412,8 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                                      f_chan=f_chan, matrix=matrix,
                                      offset=offset,
                                      e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh)
+                                     ethresh=ethresh,
+                                     header=header)
 
 
 def calc_grp_chan_matrix(fname):
