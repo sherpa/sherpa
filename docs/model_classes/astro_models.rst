@@ -26,7 +26,6 @@ The sherpa.astro.models module
       LineBroad
       Lorentz1D
       Lorentz2D
-      MultiResponseSumModel
       NormBeta1D
       PseudoVoigt1D
       Schechter
@@ -37,5 +36,5 @@ The sherpa.astro.models module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: Atten BBody BBodyFreq BPL1D Beta1D Beta2D DeVaucouleurs2D Dered Disk2D Edge HubbleReynolds JDPileup LineBroad Lorentz1D Lorentz2D MultiResponseSumModel NormBeta1D PseudoVoigt1D Schechter Sersic2D Shell2D Voigt1D
+.. inheritance-diagram:: Atten BBody BBodyFreq BPL1D Beta1D Beta2D DeVaucouleurs2D Dered Disk2D Edge HubbleReynolds JDPileup LineBroad Lorentz1D Lorentz2D NormBeta1D PseudoVoigt1D Schechter Sersic2D Shell2D Voigt1D
    :parts: 1

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  Copyright (C) 2017, 2018, 2019, 2020, 2021
-#         Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -45,61 +45,49 @@ PIXEL_RATIO_THRESHOLD = 0.1
 
 
 class Axis():
+    """Represent the axes of a N-D object.
+
+    This supports both "integrated" and "non-integrated" (point)
+    datasets.
+
+    Parameters
+    ----------
+    lo : array_like or None
+        The starting point of the axis.  If `lo` is `None` or empty
+        then the data axis is said to be empty. The axis can be in
+        ascending or descending order.
+    hi : array_like or None
+        The ending point of the axis for "integrated" axes, i.e. those
+        which have a low and high edge.
     """
-    Class for representing N-D axes objects, for both "integrated" and "non-integrated" datasets
-    """
+
     def __init__(self, lo, hi):
-        """
-        In integrated datasets axes are defined by bins. In this case both `lo` and `hi` are
-        not None. `lo` and `hi` will be converted to `numpy` arrays if they are not.
-
-        If `lo` is `None` or empty then the data axis is said to be empty.
-
-        Parameters
-        ----------
-        lo : array_like
-            The starting point of the axis
-        hi : array_like
-            The ending point of the axis
-        """
         self.lo = np.asarray(lo) if lo is not None else None
         self.hi = np.asarray(hi) if hi is not None else None
 
     @property
     def is_empty(self):
-        """
+        """Is the axis empty?
 
-
-        Returns
-        -------
-        bool
-            Whether the axis is empty, i.e. if `lo` is `None` or an empty array.
+        An empty axis has `lo` set to None or a zero-element array.
         """
         return self.lo is None or not self.lo.size
 
     @property
     def is_integrated(self):
-        """
-        Is the axis integrated?
+        """Is the axis integrated?
 
-        Returns
-        -------
-        bool
-            The axis is integrated is `hi` is not None and not empty.
+        Is `hi` set and not a zero-element array?
         """
         return self.hi is not None and self.hi.size > 0
 
     @property
     def is_ascending(self):
-        """
-        Is the axis ascending?
+        """Is the axis ascending?
 
-        Returns
-        -------
-        bool
-            The axis is ascending if the elements in `lo` are sorted in ascending order.
-            Only the first and last elements are checked, and it is assumed that the
-            elements are sorted.
+        The axis is ascending if the elements in `lo` are sorted in
+        ascending order.  Only the first and last elements are
+        checked, and it is assumed that the elements are sorted.
         """
         try:
             return self.lo[-1] > self.lo[0]
@@ -108,32 +96,21 @@ class Axis():
 
     @property
     def start(self):
-        """
-        Starting point of the data axis
-
-        Returns
-        -------
-        number
-            The first element in `lo` if the axis is ascending, or the last element otherwise.
-        """
+        """The starting point (lowest value) of the data axis."""
         if self.is_ascending:
             return self.lo[0]
         return self.lo[-1]
 
     @property
     def end(self):
-        """
-        Ending point of the data axis
+        """The ending point of the data axis
 
-        Returns
-        -------
-        number
-            If the data axis is ascending the end boundary is the last element of the `hi` array when
-            the axis is integrated, otherwise it's the last element of `lo`.
-
-            Conversely, for descending axes, the last element is either the first element of the `hi`
-            array or of the `lo` array, depending on whether the axis is integrated or not,
-            respectively.
+        If the data axis is ascending the end boundary is the last
+        element of the `hi` array when the axis is integrated,
+        otherwise it's the last element of `lo`. Conversely, for
+        descending axes, the last element is either the first element
+        of the `hi` array or of the `lo` array, depending on whether
+        the axis is integrated or not, respectively.
         """
         if self.is_ascending and self.is_integrated:
             return self.hi[-1]
@@ -145,22 +122,16 @@ class Axis():
 
     @property
     def size(self):
-        """
-        The size of the axis.
-
-        Returns
-        -------
-        number
-            The size of the axis.
-        """
+        """The size of the axis."""
         return self.lo.size
 
     def overlaps(self, other):
-        """
-        Check if this axis overlaps with another
+        """Check if this axis overlaps with another.
+
         Parameters
         ----------
         other : Axis
+            The axis to compare to.
 
         Returns
         -------
@@ -172,74 +143,47 @@ class Axis():
 
 
 class EvaluationSpace1D():
-    """
-    Class for 1D Evaluation Spaces. An Evaluation Space is a set of data axes representing
-    the data space over which a model can be evaluated.
+    """Class for 1D Evaluation Spaces.
 
-    A 1D Evaluation Space has only one axis.
+    An Evaluation Space is a set of data axes representing the data
+    space over which a model can be evaluated. A 1D Evaluation Space
+    has only one axis.
+
+    Parameters
+    ----------
+    x : array_like or None, optional
+        The data array, or the low end of the data bins if the dataset is "integrated"
+    xhi : array_like or None, optional
+        The high end of the data bins for integrated datasets.
     """
     def __init__(self, x=None, xhi=None):
-        """
-        The input arrays are used to instantiate a single axis.
-
-        Parameters
-        ----------
-        x : array_like
-            The data array, or the low end of the data bins if the dataset is "integrated"
-        xhi: array_like
-            The high end of the data bins for integrated datasets.
-        """
+        """The input arrays are used to instantiate a single axis."""
         self.x_axis = Axis(x, xhi)
 
     @property
     def is_empty(self):
-        """
-        Is the dataset empty?
-
-        Returns
-        -------
-        bool
-            True if the x axis is empty, False otherwise
-        """
+        """Is the space empty (the x axis has no elements)?"""
         return self.x_axis.is_empty
 
     @property
     def is_integrated(self):
-        """
-        Is the grid integrated?
-
-        Returns
-        -------
-        bool
-            True if the x axis is integrated, False otherwise.
-        """
+        """Is the space integrated?"""
         return self.x_axis.is_integrated
 
     @property
     def is_ascending(self):
-        """
-        Is the dataset ascending?
-
-        Returns
-        -------
-        bool
-            True if the x axis is ascending, False otherwise.
-        """
+        """Is the space ascending?"""
         return self.x_axis.is_empty
 
     @property
     def grid(self):
-        """
-        Return the grid representation of this dataset. The grid is always a tuple, even if the
-        dataset is 1-D and not integrated. This is due to the existing architecture of Sherpa's
-        model classes and the fact that there is no signature difference among 1-D and 2-D models,
-        as 1-D models can receive 1 or 2 arrays and 2-D models can receive 2 or 4 arrays.
+        """The grid representation of the space.
 
         Returns
         -------
         tuple
-            A tuple representing the x axis. The tuple will contain two arrays if the dataset is
-            integrated, one otherwise.
+            A tuple representing the x axis. The tuple will contain
+            two arrays if the dataset is integrated, one otherwise.
         """
         if self.x_axis.is_integrated:
             return self.x_axis.lo, self.x_axis.hi
@@ -248,14 +192,16 @@ class EvaluationSpace1D():
 
     @property
     def midpoint_grid(self):
-        """
-        Return a single array representing the dataset.
+        """The mid-points of the space.
+
+        For non-integrated spaces this returns the X axis.
 
         Returns
         -------
         array
-            Return the average point of the bins of integrated axes, for each bin, or the non-integrated
-            x axis array.
+            Return the average point of the bins of integrated axes,
+            for each bin, or the non-integrated x axis array.
+
         """
         if self.x_axis.is_integrated:
             return (self.x_axis.lo + self.x_axis.hi)/2
@@ -264,44 +210,31 @@ class EvaluationSpace1D():
 
     @property
     def start(self):
-        """
-        The start of the dataset.
-
-        Returns
-        -------
-        number
-            The start of the x axis array
-        """
+        """The start (lowest value) of the space."""
         return self.x_axis.start
 
     @property
     def end(self):
-        """
-        The end of the dataset.
-
-        Returns
-        -------
-        number
-            The end of the x axis array
-        """
+        """The end (highest value) of the space."""
         return self.x_axis.end
 
     def zeros_like(self):
-        """
-        Utility function that returns an array of zeros that has the same shape as the dataset.
+        """Returns zeroes for each element of the space.
 
         Returns
         -------
         array
+            A one-dimensional array.
         """
         return np.zeros(self.x_axis.lo.size)
 
     def overlaps(self, other):
-        """
-        Check if this evaluation space overlaps with another
+        """Check if this evaluation space overlaps with another.
+
         Parameters
         ----------
         other : EvaluationSpace1D
+            The space to compare to.
 
         Returns
         -------
@@ -311,13 +244,12 @@ class EvaluationSpace1D():
         return self.x_axis.overlaps(other.x_axis)
 
     def __contains__(self, other):
-        """
-        check if this space properly contains the `other` space, i.e. if the `other` space is contained
-        within the boundaries of `self`.
+        """Are all elements of other within the range (start, end) of this space?
 
         Parameters
         ----------
         other : EvaluationSpace1D
+            The space to compare to.
 
         Returns
         -------
@@ -331,28 +263,21 @@ class EvaluationSpace1D():
 
 
 class EvaluationSpace2D():
-    """
-    Class for 2D Evaluation Spaces. An Evaluation Space is a set of data axes representing
-    the data space over which a model can be evaluated.
+    """Class for 2D Evaluation Spaces.
 
-    A 2D Evaluation Space has two axes, x and y.
+    An Evaluation Space is a set of data axes representing the data
+    space over which a model can be evaluated. A 2D Evaluation Space
+    has two axes, x and y.
+
+    Parameters
+    ----------
+    x, y : array_like or None, optional
+        The data array, or the low end of the x and y data bins if the dataset
+        is "integrated".
+    xhi, yhi : array_like or None, optional
+        The high end of the x and y data bins for integrated datasets.
     """
     def __init__(self, x=None, y=None, xhi=None, yhi=None):
-        """
-        The input arrays are used to instantiate the x and y axes.
-
-        Parameters
-        ----------
-        x : array_like
-            The data array, or the low end of the x data bins if the dataset is "integrated"
-        xhi: array_like
-            The high end of the x data bins for integrated datasets.
-        y : array_like
-            The data array, or the low end of the y data bins if the dataset is "integrated"
-        yhi: array_like
-            The high end of the y data bins for integrated datasets.
-        """
-
         # In the 2D case the arrays are redundant, as they are flattened from a meshgrid.
         # We need to clean them up first to have proper axes.
         # This may happen when an EvaluationSpace2D is instantiated using the arrays passed to
@@ -374,79 +299,65 @@ class EvaluationSpace2D():
 
     @property
     def is_empty(self):
-        """
-        Is the dataset empty?
-
-        Returns
-        -------
-        bool
-            True if the x axis or y axis are empty, False otherwise
-        """
+        """Is the space empty (the x axis has no elements)?"""
         return self.x_axis.is_empty or self.y_axis.is_empty
 
     @property
     def is_integrated(self):
-        """
-        Is the grid integrated?
-
-        Returns
-        -------
-        bool
-            True if the axes are integrated, False otherwise.
-        """
+        """Is the space integrated?"""
         return (not self.is_empty) \
             and self.x_axis.is_integrated \
             and self.y_axis.is_integrated
 
     @property
     def is_ascending(self):
-        """
-        Is the dataset ascending?
+        """Is the space ascending?
 
         Returns
         -------
-        tuple(bool)
-            True if the axis is ascending, False otherwise, for the x and y axes respectively
+        (xflag, yflag) : (bool, bool)
+            True if the axis is ascending, False otherwise, for the
+            x and y axes respectively.
         """
         return self.x_axis.is_ascending, self.y_axis.is_ascending
 
     @property
     def start(self):
-        """
-        The start of the dataset.
+        """The start (lowest value) of the space.
 
         Returns
         -------
-        tuple
-            The start of the x and y axis arrays, respectively
+        (xstart, ystart) : (number, number)
+            The start of the x and y axis arrays, respectively.
         """
         return self.x_axis.start, self.y_axis.start
 
     @property
     def end(self):
-        """
-        The enf of the dataset.
+        """The end (highest value) of the space.
 
         Returns
         -------
-        tuple
-            The end of the x and y axis arrays, respectively
+        (xend, yend) : (number, number)
+            The end of the x and y axis arrays, respectively.
         """
         return self.x_axis.end, self.y_axis.end
 
     @property
     def shape(self):
+        """The sizes of the x and y axes."""
         return self.x_axis.size, self.y_axis.size
 
     def overlaps(self, other):
-        """
-        Check if this evaluation space overlaps with another
+        """Check if this evaluation space overlaps with another.
+
         Note that this is more stringent for 2D, as the boundaries
         need to coincide in this case.
 
         Parameters
         ----------
         other : EvaluationSpace2D
+            The space to compare to.
 
         Returns
         -------
@@ -460,22 +371,18 @@ class EvaluationSpace2D():
 
     @property
     def grid(self):
-        """
-        Return the grid representation of this dataset. The grid is always a tuple, even if the
-        dataset is 1-D and not integrated. This is due to the existing architecture of Sherpa's
-        model classes and the fact that there is no signature difference among 1-D and 2-D models,
-        as 1-D models can receive 1 or 2 arrays and 2-D models can receive 2 or 4 arrays.
+        """The grid representation of the space.
 
-        The x and y arrays in the grid are one-dimentional representations of the meshgrid obtained
-        from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
+        The x and y arrays in the grid are one-dimensional
+        representations of the meshgrid obtained from the x and y axis
+        arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
 
         Returns
         -------
         tuple
-            A tuple representing the x and y axes. The tuple will contain four arrays if the dataset is
-            integrated, two otherwise.
-        """
+            A two element (x, y) or 4 element (x, y, xhi, yhi) tuple.
 
+        """
         x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
         if self.x_axis.is_integrated:
             xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
@@ -484,12 +391,12 @@ class EvaluationSpace2D():
             return x, y
 
     def zeros_like(self):
-        """
-        Utility function that returns an array of zeros that has the same shape as the dataset.
+        """Returns zeroes for each element of the space.
 
         Returns
         -------
         array
+            A one dimensional array.
         """
         size = self.x_axis.lo.size * self.y_axis.lo.size
         return np.zeros(size)
@@ -502,13 +409,16 @@ class ModelDomainRegridder1D():
     instead it creates an instance that is used to evaluate
     the model.
 
-    Attributes
+    Parameters
     ----------
-    method
-        The function that interpolates the data from the internal
-        grid onto the requested grid. The default is akima. This is
-        *only* used for point grids, as integrated grids use a simple
-        rebinning scheme.
+    evaluation_space : object or None, optional
+    name : str, optional
+        The default name is 'regrid1d'.
+    interp : callable, optional
+        The interpolation function: it should accept three arrays: the
+        output x values and the x, y values to interpolate, and return
+        the interpolated y values. The default is to use
+        sherpa.utils.akima.akima.
 
     Examples
     --------
@@ -539,7 +449,26 @@ class ModelDomainRegridder1D():
         self.method = kwargs.get("interp", akima)
 
     @property
+    def method(self):
+        """Interpolate the data from the internal to requested grid.
+
+        This is *only* used for point grids, as integrated grids use a
+        simple rebinning scheme. The default is
+        sherpa.utils.akima.akima.  The callable should accept `(xout,
+        xin, yin)` arguments and interpolate the `(xin, yin)` data
+        onto the `xout` grid, returning the interpolated data.
+        """
+        return self._method
+
+    @method.setter
+    def method(self, method):
+        if not callable(method):
+            raise TypeError(f"method argument '{repr(method)}' is not callable")
+        self._method = method
+
+    @property
     def grid(self):
+        """The grid of the associated evaluation space."""
         return self.evaluation_space.grid
 
     @grid.setter
@@ -557,8 +486,8 @@ class ModelDomainRegridder1D():
     def calc(self, pars, modelfunc, *args, **kwargs):
         """Evaluate and regrid a model
 
-        Evaluate the model on the internal grid and then
-        interpolate onto the desired grid.
+        Evaluate the model on the internal grid and then interpolate
+        onto the desired grid.
 
         Parameters
         ----------
@@ -584,6 +513,7 @@ class ModelDomainRegridder1D():
         It is not clear yet whether the restriction on grid type (i.e.
         must match between the requested grid and the intenal grid
         whether it is integrated or non-integrated) is too restrictive.
+
         """
 
         if self.evaluation_space.is_empty:  # Simply pass through
@@ -594,8 +524,7 @@ class ModelDomainRegridder1D():
         return self._evaluate(requested_eval_space, pars, modelfunc, **kwargs)
 
     def _make_and_validate_grid(self, args_array):
-        """
-        Validate input grid and check whether it's point or integrated.
+        """Validate input grid and check whether it's point or integrated.
 
         Parameters
         ----------
@@ -694,6 +623,12 @@ class ModelDomainRegridder2D():
     This class is not used directly in a model expression;
     instead it creates an instance that is used to evaluate
     the model.
+
+    Parameters
+    ----------
+    evaluation_space : object or None, optional
+    name : str, optional
+        The default name is 'regrid2d'.
 
     Examples
     --------
@@ -843,8 +778,7 @@ def rebin_2d(y, from_space, to_space):
 
 
 def rebin_int(array, scale_x, scale_y):
-    """
-    Rebin array by an integer scale on both x and y
+    """Rebin array by an integer scale on both x and y
 
     Parameters
     ----------

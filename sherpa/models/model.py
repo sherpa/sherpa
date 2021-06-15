@@ -25,32 +25,32 @@ as sherpa.models.model.Parameter instances - and the function that
 takes the parameter values along with an array of grid values. The
 main classes are:
 
- - Model which is the base class and defines most of the interfaces.
+* Model which is the base class and defines most of the interfaces.
 
- - ArithmeticConstantModel and ArithmeticFunctionModel for representing
-   a constant value or a function.
+* ArithmeticConstantModel and ArithmeticFunctionModel for representing
+  a constant value or a function.
 
- - ArithmeticModel is the main base class for deriving user models since
-   it supports combining models (e.g. by addition or multiplication) and
-   a cache to reduce evaluation time at the expense of memory use.
+* ArithmeticModel is the main base class for deriving user models since
+  it supports combining models (e.g. by addition or multiplication) and
+  a cache to reduce evaluation time at the expense of memory use.
 
- - RegriddableModel builds on ArithmeticModel to allow a model to be
-   evaluated on a different grid to that requested: most model classes
-   are derived from the 1D and 2D variants of RegriddableModel.
+* RegriddableModel builds on ArithmeticModel to allow a model to be
+  evaluated on a different grid to that requested: most model classes
+  are derived from the 1D and 2D variants of RegriddableModel.
 
- - CompositeModel which is used to represent a model expression, that
-   is combined models, such as `m1 * (m2 + m3)`
+* CompositeModel which is used to represent a model expression, that
+  is combined models, such as `m1 * (m2 + m3)`
 
-   - UnaryOpModel for model expressions such as `- m1`.
+  * UnaryOpModel for model expressions such as `- m1`.
 
-   - BinaryOpModel for model expressions such as `m1 + m2`.
+  * BinaryOpModel for model expressions such as `m1 + m2`.
 
-   - NestedModel for applying one model to another.
+  * NestedModel for applying one model to another.
 
- - SimulFitModel for fitting multiple models and datasets.
+* SimulFitModel for fitting multiple models and datasets.
 
 Creating a model
-----------------
+================
 
 Models can be created with an optional name, which is useful for
 identifying a component in an expression:
@@ -75,7 +75,7 @@ identifying a component in an expression:
        gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
 
 Changing parameters
--------------------
+===================
 
 The parameters are the model values that control the output of the
 model. A particular model has a fixed set of parameters that can
@@ -114,8 +114,60 @@ attribute as you can say:
 
     >>> m2.fwhm = 20
 
+Accessing parameter values
+--------------------------
+
+The model class is set up so that any attribute access is case
+insensitive, so the following are all ways to change the ``fwhm``
+parameter:
+
+    >>> m2.fwhm = 10
+    >>> m2.FWHM = 10
+    >>> m2.FwHm = 10
+
+Linking parameters
+------------------
+
+One parameter can be made to reference one or more other parameters, a
+process called "linking". The lniked is no-longer considered a free
+parameter in a fit since it's value is derived from the other
+parameters. This link can be a simple one-to-one case, such as
+ensuring the fwhm parameter of one model is the same as the other:
+
+    >>> m2.fwhm = m1.fwhm
+
+It can be more complex, such as ensuring the position of one line
+is a fixed distance from another:
+
+    >>> l2.pos = l1.pos + 23.4
+
+It can even include multiple parameters:
+
+    >>> l3.ampl = (l1.ampl + l2.ampl) / 2
+
+Requesting the parameter value will return the evaluated expression,
+and the expression is stored in the link attribute:
+
+    >>> l1.ampl = 10
+    >>> l2.ampl = 12
+    >>> l3.ampl.val
+    11.0
+    >>> l3.ampl.link
+    <BinaryOpParameter '((l1.ampl + l2.ampl) / 2)'>
+
+The string representation of the model changes for linked parameters
+to indicate the expression:
+
+    >>> print(l3)
+    l3
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       l3.fwhm      thawed           10  1.17549e-38  3.40282e+38
+       l3.pos       thawed            0 -3.40282e+38  3.40282e+38
+       l3.ampl      linked           11 expr: ((l1.ampl + l2.ampl) / 2)
+
 Model evaluation
-----------------
+================
 
 With a sherpa.data.Data instance a model can be evaluated with the
 eval_model method of the object. For example:
@@ -142,7 +194,7 @@ values:
     [ 3.125      25.         42.04482076 25.          3.125     ]
 
 Integrated bins
-===============
+---------------
 
 If given the low and high edges of the bins then the model will - if
 supported - evaluate the integral of the model across the bins:
@@ -178,7 +230,7 @@ it normally just uses the low edge, as shown for the Gauss1D case:
     [ True  True  True  True  True]
 
 Direct access
-=============
+-------------
 
 The calc method of a model can also be used to evaluate the model, and
 this requires a list of the parameters and the independent axes:
@@ -192,8 +244,39 @@ The parameter order matches the pars attribute of the model:
     >>> print([p.fullname for p in mdl.pars])
     ['gauss1d.fwhm', 'gauss1d.pos', 'gauss1d.ampl']
 
+Model expressions
+=================
+
+The CompositeModel class is the base class for creating model
+expressions - that is the overall model that is combined of one or
+more model objects along with possible numeric terms, such as a
+model containing two gaussians and a polynomial:
+
+    >>> from sherpa.models.basic import Gauss1D, Polynom1D
+    >>> l1 = Gauss1D('l1')
+    >>> l2 = Gauss1D('l2')
+    >>> l1.pos = 5
+    >>> l2.pos = 20
+    >>> l2.ampl = l1.ampl
+    >>> c = Polynom1D('c')
+    >>> mdl = l1 + (0.5 * l2) + c
+
+The resulting model can be evaluated just like an individual
+component:
+
+    >>> x = np.arange(-10, 40, 2)
+    >>> y = mdl(x)
+
+This model is written so that the amplitude of the `l2` component is
+half the `l1` component by linking the two `ampl` parameters and then
+including a scaling factor in the model expression for `l2`. An
+alternative would have been to include this scaling factor in the link
+expression:
+
+    >>> l2.ampl = l1.ampl / 2
+
 Model cache
------------
+===========
 
 The ArithmeticModel class and modelCacher1d decorator provide basic
 support for caching one-dimensional model evaluations - that is, to
@@ -213,7 +296,7 @@ CompositeModel allow you to clear the cache and display to the
 standard output the cache status of each model component.
 
 Example
--------
+=======
 
 The following class implements a simple scale model which has a single
 parameter (`scale`) which defaults to 1. It can be used for both
@@ -584,7 +667,13 @@ class Model(NoNewAttributesAfterInit):
                 p._val = v
 
     thawedpars = property(_get_thawed_pars, _set_thawed_pars,
-                          doc='Access to the thawed parameters of the model')
+                          doc='The thawed parameters of the model.\n\n' +
+                          'Get or set the thawed parameters of the model as a list of\n' +
+                          'numbers. If there are no thawed parameters then [] is used.\n' +
+                          'The ordering matches that of the pars attribute.\n\n' +
+                          'See Also\n' +
+                          '--------\n' +
+                          'thawedparmaxes, thawedparmins\n')
 
     def _get_thawed_par_mins(self):
         return [p.min for p in self.pars if not p.frozen]
@@ -613,7 +702,14 @@ class Model(NoNewAttributesAfterInit):
                 p._min = v
 
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
-                             doc='Access to the minimum limits for the thawed parameters')
+                             doc='The minimum limits of the thawed parameters.\n\n' +
+                             'Get or set the minimum limits of the thawed parameters\n' +
+                             'of the model as a list of numbers. If there are no\n' +
+                             'thawed parameters then [] is used. The ordering matches\n' +
+                             'that of the pars attribute.\n\n' +
+                             'See Also\n' +
+                             '--------\n' +
+                             'thawedpars, thawedarhardmins, thawedparmaxes\n')
 
     def _get_thawed_par_maxes(self):
         return [p.max for p in self.pars if not p.frozen]
@@ -642,22 +738,48 @@ class Model(NoNewAttributesAfterInit):
                 p._max = v
 
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
-                              doc='Access to the maximum limits for the thawed parameters')
+                              doc='The maximum limits of the thawed parameters.\n\n' +
+                              'Get or set the maximum limits of the thawed parameters\n' +
+                              'of the model as a list of numbers. If there are no\n' +
+                              'thawed parameters then [] is used. The ordering matches\n' +
+                              'that of the pars attribute.\n\n' +
+                              'See Also\n' +
+                              '--------\n' +
+                              'thawedpars, thawedarhardmaxes, thawedparmins\n')
 
     def _get_thawed_par_hardmins(self):
         return [p.hard_min for p in self.pars if not p.frozen]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
-                                 doc='The hard minimum values for the thawed parameters.')
+                                 doc='The hard minimum values for the thawed parameters.\n\n' +
+                                 'The minimum and maximum range of the parameters can be\n' +
+                                 'changed with thawedparmins and thawedparmaxes but only\n' +
+                                 'within the range given by thawedparhardmins\n' +
+                                 'to thawparhardmaxes.\n\n' +
+                                 'See Also\n' +
+                                 '--------\n' +
+                                 'thawedparhardmaxes, thawedparmins\n')
 
     def _get_thawed_par_hardmaxes(self):
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                  doc='The hard maximum values for the thawed parameters.')
+                                  doc='The hard maximum values for the thawed parameters.\n\n' +
+                                 'The minimum and maximum range of the parameters can be\n' +
+                                 'changed with thawedparmins and thawedparmaxes but only\n' +
+                                 'within the range given by thawedparhardmins\n' +
+                                 'to thawparhardmaxes.\n\n' +
+                                  'See Also\n' +
+                                  '--------\n' +
+                                  'thawedparhardmins, thawedparmaxes\n')
 
     def reset(self):
-        """Reset the parameter values."""
+        """Reset the parameter values.
+
+        Restores each parameter to the last value it was set to.
+        This allows the parameters to be easily reset after a
+        fit.
+        """
 
         for p in self.pars:
             p.reset()
@@ -665,6 +787,9 @@ class Model(NoNewAttributesAfterInit):
 
 class CompositeModel(Model):
     """Represent a model with composite parts.
+
+    This is the base class for representing expressions that combine
+    multiple models and values.
 
     Parameters
     ----------
@@ -676,6 +801,27 @@ class CompositeModel(Model):
     Attributes
     ----------
     parts : sequence of Model
+
+    Notes
+    -----
+    Composite models can be iterated through to find their
+    components:
+
+       >>> l1 = Gauss1D('l1')
+       >>> l2 = Gauss1D('l2')
+       >>> b = Polynom1D('b')
+       >>> mdl = l1 + (0.5 * l2) + b
+       >>> mdl
+       <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
+       >>> for cpt in mdl:
+       ...     print(type(c))
+       ...
+       <class 'BinaryOpModel'>
+       <class 'sherpa.models.basic.Gauss1D'>
+       <class 'BinaryOpModel'>
+       <class 'ArithmeticConstantModel'>
+       <class 'sherpa.models.basic.Gauss1D'>
+       <class 'sherpa.models.basic.Polynom1D'>
 
     """
 
@@ -1088,9 +1234,9 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     Parameters
     ----------
     lhs : Model instance
-        The left-hand sides of the expression.
+        The left-hand side of the expression.
     rhs : Model instance
-        The right-hand sides of the expression.
+        The right-hand side of the expression.
     op : function reference
         The ufunc which combines two array values.
     opstr : str
