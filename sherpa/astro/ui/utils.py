@@ -10434,9 +10434,8 @@ class Session(sherpa.ui.utils.Session):
     def get_model_component_plot(self, id, model=None, recalc=True):
         """Return the data used to create the model-component plot.
 
-        .. versionchanged :: 4.13.2
-           For PHA data, the response model is now automatically added
-           by the routine unless the model contains a response.
+        For PHA data, the response model is automatically added by the
+        routine unless the model contains a response.
 
         Parameters
         ----------

@@ -12627,10 +12627,8 @@ class Session(NoNewAttributesAfterInit):
         This function evaluates and plots a component of the model
         expression for a data set, including any instrument response.
         Use `plot_source_component` to display without any response.
-
-        .. versionchanged :: 4.13.2
-           For PHA data, the response model is now automatically added
-           by the routine unless the model contains a response.
+        For PHA data, the response model is automatically added by the
+        routine unless the model contains a response.
 
         Parameters
         ----------
