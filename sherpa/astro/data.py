@@ -285,7 +285,8 @@ def _extract_fields(obj, stop, summary, open_block=True):
 def html_pha(pha):
     """HTML representation: PHA"""
 
-    from sherpa.astro.plot import DataPHAPlot, backend
+    from sherpa.astro.plot import DataPHAPlot
+    from sherpa import plot
 
     ls = []
 
@@ -293,7 +294,7 @@ def html_pha(pha):
     plotter.prepare(pha)
 
     try:
-        out = backend.as_html_plot(plotter, 'PHA Plot')
+        out = plot.backend.as_html_plot(plotter, 'PHA Plot')
     except AttributeError:
         out = None
 
@@ -466,7 +467,8 @@ def html_arf(arf):
     # It also assumes the units are keV/cm^2 which is not
     # guaranteed.
 
-    from sherpa.astro.plot import ARFPlot, backend
+    from sherpa.astro.plot import ARFPlot
+    from sherpa import plot
 
     ls = []
 
@@ -474,7 +476,7 @@ def html_arf(arf):
     plotter.prepare(arf)
 
     try:
-        out = backend.as_html_plot(plotter, 'ARF Plot')
+        out = plot.backend.as_html_plot(plotter, 'ARF Plot')
     except AttributeError:
         out = None
 
@@ -693,7 +695,7 @@ def simulate_rmf_plot(rmf):
     """
 
     from sherpa.models.basic import Delta1D
-    from sherpa.plot import backend
+    from sherpa import plot
 
     try:
         from matplotlib import pyplot as plt
@@ -745,7 +747,7 @@ def simulate_rmf_plot(rmf):
         return fig
 
     try:
-        return backend.as_svg(plotfunc)
+        return plot.backend.as_svg(plotfunc)
     except AttributeError:
         return None
 
@@ -761,7 +763,7 @@ def img_plot(img):
 
     """
 
-    from sherpa.plot import backend
+    from sherpa import plot
 
     try:
         from matplotlib import pyplot as plt
@@ -823,7 +825,7 @@ def img_plot(img):
         return fig
 
     try:
-        return backend.as_svg(plotfunc)
+        return plot.backend.as_svg(plotfunc)
     except AttributeError:
         return None
 
@@ -1090,8 +1092,8 @@ class DataARF(DataOgipResponse):
         return 'Energy (keV)'
 
     def get_ylabel(self):
-        from sherpa.plot import backend
-        return 'cm' + backend.get_latex_for_string('^2')
+        from sherpa import plot
+        return 'cm' + plot.backend.get_latex_for_string('^2')
 
 
 class DataRMF(DataOgipResponse):
@@ -3681,8 +3683,8 @@ class DataPHA(Data1D):
                 ylabel += '/channel'
 
         if self.plot_fac:
-            from sherpa.plot import backend
-            latex = backend.get_latex_for_string(
+            from sherpa import plot
+            latex = plot.backend.get_latex_for_string(
                 '^{}'.format(self.plot_fac))
             ylabel += ' X {}{}'.format(self.units.capitalize(), latex)
 

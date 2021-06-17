@@ -637,7 +637,7 @@ class FluxHistogram(ModelHistogram):
         self.modelvals = None
         self.clipped = None
         self.flux = None
-        super.__init__()
+        super().__init__()
 
     def __str__(self):
         vals = self.modelvals

@@ -563,10 +563,6 @@ def override_plot_backend(request):
 
     old = sherpa.plot.backend
 
-    # safety check
-    #
-    assert old.name == sherpa.astro.plot.backend.name
-
     changed = old.name != request.param.name
     if changed:
         sherpa.plot.backend = request.param
