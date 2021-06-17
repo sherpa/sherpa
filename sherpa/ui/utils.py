@@ -10892,7 +10892,7 @@ class Session(NoNewAttributesAfterInit):
         >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
         >>> set_source('jet', fmodel)
         >>> fit('jet')
-        >>> fplot = get_model('jet')
+        >>> fplot = get_model_plot('jet')
         >>> plot1 = get_model_component_plot('jet', pl*gal)
         >>> plot2 = get_model_component_plot('jet', gline*gal)
 
