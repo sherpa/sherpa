@@ -17,14 +17,15 @@ requirements:
   - flex
 
  host:
-  - python {{ environ.get('SHERPA_PYTHON_VERSION', '2.7.*') }}
-  - numpy 1.11.*
+  - python {{ environ.get('SHERPA_PYTHON_VERSION', '3.7.*') }}
+  - numpy 1.19.* # [py>=39]
+  - numpy 1.18.* # [py<39]
   - setuptools
   - six
 
  run:
-  - python {{ environ.get('SHERPA_PYTHON_VERSION', '2.7.*') }}
-  - numpy >1.11
+  - python {{ environ.get('SHERPA_PYTHON_VERSION', '3.7.*') }}
+  - numpy
   - setuptools
   - pytest
   - six

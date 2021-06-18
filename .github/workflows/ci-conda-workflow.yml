@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   sherpa_channel: sherpa
-  xspec_channel: "xspec/channel/test"
+  xspec_channel: "xspec/label/test"
   miniconda_loc: ${{ github.workspace }}/miniconda
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
 
@@ -27,9 +27,18 @@ jobs:
           - name: Linux Minimum Setup 
             os: ubuntu-latest
             python-version: 3.8
-            numpy-version: 1.17
+            numpy-version: 1.18
             install-type: develop 
             test-data: none
+
+          - name: Linux Full Build (Python 3.9)
+            os: ubuntu-latest
+            python-version: 3.9
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.11.1
 
           - name: Linux Full Build (Python 3.8)
             os: ubuntu-latest 
@@ -43,33 +52,24 @@ jobs:
           - name: Linux Full Build (Python 3.7)
             os: ubuntu-latest
             python-version: 3.7
-            numpy-version: 1.15
+            numpy-version: 1.19
             install-type: install
             fits: astropy
             test-data: submodule 
             matplotlib-version: 3
             xspec-version: 12.10.1s
 
-          - name: Linux Full Build (Python 3.6)
-            os: ubuntu-latest
-            python-version: 3.6
-            numpy-version: 1.11
-            install-type: install
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 2
-            xspec-version: 12.10.1s
-
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: 3.6 
+            python-version: 3.9 
             install-type: install
             test-data: package
-            matplotlib-version: 2
+            matplotlib-version: 3
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
             python-version: 3.7
+            numpy-version: 1.18
             install-type: develop 
             fits: astropy
             test-data: none
@@ -111,7 +111,6 @@ jobs:
     - name: Build Sherpa
       env:
         PYTHON_LDFLAGS: " "
-        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "${{ runner.os == 'linux' && '_sysconfigdata_x86_64_conda_cos6_linux_gnu' || '_sysconfigdata_x86_64_apple_darwin13_4_0' }}" 
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
@@ -122,7 +121,6 @@ jobs:
         TEST: ${{ matrix.test-data }}
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }}
-        _CONDA_PYTHON_SYSCONFIGDATA_NAME: "${{ runner.os == 'linux' && '_sysconfigdata_x86_64_conda_cos6_linux_gnu' || '_sysconfigdata_x86_64_apple_darwin13_4_0' }}" 
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
