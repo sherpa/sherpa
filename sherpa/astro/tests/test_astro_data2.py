@@ -871,22 +871,6 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     assert d4 == pytest.approx([2, 3])
 
 
-def test_pha_reverse_sorted():
-    '''This case for a PHA set with reverse sorted channels is a little
-    non-sensical, but it is a very easy way to hit the problem in #1163.
-
-    Really, we want to test that with a larger test that reads real XMM
-    data, which uses reverse energy ordering (see next test).
-
-    So, if thise tests starts to fail, but the next one passes, this one can
-    probably be removed. It's here now because it's fast, easy, and does not
-    require the large test data.
-    '''
-    d = DataPHA('x', np.array([4, 3, 2, 1, 0]), np.array([5, 4, 3, 2, 1]))
-    d.notice(2, 4)
-    assert len(d.get_dep(filter=True)) == 3
-
-
 @requires_fits
 @requires_data
 def test_xmmrgs_notice(make_data_path):
