@@ -29,6 +29,7 @@ import pytest
 from sherpa.utils.testing import requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
+from sherpa.astro.datastack import DataStack
 from acis_bkg_model import acis_bkg_model
 
 logger = logging.getLogger('sherpa')
@@ -723,134 +724,60 @@ def test_default_instantiation(ds_setup):
     assert not ds._default_instance
 
 
-def validate_show_stack(capsys, datadir, key1, key2):
-    """Does show_stack generate the expected output?
+def test_show_empty_datastack(capsys):
+    '''Test output for an empty datastack.
 
-    This is for test_show_stack and test_show_stack2.
-
-    Parameters
-    ----------
-    capsys
-       The capsys pytest object.
-    datadir: str
-       The directory containing the data files.
-    key1 : str or None
-       The keyword being used for the "MJD OBS" value: file 1.
-       If None the value is missing.
-    key2 : str or None
-       The keyword being used for the "MJD OBS" value: file 2.
-       If None the value is missing.
-
-    """
-
+    For a change, we try the OO interface here/
+    '''
     # clear out the current output
     captured = capsys.readouterr()
 
-    datastack.show_stack()
-
-    # Did we get the expected output?
-    #
-    # This depends on the serialization of numeric values, which can
-    # vary with Python/system
-    #
-    if key1 is None:
-        val1 = 'N/A'
-        key1 = 'MJD-OBS'
-    else:
-        val1 = '53493.55477826'
-
-    if key2 is None:
-        val2 = 'N/A'
-        key2 = 'MJD-OBS'
-    else:
-        val2 = '54374.009361043'
-
-    l0 = '1: {}/acisf04938_000N002_r0043_pha3.fits OBS_ID: 4938 {}: {}'.format(datadir, key1, val1)
-    l1 = '2: {}/acisf07867_000N001_r0002_pha3.fits OBS_ID: 7867 {}: {}'.format(datadir, key2, val2)
-
+    mystack = datastack.DataStack()
+    mystack.show_stack()
     captured = capsys.readouterr()
     lines = captured.out.split('\n')
-    assert len(lines) == 3
-    assert lines[0] == l0
-    assert lines[1] == l1
-    assert lines[2] == ''
-    assert captured.err == ''
+    assert len(lines) == 2
+    assert 'empty datastack' in lines[0]
+    assert lines[1].strip() == ''
+     # Now, the check the html represention
+    html = mystack._repr_html_()
+    assert 'datastack with 0 datasets' in html
 
 
 @requires_fits
 @requires_stk
 def test_show_stack(ds_setup, ds_datadir, capsys):
-    """Test the show_stack handling: MJD_OBS
+    """Test the show_stack and html representation for a stack
     """
 
     # These files use MJD_OBS in the header
     ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
     datastack.load_pha(ls)
+    # clear out the current output
+    captured = capsys.readouterr()
 
-    validate_show_stack(capsys, ds_datadir, 'MJD_OBS', 'MJD_OBS')
+    datastack.show_stack()
+    captured = capsys.readouterr()
+    lines = captured.out.split('\n')
+    assert len(lines) == 4
+    assert 'id|name|OBS_ID|MJD_OBS' in lines[0]
+    assert f'1|{ds_datadir}/acisf04938_000N002_r0043_pha3.fits|4938|53493.55' in lines[1]
+    assert f'2|{ds_datadir}/acisf07867_000N001_r0002_pha3.fits|7867|54374.00' in lines[2]
 
-
-@requires_fits
-@requires_stk
-def test_show_stack2(ds_setup, ds_datadir, capsys):
-    """Test the show_stack handling: MJD-OBS
-
-    This is test_show_stack but with the data files adjusted
-    to have MJD-OBS rather than MJD_OBS keywords
-    """
-
-    # These files use MJD_OBS in the header
-    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
-    datastack.load_pha(ls)
-
-    # Change to MJD-OBS
-    #
-    for idval in [1, 2]:
-        d = datastack.get_data(idval)
-        mjdobs = d.header['MJD_OBS']
-        d.header['MJD-OBS'] = mjdobs
-        del d.header['MJD_OBS']
-
-    validate_show_stack(capsys, ds_datadir, 'MJD-OBS', 'MJD-OBS')
-
-
-@requires_fits
-@requires_stk
-def test_show_stack3(ds_setup, ds_datadir, capsys):
-    """Test the show_stack handling: mixed MJD_OBS and MJD-OBS
-    """
-
-    # These files use MJD_OBS in the header
-    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
-    datastack.load_pha(ls)
-
-    # Change to MJD-OBS (second file only)
-    #
-    for idval in [2]:
-        d = datastack.get_data(idval)
-        mjdobs = d.header['MJD_OBS']
-        d.header['MJD-OBS'] = mjdobs
-        del d.header['MJD_OBS']
-
-    validate_show_stack(capsys, ds_datadir, 'MJD_OBS', 'MJD-OBS')
-
-
-@requires_fits
-@requires_stk
-def test_show_stack4(ds_setup, ds_datadir, capsys):
-    """Test the show_stack handling: No MJD_OBS or MJD-OBS keyword
-    """
-
-    ls = '@' + '/'.join((ds_datadir, 'pha.lis'))
-    datastack.load_pha(ls)
-
-    # Remove the MJD-OBS keyword.
-    #
-    for idval in [1, 2]:
-        d = datastack.get_data(idval)
-        del d.header['MJD_OBS']
-
-    validate_show_stack(capsys, ds_datadir, None, None)
+    # Now, check the html representation
+    # We do not want to hard-code the exact html here to allow
+    # minor formatting changes without breaking this test since this
+    # test is not about format, but about content.
+    # So, we just test that a few token that we expect are present and other
+    # are not.
+    html = datastack.DATASTACK._repr_html_()
+    for token in ['datastack with 2 datasets',
+                  'acisf04938_000N002_r0043_pha3.fits',
+                  'acisf07867_000N001_r0002_pha3.fits',
+                  'MJD_OBS', 'OBS_ID']:
+        assert token in html
+    for token in ['MJD-OBS', 'GRATING', 'INSTRUME']:
+        assert token not in html
 
 
 @requires_fits

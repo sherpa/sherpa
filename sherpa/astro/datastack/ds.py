@@ -20,6 +20,7 @@
 import numpy
 from sherpa.utils.logging import config_logger
 from sherpa.utils.err import IOErr
+from sherpa.utils.formatting import html_table, html_from_sections
 from sherpa.astro import ui
 from .utils import load_error_msg, load_wrapper, model_wrapper, \
     simple_wrapper, fit_wrapper, plot_wrapper
@@ -34,6 +35,18 @@ except ImportError:
 
 # Global list of dataset ids in use
 _all_dataset_ids = {}
+
+keys_to_display = ['OBJECT', 'TELESCOP', 'OBS_ID', 'INSTRUME', 'FILTER',
+                   # Standard is MJD_OBS, but older CIAO used 'MJD-OBS'
+                   # Usually, we'll have the one of the other with few cases
+                   # of mixed occurance. Thus, we can just treat them as
+                   # separate columns
+                   'MJD_OBS', 'MJD-OBS',
+                   # grating spectroscopy
+                   'GRATING', 'ORDER', 'TG_M',
+                   # polarimetry
+                   'XFLT0001']
+'''List of keys displayed with show_stack (if present in header)'''
 
 
 class DataStack():
@@ -108,6 +121,58 @@ class DataStack():
             del _all_dataset_ids[dataid]
         self.__init__()
 
+    def _summary_for_display(self):
+        '''Return information about the datastack used for printing
+
+        For each dataset in the datastack, id, name, and a number of
+        keys from the header (e.g. TELESCOP, MJD-OBS) are
+        collected. Then columns that are identical for all datasets
+        are removed (e.g. if no dataset has a GRATING keyword). That
+        way, the output can depend on the datasets loaded. In most
+        cases, only a few of a relatively long list of keywords will
+        differ between datasets, printing out only the relevant
+        information.
+
+        Returns
+        -------
+        header : list of strings
+            Column names
+        data : list of lists
+            Eahc list is a row, corresponding to one dataset
+
+        '''
+        tab = []
+        for dataset in self.filter_datasets():
+            row = [dataset['id'], dataset['data'].name]
+            try:
+                hdr = dataset['data'].header
+                row.extend([hdr.get(k, '') for k in keys_to_display])
+            except AttributeError:
+                row.append([''] * len(keys_to_display))
+            tab.append(row)
+
+        if len(tab) == 0:
+            header = ['empty datastack']
+            data = numpy.array([])
+        else:
+            data = numpy.array(tab)
+            # Find columns where not all entries are identical
+            ind = ~numpy.all(data == data[0, :], axis=0)
+            # But always keep the first two (id, name)
+            ind[:2] = True
+
+            header = numpy.array(['id', 'name'] + keys_to_display)[ind]
+            data = data[:, ind]
+        return header, data
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the stack
+        """
+        header, data = self._summary_for_display()
+        htab = html_table(header, data, rowcount=False,
+                          summary=f'datastack with {data.shape[0]} datasets')
+        return html_from_sections(self, htab)
+
     # QUS: should this use the logger instead of print?
     def show_stack(self):
         """Display basic information about the contents of the data stack.
@@ -116,39 +181,10 @@ class DataStack():
         standard output channel. The information displayed depends on the
         type of each data set.
         """
-
-        # The observation-date (MJD) format keyword was MJD_OBS but
-        # has changed (CIAO 4.12) for Chandra data to MJD-OBS, so
-        # need to look for both. The idea is to use the new key
-        # and then fall back to the old one.
-        #
-        for dataset in self.filter_datasets():
-            obsid = "N/A"
-            time = "N/A"
-            timekey = 'MJD-OBS'
-            try:
-                hdr = dataset['data'].header
-
-                try:
-                    obsid = hdr['OBS_ID']
-                except KeyError:
-                    pass
-
-                for key in ['MJD-OBS', 'MJD_OBS']:
-                    try:
-                        time = hdr[key]
-                        timekey = key
-                        break
-                    except KeyError:
-                        pass
-
-            except AttributeError:
-                pass
-
-            print('{0}: {1} {2}: {3} {4}: {5}'.format(dataset['id'],
-                                                      dataset['data'].name,
-                                                      'OBS_ID', obsid,
-                                                      timekey, time))
+        header, data = self._summary_for_display()
+        print('|'.join(header))
+        for row in data:
+            print('|'.join(row))
 
     # QUS: should this return a copy of the list?
     def get_stack_ids(self):
