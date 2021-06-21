@@ -1,7 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2021
+#    Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,13 +26,12 @@ import random
 import sys
 
 from . import _saoopt
+from . import _minim
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
 from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
-
-import numpy as np
 
 #
 # Use FLT_EPSILON as default tolerance
@@ -176,7 +176,7 @@ def _set_limits(x, xmin, xmax):
     return 0
 
 
-__all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif', 'minim', 'montecarlo', 'neldermead')
+__all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif', 'montecarlo', 'neldermead')
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
            seed=2005815, population_size=None, xprob=0.9,
@@ -370,10 +370,10 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
 
 #
-# Nelder Mead
+# C-versrion of minim
 #
-def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1):
+def minimC(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
+           nloop=1, iquad=1, simp=None, verbose=-1):
 
     def stat_cb0( pars ):
         return fcn( pars )[ 0 ]
@@ -410,6 +410,69 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 
     rv = (status, x, fval, msg, {'info': ifault, 'nfev': neval})
     return rv
+
+
+#
+# Fortran-versrion of minim
+#
+def minimF(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
+           nloop=1, iquad=1, simp=None, verbose=-1):
+
+    # TODO: rework so do not have two stat_cb0 functions which
+    #       are both used
+    def stat_cb0(pars):
+        return fcn(pars)[0]
+
+    x, xmin, xmax = _check_args(x0, xmin, xmax)
+
+    if step is None:
+        order = 'F' if numpy.isfortran(x) else 'C'
+        step = 0.4*numpy.ones(x.shape, numpy.float_, order)
+    if simp is None:
+        simp = 1.0e-2 * ftol
+    if maxfev is None:
+        maxfev = 512 * len(x)
+
+    orig_fcn = stat_cb0
+    def stat_cb0(x_new):
+        if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):
+            return FUNC_MAX
+        return orig_fcn(x_new)
+
+    fval, var, ifault, neval = _minim.minim(x, step, maxfev, verbose, ftol,
+                                            nloop, iquad, simp, stat_cb0,
+                                            xmin, xmax)
+    key = {
+        0: (True, 'successful termination'),
+        1: (False,
+            'number of function evaluations has exceeded maxfev=%d' % maxfev),
+        2: (False, 'information matrix is not +ve semi-definite'),
+        3: (False, 'number of parameters is less than 1'),
+        4: (False, 'nloop=%d is less than 1' % nloop)
+        }
+    status, msg = key.get(ifault, (False, 'unknown status flag (%d)' % ifault))
+
+    rv = (status, x, fval)
+    print_covar_err = False
+    if print_covar_err and 0 == ifault and numpy.any( var > 0.0 ):
+        var = map( lambda x: x * numpy.sqrt(2.0), var )
+        rv += (msg, {'covarerr': numpy.sqrt(var), 'info': ifault,
+                     'nfev': neval})
+    else:
+        rv += (msg, {'info': ifault, 'nfev': neval})
+    return rv
+
+#
+# minim
+#
+def minim(fcn, x0, xmin, xmax, useminimC, ftol=EPSILON, maxfev=None,
+          step=None, nloop=1, iquad=1, simp=None, verbose=-1):
+    if useminimC:
+        return minimC(fcn, x0, xmin, xmax, ftol=ftol, maxfev=maxfev,
+                      step=step, nloop=nloop, iquad=iquad, verbose=verbose)
+    else:
+        return minimF(fcn, x0, xmin, xmax, ftol=ftol, maxfev=maxfev,
+                      step=step, nloop=nloop, iquad=iquad, verbose=verbose)
 
 
 #
@@ -580,7 +643,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 #
 def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                 initsimplex=0, finalsimplex=9, step=None, iquad=1,
-                verbose=0 ):
+                verbose=0, useminimC=True ):
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -680,7 +743,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     info=1
     covarerr=None
     if len( finalsimplex ) >= 3 and 0 != iquad:
-        nelmea = minim( fcn, x, xmin, xmax, ftol=10.0*ftol, maxfev=maxfev-nfev-12, iquad=1 )
+        nelmea = minim( fcn, x, xmin, xmax, useminimC, ftol=10.0*ftol, maxfev=maxfev-nfev-12, iquad=1)
         nelmea_x = numpy.asarray( nelmea[1], numpy.float_ )
         nelmea_nfev = nelmea[4].get( 'nfev' )
         info = nelmea[4].get( 'info' )
@@ -691,7 +754,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             x = nelmea_x
             fval = minim_fval
         if debug:
-            print('minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info))
+            print('minimC: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info))
     
     if nfev >= maxfev:
         ier = 3

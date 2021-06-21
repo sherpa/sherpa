@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2018, 2019, 2021
+#    Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -135,6 +136,7 @@ set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
 set_method_opt("step", None)
+set_method_opt("useminimC", True)
 set_method_opt("verbose", 1)
 
 
@@ -726,6 +728,7 @@ set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
 set_method_opt("step", None)
+set_method_opt("useminimC", True)
 set_method_opt("verbose", 0)
 
 
