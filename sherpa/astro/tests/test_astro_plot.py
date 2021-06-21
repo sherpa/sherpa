@@ -30,7 +30,7 @@ from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, \
     DataPHAPlot, ModelPHAHistogram, OrderPlot, \
-    EnergyFluxHistogram, PhotonFluxHistogram
+    EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
@@ -830,3 +830,17 @@ def test_orderplot_check_range():
     # constant model / exposure time
     yexp = np.ones(10) / 1201
     assert oplot.y[0] == pytest.approx(yexp)
+
+
+def test_check_hist_bins():
+    '''Should work for reversed order (which can happen for plotting
+    wavelength) and xlo and xhi reversed (which can happen if pha/arf/rmf are
+    not sorted in increasing energy)
+    '''
+    xlo = np.arange(5, dtype=float)
+    xhi = xlo + 1
+    xhi[2] = 2.9999999
+    for x1, x2 in [(xlo, xhi), (xhi, xlo),
+                   (xlo[::-1], xhi[::-1]), (xlo[::-1], xhi[::-1])]:
+        out1, out2 = _check_hist_bins(x1.copy(), x2.copy())
+        assert np.all(out1[1:] == out2[:-1])

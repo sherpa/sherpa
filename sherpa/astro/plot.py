@@ -54,7 +54,7 @@ __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
 _tol = np.finfo(np.float32).eps
 
 
-def _check_hist_bins(plot):
+def _check_hist_bins(xlo, xhi):
     """Ensure lo/hi edges that are "close" are merged.
 
     Ensure that "close-enough" bin edges use the same value.  We do
@@ -65,25 +65,49 @@ def _check_hist_bins(plot):
 
     Parameters
     ----------
-    plot
-        The plot structure, which must have xlo and xhi attributes.
+    xlo, xhi : array
+        Lower and upper bin boundaries. Typically, ``xlo`` will contain the
+        lower boundary and ``xhi`` the upper boundary, but this function can
+        deal with situations where that is reversed. Both arrays have to be
+        monotonically increasing or decreasing.
+
+    Returns
+    -------
+    xlo, xhi : array
+        xlo and xhi with values that were very close (within numerical
+        tolerance) before changed such that they now match exactly.
 
     Notes
     -----
     Note that this holds even when plotting wavelength values, who
     have xlo/xhi in decreasing order, since the lo/hi values still
     hold.
-
     """
+    if len(xlo) != len(xhi):
+        # Not a Sherpa specific error, because this is more for developers.
+        raise ValueError('Input arrays must have same length.')
+    # Nothing to compare if input arrays are empty.
+    if len(xlo) == 0:
+        return xlo, xhi
 
     # Technically idx should be 0 or 1, with no -1 values. We
     # do not enforce this. What we do is to take all bins that
     # appear similar (sao_fcmp==0) and set the xlo[i+1] bin
     # to the xhi[i] value.
     #
-    equal = sao_fcmp(plot.xlo[1:], plot.xhi[:-1], _tol)
+    # Deal with xhi <-> xlo switches. Those can occor when converting
+    # from energy to wavelength.
+    # Deal with reversed order. Can happen when converting from energy
+    # to wavelength, or if input PHA is not ordered in increasing energy.
+    # But is both are happening at the same time, need to switch twice, which
+    # is a no-op. So, we get to use the elusive Python XOR operator.
+    if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
+        xlo, xhi = xhi, xlo
+    equal = sao_fcmp(xlo[1:], xhi[:-1], _tol)
     idx, = np.where(equal == 0)
-    plot.xlo[idx + 1] = plot.xhi[idx]
+    xlo[idx + 1] = xhi[idx]
+
+    return xlo, xhi
 
 
 def to_latex(txt):
@@ -138,7 +162,7 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
             self.xlo = hc / self.xlo
             self.xhi = hc / self.xhi
 
-        _check_hist_bins(self)
+        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
 
 
 class ModelPHAHistogram(HistogramPlot):
@@ -174,7 +198,7 @@ class ModelPHAHistogram(HistogramPlot):
             self.xlo = hc / self.xlo
             self.xhi = hc / self.xhi
 
-        _check_hist_bins(self)
+        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
 
 
 class ModelHistogram(ModelPHAHistogram):
