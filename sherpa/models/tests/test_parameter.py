@@ -32,8 +32,6 @@ from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa import ui
 
 
-# The p/afp names are from the original version of the tests.
-#
 def setUp_p():
     return Parameter('model', 'name', 0, -10, 10, -100, 100, 'units')
 
@@ -122,16 +120,6 @@ def test_frozen():
     p.frozen = []
     assert p.frozen is False
 
-    # with pytest.raises(TypeError):
-    #     p.frozen = arange(10)
-    #
-    # At present the following raises a ValueError about the
-    # truth value of an array with more than one element because
-    # of the attempt to call bool(arange(10)). In the original
-    # version of the test there was an error in the test that
-    # caused an unrelated TypeError to be raised, making it look
-    # like it had passed.
-    #
     with pytest.raises(ValueError):
         p.frozen = arange(10)
 
@@ -247,9 +235,6 @@ def tst_pos(gauss, pos, minval, maxval, frozen=False,
     assert gauss.default_val == pos
 
     # Note: these are not minval/maxval but the defaults.
-    # How, where, and why are they set?
-    # assert gauss.default_min == minval
-    # assert gauss.default_max == maxval
     assert gauss.default_min == -hugeval
     assert gauss.default_max == hugeval
 
@@ -266,9 +251,6 @@ def tst_unlink(src1, src2):
 
 
 def test_link_setup():
-    """Just ensures we run the same test as was in the original
-    version of the tests.
-    """
     src1, src2 = setUp_link()
     tst_pos(src1.pos, 4, -10, 10)
     tst_pos(src2.pos, 5, -20, 20)
