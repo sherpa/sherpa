@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021
-#                Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,6 @@ from numpy import arange
 import pytest
 
 from sherpa.utils import SherpaFloat
-from sherpa.utils.testing import SherpaTestCase
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
     BinaryOpParameter, ConstantParameter, hugeval
 from sherpa.utils.err import ParameterErr
@@ -33,192 +32,256 @@ from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa import ui
 
 
-class test_parameter(SherpaTestCase):
-
-    class TestParBase:
-
-        def __init__(self, pos1, pos2):
-            self.src1 = Gauss1D()
-            self.src1.pos = pos1
-            self.src1_pos = pos1
-            self.src2 = Gauss1D()
-            self.src2.pos = pos2
-            self.src2_pos = pos2
-            self.tst_pos(self.src1.pos, self.src1_pos)
-            self.tst_pos(self.src2.pos, self.src2_pos)
-            return
-
-        def tst_unlink(self):
-            self.src1.pos.unlink()
-            self.tst_pos(self.src1.pos, self.src1.pos.default_val,
-                         min=self.src1.pos.min, max=self.src1.pos.max)
-            self.src2.pos.unlink()
-            self.tst_pos(self.src2.pos, self.src2_pos, min=self.src2.pos.min,
-                         max=self.src2.pos.max)
-            return
-
-        def tst_pos(self, gauss, pos, min=-hugeval, max=hugeval, frozen=False,
-                    link=None, link_min=None, link_max=None):
-            assert gauss.val == pos
-            assert gauss.min == min
-            assert gauss.max == max
-            assert gauss.frozen == frozen
-            if gauss.link is None or link is None:
-                assert gauss.link == link
-            else:
-                self.tst_pos(gauss.link, pos)
-            assert gauss.default_val == pos
-            assert gauss.default_min == min
-            assert gauss.default_max == max
-
-    class TestParVal(TestParBase):
-
-        def __init__(self, pos1, pos2):
-            test_parameter.TestParBase.__init__(self, pos1, pos2)
-            return
-
-        def tst(self):
-            self.tst_pos(self.src1.pos, self.src2_pos, frozen=True,
-                         link=self.src1.pos)
-            self.tst_pos(self.src2.pos, self.src2_pos)
-
-        def tst_low_level_val_link(self):
-            self.src1.pos.val = self.src2.pos.val
-            self.src1.pos.link = self.src2.pos
-            self.tst()
-            self.tst_unlink()
-
-        def tst_ui_val_link(self):
-            ui.link(self.src1.pos, self.src2.pos)
-            self.tst()
-            self.tst_unlink()
-
-    def setUp(self):
-        self.p = Parameter('model', 'name', 0, -10, 10, -100, 100, 'units')
-        self.afp = Parameter('model', 'name', 0, alwaysfrozen=True)
-
-    def test_name(self):
-        self.assertEqual(self.p.modelname, 'model')
-        self.assertEqual(self.p.name, 'name')
-        self.assertEqual(self.p.fullname, 'model.name')
-
-    def test_alwaysfrozen(self):
-        self.assertTrue(self.afp.frozen)
-        self.afp.frozen = True
-        self.assertTrue(self.afp.frozen)
-        self.afp.freeze()
-        self.assertTrue(self.afp.frozen)
-        self.assertRaises(ParameterErr, self.afp.thaw)
-        self.assertRaises(ParameterErr, setattr, self.afp, 'frozen', 0)
-
-    def test_readonly_attributes(self):
-        self.assertEqual(self.p.alwaysfrozen, False)
-        self.assertRaises(AttributeError, setattr, self.p, 'alwaysfrozen', 1)
-        self.assertEqual(self.p.hard_min, -100.0)
-        self.assertRaises(AttributeError, setattr, self.p, 'hard_min', -1000)
-        self.assertEqual(self.p.hard_max, 100.0)
-        self.assertRaises(AttributeError, setattr, self.p, 'hard_max', 1000)
-
-    def test_val(self):
-        self.p.val = -7
-        self.assertEqual(self.p.val, -7)
-        self.assertTrue(type(self.p.val) is SherpaFloat)
-        self.assertRaises(ValueError, setattr, self.p, 'val', 'ham')
-        self.assertRaises(ParameterErr, setattr, self.p, 'val', -101)
-        self.assertRaises(ParameterErr, setattr, self.p, 'val', 101)
-
-    def test_min_max(self):
-        for attr, sign in (('min', -1), ('max', 1)):
-            setattr(self.p, attr, sign * 99)
-            val = getattr(self.p, attr)
-            self.assertEqual(val, sign * 99)
-            self.assertTrue(type(val) is SherpaFloat)
-            self.assertRaises(ValueError, setattr, self.p, attr, 'ham')
-            self.assertRaises(ParameterErr, setattr, self.p, attr, -101)
-            self.assertRaises(ParameterErr, setattr, self.p, attr, 101)
-
-    def test_frozen(self):
-        self.p.frozen = 1.0
-        self.assertTrue(self.p.frozen is True)
-        self.p.frozen = []
-        self.assertTrue(self.p.frozen is False)
-        self.assertRaises(TypeError, setattr, self.p.frozen, arange(10))
-        self.p.link = self.afp
-        self.assertTrue(self.p.frozen is True)
-        self.p.link = None
-        self.p.freeze()
-        self.assertTrue(self.p.frozen is True)
-        self.p.thaw()
-        self.assertTrue(self.p.frozen is False)
-
-    def test_link(self):
-        self.p.link = None
-        self.assertTrue(self.p.link is None)
-        self.assertNotEqual(self.p.val, 7.3)
-        self.afp.val = 7.3
-        self.p.link = self.afp
-        self.assertEqual(self.p.val, 7.3)
-        self.p.unlink()
-        self.assertTrue(self.p.link is None)
-        self.assertRaises(ParameterErr, setattr, self.afp, 'link', self.p)
-        self.assertRaises(ParameterErr, setattr, self.p, 'link', 3)
-        self.assertRaises(ParameterErr, setattr, self.p, 'link',
-                          3 * self.p + 2)
-
-    def test_iter(self):
-        for part in self.p:
-            self.assertTrue(part is self.p)
+def setUp_p():
+    return Parameter('model', 'name', 0, -10, 10, -100, 100, 'units')
 
 
-class test_composite_parameter(SherpaTestCase):
+def setUp_afp():
+    return Parameter('model', 'name', 0, alwaysfrozen=True)
 
-    def setUp(self):
-        self.p = Parameter('model', 'p', 2)
-        self.p2 = Parameter('model', 'p2', 4)
 
-    def test_unop(self):
-        for op in (abs, operator.neg):
-            p = op(self.p)
-            self.assertTrue(isinstance(p, UnaryOpParameter))
-            self.assertEqual(p.val, op(self.p.val))
+def test_name():
+    p = setUp_p()
+    assert p.modelname == 'model'
+    assert p.name == 'name'
+    assert p.fullname == 'model.name'
 
-    def test_binop(self):
-        ops = [operator.add, operator.sub, operator.mul,
-               operator.floordiv, operator.truediv, operator.mod,
-               operator.pow]
 
-        for op in ops:
-            for p in (op(self.p, self.p2.val), op(self.p.val, self.p2),
-                      op(self.p, self.p2)):
-                self.assertTrue(isinstance(p, BinaryOpParameter))
-                self.assertEqual(p.val, op(self.p.val, self.p2.val))
+def test_alwaysfrozen():
+    afp = setUp_afp()
+    assert afp.frozen
+    afp.frozen = True
+    assert afp.frozen
+    afp.freeze()
+    afp.frozen = True
 
-    def test_iter(self):
-        p = 3 * self.p + self.p2
-        parts = list(p)
-        self.assertTrue(type(parts[0]) is BinaryOpParameter)
-        self.assertTrue(type(parts[1]) is ConstantParameter)
-        self.assertTrue(parts[2] is self.p)
-        self.assertTrue(parts[3] is self.p2)
+    with pytest.raises(ParameterErr):
+        afp.thaw()
 
-    def test_complex_expression(self):
-        cmplx = (3 * self.p + self.p2) / (self.p ** 3.2)
-        p = self.p.val
-        p2 = self.p2.val
-        self.assertEqual(cmplx.val, (3 * p + p2) / (p ** 3.2))
+    with pytest.raises(ParameterErr):
+        afp.frozen = 0
 
-    def test_link_unlink_val(self):
-        tst = test_parameter.TestParVal(4, 5)
-        tst.tst_unlink()
-        return
 
-    def test_link_unlink_val_low_level(self):
-        tst = test_parameter.TestParVal(4, 5)
-        tst.tst_low_level_val_link()
+def test_readonly_attributes():
+    p = setUp_p()
+    assert not p.alwaysfrozen
+    with pytest.raises(AttributeError):
+        p.alwaysfrozen = 1
 
-    def test_link_unlink_val_ui(self):
-        tst = test_parameter.TestParVal(4, 5)
-        tst.tst_ui_val_link()
+    assert p.hard_min == -100.0
+    with pytest.raises(AttributeError):
+        p.hard_min = -1000
+
+    assert p.hard_max == 100.0
+    with pytest.raises(AttributeError):
+        p.hard_max = 1000
+
+
+def test_val():
+    p = setUp_p()
+    p.val = -7
+
+    assert p.val == -7
+    assert type(p.val) is SherpaFloat
+
+    with pytest.raises(ValueError):
+        p.val = 'ham'
+
+    with pytest.raises(ParameterErr):
+        p.val = -101
+
+    with pytest.raises(ParameterErr):
+        p.val = 101
+
+
+def test_min_max():
+    p = setUp_p()
+    for attr, sign in (('min', -1), ('max', 1)):
+        setattr(p, attr, sign * 99)
+        val = getattr(p, attr)
+        assert val == sign * 99
+        assert type(val) is SherpaFloat
+
+        with pytest.raises(ValueError):
+            setattr(p, attr, 'ham')
+
+        with pytest.raises(ParameterErr):
+            setattr(p, attr, -101)
+
+        with pytest.raises(ParameterErr):
+            setattr(p, attr, 101)
+
+
+def test_frozen():
+    p = setUp_p()
+    p.frozen = 1.0
+    assert p.frozen is True
+
+    p.frozen = []
+    assert p.frozen is False
+
+    with pytest.raises(ValueError):
+        p.frozen = arange(10)
+
+    afp = setUp_afp()
+    p.link = afp
+    assert p.frozen is True
+
+    p.link = None
+    p.freeze()
+    assert p.frozen is True
+
+    p.thaw()
+    assert p.frozen is False
+
+
+def test_link():
+    p = setUp_p()
+    assert p.link is None
+    assert p.val == 0.0
+
+    afp = setUp_afp()
+    afp.val = 7.3
+    p.link = afp
+    assert p.val == 7.3
+
+    p.unlink()
+    assert p.link is None
+
+    with pytest.raises(ParameterErr):
+        afp.link = p
+
+    with pytest.raises(ParameterErr):
+        p.link = 3
+
+    with pytest.raises(ParameterErr):
+        p.link = 3 * p + 2
+
+
+def test_iter():
+    p = setUp_p()
+    for part in p:
+        assert part is p
+
+
+def setUp_composite():
+    p = Parameter('model', 'p', 2)
+    p2 = Parameter('model', 'p2', 4)
+    return p, p2
+
+
+@pytest.mark.parametrize("op", (abs, operator.neg))
+def test_unop(op):
+    porig = setUp_p()
+    p = op(porig)
+    assert isinstance(p, UnaryOpParameter)
+    assert p.val == op(p.val)
+
+
+@pytest.mark.parametrize("op", [operator.add, operator.sub, operator.mul,
+                                operator.floordiv, operator.truediv, operator.mod,
+                                operator.pow])
+def test_binop(op):
+    p, p2 = setUp_composite()
+    for comb in (op(p, p2.val), op(p.val, p2),
+                 op(p, p2)):
+        assert isinstance(comb, BinaryOpParameter)
+        assert comb.val == op(p.val, p2.val)
+
+
+def test_iter_composite():
+    p, p2 = setUp_composite()
+    pnew = 3 * p + p2
+    parts = list(pnew)
+    assert len(parts) == 4
+    assert type(parts[0]) is BinaryOpParameter
+    assert type(parts[1]) is ConstantParameter
+    assert parts[2] is p
+    assert parts[3] is p2
+
+
+def test_complex_expression():
+    p, p2 = setUp_composite()
+    cmplx = (3 * p + p2) / (p ** 3.2)
+    p = p.val
+    p2 = p2.val
+    assert cmplx.val == (3 * p + p2) / (p ** 3.2)
+
+
+def setUp_link():
+    src1 = Gauss1D()
+    src2 = Gauss1D()
+    src1.pos.set(val=4, min=-10, max=10)
+    src2.pos.set(val=5, min=-20, max=20)
+    return src1, src2
+
+
+def tst_pos(gauss, pos, minval, maxval, frozen=False,
+            link=None):
+    assert gauss.val == pos
+    assert gauss.min == minval
+    assert gauss.max == maxval
+    assert gauss.frozen == frozen
+    if gauss.link is None or link is None:
+        assert gauss.link == link
+    else:
+        # These two asserts are just to point out that
+        # the values we check against here are different
+        # to the input values.
+        #
+        assert minval == -10
+        assert maxval == 10
+        tst_pos(gauss.link, pos, -20, 20)
+    assert gauss.default_val == pos
+
+    # Note: these are not minval/maxval but the defaults.
+    assert gauss.default_min == -hugeval
+    assert gauss.default_max == hugeval
+
+
+def tst_unlink(src1, src2):
+    # Are the min/max checks in tst_pos really adding anything
+    # since we send in the parameter values.
+    #
+    src1.pos.unlink()
+    tst_pos(src1.pos, src1.pos.default_val, -10, 10)
+
+    src2.pos.unlink()
+    tst_pos(src2.pos, 5, -20, 20)
+
+
+def test_link_setup():
+    src1, src2 = setUp_link()
+    tst_pos(src1.pos, 4, -10, 10)
+    tst_pos(src2.pos, 5, -20, 20)
+
+
+def test_link_unlink_val():
+    src1, src2 = setUp_link()
+    tst_unlink(src1, src2)
+
+
+def test_link_unlink_val_low_level():
+    src1, src2 = setUp_link()
+
+    src1.pos.val = src2.pos.val
+    src1.pos.link = src2.pos
+
+    tst_pos(src1.pos, 5, -10, 10, frozen=True, link=src1.pos)
+    tst_pos(src2.pos, 5, -20, 20)
+
+    tst_unlink(src1, src2)
+
+
+def test_link_unlink_val_ui():
+    src1, src2 = setUp_link()
+
+    ui.link(src1.pos, src2.pos)
+
+    tst_pos(src1.pos, 5, -10, 10, frozen=True, link=src1.pos)
+    tst_pos(src2.pos, 5, -20, 20)
+
+    tst_unlink(src1, src2)
 
 
 def test_link_parameter_setting():
@@ -290,3 +353,27 @@ def test_link_parameter_evaluation():
     emsg = 'parameter powlaw1d.gamma has a maximum of 10'
     with pytest.raises(ParameterErr, match=emsg):
         mdl(grid)
+
+
+@pytest.mark.parametrize("attr", ["val", "link"])
+def test_link_manual(attr):
+    """Check out parameter linking. Use .val or .link"""
+
+    p = Parameter('model', 'eta', 2)
+    q = Parameter('other', 'bob', 3)
+
+    assert p.link is None
+    assert q.link is None
+
+    assert p.val == 2
+    assert q.val == 3
+
+    setattr(p, attr, 2 * q)
+    assert p.val == 6
+
+    assert q.link is None
+    assert isinstance(p.link, BinaryOpParameter)
+    assert isinstance(p.link.parts[0], ConstantParameter)
+    assert p.link.parts[0].val == 2
+    assert isinstance(p.link.parts[1], Parameter)
+    assert p.link.parts[1] is q
