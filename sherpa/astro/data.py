@@ -3612,7 +3612,7 @@ class DataPHA(Data1D):
 
         # Ensure the data is in ascending order for create_expr.
         #
-        if self.units == 'wavelength':
+        if len(x) > 0 and x[-1] < x[0]:
             x = x[::-1]
             mask = mask[::-1]
 
@@ -3748,11 +3748,15 @@ class DataPHA(Data1D):
             return
 
         if self.units == 'energy':
-            umin = elo[0]
-            umax = ehi[-1]
+            # It's not guaranteed that channels are in increasing energy
+            # but we can certainly assume that they are monotonic.
+            # Thus, the min of the first and last entry is the minimum
+            # energy of the elo array
+            umin = min(elo[0], elo[-1])
+            umax = max(ehi[0], ehi[-1])
         elif self.units == 'wavelength':
-            umin = hc / ehi[-1]
-            umax = hc / elo[0]
+            umin = min(hc / ehi[[0, -1]])
+            umax = max(hc / elo[[0, -1]])
         else:
             # assume channel units
             umin = self.channel[0]

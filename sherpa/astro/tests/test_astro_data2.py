@@ -869,3 +869,22 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     pha.grouping = [1, 1, -1, 1]
     d4 = pha.get_dep(filter=True)
     assert d4 == pytest.approx([2, 3])
+
+
+@requires_fits
+@requires_data
+def test_xmmrgs_notice(make_data_path):
+    '''Test that notice and ignore works on XMMRGS dataset, which is
+    ordered in increasing wavelength, not energy'''
+    from sherpa.astro.io import read_pha, read_rmf
+    dat = read_pha(make_data_path('xmmrgs/P0112880201R1S004SRSPEC1003.FTZ'))
+    rmf = read_rmf(make_data_path('xmmrgs/P0112880201R1S004RSPMAT1003.FTZ'))
+    dat.set_rmf(rmf)
+    dat.units = 'wave'
+    dat.notice(18.8, 19.2)
+    assert len(dat.get_dep(filter=True)) == 41
+    assert dat.get_filter(format='%.2f') == '18.80:19.20'
+
+    dat.ignore(10, 19.)
+    assert len(dat.get_dep(filter=True)) == 20
+    assert dat.get_filter(format='%.2f') == '19.01:19.20'
