@@ -51,8 +51,9 @@ pha.notice(0.3, 7)
 tabs = ~pha.mask
 pha.group_counts(20, tabStops=tabs)
 
-from sherpa.plot import DataPlot
-dplot = DataPlot()
+# You can use sherpa.plot.DataPlot but this is better
+from sherpa.astro.plot import DataPHAPlot
+dplot = DataPHAPlot()
 dplot.prepare(pha)
 dplot.plot(xlog=True, ylog=True)
 savefig('pha_data.png')
@@ -80,9 +81,9 @@ savefig('pha_data_compare.png')
 
 pha.set_analysis('wave')
 dump("pha.get_x().max()")
-wplot = DataPlot()
+wplot = DataPHAPlot()
 wplot.prepare(pha)
-wplot.plot()
+wplot.plot(linestyle='solid', xlog=True, ylog=True)
 savefig('pha_data_wave.png')
 pha.set_analysis('energy')
 
@@ -159,12 +160,10 @@ res = fit.fit()
 
 report('res.format()')
 
-from sherpa.plot import ModelPlot
-
 dplot.prepare(pha)
 dplot.plot(xlog=True)
 
-mplot2 = ModelPlot()
+mplot2 = ModelHistogram()
 mplot2.prepare(pha, full)
 mplot2.overplot()
 

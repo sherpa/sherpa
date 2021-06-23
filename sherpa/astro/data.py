@@ -2686,7 +2686,7 @@ class DataPHA(Data1D):
 
         Sum up the counts in each group (note that the data has not
         been filtered so using get_dep with the filter argument set to
-        True is generally preferred to this):
+        True is generally preferred to using this method):
 
         >>> gcounts = pha.apply_grouping(pha.counts)
 

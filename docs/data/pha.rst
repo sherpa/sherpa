@@ -373,6 +373,47 @@ filtered range to the requested range becomes larger::
   >>> print(pha3.get_filter())
   0.525600001216:10.906200170517
 
+Manipulating data
+=================
+
+Methods like :py:meth:`~sherpa.astro.data.DataPHA.get_dep` will
+apply the necessary grouping and filters, but it can be useful to
+convert other arrays, which can be done with
+:py:meth:`~sherpa.astro.data.DataPHA.apply_filter` and
+:py:meth:`~sherpa.astro.data.DataPHA.apply_grouping`.
+The default behavior for ``apply_filter`` is to sum the
+data values with each group, so we can re-create the
+``get_dep`` call::
+
+  >>> d1 = pha.get_dep(filter=True)
+  >>> d2 = pha.apply_filter(pha.counts)
+  >>> np.all(d1 == d2)
+  True
+
+The behavior can be changed with the ``groupfunc`` argument, which
+takes a limited set of functions that describe how the data within a
+group is combined (the default is ``np.sum``).  For instance, the
+first and last channel value of each group can be calculated with::
+
+  >>> clo = pha.apply_filter(pha.channel, groupfunc=pha._min)
+  >>> chi = pha.apply_filter(pha.channel, groupfunc=pha._max)
+  >>> clo[0:7]
+  [33. 40. 45. 49. 52. 55. 57.]
+  >>> chi[0:7]
+  [39. 44. 48. 51. 54. 56. 59.]
+
+The ``apply_grouping`` method is similar but it does not apply
+any filter, so all channels are used. So to get the group
+boundaries for all channels, not just the filtered ones,
+we can say::
+
+  >>> alo = pha.apply_grouping(pha.channel, pha._min)
+  >>> ahi = pha.apply_grouping(pha.channel, pha._max)
+  >>> alo[0:7]
+  [ 1. 18. 22. 33. 40. 45. 49.]
+  >>> ahi[0:7]
+  [17. 21. 32. 39. 44. 48. 51.]
+
 Background
 ==========
 

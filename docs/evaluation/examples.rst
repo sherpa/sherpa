@@ -221,10 +221,13 @@ to ensure we only group the data within this range::
 
 The standard :doc:`Sherpa plotting <../plots/index>` setup can
 be used to display the data, which has the advantage of picking
-up the filtering, grouping, and analysis setting::
+up the filtering, grouping, and analysis setting. We do however
+take advantage of the PHA plot class (the results are **not**
+significantly different if we use
+:py:class:`sherpa.plot.DataPlot`)::
 
-   >>> from sherpa.plot import DataPlot
-   >>> dplot = DataPlot()
+   >>> from sherpa.astro.plot import DataPHAPlot
+   >>> dplot = DataPHAPlot()
    >>> dplot.prepare(pha)
    >>> dplot.plot(xlog=True, ylog=True)
 
@@ -283,7 +286,7 @@ show they match::
 
 .. image:: ../_static/evaluation/pha_data_compare.png
 
-As mentioned, the :py:class:`~sherpa.plot.DataPlot` class
+As mentioned, the :py:class:`~sherpa.astro.plot.DataPHAPlot` class
 handles the units for you. Switching the analysis setting
 to wavelength will create a plot in Angstroms::
 
@@ -292,9 +295,16 @@ to wavelength will create a plot in Angstroms::
    1544.0122577477066
    >>> wplot = DataPlot()
    >>> wplot.prepare(pha)
-   >>> wplot.plot()
+   >>> wplot.plot(linestyle='solid', xlog=True, ylog=True)
 
 .. image:: ../_static/evaluation/pha_data_wave.png
+
+.. note::
+   By setting the `linestyle` option we get, along with a point
+   at the center of each group, a histogram-style line is drawn
+   indicating each group. Note that this is the major difference
+   to the :py:class:`sherpa.plot.DataPlot` class, which would
+   just draw a line connecting the points.
 
 For now we want to make sure we complete our analysis in
 energy units::
@@ -437,8 +447,7 @@ attributes of the
 :py:class:`~sherpa.astro.data.DataRMF` object returned by
 :py:meth:`~sherpa.astro.data.DataPHA.get_rmf`, and we can
 group them as we did earlier (except for chosing the
-``pha._min`` and ``pha._max`` functions for defining the
-bounds)::
+``min`` and ``max`` labels for defining the bounds)::
 
    >>> rmf = pha.get_rmf()
    >>> rmf.e_min.size, rmf.e_max.size
@@ -501,15 +510,11 @@ consider)::
 
 We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
 which should make the predicted counts a lot more believable!
-We can display the data and model together, this time using
-the :py:class:`~sherpa.plot.ModelPlot` class (since the
-:py:class:`~sherpa.astro.plot.ModelHistogram` class used
-earlier doesn't group the model to match the data)::
+We can display the data and model together::
 
-   >>> from sherpa.plot ModelPlot
    >>> dplot.prepare(pha)
    >>> dplot.plot(xlog=True)
-   >>> mplot2 = ModelPlot()
+   >>> mplot2 = ModelHistogram()
    >>> mplot2.prepare(pha, full)
    >>> mplot2.overplot()
 

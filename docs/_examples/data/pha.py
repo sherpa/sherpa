@@ -83,6 +83,8 @@ plot.plot(xlog=True, ylog=True)
 pha.units = 'energy'
 savefig('pha_filtered_channel.png')
 
+# Grouping
+
 os.chdir(basedir)
 print(f'--> jumping to {basedir}')
 from sherpa.utils.logging import SherpaVerbosity
@@ -119,6 +121,23 @@ report('pha1.get_filter()')
 report('pha2.get_filter()')
 report('pha3.get_filter()')
 
+# Manipulating data
+
+d1 = pha.get_dep(filter=True)
+d2 = pha.apply_filter(pha.counts)
+report('np.all(d1 == d2)')
+
+clo = pha.apply_filter(pha.channel, groupfunc=pha._min)
+chi = pha.apply_filter(pha.channel, groupfunc=pha._max)
+report('clo[0:7]')
+report('chi[0:7]')
+
+alo = pha.apply_grouping(pha.channel, pha._min)
+ahi = pha.apply_grouping(pha.channel, pha._max)
+report('alo[0:7]')
+report('ahi[0:7]')
+
+# Background
 
 report('pha.background_ids')
 bkg = pha.get_background()
