@@ -1261,34 +1261,21 @@ def test_pha_apply_grouping(func, expected, create_grouped_pha):
     assert ans == pytest.approx(expected)
 
 
-@pytest.mark.parametrize('func,expected',
-                         [('_min', [1, 3, 6, 7, 9, 10]),
-                          ('_max', [2, 5, 6, 8, 9, 10]),
-                          ('_middle', [1.5, 4, 6, 7.5, 9, 10]),
-                          ('_make_groups', [1, 2, 3, 4, 5, 6]),
-                          ('sum', [3, 12, 6, 15, 9, 10]),
-                          ('_sum_sq', [2.23606798,  7.07106781,  6, 10.63014581, 9, 10])
-                         ])
-def test_pha_apply_grouping_deprecated(func, expected, create_grouped_pha):
+def test_pha_apply_grouping_deprecated(create_grouped_pha):
     """Using a function is deprecated so check it works and logs a deprecation"""
 
     pha = create_grouped_pha
 
-    if func == 'sum':
-        func = np.sum
-    else:
-        func = getattr(pha, func)
-
     with warnings.catch_warnings(record=True) as warn:
         warnings.simplefilter("always", DeprecationWarning)
-        ans = pha.apply_grouping(pha.channel, func)
+        ans = pha.apply_grouping(pha.channel, np.sum)
 
         assert len(warn) == 1
         warn = warn[0]
         assert issubclass(warn.category, DeprecationWarning)
         assert str(warn.message) == 'apply_grouping should be sent a string not a function'
 
-    assert ans == pytest.approx(expected)
+    assert ans == pytest.approx([3, 12, 6, 15, 9, 10])
 
 
 def test_pha_apply_grouping_invalid_string(create_grouped_pha):

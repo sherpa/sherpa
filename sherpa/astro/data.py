@@ -3655,29 +3655,32 @@ class DataPHA(Data1D):
 
         return ylabel
 
+    # Deprecated methods
     @staticmethod
-    # Dummy function to tell apply_grouping to construct
-    # an array of groups.
     def _make_groups(array):
         pass
 
     @staticmethod
     def _middle(array):
+        warnings.warn('_middle is deprecated', DeprecationWarning)
         array = numpy.asarray(array)
         return (array.min() + array.max()) / 2.0
 
     @staticmethod
     def _min(array):
+        warnings.warn('_min is deprecated', DeprecationWarning)
         array = numpy.asarray(array)
         return array.min()
 
     @staticmethod
     def _max(array):
+        warnings.warn('_max is deprecated', DeprecationWarning)
         array = numpy.asarray(array)
         return array.max()
 
     @staticmethod
     def _sum_sq(array):
+        warnings.warn('_sum_sq is deprecated', DeprecationWarning)
         return numpy.sqrt(numpy.sum(array * array))
 
     def get_noticed_channels(self):
