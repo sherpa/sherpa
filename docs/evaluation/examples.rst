@@ -221,10 +221,13 @@ to ensure we only group the data within this range::
 
 The standard :doc:`Sherpa plotting <../plots/index>` setup can
 be used to display the data, which has the advantage of picking
-up the filtering, grouping, and analysis setting::
+up the filtering, grouping, and analysis setting. We do however
+take advantage of the PHA plot class (the results are **not**
+significantly different if we use
+:py:class:`sherpa.plot.DataPlot`)::
 
-   >>> from sherpa.plot import DataPlot
-   >>> dplot = DataPlot()
+   >>> from sherpa.astro.plot import DataPHAPlot
+   >>> dplot = DataPHAPlot()
    >>> dplot.prepare(pha)
    >>> dplot.plot(xlog=True, ylog=True)
 
@@ -251,7 +254,7 @@ group the channel data, selecting the mid-point of each group, and
 show the "raw" data (you can see that each group has at least
 20 counts, except for the last one)::
 
-   >>> gchans = pha.apply_filter(chans, pha._middle)
+   >>> gchans = pha.apply_filter(chans, 'middle')
    >>> gchans.size
    143
    >>> plt.clf()
@@ -260,6 +263,13 @@ show the "raw" data (you can see that each group has at least
    >>> plt.ylabel('Counts')
 
 .. image:: ../_static/evaluation/pha_data_manual.png
+
+.. note::
+   The :py:meth:`~sherpa.astro.data.DataPHA.apply_filter` and
+   :py:meth:`~sherpa.astro.data.DataPHA.apply_grouping` and
+   methods have changed in the 4.14 release: the grouping
+   argument is now a string such as `"middle"` rather than a
+   method of the PHA class (`pha._middle`).
 
 While the channel data is important, it doesn't let us create
 a plot like :ref:`above <example_pha_data>`. For this we
@@ -276,14 +286,14 @@ show they match::
    >>> x = pha.get_x()
    >>> x.min(), x.max()
    (0.008030000200960785, 14.943099975585938)
-   >>> x = pha.apply_filter(x, pha._middle)
+   >>> x = pha.apply_filter(x, 'middle')
    >>> y = pha.get_y(filter=True)
    >>> dplot.plot(xlog=True, ylog=True)
    >>> plt.plot(x, y)
 
 .. image:: ../_static/evaluation/pha_data_compare.png
 
-As mentioned, the :py:class:`~sherpa.plot.DataPlot` class
+As mentioned, the :py:class:`~sherpa.astro.plot.DataPHAPlot` class
 handles the units for you. Switching the analysis setting
 to wavelength will create a plot in Angstroms::
 
@@ -292,9 +302,16 @@ to wavelength will create a plot in Angstroms::
    1544.0122577477066
    >>> wplot = DataPlot()
    >>> wplot.prepare(pha)
-   >>> wplot.plot()
+   >>> wplot.plot(linestyle='solid', xlog=True, ylog=True)
 
 .. image:: ../_static/evaluation/pha_data_wave.png
+
+.. note::
+   By setting the `linestyle` option we get, along with a point
+   at the center of each group, a histogram-style line is drawn
+   indicating each group. Note that this is the major difference
+   to the :py:class:`sherpa.plot.DataPlot` class, which would
+   just draw a line connecting the points.
 
 For now we want to make sure we complete our analysis in
 energy units::
@@ -437,14 +454,13 @@ attributes of the
 :py:class:`~sherpa.astro.data.DataRMF` object returned by
 :py:meth:`~sherpa.astro.data.DataPHA.get_rmf`, and we can
 group them as we did earlier (except for chosing the
-``pha._min`` and ``pha._max`` functions for defining the
-bounds)::
+``min`` and ``max`` labels for defining the bounds)::
 
    >>> rmf = pha.get_rmf()
    >>> rmf.e_min.size, rmf.e_max.size
    (1024, 1024)
-   >>> xlo = pha.apply_filter(rmf.e_min, pha._min)
-   >>> xhi = pha.apply_filter(rmf.e_max, pha._max)
+   >>> xlo = pha.apply_filter(rmf.e_min, 'min')
+   >>> xhi = pha.apply_filter(rmf.e_max, 'max')
 
 With these, we can convert the counts values returned by
 ``eval_model_to_fit`` to counts per keV per second
@@ -452,7 +468,7 @@ With these, we can convert the counts values returned by
 attribute to get the exposure time)::
 
    >>> x2 = pha.get_x()
-   >>> xmid = pha.apply_filter(x2, pha._middle)
+   >>> xmid = pha.apply_filter(x2, 'middle')
    >>> plt.clf()
    >>> plt.plot(xmid, y2 / (xhi - xlo) / pha.exposure)
    >>> plt.xlabel('Energy (keV)')
@@ -501,15 +517,11 @@ consider)::
 
 We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
 which should make the predicted counts a lot more believable!
-We can display the data and model together, this time using
-the :py:class:`~sherpa.plot.ModelPlot` class (since the
-:py:class:`~sherpa.astro.plot.ModelHistogram` class used
-earlier doesn't group the model to match the data)::
+We can display the data and model together::
 
-   >>> from sherpa.plot ModelPlot
    >>> dplot.prepare(pha)
    >>> dplot.plot(xlog=True)
-   >>> mplot2 = ModelPlot()
+   >>> mplot2 = ModelHistogram()
    >>> mplot2.prepare(pha, full)
    >>> mplot2.overplot()
 

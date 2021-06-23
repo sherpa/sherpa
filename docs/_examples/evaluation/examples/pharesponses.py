@@ -51,8 +51,9 @@ pha.notice(0.3, 7)
 tabs = ~pha.mask
 pha.group_counts(20, tabStops=tabs)
 
-from sherpa.plot import DataPlot
-dplot = DataPlot()
+# You can use sherpa.plot.DataPlot but this is better
+from sherpa.astro.plot import DataPHAPlot
+dplot = DataPHAPlot()
 dplot.prepare(pha)
 dplot.plot(xlog=True, ylog=True)
 savefig('pha_data.png')
@@ -61,7 +62,7 @@ chans, = pha.get_indep(filter=True)
 counts = pha.get_dep(filter=True)
 dump("chans.size, counts.size")
 
-gchans = pha.apply_filter(chans, pha._middle)
+gchans = pha.apply_filter(chans, 'middle')
 dump("gchans.size")
 
 plt.clf()
@@ -72,7 +73,7 @@ savefig('pha_data_manual.png')
 
 x = pha.get_x()
 dump("x.min(), x.max()")
-x = pha.apply_filter(x, pha._middle)
+x = pha.apply_filter(x, 'middle')
 y = pha.get_y(filter=True)
 dplot.plot(xlog=True, ylog=True)
 plt.plot(x, y)
@@ -80,9 +81,9 @@ savefig('pha_data_compare.png')
 
 pha.set_analysis('wave')
 dump("pha.get_x().max()")
-wplot = DataPlot()
+wplot = DataPHAPlot()
 wplot.prepare(pha)
-wplot.plot()
+wplot.plot(linestyle='solid', xlog=True, ylog=True)
 savefig('pha_data_wave.png')
 pha.set_analysis('energy')
 
@@ -133,11 +134,11 @@ dump("y1.size, y2.size")
 rmf = pha.get_rmf()
 dump("rmf.e_min.size, rmf.e_max.size")
 
-xlo = pha.apply_filter(rmf.e_min, pha._min)
-xhi = pha.apply_filter(rmf.e_max, pha._max)
+xlo = pha.apply_filter(rmf.e_min, 'min')
+xhi = pha.apply_filter(rmf.e_max, 'max')
 
 x2 = pha.get_x()
-xmid = pha.apply_filter(x2, pha._middle)
+xmid = pha.apply_filter(x2, 'middle')
 plt.clf()
 plt.plot(xmid, y2 / (xhi - xlo) / pha.exposure)
 
@@ -159,12 +160,10 @@ res = fit.fit()
 
 report('res.format()')
 
-from sherpa.plot import ModelPlot
-
 dplot.prepare(pha)
 dplot.plot(xlog=True)
 
-mplot2 = ModelPlot()
+mplot2 = ModelHistogram()
 mplot2.prepare(pha, full)
 mplot2.overplot()
 

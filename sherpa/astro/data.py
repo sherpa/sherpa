@@ -2522,6 +2522,9 @@ class DataPHA(Data1D):
     def apply_filter(self, data, groupfunc='sum'):
         """Group and filter the supplied data to match the data set.
 
+        .. versionchanged:: 4.14.0
+           The groupfunc argument now takes a string, not a callable.
+
         Parameters
         ----------
         data : ndarray or None
@@ -2631,6 +2634,9 @@ class DataPHA(Data1D):
     def apply_grouping(self, data, groupfunc="sum"):
         """Apply the grouping scheme of the data set to the supplied data.
 
+        .. versionchanged:: 4.14.0
+           The groupfunc argument now takes a string, not a callable.
+
         Parameters
         ----------
         data : ndarray or None
@@ -2685,7 +2691,7 @@ class DataPHA(Data1D):
 
         Sum up the counts in each group (note that the data has not
         been filtered so using get_dep with the filter argument set to
-        True is generally preferred to this):
+        True is generally preferred to using this method):
 
         >>> gcounts = pha.apply_grouping(pha.counts)
 
