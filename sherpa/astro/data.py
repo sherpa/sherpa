@@ -1846,7 +1846,7 @@ class DataPHA(Data1D):
             newarf[newarf <= 0] = 1.
 
             if filter:
-                newarf = self.apply_filter(newarf, self._middle)
+                newarf = self.apply_filter(newarf, '_middle')
 
         return newarf
 
@@ -1943,8 +1943,8 @@ class DataPHA(Data1D):
                 ehi = self.channel + 1
 
         if self.grouped and group:
-            elo = self.apply_grouping(elo, self._min)
-            ehi = self.apply_grouping(ehi, self._max)
+            elo = self.apply_grouping(elo, '_min')
+            ehi = self.apply_grouping(ehi, '_max')
 
             if len(elo) == 0:
                 raise DataErr('notmask')
@@ -2082,8 +2082,8 @@ class DataPHA(Data1D):
 
         # The edge channels of each group.
         #
-        lo = self.apply_grouping(self.channel, self._min)
-        hi = self.apply_grouping(self.channel, self._max)
+        lo = self.apply_grouping(self.channel, '_min')
+        hi = self.apply_grouping(self.channel, '_max')
 
         val = numpy.asarray(val).astype(numpy.int_)
         res = []
@@ -2119,7 +2119,7 @@ class DataPHA(Data1D):
 
         # The middle channel of each group.
         #
-        mid = self.apply_grouping(self.channel, self._middle)
+        mid = self.apply_grouping(self.channel, '_middle')
 
         # Convert to an integer (this keeps the channel within
         # the group).
@@ -2418,9 +2418,9 @@ class DataPHA(Data1D):
             scale = numpy.asarray(scale, dtype=SherpaFloat)
             if group:
                 if filter:
-                    scale = self.apply_filter(scale, self._middle)
+                    scale = self.apply_filter(scale, '_middle')
                 else:
-                    scale = self.apply_grouping(scale, self._middle)
+                    scale = self.apply_grouping(scale, '_middle')
 
             scale[scale <= 0.0] = 1.0
         return scale
@@ -2519,7 +2519,7 @@ class DataPHA(Data1D):
             areascal = self._check_scale(areascal, group, filter)
         return areascal
 
-    def apply_filter(self, data, groupfunc=numpy.sum):
+    def apply_filter(self, data, groupfunc='sum'):
         """Group and filter the supplied data to match the data set.
 
         Parameters
@@ -2528,9 +2528,11 @@ class DataPHA(Data1D):
             The data to group, which must match either the number of
             channels of the data set or the number of filtered
             channels.
-        groupfunc : function reference
-            The grouping function. See apply_grouping for the
-            supported values.
+        groupfunc : {'sum', '_sum_sq', '_min', '_max', '_middle', '_make_groups'}
+            The grouping function. The defult is sum. Note that the
+            value should be a string but if given a function then its
+            name will be used: support for this option is limited and
+            will be removed.
 
         Returns
         -------
@@ -2581,17 +2583,17 @@ class DataPHA(Data1D):
 
         >>> pha.group()
         >>> pha.notice(0.5, 7.0)
-        >>> pha.apply_filter(pha.channel, pha._min)[0:5]
+        >>> pha.apply_filter(pha.channel, '_min')[0:5]
         array([33., 40., 45., 49., 52.])
-        >>> pha.apply_filter(pha.channel, pha._max)[0:5]
+        >>> pha.apply_filter(pha.channel, '_max')[0:5]
         array([39., 44., 48., 51., 54.])
 
         Find the approximate energy range of each selected group from
         the RMF EBOUNDS extension:
 
         >>> rmf = pha.get_rmf()
-        >>> elo = pha.apply_filter(rmf.e_min, pha._min)
-        >>> ehi = pha.apply_filter(rmf.e_max, pha._max)
+        >>> elo = pha.apply_filter(rmf.e_min, '_min')
+        >>> ehi = pha.apply_filter(rmf.e_max, '_max')
 
         Calculate the grouped data, after filtering, if the counts were
         increased by 2 per channel. Note that in this case the data to
@@ -2626,7 +2628,7 @@ class DataPHA(Data1D):
 
         return super().apply_filter(self.apply_grouping(data, groupfunc))
 
-    def apply_grouping(self, data, groupfunc=numpy.sum):
+    def apply_grouping(self, data, groupfunc="sum"):
         """Apply the grouping scheme of the data set to the supplied data.
 
         Parameters
@@ -2634,11 +2636,11 @@ class DataPHA(Data1D):
         data : ndarray or None
             The data to group, which must match the number of channels
             of the data set.
-        groupfunc : function reference
-            The grouping function. Note that what matters is the name
-            of the function, not its code. The supported function
-            names are: "sum", "_sum_sq", "_min", "_max", "_middle",
-            and "_make_groups".
+        groupfunc : {'sum', '_sum_sq', '_min', '_max', '_middle', '_make_groups'}
+            The grouping function. The defult is sum. Note that the
+            value should be a string but if given a function then its
+            name will be used: support for this option is limited and
+            will be removed.
 
         Returns
         -------
@@ -2672,9 +2674,6 @@ class DataPHA(Data1D):
         _make_groups The group number, starting at the first value of data.
         ============ ======================================================
 
-        There are methods of the DataPHA class that can be used for
-        all other than "sum" (the default value).
-
         The grouped data is not filtered unless a quality filter has
         been applied (e.g. by ignore_bad) in which case the quality
         filter will be applied to the result. In general apply_filter
@@ -2703,11 +2702,11 @@ class DataPHA(Data1D):
         1024
         >>> pha.apply_grouping(np.ones(1024))
         array([ 17.,   4.,  11.,   ...
-        >>> pha.apply_grouping(np.arange(1, 1025), pha._min)
+        >>> pha.apply_grouping(np.arange(1, 1025), '_min')
         array([  1.,  18.,  22.,  ...
-        >>> pha.apply_grouping(np.arange(1, 1025), pha._max)
+        >>> pha.apply_grouping(np.arange(1, 1025), '_max')
         array([  17.,   21.,   32.,   ...
-        >>> pha.apply_grouping(np.arange(1, 1025), pha._middle)
+        >>> pha.apply_grouping(np.arange(1, 1025), '_middle')
         array([  9. ,  19.5,  27. ,  ...
 
         The grouped data is not filtered (unless ignore_bad has been
@@ -2724,17 +2723,28 @@ class DataPHA(Data1D):
         if data is None or not self.grouped:
             return data
 
+        # Do we need to convert the groupfunc argument? This is
+        # intended to be a temporary conversion added in the 4.14
+        # development cycle, and eventually requiring a string.
+        #
+        try:
+            gfunc = groupfunc.__name__
+            warnings.warn('apply_grouping should be sent a string not a function',
+                          DeprecationWarning)
+        except AttributeError:
+            gfunc = groupfunc
+
         groups = self.grouping
         filter = self.quality_filter
         if filter is None:
-            return do_group(data, groups, groupfunc.__name__)
+            return do_group(data, groups, gfunc)
 
         if len(data) != len(filter) or len(groups) != len(filter):
             raise DataErr('mismatch', "quality filter", "data array")
 
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]
-        return do_group(filtered_data, groups, groupfunc.__name__)
+        return do_group(filtered_data, groups, gfunc)
 
     def ignore_bad(self):
         """Exclude channels marked as bad.
@@ -3329,9 +3339,9 @@ class DataPHA(Data1D):
 
         filter = bool_cast(filter)
         if filter:
-            staterr = self.apply_filter(staterr, self._sum_sq)
+            staterr = self.apply_filter(staterr, '_sum_sq')
         else:
-            staterr = self.apply_grouping(staterr, self._sum_sq)
+            staterr = self.apply_grouping(staterr, '_sum_sq')
 
         # The source AREASCAL is not applied here, but the
         # background term is.
@@ -3358,9 +3368,9 @@ class DataPHA(Data1D):
 
                 # TODO: replace with _check_scale?
                 if filter:
-                    area = self.apply_filter(area, self._middle)
+                    area = self.apply_filter(area, '_middle')
                 else:
-                    area = self.apply_grouping(area, self._middle)
+                    area = self.apply_grouping(area, '_middle')
                 staterr = staterr / area
             """
 
@@ -3372,9 +3382,9 @@ class DataPHA(Data1D):
                 bkg = self.get_background(key)
                 berr = bkg.staterror
                 if filter:
-                    berr = self.apply_filter(berr, self._sum_sq)
+                    berr = self.apply_filter(berr, '_sum_sq')
                 else:
-                    berr = self.apply_grouping(berr, self._sum_sq)
+                    berr = self.apply_grouping(berr, '_sum_sq')
 
                 if (berr is None) and (staterrfunc is not None):
                     bkg_cnts = bkg.counts
@@ -3476,9 +3486,9 @@ class DataPHA(Data1D):
         syserr = self.syserror
         filter = bool_cast(filter)
         if filter:
-            syserr = self.apply_filter(syserr, self._sum_sq)
+            syserr = self.apply_filter(syserr, '_sum_sq')
         else:
-            syserr = self.apply_grouping(syserr, self._sum_sq)
+            syserr = self.apply_grouping(syserr, '_sum_sq')
         return syserr
 
     def get_x(self, filter=False, response_id=None):
@@ -3544,11 +3554,11 @@ class DataPHA(Data1D):
                 # If we apply a filter, make sure that
                 # ebins are ungrouped before applying
                 # the filter.
-                elo = self.apply_filter(elo, self._min)
-                ehi = self.apply_filter(ehi, self._max)
+                elo = self.apply_filter(elo, '_min')
+                ehi = self.apply_filter(ehi, '_max')
             elif self.grouped:
-                elo = self.apply_grouping(elo, self._min)
-                ehi = self.apply_grouping(ehi, self._max)
+                elo = self.apply_grouping(elo, '_min')
+                ehi = self.apply_grouping(ehi, '_max')
 
             if self.units == 'energy':
                 ebin = ehi - elo
@@ -3567,7 +3577,7 @@ class DataPHA(Data1D):
             return val
 
         scale = self.apply_filter(self.get_x(response_id=response_id),
-                                  self._middle)
+                                  '_middle')
         for ii in range(self.plot_fac):
             val *= scale
 
@@ -3609,8 +3619,8 @@ class DataPHA(Data1D):
             # ebins are ungrouped before applying
             # the filter.
             elo, ehi = self._get_ebins(response_id, group=False)
-            elo = self.apply_filter(elo, self._min)
-            ehi = self.apply_filter(ehi, self._max)
+            elo = self.apply_filter(elo, '_min')
+            ehi = self.apply_filter(ehi, '_max')
 
         else:
             try:
@@ -3781,7 +3791,7 @@ class DataPHA(Data1D):
         if group:
             # grouped noticed channels
             #
-            x = self.apply_filter(self.channel, self._make_groups)
+            x = self.apply_filter(self.channel, '_make_groups')
 
         else:
             # ungrouped noticed channels
@@ -4046,14 +4056,14 @@ class DataPHA(Data1D):
         # DATA-NOTE: need to clean this up.
         #
         groups = self.apply_grouping(self.channel,
-                                     self._make_groups)
+                                     '_make_groups')
         self._data_space.filter.notice((lo,), (hi,),
                                        (groups,), ignore)
 
     def to_guess(self):
         elo, ehi = self._get_ebins(group=False)
-        elo = self.apply_filter(elo, self._min)
-        ehi = self.apply_filter(ehi, self._max)
+        elo = self.apply_filter(elo, '_min')
+        ehi = self.apply_filter(ehi, '_max')
         if self.units == "wavelength":
             lo = hc / ehi
             hi = hc / elo
@@ -4077,7 +4087,7 @@ class DataPHA(Data1D):
 
     def to_plot(self, yfunc=None, staterrfunc=None, response_id=None):
         return (self.apply_filter(self.get_x(response_id=response_id),
-                                  self._middle),
+                                  '_middle'),
                 self.get_y(True, yfunc, response_id=response_id),
                 self.get_yerr(True, staterrfunc, response_id=response_id),
                 self.get_xerr(True, response_id=response_id),

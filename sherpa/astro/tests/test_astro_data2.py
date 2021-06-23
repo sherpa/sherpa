@@ -22,6 +22,7 @@
 
 import logging
 import pickle
+import warnings
 
 import numpy as np
 
@@ -1223,3 +1224,90 @@ def test_pickle_image_filter(ignore, region, expected, make_test_image):
     d2 = pickle.loads(pickle.dumps(d))
     assert isinstance(d2._region, Region)
     assert str(d2._region) == expected
+
+
+@pytest.fixture
+def create_grouped_pha():
+    """Note: no quality data."""
+
+    chans = np.arange(1, 11, dtype=np.int16)
+    d = DataPHA('example', chans, chans)
+    d.grouping = np.asarray([1, -1, 1, -1, -1, 1, 1, -1, 1, 1], dtype=np.int16)
+    d.grouped = True
+    return d
+
+
+def test_pha_apply_grouping_default(create_grouped_pha):
+    """Does apply_grouping work as expected (i.e. sum)"""
+
+    pha = create_grouped_pha
+    ans = pha.apply_grouping(pha.channel)
+    assert ans == pytest.approx([3, 12, 6, 15, 9, 10])
+
+
+@pytest.mark.parametrize('func,expected',
+                         [('_min', [1, 3, 6, 7, 9, 10]),
+                          ('_max', [2, 5, 6, 8, 9, 10]),
+                          ('_middle', [1.5, 4, 6, 7.5, 9, 10]),
+                          ('_make_groups', [1, 2, 3, 4, 5, 6]),
+                          ('sum', [3, 12, 6, 15, 9, 10]),
+                          ('_sum_sq', [2.23606798,  7.07106781,  6, 10.63014581, 9, 10])
+                         ])
+def test_pha_apply_grouping(func, expected, create_grouped_pha):
+    """Does apply_grouping work as expected"""
+
+    pha = create_grouped_pha
+    ans = pha.apply_grouping(pha.channel, func)
+    assert ans == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('func,expected',
+                         [('_min', [1, 3, 6, 7, 9, 10]),
+                          ('_max', [2, 5, 6, 8, 9, 10]),
+                          ('_middle', [1.5, 4, 6, 7.5, 9, 10]),
+                          ('_make_groups', [1, 2, 3, 4, 5, 6]),
+                          ('sum', [3, 12, 6, 15, 9, 10]),
+                          ('_sum_sq', [2.23606798,  7.07106781,  6, 10.63014581, 9, 10])
+                         ])
+def test_pha_apply_grouping_deprecated(func, expected, create_grouped_pha):
+    """Using a function is deprecated so check it works and logs a deprecation"""
+
+    pha = create_grouped_pha
+
+    if func == 'sum':
+        func = np.sum
+    else:
+        func = getattr(pha, func)
+
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always", DeprecationWarning)
+        ans = pha.apply_grouping(pha.channel, func)
+
+        assert len(warn) == 1
+        warn = warn[0]
+        assert issubclass(warn.category, DeprecationWarning)
+        assert str(warn.message) == 'apply_grouping should be sent a string not a function'
+
+    assert ans == pytest.approx(expected)
+
+
+def test_pha_apply_grouping_invalid_string(create_grouped_pha):
+    """We error out with an invalid name"""
+
+    pha = create_grouped_pha
+    with pytest.raises(ValueError) as ve:
+        pha.apply_grouping(pha.channel, 'sumit')
+
+    assert str(ve.value) == 'unsupported group function: sumit'
+
+
+def test_pha_apply_grouping_invalid_func(create_grouped_pha):
+    """We error out with an invalid function"""
+
+    pha = create_grouped_pha
+    with pytest.raises(ValueError) as ve:
+        # We don't need to check the deprecation warning here
+        with warnings.catch_warnings(record=True):
+            pha.apply_grouping(pha.channel, lambda x: x)
+
+    assert str(ve.value) == 'unsupported group function: <lambda>'

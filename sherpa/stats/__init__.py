@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020
-#             Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -991,7 +991,7 @@ class WStat(Likelihood):
             #
 
             data_bkg.append(dset.apply_filter(bset.get_dep(False),
-                                              groupfunc=numpy.sum))
+                                              groupfunc='sum'))
 
             # The assumption is that the source and background datasets
             # have the same number of channels (before any grouping or
@@ -1008,9 +1008,9 @@ class WStat(Likelihood):
             # for this?).
             #
             src_backscal = dset.apply_filter(dset.backscal * dummy,
-                                             groupfunc=dset._middle)
+                                             groupfunc='_middle')
             bkg_backscal = dset.apply_filter(bset.backscal * dummy,
-                                             groupfunc=dset._middle)
+                                             groupfunc='_middle')
 
             backscales.append(bkg_backscal / src_backscal)
 
@@ -1029,7 +1029,7 @@ class WStat(Likelihood):
                 ascal = dummy[:dset.get_dep(True).size]
             else:
                 ascal = dset.apply_filter(dset.areascal * dummy,
-                                          groupfunc=dset._middle)
+                                          groupfunc='_middle')
 
             exp_src.append(dset.exposure * ascal)
 
@@ -1037,7 +1037,7 @@ class WStat(Likelihood):
                 ascal = dummy[:dset.get_dep(True).size]
             else:
                 ascal = dset.apply_filter(bset.areascal * dummy,
-                                          groupfunc=dset._middle)
+                                          groupfunc='_middle')
 
             exp_bkg.append(bset.exposure * ascal)
 

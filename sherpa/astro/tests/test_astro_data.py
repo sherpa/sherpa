@@ -1342,8 +1342,8 @@ def test_grouping_filtering_binning(analysis, make_data_path):
 
 # The channel ranges associated with the groups can be
 # found with:
-#   pha.apply_grouping(pha.channel, pha._min)
-#   pha.apply_grouping(pha.channel, pha._max)
+#   pha.apply_grouping(pha.channel, '_min')
+#   pha.apply_grouping(pha.channel, '_max')
 #
 # For the 3c273.pi file we have:
 #
@@ -1473,14 +1473,14 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     1-17 and the last group 677-1024, which have mid-points
     9 and 850.5, hence the 9:850 as the default filter.
 
-    >>> pha.apply_grouping(pha.channel, pha._min)
+    >>> pha.apply_grouping(pha.channel, '_min')
     array([  1.,  18.,  22.,  33.,  40.,  45.,  49.,  52.,  55.,  57.,  60.,
             62.,  66.,  69.,  72.,  76.,  79.,  83.,  89.,  97., 102., 111.,
            117., 125., 131., 134., 140., 144., 151., 157., 165., 178., 187.,
            197., 212., 233., 245., 261., 277., 292., 324., 345., 369., 405.,
            451., 677.])
 
-    >>> pha.apply_grouping(pha.channel, pha._max)
+    >>> pha.apply_grouping(pha.channel, '_max')
     array([  17.,   21.,   32.,   39.,   44.,   48.,   51.,   54.,   56.,
              59.,   61.,   65.,   68.,   71.,   75.,   78.,   82.,   88.,
              96.,  101.,  110.,  116.,  124.,  130.,  133.,  139.,  143.,
