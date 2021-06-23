@@ -1008,9 +1008,9 @@ class WStat(Likelihood):
             # for this?).
             #
             src_backscal = dset.apply_filter(dset.backscal * dummy,
-                                             groupfunc='_middle')
+                                             groupfunc='middle')
             bkg_backscal = dset.apply_filter(bset.backscal * dummy,
-                                             groupfunc='_middle')
+                                             groupfunc='middle')
 
             backscales.append(bkg_backscal / src_backscal)
 
@@ -1029,7 +1029,7 @@ class WStat(Likelihood):
                 ascal = dummy[:dset.get_dep(True).size]
             else:
                 ascal = dset.apply_filter(dset.areascal * dummy,
-                                          groupfunc='_middle')
+                                          groupfunc='middle')
 
             exp_src.append(dset.exposure * ascal)
 
@@ -1037,7 +1037,7 @@ class WStat(Likelihood):
                 ascal = dummy[:dset.get_dep(True).size]
             else:
                 ascal = dset.apply_filter(bset.areascal * dummy,
-                                          groupfunc='_middle')
+                                          groupfunc='middle')
 
             exp_bkg.append(bset.exposure * ascal)
 

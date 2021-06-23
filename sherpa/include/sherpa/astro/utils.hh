@@ -365,12 +365,12 @@ namespace sherpa { namespace astro { namespace utils {
     fptr func = _sum;
 
     funcs["sum"] = _sum;
-    funcs["_sum_sq"] = _sum_sq;
-    funcs["_max"] = _max;
-    funcs["_min"] = _min;
-    funcs["_middle"] = _middle;
+    funcs["sum_sq"] = _sum_sq;
+    funcs["max"] = _max;
+    funcs["min"] = _min;
+    funcs["middle"] = _middle;
 
-    if ( funcname != "_make_groups" ) {
+    if ( funcname != "make_groups" ) {
       // An invalid function will raise std::out_of_range
       func = funcs.at(funcname);
     }
@@ -396,7 +396,7 @@ namespace sherpa { namespace astro { namespace utils {
       if ( stop > len_data )
 	return EXIT_FAILURE;
 
-      if ( funcname == "_make_groups" ) {
+      if ( funcname == "make_groups" ) {
 	grouped[ ii ] = data[0] + (SherpaFloat) ii;
 	continue;
       }

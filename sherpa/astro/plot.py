@@ -156,8 +156,8 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
         else:
             elo, ehi = (data.channel, data.channel + 1.)
 
-        self.xlo = data.apply_filter(elo, '_min')
-        self.xhi = data.apply_filter(ehi, '_max')
+        self.xlo = data.apply_filter(elo, 'min')
+        self.xhi = data.apply_filter(ehi, 'max')
         if data.units == 'wavelength':
             self.xlo = hc / self.xlo
             self.xhi = hc / self.xhi
@@ -192,8 +192,8 @@ class ModelPHAHistogram(HistogramPlot):
         else:
             elo, ehi = (data.channel, data.channel + 1.)
 
-        self.xlo = data.apply_filter(elo, '_min')
-        self.xhi = data.apply_filter(ehi, '_max')
+        self.xlo = data.apply_filter(elo, 'min')
+        self.xhi = data.apply_filter(ehi, 'max')
         if data.units == 'wavelength':
             self.xlo = hc / self.xlo
             self.xhi = hc / self.xhi
@@ -560,8 +560,8 @@ class OrderPlot(ModelHistogram):
             y = y[1]
             if data.units != 'channel':
                 elo, ehi = data._get_ebins(group=False)
-                xlo = data.apply_filter(elo, '_min')
-                xhi = data.apply_filter(ehi, '_max')
+                xlo = data.apply_filter(elo, 'min')
+                xhi = data.apply_filter(ehi, 'max')
                 if data.units == 'wavelength':
                     xlo = hc / xlo
                     xhi = hc / xhi

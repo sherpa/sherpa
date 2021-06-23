@@ -166,11 +166,11 @@ def test_do_group_check_lengths():
 
 @pytest.mark.parametrize("func,expected",
                          [("sum", [3, 12, 6]),
-                          ("_sum_sq", np.sqrt([5, 50, 36])),
-                          ("_min", [1, 3, 6]),
-                          ("_max", [2, 5, 6]),
-                          ("_middle", [1.5, 4, 6]),
-                          ("_make_groups", [1, 2, 3])
+                          ("sum_sq", np.sqrt([5, 50, 36])),
+                          ("min", [1, 3, 6]),
+                          ("max", [2, 5, 6]),
+                          ("middle", [1.5, 4, 6]),
+                          ("make_groups", [1, 2, 3])
                          ])
 def test_do_group_check_func(func, expected):
     """Check we error out if lengths do not match."""
@@ -184,7 +184,7 @@ def test_do_group_check_func(func, expected):
 # could decide to error out if values < 0 are included, which
 # would mean the test would fail, but for now it is supported).
 #
-@pytest.mark.parametrize("func", ["sum", "_min", "_max", "_middle"])
+@pytest.mark.parametrize("func", ["sum", "min", "max", "middle"])
 def test_do_group_nothing_func(func):
     """Special case: no grouping"""
 
@@ -195,7 +195,7 @@ def test_do_group_nothing_func(func):
 def test_do_group_nothing_sumsq():
     """Special case: no grouping"""
 
-    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "_sum_sq")
+    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "sum_sq")
     assert ans == pytest.approx([6, 4, 2, 1, 1, 3])
 
 
@@ -206,15 +206,15 @@ def test_do_group_nothing_group():
     term, addnig 1 to each element.
     """
 
-    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "_make_groups")
+    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "make_groups")
     assert ans == pytest.approx([6, 7, 8, 9, 10, 11])
 
 
 @pytest.mark.parametrize("func,expected",
                          [('sum', 15),
-                          ('_sum_sq', np.sqrt(67)),
-                          ('_min', -1), ('_max', 6),
-                          ('_middle', 2.5), ('_make_groups', 6)])
+                          ('sum_sq', np.sqrt(67)),
+                          ('min', -1), ('max', 6),
+                          ('middle', 2.5), ('make_groups', 6)])
 def test_do_group_single_group(func, expected):
     """There's only one group."""
 

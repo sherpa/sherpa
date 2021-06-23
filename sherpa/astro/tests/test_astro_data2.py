@@ -1246,12 +1246,12 @@ def test_pha_apply_grouping_default(create_grouped_pha):
 
 
 @pytest.mark.parametrize('func,expected',
-                         [('_min', [1, 3, 6, 7, 9, 10]),
-                          ('_max', [2, 5, 6, 8, 9, 10]),
-                          ('_middle', [1.5, 4, 6, 7.5, 9, 10]),
-                          ('_make_groups', [1, 2, 3, 4, 5, 6]),
+                         [('min', [1, 3, 6, 7, 9, 10]),
+                          ('max', [2, 5, 6, 8, 9, 10]),
+                          ('middle', [1.5, 4, 6, 7.5, 9, 10]),
+                          ('make_groups', [1, 2, 3, 4, 5, 6]),
                           ('sum', [3, 12, 6, 15, 9, 10]),
-                          ('_sum_sq', [2.23606798,  7.07106781,  6, 10.63014581, 9, 10])
+                          ('sum_sq', [2.23606798,  7.07106781,  6, 10.63014581, 9, 10])
                          ])
 def test_pha_apply_grouping(func, expected, create_grouped_pha):
     """Does apply_grouping work as expected"""
@@ -1276,6 +1276,29 @@ def test_pha_apply_grouping_deprecated(create_grouped_pha):
         assert str(warn.message) == 'apply_grouping should be sent a string not a function'
 
     assert ans == pytest.approx([3, 12, 6, 15, 9, 10])
+
+
+def test_pha_apply_grouping_deprecated2(create_grouped_pha):
+    """We used to allow pha._min to be used as the grouping 'label',
+    so check it still works (we map it to 'min').
+    """
+
+    pha = create_grouped_pha
+
+    def _middle():
+        pass
+
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always", DeprecationWarning)
+
+        ans = pha.apply_grouping(pha.channel, _middle)
+
+        assert len(warn) == 1
+        warn = warn[0]
+        assert issubclass(warn.category, DeprecationWarning)
+        assert str(warn.message) == 'apply_grouping should be sent a string not a function'
+
+    assert ans == pytest.approx([1.5, 4, 6, 7.5, 9, 10])
 
 
 def test_pha_apply_grouping_invalid_string(create_grouped_pha):
