@@ -1143,3 +1143,269 @@ def test_xspecvar_no_grouping_comparison_xspec(make_data_path,
 
     validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
+
+
+# This is a regression test, not calculated from first principles
+STATERROR_3C273_SRC = np.array([4.12310563, 3.87298335, 4.        , 3.87298335, 4.        ,
+                                3.87298335, 4.24264069, 4.24264069, 3.87298335, 4.24264069,
+                                3.87298335, 3.87298335, 4.35889894, 3.87298335, 3.87298335,
+                                4.12310563, 4.        , 4.        , 4.12310563, 3.87298335,
+                                4.35889894, 3.87298335, 4.        , 3.87298335, 4.        ,
+                                4.12310563, 3.87298335, 4.24264069, 4.        , 3.87298335,
+                                3.87298335, 4.        , 3.87298335, 3.87298335, 3.87298335,
+                                4.        , 4.        , 3.87298335, 3.87298335, 4.        ,
+                                4.        , 3.87298335, 4.        , 3.87298335, 3.87298335,
+                                4.47213595])
+
+STATERROR_3C273_BKG = np.array([ 1.41421356,  1.        ,  0.        ,  1.        ,  1.        ,
+                                 0.        ,  0.        ,  0.        ,  1.        ,  1.        ,
+                                 0.        ,  1.73205081,  1.        ,  1.        ,  1.        ,
+                                 0.        ,  0.        ,  1.41421356,  1.41421356,  0.        ,
+                                 1.73205081,  1.        ,  1.73205081,  1.        ,  0.        ,
+                                 1.73205081,  0.        ,  1.73205081,  0.        ,  0.        ,
+                                 2.        ,  0.        ,  1.73205081,  1.73205081,  2.        ,
+                                 1.        ,  1.73205081,  2.23606798,  2.23606798,  2.23606798,
+                                 2.44948974,  2.23606798,  2.44948974,  2.64575131,  4.35889894,
+                                 10.44030651])
+
+STATERROR_3C273_BSCALE = 0.134920643888096
+
+STATERROR_3C273_BKG_REGROUP = np.array([0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        1.        , 1.        , 0.        , 0.        , 0.        ,
+                                        2.23606798, 3.16227766, 3.31662479, 2.64575131, 2.44948974,
+                                        2.82842712, 3.16227766, 3.31662479, 2.82842712, 2.44948974,
+                                        2.64575131, 2.        , 0.        , 1.73205081, 1.73205081,
+                                        2.        , 3.16227766, 3.16227766, 2.44948974, 1.        ,
+                                        1.        , 0.        , 0.        , 1.        , 0.        ,
+                                        0.        , 0.        , 0.        , 1.        , 0.        ,
+                                        0.        , 1.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        1.        , 1.        , 0.        , 0.        , 0.        ,
+                                        1.        , 0.        , 0.        , 1.        , 0.        ,
+                                        1.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 1.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 1.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        1.        , 0.        , 0.        , 0.        , 1.41421356,
+                                        0.        , 0.        , 1.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 1.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        1.41421356, 1.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 1.        , 0.        ,
+                                        0.        , 1.        , 0.        , 0.        , 0.        ,
+                                        1.        , 0.        , 0.        , 0.        , 0.        ,
+                                        1.41421356, 1.        , 0.        , 1.        , 0.        ,
+                                        0.        , 1.        , 0.        , 0.        , 1.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 1.        , 0.        ,
+                                        0.        , 1.        , 1.        , 0.        , 0.        ,
+                                        0.        , 1.        , 1.        , 1.        , 1.        ,
+                                        0.        , 0.        , 0.        , 1.        , 0.        ,
+                                        1.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 1.        , 0.        , 1.        ,
+                                        1.        , 0.        , 1.        , 0.        , 0.        ,
+                                        0.        , 0.        , 1.        , 0.        , 0.        ,
+                                        0.        , 1.        , 0.        , 1.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        1.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 0.        , 0.        , 0.        , 0.        ,
+                                        0.        , 1.        , 0.        , 6.164414  ])
+
+
+# This is the mask to match
+#    notice()
+#    notice(0.5, 2)
+#    notice(5, 7)
+#
+STATERROR_3C273_MASK = np.array([False, False, False,  True,  True,  True,  True,  True,  True,
+                                 True,  True,  True,  True,  True,  True,  True,  True,  True,
+                                 True,  True,  True,  True,  True,  True,  True,  True, False,
+                                 False, False, False, False, False, False, False, False, False,
+                                 False, False, False, False,  True,  True,  True,  True,  True,
+                                 False])
+
+
+# The background dataset now has a different mapping to groups
+# than the source region but still using the "same" energy
+# filter (modulo different buoundaries). The tabStops means
+# that the first 20 and last ~200 channels map to individual
+# groups, hence the large numbre of elements.
+#
+STATERROR_3C273_MASK_REGROUP = np.zeros(264, bool)
+STATERROR_3C273_MASK_REGROUP[20:23] = True
+STATERROR_3C273_MASK_REGROUP[27:37] = True
+
+
+def loadup_3c273(use_errors, subt, noticed, make_data_path):
+    """Load up the 3C273 data.
+
+    Requires @requires_fits and @requires_data on the test.
+    """
+
+    # We could create a PHA object but it's easiest to use
+    # an on-disk version to setup everything.
+    #
+    import sherpa.astro.io
+
+    path = make_data_path('3c273.pi')
+    pha = sherpa.astro.io.read_pha(path, use_errors=use_errors)
+
+    if subt:
+        pha.subtract()
+    else:
+        pha.unsubtract()
+
+    if noticed:
+        # After this, we have both
+        #   pha.get_filter(format='%.3f')
+        #   pha.get_background().get_filter(format='%.3f')
+        # returning
+        #   '0.518:1.986,4.869:8.220'
+        #
+        # In channels this is
+        #   '36:136,334:563'
+        #
+        pha.notice(0.5, 2)
+        pha.notice(5, 7)
+
+    return pha
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filt", [False, True])
+@pytest.mark.parametrize("subt", [False, True])
+@pytest.mark.parametrize("noticed", [False, True])
+def test_get_staterror_file_no_errors(filt, subt, noticed, make_data_path):
+    """Simple test of staterror to improve test coverage.
+
+    Checks of background handling.
+
+    Done during https://github.com/sherpa/sherpa/pull/1151
+    """
+
+    # With use_errors=False there's no statistical error
+    pha = loadup_3c273(False, subt, noticed, make_data_path)
+    ans = pha.get_staterror(filter=filt)
+    assert ans is None
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filt", [False, True])
+@pytest.mark.parametrize("noticed", [False, True])
+def test_get_staterror_file_errors_unsubtracted(filt, noticed, make_data_path):
+    """Simple test of staterror to improve test coverage.
+
+    Checks of background handling.
+
+    Done during https://github.com/sherpa/sherpa/pull/1151
+    """
+
+    pha = loadup_3c273(True, False, noticed, make_data_path)
+
+    ans = pha.get_staterror(filter=filt)
+    expected = STATERROR_3C273_SRC
+    if filt and noticed:
+        expected = expected[STATERROR_3C273_MASK]
+
+    assert ans == pytest.approx(expected)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filt", [False, True])
+@pytest.mark.parametrize("noticed", [False, True])
+def test_get_staterror_file_errors_subtracted(filt, noticed, make_data_path):
+    """Simple test of staterror to improve test coverage.
+
+    Checks of background handling.
+
+    Done during https://github.com/sherpa/sherpa/pull/1151
+    """
+
+    pha = loadup_3c273(True, True, noticed, make_data_path)
+
+    ans = pha.get_staterror(filter=filt)
+    expected = STATERROR_3C273_SRC**2 + (STATERROR_3C273_BSCALE * STATERROR_3C273_BKG)**2
+    expected = np.sqrt(expected)
+    if filt and noticed:
+        expected = expected[STATERROR_3C273_MASK]
+
+    assert ans == pytest.approx(expected)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filt", [False, True])
+@pytest.mark.parametrize("noticed", [False, True])
+def test_get_staterror_file_errors_bg(filt, noticed, make_data_path):
+    """Simple test of staterror to improve test coverage.
+
+    Checks of background handling.
+
+    Done during https://github.com/sherpa/sherpa/pull/1151
+    """
+
+    pha = loadup_3c273(True, False, noticed, make_data_path)
+
+    # We use the "source" grouping by default
+    ans = pha.get_background().get_staterror(filter=filt)
+    expected = STATERROR_3C273_BKG
+    if filt and noticed:
+        expected = expected[STATERROR_3C273_MASK]
+
+    assert ans == pytest.approx(expected)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("filt", [False, True])
+@pytest.mark.parametrize("noticed", [False, True])
+def test_get_staterror_file_errors_bg_regrouped(filt, noticed, make_data_path):
+    """Simple test of staterror to improve test coverage.
+
+    Checks of background handling. This time with a separate
+    grouping to the source.
+
+    Done during https://github.com/sherpa/sherpa/pull/1151
+    """
+
+    pha = loadup_3c273(True, False, noticed, make_data_path)
+
+    bpha = pha.get_background()
+
+    # Manully create some tab stops
+    tabStops = np.zeros(1024, dtype=bool)
+    tabStops[0:20] = True
+    tabStops[800:] = True
+    bpha.group_width(40, tabStops=tabStops)
+
+    # After this, we have
+    #  pha.get_filter(format='%.3f')
+    #    '0.518:1.986,4.869:8.220'
+    # and
+    #  bpha.get_filter(format='%.3f')
+    #    '0.584:1.752,4.672:9.928'
+    #  which in channels os
+    #    '40:120,320:680'
+    #
+    ans = pha.get_background().get_staterror(filter=filt)
+    expected = STATERROR_3C273_BKG_REGROUP
+    if filt and noticed:
+        expected = expected[STATERROR_3C273_MASK_REGROUP]
+
+    assert ans == pytest.approx(expected)
