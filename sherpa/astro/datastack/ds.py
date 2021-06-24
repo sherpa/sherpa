@@ -138,7 +138,7 @@ class DataStack():
         header : list of strings
             Column names
         data : list of lists
-            Eahc list is a row, corresponding to one dataset
+            Each list is a row, corresponding to one dataset
 
         '''
         tab = []
