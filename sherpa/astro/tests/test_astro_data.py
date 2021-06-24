@@ -2586,3 +2586,130 @@ def test_pha_check_limit_channel(ignore, lo, hi, evals):
         expected = [vout] * c1 + [vin] * c2 + [vout] * c3
         assert pha.mask == pytest.approx(pha.get_mask())
         assert pha.mask == pytest.approx(expected)
+
+
+def test_pha_channel0_filtering():
+    """If channel starts at 0 does filtering still work?
+
+    This would ideally be done with a response to check the
+    mapping but let's use a simple check for now.
+    """
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.asarray([3, 4, 1, 0, 2, 5, 2, 2, 2], dtype=np.int16)
+    p1 = DataPHA('p1', chans, counts)
+    p0 = DataPHA('p0', chans - 1, counts)
+
+    assert p1.channel[0] == 1
+    assert p0.channel[0] == 0
+
+    assert not p1.subtracted
+    assert not p0.subtracted
+
+    assert not p1.grouped
+    assert not p0.grouped
+
+    assert p1.mask is True
+    assert p0.mask is True
+
+    assert p1.get_dep(filter=True) == pytest.approx(counts)
+    assert p0.get_dep(filter=True) == pytest.approx(counts)
+
+    for p in [p0, p1]:
+        p.notice(2, 6)
+
+    expected = np.zeros(9, dtype=bool)
+    expected[1:6] = True
+    assert p1.mask == pytest.approx(expected)
+
+    expected = np.zeros(9, dtype=bool)
+    expected[2:7] = True
+    assert p0.mask == pytest.approx(expected)
+
+    assert p1.get_dep(filter=True) == pytest.approx(counts[1:6])
+    assert p0.get_dep(filter=True) == pytest.approx(counts[2:7])
+
+
+def test_pha_channel0_grouping():
+    """If channel starts at 0 does grouping still work?"""
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.asarray([3, 4, 1, 0, 2, 5, 2, 2, 2], dtype=np.int16)
+    p1 = DataPHA('p1', chans, counts)
+    p0 = DataPHA('p0', chans - 1, counts)
+
+    assert p1.channel[0] == 1
+    assert p0.channel[0] == 0
+
+    for p in [p0, p1]:
+        p.group_counts(3)
+
+    assert p1.grouped
+    assert p0.grouped
+
+    expected = np.array([1, 1, 1, -1, -1, 1, 1, -1, 1], dtype=np.int16)
+    assert p1.grouping == pytest.approx(expected)
+    assert p0.grouping == pytest.approx(expected)
+
+    expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16)
+    assert p1.get_dep(filter=True) == pytest.approx(expected)
+    assert p0.get_dep(filter=True) == pytest.approx(expected)
+
+    for p in [p0, p1]:
+        p.notice(2, 6)
+
+    expected = np.zeros(9, dtype=bool)
+    expected[1:6] = True
+    assert p1.get_mask() == pytest.approx(expected)
+
+    # I do not understand this behavior
+    expected = np.zeros(9, dtype=bool)
+    # expected[2:7] = True
+    expected[5:9] = True
+    assert p0.get_mask() == pytest.approx(expected)
+
+    expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16)
+    assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
+    # assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
+    assert p0.get_dep(filter=True) == pytest.approx(expected[3:6])
+
+
+def test_pha_channel0_subtract():
+    """If channel starts at 0 can we subtract the background?"""
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.asarray([3, 4, 1, 0, 2, 5, 2, 2, 2], dtype=np.int16)
+    bcounts = np.asarray([0, 1, 1, 1, 0, 0, 2, 1, 1], dtype=np.int16)
+    p1 = DataPHA('p1', chans, counts)
+    p0 = DataPHA('p0', chans - 1, counts)
+
+    b1 = DataPHA('b1', chans, bcounts)
+    b0 = DataPHA('b0', chans - 1, bcounts)
+
+    p1.set_background(b1)
+    p0.set_background(b0)
+
+    for p in [p0, p1]:
+        p.subtract()
+        p.group_counts(3)
+        p.notice(2, 6)
+
+    assert p1.channel[0] == 1
+    assert b1.channel[0] == 1
+    assert p0.channel[0] == 0
+    assert b0.channel[0] == 0
+
+    assert p1.subtracted
+    assert p0.subtracted
+
+    expected = counts - bcounts
+    assert p1.get_dep() == pytest.approx(expected)
+    assert p0.get_dep() == pytest.approx(expected)
+
+    # See also the confusion of test_pha_channel0_grouping
+    #
+    expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16) - \
+        np.array([0, 1, 2, 0, 3, 1], dtype=np.int16)
+    assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
+    # assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
+    assert p0.get_dep(filter=True) == pytest.approx(expected[3:6])
