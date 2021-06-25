@@ -536,7 +536,7 @@ static PyMethodDef UtilsFcts[] = {
     ".. [2] \"The Calibration Requirements for Spectral Analysis Addendum: Changes log\", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html\n\n"
     "Examples\n"
     "--------\n\n"
-    "Group the aray [1, 2, 3, 4, 5, 6] into groups of length 2, 1, and 3,\n"
+    "Group the array [1, 2, 3, 4, 5, 6] into groups of length 2, 1, and 3,\n"
     "using different grouping schemes:\n\n"
     ">>> data = [1, 2, 3, 4, 5, 6]\n"
     ">>> group = [1, -1, 1, 1, -1, -1]\n"

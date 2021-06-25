@@ -1240,9 +1240,9 @@ STATERROR_3C273_MASK = np.array([False, False, False,  True,  True,  True,  True
 
 # The background dataset now has a different mapping to groups
 # than the source region but still using the "same" energy
-# filter (modulo different buoundaries). The tabStops means
+# filter (modulo different boundaries). The tabStops means
 # that the first 20 and last ~200 channels map to individual
-# groups, hence the large numbre of elements.
+# groups, hence the large number of elements.
 #
 STATERROR_3C273_MASK_REGROUP = np.zeros(264, bool)
 STATERROR_3C273_MASK_REGROUP[20:23] = True
@@ -1388,7 +1388,7 @@ def test_get_staterror_file_errors_bg_regrouped(filt, noticed, make_data_path):
 
     bpha = pha.get_background()
 
-    # Manully create some tab stops
+    # Manually create some tab stops
     tabStops = np.zeros(1024, dtype=bool)
     tabStops[0:20] = True
     tabStops[800:] = True
