@@ -2643,7 +2643,7 @@ class DataPHA(Data1D):
             The data to group, which must match the number of channels
             of the data set.
         groupfunc : {'sum', 'sum_sq', 'min', 'max', 'middle', 'make_groups'}
-            The grouping function. The defult is sum. Note that the
+            The grouping function. The default is sum. Note that the
             value should be a string but if given a function then its
             name will be used: support for this option is limited and
             will be removed.
