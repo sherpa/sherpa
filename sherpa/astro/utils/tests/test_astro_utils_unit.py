@@ -203,7 +203,7 @@ def test_do_group_nothing_group():
     """Special case: no grouping
 
     The _make_groups uses the first element in the input as the starting
-    term, addnig 1 to each element.
+    term, adding 1 to each element.
     """
 
     ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "_make_groups")
