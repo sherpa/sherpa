@@ -739,7 +739,7 @@ def test_show_empty_datastack(capsys):
     assert len(lines) == 2
     assert 'empty datastack' in lines[0]
     assert lines[1].strip() == ''
-     # Now, the check the html representation
+    # Now, the check the html representation
     html = mystack._repr_html_()
     assert 'datastack with 0 datasets' in html
 
