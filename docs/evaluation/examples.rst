@@ -149,11 +149,6 @@ is used to show the grid used by
 
 .. _model_evaluate_example_pha:
 
-Handling PHA datasets
-=====================
-
-.. _data_pha:
-
 X-ray data (`~sherpa.astro.data.DataPHA`)
 =========================================
 
