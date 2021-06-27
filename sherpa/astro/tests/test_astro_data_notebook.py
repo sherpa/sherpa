@@ -103,8 +103,12 @@ def test_pha(header, override_plot_backend):
                      np.arange(1, 5, dtype=np.int16),
                      header=header)
     r = d._repr_html_()
-
-    nmeta = 0 if (header is None) or (header == {}) else 4
+    if header is None:
+        nmeta = 5
+    elif header == {}:
+        nmeta = 0
+    else:
+        nmeta = 4
     check(r, 'PHA', 'x x', 'COUNTS', nmeta=nmeta)
 
 
