@@ -8762,18 +8762,11 @@ class Session(sherpa.ui.utils.Session):
 
         if rmf is None:
             raise DataErr('normffake', id)
+        else:
+            rmf = self.unpack_rmf(rmf)
 
-        if type(rmf) in (str, numpy.string_):
-            if os.path.isfile(rmf):
-                rmf = self.unpack_rmf(rmf)
-            else:
-                raise IOErr("filenotfound", rmf)
-
-        if arf is not None and type(arf) in (str, numpy.string_):
-            if os.path.isfile(arf):
-                arf = self.unpack_arf(arf)
-            else:
-                raise IOErr("filenotfound", arf)
+        if arf is not None:
+            arf = self.unpack_arf(arf)
 
         d.exposure = exposure
 
