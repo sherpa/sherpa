@@ -1054,7 +1054,7 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     # a link and run the model
     assert tbl.tau.val == pytest.approx(2)
     y2 = tbl(glo, ghi)
-    assert (y2[:-1] > 0).all()
+    assert (y2 > 0).all()
 
     # Test the fix for #742
     lmdl.c0 = 20
