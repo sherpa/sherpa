@@ -790,14 +790,33 @@ def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
     This used to be supported in Sherpa 4.13 and before.
     """
 
-    import sherpa.astro.xspec as xs
+    from sherpa.astro import xspec
 
-    ui.load_xstable_model('mdl', make_data_path('xspec-tablemodel-RCS.mod'))
-    mdl = ui.get_model_component('mdl')
+    path = make_data_path('xspec-tablemodel-RCS.mod')
+    tbl = xspec.read_xstable_model('bar', path)
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
-        mdl([0.1, 0.2, 0.3, 0.4])
+        tbl([0.1, 0.2, 0.3, 0.4])
+
+
+@requires_fits
+@requires_data
+@requires_xspec
+def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path, clean_astro_ui):
+    """Check we can not call a table model with a single grid (calc).
+
+    This used to be supported in Sherpa 4.13 and before.
+    """
+
+    from sherpa.astro import xspec
+
+    path = make_data_path('xspec-tablemodel-RCS.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg):
+        tbl.calc([p.val for p in tbl.pars], [0.1, 0.2, 0.3, 0.4])
 
 
 @requires_xspec
