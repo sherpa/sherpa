@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2013, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2013, 2016, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,42 +17,51 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils.testing import SherpaTestCase
 from sherpa.utils.err import SherpaErr
 from sherpa.utils.err import ModelErr
 
 
-class test_err(SherpaTestCase):
+class OldSherpaErr(Exception):
+    "Old class for all Sherpa exceptions"
 
-    def test_NewSherpaErr(self):
-        class OldSherpaErr(Exception):
-            "Old class for all Sherpa exceptions"
-            def __init__(self, dict, key, *args):
-                if key in dict:
-                    errmsg = dict[key] % args
-                else:
-                    errmsg = "unknown key '%s'" % key
-                Exception.__init__(self, errmsg)
+    def __init__(self, dict, key, *args):
 
-        dict = {'simple': 'simple message', 'arg': 'argument: %s'}
+        if key in dict:
+            errmsg = dict[key] % args
+        else:
+            errmsg = "unknown key '%s'" % key
+        Exception.__init__(self, errmsg)
 
-        # Test 1: verify that a correct call of the new constructor has the same result of the old one
-        err = SherpaErr(dict, 'simple')
-        old_err = OldSherpaErr(dict, 'simple')
-        self.assertEqual(str(err), str(old_err))
 
-        # Test 2: same as before, but with string placeholders
-        err = SherpaErr(dict, 'arg', 'foo')
-        self.assertEqual('argument: foo', str(err))
+dict = {'simple': 'simple message', 'arg': 'argument: %s'}
 
-        # Test #3: verify that a call without a key results in a generic message being produced
-        err = SherpaErr(dict)
-        self.assertEqual('Generic Error', str(err))
 
-        # Test #4: verify the user's expected behavior, i.e. a string is provided as error message
-        err = SherpaErr(dict, 'My Error')
-        self.assertEqual('My Error', str(err))
+def test1():
+    """verify that a correct call of the new constructor has the same result of the old one"""
+    err = SherpaErr(dict, 'simple')
+    old_err = OldSherpaErr(dict, 'simple')
+    assert str(err) == str(old_err)
 
-        # Test #5: verify the user provided example, which exercises a derived class
-        err = ModelErr("Unable to frobnicate model %s" % 'modelname')
-        self.assertEqual('Unable to frobnicate model modelname', str(err))
+
+def test2():
+    """same as before, but with string placeholders"""
+    err = SherpaErr(dict, 'arg', 'foo')
+    assert 'argument: foo' == str(err)
+
+
+def test3():
+    """verify that a call without a key results in a generic message being produced"""
+    err = SherpaErr(dict)
+    assert 'Generic Error' == str(err)
+
+
+def test4():
+    """verify the user's expected behavior, i.e. a string is provided as error message"""
+    err = SherpaErr(dict, 'My Error')
+    assert 'My Error' == str(err)
+
+
+def test5():
+    """verify the user provided example, which exercises a derived class"""
+    err = ModelErr("Unable to frobnicate model %s" % 'modelname')
+    assert 'Unable to frobnicate model modelname' == str(err)
