@@ -23,7 +23,6 @@ import numpy
 
 from sherpa.utils import demuller, bisection, new_muller, apache_muller, \
     zeroin
-from sherpa.utils.testing import SherpaTestCase
 
 
 def sqr(x, *args):
@@ -244,247 +243,287 @@ def muller_convergence_rate(x):
     return x - pow(x, 3.0) / 3.0
 
 
-class test_root(SherpaTestCase):
+def demuller2(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
+              tol=1.0e-6):
+    return demuller(fcn, xa, xb, (xa+xb)/2.0, args=args, maxfev=maxfev,
+                    tol=tol)
 
-    def setUp(self):
-        self.verbose = False
-        self.tol = 1.0e-6
 
-    def demuller2(self, fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
-                  tol=1.0e-6):
-        return demuller(fcn, xa, xb, (xa+xb)/2.0, args=args, maxfev=maxfev,
-                        tol=tol)
+def tst_solve(fct, a, b, tol=1.0e-6, iprint=False, verbose=False):
+    methods = [bisection, demuller2, new_muller, apache_muller, zeroin]
+    if verbose or iprint:
+        sys.stdout.write('\n')
 
-    def tst_solve(self, fct, a, b, tol, iprint=False):
-        methods = [bisection, self.demuller2, new_muller, apache_muller, zeroin]
-        if self.verbose or iprint:
-            sys.stdout.write('\n')
+    for solve_func in methods:
+        # demuller2 cannot solve prob30 & pinhead so may as well skip them
+        if fct.__name__ == 'prob30' or fct.__name__ == 'pinhead':
+            return
 
-        for solve_func in methods:
-            # demuller2 cannot solve prob30 & pinhead so may as well skip them
-            if fct.__name__ == 'prob30' or fct.__name__ == 'pinhead':
-                return
-            result = solve_func(fct, a, b, tol=tol)
-            [root, froot] = result[0]
-            if self.verbose or iprint:
-                solve_name = solve_func.__name__
-                fct_name = fct.__name__
-                nfev = result[-1]
-                msg = '%s:\t%s(%e) = %e in %d nfevs\n' % (solve_name, fct_name, root, froot, nfev)
-                sys.stdout.write(msg)
-            self.assertTrue(abs(froot) <= tol)
+        result = solve_func(fct, a, b, tol=tol)
+        [root, froot] = result[0]
+        if verbose or iprint:
+            solve_name = solve_func.__name__
+            fct_name = fct.__name__
+            nfev = result[-1]
+            msg = '%s:\t%s(%e) = %e in %d nfevs\n' % (solve_name, fct_name, root, froot, nfev)
+            sys.stdout.write(msg)
 
-    def test_prob1(self):
-        a = 0.0
-        b = 1.0
-        self.tst_solve(prob1, a, b, self.tol)
+        assert abs(froot) <= tol
 
-    def test_prob2(self):
-        a = -5.0
-        b = 1.2
-        self.tst_solve(prob2, a, b, self.tol)
 
-    def test_prob3(self):
-        a = -10.0
-        b = 10.0
-        self.tst_solve(prob3, a, b, self.tol)
+def test_prob1():
+    a = 0.0
+    b = 1.0
+    tst_solve(prob1, a, b)
 
-    def test_prob4(self):
-        a = -1.0
-        b = 1.0
-        self.tst_solve(prob4, a, b, self.tol)
 
-    def test_prob5(self):
-        a = -1.0
-        b = 1.0
-        self.tst_solve(prob5, a, b, self.tol)
+def test_prob2():
+    a = -5.0
+    b = 1.2
+    tst_solve(prob2, a, b)
 
-    def test_prob6(self):
-        a = 0.0
-        b = 3.0
-        self.tst_solve(prob6, a, b, self.tol)
 
-    def test_prob7(self):
-        a = 0.0
-        b = 5.0
-        self.tst_solve(prob7, a, b, self.tol)
+def test_prob3():
+    a = -10.0
+    b = 10.0
+    tst_solve(prob3, a, b)
 
-    def test_prob8(self):
-        a = -5.0
-        b = 0.0
-        self.tst_solve(prob8, a, b, self.tol)
 
-    def test_prob9(self):
-        a = 0.0
-        b = 3.14
-        self.tst_solve(prob9, a, b, self.tol)
+def test_prob4():
+    a = -1.0
+    b = 1.0
+    tst_solve(prob4, a, b)
 
-    def test_prob10(self):
-        a = 0.0
-        b = 2.0
-        self.tst_solve(prob10, a, b, self.tol)
 
-    def test_prob11(self):
-        a = -1.0
-        b = 1.5
-        self.tst_solve(prob11, a, b, self.tol)
+def test_prob5():
+    a = -1.0
+    b = 1.0
+    tst_solve(prob5, a, b)
 
-    def test_prob12(self):
-        a = -1.0
-        b = 1.0
-        self.tst_solve(prob12, a, b, self.tol)
 
-    def test_prob13(self):
-        a = -0.5
-        b = 0.99
-        self.tst_solve(prob13, a, b, self.tol)
+def test_prob6():
+    a = 0.0
+    b = 3.0
+    tst_solve(prob6, a, b)
 
-    def test_prob14(self):
-        a = 1.0
-        b = 3.0
-        self.tst_solve(prob14, a, b, self.tol)
 
-    def test_prob15(self):
-        a = 15.0
-        b = 75.0
-        self.tst_solve(prob15, a, b, self.tol)
+def test_prob7():
+    a = 0.0
+    b = 5.0
+    tst_solve(prob7, a, b)
 
-    def test_prob16(self):
-        a = 2.0
-        b = 3.0
-        self.tst_solve(prob16, a, b, self.tol)
 
-    def test_prob17(self):
-        a = -1.0
-        b = 3.0
-        self.tst_solve(prob17, a, b, self.tol)
+def test_prob8():
+    a = -5.0
+    b = 0.0
+    tst_solve(prob8, a, b)
 
-    def test_prob18(self):
-        a = -1.0
-        b = 3.0
-        self.tst_solve(prob18, a, b, self.tol)
 
-    def test_prob19(self):
-        a = -1.0
-        b = 3.0
-        self.tst_solve(prob19, a, b, self.tol)
+def test_prob9():
+    a = 0.0
+    b = 3.14
+    tst_solve(prob9, a, b)
 
-    def test_prob20(self):
-        a = 2.0
-        b = 3.0
-        self.tst_solve(prob20, a, b, self.tol)
 
-    def test_prob21(self):
-        a = -1000.0
-        b = 1000.0
-        self.tst_solve(prob21, a, b, self.tol)
+def test_prob10():
+    a = 0.0
+    b = 2.0
+    tst_solve(prob10, a, b)
 
-    def test_prob22(self):
-        a = -10.0
-        b = 100.0
-        self.tst_solve(prob22, a, b, self.tol)
 
-    def test_prob23(self):
-        a = -10.0
-        b = 100.0
-        self.tst_solve(prob23, a, b, self.tol)
+def test_prob11():
+    a = -1.0
+    b = 1.5
+    tst_solve(prob11, a, b)
 
-    def test_prob24(self):
-        a = 1.0e-4
-        b = 20.0
-        self.tst_solve(prob24, a, b, self.tol)
 
-    def test_prob25(self):
-        a = -1000.0
-        b = 1000.0
-        self.tst_solve(prob25, a, b, self.tol)
+def test_prob12():
+    a = -1.0
+    b = 1.0
+    tst_solve(prob12, a, b)
 
-    def test_prob26(self):
-        a = 1.0e-4
-        b = 20.0
-        self.tst_solve(prob26, a, b, self.tol)
 
-    def test_prob27(self):
-        a = -1000.0
-        b = 1000.0
-        self.tst_solve(prob27, a, b, self.tol)
+def test_prob13():
+    a = -0.5
+    b = 0.99
+    tst_solve(prob13, a, b)
 
-    def test_prob28(self):
-        a = -10.0
-        b = 10.0
-        self.tst_solve(prob28, a, b, self.tol)
 
-    def test_prob29(self):
-        a = 0
-        b = 10
-        self.tst_solve(prob29, a, b, self.tol)
+def test_prob14():
+    a = 1.0
+    b = 3.0
+    tst_solve(prob14, a, b)
 
-    def test_prob30(self):
-        a = -50
-        b = 100.0
-        self.tst_solve(prob30, a, b, self.tol)
 
-    def test_prob31(self):
-        a = -1.0
-        b = 1.0
-        self.tst_solve(prob31, a, b, self.tol)
+def test_prob15():
+    a = 15.0
+    b = 75.0
+    tst_solve(prob15, a, b)
 
-    def test_prob32(self):
-        a = 0.1
-        b = 0.9
-        self.tst_solve(prob32, a, b, self.tol)
 
-    def test_prob33(self):
-        a = 2.8
-        b = 3.1
-        self.tst_solve(prob33, a, b, self.tol)
+def test_prob16():
+    a = 2.0
+    b = 3.0
+    tst_solve(prob16, a, b)
 
-    def test_prob34(self):
-        a = -1.3
-        b = -0.5
-        self.tst_solve(prob34, a, b, self.tol)
 
-    def test_prob35(self):
-        a = 2.0
-        b = 3.0
-        self.tst_solve(prob35, a, b, self.tol)
+def test_prob17():
+    a = -1.0
+    b = 3.0
+    tst_solve(prob17, a, b)
 
-    def test_prob36(self):
-        a = 0.5
-        b = 1.5
-        self.tst_solve(prob36, a, b, self.tol)
 
-    def test_prob37(self):
-        a = 0.5
-        b = 5.0
-        self.tst_solve(prob37, a, b, self.tol)
+def test_prob18():
+    a = -1.0
+    b = 3.0
+    tst_solve(prob18, a, b)
 
-    def test_prob38(self):
-        a = 1.0
-        b = 4.0
-        self.tst_solve(prob38, a, b, self.tol)
 
-    def test_repeller(self):
-        a = -10.0
-        b = 10.0
-        self.tst_solve(repeller, a, b, self.tol)
+def test_prob19():
+    a = -1.0
+    b = 3.0
+    tst_solve(prob19, a, b)
 
-    def test_pinhead(self):
-        a = 1.0e-5
-        b = 10.0
-        self.tst_solve(pinhead, a, b, self.tol)
 
-    def test_kepler(self):
-        a = -175.0
-        b = 185.0
-        self.tst_solve(kepler, a, b, self.tol)
+def test_prob20():
+    a = 2.0
+    b = 3.0
+    tst_solve(prob20, a, b)
 
-    def test_wallis(self):
-        a = 2.0
-        b = 3.0
-        self.tst_solve(wallis, a, b, self.tol)
 
-    def test_muller_convergence_rate(self):
-        a = 1.7
-        b = 10.0
-        self.tst_solve(muller_convergence_rate, a, b, self.tol)
+def test_prob21():
+    a = -1000.0
+    b = 1000.0
+    tst_solve(prob21, a, b)
+
+
+def test_prob22():
+    a = -10.0
+    b = 100.0
+    tst_solve(prob22, a, b)
+
+
+def test_prob23():
+    a = -10.0
+    b = 100.0
+    tst_solve(prob23, a, b)
+
+
+def test_prob24():
+    a = 1.0e-4
+    b = 20.0
+    tst_solve(prob24, a, b)
+
+
+def test_prob25():
+    a = -1000.0
+    b = 1000.0
+    tst_solve(prob25, a, b)
+
+
+def test_prob26():
+    a = 1.0e-4
+    b = 20.0
+    tst_solve(prob26, a, b)
+
+
+def test_prob27():
+    a = -1000.0
+    b = 1000.0
+    tst_solve(prob27, a, b)
+
+
+def test_prob28():
+    a = -10.0
+    b = 10.0
+    tst_solve(prob28, a, b)
+
+
+def test_prob29():
+    a = 0
+    b = 10
+    tst_solve(prob29, a, b)
+
+
+def test_prob30():
+    a = -50
+    b = 100.0
+    tst_solve(prob30, a, b)
+
+
+def test_prob31():
+    a = -1.0
+    b = 1.0
+    tst_solve(prob31, a, b)
+
+
+def test_prob32():
+    a = 0.1
+    b = 0.9
+    tst_solve(prob32, a, b)
+
+
+def test_prob33():
+    a = 2.8
+    b = 3.1
+    tst_solve(prob33, a, b)
+
+
+def test_prob34():
+    a = -1.3
+    b = -0.5
+    tst_solve(prob34, a, b)
+
+
+def test_prob35():
+    a = 2.0
+    b = 3.0
+    tst_solve(prob35, a, b)
+
+
+def test_prob36():
+    a = 0.5
+    b = 1.5
+    tst_solve(prob36, a, b)
+
+
+def test_prob37():
+    a = 0.5
+    b = 5.0
+    tst_solve(prob37, a, b)
+
+
+def test_prob38():
+    a = 1.0
+    b = 4.0
+    tst_solve(prob38, a, b)
+
+
+def test_repeller():
+    a = -10.0
+    b = 10.0
+    tst_solve(repeller, a, b)
+
+
+def test_pinhead():
+    a = 1.0e-5
+    b = 10.0
+    tst_solve(pinhead, a, b)
+
+
+def test_kepler():
+    a = -175.0
+    b = 185.0
+    tst_solve(kepler, a, b)
+
+
+def test_wallis():
+    a = 2.0
+    b = 3.0
+    tst_solve(wallis, a, b)
+
+
+def test_muller_convergence_rate():
+    a = 1.7
+    b = 10.0
+    tst_solve(muller_convergence_rate, a, b)
