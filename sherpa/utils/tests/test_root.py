@@ -256,8 +256,8 @@ def tst_solve(fct, a, b, tol=1.0e-6, iprint=False, verbose=False):
 
     for solve_func in methods:
         # demuller2 cannot solve prob30 & pinhead so may as well skip them
-        if fct.__name__ == 'prob30' or fct.__name__ == 'pinhead':
-            return
+        if solve_func.__name__ == "demuller2" and fct.__name__ in ['prob30', 'pinhead']:
+            continue
 
         result = solve_func(fct, a, b, tol=tol)
         [root, froot] = result[0]
