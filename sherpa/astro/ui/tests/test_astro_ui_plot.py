@@ -1047,6 +1047,22 @@ def basic_pha1(make_data_path):
 
 
 @pytest.fixture
+def basic_pha1_bg(make_data_path):
+    """Create a basic PHA-1 data set/setup for the background.
+
+    This is currently only used to get a dataset with no response.
+    """
+
+    ui.set_default_id('tst')
+    ui.load_pha(make_data_path('3c273_bg.pi'))
+    ui.notice(33, 676)
+    ui.set_source(ui.powlaw1d.pl)
+    pl = ui.get_model_component('pl')
+    pl.gamma = 1.93
+    pl.ampl = 1.74e-4
+
+
+@pytest.fixture
 def basic_img(make_data_path):
     """Create a basic image data set/setup"""
 
@@ -1175,6 +1191,248 @@ def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1, hide_logging):
                                       ui.plot_source_component])
 def test_pha1_plot_component(clean_astro_ui, basic_pha1, plotfunc):
     plotfunc("pl")
+
+
+def test_data1_get_model_component_plot(clean_astro_ui):
+    """There is no response concept for non-PHA data.
+
+    See test_pha1_get_model_component_plot_add_response
+    for the PHA explanation.
+    """
+
+    x = np.asarray([1, 2, 3])
+    ui.load_arrays(1, x, x)
+    ui.set_source(ui.polynom1d.mdl)
+    mdl.c0 = -3
+    mdl.c1 = 2
+
+    # Apparently we have sherpa.astro.plot.ComponentModelPlot
+    # and sherpa.plot.ComponentModelPlot.
+    #
+    mplot = ui.get_model_component_plot('mdl')
+    assert isinstance(mplot, sherpa.plot.ComponentModelPlot)
+    assert mplot.title == 'Model component: polynom1d.mdl'
+
+    # Unlike the PHA case it's easy to evaluate the model
+    # for this test.
+    assert mplot.x == pytest.approx([1, 2, 3])
+    assert mplot.y == pytest.approx([-1, 1, 3])
+
+
+def check_pha1_model_component_plot(mplot, mdl):
+    """The checks for get_model_component_plot with PHA data
+
+    This is for when the response is included.
+    """
+
+    assert isinstance(mplot, ComponentModelPlot)
+
+    # The plot title includes the exposure time whose output could change
+    # so do not use an equality check but something a bit-more forgiving
+    # (could use a regexp but not worth it).
+    #
+    assert mplot.title.startswith('Model component: apply_rmf(apply_arf((38564.60')
+    assert mplot.title.endswith(' * powlaw1d.pl)))')
+
+    # This may change if we change the filtering/grouping code
+    # Note that the model is evaluated on the un-grouped data.
+    #
+    assert len(mplot.xlo) == 644
+    assert mplot.xlo[0] == pytest.approx(0.467200)
+    assert mplot.xlo[-1] == pytest.approx(9.85500)
+    assert mplot.xhi[0] == pytest.approx(0.481800)
+    assert mplot.xhi[-1] == pytest.approx(9.869600)
+
+    # The model is evaluated over the full channel range so we need to
+    # restrict to the noticed channel range (of 33 to 676 inclusive).
+    # I am 'cheating' with the argument to mdl() here since it is currently
+    # ignored as long as it's specified.
+    #
+    yexp = mdl([1])
+    assert len(yexp) == 1024
+    yexp = yexp[32:676]
+
+    dy = mplot.xhi - mplot.xlo
+    texp = 38564.608926889
+    assert mplot.y == pytest.approx(yexp / dy / texp)
+
+    # manual check of one the y values
+    #
+    assert mplot.y[0] == pytest.approx(0.00501761)
+
+
+# NOTE: the following model_component tests are just different
+# enough in how you send in the data that it's not easy to parametrize
+# them, so we have a bunch of similar routines rather than a single
+# parametrized test.
+
+@requires_fits
+@requires_data
+def test_pha1_get_model_component_plot_add_response(clean_astro_ui, basic_pha1):
+    """Do we automatically add in the response? See issue #1020
+
+    Note that this test does not need requires_plotting since
+    we don't use anything that requires the plot backend.
+    """
+
+    # It's important to also test the "specify a string not
+    # a model object" feature of the get_xxx_plot call here.
+    # The explicit call in xxxx_with_response below does
+    # not use a string.
+    #
+    mplot = ui.get_model_component_plot('pl')
+    rsp = ui.get_response()
+    mdl = rsp(pl)
+    check_pha1_model_component_plot(mplot, mdl)
+
+
+@requires_fits
+@requires_data
+def test_pha1_get_model_component_plot_with_response(clean_astro_ui, basic_pha1):
+    """What happens if we explicitly include the response?
+
+    Note that this test does not need requires_plotting since
+    we don't use anything that requires the plot backend.
+    """
+
+    rsp = ui.get_response()
+    mdl = rsp(pl)
+    mplot = ui.get_model_component_plot(mdl)
+    check_pha1_model_component_plot(mplot, mdl)
+
+
+@requires_fits
+@requires_data
+def test_pha1_get_model_component_plot_no_response(clean_astro_ui, basic_pha1_bg):
+    """What happens if we have no response?"""
+
+    # safety check the file remains response "free".
+    pha = ui.get_data('tst')
+    assert pha.units == 'channel'
+    assert pha.get_response() == (None, None)
+    with pytest.raises(DataErr) as exc:
+        ui.get_response()
+
+    assert str(exc.value).startswith('No instrument response found for dataset')
+    assert str(exc.value).endswith('3c273_bg.pi')
+
+    # use the background dataset as it's response "free"
+    mplot = ui.get_model_component_plot('pl')
+    print(mplot)
+
+    assert isinstance(mplot, ComponentModelPlot)
+    assert mplot.title == 'Model component: powlaw1d.pl'
+
+    xlo = np.arange(33, 677)
+    assert mplot.xlo == pytest.approx(xlo)
+    assert mplot.xhi == pytest.approx(xlo + 1)
+
+    # The y values are currently pl(channels) / bin width / time
+    # for the selected channel range. Fortunately the bin width is 1.
+    #
+    chans = np.arange(33, 677)
+    yexp = pl(chans)
+    texp = 38564.608926889
+    assert mplot.y == pytest.approx(yexp / texp)
+
+    # manual check of one the y values
+    #
+    assert np.log10(mplot.y[0]) == pytest.approx(-11.276372)
+
+
+def check_pha1_plot_model_component_plot():
+    """Check the model component plot.
+
+    This is much-more limited than the test_pha1_get_model_component_plot_xxx
+    variants, as all we do is check the y axis range makes sense
+    (as it wouldn't have with #1020 unfixed).
+
+    Any test calling this requires @requires_plotting
+    """
+    from matplotlib import pyplot as plt
+
+    # Just check the Y range to be close to the expected range - this
+    # could vary a bit across matplotlib versions
+    #
+    # The range is expected to be ~1e-5 to 1e-2
+    ylim = plt.ylim()
+    assert ylim[0] > 1e-6
+    assert ylim[1] > 1e-2
+    assert ylim[1] < 2e-2
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_model_component_add_response(clean_astro_ui, basic_pha1):
+    """Do we automatically add in the response? See issue #1020.
+    """
+    ui.plot_model_component('pl', ylog=True)
+    check_pha1_plot_model_component_plot()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_with_model_component_add_response(clean_astro_ui, basic_pha1):
+    """Do we automatically add in the response? See issue #1020.
+    """
+    ui.plot('model_component', 'pl', ylog=True)
+    check_pha1_plot_model_component_plot()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_model_component_with_response(clean_astro_ui, basic_pha1):
+    """Plot is okay if we include the response
+    """
+    rsp = ui.get_response()
+    ui.plot_model_component(rsp(pl), ylog=True)
+    check_pha1_plot_model_component_plot()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_with_model_component_with_response(clean_astro_ui, basic_pha1):
+    """Plot is okay if we include the response
+    """
+    rsp = ui.get_response()
+    ui.plot('model_component', rsp(pl), ylog=True)
+    check_pha1_plot_model_component_plot()
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_model_component_no_response(clean_astro_ui, basic_pha1_bg):
+    """PHA file but no response
+    """
+    from matplotlib import pyplot as plt
+
+    ui.plot_model_component('pl', ylog=True)
+
+    # The range is expected to be ~1e-14 to ~7e-12 which is very different
+    # from the 'with response' values
+    ylim = plt.ylim()
+    assert ylim[1] < 1e-11
+
+
+@requires_plotting
+@requires_fits
+@requires_data
+def test_pha1_plot_with_model_component_no_response(clean_astro_ui, basic_pha1_bg):
+    """PHA file but no response
+    """
+    from matplotlib import pyplot as plt
+
+    ui.plot('model_component', pl, ylog=True)
+
+    # The range is expected to be ~1e-14 to ~7e-12 which is very different
+    # from the 'with response' values
+    ylim = plt.ylim()
+    assert ylim[1] < 1e-11
 
 
 @requires_plotting

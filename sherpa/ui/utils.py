@@ -10840,7 +10840,6 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None, recalc=True):
         """Return the data used to create the model-component plot.
 
@@ -10893,16 +10892,14 @@ class Session(NoNewAttributesAfterInit):
         >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
         >>> set_source('jet', fmodel)
         >>> fit('jet')
-        >>> fplot = get_model('jet')
+        >>> fplot = get_model_plot('jet')
         >>> plot1 = get_model_component_plot('jet', pl*gal)
         >>> plot2 = get_model_component_plot('jet', gline*gal)
 
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -10981,9 +10978,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -12625,8 +12620,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
-    #           but does the astro version support a bkg_id parameter?
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the model for a data set.
@@ -12634,6 +12627,8 @@ class Session(NoNewAttributesAfterInit):
         This function evaluates and plots a component of the model
         expression for a data set, including any instrument response.
         Use `plot_source_component` to display without any response.
+        For PHA data, the response model is automatically added by the
+        routine unless the model contains a response.
 
         Parameters
         ----------
@@ -12692,6 +12687,14 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit('jet')
         >>> plot_model_component('jet', pl, overplot=True)
         >>> plot_model_component('core', pl, overplot=True)
+
+        For PHA data sets the response is automatically added, but it
+        can also be explicitly included, which will create the same
+        plot:
+
+        >>> plot_model_component(pl)
+        >>> rsp = get_response()
+        >>> plot_model_component(rsp(pl))
 
         """
 
@@ -15610,9 +15613,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         # Ensure the convolution models get applied
         is_source = self._get_model_status(id)[1]
@@ -15677,9 +15678,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         imageobj = self._image_types['source_component']
         data = self.get_data(id)
