@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,22 +17,27 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-from sherpa.utils.testing import SherpaTestCase, requires_stk
-
 import os
+
+from sherpa.utils.testing import requires_stk
+
+
 _this_dir = os.path.dirname(__file__)
 
 
+def get_name(name):
+    return '/'.join((_this_dir, name))
+
+
 @requires_stk
-class test_stack(SherpaTestCase):
+def test_build_stack():
+    import stk
 
-    def test_build_stack(self):
-        import stk
+    names = ['a', 'a1', 'a2', 'b', 'b1', 'b2']
+    expected = [get_name(n) for n in names]
 
-        def get_name(name):
-            return '/'.join((_this_dir, name))
+    out = stk.build('@+{}/{}'.format(_this_dir, 'a.lis'))
+    for outval, expval in zip(out, expected):
+        assert outval == expval
 
-        out = stk.build('@+{}/{}'.format(_this_dir, 'a.lis'))
-        self.assertEqual([get_name('a'), get_name('a1'), get_name('a2'),
-                          get_name('b'), get_name('b1'), get_name('b2')], out)
+    assert len(out) == len(expected)
