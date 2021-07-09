@@ -21,6 +21,8 @@ import sys
 
 import numpy
 
+import pytest
+
 from sherpa.utils import demuller, bisection, new_muller, apache_muller, \
     zeroin
 
@@ -234,6 +236,7 @@ def wallis(x, *args):
     return x**3 - 2*x - 5
 
 
+# NOTE: unused
 def thinpole(x, *args):
     pi = 3.141592653589793
     return 3.0 * x**2 + 1.0 + (numpy.log((x - pi)**2)) / pi**4
@@ -249,281 +252,70 @@ def demuller2(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                     tol=tol)
 
 
-def tst_solve(fct, a, b, tol=1.0e-6, iprint=False, verbose=False):
-    methods = [bisection, demuller2, new_muller, apache_muller, zeroin]
-    if verbose or iprint:
+@pytest.mark.parametrize('method', [bisection, demuller2, new_muller, apache_muller, zeroin])
+@pytest.mark.parametrize('problem,a,b',
+                         [(prob1, 0.0, 1.0),
+                          (prob2, -5.0, 1.2),
+                          (prob3, -10.0, 10.0),
+                          (prob4, -1.0, 1.0),
+                          (prob5, -1.0, 1.0),
+                          (prob6, 0.0, 3.0),
+                          (prob7, 0.0, 5.0),
+                          (prob8, -5.0, 0.0),
+                          (prob9, 0.0, 3.14),
+                          (prob10, 0.0, 2.0),
+                          (prob11, -1.0, 1.5),
+                          (prob12, -1.0, 1.0),
+                          (prob13, -0.5, 0.99),
+                          (prob14, 1.0, 3.0),
+                          (prob15, 15.0, 75.0),
+                          (prob16, 2.0, 3.0),
+                          (prob17, -1.0, 3.0),
+                          (prob18, -1.0, 3.0),
+                          (prob19, -1.0, 3.0),
+                          (prob20, 2.0, 3.0),
+                          (prob21, -1000.0, 1000.0),
+                          (prob22, -10.0, 100.0),
+                          (prob23, -10.0, 100.0),
+                          (prob24, 1.0e-4, 20.0),
+                          (prob25, -1000.0, 1000.0),
+                          (prob26, 1.0e-4, 20.0),
+                          (prob27, -1000.0, 1000.0),
+                          (prob28, -10.0, 10.0),
+                          (prob29, 0, 10),
+                          (prob30, -50, 100.0),
+                          (prob31, -1.0, 1.0),
+                          (prob32, 0.1, 0.9),
+                          (prob33, 2.8, 3.1),
+                          (prob34, -1.3, -0.5),
+                          (prob35, 2.0, 3.0),
+                          (prob36, 0.5, 1.5),
+                          (prob37, 0.5, 5.0),
+                          (prob38, 1.0, 4.0),
+                          (repeller, -10.0, 10.0),
+                          (pinhead, 1.0e-5, 10.0),
+                          (kepler, -175.0, 185.0),
+                          (wallis, 2.0, 3.0),
+                          (muller_convergence_rate, 1.7, 10.0)
+                         ])
+def test_case(method, problem, a, b):
+    """Test a given problem"""
+
+    verbose = False
+    tol = 1.0e-6
+    if verbose:
         sys.stdout.write('\n')
 
-    for solve_func in methods:
-        # demuller2 cannot solve prob30 & pinhead so may as well skip them
-        if solve_func.__name__ == "demuller2" and fct.__name__ in ['prob30', 'pinhead']:
-            continue
-
-        result = solve_func(fct, a, b, tol=tol)
-        [root, froot] = result[0]
-        if verbose or iprint:
-            solve_name = solve_func.__name__
-            fct_name = fct.__name__
-            nfev = result[-1]
-            msg = '%s:\t%s(%e) = %e in %d nfevs\n' % (solve_name, fct_name, root, froot, nfev)
-            sys.stdout.write(msg)
-
-        assert abs(froot) <= tol
-
-
-def test_prob1():
-    a = 0.0
-    b = 1.0
-    tst_solve(prob1, a, b)
-
-
-def test_prob2():
-    a = -5.0
-    b = 1.2
-    tst_solve(prob2, a, b)
-
-
-def test_prob3():
-    a = -10.0
-    b = 10.0
-    tst_solve(prob3, a, b)
-
-
-def test_prob4():
-    a = -1.0
-    b = 1.0
-    tst_solve(prob4, a, b)
-
-
-def test_prob5():
-    a = -1.0
-    b = 1.0
-    tst_solve(prob5, a, b)
-
-
-def test_prob6():
-    a = 0.0
-    b = 3.0
-    tst_solve(prob6, a, b)
-
-
-def test_prob7():
-    a = 0.0
-    b = 5.0
-    tst_solve(prob7, a, b)
-
-
-def test_prob8():
-    a = -5.0
-    b = 0.0
-    tst_solve(prob8, a, b)
-
-
-def test_prob9():
-    a = 0.0
-    b = 3.14
-    tst_solve(prob9, a, b)
-
-
-def test_prob10():
-    a = 0.0
-    b = 2.0
-    tst_solve(prob10, a, b)
-
-
-def test_prob11():
-    a = -1.0
-    b = 1.5
-    tst_solve(prob11, a, b)
-
-
-def test_prob12():
-    a = -1.0
-    b = 1.0
-    tst_solve(prob12, a, b)
-
-
-def test_prob13():
-    a = -0.5
-    b = 0.99
-    tst_solve(prob13, a, b)
-
-
-def test_prob14():
-    a = 1.0
-    b = 3.0
-    tst_solve(prob14, a, b)
-
-
-def test_prob15():
-    a = 15.0
-    b = 75.0
-    tst_solve(prob15, a, b)
-
-
-def test_prob16():
-    a = 2.0
-    b = 3.0
-    tst_solve(prob16, a, b)
-
-
-def test_prob17():
-    a = -1.0
-    b = 3.0
-    tst_solve(prob17, a, b)
-
-
-def test_prob18():
-    a = -1.0
-    b = 3.0
-    tst_solve(prob18, a, b)
-
-
-def test_prob19():
-    a = -1.0
-    b = 3.0
-    tst_solve(prob19, a, b)
-
-
-def test_prob20():
-    a = 2.0
-    b = 3.0
-    tst_solve(prob20, a, b)
-
-
-def test_prob21():
-    a = -1000.0
-    b = 1000.0
-    tst_solve(prob21, a, b)
-
-
-def test_prob22():
-    a = -10.0
-    b = 100.0
-    tst_solve(prob22, a, b)
-
-
-def test_prob23():
-    a = -10.0
-    b = 100.0
-    tst_solve(prob23, a, b)
-
-
-def test_prob24():
-    a = 1.0e-4
-    b = 20.0
-    tst_solve(prob24, a, b)
-
-
-def test_prob25():
-    a = -1000.0
-    b = 1000.0
-    tst_solve(prob25, a, b)
-
-
-def test_prob26():
-    a = 1.0e-4
-    b = 20.0
-    tst_solve(prob26, a, b)
-
-
-def test_prob27():
-    a = -1000.0
-    b = 1000.0
-    tst_solve(prob27, a, b)
-
-
-def test_prob28():
-    a = -10.0
-    b = 10.0
-    tst_solve(prob28, a, b)
-
-
-def test_prob29():
-    a = 0
-    b = 10
-    tst_solve(prob29, a, b)
-
-
-def test_prob30():
-    a = -50
-    b = 100.0
-    tst_solve(prob30, a, b)
-
-
-def test_prob31():
-    a = -1.0
-    b = 1.0
-    tst_solve(prob31, a, b)
-
-
-def test_prob32():
-    a = 0.1
-    b = 0.9
-    tst_solve(prob32, a, b)
-
-
-def test_prob33():
-    a = 2.8
-    b = 3.1
-    tst_solve(prob33, a, b)
-
-
-def test_prob34():
-    a = -1.3
-    b = -0.5
-    tst_solve(prob34, a, b)
-
-
-def test_prob35():
-    a = 2.0
-    b = 3.0
-    tst_solve(prob35, a, b)
-
-
-def test_prob36():
-    a = 0.5
-    b = 1.5
-    tst_solve(prob36, a, b)
-
-
-def test_prob37():
-    a = 0.5
-    b = 5.0
-    tst_solve(prob37, a, b)
-
-
-def test_prob38():
-    a = 1.0
-    b = 4.0
-    tst_solve(prob38, a, b)
-
-
-def test_repeller():
-    a = -10.0
-    b = 10.0
-    tst_solve(repeller, a, b)
-
-
-def test_pinhead():
-    a = 1.0e-5
-    b = 10.0
-    tst_solve(pinhead, a, b)
-
-
-def test_kepler():
-    a = -175.0
-    b = 185.0
-    tst_solve(kepler, a, b)
-
-
-def test_wallis():
-    a = 2.0
-    b = 3.0
-    tst_solve(wallis, a, b)
-
-
-def test_muller_convergence_rate():
-    a = 1.7
-    b = 10.0
-    tst_solve(muller_convergence_rate, a, b)
+    # demuller2 cannot solve prob30 & pinhead so may as well skip them
+    if method.__name__ == "demuller2" and problem.__name__ in ['prob30', 'pinhead']:
+        pytest.skip('Known failure case')
+
+    result = method(problem, a, b, tol=tol)
+    [root, froot] = result[0]
+    if verbose:
+        msg = '%s:\t%s(%e) = %e in %d nfevs\n' % (method.__name__,
+                                                  problem.__name__,
+                                                  root, froot, result[-1])
+        sys.stdout.write(msg)
+
+    assert abs(froot) <= tol
