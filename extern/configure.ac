@@ -25,8 +25,8 @@ AC_ARG_ENABLE([region],
   AS_HELP_STRING([--enable-region], [Build region library shipped with Sherpa]))
 
 AS_IF([test "x$enable_region" = "xyes"], [
-  AC_CONFIG_SUBDIRS([region-4.13])
-  AC_SUBST(region, region-4.13)
+  AC_CONFIG_SUBDIRS([region-4.14])
+  AC_SUBST(region, region-4.14)
 ])
 
 AC_ARG_ENABLE([group],

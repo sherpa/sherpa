@@ -109,19 +109,13 @@ regShape* regCreatePolygon(regFlavor include,
       }
     }
     
-    // Verify that the polygon does not have duplicate points in a row.
-    for (ii=0;ii<nPoints-2;ii++) 
-    {
-      if ((newShape->xpos[ii] == newShape->xpos[ii+1]) &&
-	  (newShape->ypos[ii] == newShape->ypos[ii+1]) ) 
-      {
-	fprintf(stderr, "WARNING: Zero length polygon line segment at (%g,%g) (index = %lu).\n",
-		newShape->xpos[ii], newShape->ypos[ii], ii);
-	// TODO:
-	//  Disallow malformed polygons?
-	// return (NULL);
-      }
-    }
+    /* 
+       REMOVED: For-loop verifying that the polygon does not have duplicate points in a row
+
+       The region library change in regInsideRegion() for Polygons to use the winding method 
+       has made the warning about "Zero length" segments unnecessary.  This algorithm does not 
+       have the vulnerability to that condition which the previous one did, hence it was removed. 
+    */
 
     return newShape;
 } // end regCreatePolygon

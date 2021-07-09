@@ -790,7 +790,7 @@ CPPFLAGS
 LT_SYS_LIBRARY_PATH
 CPP'
 ac_subdirs_all='fftw-3.3.8
-region-4.13
+region-4.14
 grplib-4.9
 wcssubs
 stklib-4.11'
@@ -11945,9 +11945,9 @@ fi
 
 if test "x$enable_region" = "xyes"; then :
 
-  subdirs="$subdirs region-4.13"
+  subdirs="$subdirs region-4.14"
 
-  region=region-4.13
+  region=region-4.14
 
 
 fi
