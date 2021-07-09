@@ -18,14 +18,13 @@ requirements:
 
  host:
   - python {{ environ.get('SHERPA_PYTHON_VERSION', '3.7.*') }}
-  - numpy 1.19.* # [py>=39]
-  - numpy 1.18.* # [py<39]
+  - numpy 1.19.*
   - setuptools
   - six
 
  run:
   - python {{ environ.get('SHERPA_PYTHON_VERSION', '3.7.*') }}
-  - numpy
+  - {{ pin_compatible('numpy') }}
   - setuptools
   - pytest
   - six
