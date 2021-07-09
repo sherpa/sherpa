@@ -41,8 +41,8 @@ def _bin_warning(response_type, filename):
 
 def _assert_userwarning(expected_warnings, observed_warnings):
 
-    expected_warnings_set = set([warning.args for warning in expected_warnings])
-    observed_warnings_set = set([warning.message.args for warning in observed_warnings])
+    expected_warnings_set = {w.args for w in expected_warnings}
+    observed_warnings_set = {w.message.args for w in observed_warnings}
 
     assert observed_warnings_set == expected_warnings_set
 
