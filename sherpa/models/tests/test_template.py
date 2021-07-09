@@ -17,99 +17,92 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import logging
-
 import numpy
 
 import pytest
 
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
-from sherpa.utils.testing import SherpaTestCase, requires_data
+from sherpa.utils.testing import requires_data
 from sherpa.utils.err import ModelErr
 from sherpa import ui
 
-logger = logging.getLogger("sherpa")
+
+# Regression reported by Aneta (original report by Fabrizio Nicastro)
+# When restoring a file saved with an older version of sherpa,
+# we need to make sure models are assigned an is_discrete field.
+# For model that do not have the is_discrete field, fallback to False.
+#
+@requires_data
+def test_restore_is_discrete(run_thread, clean_ui):
+    # TODO: test.py test is a dummy test. We need to implement a real
+    # test. Take a look at the old testdata/ciao4.3/template_restore
+    # directory for help.
+    run_thread('template_restore', 'test.py')
+
+
+# TestCase 1 load_template_model enables interpolation by default
+@requires_data
+def test_load_template_with_interpolation(run_thread, clean_ui):
+    run_thread('load_template_with_interpolation')
+    pvals = ui.get_fit_results().parvals
+    pmin = pvals[0]
+    pmax = pvals[1]
+    if pmax < pmin:
+        (pmin, pmax) = (pmax, pmin)
+
+    tol = 0.001
+    assert pmin == pytest.approx(2023.46, rel=tol)
+    assert pmax == pytest.approx(2743.47, rel=tol)
 
 
 @requires_data
-class test_new_templates_ui(SherpaTestCase):
-    def assign_model(self, name, obj):
-        self.locals[name] = obj
+def test_load_template_interpolator(run_thread, clean_ui):
+    run_thread('load_template_interpolator')
+    pval = ui.get_fit_results().parvals[0]
+    assert pval == pytest.approx(2743.91, rel=0.001)
 
-    def run_thread(self, name, scriptname='fit.py'):
-        ui.clean()
-        ui.set_model_autoassign_func(self.assign_model)
-        super(test_new_templates_ui, self).run_thread(name, scriptname=scriptname)
 
-    def setUp(self):
-        self.loggingLevel = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
+# TestCase 2 load_template_model with template_interpolator_name=None
+# disables interpolation
+#
+# TestCase 3.1 discrete templates fail when probed for values they do
+# not represent (gridsearch with wrong values)
+@requires_data
+def test_load_template_model_without_interpolation_2_31(run_thread, clean_ui):
+    with pytest.raises(ModelErr) as me:
+        run_thread('load_template_without_interpolation',
+                   scriptname='test_case_2_and_3.1.py')
 
-    def tearDown(self):
-        logger.setLevel(self.loggingLevel)
+    emsg = 'Interpolation of template parameters was disabled for this model, but parameter values not in the template library have been requested. Please use gridsearch method and make sure the sequence option is consistent with the template library'
+    assert str(me.value) == emsg
 
-    # Regression reported by Aneta (original report by Fabrizio Nicastro)
-    # When restoring a file saved with an older version of sherpa,
-    # we need to make sure models are assigned an is_discrete field.
-    # For model that do not have the is_discrete field, fallback to False.
-    def test_restore_is_discrete(self):
-        # TODO: test.py test is a dummy test. We need to implement a real
-        # test. Take a look at the old testdata/ciao4.3/template_restore
-        # directory for help.
-        self.run_thread('template_restore', 'test.py')
 
-    # TestCase 1 load_template_model enables interpolation by default
-    def test_load_template_with_interpolation(self):
-        self.run_thread('load_template_with_interpolation')
-        pvals = ui.get_fit_results().parvals
-        pmin = pvals[0]
-        pmax = pvals[1]
-        if pmax < pmin:
-            (pmin, pmax) = (pmax, pmin)
+# TestCase 3.2 discrete templates fail when probed for values they do
+# not represent (continuous method with discrete template)
+#
+@requires_data
+def test_load_template_model_without_interpolation_32(run_thread, clean_ui):
+    with pytest.raises(ModelErr) as me:
+        run_thread('load_template_without_interpolation',
+                   scriptname='test_case_3.2.py')
 
-        tol = 0.001
-        self.assertEqualWithinTol(2023.46, pmin, tol)
-        self.assertEqualWithinTol(2743.47, pmax, tol)
+    emsg = "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior)."
+    assert str(me.value) == emsg
 
-    def test_load_template_interpolator(self):
-        self.run_thread('load_template_interpolator')
-        pval = ui.get_fit_results().parvals[0]
-        self.assertEqualWithinTol(2743.91, pval, 0.001)
 
-    # TestCase 2 load_template_model with template_interpolator_name=None
-    # disables interpolation
-    #
-    # TestCase 3.1 discrete templates fail when probed for values they do
-    # not represent (gridsearch with wrong values)
-    def test_load_template_model_without_interpolation_2_31(self):
-        try:
-            self.run_thread('load_template_without_interpolation',
-                            scriptname='test_case_2_and_3.1.py')
-        except ModelErr:
-            return
-        self.fail('Fit should have failed: gridsearch with wrong parvals')
+# TestCase 4 gridsearch with right values succeeds
+@requires_data
+def test_grid_search_with_discrete_template(run_thread, clean_ui):
+    run_thread('load_template_without_interpolation',
+               scriptname='test_case_4.py')
 
-    # TestCase 3.2 discrete templates fail when probed for values they do
-    # not represent (continuous method with discrete template)
-    #
-    def test_load_template_model_without_interpolation_32(self):
-        try:
-            self.run_thread('load_template_without_interpolation',
-                            scriptname='test_case_3.2.py')
-        except ModelErr:
-            return
-        self.fail('Fit should have failed: gridsearch with wrong parvals')
 
-    # TestCase 4 gridsearch with right values succeeds
-    def test_grid_search_with_discrete_template(self):
-        self.run_thread('load_template_without_interpolation',
-                        scriptname='test_case_4.py')
-
-    # TestCase 5 user can access interpolators' parvals
-    def test_grid_search_with_discrete_template_parvals(self):
-        self.run_thread('load_template_with_interpolation',
-                        scriptname='test_case_5.py')
+# TestCase 5 user can access interpolators' parvals
+@requires_data
+def test_grid_search_with_discrete_template_parvals(run_thread, clean_ui):
+    run_thread('load_template_with_interpolation',
+               scriptname='test_case_5.py')
 
 
 @pytest.fixture
