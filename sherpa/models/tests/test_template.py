@@ -21,6 +21,8 @@ import logging
 
 import numpy
 
+import pytest
+
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
 from sherpa.utils.testing import SherpaTestCase, requires_data
@@ -110,43 +112,35 @@ class test_new_templates_ui(SherpaTestCase):
                         scriptname='test_case_5.py')
 
 
-class test_template(SherpaTestCase):
+@pytest.fixture
+def setUp():
+    x = numpy.linspace(0.1, 5, 50)
 
-    def setUp(self):
-        self.num = 4
-        self.ncoords = 100
-        self.ntemplates = 2**self.num
-        self.x = numpy.linspace(0.1, 5, 50)
-        g1 = Gauss1D('g1')
+    num = 4
+    ncoords = 100
+    ntemplates = 2**num
+    g1 = Gauss1D('g1')
 
-        # create a 4-dimensional grid from 0 to 1 inclusive, shape = (16,4)
-        grid = numpy.mgrid[[slice(0, 2, 1) for ii in range(self.num)]]
-        grid = numpy.asarray(list(map(numpy.ravel, grid))).T
-        coords = numpy.linspace(0.01, 6, 100)
-        names = ["p%i" % i for i in range(self.num)]
-        templates = []
-        for ii in range(self.ntemplates):
-            t = TableModel()
-            g1.fwhm = numpy.random.uniform(0.5, 2.0)
-            g1.pos = numpy.random.uniform(1.0, 4.5)
-            g1.ampl = numpy.random.uniform(1.0, 50.)
-            t.load(coords, g1(coords))
-            templates.append(t)
+    # create a 4-dimensional grid from 0 to 1 inclusive, shape = (16,4)
+    grid = numpy.mgrid[[slice(0, 2, 1) for ii in range(num)]]
+    grid = numpy.asarray(list(map(numpy.ravel, grid))).T
+    coords = numpy.linspace(0.01, 6, 100)
+    names = ["p%i" % i for i in range(num)]
+    templates = []
+    for ii in range(ntemplates):
+        t = TableModel()
+        g1.fwhm = numpy.random.uniform(0.5, 2.0)
+        g1.pos = numpy.random.uniform(1.0, 4.5)
+        g1.ampl = numpy.random.uniform(1.0, 50.)
+        t.load(coords, g1(coords))
+        templates.append(t)
 
-        self.model = create_template_model("mdl", names, grid, templates)
+    return x, create_template_model("mdl", names, grid, templates)
 
-    def tearDown(self):
-        self.model = None
 
-    def test_template_model_evaluation(self):
-        self.model.thawedpars = [0, 1, 0, 1]
-        # We want to evaluate the model, but do not check the result
-        self.model(self.x)
+def test_template_model_evaluation(setUp):
+    x, model = setUp
+    model.thawedpars = [0, 1, 0, 1]
 
-#    def test_template_query_index(self):
-#        expected = 5
-#        result = self.model.query_index([0,1,0,1])
-#        self.assertEqual(expected, result)
-#
-#    def test_template_query(self):
-#        result = self.model.query([0,1,0,1])
+    # We want to evaluate the model, but do not check the result
+    model(x)
