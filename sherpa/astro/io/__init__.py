@@ -671,55 +671,181 @@ def _set_keyword(header, label, value):
 
 
 def _pack_pha(dataset):
-    if not isinstance(dataset, DataPHA):
-        raise IOErr('notpha', dataset.name)
+    """Extract FITS  column and header information.
 
-    data = {}
+    Notes
+    -----
+    The PHA Data Extension header page [1]_ lists the following
+    keywords as either required or we-really-want-them:
+
+        EXTNAME (= SPECTRUM) - the name (i.e. type) of the extension
+        TELESCOP - the "telescope" (i.e. mission/satellite name).
+        INSTRUME - the instrument/detector.
+        FILTER - the instrument filter in use (if any)
+        EXPOSURE - the integration time (in seconds) for the PHA data (assumed to be corrected for deadtime, data drop-outs etc. )
+        BACKFILE - the name of the corresponding background file (if any)
+        CORRFILE - the name of the corresponding correction file (if any)
+        CORRSCAL - the correction scaling factor.
+        RESPFILE - the name of the corresponding (default) redistribution matrix file (RMF; see George et al. 1992a).
+        ANCRFILE - the name of the corresponding (default) ancillary response file (ARF; see George et al. 1992a).
+        HDUCLASS - should contain the string "OGIP" to indicate that this is an OGIP style file.
+        HDUCLAS1 - should contain the string "SPECTRUM" to indicate this is a spectrum.
+        HDUVERS - the version number of the format (this document describes version 1.2.1)
+        POISSERR - whether Poissonian errors are appropriate to the data (see below).
+        CHANTYPE - whether the channels used in the file have been corrected in anyway (see below).
+        DETCHANS - the total number of detector channels available.
+
+    We also add in the following, defaulting to the first value - we
+    should do better to support HDUCLAS3=RATE data!
+
+        HDUCLAS2 - indicating the type of data stored.
+          Allowed values are:
+            'TOTAL' for a gross PHA Spectrum (source + bkgd)
+            'NET' for a bkgd-subtracted PHA Spectrum
+            'BKG' for a bkgd PHA Spectrum
+        HDUCLAS3 - indicating further details of the type of data stored.
+          Allowed values are:
+            'COUNT' for PHA data stored as counts (rather than count/s)
+            'RATE' for PHA data stored in count/s
+        HDUCLAS4 - indicating whether this is a type I or II extension.
+          Allowed values are:
+            'TYPE:I' for type I (single spectrum) data
+            'TYPE:II' for type II (multiple spectra) data
+
+    The POISSERR keyword is not required if a STAT_ERR column is
+    present however it is recommended in this case for clarity. If
+    STAT_ERR is to be used for the errors then POISSERR is set to
+    false.
+
+    If the CHANNEL array doesn't start at 1 then TLMIN1 and TLMAX1 are
+    required (here we assume the CHANNEL column is first) and they are
+    strongly recommended otherwise.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node6.html
+
+    """
+
+    # The logic here repeats some of the checks that probably should
+    # be done by the DataPHA class itself. However, it is likely
+    # that we don't want to make the DataPHA class always reject
+    # inconsistent state, as this could preclude certain workflows,
+    # so we need some validation here.
+    #
+    if not isinstance(dataset, DataPHA):
+        raise IOErr("notpha", dataset.name)
 
     arf, rmf = dataset.get_response()
     bkg = dataset.get_background()
 
     # Header Keys
     header = {}
-    if hasattr(dataset, 'header'):  # and type(dataset.header) is dict:
+    if hasattr(dataset, "header"):
         header = dataset.header.copy()
 
-    header['EXPOSURE'] = getattr(dataset, 'exposure', 'none')
+    def _set(key, defval):
+        if key in header:
+            return
+        header[key] = defval
 
-    _set_keyword(header, 'RESPFILE', rmf)
-    _set_keyword(header, 'ANCRFILE', arf)
-    _set_keyword(header, 'BACKFILE', bkg)
+    # We do not validate these values if set by the user, but perhaps we should
+    # over-ride them.
+    #
+    _set("HDUCLASS", "OGIP")
+    _set("HDUCLAS1", "SPECTRUM")
+    _set("HDUCLAS2", "TOTAL")
+    _set("HDUCLAS3", "COUNT")
+    _set("HDUCLAS4", "TYPE:I")
+    _set("HDUVERS", "1.2.1")
+    _set("HDUDOC", "Arnaud et al. 1992a Legacy 2  p 65")
 
-    # Columns
-    col_names = ['channel', 'counts', 'stat_err', 'sys_err',
-                 'bin_lo', 'bin_hi', 'grouping', 'quality']
+    _set("TELESCOP", "none")
+    _set("INSTRUME", "none")
+    _set("FILTER", "none")
+    _set("CORRFILE", "none")
+    _set("CORRSCAL", 0)
+    _set("CHANTYPE", "PI")  # Assume a sensible default
 
-    data['channel'] = getattr(dataset, 'channel', None)
-    data['counts'] = getattr(dataset, 'counts', None)
-    data['stat_err'] = getattr(dataset, 'staterror', None)
-    data['sys_err'] = getattr(dataset, 'syserror', None)
-    data['bin_lo'] = getattr(dataset, 'bin_lo', None)
-    data['bin_hi'] = getattr(dataset, 'bin_hi', None)
-    data['grouping'] = getattr(dataset, 'grouping', None)
-    data['quality'] = getattr(dataset, 'quality', None)
+    header["EXPOSURE"] = getattr(dataset, "exposure", "none")
 
-    backscal = getattr(dataset, 'backscal', None)
-    if backscal is not None:
-        if numpy.isscalar(backscal):
-            header['BACKSCAL'] = backscal
+    _set("RESPFILE", "none")
+    _set("ANCRFILE", "none")
+    _set("BACKFILE", "none")
+
+    _set_keyword(header, "RESPFILE", rmf)
+    _set_keyword(header, "ANCRFILE", arf)
+    _set_keyword(header, "BACKFILE", bkg)
+
+    # TODO: perhaps we shuold error out if channel or counts is not set?
+    #
+    data = {}
+    data["channel"] = getattr(dataset, "channel", None)
+    data["counts"] = getattr(dataset, "counts", None)
+    data["stat_err"] = getattr(dataset, "staterror", None)
+    data["sys_err"] = getattr(dataset, "syserror", None)
+    data["bin_lo"] = getattr(dataset, "bin_lo", None)
+    data["bin_hi"] = getattr(dataset, "bin_hi", None)
+    data["grouping"] = getattr(dataset, "grouping", None)
+    data["quality"] = getattr(dataset, "quality", None)
+
+    def convert_to_column(colname):
+        val = getattr(dataset, colname, None)
+        if val is None:
+            return
+
+        uname = colname.upper()
+        if numpy.isscalar(val):
+            header[uname] = val
         else:
-            data['backscal'] = backscal
-            col_names.append('backscal')
+            data[colname] = val
+            try:
+                del header[uname]
+            except KeyError:
+                pass
 
-    areascal = getattr(dataset, 'areascal', None)
-    if areascal is not None:
-        if numpy.isscalar(areascal):
-            header['AREASCAL'] = areascal
-        else:
-            data['areascal'] = areascal
-            col_names.append('areascal')
+    convert_to_column("backscal")
+    convert_to_column("areascal")
 
-    return data, col_names, header
+    # Replace columns where appropriate.
+    #
+    if data["sys_err"] is None or (data["sys_err"] == 0).all():
+        _set("SYS_ERR", 0)
+        del data["sys_err"]
+
+    if data["quality"] is None or (data["quality"] == 0).all():
+        _set("QUALITY", 0)
+        del data["quality"]
+
+    if data["grouping"] is None or (data["grouping"] == 1).all():
+        _set("GROUPING", 0)
+        del data["grouping"]
+
+    # Default to using the STAT_ERR column if set. This is only
+    # changed if the user has not set the POISSERR keyword: this
+    # keyword is likely to be set for data that has been read in from
+    # a file.
+    #
+    _set("POISSERR", data["stat_err"] is None)
+
+    # We are not going to match OGIP standard if there's no data...
+    #
+    # It's also not clear how to handle the case when the channel
+    # range is larger than the channel column. At present we rely in
+    # the header being set, which is not ideal.
+    #
+    if data["channel"] is not None:
+        tlmin = data["channel"][0]
+        tlmax = data["channel"][-1]
+
+        # This requires that channel is the first column
+        _set("TLMIN1", tlmin)
+        _set("TLMAX1", tlmax)
+        _set("DETCHANS", tlmax - tlmin + 1)
+
+    data = {k: v for (k, v) in data.items() if v is not None}
+    return data, list(data.keys()), header
 
 
 def write_arrays(filename, args, fields=None, ascii=True, clobber=False):

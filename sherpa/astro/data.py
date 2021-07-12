@@ -1589,11 +1589,11 @@ must be an integer.""")
         self.backscal = backscal
         self.areascal = areascal
         if header is None:
-            self.header = {'HDUCLASS': "OGIP", 'HDUCLAS1': "SPECTRUM",
-                           'HDUCLAS2': "TOTAL", 'HDUCLAS3': "TYPE:I",
-                           'HDUCLAS4': "COUNT", 'HDUVERS': "1.2.1",
-                           'TELESCOP': "UNKNOWN", 'INTRUME': "UNKNOWN",
-                           "FILTER": "UNKNOWN", "POISSERR": True}
+            self.header = {"HDUCLASS": "OGIP", "HDUCLAS1": "SPECTRUM",
+                           "HDUCLAS2": "TOTAL", "HDUCLAS3": "TYPE:I",
+                           "HDUCLAS4": "COUNT", "HDUVERS": "1.2.1",
+                           "TELESCOP": "none", "INSTRUME": "none",
+                           "FILTER": "none", "POISSERR": True}
 
         else:
             self.header = header
@@ -1611,7 +1611,7 @@ must be an integer.""")
         self._backgrounds = {}
         self._rate = True
         self._plot_fac = 0
-        self.units = 'channel'
+        self.units = "channel"
         self.quality_filter = None
         Data1D.__init__(self, name, channel, counts, staterror, syserror)
 

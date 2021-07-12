@@ -38,6 +38,7 @@ import pytest
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro import io
+from sherpa.utils.err import IOErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -97,7 +98,11 @@ def test_pha_write_basic(make_data_path, tmp_path):
         assert hdr["TIMEZERO"] == 0
         assert hdr["DETCHANS"] == 1024
 
-    def check_data(obj):
+        assert hdr["SYS_ERR"] == pytest.approx(0.0)
+        assert hdr["GROUPING"] == 0
+        assert hdr["QUALITY"] == 0
+
+    def check_data(obj, roundtrip=False):
         """Basic checks of the data"""
 
         assert obj.staterror is None
@@ -127,20 +132,24 @@ def test_pha_write_basic(make_data_path, tmp_path):
         assert obj.counts[12:22] == pytest.approx(cvals)
 
         assert len(obj.grouping) == 1024
-        assert len(obj.quality) == 1024
+        if roundtrip:
+            assert obj.quality is None
+        else:
+            assert len(obj.quality) == 1024
+            assert obj.quality == pytest.approx(np.zeros(1024))
 
         if backend_is("crates"):
             assert obj.grouping.dtype == np.dtype("int16")
-            assert obj.quality.dtype == np.dtype("int16")
+            if not roundtrip:
+                assert obj.quality.dtype == np.dtype("int16")
 
         elif backend_is("pyfits"):
             assert obj.grouping.dtype == np.dtype(">i2")
-            assert obj.quality.dtype == np.dtype(">i2")
+            if not roundtrip:
+                assert obj.quality.dtype == np.dtype(">i2")
 
         else:
             pytest.fail("Unrecognized IO backend")
-
-        assert obj.quality == pytest.approx(np.zeros(1024))
 
         one, = np.where(obj.grouping == 1)
         expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,
@@ -177,7 +186,7 @@ def test_pha_write_basic(make_data_path, tmp_path):
     assert isinstance(outdata, DataPHA)
     assert outdata.name.endswith("/test.pha")
     check_header(outdata)
-    check_data(outdata)
+    check_data(outdata, roundtrip=True)
 
     # The responses and background should NOT be read in
     # (we are in a different directory to infile so we can't
@@ -229,7 +238,11 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
         assert hdr["TIMEZERO"] == 0
         assert hdr["DETCHANS"] == 1024
 
-    def check_data(obj):
+        assert hdr["SYS_ERR"] == pytest.approx(0.0)
+        assert hdr["GROUPING"] == 0
+        assert hdr["QUALITY"] == 0
+
+    def check_data(obj, roundtrip=False):
         """Basic checks of the data"""
 
         assert (obj.staterror == 0).sum() == 714
@@ -266,20 +279,24 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
         assert obj.counts[12:22] == pytest.approx(cvals)
 
         assert len(obj.grouping) == 1024
-        assert len(obj.quality) == 1024
+        if roundtrip:
+            assert obj.quality is None
+        else:
+            assert len(obj.quality) == 1024
+            assert obj.quality == pytest.approx(np.zeros(1024))
 
         if backend_is("crates"):
             assert obj.grouping.dtype == np.dtype("int16")
-            assert obj.quality.dtype == np.dtype("int16")
+            if not roundtrip:
+                assert obj.quality.dtype == np.dtype("int16")
 
         elif backend_is("pyfits"):
             assert obj.grouping.dtype == np.dtype(">i2")
-            assert obj.quality.dtype == np.dtype(">i2")
+            if not roundtrip:
+                assert obj.quality.dtype == np.dtype(">i2")
 
         else:
             pytest.fail("Unrecognized IO backend")
-
-        assert obj.quality == pytest.approx(np.zeros(1024))
 
         one, = np.where(obj.grouping == 1)
         expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,
@@ -316,7 +333,7 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
     assert isinstance(outdata, DataPHA)
     assert outdata.name.endswith("/test.pha")
     check_header(outdata)
-    check_data(outdata)
+    check_data(outdata, roundtrip=True)
 
     # The responses and background should NOT be read in
     # (we are in a different directory to infile so we can't
@@ -341,7 +358,7 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
 
     """
 
-    def check_header(obj):
+    def check_header(obj, roundtrip=False):
         # check header for a selected set of keywords
         hdr = obj.header
 
@@ -352,7 +369,10 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
         assert hdr["HDUCLAS1"] == "SPECTRUM"
         assert hdr["HDUCLAS2"] == "NET"
         assert hdr["HDUCLAS3"] == "COUNT"
-        assert "HDUCLAS4" not in hdr
+        if roundtrip:
+            assert hdr["HDUCLAS4"] == "TYPE:I"
+        else:
+            assert "HDUCLAS4" not in hdr
         assert hdr["HDUVERS"] == "1.2.0"
         assert "HDUVERS1" not in hdr
 
@@ -489,7 +509,7 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
     outdata = io.read_pha(outfile, use_errors=True)
     assert isinstance(outdata, DataPHA)
     assert outdata.name.endswith("/test.pha")
-    check_header(outdata)
+    check_header(outdata, roundtrip=True)
     check_data(outdata, roundtrip=True)
 
     # The responses and background should NOT be read in
@@ -517,8 +537,8 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
     assert c0.values.dtype == np.int16
-    assert c0.get_tlmin() == -32768
-    assert c0.get_tlmax() == 32767
+    assert c0.get_tlmin() == 1
+    assert c0.get_tlmax() == 4
 
     c1 = cr.get_column(1)
     assert c1.name == "COUNTS"
@@ -532,15 +552,25 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     assert cr.get_key_value("HDUCLAS3") == "TYPE:I"
     assert cr.get_key_value("HDUCLAS4") == "COUNT"
     assert cr.get_key_value("HDUVERS") == "1.2.1"
-    assert cr.get_key_value("TELESCOP") == "UNKNOWN"
-    assert cr.get_key_value("INTRUME") == "UNKNOWN"  # TYPO - should be INSTRUME
-    assert cr.get_key_value("FILTER") == "UNKNOWN"
+    assert cr.get_key_value("TELESCOP") == "none"
+    assert cr.get_key_value("INSTRUME") == "none"
+    assert cr.get_key_value("FILTER") == "none"
     assert cr.get_key_value("POISSERR")
 
+    assert cr.get_key_value("CHANTYPE") == "PI"
+    assert cr.get_key_value("DETCHANS") == 4
+
+    assert cr.get_key_value("SYS_ERR") == 0
+    assert cr.get_key_value("QUALITY") == 0
+    assert cr.get_key_value("GROUPING") == 0
+
+    assert cr.get_key_value("CORRSCAL") == 0
+
+    for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
+        assert cr.get_key_value(key) == "none"
+
     # keywords we should have but currently don't
-    for key in ["EXPOSURE", "BACKFILE", "BACKSCAL", "CORRFILE",
-                "CORRSCAL", "RESPFILE", "ANCRFILE", "AREASCAL",
-                "CHANTYPE", "DETCHANS"]:
+    for key in ["EXPOSURE", "BACKSCAL", "AREASCAL"]:
         assert cr.get_key_value(key) is None
 
 
@@ -566,23 +596,33 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert hdu.header["HDUCLAS3"] == "TYPE:I"
         assert hdu.header["HDUCLAS4"] == "COUNT"
         assert hdu.header["HDUVERS"] == "1.2.1"
-        assert hdu.header["TELESCOP"] == "UNKNOWN"
-        assert hdu.header["INTRUME"] == "UNKNOWN"  # TYPO - should be INSTRUME
-        assert hdu.header["FILTER"] == "UNKNOWN"
+        assert hdu.header["TELESCOP"] == "none"
+        assert hdu.header["INSTRUME"] == "none"
+        assert hdu.header["FILTER"] == "none"
 
         assert hdu.header["POISSERR"]
 
+        assert hdu.header["CHANTYPE"] == "PI"
+        assert hdu.header["DETCHANS"] == 4
+
+        assert hdu.header['SYS_ERR'] == 0
+        assert hdu.header['QUALITY'] == 0
+        assert hdu.header['GROUPING'] == 0
+
+        assert hdu.header["CORRSCAL"] == 0
+        for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
+            assert hdu.header[key] == "none"
+
+        assert hdu.header["TLMIN1"] == 1
+        assert hdu.header["TLMAX1"] == 4
+
         # check some keywords we don't expect
         #
-        assert "TLMIN1" not in hdu.header
-        assert "TLMAX1" not in hdu.header
         assert "TLMIN2" not in hdu.header
         assert "TLMAX2" not in hdu.header
 
         # keywords we should have but currently don't
-        for key in ["EXPOSURE", "BACKFILE", "BACKSCAL", "CORRFILE",
-                    "CORRSCAL", "RESPFILE", "ANCRFILE", "AREASCAL",
-                    "CHANTYPE", "DETCHANS"]:
+        for key in ["EXPOSURE", "BACKSCAL", "AREASCAL"]:
             assert key not in hdu.header
 
     finally:
@@ -647,8 +687,8 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
     assert c0.values.dtype == np.float64
-    assert c0.get_tlmin() < 1e308
-    assert c0.get_tlmax() > 1e308
+    assert c0.get_tlmin() == 1
+    assert c0.get_tlmax() == 10
 
     c1 = cr.get_column(1)
     assert c1.name == "COUNTS"
@@ -674,13 +714,20 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
     assert c4.get_tlmin() < 1e308
     assert c4.get_tlmax() > 1e308
 
-    # Keywords we should have but do not
-    for key in ["HDUCLASS", "HDUCLAS1", "HDUCLAS2", "HDUCLAS3", "HDUCLAS4",
-                "HDUVERS", "POISSERR"]:
-        assert cr.get_key_value(key) is None
+    assert cr.get_key_value("HDUCLASS") == "OGIP"
+    assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
+    assert cr.get_key_value("HDUCLAS2") == "TOTAL"
+    # assert cr.get_key_value("HDUCLAS3") == "TYPE:I"
+    # assert cr.get_key_value("HDUCLAS4") == "COUNT"
+    assert cr.get_key_value("HDUCLAS3") == "COUNT"
+    assert cr.get_key_value("HDUCLAS4") == "TYPE:I"
+    assert cr.get_key_value("HDUVERS") == "1.2.1"
+    assert cr.get_key_value("HDUVERS1") is None
+
+    assert cr.get_key_value("POISSERR")
 
     assert cr.get_key_value("TELESCOP") == "CHANDRA"
-    assert cr.get_key_value("INTRUME") == "ACIS"
+    assert cr.get_key_value("INSTRUME") == "ACIS"
     assert cr.get_key_value("FILTER") == "NONE"
 
     assert cr.get_key_value("EXPOSURE") == pytest.approx(etime)
@@ -691,8 +738,15 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
     assert cr.get_key_value("CHANTYPE") == "PI"
     assert cr.get_key_value("DETCHANS") == 10
 
-    # keywords we should have but currently don't
-    for key in ["BACKFILE", "CORRSCAL", "RESPFILE", "AREASCAL"]:
+    assert cr.get_key_value("CORRSCAL") == 0
+
+    for key in ["BACKFILE", "RESPFILE"]:
+        assert cr.get_key_value(key) == "none"
+
+    assert cr.get_key_value("SYS_ERR") == 0
+
+    # We do not have these keywords as they are stored as columns
+    for key in ["AREASCAL", "QUALITY", "GROUPING"]:
         assert cr.get_key_value(key) is None
 
 
@@ -718,10 +772,17 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert hdu.columns[4].name == "AREASCAL"
         assert hdu.columns[4].format == "D"
 
-        # Keywords we should have but do not
-        for key in ["HDUCLASS", "HDUCLAS1", "HDUCLAS2", "HDUCLAS3", "HDUCLAS4",
-                    "HDUVERS", "POISSERR"]:
-            assert key not in hdu.header
+        assert hdu.header["HDUCLASS"] == "OGIP"
+        assert hdu.header["HDUCLAS1"] == "SPECTRUM"
+        assert hdu.header["HDUCLAS2"] == "TOTAL"
+        # assert hdu.header["HDUCLAS3"] == "TYPE:I"
+        # assert hdu.header["HDUCLAS4"] == "COUNT"
+        assert hdu.header["HDUCLAS3"] == "COUNT"  # WRONG I think
+        assert hdu.header["HDUCLAS4"] == "TYPE:I"  # WRONG I think
+        assert hdu.header["HDUVERS"] == "1.2.1"  # should this be 1.1.0?
+        assert "HDUVERS1" not in hdu.header
+
+        assert hdu.header["POISSERR"]
 
         assert hdu.header["TELESCOP"] == "CHANDRA"
         assert hdu.header["INSTRUME"] == "ACIS"
@@ -735,12 +796,19 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert hdu.header["CHANTYPE"] == "PI"
         assert hdu.header["DETCHANS"] == 10
 
+        assert hdu.header["CORRSCAL"] == 0
+
+        for key in ["BACKFILE", "RESPFILE"]:
+            assert hdu.header[key] == "none"
+
+        assert hdu.header["SYS_ERR"] == 0
+
+        # We do not have these keywords as they are stored as columns
+        for key in ["AREASCAL", "QUALITY", "GROUPING"]:
+            assert key not in hdu.header
+
         assert hdu.header["TLMIN1"] == 1
         assert hdu.header["TLMAX1"] == 10
-
-        # keywords we should have but currently don't
-        for key in ["BACKFILE", "CORRSCAL", "RESPFILE", "AREASCAL"]:
-            assert key not in hdu.header
 
     finally:
         hdus.close()
@@ -788,10 +856,6 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
     pha = None
 
     assert len(caplog.record_tuples) == 0
-
-    # We can't read in the PHA file with crates
-    if backend_is("crates"):
-        pytest.skip("Can not read in this PHA file with crates")
 
     with SherpaVerbosity("INFO"):
         inpha = io.read_pha(str(outfile))
@@ -847,7 +911,7 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
     only PHA-I.
     """
 
-    def check_header(pha):
+    def check_header(pha, roundtrip=False):
         hdr = pha.header
         assert hdr["TG_M"] == 2
         assert hdr["TG_PART"] == 1
@@ -878,7 +942,10 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
         assert "TOTCTS" not in hdr
 
         assert not hdr["POISSERR"]
-        assert not "SYS_ERR" in hdr
+        if roundtrip:
+            assert hdr["SYS_ERR"] == 0
+        else:
+            assert not "SYS_ERR" in hdr
 
         assert hdr["QUALITY"] == 0
         assert hdr["GROUPING"] == 0
@@ -935,7 +1002,7 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
     outpha = io.read_pha(str(outfile))
     assert isinstance(outpha, DataPHA)
     assert outpha.name.endswith("/test.pha")
-    check_header(outpha)
+    check_header(outpha, roundtrip=True)
     check_data(outpha, roundtrip=True)
 
 
@@ -952,8 +1019,8 @@ def check_csc_pha_roundtrip_crates(path):
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
     assert c0.values.dtype == np.float64
-    assert c0.get_tlmin() < -1e308
-    assert c0.get_tlmax() > 1e308
+    assert c0.get_tlmin() == 1.0
+    assert c0.get_tlmax() == 1024.0
 
     c1 = cr.get_column(1)
     assert c1.name == "COUNTS"
@@ -965,7 +1032,7 @@ def check_csc_pha_roundtrip_crates(path):
     assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
     assert cr.get_key_value("HDUCLAS2") == "TOTAL"
     assert cr.get_key_value("HDUCLAS3") == "COUNT"
-    assert cr.get_key_value("HDUCLAS4") is None
+    assert cr.get_key_value("HDUCLAS4") == "TYPE:I"
     assert cr.get_key_value("HDUVERS") == "1.1.0"
     assert cr.get_key_value("HDUVERS1") == "1.1.0"
 
@@ -973,7 +1040,7 @@ def check_csc_pha_roundtrip_crates(path):
 
     assert cr.get_key_value("TELESCOP") == "CHANDRA"
     assert cr.get_key_value("INSTRUME") == "ACIS"
-    assert cr.get_key_value("FILTER") is None
+    assert cr.get_key_value("FILTER") == "none"
 
     assert cr.get_key_value("EXPOSURE") == pytest.approx(37664.157219191)
     assert cr.get_key_value("BACKSCAL") == pytest.approx(2.2426552620567e-06)
@@ -1013,7 +1080,7 @@ def check_csc_pha_roundtrip_pyfits(path):
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
         assert hdu.header["HDUCLAS2"] == "TOTAL"
         assert hdu.header["HDUCLAS3"] == "COUNT"
-        assert "HDUCLAS4" not in hdu.header
+        assert hdu.header["HDUCLAS4"] == "TYPE:I"
         assert hdu.header["HDUVERS"] == "1.1.0"
         assert hdu.header["HDUVERS1"] == "1.1.0"
 
@@ -1021,7 +1088,7 @@ def check_csc_pha_roundtrip_pyfits(path):
 
         assert hdu.header["TELESCOP"] == "CHANDRA"
         assert hdu.header["INSTRUME"] == "ACIS"
-        assert "FILTER" not in hdu.header
+        assert hdu.header["FILTER"] == "none"
 
         assert hdu.header["EXPOSURE"] == pytest.approx(37664.157219191)
         assert hdu.header["BACKSCAL"] == pytest.approx(2.2426552620567e-06)
@@ -1167,7 +1234,7 @@ def test_csc_pha_roundtrip(make_data_path, tmp_path):
     assert isinstance(outpha, DataPHA)
     assert outpha.name.endswith("/test.pha")
     check_header(outpha)
-    assert "HDUCLAS4" not in outpha.header
+    assert outpha.header["HDUCLAS4"] == "TYPE:I"
     check_data(outpha)
 
     # The responses and background should NOT be read in
@@ -1189,3 +1256,86 @@ def test_csc_pha_roundtrip(make_data_path, tmp_path):
 
     else:
         raise RuntimeError(f"Unknown io backend: {io.backend}")
+
+
+@pytest.mark.parametrize("column", ["channel", "counts"])
+@pytest.mark.parametrize("is_ascii", [True, False])
+@requires_fits
+def test_write_pha_missing_column(column, is_ascii, tmp_path):
+    """What happens when there's no "required" column.
+
+    At the moment we write out the file.
+    """
+
+    chans = np.arange(1, 4, dtype=np.int32)
+    counts = np.arange(1, 4, dtype=np.int32)
+    pha = DataPHA("tmp", chans, counts)
+    setattr(pha, column, None)
+
+    tmpfile = tmp_path / 'test.out'
+    assert not tmpfile.exists()
+    io.write_pha(str(tmpfile), pha, ascii=is_ascii)
+
+    # We want to check we've created a single-column file, but
+    # it depends on the backend and whether it was written
+    # out in ASCII or FITS format. As we don't really care here,
+    # all we do is check the output file exists and is not empty.
+    #
+    assert tmpfile.exists()
+    assert tmpfile.is_file()
+    assert tmpfile.stat().st_size > 0
+
+
+@requires_fits
+def test_write_pha_columnn_length_mismatch_ascii(tmp_path):
+    """What happens when "required" column do not match.
+
+    This is separate from test_write_pha_columnn_length_mismatch_fits
+    as the behavior is different-enough it's not worth adding a
+    is_ascii parameter. It also depends on the backend.
+    """
+
+    chans = np.arange(1, 4, dtype=np.int32)
+    counts = np.arange(1, 6, dtype=np.int32)
+    pha = DataPHA("tmp", chans, counts)
+
+    tmpfile = tmp_path / 'test.fits'
+    if backend_is("crates"):
+        io.write_pha(str(tmpfile), pha, ascii=True)
+        dat = io.read_table(str(tmpfile))
+        assert len(dat.x) == 5
+        assert len(dat.y) == 5
+        assert dat.x == pytest.approx([1, 2, 3, 0, 0])
+        assert dat.y == pytest.approx([1, 2, 3, 4, 5])
+
+    elif backend_is("pyfits"):
+        with pytest.raises(IOErr) as err:
+            io.write_pha(str(tmpfile), pha, ascii=True)
+
+        assert str(err.value) == "not all arrays are of equal length"
+
+    else:
+        assert False  # programming error
+
+
+@requires_fits
+def test_write_pha_columnn_length_mismatch_fits(tmp_path):
+    """What happens when "required" column do not match.
+
+    At the moment we write out the file with mis-matched lengths.
+
+    """
+
+    chans = np.arange(1, 4, dtype=np.int32)
+    counts = np.arange(1, 6, dtype=np.int32)
+    pha = DataPHA("tmp", chans, counts)
+
+    tmpfile = tmp_path / 'test.fits'
+    io.write_pha(str(tmpfile), pha, ascii=False)
+
+    # The extra rows are padded with 0
+    dat = io.read_table(str(tmpfile))
+    assert len(dat.x) == 5
+    assert len(dat.y) == 5
+    assert dat.x == pytest.approx([1, 2, 3, 0, 0])
+    assert dat.y == pytest.approx([1, 2, 3, 4, 5])
