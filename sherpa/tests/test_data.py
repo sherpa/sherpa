@@ -1247,3 +1247,121 @@ def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
 
     err = f'strings not allowed in {emsg} bound list'
     assert str(de.value) == err
+
+
+@pytest.mark.parametrize("expected,args",
+                         [('2.0:20.0', []),
+                          ('', [(False, 1, 30)]),
+                          ('10.0:17.0', [(True, 7.1, 18)]),
+                          ('10.0:12.0,17.0', [(True, 7.1, 18), (False, 13, 16)]),
+                          ('2.0:12.0,17.0', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
+                          ('10.0:12.0,17.0:20.0', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
+                          ('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)]),
+                          ('2.0:20.0', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
+                         ])
+def test_data1d_get_filter_calls(expected, args):
+    """Basic check of get_filter
+
+    expected is the expected response
+    args is a list of 3-tuples of (flag, loval, hival) where
+    flag is True for notice and False for notice; they define
+    the filter to apply
+    """
+
+    xs = numpy.asarray([2, 5, 10, 12, 15, 17, 20])
+    ys = numpy.ones(xs.size)
+
+    d = Data1D('data', xs, ys)
+
+    for (flag, lo, hi) in args:
+        if flag:
+            d.notice(lo, hi)
+        else:
+            d.ignore(lo, hi)
+
+    assert d.get_filter(format='%.1f') == expected
+
+
+@pytest.mark.parametrize("expected,args",
+                         [('3.5:22.5', []),
+                          pytest.param('', [(False, 1, 30)], marks=pytest.mark.xfail),
+                          ('6.5:18.5', [(True, 7.1, 18)]),
+                          ('6.5:11.0,18.5', [(True, 7.1, 18), (False, 13, 16)]),
+                          # The following is interesting because the final notice(0, 12)
+                          # hits the 12-15 bin, but should it?
+                          ('3.5:13.5,18.5', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
+                          ('6.5:11.0,15.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
+                          pytest.param('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)], marks=pytest.mark.xfail),
+                          ('3.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
+                         ])
+def test_data1dint_get_filter_calls(expected, args):
+    """Basic check of get_filter
+
+    expected is the expected response
+    args is a list of 3-tuples of (flag, loval, hival) where
+    flag is True for notice and False for notice; they define
+    the filter to apply
+    """
+
+    # Note this is not a contiguous grid
+    xlos = numpy.asarray([2, 5, 10, 12, 15, 17, 20])
+    xhis = numpy.asarray([5, 8, 12, 15, 16, 20, 25])
+
+    ys = numpy.ones(xlos.size)
+
+    d = Data1DInt('data', xlos, xhis, ys)
+
+    for (flag, lo, hi) in args:
+        if flag:
+            d.notice(lo, hi)
+        else:
+            d.ignore(lo, hi)
+
+    assert d.get_filter(format='%.1f') == expected
+
+
+@pytest.mark.xfail
+def test_data1dint_get_x_xerr():
+    """Check get_x/get_xerr when filtering
+
+    This was added because there was a bug when all data had been
+    filtered out. It is essentially the same as
+    test_data1dint_get_filter_calls since get_filter calls get_x,
+    but it does add explicit checks and a check of get_xerr.
+
+    """
+
+    # Note this is not a contiguous grid
+    xlos = numpy.asarray([2, 5, 10, 12, 15, 17, 20])
+    xhis = numpy.asarray([5, 8, 12, 15, 16, 20, 25])
+
+    ys = numpy.ones(xlos.size)
+
+    d = Data1DInt('data', xlos, xhis, ys)
+
+    x = [3.5, 6.5, 11, 13.5, 15.5, 18.5, 22.5]
+    xerr = xhis - xlos
+    assert d.get_x() == pytest.approx(x)
+    assert d.get_xerr() == pytest.approx(xerr)
+
+    assert d.get_x(True) == pytest.approx(x)
+    assert d.get_xerr(True) == pytest.approx(xerr)
+
+    # Ignore a few points at the start and end
+    d.notice(11, 18)
+
+    # Just check that the default behavior does't change with the filter
+    assert d.get_x() == pytest.approx(x)
+    assert d.get_xerr() == pytest.approx(xerr)
+
+    assert d.get_x(True) == pytest.approx(x[2:-1])
+    assert d.get_xerr(True) == pytest.approx(xerr[2:-1])
+
+    # Now ignore all points
+    d.ignore(0, 1000)
+
+    assert d.get_x() == pytest.approx(x)
+    assert d.get_xerr() == pytest.approx(xerr)
+
+    assert d.get_x(True) == pytest.approx([])
+    assert d.get_xerr(True) == pytest.approx([])
