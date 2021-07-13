@@ -1199,10 +1199,19 @@ class Data1DInt(Data1D):
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
+        if len(indep) == 1:
+            # assume all data has been filtered out
+            return numpy.asarray([])
+
         return (indep[0] + indep[1]) / 2.0
 
     def get_xerr(self, filter=False, model=None):
-        xlo, xhi = self.get_evaluation_indep(filter, model)
+        indep = self.get_evaluation_indep(filter, model)
+        if len(indep) == 1:
+            # assume all data has been filtered out
+            return numpy.asarray([])
+
+        xlo, xhi = indep
         return xhi - xlo
 
     def notice(self, xlo=None, xhi=None, ignore=False):

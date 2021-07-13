@@ -1284,14 +1284,14 @@ def test_data1d_get_filter_calls(expected, args):
 
 @pytest.mark.parametrize("expected,args",
                          [('3.5:22.5', []),
-                          pytest.param('', [(False, 1, 30)], marks=pytest.mark.xfail),
+                          ('', [(False, 1, 30)]),
                           ('6.5:18.5', [(True, 7.1, 18)]),
                           ('6.5:11.0,18.5', [(True, 7.1, 18), (False, 13, 16)]),
                           # The following is interesting because the final notice(0, 12)
                           # hits the 12-15 bin, but should it?
                           ('3.5:13.5,18.5', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
                           ('6.5:11.0,15.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
-                          pytest.param('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)], marks=pytest.mark.xfail),
+                          ('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)]),
                           ('3.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
                          ])
 def test_data1dint_get_filter_calls(expected, args):
@@ -1320,7 +1320,6 @@ def test_data1dint_get_filter_calls(expected, args):
     assert d.get_filter(format='%.1f') == expected
 
 
-@pytest.mark.xfail
 def test_data1dint_get_x_xerr():
     """Check get_x/get_xerr when filtering
 
