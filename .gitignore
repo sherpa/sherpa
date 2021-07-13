@@ -122,3 +122,6 @@ docs/ExamplePlots.ipynb
 
 # IDE config
 .vscode
+
+# emacs related files
+flycheck*py
