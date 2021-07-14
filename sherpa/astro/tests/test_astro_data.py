@@ -1999,22 +1999,22 @@ def test_energy_filter_roundtrip(make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
-    fall = pha.get_filter()
-    assert fall == '0.124829999695:12.410000324249'
+    fall = pha.get_filter(format='%.5f')
+    assert fall == '0.12483:12.41000'
 
     pha.notice(0.5, 7)
     pha.ignore(1, 2)
 
-    expected = '0.518300011754:0.970899999142,2.058600068092:8.219800233841'
-    f1 = pha.get_filter()
+    expected = '0.51830:0.97090,2.05860:8.21980'
+    f1 = pha.get_filter(format='%.5f')
     assert f1 == expected
 
     pha.ungroup()
-    f2 = pha.get_filter()
-    assert f2 == '0.474500000477:0.985500007868,2.036700010300:9.862299919128'
+    f2 = pha.get_filter(format='%.5f')
+    assert f2 == '0.47450:0.98550,2.03670:9.86230'
 
     pha.group()
-    f3 = pha.get_filter()
+    f3 = pha.get_filter(format='%.5f')
     assert f3 == expected
 
 
@@ -2165,3 +2165,188 @@ def test_pha_creation_warns_about_non_numpy_counts():
     assert isinstance(d.counts, np.ndarray)
 
     assert d.counts == pytest.approx(counts)
+
+
+@requires_fits
+@requires_data
+def test_pha_check_filter(make_data_path):
+    """Added a test found useful when changing get_filter."""
+
+    import sherpa.astro.io
+
+    infile = make_data_path('3c273.pi')
+    pha = sherpa.astro.io.read_pha(infile)
+
+    pha.notice(0.5, 7)
+    assert pha.get_filter(format='%.4f') == '0.5183:8.2198'
+
+    pha.ignore(None, 1)
+    assert pha.get_filter(format='%.4f') == '1.0658:8.2198'
+
+    pha.ignore(5, None)
+    assert pha.get_filter(format='%.4f') == '1.0658:4.4822'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 26
+
+    pha.ungroup()
+
+    assert pha.get_filter(format='%.4f') == '1.0439:4.7085'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 252
+
+
+def test_pha_filter_simple_channel1():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_energy
+    """
+
+    chans = np.arange(1, 7, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    assert pha.get_filter() == '1:6'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter() == '1:6'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter() == '1,3:4,6'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter() == '2,5'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter() == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter() == '1'
+
+    pha.mask[-1] = True
+    assert pha.get_filter() == '1,6'
+
+    pha.mask[0] = False
+    assert pha.get_filter() == '6'
+
+
+def test_pha_filter_simple_channel0():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_energy
+    """
+
+    chans = np.arange(0, 6, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    assert pha.get_filter() == '0:5'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter() == '0:5'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter() == '0,2:3,5'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter() == '1,4'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter() == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter() == '0'
+
+    pha.mask[-1] = True
+    assert pha.get_filter() == '0,5'
+
+    pha.mask[0] = False
+    assert pha.get_filter() == '5'
+
+
+def test_pha_filter_simple_energy1():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_channel1
+    """
+
+    chans = np.arange(1, 7, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    rmf = create_delta_rmf(chans, chans + 1,
+                           e_min=chans, e_max=chans + 1)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_filter(format='%.1f') == '1.5:6.5'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == '1.5:6.5'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter(format='%.1f') == '1.5,3.5:4.5,6.5'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter(format='%.1f') == '2.5,5.5'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter(format='%.1f') == '1.5'
+
+    pha.mask[-1] = True
+    assert pha.get_filter(format='%.1f') == '1.5,6.5'
+
+    pha.mask[0] = False
+    assert pha.get_filter(format='%.1f') == '6.5'
+
+
+def test_pha_filter_simple_energy0():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_channel0
+
+    It is not at all clear what is going on here - DJB doesn't
+    think the test is wrong.
+    """
+
+    chans = np.arange(0, 6, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    # use integer bins as easy to check but ensure
+    # the first bin is not 0
+    rmf = create_delta_rmf(chans + 10, chans + 11,
+                           e_min=chans + 10, e_max=chans + 11)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_filter(format='%.1f') == '14.5:15.5'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == '14.5:15.5'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter(format='%.1f') == '14.5,12.5:11.5,15.5'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter(format='%.1f') == '10.5,13.5'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter(format='%.1f') == '15.5'
+
+    pha.mask[-1] = True
+    assert pha.get_filter(format='%.1f') == '14.5,15.5'
+
+    pha.mask[0] = False
+    assert pha.get_filter(format='%.1f') == '14.5'
