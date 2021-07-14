@@ -1746,12 +1746,21 @@ def test_channel_changing_limits(make_data_path):
 
     pha.set_analysis('channel')
 
+    assert pha.mask is True
+
     # selects
     #    group 11 (channels 60-61, mid=60)
     # to
     #    group 42 (channsls 345-368, mid=356)
     #
     pha.notice(60, 350)
+
+    mexpected1 = np.zeros(46, dtype=bool)
+    mexpected1[10:42] = True
+    mexpected2 = np.zeros(1024, dtype=bool)
+    mexpected2[59:368] = True
+    assert pha.mask == pytest.approx(mexpected1)
+    assert pha.get_mask() == pytest.approx(mexpected2)
 
     expected1 = '60:356'
     expected2 = '60:368'
@@ -1762,11 +1771,15 @@ def test_channel_changing_limits(make_data_path):
     # group, even when group=False.
     #
     pha.ungroup()
+    assert pha.mask == pytest.approx(mexpected2)
+    assert pha.get_mask() == pytest.approx(mexpected2)
     assert pha.get_filter() == expected2
     assert pha.get_filter(group=False) == expected2
 
     # We go back to the original filter
     pha.group()
+    assert pha.mask == pytest.approx(mexpected1)
+    assert pha.get_mask() == pytest.approx(mexpected2)
     assert pha.get_filter() == expected1
     assert pha.get_filter(group=False) == expected2
 
@@ -2197,6 +2210,50 @@ def test_pha_check_filter(make_data_path):
     assert plot[0].size == 252
 
 
+@requires_fits
+@requires_data
+def test_pha_check_filter_channel(make_data_path):
+    """test_pha_check_filter with channel units"""
+
+    import sherpa.astro.io
+
+    infile = make_data_path('3c273.pi')
+    pha = sherpa.astro.io.read_pha(infile)
+    pha.units = 'channel'
+
+    # The data is grouped so it doesn't quite match
+    pha.notice(35, 480)
+    assert pha.get_filter(format='%i') == '36:563'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '0.5183:8.2198'
+    pha.units = 'channel'
+
+    pha.ignore(None, 69)
+    assert pha.get_filter(format='%i') == '73:563'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '1.0658:8.2198'
+    pha.units = 'channel'
+
+    pha.ignore(343, None)
+    assert pha.get_filter(format='%i') == '73:307'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '1.0658:4.4822'
+    pha.units = 'channel'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 26
+
+    pha.ungroup()
+
+    assert pha.get_filter(format='%i') == '72:323'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '1.0439:4.7085'
+    pha.units = 'channel'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 252
+
+
 def test_pha_filter_simple_channel1():
     """Simple tests of get_filter
 
@@ -2350,3 +2407,146 @@ def test_pha_filter_simple_energy0():
 
     pha.mask[0] = False
     assert pha.get_filter(format='%.1f') == '14.5'
+
+
+@pytest.mark.parametrize('ignore', [False, True])
+@pytest.mark.parametrize('lo,hi,evals',
+                         [(0.5, 2.3, (0, 10, 0)),
+                          (0.7, 2.1, (1, 8, 1)),
+                          (0.5, 0.7, (0, 2, 8)),
+                          (1.1, 1.3, (3, 2, 5)),
+                          (2.1, 2.3, (8, 2, 0)),
+                          # special case filters that are within a single bin
+                          (0.45, 0.55, (0, 1, 9)),
+                          (0.65, 0.75, (1, 1, 8)),
+                          (1.05, 1.15, (3, 1, 6)),
+                          (2.25, 2.35, (9, 1, 0)),
+                          # outside the limits
+                          (0.1, 0.4, None),
+                          (0.1, 0.5, (0, 1, 9)),
+                          (2.41, 2.8, None),
+                          # Now queries on the edge of each bin; these would ideally
+                          # only match 1 bin
+                          (0.4, 0.6, (0, 1, 9)),
+                          (0.6, 0.8, (0, 3, 7)),
+                          (0.8, 1.0, (2, 2, 6)),
+                          (1.0, 1.2, (3, 2, 5)),
+                          (1.2, 1.4, (4, 1, 5)),
+                          (1.4, 1.6, (4, 3, 3)),
+                          (1.6, 1.8, (6, 2, 2)),
+                          (1.8, 2.0, (7, 2, 1)),
+                          (2.0, 2.2, (8, 2, 0)),
+                          (2.2, 2.4, (9, 1, 0)),
+                          # check last upper limit
+                          (2.4, 2.6, (9, 1, 0))
+                         ])
+def test_pha_check_limit(ignore, lo, hi, evals):
+    """What happens when we hit values at bin edges [energy]?
+
+    This includes some non-bin-edge tests for fun. Fortunately
+    ignore and notice are inverses here so we can use the
+    same pattern to generate the expected mask signal.
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = chans * 2
+    pha = DataPHA('example', chans, counts)
+
+    egrids = 0.2 + 0.2 * np.arange(1, 12)
+    arf = DataARF('arf', egrids[:-1], egrids[1:],
+                  np.ones(10))
+    pha.set_arf(arf)
+    pha.units = 'energy'
+
+    assert pha.mask is True
+    assert pha.get_mask() is None
+
+    func = pha.ignore if ignore else pha.notice
+    func(lo, hi)
+    if evals is None:
+        assert pha.mask is True
+        assert pha.get_mask() is None
+    else:
+        if ignore:
+            vout = True
+            vin = False
+        else:
+            vout = False
+            vin = True
+
+        c1, c2, c3 = evals
+        expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+        assert pha.mask == pytest.approx(pha.get_mask())
+        assert pha.mask == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('ignore', [False, True])
+@pytest.mark.parametrize('lo,hi,evals',
+                         [(1, 10, (0, 10, 0)),
+                          (2, 9, (1, 8, 1)),
+                          (1, 2, (0, 2, 8)),
+                          (4, 5, (3, 2, 5)),
+                          (9, 10, (8, 2, 0)),
+                          # outside the limits
+                          (0, 1, None),
+                          (11, 12, None),
+                          # Now queries on the edge of each bin; these would ideally
+                          # only match 1 bin
+                          (1, 1, None),
+                          # (1, 1, (0, 1, 9)),
+                          (2, 2, (1, 1, 8)),
+                          (3, 3, (2, 1, 7)),
+                          (4, 4, (3, 1, 6)),
+                          (5, 5, (4, 1, 5)),
+                          (6, 6, (5, 1, 4)),
+                          (7, 7, (6, 1, 3)),
+                          (8, 8, (7, 1, 2)),
+                          (9, 9, (8, 1, 1)),
+                          # (10, 10, (9, 1, 0)),
+                          (10, 10, None),
+                          # check last upper limit
+                          (10, 11, None),
+                         ])
+def test_pha_check_limit_channel(ignore, lo, hi, evals):
+    """What happens when we hit values at bin edges [channel]?
+
+    Channel filtering behaves differently to energy/wavelength
+    filtering so check.  It's not quite the same since I am
+    restricting the channel ranges to integer values so some of the
+    energy checks don't make sense here.
+
+    The ARF is not necessary but keep in to better match
+    test_pha_check_limit.
+
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = chans * 2
+    pha = DataPHA('example', chans, counts)
+
+    egrids = 0.2 + 0.2 * np.arange(1, 12)
+    arf = DataARF('arf', egrids[:-1], egrids[1:],
+                  np.ones(10))
+    pha.set_arf(arf)
+    pha.units = 'channel'
+
+    assert pha.mask is True
+    assert pha.get_mask() is None
+
+    func = pha.ignore if ignore else pha.notice
+    func(lo, hi)
+    if evals is None:
+        assert pha.mask is True
+        assert pha.get_mask() is None
+    else:
+        if ignore:
+            vout = True
+            vin = False
+        else:
+            vout = False
+            vin = True
+
+        c1, c2, c3 = evals
+        expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+        assert pha.mask == pytest.approx(pha.get_mask())
+        assert pha.mask == pytest.approx(expected)
