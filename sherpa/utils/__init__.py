@@ -1438,6 +1438,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
     if mask is None:
         seq = vals
+
     else:
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
@@ -1456,51 +1457,31 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         index = numpy.arange(len(mask))
         seq = index[mask]
 
-    # diffs has 1 less element than vals
-    #
-    diffs = numpy.apply_along_axis(numpy.diff, 0, seq)
-    diffs = diffs == 1
-
-    def filt(start, end):
-        "What is the filter expression for this range?"
-        vstr = format % start
-        if start != end:
-            vstr += delim + format % end
-        return vstr
-
-    # The trick here is that if diffs is True then we just want to
-    # update the end counter, which gives the end-point of the current
-    # range, and move to the next bin. We only output data when diffs
-    # is False, when we report the previous range and start a new
-    # range.
-    #
-    expr = []
+    exprs = []
     start = vals[0]
-    end = vals[0]
-    for delta, val in zip(diffs, vals[1:]):
 
-        # If this is part of a contiguous sequence then we update
-        # the end value and move on.
-        #
-        if delta:
-            end = val
-            continue
-
-        # If we have a break then output the range we have just
-        # processed.
-        #
-        expr.append(filt(start, end))
-
-        # Start a new range.
-        #
-        start = val
-        end = val
-
-    # Handle the last range.
+    # We follow create_expr_int but instead of having separate lo/hi
+    # always we use the same array
     #
-    expr.append(filt(start, end))
+    startbins = vals[1:]
+    endbins = vals[:-1]
 
-    return ','.join(expr)
+    diffs = numpy.diff(seq)
+    idxs, = numpy.where(diffs != 1)
+    for idx in idxs:
+        exprs.append((start, endbins[idx]))
+        start = startbins[idx]
+
+    exprs.append((start, vals[-1]))
+
+    def filt(lo, hi):
+        vstr = format % lo
+        if lo == hi:
+            return vstr
+
+        return vstr + f"{delim}{format % hi}"
+
+    return ",".join([filt(*expr) for expr in exprs])
 
 
 def create_expr_int(lovals, hivals, mask=None,
