@@ -1283,14 +1283,14 @@ def test_data1d_get_filter_calls(expected, args):
 
 
 @pytest.mark.parametrize("expected,args",
-                         [('3.5:22.5', []),
+                         [('2.0:25.0', []),
                           ('', [(False, 1, 30)]),
-                          ('6.5:18.5', [(True, 7.1, 18)]),
-                          ('6.5:11.0,18.5', [(True, 7.1, 18), (False, 13, 16)]),
-                          ('3.5:11.0,18.5', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
-                          ('6.5:11.0,15.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
+                          ('5.0:20.0', [(True, 7.1, 18)]),
+                          ('5.0:12.0,17.0:20.0', [(True, 7.1, 18), (False, 13, 16)]),
+                          ('2.0:12.0,17.0:20.0', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
+                          ('5.0:12.0,15.0:25.0', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
                           ('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)]),
-                          ('3.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
+                          ('2.0:25.0', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
                          ])
 def test_data1dint_get_filter_calls(expected, args):
     """Basic check of get_filter

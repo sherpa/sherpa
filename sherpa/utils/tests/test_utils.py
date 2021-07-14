@@ -881,6 +881,60 @@ def test_create_expr_mask_singlebins():
     assert out == "0.40,0.42,0.56,0.58"
 
 
+def test_create_expr_int_empty():
+    """"No data"""
+
+    out = utils.create_expr_int([], [])
+    assert out == ''
+
+
+def test_create_expr_int_size_error():
+    """What happens when lovals and hivals have different sizes?"""
+
+    with pytest.raises(ValueError) as exc:
+        utils.create_expr_int([1, 2, 3, 4], [2, 3])
+
+    assert str(exc.value) == 'hivals array mis-match with lovals'
+
+
+def test_create_expr_int_mask_size_error():
+    """What happens when lovals and mask have different sizes?"""
+
+    with pytest.raises(ValueError) as exc:
+        utils.create_expr_int([1, 2, 3, 4], [4, 5, 6, 7], [True, True])
+
+    assert str(exc.value) == 'mask array mis-match with lovals'
+
+
+@pytest.mark.parametrize("expected,lovals,hivals",
+                         [('1-5', [1, 2, 3, 4], [2, 3, 4, 5]),
+                          ('1-8', [1, 2, 4, 5, 7], [2, 3, 5, 6, 8]),
+                          ('0.1-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.8, 1.0]),
+                          ('0.1-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0])
+                         ])
+def test_create_expr_int_docstring_no_mask(expected, lovals, hivals):
+    """"Check the docstring examples"""
+
+    out = utils.create_expr_int(lovals, hivals)
+    assert out == expected
+
+
+@pytest.mark.parametrize("expected,lovals,hivals,mask",
+                         [('0.1-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0], [True, True, True, True]),
+                          ('1-3,4-5', [1, 2, 4], [2, 3, 5], [True, True, False, True]),
+                          ('1-4,5-6', [1, 3, 5], [2, 4, 6], [True, True, False, True]),
+                          ('0.1-0.4,0.6-1.0', [0.1, 0.2, 0.6, 0.8], [0.2, 0.4, 0.8, 1.0],[True, True, False, True, True]),
+                          ('0.1-0.3,0.4-0.5,0.8-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [True, True, False, True, False, True]),
+                          ('0.1-0.3,0.4-0.5,0.8-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [False, True, True, False, True, False, True, False]),
+                          ('1-2,2-5', [1, 2, 3, 4], [2, 3, 4, 5], [True, False, True, True, True]),
+                         ])
+def test_create_expr_int_docstring_mask(expected, lovals, hivals ,mask):
+    """"Check the docstring examples"""
+
+    out = utils.create_expr_int(lovals, hivals, mask)
+    assert out == expected
+
+
 def test_send_to_pager_file(tmpdir):
     """Check we can create a file"""
 

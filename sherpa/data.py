@@ -67,7 +67,7 @@ import numpy
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
-    print_fields, create_expr, calc_total_error, bool_cast, \
+    print_fields, create_expr, create_expr_int, calc_total_error, bool_cast, \
     filter_bins, parallel_map_funcs
 from sherpa.utils import formatting
 
@@ -1209,8 +1209,6 @@ class Data1D(Data):
         return err
 
     def get_filter(self, format='%.4f', delim=':'):
-        # for derived intergrated classes, this will return values in center of
-        # bin.
         x = self.get_x(filter=True)
         if numpy.iterable(self.mask):
             mask = self.mask
@@ -1352,6 +1350,26 @@ class Data1DInt(Data1D):
 
         xlo, xhi = indep
         return xhi - xlo
+
+    def get_filter(self, format='%.4f', delim=':'):
+        # We could just use the middle of each bin (which is what
+        # would happen if we didn't over-ride Data1D.filter) but let's
+        # use the start and end values for each selected bin.
+        #
+        indep = self.get_evaluation_indep(filter=True)
+        if len(indep) == 1:
+            # assume all data has been filtered out
+            return ''
+
+        if numpy.iterable(self.mask):
+            mask = self.mask
+        else:
+            # Unlike create_expr we do not need to send
+            # a mask in here
+            mask = None
+
+        return create_expr_int(indep[0], indep[1], mask=mask,
+                               format=format, delim=delim)
 
     def notice(self, xlo=None, xhi=None, ignore=False):
         """Notice or ignore the given range.
