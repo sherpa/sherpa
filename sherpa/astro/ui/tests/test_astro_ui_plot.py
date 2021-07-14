@@ -3970,7 +3970,7 @@ def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
     ui.notice(0.77, 1.125)
 
     f = ui.get_filter()
-    assert f == '0.775000000000:1.210000000000'
+    assert f == '0.750000000000:1.300000000000'
 
 
 @requires_fits
@@ -3990,7 +3990,7 @@ def test_pha_model_plot_filter_range_1024(make_data_path, clean_astro_ui):
     ui.notice(0.5, 5)
 
     f = ui.get_filter()
-    assert f == '0.518300011754:4.869099855423'
+    assert f == '0.467200011015:5.022399902344'
 
 
 @requires_fits
@@ -4008,7 +4008,7 @@ def test_pha_model_plot_filter_range_1024_true(mask, make_data_path, clean_astro
     d.mask = mask
     ui.plot_model()
     f = ui.get_filter()
-    assert f == '0.124829999695:12.410000324249'
+    assert f == '0.001460000058:14.950400352478'
 
 
 @requires_fits

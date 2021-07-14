@@ -100,7 +100,7 @@ from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
-    create_expr, parse_expr, bool_cast, rebin, filter_bins
+    create_expr, create_expr_int, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
 from sherpa.astro import hc
 
@@ -3775,8 +3775,12 @@ class DataPHA(Data1D):
         """Return the data filter as a string.
 
         For grouped data, or when the analysis setting is not
-        channel, filter values refer to the center of the
+        channel, filter values refer to the full range of each
         channel or group.
+
+        .. versionchanged:: 4.14.0
+           Prior to 4.14.0 the filter used the mid-point of the bin,
+           not it's low or high value.
 
         Parameters
         ----------
@@ -3816,49 +3820,75 @@ class DataPHA(Data1D):
         if self.mask is False:
             return 'No noticed bins'
 
-        if numpy.iterable(self.mask):
-            mask = self.mask
-        else:
-            mask = None
-
-        if group:
-            # grouped noticed channels
-            #
-            x = self.apply_filter(self.channel, self._make_groups)
-
-        else:
-            # ungrouped noticed channels
-            x = self.get_noticed_channels()
-
-            # We need the "ungrouped" mask array. Need to check
-            # issue #361 since get_noticed_channels notes an
-            # issue that may be relevant here (so far this
-            # doesn't seem to be the case).
-            #
-            mask = self.get_mask()
-
-            # Safety check for users. Warn, but continue.
-            #
-            if mask is not None and mask.sum() != x.size:
-                warning("There is a mis-match in the ungrouped mask " +
-                        "and data ({} vs {})".format(mask.sum(), x.size))
-
-        # Convert channels to appropriate quantity if necessary
-        x = self._from_channel(x, group=group)
-
-        if mask is None:
-            mask = numpy.ones(len(x), dtype=bool)
-
-        # Ensure the data is in ascending order for create_expr.
+        # We use get_noticed_channels since it includes quality
+        # filtering, which the 'self.mask is True' check below does
+        # not make.
         #
-        if len(x) > 0 and x[-1] < x[0]:
-            x = x[::-1]
+        chans = self.get_noticed_channels()
+
+        # Special case all data has been masked. Should it
+        # error out or return either '' or 'No noticed bins'?
+        #
+        if len(chans) == 0:
+            # raise DataErr('notmask')
+            # return 'No noticed bins'
+            return ''
+
+        # Special case all channels are selected.
+        #
+        if self.mask is True:
+            elo, ehi = self._get_ebins(group=False, response_id=None)
+            if self.units == 'energy':
+                loval = elo[0]
+                hival = ehi[-1]
+            elif self.units == 'wavelength':
+                loval = hc / ehi[-1]
+                hival = hc / elo[0]
+            else:
+                # Assume channel
+                loval = self.channel[0]
+                hival = self.channel[-1]
+                format = '%i'
+
+            # Check for inversion
+            if loval > hival:
+                loval, hival = hival, loval
+
+            return f"{format % loval}{delim}{format % hival}"
+
+        mask = self.get_mask()
+        # Just to check
+        assert mask is not None
+
+        # What channels are selected - note that it is possible to
+        # get here and have all channels selected (ie all elements
+        # of self.mask are True).
+        #
+        # We handle channel units differently to energy or wavelength,
+        # as channels are treated as Data1D does whereas we want to
+        # use Data1DInt for the units.
+        #
+        # We do everything ungrouped as there is no difference now
+        # (as of Sherpa 4.14.0).
+        #
+        if self.units == 'channel':
+            return create_expr(chans, mask=mask, format='%i', delim=delim)
+
+        # Unfortunately we don't have a usable API for accessing the
+        # energy or wavelength ranges directly.
+        #
+        xlo, xhi = self._get_ebins(group=False)
+        if self.units == 'wavelength':
+            xlo, xhi = hc / xhi, hc / xlo
+
+        # Ensure the data is in ascending order for create_expr_int.
+        #
+        if xlo[0] > xlo[-1]:
+            xlo = xlo[::-1]
+            xhi = xhi[::-1]
             mask = mask[::-1]
 
-        if self.units == 'channel':
-            format = '%i'
-
-        return create_expr(x, mask=mask, format=format, delim=delim)
+        return create_expr_int(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
         return (self.get_filter(format='%.4f', delim='-') +
