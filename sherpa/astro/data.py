@@ -3690,6 +3690,23 @@ class DataPHA(Data1D):
                 # match the error seen from other data classes here
                 raise DataErr('typecheck', f'{label} bound')
 
+        # Validate input
+        #
+        if lo is not None and hi is not None and lo > hi:
+            raise DataErr('bad', 'hi argument', 'must be >= lo')
+
+        # Ensure the limits are physically meaningful, that is
+        # energy and wavelengths are >= 0. Technically it should be
+        # > but using 0 is a nice value for a minimum. We do not
+        # enforce limits if channels are being used because it's
+        # not clear if channels can technically be negative.
+        #
+        if self.units != 'channel':
+            if lo is not None and lo < 0:
+                raise DataErr('bad', 'lo argument', 'must be >= 0')
+            if hi is not None and hi < 0:
+                raise DataErr('bad', 'hi argument', 'must be >= 0')
+
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do
         # *not* impose filter on data itself.  (Revision possibly

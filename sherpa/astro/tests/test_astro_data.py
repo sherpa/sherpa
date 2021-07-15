@@ -1524,10 +1524,10 @@ def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, '0.1248:12.4100'),
+                         [(0, 2000, '0.1248:12.4100'),
                           (0.7, 2000, '0.6716:12.4100'),
-                          (-5, 4.2, '0.1248:4.1391'),
-                          (-20, -5, '0.1248:12.4100'),
+                          (0, 4.2, '0.1248:4.1391'),
+                          (0, 1e-10, '0.1248:12.4100'),
                           (2000, 3000, '0.1248:12.4100')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1545,10 +1545,10 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, '0.0080:14.9431'),
+                         [(0, 2000, '0.0080:14.9431'),
                           (0.7, 2000, '0.6935:14.9431'),
-                          (-5, 4.2, '0.0080:4.1975'),
-                          (-20, -5, '0.0080:14.9431'),
+                          (0, 4.2, '0.0080:4.1975'),
+                          (0, 1e-10, '0.0080:14.9431'),
                           (2000, 3000, '0.0080:14.9431')])
 def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1566,10 +1566,10 @@ def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_dat
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 8000, '0.9991:99.3224'),
+                         [(0, 8000, '0.9991:99.3224'),
                           (20, 8000, '20.4628:99.3224'),
-                          (-5, 15, '0.9991:14.7688'),
-                          (-20, -5, '0.9991:99.3224'),
+                          (0, 15, '0.9991:14.7688'),
+                          (0, 1e-10, '0.9991:99.3224'),
                           (8000, 9000, '99.3224')])
 def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1587,10 +1587,10 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 8000, '0.8297:1544.0123'),
+                         [(0, 8000, '0.8297:1544.0123'),
                           (20, 8000, '19.9813:1544.0123'),
-                          (-5, 15, '0.8297:15.0302'),
-                          (-20, -5, '0.8297:1544.0123'),
+                          (0, 15, '0.8297:15.0302'),
+                          (0, 1e-10, '0.8297:1544.0123'),
                           (8000, 9000, '1544.0123')])
 def test_notice_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1650,10 +1650,10 @@ def test_ignore_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (0.8, 2000, '0.1248:0.7665'),
-                          (-5, 3.5, '3.6792:12.4100'),
-                          (-20, -5, '0.1248:12.4100'),
+                          (0, 3.5, '3.6792:12.4100'),
+                          (0, 1e-10, '0.1248:12.4100'),
                           (2000, 3000, '0.1248:12.4100')])
 def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1671,10 +1671,10 @@ def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (0.8, 2000, '0.0080:0.7811'),
-                          (-5, 3.5, '3.5113:14.9431'),
-                          (-20, -5, '0.0080:14.9431'),
+                          (0, 3.5, '3.5113:14.9431'),
+                          (0, 1e-10, '0.0080:14.9431'),
                           (2000, 3000, '0.0080:14.9431')])
 def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1692,10 +1692,10 @@ def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_dat
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (20, 2000, '0.9991:18.4610'),
-                          (-5, 15, '15.4401:99.3224'),
-                          (-20, -5, '0.9991:99.3224'),
+                          (0, 15, '15.4401:99.3224'),
+                          (0, 1e-10, '0.9991:99.3224'),
                           (2000, 3000, '0.9991:44.6951')])
 def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1713,10 +1713,10 @@ def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (20, 2000, '0.8297:19.5220'),
-                          (-5, 15, '15.3010:1544.0123'),
-                          (-20, -5, '0.8297:1544.0123'),
+                          (0, 15, '15.3010:1544.0123'),
+                          (0, 1e-10, '0.8297:1544.0123'),
                           (2000, 3000, '0.8297:566.1378')])
 def test_ignore_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1729,6 +1729,43 @@ def test_ignore_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_
 
     pha.ignore(lo, hi)
     assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("units", ["energy", "wave"])
+@pytest.mark.parametrize("notice", [True, False])
+@pytest.mark.parametrize("lo,hi",
+                         [(-5, -2), (-5, 2), (-5, None), (0, -2), (None, -2)])
+def test_pha_validates_limits(units, notice, lo, hi, make_data_path):
+    """Check the limits are validated."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.units = units
+    func = pha.notice if notice else pha.ignore
+
+    with pytest.raises(DataErr) as de:
+        func(lo, hi)
+
+    assert str(de.value).startswith('unknown ')
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("notice", [True, False])
+def test_pha_validates_range(notice, make_data_path):
+    """Ensure lo <= hi check is made"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    func = pha.notice if notice else pha.ignore
+    with pytest.raises(DataErr) as de:
+        func(3, 2)
+
+    assert str(de.value) == "unknown hi argument: 'must be >= lo'"
 
 
 @requires_data
