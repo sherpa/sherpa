@@ -1119,10 +1119,11 @@ class Data1D(Data):
         # for derived intergrated classes, this will return values in center of
         # bin.
         x = self.get_x(filter=True)
-        mask = numpy.ones(len(x), dtype=bool)
         if numpy.iterable(self.mask):
             mask = self.mask
-        return create_expr(x, mask, format, delim)
+        else:
+            mask = numpy.ones(len(x), dtype=bool)
+        return create_expr(x, mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
         return self.get_filter(delim='-') + ' ' + self.get_xlabel()
