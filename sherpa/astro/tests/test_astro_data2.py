@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro.data import DataARF, DataIMG, DataPHA
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits
@@ -241,6 +242,34 @@ def test_288_a():
     assert pha.mask == pytest.approx([True, False, True])
 
 
+def test_288_a_energy():
+    """The issue from #288 which was working
+
+    test_288_a but with a response so we test energy filters
+    """
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    rlo = channels
+    rhi = channels + 1
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    assert pha.mask
+    pha.ignore(3, 4)
+
+    # I use approx because it gives a nice answer, even though
+    # I want eqiuality not approximation in this test. Fortunately
+    # with bools the use of approx is okay (it can tell the
+    # difference between 0 and 1, aka False and True).
+    #
+    assert pha.mask == pytest.approx([True, False, True])
+
+
 def test_288_b():
     """The issue from #288 which was failing"""
 
@@ -248,6 +277,29 @@ def test_288_b():
     counts = np.asarray([5, 5, 10, 10, 2])
     grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
     pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    assert pha.mask
+    pha.ignore(3.1, 4)
+
+    assert pha.mask == pytest.approx([True, False, True])
+
+
+def test_288_b_energy():
+    """The issue from #288 which was failing
+
+    test_288_b but with a response so we test energy filters
+    """
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    rlo = channels
+    rhi = channels + 1
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
 
     assert pha.mask
     pha.ignore(3.1, 4)
@@ -277,7 +329,13 @@ def test_grouping_non_numpy():
 
 
 def test_416_a():
-    """The first test case from issue #416"""
+    """The first test case from issue #416
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
+    """
 
     # if y is not a numpy array then group_counts errors out
     # with a strange error. Another reason why DataPHA needs
@@ -287,7 +345,13 @@ def test_416_a():
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
-    pha.notice(3.5, 6.5)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    pha.notice(4.5, 6.5)
 
     mask = [False, False, False, True, True, True, False, False, False, False]
     assert pha.mask == pytest.approx(mask)
@@ -316,12 +380,23 @@ def test_416_b(caplog):
     """The second test case from issue #416
 
     This is to make sure this hasn't changed.
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
     """
 
     x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
     pha.notice(3.5, 6.5)
     pha.group_counts(3)
 
@@ -355,13 +430,29 @@ def test_416_b(caplog):
 
 def test_416_c():
     """The third test case from issue #416
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
     """
 
     x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
-    pha.notice(3.5, 6.5)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    # When using channels this used notice(3.5, 6.5)
+    # but using energy space we need to use a differnt
+    # range to match the ones the original channel filter
+    # used.
+    #
+    pha.notice(4.5, 6.5)
 
     # this should be ~pha.mask
     tabstops = [True] * 3 + [False] * 3 + [True] * 4
