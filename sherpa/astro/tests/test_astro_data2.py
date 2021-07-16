@@ -104,9 +104,10 @@ def test_need_numpy_channels():
                           ("channel", '4', [(False, 5, None), (False, None, 3)]),
                           # a few checks of non-integer channel limits (we don't explicitly
                           # say what this means so just check we know what it does)
-                          ("channel", '3:7', [(True, 2.8, 7.9)]),
-                          ("channel", '3:7', [(True, 2.1, 7.2)]),
-                          ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
+                          # These are no-longer valid
+                          # ("channel", '3:7', [(True, 2.8, 7.9)]),
+                          # ("channel", '3:7', [(True, 2.1, 7.2)]),
+                          # ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
                           # energy
                           ("energy", '0.3:2.1', []),
                           ("energy", '', [(False, 0.3, 2.1)]),
@@ -223,6 +224,23 @@ def test_error_on_invalid_channel_grouped2(chan):
     assert str(exc.value) == 'invalid group number: {}'.format(chan - 1)
 
 
+@pytest.mark.parametrize("ignore", [False, True])
+@pytest.mark.parametrize("lbl,lo,hi", [('lo', 1.5, 2.5),
+                                       ('lo', 1.5, 2),
+                                       ('hi', 1, 2.5)])
+def test_pha_channel_limits_are_integers(ignore, lbl, lo, hi):
+    """Ensure channels are integers."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, -1, 1])
+
+    func = pha.ignore if ignore else pha.notice
+    with pytest.raises(DataErr) as exc:
+        func(lo, hi)
+
+    assert str(exc.value) == f"unknown {lbl} argument: 'must be an integer channel value'"
+
+
 def test_288_a():
     """The issue from #288 which was working"""
 
@@ -271,7 +289,10 @@ def test_288_a_energy():
 
 
 def test_288_b():
-    """The issue from #288 which was failing"""
+    """The issue from #288 which was failing
+
+    We now error out with a non-integer channel
+    """
 
     channels = np.arange(1, 6)
     counts = np.asarray([5, 5, 10, 10, 2])
@@ -279,9 +300,10 @@ def test_288_b():
     pha = DataPHA('x', channels, counts, grouping=grouping)
 
     assert pha.mask
-    pha.ignore(3.1, 4)
+    with pytest.raises(DataErr) as de:
+        pha.ignore(3.1, 4)
 
-    assert pha.mask == pytest.approx([True, False, True])
+    assert str(de.value) == "unknown lo argument: 'must be an integer channel value'"
 
 
 def test_288_b_energy():

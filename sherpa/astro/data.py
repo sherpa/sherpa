@@ -3706,7 +3706,15 @@ class DataPHA(Data1D):
         # enforce limits if channels are being used because it's
         # not clear if channels can technically be negative.
         #
-        if self.units != 'channel':
+        # For channels we just require the numbers are integers.
+        #
+        if self.units == 'channel':
+            if lo is not None and not float(lo).is_integer():
+                raise DataErr('bad', 'lo argument', 'must be an integer channel value')
+            if hi is not None and not float(hi).is_integer():
+                raise DataErr('bad', 'hi argument', 'must be an integer channel value')
+
+        else:
             if lo is not None and lo < 0:
                 raise DataErr('bad', 'lo argument', 'must be >= 0')
             if hi is not None and hi < 0:

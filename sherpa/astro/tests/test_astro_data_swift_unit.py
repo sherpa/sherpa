@@ -454,8 +454,13 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     # this range is used. Alternatively, channel 801 could have been
     # excluded explicitly.
     #
+    # With changes to PHA filtering we now have to change the
+    # filter range again to include the 0.29-0.30 bin.
+    #
     # ui.notice(0.3, 8.0)
-    ui.notice(0.3, 7.995)
+    # ui.notice(0.3, 7.995)
+    # ui.notice(0.299, 8.0)
+    ui.notice(0.299, 7.995)  # TODO why has this changed?
 
     # Check the selected range
     pha = ui.get_data()

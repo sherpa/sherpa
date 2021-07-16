@@ -2539,10 +2539,9 @@ def test_pha_check_limit(ignore, lo, hi, evals):
                           (7, 7, (6, 1, 3)),
                           (8, 8, (7, 1, 2)),
                           (9, 9, (8, 1, 1)),
-                          # (10, 10, (9, 1, 0)),
-                          (10, 10, None),
+                          (10, 10, None),  # (9, 1, 0))
                           # check last upper limit
-                          (10, 11, None),
+                          (10, 11, None)   # (9, 1, 0))
                          ])
 def test_pha_check_limit_channel(ignore, lo, hi, evals):
     """What happens when we hit values at bin edges [channel]?
