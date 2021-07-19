@@ -154,6 +154,9 @@ def _notice_resp(chans, arf, rmf):
                         los = (rmf.energ_lo[ii],)
                         his = (rmf.energ_hi[ii],)
                         grid = (arf.energ_lo, arf.energ_hi)
+                        # TODO: should this set integrated=True?
+                        #       we only have one test of this code in
+                        #       sherpa/astro/tests/test_astro.py:test_missmatch_arf
                         idx = filter_bins(los, his, grid).nonzero()[0]
                         arf_mask[idx] = True
             arf.notice(arf_mask)
@@ -3960,9 +3963,8 @@ class DataPHA(Data1D):
 
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do
-        # *not* impose filter on data itself.  (Revision possibly
-        # this should be done in high-level UI?)  SMD 10/25/12
-
+        # *not* impose filter on data itself.
+        #
         filter_background_only = False
         if bkg_id is not None:
             if not numpy.iterable(bkg_id):
@@ -3973,7 +3975,8 @@ class DataPHA(Data1D):
 
         # Automatically impose data's filter on background data sets.
         # Units must agree for this to be meaningful, so temporarily
-        # make data and background units match. SMD 10/25/12
+        # make data and background units match.
+        #
         for bid in bkg_id:
             bkg = self.get_background(bid)
             old_bkg_units = bkg.units
@@ -3987,6 +3990,7 @@ class DataPHA(Data1D):
                 bkg.units = old_bkg_units
 
         # If we're only supposed to filter backgrounds, return
+        #
         if filter_background_only:
             return
 
@@ -3995,108 +3999,63 @@ class DataPHA(Data1D):
             self.quality_filter = None
             self.notice_response(False)
 
-        # When convert_limit is called, any limit that is outside the
-        # supported range (e.g. lo = 0.01 when the response is 0.1 to
-        # 11 keV) will get clamped to the minumum or maximum value.
-        # This is okay when lo is smaller and hi is larger than the
-        # supported values but is a problem when they are both
-        # smaller or larger than the range, since the result is then
-        # that the first or last group would be filtered. It is
-        # therefore necessary to check for this condition.
-        #
-        # This would be easier if _to_channel were to identify that
-        # the range had been (or should be) clamped, but that is a
-        # larger change than I want to implement, so instead we repeat
-        # some of the checks that the _xxx_to_channel methods make to
-        # see what the minimum and maximum allowed values are.
+        # elo and ehi will be in channel (units=channel) or energy
+        # (units=energy or units=wavelength).
         #
         try:
-            elo, ehi = self._get_ebins(group=False)
+            elo, ehi = self._get_ebins(group=self.grouped)
         except DataErr as de:
             info(f"Skipping dataset {self.name}: {de}")
             return
 
-        if self.units == 'energy':
-            # It's not guaranteed that channels are in increasing energy
-            # but we can certainly assume that they are monotonic.
-            # Thus, the min of the first and last entry is the minimum
-            # energy of the elo array
-            umin = min(elo[0], elo[-1])
-            umax = max(ehi[0], ehi[-1])
-        elif self.units == 'wavelength':
-            umin = min(hc / ehi[[0, -1]])
-            umax = max(hc / elo[[0, -1]])
-        else:
-            # assume channel units
-            umin = self.channel[0]
-            umax = self.channel[-1]
-
-        assert umin < umax, (self.units, umin, umax)
-
-        # Finally we can check that the request is not
-        # outside the valid range "on the same side".
+        # Convert wavelength limits to energy if necessary.
         #
-        if lo is not None and hi is not None:
-            assert lo <= hi, (lo, hi)
-            if hi <= umin:
-                return
-            if lo >= umax:
-                return
+        if self.units == 'wavelength':
+            wlo = lo
+            whi = hi
 
-        # We do not want a "all data are masked out" error to cause
-        # this to fail; it should just do nothing (as trying to set
-        # a noticed range to include masked-out ranges would also
-        # be ignored). Note that originally this try/except caught
-        # errors like "RMF has no ebounds data", but this is now
-        # caught earlier in the call to _get_ebins, so it is possible
-        # that the check is no-longer needed.
+            # As we allow 0 as a limit this is uglier than we'd want.
+            # I tried to take more advantage of domain knowledge here
+            # (that is the min/max range of the energy grid) but it
+            # is hard to get right so just follow the same approach
+            # as used elsewhere when the wavelength is 0.
+            #
+            tiny = numpy.finfo(numpy.float32).tiny
+
+            if wlo is None:
+                hi = None
+            elif wlo == 0.0:
+                hi = hc / tiny
+            else:
+                hi = hc / wlo
+
+            if whi is None:
+                lo = None
+            elif whi == 0.0:
+                lo = hc / tiny
+            else:
+                lo = hc / whi
+
+        # safety check
+        assert lo is None or hi is None or lo <= hi, (lo, hi, self.name)
+
+        # We skip if the filter lies outside the valid range.
         #
-        # Convert to "group number" (which, for ungrouped data,
-        # is just channel number).
-        #
-        def convert_limit(x):
-            """Convert the limit to 'group number'.
+        emin = min(elo[[0, -1]])
+        emax = max(ehi[[0, -1]])
+        if lo is not None and hi is not None and (hi <= emin or lo >= emax):
+            return
 
-            x must not be None or a string. The return value is None if
-            the value is invalid (and so should be skipped).
-            """
+        if (self.units == 'channel') and (hi is not None):
+            # A channel range lo to hi is read as [lo, hi] rather than
+            # [lo, hi), so we increase the upper limit by 1 to
+            # work around this, as the filter below is < hi.
+            #
+            hi += 1
 
-            try:
-                return self._to_channel(x)
-            except DataErr as de:
-                info(f"Skipping dataset {self.name}: {de}")
-                return None
-
-        if lo is not None:
-            lo = convert_limit(lo)
-            if lo is None:
-                return
-
-        if hi is not None:
-            hi = convert_limit(hi)
-            if hi is None:
-                return
-
-        # At this point lo and hi are in "group number".
-        #
-        # When do we need to flip the limits? It is not clear whether
-        # we always need lo <= hi.
-        #
-        if ((self.units == "wavelength" and
-             elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
-            (self.units == "energy" and
-             elo[0] > elo[-1] and ehi[0] > ehi[-1])):
-            lo, hi = hi, lo
-
-        # Don't use the middle of the channel anymore as the
-        # grouping function.  That was just plain dumb.
-        # So just get back an array of groups 1-N, if grouped
-        # DATA-NOTE: need to clean this up.
-        #
-        groups = self.apply_grouping(self.channel,
-                                     self._make_groups)
-        self._data_space.filter.notice((lo,), (hi,),
-                                       (groups,), ignore)
+        self._data_space.filter.notice((None, lo), (hi, None),
+                                       (elo, ehi), ignore=ignore,
+                                       integrated=True)
 
     def to_guess(self):
         elo, ehi = self._get_ebins(group=False)

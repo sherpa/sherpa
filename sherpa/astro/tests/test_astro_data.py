@@ -226,7 +226,6 @@ def test_test_energy_grid_reversed_ignore(setUp2):
     assert pha.mask == pytest.approx(expected)
 
 
-
 @pytest.fixture
 def setUp3():
 
@@ -248,7 +247,7 @@ def test_filter_wave_grid_notice(setUp3):
     pha.notice(100.0, 225.0)
 
     expected = np.ones(16384, dtype=bool)
-    expected[8465:16384] = False
+    expected[8464:16384] = False
     assert pha.mask == pytest.approx(expected)
 
 
@@ -2465,17 +2464,17 @@ def test_pha_filter_simple_energy0():
                           # Now queries on the edge of each bin; these would ideally
                           # only match 1 bin
                           (0.4, 0.6, (0, 1, 9)),
-                          (0.6, 0.8, (0, 3, 7)),
-                          (0.8, 1.0, (2, 2, 6)),
-                          (1.0, 1.2, (3, 2, 5)),
+                          (0.6, 0.8, (1, 1, 8)),
+                          (0.8, 1.0, (2, 1, 7)),
+                          (1.0, 1.2, (3, 1, 6)),
                           (1.2, 1.4, (4, 1, 5)),
-                          (1.4, 1.6, (4, 3, 3)),
-                          (1.6, 1.8, (6, 2, 2)),
-                          (1.8, 2.0, (7, 2, 1)),
-                          (2.0, 2.2, (8, 2, 0)),
+                          (1.4, 1.6, (5, 1, 4)),
+                          (1.6, 1.8, (6, 1, 3)),
+                          (1.8, 2.0, (7, 1, 2)),
+                          (2.0, 2.2, (8, 1, 1)),
                           (2.2, 2.4, (9, 1, 0)),
                           # check last upper limit
-                          (2.4, 2.6, (9, 1, 0))
+                          (2.4, 2.6, (10, 0, 0))
                          ])
 def test_pha_check_limit(ignore, lo, hi, evals):
     """What happens when we hit values at bin edges [energy]?
@@ -2539,9 +2538,9 @@ def test_pha_check_limit(ignore, lo, hi, evals):
                           (7, 7, (6, 1, 3)),
                           (8, 8, (7, 1, 2)),
                           (9, 9, (8, 1, 1)),
-                          (10, 10, None),  # (9, 1, 0))
+                          (10, 10, (9, 1, 0)),
                           # check last upper limit
-                          (10, 11, None)   # (9, 1, 0))
+                          (10, 11, (9, 1, 0))
                          ])
 def test_pha_check_limit_channel(ignore, lo, hi, evals):
     """What happens when we hit values at bin edges [channel]?

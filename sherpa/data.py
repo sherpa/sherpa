@@ -487,14 +487,18 @@ class Filter():
             raise DataErr('mismatch', 'mask', 'data array')
         return array[self.mask]
 
-    def notice(self, mins, maxes, axislist, ignore=False):
+    def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
+
+        # If integrated is True then we should have an even number
+        # of axisist elements, but we do not require this.
+        #
         ignore = bool_cast(ignore)
         for vals, label in zip([mins, maxes, axislist],
                                ['lower bound', 'upper bound', 'grid']):
             if any([isinstance(val, str) for val in vals]):
                 raise DataErr('typecheck', label)
 
-        mask = filter_bins(mins, maxes, axislist)
+        mask = filter_bins(mins, maxes, axislist, integrated=integrated)
 
         if mask is None:
             self.mask = not ignore
@@ -863,8 +867,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def apply_filter(self, data):
         return self._data_space.filter.apply(data)
 
-    def notice(self, mins, maxes, ignore=False):
-        self._data_space.filter.notice(mins, maxes, self.get_indep(), ignore)
+    def notice(self, mins, maxes, ignore=False, integrated=False):
+        self._data_space.filter.notice(mins, maxes, self.get_indep(),
+                                       ignore=ignore, integrated=integrated)
 
     def ignore(self, *args, **kwargs):
         kwargs['ignore'] = True
@@ -1156,7 +1161,7 @@ class Data1D(Data):
             return data_space.grid
 
     def notice(self, xlo=None, xhi=None, ignore=False):
-        Data.notice(self, (xlo,), (xhi,), ignore)
+        Data.notice(self, (xlo,), (xhi,), ignore=ignore)
 
     @property
     def x(self):
@@ -1216,7 +1221,8 @@ class Data1DInt(Data1D):
         return xhi - xlo
 
     def notice(self, xlo=None, xhi=None, ignore=False):
-        Data.notice(self, (None, xlo), (xhi, None), ignore)
+        Data.notice(self, (None, xlo), (xhi, None),
+                    ignore=ignore, integrated=True)
 
     @property
     def xlo(self):
@@ -1347,7 +1353,8 @@ class Data2D(Data):
         return self.get_x1()
 
     def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
-        Data.notice(self, (x0lo, x1lo), (x0hi, x1hi), ignore)
+        Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
+                    ignore=ignore)
 
 
 class Data2DInt(Data2D):
@@ -1372,7 +1379,8 @@ class Data2DInt(Data2D):
         return (indep.x1lo + indep.x1hi) / 2.0
 
     def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
-        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None), ignore)
+        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
+                    ignore=ignore, integrated=True)
 
 
 # Notebook representations
