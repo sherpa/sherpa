@@ -3820,12 +3820,17 @@ class DataPHA(Data1D):
 
         Notes
         -----
+        Calling notice with no arguments selects all points in the
+        dataset.
+
         If no channels have been ignored then a call to `notice` with
         `ignore=False` will select just the `lo` to `hi` range, and
         exclude any channels outside this range. If there has been a
         filter applied then the range `lo` to `hi` will be added to the
         range of noticed data (when `ignore=False`).
 
+        Examples
+        --------
         So, for an ungrouped PHA file with 1024 channels:
 
         >>> pha.units = 'channel'
