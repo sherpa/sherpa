@@ -1415,17 +1415,14 @@ class DataPHA(Data1D):
         if units.startswith('chan'):
             # Note: the names of these routines appear confusing because of the
             #       way group values are used
-            self._to_channel = self._channel_to_group
             self._from_channel = self._group_to_channel
             units = 'channel'
 
         elif units.startswith('ener'):
-            self._to_channel = self._energy_to_channel
             self._from_channel = self._channel_to_energy
             units = 'energy'
 
         elif units.startswith('wave'):
-            self._to_channel = self._wavelength_to_channel
             self._from_channel = self._channel_to_wavelength
             units = 'wavelength'
 
@@ -1562,7 +1559,6 @@ class DataPHA(Data1D):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['_to_channel']
         del state['_from_channel']
         return state
 
@@ -2122,41 +2118,6 @@ class DataPHA(Data1D):
 
         return (lo, hi)
 
-    def _channel_to_group(self, val):
-        """Convert channel number to group number.
-
-        For ungrouped data channel and group numbering are the
-        same.
-        """
-        if not self.grouped:
-            return val
-
-        # The edge channels of each group.
-        #
-        lo = self.apply_grouping(self.channel, self._min)
-        hi = self.apply_grouping(self.channel, self._max)
-
-        val = numpy.asarray(val).astype(numpy.int_)
-        res = []
-        for v in val.flat:
-            # could follow _energy_to_channel but for now go
-            # with something simple
-            if v < self.channel[0]:
-                ans = self.channel[0]
-            elif v > self.channel[-1]:
-                ans = self.channel[-1]
-            else:
-                idx, = numpy.where((v >= lo) & (v <= hi))
-                ans = idx[0] + 1
-
-            res.append(ans)
-
-        res = numpy.asarray(res, SherpaFloat)
-        if val.shape == ():
-            return res[0]
-
-        return res
-
     def _group_to_channel(self, val, group=True, response_id=None):
         """Convert group number to channel number.
 
@@ -2191,35 +2152,6 @@ class DataPHA(Data1D):
         except IndexError:
             raise DataErr('invalidchannel', val)
 
-    def _energy_to_channel(self, val):
-        elo, ehi = self._get_ebins()
-
-        val = numpy.asarray(val)
-        res = []
-        for v in val.flat:
-            if tuple(numpy.flatnonzero(elo <= v)) == ():
-                if elo[0] > elo[-1] and ehi[0] > ehi[-1]:
-                    res.append(SherpaFloat(len(elo)))
-                else:
-                    res.append(SherpaFloat(1))
-            elif tuple(numpy.flatnonzero(ehi > v)) == ():
-                if elo[0] > elo[-1] and ehi[0] > ehi[-1]:
-                    res.append(SherpaFloat(1))
-                else:
-                    res.append(SherpaFloat(len(ehi)))
-            elif tuple(numpy.flatnonzero((elo <= v) & (ehi > v)) + 1) != ():
-                res.append(SherpaFloat(
-                    numpy.flatnonzero((elo <= v) & (ehi > v)) + 1))
-            elif (elo <= v).argmin() == (ehi > v).argmax():
-                res.append(SherpaFloat((elo <= v).argmin()))
-            else:
-                raise DataErr("energytochannel", v)
-
-        if val.shape == ():
-            return res[0]
-
-        return numpy.asarray(res, SherpaFloat)
-
     def _channel_to_wavelength(self, val, group=True, response_id=None):
         tiny = numpy.finfo(numpy.float32).tiny
         vals = numpy.asarray(self._channel_to_energy(val, group, response_id))
@@ -2230,23 +2162,6 @@ class DataPHA(Data1D):
             vals[vals == 0.0] = tiny
         vals = hc / vals
         return vals
-
-    def _wavelength_to_channel(self, val):
-        """Convert a wavelength to group or channel number.
-
-        Note that values of 0 or less are replaced by a
-        small value (~1e-38).
-
-        """
-        tiny = numpy.finfo(numpy.float32).tiny
-        vals = numpy.asarray(val)
-        if vals.shape == ():
-            if vals <= 0.0:
-                vals = tiny
-        else:
-            vals[vals <= 0.0] = tiny
-        vals = hc / vals
-        return self._energy_to_channel(vals)
 
     default_background_id = 1
     """The identifier for the background component when not set."""
