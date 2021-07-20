@@ -75,6 +75,29 @@ def fix_xspec(clean_astro_ui, hide_logging):
     xspec.set_xsxsect(xsect)
 
 
+def check_thread(run_thread, thread, parallel, cmpfunc, parnames):
+    """Run the thread test and call the comparison function"""
+
+    if parallel:
+        thread += '_ncpus'
+
+    tlocals = run_thread(thread)
+    fit_results = ui.get_fit_results()
+    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+
+    # what parameters do we want to test
+    #
+    parvals = [tlocals[p] for p in parnames]
+
+    # compare the results
+    cmpfunc(fit_results, *parvals, covarerr)
+
+    if not parallel or _ncpus < 2:
+        assert fit_results.extra_output['num_parallel_map'] == 0
+    else:
+        assert fit_results.extra_output['num_parallel_map'] > 0
+
+
 @requires_data
 @requires_fits
 @requires_xspec
@@ -82,7 +105,7 @@ def fix_xspec(clean_astro_ui, hide_logging):
 def test_pha_intro(parallel, run_thread, fix_xspec):
 
     # Currently there's no test of covarerr
-    def cmp_pha_intro(fit_result, p1, covarerr):
+    def cmp_thread(fit_result, p1, covarerr):
         assert fit_result.statval == approx(37.9079, rel=1e-4)
         assert fit_result.rstat == approx(0.902569, rel=1e-4)
         assert fit_result.qval == approx(0.651155, rel=1e-4)
@@ -106,19 +129,7 @@ def test_pha_intro(parallel, run_thread, fix_xspec):
                     0.94738472, 0.95415463, 0.96121113]
         assert calc == approx(expected, rel=1e-4)
 
-    thread = 'pha_intro'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_pha_intro(fit_results, tlocals['p1'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'pha_intro', parallel, cmp_thread, ['p1'])
 
 
 @requires_data
@@ -133,7 +144,7 @@ def test_pha_read(run_thread):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_basic(parallel, run_thread, clean_astro_ui):
 
-    def cmp_test_basic(fit_results, m1, m2, covarerr):
+    def cmp_thread(fit_results, m1, m2, covarerr):
         assert fit_results.nfev == 9
         assert fit_results.numpoints == 11
         assert fit_results.dof == 9
@@ -150,24 +161,12 @@ def test_basic(parallel, run_thread, clean_astro_ui):
         assert m2.c0.val == approx(1.75548, rel=1e-4)
         assert m2.c1.val == approx(0.198455, rel=1e-4)
 
-    thread = 'basic'
-    if parallel:
-        thread += '_ncpus'
-
     # In data1.dat for this test, there is a comment with one
     # word at the beginning -- deliberately would break when reading
     # with DM ASCII kernel, but passes because we have Sherpa code
     # to bypass that.
-    tlocals = run_thread(thread)
-
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_test_basic(fit_results, tlocals['m1'], tlocals['m2'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    #
+    check_thread(run_thread, 'basic', parallel, cmp_thread, ['m1', 'm2'])
 
 
 @requires_data
@@ -176,7 +175,7 @@ def test_basic(parallel, run_thread, clean_astro_ui):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_simultaneous(parallel, run_thread, fix_xspec):
 
-    def cmp_simultaneous(fit_results, abs1, pl1, pl2, covarerr):
+    def cmp_thread(fit_results, abs1, pl1, pl2, covarerr):
         assert fit_results.numpoints == 18
         assert fit_results.dof == 14
 
@@ -192,19 +191,8 @@ def test_simultaneous(parallel, run_thread, fix_xspec):
         assert pl1.ampl.val == approx(2.28323e-05, 1e-3)
         assert pl2.ampl.val == approx(2.44585e-05, 1e-3)
 
-    thread = 'simultaneous'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_simultaneous(fit_results, tlocals['abs1'], tlocals['pl1'], tlocals['pl2'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'simultaneous', parallel, cmp_thread,
+                 ['abs1', 'pl1', 'pl2'])
 
 
 @requires_data
@@ -213,7 +201,7 @@ def test_simultaneous(parallel, run_thread, fix_xspec):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_sourceandbg(parallel, run_thread, fix_xspec):
 
-    def cmp_sourceanddbg(fit_results, a1, b1, b2, covarerr):
+    def cmp_thread(fit_results, a1, b1, b2, covarerr):
         assert fit_results.numpoints == 1330
         assert fit_results.dof == 1325
 
@@ -231,19 +219,8 @@ def test_sourceandbg(parallel, run_thread, fix_xspec):
         assert b2.kt.val == approx(0.563109, 1e-2)
         assert b2.norm.val == approx(1.16118e-05, 1e-2)
 
-    thread = 'sourceandbg'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_sourceanddbg(fit_results, tlocals['a1'], tlocals['b1'], tlocals['b2'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'sourceandbg', parallel, cmp_thread,
+                 ['a1', 'b1', 'b2'])
 
 
 @requires_data
@@ -293,19 +270,7 @@ def cmp_radpro(fit_results, src, covarerr):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_radpro(parallel, run_thread, clean_astro_ui):
 
-    thread = 'radpro'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_radpro(fit_results, tlocals['src'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'radpro', parallel, cmp_radpro, ['src'])
 
 
 # This is test_radpro but it uses crates syntax to load the
@@ -316,15 +281,8 @@ def test_radpro(parallel, run_thread, clean_astro_ui):
 @requires_data
 @pytest.mark.skipif(not is_crates_io, reason='Test requires crates')
 def test_radpro_dm(run_thread, clean_astro_ui):
-    tlocals = run_thread('radpro_dm')
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_radpro(fit_results, tlocals['src'], covarerr)
 
-    if _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'radpro_dm', False, cmp_radpro, ['src'])
 
 
 @requires_data
@@ -392,7 +350,7 @@ def test_radpro_psf(run_thread, clean_astro_ui):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_linepro(parallel, run_thread, clean_astro_ui):
 
-    def cmp_linepro(fit_results, b1, covarerr):
+    def cmp_thread(fit_results, b1, covarerr):
         assert fit_results.nfev == 17
         assert fit_results.numpoints == 75
         assert fit_results.dof == 72
@@ -405,19 +363,7 @@ def test_linepro(parallel, run_thread, clean_astro_ui):
         assert b1.beta.val == approx(0.492232, rel=1e-4)
         assert b1.ampl.val == approx(11.8129, rel=1e-4)
 
-    thread = 'linepro'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_linepro(fit_results, tlocals['b1'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'linepro', parallel, cmp_thread, ['b1'])
 
 
 @requires_data
@@ -425,7 +371,7 @@ def test_linepro(parallel, run_thread, clean_astro_ui):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_kernel(parallel, run_thread, clean_astro_ui):
 
-    def cmp_kernel(fit_results, b1, covarerr):
+    def cmp_thread(fit_results, b1, covarerr):
         assert fit_results.nfev == 21
         assert fit_results.numpoints == 75
         assert fit_results.dof == 72
@@ -438,19 +384,7 @@ def test_kernel(parallel, run_thread, clean_astro_ui):
         assert b1.beta.val == approx(0.555464, rel=1e-4)
         assert b1.ampl.val == approx(1.93706, rel=1e-4)
 
-    thread = 'kernel'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_kernel(fit_results, tlocals['b1'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'kernel', parallel, cmp_thread, ['b1'])
 
 
 @requires_data
@@ -459,7 +393,7 @@ def test_kernel(parallel, run_thread, clean_astro_ui):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_spectrum(parallel, run_thread, fix_xspec):
 
-    def cmp_spectrum(fres, abs2, mek1, mek2, covarerr):
+    def cmp_thread(fres, abs2, mek1, mek2, covarerr):
         assert fres.numpoints == 446
         assert fres.dof == 441
 
@@ -475,19 +409,8 @@ def test_spectrum(parallel, run_thread, fix_xspec):
         assert mek2.kt.val == approx(2.35845, rel=1e-4)
         assert mek2.norm.val == approx(1.03724, rel=1e-4)
 
-    thread = 'spectrum'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_spectrum(fit_results, tlocals['abs2'], tlocals['mek1'], tlocals['mek2'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'spectrum', parallel, cmp_thread,
+                 ['abs2', 'mek1', 'mek2'])
 
 
 @requires_data
@@ -512,7 +435,7 @@ def test_histo(run_thread, clean_astro_ui):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_xmm(parallel, run_thread, fix_xspec):
 
-    def cmp_xmm(fres, intrin, phard, covarerr):
+    def cmp_thread(fres, intrin, phard, covarerr):
         assert fres.nfev == 95
         assert fres.numpoints == 162
         assert fres.dof == 159
@@ -525,19 +448,8 @@ def test_xmm(parallel, run_thread, fix_xspec):
         assert phard.phoindex.val == approx(1.49055, 1e-2)
         assert phard.norm.val == approx(0.00140301, 1e-2)
 
-    thread = 'xmm'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_xmm(fit_results, tlocals['intrin'], tlocals['phard'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'xmm', parallel, cmp_thread,
+                 ['intrin', 'phard'])
 
 
 @requires_data
@@ -545,7 +457,7 @@ def test_xmm(parallel, run_thread, fix_xspec):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_grouped_ciao4_5(parallel, run_thread, clean_astro_ui):
 
-    def cmp_grouped_ciao4_5(fres, aa, covarerr):
+    def cmp_thread(fres, aa, covarerr):
         assert fres.numpoints == 46
         assert fres.statval == approx(18.8316, rel=1e-4)
 
@@ -554,19 +466,8 @@ def test_grouped_ciao4_5(parallel, run_thread, clean_astro_ui):
         assert aa.gamma.val == approx(1.83906, rel=1e-4)
         assert aa.ampl.val == approx(0.000301258, rel=1e-4)
 
-    thread = 'grouped_ciao4.5'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    cmp_grouped_ciao4_5(fit_results, tlocals['aa'], covarerr)
-
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    check_thread(run_thread, 'grouped_ciao4.5', parallel, cmp_thread,
+                 ['aa'])
 
 
 @requires_data
@@ -637,40 +538,30 @@ def test_proj(run_thread, fix_xspec):
 @pytest.mark.parametrize('parallel', [False, True])
 def test_proj_bubble(parallel, run_thread, fix_xspec):
 
-    def cmp_proj_bubble(mek1, covarerr, proj, conf):
+    # fit_results is unused
+    def cmp_thread(fit_results, mek1, covarerr):
 
         assert covarerr[0] == approx(0, rel=1e-4)
         assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
         assert mek1.kt.val == approx(17.8849, rel=1e-2)
         assert mek1.norm.val == approx(4.15418e-06, rel=1e-2)
 
-        # Proj -- Upper bound of kT can't be found
-        #
-        assert proj.parmins[0] == approx(-12.048069, rel=0.01)
-        assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
-        assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
-        assert proj.parmaxes[0] is None
-        assert conf.parmins[0] == approx(-12.1073, rel=0.01)
-        assert conf.parmaxes[0] == approx(62.0585, rel=0.01)
-        assert conf.parmins[1] == approx(-9.5568e-07, rel=0.01)
-        assert conf.parmaxes[1] == approx(2.39937e-06, rel=0.01)
+    check_thread(run_thread, 'proj_bubble', parallel, cmp_thread,
+                 ['mek1'])
 
-    thread = 'proj_bubble'
-    if parallel:
-        thread += '_ncpus'
-
-    tlocals = run_thread(thread)
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-
+    # Proj -- Upper bound of kT can't be found
+    #
     proj = ui.get_proj_results()
-    conf = ui.get_conf_results()
-    cmp_proj_bubble(tlocals['mek1'], covarerr, proj, conf)
+    assert proj.parmins[0] == approx(-12.048069, rel=0.01)
+    assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
+    assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
+    assert proj.parmaxes[0] is None
 
-    if not parallel or _ncpus < 2:
-        assert fit_results.extra_output['num_parallel_map'] == 0
-    else:
-        assert fit_results.extra_output['num_parallel_map'] > 0
+    conf = ui.get_conf_results()
+    assert conf.parmins[0] == approx(-12.1073, rel=0.01)
+    assert conf.parmaxes[0] == approx(62.0585, rel=0.01)
+    assert conf.parmins[1] == approx(-9.5568e-07, rel=0.01)
+    assert conf.parmaxes[1] == approx(2.39937e-06, rel=0.01)
 
 
 @requires_data
