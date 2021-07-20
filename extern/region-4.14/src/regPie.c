@@ -337,6 +337,10 @@ void reg_pie_bounds(double ang1, double ang2, double r2, double r1,
     double c1, c2;
     double s1, s2;
     double t1, t2;
+
+    ang1 = reg_mod_angle(ang1);
+    ang2 = reg_mod_angle(ang2);
+
     q1 = reg_quadrant(ang1);
     q2 = reg_quadrant(ang2);
 
