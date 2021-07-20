@@ -39,8 +39,8 @@ except ImportError:
 
 
 try:
-    import sherpa.astro.io
-    is_crates_io = "sherpa.astro.io.crates_backend" == sherpa.astro.io.backend.__name__
+    from sherpa.astro.io import backend
+    is_crates_io = "sherpa.astro.io.crates_backend" == backend.__name__
 except ImportError:
     is_crates_io = False
 
@@ -49,8 +49,6 @@ except ImportError:
 # Sherpa configuration file.
 #
 EMIN = 1.0e-10
-
-# has_xspec = has_package_from_list("sherpa.astro.xspec")
 
 
 @pytest.fixture
@@ -104,9 +102,6 @@ def test_pha_intro(parallel, run_thread, fix_xspec):
         assert calc == approx(-0.57731725, rel=1e-4)
 
         calc = ui.calc_kcorr([1, 1.2, 1.4, 1.6, 1.8, 2], 0.5, 2)
-        # Prior to fixing #619 the expected values were
-        # expected = [0.93341286, 0.93752836, 0.94325233,
-        #             0.94990140, 0.95678054, 0.96393515]
         expected = [0.93132747, 0.9352768, 0.94085917,
                     0.94738472, 0.95415463, 0.96121113]
         assert calc == approx(expected, rel=1e-4)
@@ -259,7 +254,7 @@ def test_spatial(run_thread, clean_astro_ui):
     g2 = tlocals['g2']
 
     results = ui.get_fit_results()
-    # assert results.nfev == 397
+    assert results.nfev == 397
     assert results.numpoints == 4881
     assert results.dof == 4877
 
@@ -274,26 +269,29 @@ def test_spatial(run_thread, clean_astro_ui):
     assert g2.ampl.val == approx(226.563, rel=1e-4)
 
 
+def cmp_radpro(fit_results, src, covarerr):
+    """Check the radpro/radpro_dm tests"""
+
+    assert fit_results.nfev == 92
+    assert fit_results.numpoints == 38
+    assert fit_results.dof == 35
+
+    assert covarerr[0] == approx(9.37345, rel=1e-4)
+    assert covarerr[1] == approx(0.512596, rel=1e-4)
+    assert covarerr[2] == approx(0.0691102, rel=1e-4)
+    assert fit_results.statval == approx(217.450, rel=1e-4)
+    assert fit_results.rstat == approx(6.21287, rel=1e-4)
+    assert fit_results.qval == approx(0.0, rel=1e-4)
+    assert src.r0.val == approx(125.829, rel=1e-4)
+    assert src.beta.val == approx(4.1633, rel=1e-4)
+    assert src.xpos.val == approx(0.0, rel=1e-4)
+    assert src.ampl.val == approx(4.42821, rel=1e-4)
+
+
 @requires_data
 @requires_fits
 @pytest.mark.parametrize('parallel', [False, True])
 def test_radpro(parallel, run_thread, clean_astro_ui):
-
-    def cmp_radpro(fit_results, src, covarerr):
-        assert fit_results.nfev == 92
-        assert fit_results.numpoints == 38
-        assert fit_results.dof == 35
-
-        assert covarerr[0] == approx(9.37345, rel=1e-4)
-        assert covarerr[1] == approx(0.512596, rel=1e-4)
-        assert covarerr[2] == approx(0.0691102, rel=1e-4)
-        assert fit_results.statval == approx(217.450, rel=1e-4)
-        assert fit_results.rstat == approx(6.21287, rel=1e-4)
-        assert fit_results.qval == approx(0.0, rel=1e-4)
-        assert src.r0.val == approx(125.829, rel=1e-4)
-        assert src.beta.val == approx(4.1633, rel=1e-4)
-        assert src.xpos.val == approx(0.0, rel=1e-4)
-        assert src.ampl.val == approx(4.42821, rel=1e-4)
 
     thread = 'radpro'
     if parallel:
@@ -310,37 +308,23 @@ def test_radpro(parallel, run_thread, clean_astro_ui):
         assert fit_results.extra_output['num_parallel_map'] > 0
 
 
-# This test is completely redundant to test_radpro above.
-# The only difference is that here I test if using DM syntax
-# in the file name returns the correct arrays from CRATES.
-# Since any other I/O backend would not understand DM syntax,
-# I make this test a no-op unless CRATES is used as the I/O
-# backend.  SMD 05/23/13
+# This is test_radpro but it uses crates syntax to load the
+# data, hence we have a very-slightly-different thread. We have
+# not bothered to add a "_ncpus" version of the thread to test
+# out the parallel handling.
 #
 @requires_data
 @pytest.mark.skipif(not is_crates_io, reason='Test requires crates')
 def test_radpro_dm(run_thread, clean_astro_ui):
     tlocals = run_thread('radpro_dm')
+    fit_results = ui.get_fit_results()
+    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+    cmp_radpro(fit_results, tlocals['src'], covarerr)
 
-    fres = ui.get_fit_results()
-    covarerr = sqrt(fres.extra_output['covar'].diagonal())
-
-    assert fres.nfev == 92
-    assert fres.numpoints == 38
-    assert fres.dof == 35
-
-    assert covarerr[0] == approx(9.37344776, rel=1e-4)
-    assert covarerr[1] == approx(0.51259645, rel=1e-4)
-    assert covarerr[2] == approx(0.06911017, rel=1e-4)
-    assert fres.statval == approx(217.450, rel=1e-4)
-    assert fres.rstat == approx(6.21287, rel=1e-4)
-    assert fres.qval == approx(0.0, rel=1e-4)
-
-    srcmdl = tlocals['src']
-    assert srcmdl.r0.val == approx(125.829, rel=1e-4)
-    assert srcmdl.beta.val == approx(4.1633, rel=1e-4)
-    assert srcmdl.xpos.val == approx(0.0, rel=1e-4)
-    assert srcmdl.ampl.val == approx(4.42821, rel=1e-4)
+    if _ncpus < 2:
+        assert fit_results.extra_output['num_parallel_map'] == 0
+    else:
+        assert fit_results.extra_output['num_parallel_map'] > 0
 
 
 @requires_data
@@ -350,7 +334,7 @@ def test_psf2d(run_thread, clean_astro_ui):
     g1 = tlocals['g1']
 
     results = ui.get_fit_results()
-    # assert results.nfev == 342
+    assert results.nfev == 296
     assert results.numpoints == 4899
     assert results.dof == 4895
 
@@ -367,7 +351,7 @@ def test_fpsf2d(run_thread, clean_astro_ui):
     tlocals = run_thread('fpsf')
 
     fres = ui.get_fit_results()
-    # assert fres.nfev == 978
+    assert fres.nfev == 581
     assert fres.numpoints == 4899
     assert fres.dof == 4895
 
@@ -513,7 +497,7 @@ def test_histo(run_thread, clean_astro_ui):
     g1 = tlocals['g1']
 
     results = ui.get_fit_results()
-    # assert results.nfev == 19
+    assert results.nfev == 3062
     assert results.numpoints == 50
     assert results.dof == 47
     assert results.statval == approx(14.7264, rel=1e-4)
@@ -556,10 +540,6 @@ def test_xmm(parallel, run_thread, fix_xspec):
         assert fit_results.extra_output['num_parallel_map'] > 0
 
 
-# As of CIAO 4.5, can filter on channel number, even when
-# data are grouped! Test results should exactly match CIAO 4.4
-# fit results in grouped/fit.py
-#
 @requires_data
 @requires_fits
 @pytest.mark.parametrize('parallel', [False, True])
@@ -834,8 +814,6 @@ def test_missmatch_arf(make_data_path):
     assert parvals[2] == approx(2.35452, rel=1.0e-3)
 
 
-# This was test_threads.test_pileup
-#
 @requires_data
 @requires_fits
 @requires_xspec
@@ -904,8 +882,6 @@ def test_thread_pileup(run_thread):
     assert lines[18].startswith('   *** pileup fraction: ')
 
 
-# This was test_threads.test_proj_bubble
-#
 @requires_data
 @requires_fits
 @requires_xspec
