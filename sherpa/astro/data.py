@@ -3427,7 +3427,7 @@ class DataPHA(Data1D):
                 elo, ehi = self._get_ebins(response_id=response_id)
             except DataErr:
                 # What should we do here? This indicates that all bins
-                # have been marked as bad.
+                # have been marked as bad (and grouping is present).
                 #
                 return numpy.asarray([])
 

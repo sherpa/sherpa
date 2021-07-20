@@ -224,6 +224,97 @@ def test_error_on_invalid_channel_grouped2(chan):
     assert str(exc.value) == 'invalid group number: {}'.format(chan - 1)
 
 
+def test_pha_get_xerr_all_bad_channel_no_group():
+    """get_xerr handles all bad values [channel]
+
+    It's not obvious what it is meant to be doing here.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  quality=[2, 2, 2])
+
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+
+def test_pha_get_xerr_all_bad_channel_group():
+    """get_xerr handles all bad values [channel]
+
+    The behavior with grouping is different, presumably because
+    we assume we have groping when we have a quality array.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, 1, 1],
+                  quality=[2, 2, 2])
+
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+    assert pha.grouped
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([])
+
+
+def test_pha_get_xerr_all_bad_energy_no_group():
+    """get_xerr handles all bad values [energy]
+
+    It's not obvious what it is meant to be doing here.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  quality=[2, 2, 2])
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+
+def test_pha_get_xerr_all_bad_energy_group():
+    """get_xerr handles all bad values [energy]
+
+    The behavior with grouping is different, presumably because
+    we assume we have groping when we have a quality array.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, 1, 1],
+                  quality=[2, 2, 2])
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+    assert pha.grouped
+    pha.ignore_bad()
+
+    # Should this error out or not?
+    # assert pha.get_filter() == ''
+    with pytest.raises(DataErr) as de:
+        pha.get_filter()
+
+    assert str(de.value) == 'mask excludes all data'
+
+    assert pha.get_xerr() == pytest.approx([])
+
+
 @pytest.mark.parametrize("ignore", [False, True])
 @pytest.mark.parametrize("lbl,lo,hi", [('lo', 1.5, 2.5),
                                        ('lo', 1.5, 2),
