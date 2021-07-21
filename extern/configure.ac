@@ -16,9 +16,9 @@ AC_ARG_ENABLE([fftw],
   AS_HELP_STRING([--enable-fftw], [Build fftw library shipped with Sherpa]))
 
 AS_IF([test "x$enable_fftw" = "xyes"], [
-  AC_CONFIG_SUBDIRS([fftw-3.3.8])
-  AC_SUBST(fftw, fftw-3.3.8)
-  touch fftw-3.3.8/doc/fftw3.info
+  AC_CONFIG_SUBDIRS([fftw-3.3.9])
+  AC_SUBST(fftw, fftw-3.3.9)
+  touch fftw-3.3.9/doc/fftw3.info
 ])
 
 AC_ARG_ENABLE([region],
