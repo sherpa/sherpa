@@ -2145,6 +2145,37 @@ def test_pha_check_filter_channel(make_data_path):
     assert plot[0].size == 252
 
 
+@pytest.mark.parametrize('ignore,lo,hi,expected',
+                         [(False, 0, 0, True),
+                          (True, 0, 0, True),
+                          (False, 0, None, [True] * 6),
+                          (True, 0, None, [False] * 6),
+                          (False, None, 0, [False] * 6),
+                          (True, None, 0, [True] * 6)])
+def test_pha_filter_wave_0limit(ignore, lo, hi, expected):
+    """Edge case checks for wavelength handling: 0 values
+
+    Explicit handling of the wavelength handling when a filter limit
+    is 0. It's not really obvious what we want these limits to mean
+    so I am treating this as a regression test.
+
+    """
+
+    chans = np.arange(1, 7, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    rmf = create_delta_rmf(chans, chans + 1,
+                           e_min=chans, e_max=chans + 1)
+    pha.set_rmf(rmf)
+    pha.units = 'wave'
+
+    assert pha.mask is True
+
+    func = pha.ignore if ignore else pha.notice
+    func(lo, hi)
+    assert pha.mask == pytest.approx(expected)
+
+
 def test_pha_filter_simple_channel1():
     """Simple tests of get_filter
 
@@ -2329,7 +2360,20 @@ def test_pha_filter_simple_energy0():
                           (2.0, 2.2, (8, 1, 1)),
                           (2.2, 2.4, (9, 1, 0)),
                           # check last upper limit
-                          (2.4, 2.6, (10, 0, 0))
+                          (2.4, 2.6, (10, 0, 0)),
+                          # exact limit
+                          (0.4, 2.4, (0, 10, 0)),
+                          # multiple bins
+                          (1.0, 1.4, (3, 2, 5)),
+                          (0.6, 2.0, (1, 7, 2)),
+                          (1.4, 2.2, (5, 4, 1)),
+                          # 0 values
+                          (0, 0, None),
+                          (0, 0.01, None),
+                          (0, 0.5, (0, 1, 9)),
+                          (0, 1, (0, 3, 7)),
+                          (0, 2.4, (0, 10, 0)),
+                          (0, 3.0, (0, 10, 0))
                          ])
 def test_pha_check_limit(ignore, lo, hi, evals):
     """What happens when we hit values at bin edges [energy]?
@@ -2395,7 +2439,18 @@ def test_pha_check_limit(ignore, lo, hi, evals):
                           (9, 9, (8, 1, 1)),
                           (10, 10, (9, 1, 0)),
                           # check last upper limit
-                          (10, 11, (9, 1, 0))
+                          (10, 11, (9, 1, 0)),
+                          # exact limit
+                          (1, 10, (0, 10, 0)),
+                          # multiple bins
+                          (4, 5, (3, 2, 5)),
+                          (2, 8, (1, 7, 2)),
+                          (6, 9, (5, 4, 1)),
+                          # 0 values
+                          (0, 0, None),
+                          (0, 3, (0, 3, 7)),
+                          (0, 10, (0, 10, 0)),
+                          (0, 12, (0, 10, 0))
                          ])
 def test_pha_check_limit_channel(ignore, lo, hi, evals):
     """What happens when we hit values at bin edges [channel]?
