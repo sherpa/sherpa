@@ -2146,12 +2146,12 @@ def test_pha_check_filter_channel(make_data_path):
 
 
 @pytest.mark.parametrize('ignore,lo,hi,expected',
-                         [(False, 0, 0, True),
-                          (True, 0, 0, True),
-                          (False, 0, None, [True] * 6),
-                          (True, 0, None, [False] * 6),
-                          (False, None, 0, [False] * 6),
-                          (True, None, 0, [True] * 6)])
+                         [(False, 0, 0, None),
+                          (True, 0, 0, True),    # why is this not 'not ignore'?
+                          (False, 0, None, None),
+                          (True, 0, None, None),
+                          (False, None, 0, None),
+                          (True, None, 0, None)])
 def test_pha_filter_wave_0limit(ignore, lo, hi, expected):
     """Edge case checks for wavelength handling: 0 values
 
@@ -2173,7 +2173,11 @@ def test_pha_filter_wave_0limit(ignore, lo, hi, expected):
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
-    assert pha.mask == pytest.approx(expected)
+
+    if expected is None:
+        assert pha.mask is not ignore
+    else:
+        assert pha.mask == pytest.approx(expected)
 
 
 def test_pha_filter_simple_channel1():
@@ -2344,8 +2348,12 @@ def test_pha_filter_simple_energy0():
                           (1.05, 1.15, (3, 1, 6)),
                           (2.25, 2.35, (9, 1, 0)),
                           # outside the limits
+                          (0.1, 0.3, None),
                           (0.1, 0.4, None),
                           (0.1, 0.5, (0, 1, 9)),
+                          (None, 0.5, (0, 1, 9)),
+                          (2.3, 3.0, (9, 1, 0)),
+                          (2.3, None, (9, 1, 0)),
                           (2.41, 2.8, None),
                           # Now queries on the edge of each bin; these would ideally
                           # only match 1 bin
@@ -2423,12 +2431,15 @@ def test_pha_check_limit(ignore, lo, hi, evals):
                           (4, 5, (3, 2, 5)),
                           (9, 10, (8, 2, 0)),
                           # outside the limits
-                          (0, 1, None),
+                          (0, 0, None),
+                          (0, 1, (0, 1, 9)),
+                          (None, 1, (0, 1, 9)),
+                          (10, 12, (9, 1, 0)),
+                          (10, None, (9, 1, 0)),
                           (11, 12, None),
                           # Now queries on the edge of each bin; these would ideally
                           # only match 1 bin
-                          (1, 1, None),
-                          # (1, 1, (0, 1, 9)),
+                          (1, 1, (0, 1, 9)),
                           (2, 2, (1, 1, 8)),
                           (3, 3, (2, 1, 7)),
                           (4, 4, (3, 1, 6)),

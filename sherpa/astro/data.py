@@ -1266,6 +1266,83 @@ class DataRosatRMF(DataRMF):
         return energy_lo, energy_hi
 
 
+def validate_wavelength_limits(wlo, whi, emax):
+    """Check that the wavelength limits are sensible.
+
+    This is used by DataPHA.notice to ensure that the wavelength
+    limits are meaningful. It deals with converting to energy
+    and handling 0 limits.
+
+    Parameters
+    ----------
+    wlo, whi : number or None
+        The wavelength limit for the low and high edges, or None.
+        We have wlo >= 0 and wlo <= whi.
+    emax : number
+        The maximum energy of the response (the upper edge of the
+        last bin).
+
+    Returns
+    -------
+    lims : (lo, hi) or None
+        The energy filter or None if it doesn't overlap the response.
+        The lo and hi values can be None.
+
+    Notes
+    -----
+    This routine can return a range that doesn't overlap the
+    response, but that is handled downstream (i.e. it only returns
+    None in certain circumstances, not all cases).
+
+    """
+
+    # As we allow wlo and whi to be 0 we need to handle this here,
+    # otherwise we'd have try hc / 0. We can either replace 0 by a
+    # value such as numpy.finfo(numpy.float32).tiny which will result
+    # in a very-large energy, or we can use domain knowledge - the
+    # maximum energy value in the grid and the requested limits. We
+    # try the latter, but it's not as simple
+    #
+    if whi is None:
+        lo = None
+    elif whi == 0.0:
+        lo = -1
+    else:
+        lo = hc / whi
+
+    if wlo is None:
+        hi = None
+    elif wlo == 0.0:
+        hi = -1
+    else:
+        hi = hc / wlo
+
+    # If either of the arguments were 0 then we need to ensure they
+    # are sensible when combined together. Note that we can't have
+    # whi = 0 and wlo > 0 (ie lo < -1 and hi > 0).
+    #
+    if lo is not None and hi is not None:
+        if lo < 0 and hi < 0:
+            # Both limits were 0 so we can do nothing
+            return None
+        elif hi < 0:
+            # The original query was 0 to x which maps to hc/x to None
+            # but we need to know if hc/x is > emax or not
+            if lo < emax:
+                hi = None
+            else:
+                # there is no valid filter here
+                return None
+
+    elif lo is not None and lo < 0:
+        lo = None
+
+    elif hi is not None and hi < 0:
+        hi = None
+
+    return lo, hi
+
+
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
@@ -3928,50 +4005,34 @@ class DataPHA(Data1D):
             info(f"Skipping dataset {self.name}: {de}")
             return
 
+        emin = min(elo[[0, -1]])
+        emax = max(ehi[[0, -1]])
+
         # Convert wavelength limits to energy if necessary.
         #
         if self.units == 'wavelength':
-            wlo = lo
-            whi = hi
+            lims = validate_wavelength_limits(lo, hi, emax)
+            if lims is None:
+                # No useful filter to apply
+                return
 
-            # As we allow 0 as a limit this is uglier than we'd want.
-            # I tried to take more advantage of domain knowledge here
-            # (that is the min/max range of the energy grid) but it
-            # is hard to get right so just follow the same approach
-            # as used elsewhere when the wavelength is 0.
-            #
-            tiny = numpy.finfo(numpy.float32).tiny
-
-            if wlo is None:
-                hi = None
-            elif wlo == 0.0:
-                hi = hc / tiny
-            else:
-                hi = hc / wlo
-
-            if whi is None:
-                lo = None
-            elif whi == 0.0:
-                lo = hc / tiny
-            else:
-                lo = hc / whi
+            lo, hi = lims
 
         # safety check
         assert lo is None or hi is None or lo <= hi, (lo, hi, self.name)
 
-        # We skip if the filter lies outside the valid range.
-        #
-        emin = min(elo[[0, -1]])
-        emax = max(ehi[[0, -1]])
-        if lo is not None and hi is not None and (hi <= emin or lo >= emax):
-            return
-
-        if (self.units == 'channel') and (hi is not None):
+        if self.units == 'channel' and hi is not None:
             # A channel range lo to hi is read as [lo, hi] rather than
             # [lo, hi), so we increase the upper limit by 1 to
-            # work around this, as the filter below is < hi.
+            # work around this, as the filter call checks for < hi
+            # and not <= hi.
             #
             hi += 1
+
+        # We skip if the filter lies outside the valid range.
+        #
+        if (lo is not None and lo >= emax) or (hi is not None and hi <= emin):
+            return
 
         self._data_space.filter.notice((None, lo), (hi, None),
                                        (elo, ehi), ignore=ignore,
