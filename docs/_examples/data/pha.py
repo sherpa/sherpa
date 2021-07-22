@@ -52,13 +52,18 @@ counts = np.ones(1024, dtype=int)
 test = DataPHA('example', chans, counts)
 report('test')
 
-report('pha.units')
-
 plot = DataPHAPlot()
 plot.histo_prefs['linestyle'] = '-'
 plot.prepare(pha)
 plot.plot()
 savefig('pha_initial.png')
+
+# units
+
+dump('pha.get_analysis()')
+report('pha.units')
+
+# filtering
 
 report("pha.mask")
 report("pha.grouped")
@@ -142,3 +147,8 @@ report('ahi[0:7]')
 report('pha.background_ids')
 bkg = pha.get_background()
 report('bkg')
+
+
+report('pha.get_dep(filter=True)')
+pha.subtract()
+report('pha.get_dep(filter=True)')
