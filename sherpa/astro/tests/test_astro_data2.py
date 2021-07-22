@@ -94,11 +94,19 @@ def test_need_numpy_channels():
                           ("channel", '2:3,5:10', [(True, 2, 9), (False, 4, 6), (True, 5, 13)]),
                           ("channel", '', [(True, 2, 9), (False, 4, 6), (True, 5, 13), (False, 0, 13)]),
                           ("channel", '1:10', [(True, 2, 9), (False, 4, 6), (True, 0, 13)]),
+                          # None checks
+                          ("channel", '1:3', [(True, None, 3)]),
+                          ("channel", '4:10', [(False, None, 3)]),
+                          ("channel", '5:10', [(True, 5, None)]),
+                          ("channel", '1:4', [(False, 5, None)]),
+                          ("channel", '1:3,5:10', [(True, 5, None), (True, None, 3)]),
+                          ("channel", '4', [(False, 5, None), (False, None, 3)]),
                           # a few checks of non-integer channel limits (we don't explicitly
                           # say what this means so just check we know what it does)
                           ("channel", '3:7', [(True, 2.8, 7.9)]),
                           ("channel", '3:7', [(True, 2.1, 7.2)]),
                           ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
+                          # energy
                           ("energy", '0.3:2.1', []),
                           ("energy", '', [(False, 0.3, 2.1)]),
                           ("energy", '', [(False, 0, 3)]),
@@ -108,6 +116,16 @@ def test_need_numpy_channels():
                           ("energy", '0.5:1.1,1.5:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2)]),
                           ("energy", '', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2), (False, 0.01, 13)]),
                           ("energy", '0.3:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.01, 13)]),
+                          # None checks
+                          ("energy", '0.3:0.7', [(True, None, 0.65)]),
+                          ("energy", '0.9:2.1', [(False, None, 0.65)]),
+                          ("energy", '0.9:2.1', [(True, 0.95, None)]),
+                          ("energy", '0.3:0.7', [(False, 0.95, None)]),
+                          ("energy", '0.3:0.7,1.1:2.1', [(True, 1.05, None), (True, None, 0.65)]),
+                          ("energy", '0.3:2.1', [(True, 0.95, None), (True, None, 0.65)]),
+                          ("energy", '0.9', [(False, 1.05, None), (False, None, 0.65)]),
+                          ("energy", '', [(False, 0.95, None), (False, None, 0.65)]),
+                          # wavelength
                           ("wave", '5.9:41.3', []),
                           ("wave", '', [(False, 1, 70)]),
                           ("wave", '6.5:24.8', [(True, 6.5, 25)]),
@@ -115,6 +133,15 @@ def test_need_numpy_channels():
                           ("wave", '5.9:9.5,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 10)]),
                           ("wave", '6.5:8.3,11.3:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 12, 70)]),
                           ("wave", '5.9:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 70)]),
+                          # None checks
+                          ("wave", '5.9:9.5', [(True, None, 9.1)]),
+                          ("wave", '11.3:41.3', [(False, None, 9.1)]),
+                          ("wave", '11.3:41.3', [(True, 12.0, None)]),
+                          ("wave", '5.9:9.5', [(False, 12.0, None)]),
+                          ("wave", '5.9:9.5,13.8:41.3', [(True, 12.5, None), (True, None, 9.1)]),
+                          ("wave", '5.9:41.3', [(True, 12.0, None), (True, None, 9.1)]),
+                          ("wave", '11.3', [(False, 12.5, None), (False, None, 9.1)]),
+                          ("wave", '', [(False, 12.0, None), (False, None, 9.1)]),
                          ])
 def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
     """Check we get the filter we expect
@@ -122,7 +149,7 @@ def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
     chtype is channel, energy, or wavelength
     expected is the expected response
     args is a list of 3-tuples of (flag, loval, hival) where
-    flag is True for notice and False for notice; they define
+    flag is True for notice and False for ignore; they define
     the filter to apply
     """
 
