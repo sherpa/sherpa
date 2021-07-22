@@ -3171,6 +3171,12 @@ class Session(NoNewAttributesAfterInit):
         This returns the filter expression, created by one or more
         calls to `ignore` and `notice`, for the data set.
 
+        .. versionchanged:: 4.14.0
+           The filter expressions have been tweaked for Data1DInt and
+           PHA data sets (when using energy or wavelength units) and
+           now describe the full range of the bins, rather than the
+           mid-points.
+
         Parameters
         ----------
         id : int or str, optional
@@ -3202,8 +3208,9 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        The default filter is the full dataset, given in the
-        format ``lowval:hival`` (both are inclusive limits):
+        The default filter is the full dataset, given in the format
+        ``lowval:hival`` (for a `Data1D` dataset like this these are
+        inclusive limits):
 
         >>> load_arrays(1, [10, 15, 20, 25], [5, 7, 4, 2])
         >>> get_filter()
@@ -3229,6 +3236,35 @@ class Session(NoNewAttributesAfterInit):
         >>> set_filter([1, 1, 0, 1])
         >>> get_filter()
         '10.0000,15.0000,25.0000'
+
+        For an integrated data set (Data1DInt and DataPHA with energy
+        or wavelength units)
+
+        >>> load_arrays(1, [10, 15, 20, 25], [15, 20, 23, 30], [5, 7, 4, 2], Data1DInt)
+        >>> get_filter()
+        '10.0000:30.0000'
+
+        For integrated datasets the limits are now inclusive only for
+        the lower limit, but in this the end-point ends within a bin
+        so is is included:
+
+        >>> notice(17, 28)
+        >>> get_filter()
+        '15.0000:30.0000'
+
+        There is no data in the range 23 to 24 so the ignore doesn't
+        change anything:
+
+        >>> ignore(23, 24)
+        >>> get_filter()
+        '15.0000:30.0000'
+
+        However it does match the range 22 to 23 and so changes
+        the filter:
+
+        >>> ignore(22, 23)
+        >>> get_filter()
+        '15.0000:30.0000'
 
         Return the filter for data set 3:
 
@@ -4655,15 +4691,23 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to all data
         sets.
 
+        .. versionchanged:: 4.14.0
+           Integrated data sets - so Data1DInt and DataPHA when using
+           energy or wavelengths - now ensure that the `hi` argument
+           is exclusive and better handling of the `lo` argument when it
+           matches a bin edge. This can result in the same filter selecting
+           a smaller number of bins than in earlier versions of Sherpa.
+
         Parameters
         ----------
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form ``a:b``, with multiple
-           ranges allowed, where the ranges are separated by a
-           ``,``. The term ``:b`` means include everything up to, and
-           including ``b``, and ``a:`` means include everything that is
-           higher than, or equal to, ``a``.
+           expression listing ranges in the form ``a:b``, with
+           multiple ranges allowed, where the ranges are separated by
+           a ``,``. The term ``:b`` means include everything up to
+           ``b`` (an exclusive limit for integrated datasets), and
+           ``a:`` means include everything that is higher than, or
+           equal to, ``a``.
         hi : number, optional
            The upper bound of the filter when ``lo`` is not a string.
         bkg_id : int or str, optional
@@ -4692,8 +4736,9 @@ class Session(NoNewAttributesAfterInit):
         points. If `notice` is called after a filter has been applied
         then the filter is applied to the existing data.
 
-        For binned data sets, the bin is included if the noticed
-        range falls anywhere within the bin.
+        For binned data sets, the bin is included if the noticed range
+        falls anywhere within the bin, but excluing the ``hi`` value
+        (except for PHA data sets when using ``channel`` units).
 
         The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
@@ -4752,15 +4797,23 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to all data
         sets.
 
+        .. versionchanged:: 4.14.0
+           Integrated data sets - so Data1DInt and DataPHA when using
+           energy or wavelengths - now ensure that the `hi` argument
+           is exclusive and better handling of the `lo` argument when it
+           matches a bin edge. This can result in the same filter selecting
+           a smaller number of bins than in earlier versions of Sherpa.
+
         Parameters
         ----------
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form ``a:b``, with multiple
-           ranges allowed, where the ranges are separated by a
-           ``,``. The term ``:b`` means exclude everything up to, and
-           including ``b``, and ``a:`` means exclude everything that is
-           higher than, or equal to, ``a``.
+           expression listing ranges in the form ``a:b``, with
+           multiple ranges allowed, where the ranges are separated by
+           a ``,``. The term ``:b`` means exclude everything up to
+           ``b`` (an exclusive limit for integrated datasets), and
+           ``a:`` means exclude everything that is higher than, or
+           equal to, ``a``.
         hi : number, optional
            The upper bound of the filter when ``lo`` is not a string.
         bkg_id : int or str, optional
@@ -4834,17 +4887,25 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to the
         given data set, or data sets.
 
+        .. versionchanged:: 4.14.0
+           Integrated data sets - so Data1DInt and DataPHA when using
+           energy or wavelengths - now ensure that the `hi` argument
+           is exclusive and better handling of the `lo` argument when it
+           matches a bin edge. This can result in the same filter selecting
+           a smaller number of bins than in earlier versions of Sherpa.
+
         Parameters
         ----------
         ids : int or str, or array of int or str
            The data set, or sets, to use.
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form ``a:b``, with multiple
-           ranges allowed, where the ranges are separated by a
-           ``,``. The term ``:b`` means include everything up to, and
-           including ``b``, and ``a:`` means inlude everything that is
-           higher than, or equal to, ``a``.
+           expression listing ranges in the form ``a:b``, with
+           multiple ranges allowed, where the ranges are separated by
+           a ``,``. The term ``:b`` means include everything up to
+           ``b`` (an exclusive limit for integrated datasets), and
+           ``a:`` means include everything that is higher than, or
+           equal to, ``a``.
         hi : number, optional
            The upper bound of the filter when ``lo`` is not a string.
         bkg_id : int or str, optional
@@ -4917,17 +4978,25 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to the given
         data set, or sets.
 
+        .. versionchanged:: 4.14.0
+           Integrated data sets - so Data1DInt and DataPHA when using
+           energy or wavelengths - now ensure that the `hi` argument
+           is exclusive and better handling of the `lo` argument when it
+           matches a bin edge. This can result in the same filter selecting
+           a smaller number of bins than in earlier versions of Sherpa.
+
         Parameters
         ----------
         ids : int or str, or array of int or str
            The data set, or sets, to use.
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form ``a:b``, with multiple
-           ranges allowed, where the ranges are separated by a
-           ``,``. The term ``:b`` means exclude everything up to, and
-           including ``b``, and ``a:`` means exclude everything that is
-           higher than, or equal to, ``a``.
+           expression listing ranges in the form ``a:b``, with
+           multiple ranges allowed, where the ranges are separated by
+           a ``,``. The term ``:b`` means exclude everything up to
+           ``b`` (an exclusive limit for integrated datasets), and
+           ``a:`` means exclude everything that is higher than, or
+           equal to, ``a``.
         hi : number, optional
            The upper bound of the filter when ``lo`` is not a string.
         bkg_id : int or str, optional

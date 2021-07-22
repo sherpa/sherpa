@@ -1461,6 +1461,12 @@ class Data1DInt(Data1D):
         Ranges are inclusive for the lower limit and exclusive
         for the upper limit.
 
+        .. versionchanged:: 4.14.0
+           Filtering Data1DInt datasets has been improved to fix a
+           number of corner cases. As part of this the upper limit has
+           been changed to be exclusive whereas previously it was not
+           obvious what the filter was doing.
+
         Parameters
         ----------
         xlo, xhi : number or None, optional
@@ -1490,13 +1496,16 @@ class Data1DInt(Data1D):
         >>> y = np.ones_like(xlo)
         >>> d = Data1DInt('example', xlo, xhi, y)
         >>> d.xlo[0], d.xhi[-1]
-        (0.4, 2.4000000000000004)
-        >>> d.notice()
+        (0.4, 2.400000000000001)
         >>> d.get_filter(format='%.1f')
-        '0.5:2.3'
+        '0.4:2.4'
         >>> d.notice(0.8, 1.9)
         >>> d.get_filter(format='%.1f')
-        '0.7:1.9'
+        '0.8:2.0'
+
+        >>> d.notice()
+        >>> d.get_filter(format='%.1f')
+        '0.4:2.4'
 
         """
 

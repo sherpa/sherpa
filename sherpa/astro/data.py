@@ -3907,6 +3907,13 @@ class DataPHA(Data1D):
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
         """Notice or ignore the given range.
 
+        .. versionchanged:: 4.14.0
+           PHA filtering has been improved to fix a number of corner
+           cases which can result in the same filter now selecting one
+           or two less channels that done in earlier versions of
+           Sherpa. The lo and hi arguments are now restricted based on
+           the units setting.
+
         Parameters
         ----------
         lo, hi : number or None, optional
@@ -3928,7 +3935,7 @@ class DataPHA(Data1D):
         Notes
         -----
         Calling notice with no arguments selects all points in the
-        dataset.
+        dataset (or, if `ignore=True`, it will remove all points).
 
         If no channels have been ignored then a call to `notice` with
         ``ignore=False`` will select just the ``lo`` to ``hi`` range,
@@ -3939,6 +3946,18 @@ class DataPHA(Data1D):
         (with ``ignore=False``) selects a range outside the data set -
         such as a channel range of 2000 to 3000 when the valid range
         is 1 to 1024 - then all points will be ignored.
+
+        When filtering with channel units then:
+
+        - the lo and hi arguments, if set, must be integers,
+        - and the lo and hi values are inclusive.
+
+        For energy and wavelength filters:
+
+        - the lo and hi arguments, if set, must be >= 0,
+        - and the lo limit is inclusive but the hi limit is exclusive.
+
+        For
 
         Examples
         --------
@@ -3977,7 +3996,7 @@ class DataPHA(Data1D):
         >>> pha.notice()
         >>> pha.notice(0.5, 7)
         >>> pha.get_filter(format='%.3f')
-        '0.518:8.220'
+        '0.467:9.870'
 
         """
 

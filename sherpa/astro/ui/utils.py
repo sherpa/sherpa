@@ -6751,11 +6751,11 @@ class Session(sherpa.ui.utils.Session):
         >>> group_counts('jet', 20)
         >>> notice_id('jet', 0.5, 7)
         >>> get_filter('jet')
-        '0.540199995041:7.869399785995'
+        '0.496399998665:7.212399959564'
         >>> ignore_bad('jet')
         WARNING: filtering grouped data with quality flags, previous filters deleted
         >>> get_filter('jet')
-        '0.200749998679:14.417500019073'
+        '0.001460000058:14.950400352478'
 
         """
         data = self._get_pha_data(id)
