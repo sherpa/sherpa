@@ -238,16 +238,15 @@ is wider, as shown above and with the :py:meth:`~sherpa.astro.data.DataPHA.get_f
 method::
 
   >>> print(pha.get_filter())
-  0.518300011754:8.219800233841
+  0.467200011015:9.869600296021
 
 .. note::
 
    Each channel covers a finite energy range, and so when determining what
    value to display, the :py:meth:`~sherpa.astro.data.DataPHA.get_filter` call
-   uses the mid-point of each bin. This means that the full range covered
-   by the filter is actually larger than displayed (see
-   `issue #1129 <https://github.com/sherpa/sherpa/issues/1129>`_ for more
-   information).
+   uses the full range (this was changed in Sherpa 4.14.0, in earlier versions
+   the mid-point was used so the expression would appear to cover a smaller
+   range but would still reflect the same filter).
 
 The reason for this change is two fold:
 
@@ -290,7 +289,7 @@ We can switch temporarily to channel units and see differences in the
 
   >>> pha.units = 'channel'
   >>> print(pha.get_filter())
-  36:563
+  33:676
   >>> plot.prepare(pha)
   >>> plot.plot(xlog=True, ylog=True)
   >>> pha.units = 'energy'
@@ -364,14 +363,16 @@ as it makes it easier to compare::
 .. image:: ../_static/data/pha_grouping_comparison.png
 
 In general, as the grouped bins become larger then the difference of the
-filtered range to the requested range becomes larger::
+filtered range to the requested range becomes larger (the first two
+files have the same range as the samebins have been selected, it's
+just that pha1 is ungrouped)::
 
   >>> print(pha1.get_filter())
-  0.474500000477:9.862299919128
+  0.467200011015:9.869600296021
   >>> print(pha2.get_filter())
-  0.518300011754:8.219800233841
+  0.467200011015:9.869600296021
   >>> print(pha3.get_filter())
-  0.525600001216:10.906200170517
+  0.394199997187:14.950400352478
 
 Manipulating data
 =================
