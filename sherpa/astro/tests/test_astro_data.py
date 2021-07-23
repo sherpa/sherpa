@@ -18,7 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import logging
 import warnings
 
 import numpy as np
@@ -29,9 +28,7 @@ from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.utils import parse_expr
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
-
-logger = logging.getLogger('sherpa')
+from sherpa.utils.testing import requires_data, requires_fits
 
 
 def _monotonic_warning(response_type, filename):
@@ -44,21 +41,16 @@ def _bin_warning(response_type, filename):
 
 def _assert_userwarning(expected_warnings, observed_warnings):
 
-    expected_warnings_set = set([warning.args for warning in expected_warnings])
-    observed_warnings_set = set([warning.message.args for warning in observed_warnings])
+    expected_warnings_set = {w.args for w in expected_warnings}
+    observed_warnings_set = {w.message.args for w in observed_warnings}
 
     assert observed_warnings_set == expected_warnings_set
 
 
-class test_filter_energy_grid(SherpaTestCase):
+@pytest.fixture
+def setUp1():
 
-    _notice = np.ones(46, dtype=bool)
-    _notice[44:46] = False
-
-    _ignore = np.zeros(46, dtype=bool)
-    _ignore[14:33] = True
-
-    _emin = np.array([
+    emin = np.array([
         1.46000006e-03, 2.48199999e-01, 3.06600004e-01, 4.67200011e-01,
         5.69400012e-01, 6.42400026e-01, 7.00800002e-01, 7.44599998e-01,
         7.88399994e-01, 8.17600012e-01, 8.61400008e-01, 8.90600026e-01,
@@ -70,9 +62,9 @@ class test_filter_energy_grid(SherpaTestCase):
         2.71560001e+00, 2.86159992e+00, 3.08060002e+00, 3.38720012e+00,
         3.56240010e+00, 3.79600000e+00, 4.02960014e+00, 4.24860001e+00,
         4.71579981e+00, 5.02239990e+00, 5.37279987e+00, 5.89839983e+00,
-        6.57000017e+00, 9.86960030e+00], float)
+        6.57000017e+00, 9.86960030e+00])
 
-    _emax = np.array([
+    emax = np.array([
         0.2482, 0.3066, 0.46720001, 0.56940001, 0.64240003,
         0.7008, 0.7446, 0.78839999, 0.81760001, 0.86140001,
         0.89060003, 0.949, 0.9928, 1.03659999, 1.09500003,
@@ -82,42 +74,42 @@ class test_filter_energy_grid(SherpaTestCase):
         2.58419991, 2.71560001, 2.86159992, 3.08060002, 3.38720012,
         3.5624001, 3.796, 4.02960014, 4.24860001, 4.71579981,
         5.0223999, 5.37279987, 5.89839983, 6.57000017, 9.8696003,
-        14.95040035], float)
+        14.95040035])
 
-    def setUp(self):
-        self.old_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-        self.pha = DataPHA('', np.arange(46, dtype=float) + 1.,
-                           np.zeros(46),
-                           bin_lo=self._emin,
-                           bin_hi=self._emax)
-        self.pha.units = "energy"
-
-    def tearDown(self):
-        logger.setLevel(self.old_level)
-
-    def test_notice(self):
-        self.pha.notice()
-        self.pha.notice(0.0, 6.0)
-        assert (self._notice == np.asarray(self.pha.mask)).all()
-
-    def test_ignore(self):
-        self.pha.notice()
-        self.pha.ignore(0.0, 1.0)
-        self.pha.ignore(3.0, 15.0)
-        assert (self._ignore == np.asarray(self.pha.mask)).all()
+    pha = DataPHA('', np.arange(46, dtype=float) + 1.,
+                  np.zeros(46),
+                  bin_lo=emin,
+                  bin_hi=emax)
+    pha.units = "energy"
+    return pha
 
 
-class test_filter_energy_grid_reversed(SherpaTestCase):
+def test_filter_energy_grid_notice(setUp1):
+    pha = setUp1
+    pha.notice()
+    pha.notice(0.0, 6.0)
 
-    _notice = np.zeros(204, dtype=bool)
-    _notice[0:42] = True
+    # Use approx to make it easy to check an array
+    expected = np.ones(46, dtype=bool)
+    expected[44:46] = False
+    assert pha.mask == pytest.approx(expected)
 
-    _ignore = np.ones(204, dtype=bool)
-    _ignore[66:70] = False
-    _ignore[0:17] = False
 
-    _emin = np.array([
+def test_filter_energy_grid_ignore(setUp1):
+    pha = setUp1
+    pha.notice()
+    pha.ignore(0.0, 1.0)
+    pha.ignore(3.0, 15.0)
+
+    expected = np.zeros(46, dtype=bool)
+    expected[14:33] = True
+    assert pha.mask == pytest.approx(expected)
+
+
+@pytest.fixture
+def setUp2():
+
+    emin = np.array([
         2.39196181, 2.35973215, 2.34076023, 2.30973101, 2.2884388,
         2.25861454, 2.22371697, 2.20662117, 2.18140674, 2.14317489,
         2.12185216, 2.09055495, 2.06256914, 2.04509854, 2.02788448,
@@ -160,7 +152,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.34418666, 0.33912122, 0.33720407, 0.33505177, 0.33279634,
         0.33081138, 0.32847831, 0.32592943, 0.3111549], float)
 
-    _emax = np.array([
+    emax = np.array([
         3.06803656, 2.39196181, 2.35973215, 2.34076023, 2.30973101,
         2.2884388, 2.25861454, 2.22371697, 2.20662117, 2.18140674,
         2.14317489, 2.12185216, 2.09055495, 2.06256914, 2.04509854,
@@ -203,63 +195,73 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.34669766, 0.34418666, 0.33912122, 0.33720407, 0.33505177,
         0.33279634, 0.33081138, 0.32847831, 0.32592943], float)
 
-    def setUp(self):
-        self.pha = DataPHA('', np.arange(204, dtype=float) + 1.,
-                           np.zeros(204),
-                           bin_lo=self._emin,
-                           bin_hi=self._emax)
-        self.pha.units = "energy"
-
-    def tearDown(self):
-        pass
-
-    def test_notice(self):
-        self.pha.notice()
-        self.pha.notice(4., 8.3)
-        assert (self._notice == np.asarray(self.pha.mask)).all()
-
-    def test_ignore(self):
-        self.pha.notice()
-        self.pha.ignore(10.3, 13.8)
-        self.pha.ignore(4.6, 6.2)
-        assert (self._ignore == np.asarray(self.pha.mask)).all()
+    pha = DataPHA('', np.arange(204, dtype=float) + 1.,
+                  np.zeros(204),
+                  bin_lo=emin,
+                  bin_hi=emax)
+    pha.units = "energy"
+    return pha
 
 
-class test_filter_wave_grid(SherpaTestCase):
+def test_test_energy_grid_reversed_notice(setUp2):
+    pha = setUp2
 
-    _notice = np.ones(16384, dtype=bool)
-    _notice[8465:16384] = False
+    pha.notice()
+    pha.notice(4., 8.3)
 
-    _ignore = np.zeros(16384, dtype=bool)
-    _ignore[14064:15984] = True
+    expected = np.zeros(204, dtype=bool)
+    expected[0:42] = True
+    assert pha.mask == pytest.approx(expected)
 
-    _emin = np.arange(205.7875, 0.9875, -0.0125)
+def test_test_energy_grid_reversed_ignore(setUp2):
+    pha = setUp2
 
-    _emax = _emin + 0.0125
+    pha.notice()
+    pha.ignore(10.3, 13.8)
+    pha.ignore(4.6, 6.2)
 
-    def setUp(self):
-        self.old_level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-        self.pha = DataPHA('', np.arange(16384, dtype=float) + 1,
-                           np.zeros(16384),
-                           bin_lo=self._emin,
-                           bin_hi=self._emax)
+    expected = np.ones(204, dtype=bool)
+    expected[66:70] = False
+    expected[0:17] = False
+    assert pha.mask == pytest.approx(expected)
 
-    def tearDown(self):
-        logger.setLevel(self.old_level)
 
-    def test_notice(self):
-        self.pha.units = 'wavelength'
-        self.pha.notice()
-        self.pha.notice(100.0, 225.0)
-        assert (self._notice == np.asarray(self.pha.mask)).all()
 
-    def test_ignore(self):
-        self.pha.units = 'wavelength'
-        self.pha.notice()
-        self.pha.ignore(30.01, 225.0)
-        self.pha.ignore(0.1, 6.0)
-        assert (self._ignore == np.asarray(self.pha.mask)).all()
+@pytest.fixture
+def setUp3():
+
+    emin = np.arange(205.7875, 0.9875, -0.0125)
+    emax = emin + 0.0125
+
+    pha = DataPHA('', np.arange(16384, dtype=float) + 1,
+                  np.zeros(16384),
+                  bin_lo=emin,
+                  bin_hi=emax)
+    pha.units = 'wavelength'
+    return pha
+
+
+def test_filter_wave_grid_notice(setUp3):
+    pha = setUp3
+
+    pha.notice()
+    pha.notice(100.0, 225.0)
+
+    expected = np.ones(16384, dtype=bool)
+    expected[8465:16384] = False
+    assert pha.mask == pytest.approx(expected)
+
+
+def test_filter_wave_grid_ignore(setUp3):
+    pha = setUp3
+
+    pha.notice()
+    pha.ignore(30.01, 225.0)
+    pha.ignore(0.1, 6.0)
+
+    expected = np.zeros(16384, dtype=bool)
+    expected[14064:15984] = True
+    assert pha.mask == pytest.approx(expected)
 
 
 # It would be nice to add some unit testing here, but it's not trivial

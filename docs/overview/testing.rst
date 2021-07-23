@@ -7,10 +7,10 @@ The sherpa.utils.testing module
 .. automodule:: sherpa.utils.testing
 
    .. rubric:: Functions
-               
+
    .. autosummary::
       :toctree: api
-               
+
       requires_data
       requires_ds9
       requires_fits
@@ -20,10 +20,3 @@ The sherpa.utils.testing module
       requires_pylab
       requires_stk
       requires_xspec
-      
-   .. rubric:: Classes
-               
-   .. autosummary::
-      :toctree: api
-
-      SherpaTestCase

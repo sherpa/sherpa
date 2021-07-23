@@ -348,7 +348,8 @@ def run_thread_function(name, scriptname, test_data_path):
     Returns
     -------
     localsyms : dict
-        Any model parameters created by the script.
+        Any variables created by the script (includes model
+        components).
 
     Examples
     --------
@@ -370,16 +371,10 @@ def run_thread_function(name, scriptname, test_data_path):
     cwd = os.getcwd()
     os.chdir(test_data_path)
 
-    # Need to add to localsyms so that the scripts can work, but we
-    # do not need (for now) to return all the local symbols, so
-    # also have a version just for model parameters.
-    #
     localsyms = {}
-    modelsyms = {}
 
     def assign_model(name, val):
         localsyms[name] = val
-        modelsyms[name] = val
 
     old_assign_model = ui.get_model_autoassign_func()
 
@@ -392,7 +387,7 @@ def run_thread_function(name, scriptname, test_data_path):
         ui.set_model_autoassign_func(old_assign_model)
         os.chdir(cwd)
 
-    return modelsyms
+    return localsyms
 
 
 @pytest.fixture
