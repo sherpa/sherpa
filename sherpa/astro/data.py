@@ -367,7 +367,7 @@ def html_pha(pha):
                           ('HDUCLAS2', 'Data stored'),
                           ('HDUCLAS3', 'Data format'),
                           ('HDUCLAS4', 'PHA format'),
-                          ('XFLT0001', 'Stokes (polarimetry)')])
+                          ('XFLT0001', 'XEPC filter 0001')])
 
     if meta is not None:
         ls.append(formatting.html_section(meta, summary='Metadata'))
