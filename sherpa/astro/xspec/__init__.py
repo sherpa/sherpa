@@ -861,6 +861,37 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
     version_enabled = True
 
+    def __init__(self, name, pars):
+
+        # Validate the parameters argument to check that the
+        # names are unique (name insensitive) and members of
+        # the class (i.e. there are attributes with this name).
+        #
+        # This could be done at a higher level of the class structure
+        # but given the support for composite models it can't be
+        # done at the Model layer. It probably makes sense to do this
+        # at the ArithmeticModel layer but this is the place where we
+        # make the most changes and we know these constraints are
+        # correct here so do so here.
+        #
+        # These are development errors so use asserts rather than
+        # raising an error.
+        #
+        seen = set()
+        for par in pars:
+            pname = par.name.lower()
+
+            # unique names
+            assert pname not in seen, (par.name, name)
+            seen.add(pname)
+
+            # there's actually an attribute with this name
+            attr = getattr(self, par.name)
+            assert attr.name == par.name, (par.name, name)
+
+        super().__init__(name, pars)
+
+
     @modelCacher1d
     def calc(self, *args, **kwargs):
         """Calculate the model given the parameters and grid.
