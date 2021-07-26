@@ -44,7 +44,7 @@ rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
 
 @pytest.mark.parametrize("has_bkg", [True, False])
 @pytest.mark.parametrize("is_source", [True, False])
-def test_fake_pha_basic(has_bkg, is_source):
+def test_fake_pha_basic(has_bkg, is_source, reset_seed):
     """No background.
 
     See also test_fake_pha_add_background
@@ -52,8 +52,9 @@ def test_fake_pha_basic(has_bkg, is_source):
     For simplicity we use perfect responses.
 
     A background dataset can be added, but it should
-    not be used in the simulation woth default settings
+    not be used in the simulation with default settings
     """
+    np.random.seed(4276)
     data = DataPHA('any', channels, counts, exposure=1000.)
 
     if has_bkg:
@@ -106,7 +107,8 @@ def test_fake_pha_basic(has_bkg, is_source):
     else:
         # No multiplication with exposure time, arf binning, etc.
         # so we just expect very few counts
-        assert data.counts.sum() < 20
+        assert data.counts.sum() < 10
+        assert data.counts.sum() >= 2
 
     # Essentially double the exposure by having two identical arfs
     data.set_arf(arf, 2)
@@ -117,8 +119,8 @@ def test_fake_pha_basic(has_bkg, is_source):
         assert data.counts.sum() < 3000
         assert data.counts[1] > data.counts[0]
     else:
-        assert data.counts.sum() < 50
-        assert data.counts.sum() > 1
+        assert data.counts.sum() < 20
+        assert data.counts.sum() >=4
 
 
 def test_fake_pha_background_pha():
