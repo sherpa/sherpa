@@ -1,0 +1,54 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module minim__user__routines 
+    interface minim_user_interface
+       subroutine functn(p,nop,func)
+         real*8 dimension(nop),intent(in) :: p
+         integer*4 depend(p),intent(hide) :: nop=len(p)
+         real*8 intent(out) :: func
+       end subroutine functn
+    end interface minim_user_interface
+end python module minim__user__routines
+python module _minim
+    interface
+        subroutine minim(p,step,nop,func,max,iprint,stopcr,nloop,iquad,simp,var,functn,ifault,neval,lb,ub,g,h,pbar,pstar,pstst,aval,bmat,pmin,vc,temp)
+            use minim__user__routines
+            real*8 dimension(nop),intent(inout) :: p
+            real*8 dimension(nop),intent(in) :: step
+            integer*4 depend(p),intent(hide) :: nop=len(p)
+            real*8 intent(out) :: func
+            integer*4 intent(in) :: max
+            integer*4 intent(in) :: iprint
+            real*8 intent(in) :: stopcr
+            integer*4 intent(in) :: nloop
+            integer*4 intent(in) :: iquad
+            real*8 intent(in) :: simp
+            real*8 dimension(nop),intent(out) :: var
+            external functn
+            integer*4 intent(out) :: ifault
+            integer*4 intent(out) :: neval
+            real*8 dimension(nop),intent(in) :: lb
+            real*8 dimension(nop),intent(in) :: ub
+            real*8 dimension(nop+1,nop),intent(hide) :: g
+            real*8 dimension(nop+1),intent(hide) :: h
+            real*8 dimension(nop),intent(hide) :: pbar
+            real*8 dimension(nop),intent(hide) :: pstar
+            real*8 dimension(nop),intent(hide) :: pstst
+            real*8 dimension(nop),intent(hide) :: aval
+            real*8 dimension(nop*(nop+1)/2),intent(hide) :: bmat
+            real*8 dimension(nop),intent(hide) :: pmin
+            real*8 dimension(nop*(nop+1)/2),intent(hide) :: vc
+            real*8 dimension(nop),intent(hide) :: temp
+        end subroutine minim
+        subroutine syminv(a,n,c,w,nullty,ifault,rmax)
+          real*8 dimension(n*(n+1)/2),intent(in) :: a
+          integer*4 intent(in) :: n
+          real*8 dimension(n*(n+1)/2),intent(out) :: c
+          real*8 dimension(n),intent(hide) :: w
+          integer*4 intent(hide) :: nullty
+          integer*4 intent(out) :: ifault
+          real*8 intent(out) :: rmax
+        end subroutine syminv
+    end interface 
+end python module _minim

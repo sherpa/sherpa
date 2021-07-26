@@ -276,7 +276,11 @@ public:
 
 private:
 
+#if (__STDC_VERSION__ < 201112L)
   std::auto_ptr< sherpa::Simplex > simplex;
+#else
+  std::unique_ptr< sherpa::Simplex > simplex;
+#endif
 
 };
 

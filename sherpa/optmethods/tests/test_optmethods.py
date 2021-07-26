@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -47,6 +47,15 @@ def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
         assert xtra.get('num_parallel_map') != 0
 
 ###############################################################################
+
+def test_minim_no_reflect(reltol=1.0e-3, abstol=1.0e-3):
+    fct = _tstoptfct.Colville
+    wrong_fval = 174.28569111739617
+    x0, xmin, xmax, fmin = init( fct.__name__, 4)
+    status, x, fval, msg, xtra = minim(fct, x0, xmin, xmax, reflect=False)
+    assert fval == pytest.approx(wrong_fval, rel=reltol, abs=abstol)
+    assert fmin != wrong_fval
+
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_rosenbrock(opt, npar=4):
     tst_opt(opt, _tstoptfct.rosenbrock, npar)
