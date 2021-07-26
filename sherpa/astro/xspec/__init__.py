@@ -7205,6 +7205,10 @@ class XSzkerrbb(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The fcol parameter was incorrectly labelled as hd: both names
+       can be used to access this parameter.
+
     Attributes
     ----------
     eta
@@ -7264,7 +7268,9 @@ class XSzkerrbb(XSAdditiveModel):
         self.Mbh = Parameter(name, 'Mbh', 1., 0., 100., 0.0, hugeval, 'M_sun')
         self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, 'M0yr')
         self.z = Parameter(name, 'z', 0.01, 0., 10., 0.0, 10, frozen=True)
-        self.fcol = Parameter(name, 'hd', 1.7, 1., 10., 0.0, hugeval, frozen=True)
+        self.fcol = Parameter(name, 'fcol', 1.7, 1., 10., 0.0, hugeval, frozen=True,
+                              # Parameter was mis-labelled until 4.14.0
+                              aliases=['hd'])
         self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
         self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
@@ -12886,6 +12892,10 @@ class XSvashift(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The Velocity parameter was incorrectly labelled as Redshift:
+       both names can be used to access this parameter.
+
     .. versionadded:: 4.12.2
 
     Attributes
@@ -12914,10 +12924,12 @@ class XSvashift(XSConvolutionKernel):
     __function__ = "C_vashift"
 
     def __init__(self, name='xsvashift'):
-        self.Redshift = Parameter(name, 'Velocity', 0.0,
+        self.Velocity = Parameter(name, 'Velocity', 0.0,
                                   min=-1e4, max=1e4,
                                   hard_min=-1e4, hard_max=1e4,
-                                  units='km/s', frozen=True)
+                                  units='km/s', frozen=True,
+                                  # Parameter was mis-labelled until 4.14.0
+                                  aliases=['Redshift'])
         XSConvolutionKernel.__init__(self, name, (self.Velocity,))
 
 
@@ -12926,6 +12938,10 @@ class XSvmshift(XSConvolutionKernel):
     """The XSPEC vmshift convolution model: velocity shift a multiplicative model.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.14.0
+       The Velocity parameter was incorrectly labelled as Redshift:
+       both names can be used to access this parameter.
 
     .. versionadded:: 4.12.2
 
@@ -12955,10 +12971,12 @@ class XSvmshift(XSConvolutionKernel):
     __function__ = "C_vmshift"
 
     def __init__(self, name='xsvmshift'):
-        self.Redshift = Parameter(name, 'Velocity', 0.0,
+        self.Velocity = Parameter(name, 'Velocity', 0.0,
                                   min=-1e4, max=1e4,
                                   hard_min=-1e4, hard_max=1e4,
-                                  units='km/s', frozen=True)
+                                  units='km/s', frozen=True,
+                                  # Parameter was mis-labelled until 4.14.0
+                                  aliases=['Redshift'])
         XSConvolutionKernel.__init__(self, name, (self.Velocity,))
 
 
