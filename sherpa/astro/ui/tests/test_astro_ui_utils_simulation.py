@@ -183,6 +183,56 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
     assert faked.counts[1] > faked.counts[0]
 
 
+def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui):
+    """Similar to test_fake_pha_basic but instead of passing in
+    the RMF, we set it before. The result should be the same, so we
+    don't have ot go through all the parameterization of that test.
+    """
+
+    channels = np.arange(1, 4, dtype=np.int16)
+    counts = np.ones(3, dtype=np.int16)
+
+    ui.load_arrays('id123', channels, counts, ui.DataPHA)
+    ui.set_exposure('id123', 100)
+
+    ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    arf = ui.create_arf(elo, ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf('id123', rmf)
+    ui.set_arf('id123', arf)
+
+    mdl = ui.create_model_component('const1d', 'mdl')
+    mdl.c0 = 2
+    ui.set_source('id123', mdl)
+
+    ui.fake_pha('id123', None, None, 1000.0)
+
+    faked = ui.get_data('id123')
+    assert faked.exposure == pytest.approx(1000.0)
+    assert (faked.channel == channels).all()
+
+    assert faked.name == 'faked'
+    assert faked.background_ids == []
+
+    # check we've faked counts (the scaling is such that it is
+    # very improbable that this condition will fail)
+    assert (faked.counts > counts).all()
+
+    # For reference the predicted source signal is
+    #    [200, 400, 400]
+    #
+    # What we'd like to say is that the predicted counts are
+    # similar, but this is not easy to do. What we can try
+    # is summing the counts (to average over the randomness)
+    # and then a simple check
+    #
+    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
+    # This is more likely to fail by chance, but still very unlikely
+    assert faked.counts[1] > faked.counts[0]
+
+
 @pytest.mark.parametrize("id", [None, 1, "faked"])
 def test_fake_pha_add_background(id, clean_astro_ui):
     """Check we can add a background component.

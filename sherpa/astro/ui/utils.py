@@ -8632,16 +8632,6 @@ class Session(sherpa.ui.utils.Session):
         time, along with a Poisson noise term. A background component can
         be included.
 
-        .. versionchanged:: 4.13.1
-           Using an id parameter of None now means that the default
-           dataset identifier is used, rather than creating a
-           completely new dataset.
-
-        .. versionchanged:: 4.13.2
-           Multiple ARFs and RMFs can now be used for the simulation.
-           Furthermore, background models can be specified instead of
-           background `~sherpa.stro.data.DataPHA` datasets.
-
         Parameters
         ----------
         id : int or str
@@ -8652,10 +8642,14 @@ class Session(sherpa.ui.utils.Session):
            The name of the ARF, or an ARF data object (e.g.  as
            returned by `get_arf` or `unpack_arf`). A list of filenames
            can be passed in for instruments that require multile ARFs.
+           Set this to `None` to use any arf that is already set for
+           the data set given by id.
         rmf : filename or RMF object or list of filenames
            The name of the RMF, or an RMF data object (e.g.  as
            returned by `get_arf` or `unpack_arf`).  A list of filenames
            can be passed in for instruments that require multile RMFs.
+           Set this to `None` to use any arf that is already set for
+           the data set given by id.
         exposure : number
            The exposure time, in seconds.
         backscal : number, optional
@@ -8762,7 +8756,7 @@ class Session(sherpa.ui.utils.Session):
             d = sherpa.astro.data.DataPHA('', None, None)
             self.set_data(id, d)
 
-        if rmf is None:
+        if rmf is None and len(d.response_ids) == 0:
             raise DataErr('normffake', id)
 
         if type(rmf) in (str, numpy.string_):
@@ -8771,20 +8765,23 @@ class Session(sherpa.ui.utils.Session):
             else:
                 raise IOErr("filenotfound", rmf)
 
-        if arf is not None and type(arf) in (str, numpy.string_):
+        if type(arf) in (str, numpy.string_):
             if os.path.isfile(arf):
                 arf = self.unpack_arf(arf)
             else:
                 raise IOErr("filenotfound", arf)
 
-        for resp_id in d.response_ids:
-            d.delete_response(resp_id)
+        if not (rmf is None and arf is None):
+            for resp_id in d.response_ids:
+                d.delete_response(resp_id)
 
         # Get one rmf for testing the channel number
         # This would be a lot simpler if I could just raise the
         # incombatiblersp error on the OO layer (that happens, but the id
         # is not in the error messaage).
-        if numpy.iterable(rmf):
+        if rmf is None:
+            rmf0 = d.get_rmf()
+        elif numpy.iterable(rmf):
             rmf0 = self.unpack_rmf(rmf[0])
         else:
             rmf0 = rmf
@@ -8797,16 +8794,17 @@ class Session(sherpa.ui.utils.Session):
                 raise DataErr('incompatibleresp', rmf.name, str(id))
 
         # at this point, we can be sure that arf is not a string, because
-        # if it was, it went through load_Arf alreayd above.
-        if numpy.iterable(arf):
-            self.load_multi_arfs(id, arf, range(len(arf)))
-        else:
-            self.set_arf(id, arf)
+        # if it was, it would have gone through load_arf already above.
+        if not (rmf is None and arf is None):
+            if numpy.iterable(arf):
+                self.load_multi_arfs(id, arf, range(len(arf)))
+            else:
+                self.set_arf(id, arf)
 
-        if numpy.iterable(rmf):
-            self.load_multi_rmfs(id, rmf, range(len(rmf)))
-        else:
-            self.set_rmf(id, rmf)
+            if numpy.iterable(rmf):
+                self.load_multi_rmfs(id, rmf, range(len(rmf)))
+            else:
+                self.set_rmf(id, rmf)
 
         d.exposure = exposure
 
