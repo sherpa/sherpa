@@ -21,6 +21,7 @@ import numpy
 from sherpa.utils.logging import config_logger
 from sherpa.utils.err import IOErr
 from sherpa.utils.formatting import html_table, html_from_sections
+from sherpa.utils import send_to_pager
 from sherpa.astro import ui
 from .utils import load_error_msg, load_wrapper, model_wrapper, \
     simple_wrapper, fit_wrapper, plot_wrapper
@@ -173,18 +174,30 @@ class DataStack():
                           summary=f'datastack with {data.shape[0]} datasets')
         return html_from_sections(self, htab)
 
-    # QUS: should this use the logger instead of print?
-    def show_stack(self):
+    def show_stack(self, outfile=None, clobber=False):
         """Display basic information about the contents of the data stack.
 
         A brief summary of each data set in the stack is printed to the
         standard output channel. The information displayed depends on the
         type of each data set.
+
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
         """
         header, data = self._summary_for_display()
-        print('|'.join(header))
+        txt = '|'.join(header) + '\n'
         for row in data:
-            print('|'.join(row))
+            txt += '|'.join(row) + '\n'
+        send_to_pager(txt, outfile, clobber)
 
     # QUS: should this return a copy of the list?
     def get_stack_ids(self):
