@@ -26,7 +26,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.astro.data import DataARF, DataIMG, DataPHA
 from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits
@@ -83,6 +83,95 @@ def test_need_numpy_channels():
 
     pha.ignore()
     assert pha.get_filter() == 'No noticed bins'
+
+
+@pytest.mark.parametrize("chtype,expected,args",
+                         [("channel", '1:10', []),
+                          ("channel", '', [(False, 1, 10)]),
+                          ("channel", '2:9', [(True, 2, 9)]),
+                          ("channel", '2:3,7:9', [(True, 2, 9), (False, 4, 6)]),
+                          ("channel", '1:4,7:9', [(True, 2, 9), (False, 4, 6), (True, 0, 4)]),
+                          ("channel", '2:3,5:10', [(True, 2, 9), (False, 4, 6), (True, 5, 13)]),
+                          ("channel", '', [(True, 2, 9), (False, 4, 6), (True, 5, 13), (False, 0, 13)]),
+                          ("channel", '1:10', [(True, 2, 9), (False, 4, 6), (True, 0, 13)]),
+                          # None checks
+                          ("channel", '1:3', [(True, None, 3)]),
+                          ("channel", '4:10', [(False, None, 3)]),
+                          ("channel", '5:10', [(True, 5, None)]),
+                          ("channel", '1:4', [(False, 5, None)]),
+                          ("channel", '1:3,5:10', [(True, 5, None), (True, None, 3)]),
+                          ("channel", '4', [(False, 5, None), (False, None, 3)]),
+                          # a few checks of non-integer channel limits (we don't explicitly
+                          # say what this means so just check we know what it does)
+                          ("channel", '3:7', [(True, 2.8, 7.9)]),
+                          ("channel", '3:7', [(True, 2.1, 7.2)]),
+                          ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
+                          # energy
+                          ("energy", '0.3:2.1', []),
+                          ("energy", '', [(False, 0.3, 2.1)]),
+                          ("energy", '', [(False, 0, 3)]),
+                          ("energy", '0.5:1.9', [(True, 0.51, 1.98)]),
+                          ("energy", '0.5:1.1,1.7:1.9', [(True, 0.51, 1.98), (False, 1.24, 1.51)]),
+                          ("energy", '0.3:1.3,1.7:1.9', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.001, 1.32)]),
+                          ("energy", '0.5:1.1,1.5:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2)]),
+                          ("energy", '', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2), (False, 0.01, 13)]),
+                          ("energy", '0.3:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.01, 13)]),
+                          # None checks
+                          ("energy", '0.3:0.7', [(True, None, 0.65)]),
+                          ("energy", '0.9:2.1', [(False, None, 0.65)]),
+                          ("energy", '0.9:2.1', [(True, 0.95, None)]),
+                          ("energy", '0.3:0.7', [(False, 0.95, None)]),
+                          ("energy", '0.3:0.7,1.1:2.1', [(True, 1.05, None), (True, None, 0.65)]),
+                          ("energy", '0.3:2.1', [(True, 0.95, None), (True, None, 0.65)]),
+                          ("energy", '0.9', [(False, 1.05, None), (False, None, 0.65)]),
+                          ("energy", '', [(False, 0.95, None), (False, None, 0.65)]),
+                          # wavelength
+                          ("wave", '5.9:41.3', []),
+                          ("wave", '', [(False, 1, 70)]),
+                          ("wave", '6.5:24.8', [(True, 6.5, 25)]),
+                          ("wave", '6.5:8.3,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12)]),
+                          ("wave", '5.9:9.5,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 10)]),
+                          ("wave", '6.5:8.3,11.3:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 12, 70)]),
+                          ("wave", '5.9:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 70)]),
+                          # None checks
+                          ("wave", '5.9:9.5', [(True, None, 9.1)]),
+                          ("wave", '11.3:41.3', [(False, None, 9.1)]),
+                          ("wave", '11.3:41.3', [(True, 12.0, None)]),
+                          ("wave", '5.9:9.5', [(False, 12.0, None)]),
+                          ("wave", '5.9:9.5,13.8:41.3', [(True, 12.5, None), (True, None, 9.1)]),
+                          ("wave", '5.9:41.3', [(True, 12.0, None), (True, None, 9.1)]),
+                          ("wave", '11.3', [(False, 12.5, None), (False, None, 9.1)]),
+                          ("wave", '', [(False, 12.0, None), (False, None, 9.1)]),
+                         ])
+def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
+    """Check we get the filter we expect
+
+    chtype is channel, energy, or wavelength
+    expected is the expected response
+    args is a list of 3-tuples of (flag, loval, hival) where
+    flag is True for notice and False for ignore; they define
+    the filter to apply
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = np.ones(10, dtype=int)
+    pha = DataPHA('data', chans, counts)
+
+    # Use an ARF to create a channel to energy mapping
+    # The 0.2-2.2 keV range maps to 5.636-61.992 Angstrom
+    #
+    egrid = 0.2 * np.arange(1, 12)
+    arf = DataARF('arf', egrid[:-1], egrid[1:], np.ones(10))
+    pha.set_arf(arf)
+
+    pha.units = chtype
+    for (flag, lo, hi) in args:
+        if flag:
+            pha.notice(lo, hi)
+        else:
+            pha.ignore(lo, hi)
+
+    assert pha.get_filter(format='%.1f') == expected
 
 
 @pytest.mark.parametrize("chan", [0, -1, 4])
