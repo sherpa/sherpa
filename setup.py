@@ -1,6 +1,6 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019, 2020
-#               Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -106,10 +106,11 @@ meta = dict(name='sherpa',
                                      'include/sherpa/astro/*.hh',
                                      'tests/*',
                                      'static/css/*'],
+                          'sherpa': ['tests/*.lis', 'tests/test_*.py'],
                           'sherpa.estmethods': ['tests/test_*.py'],
                           'sherpa.image': ['tests/test_*.py'],
                           'sherpa.models': ['tests/test_*.py'],
-                          'sherpa.optmethods': ['tests/test_*.py'],
+                          'sherpa.optmethods': ['tests/*.hh', 'tests/_tstoptfct.cc', 'tests/test_*.py'],
                           'sherpa.plot': ['tests/test_*.py'],
                           'sherpa.sim': ['tests/test_*.py'],
                           'sherpa.stats': ['tests/test_*.py'],
@@ -123,6 +124,7 @@ meta = dict(name='sherpa',
                           'sherpa.astro.sim': ['tests/test_*.py'],
                           'sherpa.astro.ui': ['tests/data/*', 'tests/test_*.py'],
                           'sherpa.astro.utils': ['tests/test_*.py'],
+                          'sherpa.astro.xspec': ['tests/test_*.py'],
                           },
             data_files=[('sherpa',
                          ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
