@@ -1264,7 +1264,7 @@ def test_data1d_get_filter_calls(expected, args):
 
     expected is the expected response
     args is a list of 3-tuples of (flag, loval, hival) where
-    flag is True for notice and False for notice; they define
+    flag is True for notice and False for ignore; they define
     the filter to apply
     """
 
