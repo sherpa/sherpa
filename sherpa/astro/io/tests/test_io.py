@@ -150,8 +150,12 @@ def fake_rmf(outfile):
     def hdr(key, value):
         if isinstance(value, str):
             value = "'{}'".format(value)
-        elif isinstance(value, bool):
-            value = 'T' if value else 'F'
+        else:
+            if isinstance(value, bool):
+                value = 'T' if value else 'F'
+
+            # add spacing to make FVERIFY happy
+            value = f"{str(value):>20s}"
 
         out = "{:8s}= {}".format(key, value)
         return out.ljust(80)
