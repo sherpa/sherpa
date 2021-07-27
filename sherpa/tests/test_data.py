@@ -1299,7 +1299,7 @@ def test_data1dint_get_filter_calls(expected, args):
 
     expected is the expected response
     args is a list of 3-tuples of (flag, loval, hival) where
-    flag is True for notice and False for notice; they define
+    flag is True for notice and False for ignore; they define
     the filter to apply
     """
 
@@ -1349,7 +1349,7 @@ def test_data1dint_get_x_xerr():
     # Ignore a few points at the start and end
     d.notice(11, 18)
 
-    # Just check that the default behavior does't change with the filter
+    # Just check that the default behavior doesn't change with the filter
     assert d.get_x() == pytest.approx(x)
     assert d.get_xerr() == pytest.approx(xerr)
 

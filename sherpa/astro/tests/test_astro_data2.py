@@ -158,7 +158,7 @@ def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
     pha = DataPHA('data', chans, counts)
 
     # Use an ARF to create a channel to energy mapping
-    # The 0.2-2.2 keV range maps to 5.636-61.992 Angsrom
+    # The 0.2-2.2 keV range maps to 5.636-61.992 Angstrom
     #
     egrid = 0.2 * np.arange(1, 12)
     arf = DataARF('arf', egrid[:-1], egrid[1:], np.ones(10))
