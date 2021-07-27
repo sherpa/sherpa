@@ -64,10 +64,6 @@ versioneer.versionfile_build = 'sherpa/_version.py'
 versioneer.tag_prefix = ''
 versioneer.parentdir_prefix = 'sherpa-'
 
-# Restrict to python 3.5 or later for pip, but see
-# https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-# for limitations
-#
 meta = dict(name='sherpa',
             version=versioneer.get_version(),
             author='Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
@@ -78,9 +74,9 @@ meta = dict(name='sherpa',
             long_description=open('README.md', 'rt').read(),
             long_description_content_type='text/markdown',
             platforms='Linux, Mac OS X',
-            python_requires='~=3.5',
+            python_requires='~=3.6',
             install_requires=['numpy'],
-            tests_require=['pytest-xvfb', 'pytest>=3.3'],
+            tests_require=['pytest-xvfb', 'pytest>=5.0,!=5.2.3'],
             packages=['sherpa',
                       'sherpa.estmethods',
                       'sherpa.image',
@@ -128,7 +124,8 @@ meta = dict(name='sherpa',
                           },
             data_files=[('sherpa',
                          ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
-            ext_modules=static_ext_modules, cmdclass=versioneer.get_cmdclass(),
+            ext_modules=static_ext_modules,
+            cmdclass=versioneer.get_cmdclass(),
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
@@ -139,9 +136,9 @@ meta = dict(name='sherpa',
                 'Intended Audience :: Science/Research',
                 'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
                 'Programming Language :: C',
-                'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: 3.6',
                 'Programming Language :: Python :: 3.7',
+                'Programming Language :: Python :: 3.8',
                 'Programming Language :: Python :: Implementation :: CPython',
                 'Topic :: Scientific/Engineering :: Astronomy',
                 'Topic :: Scientific/Engineering :: Physics'
