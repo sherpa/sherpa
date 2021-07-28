@@ -519,7 +519,7 @@ namespace sherpa { namespace utils {
       return my_max;
 
     // avoid underflow
-    if ( 0.0 == num || denom > 1 && num < denom * my_min )
+    if ( 0.0 == num || (denom > 1 && num < denom * my_min) )
       return T(0);
     
     return num / denom;
