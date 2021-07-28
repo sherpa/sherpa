@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -105,7 +105,7 @@ namespace sherpa { namespace astro { namespace utils {
     // num_chans vectors, as we can have multiple groups associated
     // with energy bin ii.
 
-    register IndexType ii;
+    IndexType ii;
 
     // The position in the response array is yet different; if there
     // are two channel groups associated with energy bin ii, and the
@@ -117,22 +117,22 @@ namespace sherpa { namespace astro { namespace utils {
     //  - Increment group_counter by two;
     //  - And increment response_counter by twenty (five + fifteen)
 
-    //register IndexType resp_counter = 0;
+    //IndexType resp_counter = 0;
 
     // How many groups are in the current energy bin?
-    register IndexType current_num_groups = 0;
+    IndexType current_num_groups = 0;
 
     // How many channels are in the current group?
-    register IndexType current_num_chans = 0;
+    IndexType current_num_chans = 0;
 
     // What is the current channel of the output (counts) array?
-    //register IndexType current_chan = 0;
+    //IndexType current_chan = 0;
 
-    register FloatType source_bin_ii;
-    register const ConstFloatType *resp_tmp = resp;
-    register const ConstIntType *first_chan_tmp = first_chan;
-    register const ConstIntType *num_chans_tmp = num_chans;
-    register FloatType *counts_tmp = counts;
+    FloatType source_bin_ii;
+    const ConstFloatType *resp_tmp = resp;
+    const ConstIntType *first_chan_tmp = first_chan;
+    const ConstIntType *num_chans_tmp = num_chans;
+    FloatType *counts_tmp = counts;
 
     for ( ii = 0; ii < len_source; ii++ ) {
       
@@ -238,15 +238,15 @@ namespace sherpa { namespace astro { namespace utils {
 		   vector<FloatType>& rsp,
 		   BoolType *mask) {
 
-    register IndexType response_counter = 0, group_counter = 0;
-    register IntType current_num_chans = 0, current_chan = 0,
+    IndexType response_counter = 0, group_counter = 0;
+    IntType current_num_chans = 0, current_chan = 0,
       current_num_groups = 0, lo = 0, hi = 0;
     
     for( IndexType ii = 0; ii < len_num_groups; ++ii ) {
       
       current_num_groups = n_grp[ ii ];
      
-      register IntType ngrp = 0;
+      IntType ngrp = 0;
  
       while( current_num_groups > 0 ) {
 	
