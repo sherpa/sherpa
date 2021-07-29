@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2008  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2008, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -236,9 +236,9 @@ namespace sherpa { namespace utils {
 		      DataType x0, DataType x1, DataType& val )
   {
   
-    register DataType deltaX = x0 - p[1];
-    register DataType deltaY = x1 - p[2];
-    register DataType p_four = p[4];
+    DataType deltaX = x0 - p[1];
+    DataType deltaY = x1 - p[2];
+    DataType p_four = p[4];
     if( p[3] != 0 ) {
       while( p_four >= 2*PI ) {
 	p_four -= 2*PI;
@@ -246,14 +246,14 @@ namespace sherpa { namespace utils {
       while( p_four < 0.0 ) {
 	p_four += 2*PI;
       }
-      register DataType cosTheta = COS(p_four);
-      register DataType sinTheta = SIN(p_four);
-      register DataType newX = deltaX * cosTheta + deltaY * sinTheta;
-      register DataType newY = deltaY * cosTheta - deltaX * sinTheta;
+      DataType cosTheta = COS(p_four);
+      DataType sinTheta = SIN(p_four);
+      DataType newX = deltaX * cosTheta + deltaY * sinTheta;
+      DataType newY = deltaY * cosTheta - deltaX * sinTheta;
       if( p[3] == 1 )
 	return EXIT_FAILURE;
       else {
-	register DataType ellip2 = (1. - p[3]) * (1. - p[3]);
+	DataType ellip2 = (1. - p[3]) * (1. - p[3]);
 	val = (newX * newX * ellip2 + newY * newY) / ellip2;
 	return EXIT_SUCCESS;
       }
@@ -273,9 +273,9 @@ namespace sherpa { namespace utils {
   {
     DataType sigmaa = p[0];
     DataType sigmab = p[1];
-    register DataType deltaX = x0 - p[2];
-    register DataType deltaY = x1 - p[3];
-    register DataType theta = p[4];
+    DataType deltaX = x0 - p[2];
+    DataType deltaY = x1 - p[3];
+    DataType theta = p[4];
 
     if ( 0 == sigmaa || 0 == sigmab ) {
       val = 0.0;
@@ -288,10 +288,10 @@ namespace sherpa { namespace utils {
     while( theta < 0.0 ) {
       theta += 2*PI;
     }
-    register DataType cosTheta = COS(theta);
-    register DataType sinTheta = SIN(theta);
-    register DataType newX = deltaX * cosTheta + deltaY * sinTheta;
-    register DataType newY = deltaY * cosTheta - deltaX * sinTheta;
+    DataType cosTheta = COS(theta);
+    DataType sinTheta = SIN(theta);
+    DataType newX = deltaX * cosTheta + deltaY * sinTheta;
+    DataType newY = deltaY * cosTheta - deltaX * sinTheta;
     DataType a = newX / sigmaa;
     DataType b = newY / sigmab;
     val = a*a + b*b;
@@ -316,9 +316,9 @@ namespace sherpa { namespace utils {
 
   // {
   
-  //   register DataType deltaX = x0 - p[1];
-  //   register DataType deltaY = x1 - p[2];
-  //   register DataType p_four = p[4];
+  //   DataType deltaX = x0 - p[1];
+  //   DataType deltaY = x1 - p[2];
+  //   DataType p_four = p[4];
   //   if( p[3] != 0 ) {
   //     while( p_four >= 2*PI ) {
   // 	p_four -= 2*PI;
@@ -326,10 +326,10 @@ namespace sherpa { namespace utils {
   //     while( p_four < 0.0 ) {
   // 	p_four += 2*PI;
   //     }
-  //     register DataType cosTheta = COS(p_four);
-  //     register DataType sinTheta = SIN(p_four);
-  //     register DataType newX = deltaX * cosTheta + deltaY * sinTheta;
-  //     register DataType newY = deltaY * cosTheta - deltaX * sinTheta;
+  //     DataType cosTheta = COS(p_four);
+  //     DataType sinTheta = SIN(p_four);
+  //     DataType newX = deltaX * cosTheta + deltaY * sinTheta;
+  //     DataType newY = deltaY * cosTheta - deltaX * sinTheta;
   //     if( p[3] == 1 )
   // 	return EXIT_FAILURE;
   //     else {
@@ -519,7 +519,7 @@ namespace sherpa { namespace utils {
       return my_max;
 
     // avoid underflow
-    if ( 0.0 == num || denom > 1 && num < denom * my_min )
+    if ( 0.0 == num || (denom > 1 && num < denom * my_min) )
       return T(0);
     
     return num / denom;

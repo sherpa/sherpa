@@ -138,7 +138,7 @@ The prerequisites for building from source are:
 
 * Python versions: 3.6, 3.7, 3.8
 * Python packages: ``setuptools``, ``numpy``
-* System: ``gcc``, ``g++``, ``make``, ``flex``,
+* System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these
   tools; please report problems to the
   `Sherpa issue tracker <https://github.com/sherpa/sherpa/issues/>`_).
@@ -368,6 +368,9 @@ or that provided by
 `Virtualenv <https://virtualenv.pypa.io/en/stable/>`_,
 be used when building and installing Sherpa.
 
+The ``CC`` and ``CXX`` environment variables can be set to the C and
+C++ compilers to use if not found by ``setup.py``.
+
 .. warning::
 
    When building Sherpa on macOS within a conda environment, the following
@@ -380,7 +383,7 @@ be used when building and installing Sherpa.
 
 .. note::
 
-   Additionally, if you are building with Clang version 12, you will
+   If you are building with Clang version 12, you will
    encounter build issues in the region area related to an implicit
    declaration. If so, pre-pending the following to your pip install
    or python setup.py install line should resolve the build issues::
@@ -391,7 +394,6 @@ be used when building and installing Sherpa.
    you specifically install a gcc from a different source, you are
    likely to run into this problem, even if you believe that your
    compiler is invoked with `gcc`.)
-
 
 A standard installation
 ^^^^^^^^^^^^^^^^^^^^^^^
