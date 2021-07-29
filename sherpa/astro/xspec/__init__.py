@@ -97,6 +97,29 @@ from . import _xspec
 # when the compiled code has not been compiled (e.g. for a Sphinx
 # documentation run).
 #
+def get_xselements():
+    """Return the element names supported by XSPEC models.
+
+    .. versionadded:: 4.14.0
+
+    Returns
+    -------
+    names : dict
+        The key is the name and the value is the atomic number.
+
+    See Also
+    --------
+    get_xsabund, get_xsabundances
+
+    """
+
+    # We could define this once but it's not worth it as it's
+    # easy to create.
+    #
+    n = _xspec.get_xsnelem()
+    return {_xspec.get_xselem(i): i + 1 for i in range(n)}
+
+
 def get_xsabund(element=None):
     """Return the X-Spec abundance setting or elemental abundance.
 
@@ -121,7 +144,7 @@ def get_xsabund(element=None):
 
     See Also
     --------
-    set_xsabund
+    get_xsabundances, get_xsatomdb, get_xselements, set_xsabund
 
     Examples
     --------
@@ -149,6 +172,62 @@ def get_xsabund(element=None):
         return _xspec.get_xsabund()
     else:
         return _xspec.get_xsabund(element)
+
+
+def get_xsabundances():
+    """Return the current X-Spec elemental abundances.
+
+    .. versionadded:: 4.14.0
+
+    Returns
+    -------
+    abundances : dict
+        The key is the element name and the value is the abundance
+        relative to H.
+
+    See Also
+    --------
+    get_xsabund, get_xselements, set_xsabund
+
+    Examples
+    --------
+
+    >>> set_xsabund('angr')
+    >>> abunds = get_xsabundances()
+    >>> abunds['He']
+    0.09769999980926514
+    >>> abunds['Fe']
+    4.6799999836366624e-05
+
+    """
+
+    return {elem: _xspec.get_xsabund(elem)
+            for elem in get_xselements()}
+
+
+def get_xsatomdb():
+    """Return the X-Spec ATOMDB version string.
+
+    .. versionadded:: 4.14.0
+
+    Returns
+    -------
+    version : str
+       The ATOMDB version number.
+
+    See Also
+    --------
+    get_xsabund, set_xsatomdb
+
+    Examples
+    --------
+
+    >>> get_xsatomdb()
+    '3.0.9'
+
+    """
+
+    return _xspec.get_xsatomdb()
 
 
 def get_xschatter():
@@ -249,15 +328,21 @@ def set_xsabund(abundance):
     photoelectric absorption models. It is equivalent to the X-Spec
     ``abund`` command [1]_.
 
+    .. versionchanged:: 4.14.0
+       The abundance argument can now be a sequence of values to
+       set all the abundances.
+
     Parameters
     ----------
-    abundance : str
-       A file name, format described below, or one of the pre-defined
-       names listed in the Notes section below.
+    abundance : str or sequence
+       A file name, format described below, one of the pre-defined
+       names listed in the Notes section below, or a sequence of 30
+       numbers giving the abundances ralative to H in atomic number
+       order.
 
     See Also
     --------
-    get_xsabund, get_xsversion, set_xschatter
+    get_xsabund, get_xsatomdb, get_xselements, get_xsversion, set_xschatter
 
     Notes
     -----
@@ -275,12 +360,12 @@ def set_xsabund(abundance):
 
     The values for these tables are given at [1]_.
 
-    Data files should be in ASCII format, containing a single
-    numeric (floating-point) column of the abundance values,
-    relative to Hydrogen.
+    Data files should be in ASCII format, containing a single numeric
+    (floating-point) column of the abundance values, relative to
+    Hydrogen.
 
-    The screen output of this function is controlled by the
-    X-Spec chatter setting (`set_xschatter`).
+    The screen output of this function is controlled by the X-Spec
+    chatter setting (`set_xschatter`).
 
     References
     ----------
@@ -323,9 +408,52 @@ def set_xsabund(abundance):
     >>> set_xsabund('abund.dat')
      Solar Abundance Vector set to file:  User defined abundance vector / no description specified
 
+    Set the abundances to 0 other than H and Cr (note that the index
+    value is one less than the Atomic Number):
+
+    >>> elems = get_xselements()
+    >>> abunds = np.zeros(30)
+    >>> abunds[0] = 1
+    >>> abunds[abunds['Cr'] - 1] = 0.5
+    >>> set_xsabund(abunds)
+     Solar Abundance Vector set to file:  User defined abundance vector / no description specified
+    >>> get_xsabud('H')
+    1.0
+    >>> get_xsabud('He')
+    0.0
+    >>> get_xsabud('Cr')
+    0.5
+
     """
 
-    _xspec.set_xsabund(abundance)
+    if isinstance(abundance, str):
+        _xspec.set_xsabund(abundance)
+    else:
+        _xspec.set_xsabund_table(abundance)
+
+
+def set_xsatomdb(version):
+    """Set the the X-Spec ATOMDB version.
+
+    .. versionadded:: 4.14.0
+
+    Parameters
+    ----------
+    version : str
+       The ATOMDB version string to use.
+
+    See Also
+    --------
+    get_xsabund, get_xsatomdb
+
+    Examples
+    --------
+
+    >>> set_xsatomdb('3.0.9')
+
+    """
+
+    _xspec.set_xsatomdb(version)
 
 
 def set_xschatter(level):
@@ -642,7 +770,7 @@ def set_xspath_manager(path):
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
 # a 3-tuple, and "modelstrings" is a dictionary of model strings
-# applicable to certain models.  The abund and xsect settings are
+# applicable to certain models.  The abund, atomdb, and xsect settings are
 # strings.  The chatter setting is an integer.  Please see the
 # XSPEC manual concerning the following commands: abund, chatter,
 # cosmo, xsect, and xset.
@@ -668,12 +796,13 @@ def get_xsstate():
 
     See Also
     --------
-    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
+    get_xsabund, get_xsatomdb, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
     set_xsstate
     """
 
     # Do not return the internal dictionary but a copy of it.
     return {"abund": get_xsabund(),
+            "atomdb": get_xsatomdb(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
@@ -689,19 +818,20 @@ def set_xsstate(state):
     state : dict
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
-        keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
+        keys: 'abund', 'atomdb', 'chatter', 'cosmo', 'xsect', 'modelstrings',
         and 'paths'.
 
     See Also
     --------
-    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
+    get_xsstate, set_xsabund, set_xsatomdb, set_xschatter, set_xscosmo, set_xsxsect,
     set_xsxset
 
     Notes
     -----
-    The state of the XSPEC module will only be changed if all
-    the required keys in the dictionary are present. All keys apart
-    from 'paths' are required.
+    The state of the XSPEC module will only be changed if all the
+    required keys in the dictionary are present. All keys apart from
+    'paths' are required.
+
     """
 
     if type(state) == dict and \
@@ -717,6 +847,15 @@ def set_xsstate(state):
         set_xschatter(state["chatter"])
         set_xscosmo(h0, q0, l0)
         set_xsxsect(state["xsect"])
+
+        # Set ATOMDB if present; we do not requre it to allow
+        # the code to work with older state files
+        #
+        try:
+            set_xsatomdb(state["atomdb"])
+        except KeyError:
+            pass
+
         for name in state["modelstrings"].keys():
             set_xsxset(name, state["modelstrings"][name])
 
@@ -819,8 +958,10 @@ def read_xstable_model(modelname, filename, etable=False):
 #
 # Note that not all routines from _xspec are re-exported here.
 #
-__all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
-           'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
+__all__ = ('get_xschatter', 'get_xselements', 'get_xsabund', 'get_xsabundances',
+           'get_xsatomdb', 'get_xscosmo', 'get_xsxsect',
+           'set_xschatter', 'set_xsabund', 'set_xsatomdb',
+           'set_xscosmo', 'set_xsxsect',
            'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
            'get_xsstate')
 

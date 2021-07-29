@@ -51,7 +51,7 @@ from sherpa.models.basic import Const1D
 #
 # For XSPEC 12.10.1 and later, the default settings depend on
 #  - the user's ~/.xspec/Xspec.init file
-#  - the $HEADAS/../spectral/manaer/Xspec.init file
+#  - the $HEADAS/../spectral/manager/Xspec.init file
 #  - in-built dfeaults
 #
 # This means that it is now hard to reliably check the default
@@ -135,6 +135,22 @@ def test_abund_default():
 
     oval = xspec.get_xsabund()
     assert oval in DEFAULT_ABUND
+
+
+@requires_xspec
+def test_atomdb_default():
+    """Check the expected default setting for ATOMDB.
+
+    As we don't know what this should be just check we don't
+    get "garbage".
+
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsatomdb()
+    assert isinstance(oval, str)
+    assert oval != ''
 
 
 @requires_xspec
@@ -244,7 +260,7 @@ def test_cosmo_default():
 
 @requires_xspec
 def test_abund_element():
-    """Can we access the elemental settings?
+    """Can we access the elemental settings? [get_xsabund]
     """
 
     from sherpa.astro import xspec
@@ -274,6 +290,37 @@ def test_abund_element():
     assert ar == pytest.approx(2.57e-06)
     assert k == pytest.approx(0.0)
     assert fe == pytest.approx(2.69e-05)
+
+
+@requires_xspec
+def test_abundances_element():
+    """Can we access the elemental settings? [get_xsabundances]
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund('wilm')
+        abunds = xspec.get_xsabundances()
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert len(abunds) == len(ELEMENT_NAMES)
+
+    # These values were found from HEASOFT version 6.19
+    # spectral/manager/abundances.dat
+    # The values are given to two decimal places in this file.
+    # It is not worth testing all settings, since we are not
+    # testing the XSPEC implementation itself, just our use of it.
+    #
+    assert abunds['H'] == pytest.approx(1.0)
+    assert abunds['He'] == pytest.approx(9.77e-2)
+    assert abunds['Si'] == pytest.approx(1.86e-05)
+    assert abunds['Ar'] == pytest.approx(2.57e-06)
+    assert abunds['K'] == pytest.approx(0.0)
+    assert abunds['Fe'] == pytest.approx(2.69e-05)
 
 
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
@@ -390,6 +437,32 @@ def test_abund_change_file():
     oval = xspec.get_xsabund()
     try:
         xspec.set_xsabund(tfh.name)
+
+        abund = xspec.get_xsabund()
+        out = {n: xspec.get_xsabund(n)
+               for n in ELEMENT_NAMES}
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert abund == 'file'
+    for n in ELEMENT_NAMES:
+        assert out[n] == pytest.approx(elems[n])
+
+
+@requires_xspec
+def test_abund_change_vector():
+    """Can we change the abundance setting: vector
+    """
+
+    from sherpa.astro import xspec
+
+    vals = [i * 0.1 for i, _ in enumerate(ELEMENT_NAMES)]
+    elems = {n: vals[i] for i, n in enumerate(ELEMENT_NAMES)}
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund(vals)
 
         abund = xspec.get_xsabund()
         out = {n: xspec.get_xsabund(n)
@@ -709,7 +782,7 @@ def test_read_xstable_model(make_data_path):
     assert_almost_equal(tbl.norm.max, 1e24)
 
     for p in tbl.pars:
-        assert not(p.frozen)
+        assert not p.frozen
 
 
 @requires_xspec
@@ -926,7 +999,7 @@ def test_create_xspec_multiplicative_model(make_data_path):
     assert tbl.fract.max == pytest.approx(1)
 
     for p in tbl.pars:
-        assert not(p.frozen)
+        assert not p.frozen
 
 
 @requires_data
@@ -1173,3 +1246,20 @@ def test_integrate_setting_con(clsname):
     y1 = np.log10(y1)
     y2 = np.log10(y2)
     assert y2 == pytest.approx(y1)
+
+
+@requires_xspec
+def test_get_xselements():
+    """Check we know what elements XSPEC cares about.
+
+    This could technically change, but is unlikely to do so,
+    and so important for us to know about. It also acts
+    as a test of get_xselements.
+    """
+
+    from sherpa.astro import xspec
+
+    expected = {n: i for (i, n) in enumerate(ELEMENT_NAMES, 1)}
+
+    elems = xspec.get_xselements()
+    assert elems == expected

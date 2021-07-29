@@ -33,6 +33,11 @@ int _sherpa_init_xspec_library();
 // are given below. Note that this is the C/FORTRAN interface, not the
 // more-featureful FunctionUtility module.
 //
+// The intention is to move to FunctionUtility (see https://github.com/sherpa/sherpa/issues/1225)
+// but that is a lot easier if we require XSPEC 12.12.0 or later, so for now
+// stick with this interface. The original support was based on XSPEC 12.9.0
+// but this has been updated - it looks like it hasn't changed since XSPEC 12.9.1
+//
 // Functions which are used below:
 // FNINIT	Initializes data directory locations needed by the models. See below for a fuller description.
 // FGABND	Get an element abundance.
@@ -64,30 +69,32 @@ int _sherpa_init_xspec_library();
 //
 // Functions not wrapped since they are not useful as is (they need
 // functionality from 12.9.1 to set the XFLT keywords):
-// DGFILT	Get a particular XFLT keyword value from a data file.
-// DGNFLT	Get the number of XFLT keywords in a data file.
+// DGFILT	Get a particular XFLT keyword value from a data file.    in use
+// DGNFLT	Get the number of XFLT keywords in a data file.          in use
 //
 // Other symbols in xsFortran.h are:
-// DGQFLT       Does a XFLT keyword exist?
+// DGQFLT       Does a XFLT keyword exist?     in use
 // PDBVAL       Set a database value
 //
 // Symbols in 12.9.1/HEASOFT 6.22 but not in 12.9.0/HEASOFT 6.19
+// and are now being used (partly)
+//
 // FGABNZ
 // FGTABN
 // FGTABZ
-// FGELTI
-// FGNELT
+// FGELTI    in use
+// FGNELT    in use
 // FGABFL
 // FPABFL
-// FGAPTH
-// FPAPTH
+// FGAPTH    in use
+// FPAPTH    in use
 // csmpall
-// DPFILT
-// DCLFLT
+// DPFILT    in use
+// DCLFLT    in use
 // GDBVAL
 // CDBASE
-// FGATDV
-// FPATDV
+// FGATDV    in use
+// FPATDV    in use
 //
 // These seem unlikely to be useful for Sherpa
 // xs_getChat
@@ -101,9 +108,6 @@ int _sherpa_init_xspec_library();
 // gammq
 //
 #include "xsFortran.h"
-
-// TODO: is this defined in an XSPEC header file?
-#define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
 // C_<model> are declared here; the other models are defined in
 // functionMap.h but that requires using the XSPEC build location
@@ -485,6 +489,39 @@ static PyObject* get_chatter( PyObject *self )
 }
 
 
+static PyObject* get_nelem( PyObject *self )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  return Py_BuildValue( (char*)"i", FGNELT() );
+
+}
+
+
+static PyObject* get_elem_name( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  int element = 0;
+
+  if ( !PyArg_ParseTuple( args, (char*)"i", &element ) )
+    return NULL;
+
+  // Looks like FGELTI does no sanity checks
+  if ((element < 0) || (element >= FGNELT())) {
+    return PyErr_Format( PyExc_LookupError,
+			 (char*)"could not get XSPEC element number %d",
+			 element );
+  }
+
+  return (PyObject*) Py_BuildValue( (char*)"s", FGELTI(element) );
+}
+
+
 static PyObject* get_abund( PyObject *self, PyObject *args )
 {
 
@@ -540,17 +577,15 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
       if (cerr_sbuf != NULL)
 	std::cerr.rdbuf(cerr_sbuf);
 
-      PyErr_Format( PyExc_ValueError,
-		    (char*)"could not get XSPEC abundance for '%s'",
-		  element);
-      return NULL;
+      return PyErr_Format( PyExc_ValueError,
+			   (char*)"could not get XSPEC abundance for '%s'",
+			   element);
 
     }
 
     if( fout.str().size() > 0 ) {
-      PyErr_Format( PyExc_TypeError,
-		    (char*)"could not find element '%s'", element);
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"could not find element '%s'", element);
     }
 
     retval = (PyObject*) Py_BuildValue( (char*)"f", abundVal );
@@ -631,10 +666,9 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
   } catch(...) {
 
-    PyErr_Format( PyExc_ValueError,
-                  (char*)"could not set XSPEC chatter level to %d",
-                  chatter);
-    return NULL;
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not set XSPEC chatter level to %d",
+			 chatter);
 
   }
 
@@ -665,9 +699,14 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
 
   }
 
-  // if abundance table name fails, try it as a filename
+  // If abundance table name fails, try it as a filename.
+  // We could use RFLABD but this seems to set a few internal
+  // values that gthe following doesn't so I'm not sure it's
+  // quite the same thing.
+  //
   if( status ) {
 
+    size_t ABUND_SIZE = (size_t)FGNELT();
     std::ifstream fileStream(table);
     std::vector<float> vals(ABUND_SIZE, 0);
     size_t count(0);
@@ -687,10 +726,9 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     catch ( std::exception& ) {
 
       if( !fileStream.eof() ) {
-      	PyErr_Format( PyExc_ValueError,
-                      (char*)"Cannot read file '%s'.  It may not exist or contains invalid data",
-                      table);
-	return NULL;
+	return PyErr_Format( PyExc_ValueError,
+			     (char*)"Cannot read file '%s'.  It may not exist or contains invalid data",
+			     table);
       }
 
       status = 1;
@@ -709,9 +747,44 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   }
 
   if ( 0 != status ) {
-    PyErr_Format( PyExc_ValueError,
-		  (char*)"could not set XSPEC abundance to %s",
-                  table );
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not set XSPEC abundance to %s",
+			 table );
+  }
+
+  Py_RETURN_NONE;
+
+}
+
+
+static PyObject* set_abund_table( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  sherpa::astro::xspec::FloatArray elems;
+
+  if ( !PyArg_ParseTuple( args, (char*)"O&",
+			  (converter)sherpa::convert_to_contig_array< sherpa::astro::xspec::FloatArray >,
+			  &elems ) )
+    return NULL;
+
+  int nelem = FGNELT();
+  npy_intp ngot = elems.get_size();
+  if (nelem != ngot) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Need %d abundances but sent %d",
+			 nelem, ngot );
+  }
+
+  int status = 0;
+  FPSOLR((char*)"file", &status);
+  FPSLFL( &elems[0], nelem, &status );
+
+  if (status != 0) {
+    PyErr_SetString( PyExc_ValueError,
+		     (char*)"could not set XSPEC abundance" );
     return NULL;
   }
 
@@ -741,11 +814,10 @@ static PyObject* set_cosmo( PyObject *self, PyObject *args )
 
   } catch(...) {
 
-    PyErr_Format( PyExc_ValueError,
-                  (char*)"could not set XSPEC cosmology settings to "
-                  "H0=%g q0=%g Lambda0=%g",
-                  h0, l0, q0);
-    return NULL;
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not set XSPEC cosmology settings to "
+			 "H0=%g q0=%g Lambda0=%g",
+			 h0, l0, q0);
 
   }
 
@@ -777,11 +849,10 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
   }
 
   if ( 0 != status ) {
-    PyErr_Format( PyExc_ValueError,
-                  (char*)"could not set XSPEC photoelectric "
-                  "cross-section to '%s'",
-                  csection);
-    return NULL;
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not set XSPEC photoelectric "
+			 "cross-section to '%s'",
+			 csection);
   }
 
   Py_RETURN_NONE;
@@ -813,10 +884,9 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
   }
 
   if ( 0 != status ) {
-    PyErr_Format( PyExc_ValueError,
-		  (char*)"could not set XSPEC model strings '%s: %s'",
-		  str_name, str_value);
-    return NULL;
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not set XSPEC model strings '%s: %s'",
+			 str_name, str_value);
   }
 
   Py_RETURN_NONE;
@@ -841,14 +911,65 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
   } catch(...) {
 
-    PyErr_Format( PyExc_KeyError,
-		  (char*)"could not get XSPEC model string '%s'",
-		  str_name);
-    return NULL;
+    return PyErr_Format( PyExc_KeyError,
+			 (char*)"could not get XSPEC model string '%s'",
+			 str_name);
 
   }
 
   return Py_BuildValue( (char*)"s", str_value );
+
+}
+
+static PyObject* get_abundance_file( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  return Py_BuildValue( (char*)"s", FGABFL() );
+
+}
+
+static PyObject* set_abundance_file( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  char* name = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"s", &name ) )
+    return NULL;
+
+  FPABFL( name );
+  Py_RETURN_NONE;
+
+}
+
+static PyObject* get_atomdb( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  return Py_BuildValue( (char*)"s", FGATDV() );
+
+}
+
+static PyObject* set_atomdb( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  char* ver = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"s", &ver ) )
+    return NULL;
+
+  FPATDV( ver );
+  Py_RETURN_NONE;
 
 }
 
@@ -863,18 +984,44 @@ static PyObject* get_xspec_path( const char *label, char *getfunc() )
 
   char* str_value = NULL;
   try {
+    // Pretty sure these functions don't throw an error
     str_value = getfunc();
   } catch(...) {
 
-    std::ostringstream emsg;
-    emsg << "could not get XSPEC " << label << " path";
-    PyErr_SetString( PyExc_LookupError,
-                     emsg.str().c_str() );
-    return NULL;
+    return PyErr_Format( PyExc_LookupError,
+			 "could not get XSPEC %s path",
+			 label );
 
   }
 
   return Py_BuildValue( (char*)"s", str_value );
+
+}
+
+static PyObject* set_xspec_path( PyObject *args, const char *label, void setfunc(const char*) )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  char* path = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
+    return NULL;
+
+  try {
+
+    setfunc( path );
+
+  } catch(...) {
+
+    return PyErr_Format( PyExc_LookupError,
+			 "could not set XSPEC %s path to '%s'",
+			 label, path );
+
+  }
+
+  Py_RETURN_NONE;
 
 }
 
@@ -888,51 +1035,129 @@ static PyObject* get_model_data_path( PyObject *self )
   return get_xspec_path("model", FGMODF);
 }
 
+static PyObject* get_abundance_data_path( PyObject *self )
+{
+  return get_xspec_path("abundance", FGAPTH);
+}
+
 static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
 {
+  return set_xspec_path(args, "manager", FPDATD);
+}
 
+static PyObject* set_abundance_data_path( PyObject *self, PyObject *args )
+{
+  return set_xspec_path(args, "abundance", FPAPTH);
+}
+
+// XFLT handling
+//
+static PyObject* get_xflt_clear( PyObject *self, PyObject *args )
+{
   if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
     return NULL;
 
-  char* path = NULL;
-
-  if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
-    return NULL;
-
-  try {
-
-    FPDATD( path );
-
-  } catch(...) {
-
-    std::ostringstream emsg;
-    emsg << "could not set XSPEC manager path to '" << path << "'";
-    PyErr_SetString( PyExc_ValueError,
-                     emsg.str().c_str() );
-    return NULL;
-  }
-
+  DCLFLT();
   Py_RETURN_NONE;
-
 }
+
+static PyObject* get_xflt_number( PyObject *self, PyObject *args )
+{
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  int ifl = 1;
+
+  if ( !PyArg_ParseTuple( args, (char*)"i", &ifl ) )
+    return NULL;
+
+  return Py_BuildValue( (char*)"i", DGNFLT(ifl) );
+}
+
+static PyObject* get_xflt_has_key( PyObject *self, PyObject *args )
+{
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  int ifl = 1;
+  char *key = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"is", &ifl, &key ) )
+    return NULL;
+
+  return Py_BuildValue( (char*)"i", DGQFLT(ifl, key) );
+}
+
+static PyObject* get_xflt_key( PyObject *self, PyObject *args )
+{
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  int ifl = 1;
+  char *key = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"is", &ifl, &key ) )
+    return NULL;
+
+  return Py_BuildValue( (char*)"f", DGFILT(ifl, key) );
+}
+
+static PyObject* set_xflt_key( PyObject *self, PyObject *args )
+{
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  int ifl = 1;
+  int nfilt = 1;
+  char *key = NULL;
+  float value = 0.0;
+
+  if ( !PyArg_ParseTuple( args, (char*)"iisf", &ifl, &nfilt, &key, &value ) )
+    return NULL;
+
+  DPFILT(ifl, nfilt, key, value);
+  Py_RETURN_NONE;
+}
+
 
 static PyMethodDef XSpecMethods[] = {
   { (char*)"get_xsversion", (PyCFunction)get_version, METH_NOARGS, NULL },
   { (char*)"get_xschatter", (PyCFunction)get_chatter, METH_NOARGS, NULL },
+  { (char*)"get_xsnelem", (PyCFunction)get_nelem, METH_NOARGS, NULL },
   FCTSPEC(set_xschatter, set_chatter),
+  FCTSPEC(get_xselem, get_elem_name),
   FCTSPEC(get_xsabund, get_abund),
   FCTSPEC(set_xsabund, set_abund),
+  FCTSPEC(set_xsabund_table, set_abund_table),
   FCTSPEC(set_xscosmo, set_cosmo),
   { (char*)"get_xscosmo", (PyCFunction)get_cosmo, METH_NOARGS, NULL },
   { (char*)"get_xsxsect", (PyCFunction)get_cross, METH_NOARGS, NULL },
   FCTSPEC(set_xsxsect, set_cross),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
+  { (char*)"get_xsatomdb",
+    (PyCFunction)get_atomdb, METH_NOARGS, NULL },
+  FCTSPEC(set_xsatomdb, set_atomdb),
+
+  { (char*)"get_xsabundance_file",
+    (PyCFunction)get_abundance_file, METH_NOARGS, NULL },
+  FCTSPEC(set_xsabundance_file, set_abundance_file),
+
   { (char*)"get_xspath_manager",
     (PyCFunction)get_manager_data_path, METH_NOARGS, NULL },
   { (char*)"get_xspath_model",
     (PyCFunction)get_model_data_path, METH_NOARGS, NULL },
+  { (char*)"get_xspath_abundance",
+    (PyCFunction)get_abundance_data_path, METH_NOARGS, NULL },
   FCTSPEC(set_xspath_manager, set_manager_data_path),
+  FCTSPEC(set_xspath_abundance, set_abundance_data_path),
+
+  FCTSPEC(get_xsxflt_number, get_xflt_number),
+  { (char*)"get_xsxflt_clear",
+    (PyCFunction)get_xflt_clear, METH_NOARGS, NULL },
+  FCTSPEC(get_xsxflt_has_key, get_xflt_has_key),
+  FCTSPEC(get_xsxflt_key, get_xflt_key),
+  FCTSPEC(set_xsxflt_key, set_xflt_key),
 
 #ifdef XSPEC_12_10_1
   XSPECMODELFCT_NORM( agnsed, 16 ),

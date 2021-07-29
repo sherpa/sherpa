@@ -40,7 +40,7 @@ _session._add_model_types(sherpa.astro.models)
 _session._add_model_types(sherpa.astro.optical)
 _session._add_model_types(sherpa.models.template)
 
-# To add PSFModel to list -- doesn't inherit from ArithmeticModel
+# To add PSFModel to list -- doesn't inherit from Arit`<hmeticModel
 _session._add_model_types(sherpa.instrument, baselist=(sherpa.models.Model,))
 
 # Get RMFModel, ARFModel in list of models
@@ -52,13 +52,15 @@ if hasattr(sherpa.astro, 'xspec'):
                                sherpa.astro.xspec.XSMultiplicativeModel,
                                sherpa.astro.xspec.XSConvolutionKernel))
 
-    from sherpa.astro.xspec import get_xsabund, get_xscosmo, get_xsxsect, \
-        set_xsabund, set_xscosmo, set_xsxsect, set_xsxset, get_xsxset, \
-        get_xschatter, set_xschatter
-    __all__.extend(('get_xsabund', 'get_xschatter', 'get_xscosmo',
-                    'get_xsxsect', 'set_xsabund', 'set_xschatter',
-                    'set_xscosmo', 'set_xsxsect', 'set_xsxset',
-                    'get_xsxset'))
+    from sherpa.astro.xspec import get_xsabund, get_xsabundances, \
+        get_xsatomdb, get_xselements, get_xscosmo, get_xsxsect, \
+        set_xsabund, set_xsatomdb, set_xscosmo, set_xsxsect, set_xsxset, \
+        get_xsxset, get_xschatter, set_xschatter
+    __all__.extend(('get_xsabund', 'get_xsabundances', 'get_xsatomdb',
+                    'get_xselements', 'get_xschatter', 'get_xscosmo',
+                    'get_xsxsect', 'set_xsabund', 'set_xsatomdb',
+                    'set_xschatter', 'set_xscosmo', 'set_xsxsect',
+                    'set_xsxset', 'get_xsxset'))
 
 __all__.extend(_session._export_names(globals()))
 
