@@ -372,7 +372,7 @@ def test_288_a_energy():
     pha.ignore(3, 4)
 
     # I use approx because it gives a nice answer, even though
-    # I want eqiuality not approximation in this test. Fortunately
+    # I want equality not approximation in this test. Fortunately
     # with bools the use of approx is okay (it can tell the
     # difference between 0 and 1, aka False and True).
     #
