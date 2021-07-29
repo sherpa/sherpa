@@ -82,7 +82,7 @@ echo "* configuring XSPEC"
 sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
 sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=${xspec_include_path}|g" setup.cfg
-sed -i.orig "s|#xspec_version = 12.9.0|xspec_version = ${xspec_version_string}|g" setup.cfg
+sed -i.orig "s|#xspec_version = 12.9.1|xspec_version = ${xspec_version_string}|g" setup.cfg
 
 #Xspec ~12.10.1n now requires fftw. This disables the fftw build from extern
 sed -i.orig "s|#fftw=local|fftw=local|g" setup.cfg

@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2014-2017, 2018, 2020
-#       Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014-2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,7 +34,7 @@ class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
-                    ('xspec-version', None, "the XSPEC version (default 12.9.0)"),
+                    ('xspec-version', None, "the XSPEC version (default 12.9.1)"),
                     ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
                     ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
                     ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
@@ -49,7 +49,7 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
-        self.xspec_version = '12.9.0'
+        self.xspec_version = '12.9.1'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
         self.xspec_libraries = 'XSFunctions XSModel XSUtil XS'
@@ -99,13 +99,13 @@ class xspec_config(Command):
                 self.announce("Found XSPEC version: {}".format(xspec_raw_version), 2)
                 xspec_version = LooseVersion(xspec_raw_version)
 
-                if xspec_version < LooseVersion("12.9.0"):
-                    self.warn("XSPEC Version is less than 12.9.0, which is the minimal supported version for Sherpa")
+                if xspec_version < LooseVersion("12.9.1"):
+                    self.warn("XSPEC Version is less than 12.9.1, which is the minimal supported version for Sherpa")
 
                 # I am not sure what the naming of the XSPEC components are,
                 # but let's stick with major, minor, and patch.
                 #
-                for major, minor, patch in [(12, 9, 0), (12, 9, 1),
+                for major, minor, patch in [(12, 9, 1),
                                             (12, 10, 0), (12, 10, 1),
                                             (12, 11, 0), (12, 11, 1)]:
                     version = '{}.{}.{}'.format(major, minor, patch)

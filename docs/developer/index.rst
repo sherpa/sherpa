@@ -256,7 +256,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.11.1 down to 12.9.0. It may build against
+:term:`XSPEC` versions 12.11.1 down to 12.9.1. It may build against
 newer versions, but if it does it will not provide access
 to any new models in the release. The following steps are needed
 to update to a newer version, and assume that you have the new version
@@ -277,7 +277,7 @@ them).
    When adding support for XSPEC 12.11.1, the code in the ``run``
    method was changed to include the triple ``(12, 11, 1)``::
 
-       for major, minor, patch in [(12, 9, 0), (12, 9, 1),
+       for major, minor, patch in [(12, 9, 1),
                                    (12, 10, 0), (12, 10, 1),
                                    (12, 11, 0), (12, 11, 1)]:
            version = '{}.{}.{}'.format(major, minor, patch)

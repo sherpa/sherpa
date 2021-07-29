@@ -51,7 +51,7 @@ The Sherpa build can be configured to create the
 :py:mod:`sherpa.astro.xspec` module, which provides the models and utility
 functions from the :term:`XSPEC`.
 The supported versions of XSPEC are 12.11.1, 12.11.0, 12.10.1 (patch level `a` or later),
-12.10.0, 12.9.1, and 12.9.0.
+12.10.0, and 12.9.1.
 
 Interactive display and manipulation of two-dimensional images
 is available if the :term:`DS9` image viewer and the :term:`XPA`
@@ -215,12 +215,12 @@ XSPEC
 
 Sherpa can be built to use the Astronomy models provided by
 :term:`XSPEC` versions 12.11.1, 12.11.0, 12.10.1 (patch level `a` or later), 12.10.0,
-12.9.1, and 12.9.0. To enable XSPEC support, several changes must be
+and 12.9.1. To enable XSPEC support, several changes must be
 made to the ``xspec_config`` section of the ``setup.cfg`` file. The
 available options (with default values) are::
 
     with-xspec = False
-    xspec_version = 12.9.0
+    xspec_version = 12.9.1
     xspec_lib_dirs = None
     xspec_include_dirs = None
     xspec_libraries = XSFunctions XSModel XSUtil XS
@@ -294,7 +294,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
 
-5. If the full XSPEC 12.9.x system has been built then use::
+5. If the full XSPEC 12.9.1 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.9.1
@@ -303,8 +303,6 @@ match the contents of the XSPEC installation.
        xspec_libraries = XSFunctions XSModel XSUtil XS
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
-
-   changing ``12.9.1`` to ``12.9.0`` as appropriate.
 
 6. If the model-only build of XSPEC has been installed, then
    the configuration is similar, but the library names may

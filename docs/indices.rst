@@ -145,4 +145,4 @@ Glossary
        <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixExternal.html>`_.
 
        Sherpa can be built to use XSPEC versions 12.11.1, 12.11.0, 12.10.1 (patch level `a`
-       or later), 12.10.0, 12.9.1, or 12.9.0.
+       or later), 12.10.0, or 12.9.1.

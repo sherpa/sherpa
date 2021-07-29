@@ -99,13 +99,6 @@ def get_xspec_models():
               'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel']:
         remove_item(model_names, n)
 
-    # The sirf model - in 12.8.2 and up to 12.9.0d at least - includes
-    # a read outside of an array. This has been seen to cause occasional
-    # errors in the Sherpa test case, so it is removed from the test
-    # for now. This problem has been reported to the XSPEC developers,
-    # so it will hopefully be fixed in one of ther 12.9.0 patches.
-    remove_item(model_names, 'XSsirf')
-
     models = [getattr(xs, model_name) for model_name in model_names]
     models = list(filter(lambda mod: mod.version_enabled, models))
 
