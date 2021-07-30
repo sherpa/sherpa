@@ -32,6 +32,7 @@ import string
 import sys
 from configparser import ConfigParser, NoSectionError
 import pydoc
+import platform
 
 import numpy
 import numpy.random
@@ -1303,10 +1304,8 @@ def print_fields(names, vals, converters=None):
         converters = {numpy.bool_: 'Bool',
                       numpy.bytes_: 'Bytes0',
                       numpy.complex128: 'Complex128',
-                      numpy.complex256: 'Complex256',
                       numpy.complex64: 'Complex64',
                       numpy.datetime64: 'Datetime64',
-                      numpy.float128: 'Float128',
                       numpy.float16: 'Float16',
                       numpy.float32: 'Float32',
                       numpy.float64: 'Float64',
@@ -1323,6 +1322,10 @@ def print_fields(names, vals, converters=None):
                       numpy.uint8: 'UInt8',
                       numpy.void: 'Void0'
                       }
+        if platform.processor() != 'arm' or platform.machine() != 'arm64':
+            converters[numpy.complex256] = 'Complex256'
+            converters[numpy.float128] = 'Float128'
+
 
     width = max(len(n) for n in names)
     fmt = '%%-%ds = %%s' % width

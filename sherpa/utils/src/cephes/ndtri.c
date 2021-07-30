@@ -66,8 +66,11 @@ static unsigned short s2p[] = {0040440,0066230,0177661,0034055};
 #endif
 
 #ifdef IBMPC
+/*
 static unsigned short s2p[] = {0x2706,0x1ff6,0x0d93,0x4004};
 #define s2pi *(double *)s2p
+*/
+#define s2pi 2.50662827463100050242E0
 #endif
 
 #ifdef MIEEE
