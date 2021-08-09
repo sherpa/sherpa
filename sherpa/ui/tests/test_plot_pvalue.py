@@ -29,6 +29,7 @@ from sherpa.utils.testing import requires_data, \
 from sherpa.astro import ui
 
 
+@pytest.mark.xfail
 @requires_xspec
 @requires_fits
 @requires_data
@@ -63,7 +64,7 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     # of the output attributes.
     #
     ui.fit()
-    ui.plot_pvalue(p1, p1 + g1, num=100)
+    ui.plot_pvalue(p1, p1 + g1, num=100, bins=20)
 
     tmp = ui.get_pvalue_results()
 
@@ -79,3 +80,20 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     assert tmp.samples.shape == (100, 2)
     assert tmp.stats.shape == (100, 2)
     assert tmp.ratios.shape == (100, )
+
+    # Check the plot
+    #
+    tmp = ui.get_pvalue_plot()
+
+    assert tmp.lr == pytest.approx(2.679487496941789)
+
+    assert tmp.xlabel == 'Likelihood Ratio'
+    assert tmp.ylabel == 'Frequency'
+    assert tmp.title == 'Likelihood Ratio Distribution'
+
+    # It would be nice to check the values here
+    #
+    assert tmp.ratios.shape == (100, )
+    assert tmp.xlo.shape == (21, )
+    assert tmp.xhi.shape == (21, )
+    assert tmp.y.shape == (21, )
