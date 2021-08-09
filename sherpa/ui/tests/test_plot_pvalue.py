@@ -35,7 +35,6 @@ from sherpa.astro import ui
 from sherpa.models.basic import Gauss2D
 
 
-@pytest.mark.xfail
 @requires_xspec
 @requires_fits
 @requires_data
@@ -341,7 +340,6 @@ def check_imgdata_convolved():
     assert tmp.y.shape == (6, )
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging, setup_imgdata_model, caplog):
@@ -358,7 +356,6 @@ def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging, setu
     check_imgdata_unconvolved(caplog)
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_model_convolved(clean_astro_ui, hide_logging, setup_imgdata_model):
@@ -372,7 +369,6 @@ def test_plot_pvalue_imgpsf_model_convolved(clean_astro_ui, hide_logging, setup_
     check_imgdata_convolved()
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_file_unconvolved(clean_astro_ui, hide_logging, setup_imgdata_file, caplog):
