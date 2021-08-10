@@ -66,7 +66,8 @@ static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
 // The constructor can be given a string and a flag, which if
 // set indicates this is a file name. The file support is
 // unnescessary as we can read the data in Python, so this
-// API could just deal with strings.
+// API could just deal with strings (it lets the C code deal
+// with the length of the region string rather than us).
 //
 static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
 			      PyObject *kwargs)
@@ -76,25 +77,20 @@ static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
   int fileflag = 0;
 
   static const char *kwlist[] = {"region", "fileflag", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "|si",
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "s|p",
                                      const_cast<char**>(kwlist),
 				     &objS, &fileflag ) )
     return NULL;
 
-  if (objS == NULL) {
-    reg = regCreateEmptyRegion();
-  } else {
-    reg = parse_string( objS, fileflag );
-    if (!reg) {
-      std::ostringstream err;
-      if (fileflag) {
-	err << "unable to read region from: " << objS;
-      } else {
-	err << "unable to parse region string: " << objS;
-      }
-      PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-      return NULL;
+  reg = parse_string( objS, fileflag );
+  if (!reg) {
+    const char *fmt;
+    if (fileflag) {
+      fmt = "unable to read region from: %s";
+    } else {
+      fmt = "unable to parse region string: '%s'";
     }
+    return PyErr_Format( PyExc_ValueError, fmt, objS );
   }
 
   return pyRegion_build( type, reg );
@@ -205,7 +201,7 @@ static PyTypeObject pyRegion_Type = {
   0,                             // tp_setattro
   0,                             // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags  DO NOT REMOVE
-  (char*)"PyRegion reg = Region(region=None, fileflag=0)",      // tp_doc, __doc__
+  (char*)"PyRegion reg = Region(region, fileflag=False)",      // tp_doc, __doc__
   0,		                 // tp_traverse
   0,		                 // tp_clear
   0,		                 // tp_richcompare

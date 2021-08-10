@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -35,9 +36,21 @@ ym = [254, 255, 256]
 
 
 def test_region_empty():
-    """The empty region"""
-    r = Region()
-    assert '' == str(r)
+    """The empty region - can no-longer create"""
+
+    with pytest.raises(TypeError) as te:
+        r = Region()
+
+    assert str(te.value) == "function missing required argument 'region' (pos 1)"
+
+
+def test_region_empty_none():
+    """The empty region (given explicitly) - can no-longer create"""
+
+    with pytest.raises(TypeError) as te:
+        r = Region(None)
+
+    assert str(te.value) == "argument 1 must be str, not None"
 
 
 def test_region_string():
@@ -49,13 +62,14 @@ def test_region_string():
     assert normalized_string == str(r)
 
 
-def test_region_string_invalid():
+@pytest.mark.parametrize('wrong',
+                         ['', 'None', 'circle 100 200 30'])
+def test_region_string_invalid(wrong):
     """Check we error out with invalid input"""
-    wrong = 'circle 100 200 30'
     with pytest.raises(ValueError) as exc:
         Region(wrong)
 
-    emsg = 'unable to parse region string: ' + wrong
+    emsg = f"unable to parse region string: '{wrong}'"
     assert str(exc.value) == emsg
 
 
@@ -86,11 +100,10 @@ def test_region_file_invalid(tmp_path):
     assert str(exc.value) == emsg
 
 
-@pytest.mark.parametrize("arg", [None, 3])
-def test_region_invalid(arg):
-    """What happens with some invalid arguments?"""
+def test_region_invalid():
+    """What happens with an invalid argument that is not a string"""
     with pytest.raises(TypeError):
-        Region(arg)
+        Region(3)
 
 
 def test_region_mask_nomatch():
@@ -150,38 +163,6 @@ def test_region_mask_match_file(tmp_path):
     r = Region(str(f), True)
     m = r.mask(xm, ym)
     assert all(val == 1 for val in m)
-
-
-def test_region_mask_null():
-    """What happens if the region is empty?"""
-    empty = Region()
-    m = empty.mask(x, y)
-    assert all(val == 0 for val in m)
-
-
-def test_region_combine_nothing1():
-    """Adding a region to nothing == region"""
-
-    empty = Region()
-    r = empty.combine(Region(region_string))
-    assert normalized_string == str(r)
-
-
-def test_region_ignore_nothing1():
-    """Ignoring a region frm nothing == !region"""
-
-    empty = Region()
-    r = empty.combine(Region(region_string), True)
-    assert '!' + normalized_string == str(r)
-
-
-@pytest.mark.parametrize('ignore', [False, True])
-def test_region_combine_nothing2(ignore):
-    """Adding or ignoring nothing to a region == region"""
-
-    orig = Region(region_string)
-    r = orig.combine(Region(), ignore)
-    assert normalized_string == str(r)
 
 
 def test_region_combine():
@@ -287,7 +268,7 @@ def test_region_combine_invalid(arg):
     """Check we error out if not sent a region."""
 
     with pytest.raises(TypeError):
-        Region().combine(arg)
+        Region('field()').combine(arg)
 
 
 def test_region_invert():
@@ -304,22 +285,6 @@ def test_region_invert():
     assert str(r) == "!Box(100,100,10,20)"
 
     assert r.mask(x, y) == pytest.approx([1, 0, 1])
-
-
-def test_region_invert_empty():
-    """Can we invert an empty region?"""
-
-    x = np.asarray([50, 95, 105])
-    y = np.asarray([50, 105, 115])
-
-    r = Region()
-
-    assert r.mask(x, y) == pytest.approx([0, 0, 0])
-
-    r.invert()
-    assert str(r) == ''
-
-    assert r.mask(x, y) == pytest.approx([0, 0, 0])
 
 
 def check_region_invert_compare(reg):
