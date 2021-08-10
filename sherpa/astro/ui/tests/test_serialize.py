@@ -872,7 +872,6 @@ set_coord(1, 'logical')
 
 ######### Filter Data
 
-notice2d_id(1, "")
 
 
 ######### Set Statistic
@@ -1502,7 +1501,6 @@ def test_restore_usermodel():
     assert ui.calc_stat(3) == pytest.approx(statval)
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_restore_img_no_filter_no_model(make_data_path, clean_astro_ui):
