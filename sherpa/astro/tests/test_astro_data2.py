@@ -21,6 +21,7 @@
 """Continued testing of sherpa.astro.data."""
 
 import logging
+import pickle
 
 import numpy as np
 
@@ -1181,3 +1182,47 @@ def test_xmmrgs_notice(make_data_path):
     dat.ignore(10, 19.)
     assert len(dat.get_dep(filter=True)) == 20
     assert dat.get_filter(format='%.2f') == '19.01:19.20'
+
+
+@pytest.mark.xfail
+def test_pickle_image_filter_none(make_test_image):
+    """Check we can pickle/unpickle without a region filter.
+
+    This test assumes we have region support, but we do not
+    currently have any test builds without it so do not
+    bother skipping (as many tests would need to be fixed
+    if we add a no-region build, which we probably should).
+
+    """
+
+    d = make_test_image
+    assert d._region is None
+
+    d2 = pickle.loads(pickle.dumps(d))
+    assert d2._region is None
+
+
+@pytest.mark.parametrize("ignore,region,expected",
+                         [(False, 'circle(4255, 3840, 20)', 'Circle(4255,3840,20)'),
+                          (True, 'circle(4255, 3840, 20)', '!Circle(4255,3840,20)'),
+                          (False, 'circle(4255, 3840, 20) - field()', 'Circle(4255,3840,20)&!Field()'),
+                          (True, 'circle(4255, 3840, 20) - field()', '!Circle(4255,3840,20)|Field()'),
+                          ])
+def test_pickle_image_filter(ignore, region, expected, make_test_image):
+    """Check we can pickle/unpickle with a region filter.
+
+    This test assumes we have region support, but we do not
+    currently have any test builds without it so do not
+    bother skipping (as many tests would need to be fixed
+    if we add a no-region build, which we probably should).
+
+    """
+
+    d = make_test_image
+    d.notice2d(region, ignore=ignore)
+    assert isinstance(d._region, Region)
+    assert str(d._region) == expected
+
+    d2 = pickle.loads(pickle.dumps(d))
+    assert isinstance(d2._region, Region)
+    assert str(d2._region) == expected
