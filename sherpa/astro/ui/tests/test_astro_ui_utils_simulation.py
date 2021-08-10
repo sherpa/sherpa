@@ -27,7 +27,8 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
-from sherpa.utils.err import DataErr,IOErr
+from sherpa.utils.err import DataErr, IOErr
+from sherpa.utils.testing import requires_fits
 
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
@@ -49,6 +50,7 @@ def test_fake_pha_no_rmf(id, clean_astro_ui):
     assert str(exc.value) == emsg
 
 
+@requires_fits
 @pytest.mark.parametrize("id", [None, 1, "faked"])
 def test_fake_pha_missing_rmf(id, clean_astro_ui, tmp_path):
     """Check we error out if RMF is not valid."""
@@ -65,6 +67,7 @@ def test_fake_pha_missing_rmf(id, clean_astro_ui, tmp_path):
     assert str(exc.value) == f"file '{rmf}' not found"
 
 
+@requires_fits
 @pytest.mark.parametrize("id", [None, 1, "faked"])
 def test_fake_pha_missing_arf(id, clean_astro_ui, tmp_path):
     """Check we error out if ARF is not valid."""
