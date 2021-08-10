@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2009, 2016, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2016, 2020, 2021
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -178,6 +179,9 @@ static PyMethodDef pyRegion_methods[] = {
 };
 
 
+// Unfortunately we can not use C99-style designated initializers here
+// so we need to keep all the "null" values.
+//
 static PyTypeObject pyRegion_Type = {
   // Note that there is no semicolon after the PyObject_HEAD_INIT macro;
   // one is included in the macro definition.
@@ -319,8 +323,10 @@ PyInit__region(void)
     return NULL;
 
   Py_INCREF(&pyRegion_Type);
-
-  PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type);
+  if (PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type) < 0) {
+    Py_DECREF(&pyRegion_Type);
+    Py_DECREF(m);
+  }
   return m;
 
 }
