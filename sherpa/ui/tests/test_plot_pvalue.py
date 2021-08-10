@@ -381,7 +381,6 @@ def test_plot_pvalue_imgpsf_file_unconvolved(clean_astro_ui, hide_logging, setup
     check_imgdata_unconvolved(caplog)
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_file_convolved(clean_astro_ui, hide_logging, setup_imgdata_file):

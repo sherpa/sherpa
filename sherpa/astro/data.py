@@ -4010,7 +4010,10 @@ class DataIMG(Data2D):
 
         # PyRegion objects (of type 'extension') are NOT picklable, yet.
         # preserve the region string and restore later with constructor
-        state['_region'] = state['_region'].__str__()
+        # (but correctly handling the "None" case, to avoid #1214)
+        #
+        if state['_region'] is not None:
+            state['_region'] = state['_region'].__str__()
         return state
 
     def __setstate__(self, state):
@@ -4027,16 +4030,24 @@ class DataIMG(Data2D):
 
         # _set_coord will correctly define the _get_* WCS function pointers.
         self._set_coord(state['_coord'])
+
+        # This used to always use the _region setting to create a
+        # Region filter, but it doesn't make sense if the filter is
+        # _None, so we now skip this case (it lead to #1214).
+        #
+        if self._region is None:
+            return
+
         if regstatus:
-            self._region = Region(self._region)
+            # Should we allow '' to be sent to Region?
+            if self._region == '':
+                self._region = Region()
+            else:
+                self._region = Region(self._region)
         else:
-            # An ImportErr could be raised rather than display a
-            # warnng, but that would make it harder for the user
-            # to extract useful data (e.g. in the case of triggering
-            # this when loading a pickled file).
-            #
-            if self._region is not None and self._region != '':
-                warning("Unable to restore region={} as region module is not avaialable.".format(self._region))
+            # If the region is "" then str() will produce '' so we want
+            # double quotes about it.
+            warning(f'Unable to restore region="{self._region}" as region module is not avaialable.')
 
             self._region = None
 

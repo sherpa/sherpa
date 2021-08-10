@@ -1184,7 +1184,6 @@ def test_xmmrgs_notice(make_data_path):
     assert dat.get_filter(format='%.2f') == '19.01:19.20'
 
 
-@pytest.mark.xfail
 def test_pickle_image_filter_none(make_test_image):
     """Check we can pickle/unpickle without a region filter.
 
