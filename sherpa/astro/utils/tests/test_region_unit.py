@@ -16,9 +16,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import pytest
 
 import numpy as np
+
+import pytest
 
 from sherpa.astro.utils._region import Region
 
@@ -58,16 +59,16 @@ def test_region_string_invalid():
     assert str(exc.value) == emsg
 
 
-def test_region_file(tmpdir):
+def test_region_file(tmp_path):
     """Can we create a region from a file?"""
-    f = tmpdir.join('reg')
-    f.write(normalized_string)
+    f = tmp_path / 'reg'
+    f.write_text(normalized_string)
 
     r = Region(str(f), True)
     assert normalized_string == str(r)
 
 
-def test_region_file_invalid(tmpdir):
+def test_region_file_invalid(tmp_path):
     """What happens if the file is invalid.
 
     Note that the file parser apparently fails if
@@ -75,8 +76,8 @@ def test_region_file_invalid(tmpdir):
     in case the parser ever gets improved, in which
     case this test will need a new invalid file.
     """
-    f = tmpdir.join('reg')
-    f.write(region_string)
+    f = tmp_path / 'src.reg'
+    f.write_text(region_string)
 
     with pytest.raises(ValueError) as exc:
         Region(str(f), True)
@@ -131,20 +132,20 @@ def test_region_mask_keywords2():
     assert m == pytest.approx([1, 0, 1])
 
 
-def test_region_mask_nomatch_file(tmpdir):
+def test_region_mask_nomatch_file(tmp_path):
     """It shoudn't matter where the region comes from"""
-    f = tmpdir.join("reg")
-    f.write(normalized_string)
+    f = tmp_path / 'reg.reg'
+    f.write_text(normalized_string)
 
     r = Region(str(f), True)
     m = r.mask(x, y)
     assert all(val == 0 for val in m)
 
 
-def test_region_mask_match_file(tmpdir):
+def test_region_mask_match_file(tmp_path):
     """It shoudn't matter where the region comes from"""
-    f = tmpdir.join("reg")
-    f.write(normalized_string)
+    f = tmp_path / 'reg.src'
+    f.write_text(normalized_string)
 
     r = Region(str(f), True)
     m = r.mask(xm, ym)
@@ -319,3 +320,130 @@ def test_region_invert_empty():
     assert str(r) == ''
 
     assert r.mask(x, y) == pytest.approx([0, 0, 0])
+
+
+COMPLEX_REGION = ["circle(50,50,30)",
+                  "ellipse(40,75,30,20,320)",
+                  "-rotbox(30,30,10,5,45)"]
+
+
+def check_complex_region_1245(reg):
+    """Check the region filtering
+
+    We do not check the string representation as different
+    strings can represent the same filter
+    """
+
+    # make it rectangular just in case
+    y, x = np.mgrid[0:101, 0:102]
+    z = np.arange(x.size)
+    mask = reg.mask(x.flatten(), y.flatten()) == 1
+
+    # I have not checked this is correct, but it was based on data
+    # created by image_data and analyzed by dax that seemed to make sense.
+    #
+    assert mask.sum() == 3722
+
+    filt = z[mask]
+    assert filt.min() == 2090
+    assert filt.max() == 10133
+    assert filt.sum() == 22558471
+
+
+def check_complex_region_1245_no_exclude(reg):
+    """check_complex_region_1245 but when the -rotbox is not applied
+    """
+
+    # make it rectangular just in case
+    y, x = np.mgrid[0:101, 0:102]
+    z = np.arange(x.size)
+    mask = reg.mask(x.flatten(), y.flatten()) == 1
+
+    # I have not checked this is correct, but it was based on data
+    # created by image_data and analyzed by dax that seemed to make sense.
+    #
+    assert mask.sum() == 3757
+
+    filt = z[mask]
+    assert filt.min() == 2090
+    assert filt.max() == 10133
+    assert filt.sum() == 22671256
+
+
+def test_complex_region_file_explicit(tmp_path):
+    """Based on #1245.
+
+    Here we are explicit in our region shape - that is
+       a - c
+       b - c
+
+    although technically we could have used
+       a - c
+       b
+
+    as c does not overlap a
+    """
+
+    regfile = tmp_path / 'test.reg'
+    regstr = "\n".join([COMPLEX_REGION[0] + COMPLEX_REGION[2],
+                        COMPLEX_REGION[1] + COMPLEX_REGION[2]])
+    regfile.write_text(regstr)
+    rfile = Region(str(regfile), True)
+
+    assert str(rfile) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)|Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
+    check_complex_region_1245(rfile)
+
+
+def test_complex_region_file_implicit(tmp_path):
+    """Based on #1245.
+
+    Unlike test_complex_region_file_explicit the region
+    file is just
+
+       a
+       b
+       -c
+
+    Note that this actualy behaves as if we've just ignored the "-c"
+    filter (e.g. a dmcopy with this filter file ignores the -c
+    expression) because c does not overlap b [or whatever logic
+    is used by CIAO region expressions]
+
+    """
+
+    regfile = tmp_path / 'test.reg'
+    regstr = "\n".join(COMPLEX_REGION)
+    regfile.write_text(regstr)
+    rfile = Region(str(regfile), True)
+
+    assert str(rfile) == 'Circle(50,50,30)|Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
+    check_complex_region_1245_no_exclude(rfile)
+
+
+@pytest.mark.xfail
+def test_complex_region_manual_explicit():
+    """Based on #1245.
+
+    Here we create the region like test_complex_region_file_explicit
+    """
+
+    rmanual = Region(COMPLEX_REGION[0] + COMPLEX_REGION[2])
+    rmanual = rmanual.combine(Region(COMPLEX_REGION[1] + COMPLEX_REGION[2]))
+
+    assert str(rmanual) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
+    check_complex_region_1245(rmanual)
+
+
+@pytest.mark.xfail
+def test_complex_region_manual_implicit():
+    """Based on #1245.
+
+    Here we create the region like test_complex_region_file_implicit
+    """
+
+    rmanual = Region(COMPLEX_REGION[0])
+    rmanual = rmanual.combine(Region(COMPLEX_REGION[1]))
+    rmanual = rmanual.combine(Region(COMPLEX_REGION[2][1:]), exclude=True)
+
+    assert str(rmanual) == 'Circle(50,50,30)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
+    check_complex_region_1245(rmanual)
