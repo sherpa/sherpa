@@ -173,15 +173,12 @@ def test_region_union():
     r = Region(r1).union(Region(r2))
 
     r2 = r2.replace('rect', 'rectangle')
-    expected = r1.capitalize() + '&' + r2.capitalize()
+    expected = r1.capitalize() + '|' + r2.capitalize()
     assert expected == str(r)
 
 
 def test_region_ignore_no_overlap():
     """Ignoring a region which doesn't overlap.
-
-    It looks like the region lib doesn't try to simplify
-    the combination of shapes.
     """
 
     r1 = 'circle(10,10,10)'
@@ -189,7 +186,7 @@ def test_region_ignore_no_overlap():
     r = Region(r1).subtract(Region(r2))
 
     r2 = r2.replace('rect', 'rectangle')
-    expected = r1.capitalize() + '&!' + r2.capitalize()
+    expected = r1.capitalize()
     assert expected == str(r)
 
 
@@ -216,7 +213,7 @@ def test_region_combine_combined():
     rcomb = rcomb.union(Region(r3))
 
     r2 = r2.replace('rect', 'rectangle')
-    expected = '&'.join([x.capitalize() for x in [r1, r2, r3]])
+    expected = '|'.join([x.capitalize() for x in [r1, r2, r3]])
     assert expected == str(rcomb)
 
 
@@ -227,6 +224,7 @@ def test_region_ignore_combined():
     to check the results.
     """
 
+    # Note r2 does not overlap r1
     r1 = 'circle(10,10,10)'
     r2 = 'rect(100,100,200,200)'
     r3 = 'ellipse(70,70,10,12,45)'
@@ -234,8 +232,7 @@ def test_region_ignore_combined():
     rcomb = Region(r1).subtract(Region(r2))
     rcomb = rcomb.union(Region(r3))
 
-    r2 = '!' + r2.replace('rect', 'rectangle').capitalize()
-    expected = '&'.join([r1.capitalize(), r2, r3.capitalize()])
+    expected = '|'.join([r1.capitalize(), r3.capitalize()])
     assert expected == str(rcomb)
 
 
@@ -414,7 +411,6 @@ def test_complex_region_file_implicit(tmp_path):
     check_complex_region_1245_no_exclude(rfile)
 
 
-@pytest.mark.xfail
 def test_complex_region_manual_explicit():
     """Based on #1245.
 
@@ -424,11 +420,10 @@ def test_complex_region_manual_explicit():
     rmanual = Region(COMPLEX_REGION[0] + COMPLEX_REGION[2])
     rmanual = rmanual.union(Region(COMPLEX_REGION[1] + COMPLEX_REGION[2]))
 
-    assert str(rmanual) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
+    assert str(rmanual) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)|Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
     check_complex_region_1245(rmanual)
 
 
-@pytest.mark.xfail
 def test_complex_region_manual_implicit():
     """Based on #1245.
 
@@ -439,5 +434,7 @@ def test_complex_region_manual_implicit():
     rmanual = rmanual.union(Region(COMPLEX_REGION[1]))
     rmanual = rmanual.subtract(Region(COMPLEX_REGION[2][1:]))
 
-    assert str(rmanual) == 'Circle(50,50,30)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
+    # Note how the rotbox is only applied to the first shape (which it overlaps), not
+    # the second one.
+    assert str(rmanual) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)|Ellipse(40,75,30,20,320)'
     check_complex_region_1245(rmanual)

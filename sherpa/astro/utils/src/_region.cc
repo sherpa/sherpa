@@ -246,7 +246,7 @@ static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs 
   regRegion *r1 = self->region;
   regRegion *r2 = reg2->region;
 
-  regRegion *combined = regCombineRegion( r1, r2 );
+  regRegion *combined = regUnionRegion( r1, r2 );
   if ( NULL == combined ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"unable to union the regions" );
@@ -282,7 +282,7 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
   regRegion *r1 = self->region;
   regRegion *r2 = regInvert( reg2->region );
 
-  regRegion *combined = regCombineRegion( r1, r2 );
+  regRegion *combined = regIntersectRegion( r1, r2 );
   regFree( r2 );
 
   if ( NULL == combined ) {

@@ -730,7 +730,7 @@ def test_img_get_filter_exclude(make_test_image):
     shape = 'ellipse(4260,3840,3,2,0)'
     d.notice2d(shape, ignore=True)
 
-    expected = '!' + shape.capitalize()
+    expected = 'Field()&!' + shape.capitalize()
     assert d.get_filter() == expected
 
 
@@ -758,7 +758,7 @@ def test_img_get_filter_combined(make_test_image):
     d.notice2d(shape2)
 
     shape2 = shape2.replace('rect', 'rectangle')
-    shape = shape1.capitalize() + '&' + shape2.capitalize()
+    shape = shape1.capitalize() + '|' + shape2.capitalize()
     assert d.get_filter() == shape
 
 
@@ -787,6 +787,9 @@ def check_ignore_ignore(d):
     mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1)
 
+    expected = 'Field()&!' + shape1.capitalize()
+    assert d.get_filter() == expected
+
     shape2 = 'rect(4258,3830,4264,3841)'
     d.notice2d(shape2, ignore=True)
 
@@ -794,7 +797,7 @@ def check_ignore_ignore(d):
     assert d.mask == pytest.approx(mask1 & mask2)
 
     shape2 = shape2.replace('rect', 'rectangle')
-    expected = '!' + shape1.capitalize() + '&!' + shape2.capitalize()
+    expected = 'Field()&!' + shape1.capitalize() + '&!' + shape2.capitalize()
     assert d.get_filter() == expected
 
 
@@ -810,9 +813,23 @@ def test_img_get_filter_included_excluded(make_test_image):
 def test_img_get_filter_excluded_excluded(make_test_image):
     """Simple get_filter check on an image.
 
-    Here we want to check the behavior when d.mask is False.
-    I am not sure this makes sense, but this is done to
-    show the current behavior.
+    Here we want to check the behavior when d.mask is False.  I am not
+    sure this makes sense, but this is done to show the current
+    behavior. Note that d.notice2d(ignore=True) is meant to ignore all
+    points but it (currently) doesn't add a region since we know from
+    the mask all the points are ignored and so there's no need to add
+    a "no region" filter: if you have !field() and then union s1 we
+    would get
+
+        !field()|s
+
+    but this is the same as
+
+        s
+
+    Instead if we do !field().subtract(s) then it's the same as
+    !field(). There probably is something we could improve here.
+
     """
     d = make_test_image
 
