@@ -322,6 +322,56 @@ def test_region_invert_empty():
     assert r.mask(x, y) == pytest.approx([0, 0, 0])
 
 
+def check_region_invert_compare(reg):
+    """Check that [field()]-rect(..) is filtering correctly."""
+
+    y, x = np.mgrid[99:108, 100:106]
+    x = x.flatten()
+    y = y.flatten()
+
+    m = reg.mask(x, y)
+
+    # For boxes it's <= for the upper limit, not <
+    expected = (x >= 100) & (x <= 104) & (y >= 100) & (y <= 106)
+    expected = ~expected
+    assert np.all(m == expected.flatten())
+
+    # just check we are actually doing a filter...
+    assert expected.size == 54
+    assert expected.sum() == 19
+
+
+def test_region_invert_compare_invert():
+    """-r and field()-r should ideally filter the same way
+    but they are potentially different.
+    """
+
+    shape = "rect(100, 100, 104, 106)"
+    r = Region(shape)
+    r.invert()
+    check_region_invert_compare(r)
+
+
+def test_region_invert_compare_steps():
+    """-r and field()-r should ideally filter the same way
+    but they are potentially different.
+    """
+
+    shape = "rect(100, 100, 104, 106)"
+    r = Region("field()").combine(Region(shape), exclude=True)
+    check_region_invert_compare(r)
+
+
+def test_region_invert_compare_inone():
+    """-r and field()-r should ideally filter the same way
+    but they are potentially different.
+    """
+
+    shape = "rect(100, 100, 104, 106)"
+    r = Region(f"field()-{shape}")
+    check_region_invert_compare(r)
+
+
 COMPLEX_REGION = ["circle(50,50,30)",
                   "ellipse(40,75,30,20,320)",
                   "-rotbox(30,30,10,5,45)"]
