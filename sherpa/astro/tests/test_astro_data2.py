@@ -798,26 +798,6 @@ def check_ignore_ignore(d):
     assert d.get_filter() == expected
 
 
-def check_ignore_ignore2(d):
-    """Check removing the shapes works as expected."""
-
-    shape1 = 'ellipse(4260,3840,3,2,0)'
-    d.notice2d(shape1, ignore=True)
-
-    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(bool)
-    assert d.mask == pytest.approx(mask1)
-
-    shape2 = 'rect(4258,3830,4264,3841)'
-    d.notice2d(shape2, ignore=True)
-
-    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(bool)
-    assert d.mask == pytest.approx(mask1 & mask2)
-
-    shape2 = shape2.replace('rect', 'rectangle')
-    expected = '!' + shape1.capitalize() + '&!' + shape2.capitalize()
-    assert d.get_filter() == expected
-
-
 def test_img_get_filter_included_excluded(make_test_image):
     """Simple get_filter check on an image.
 
