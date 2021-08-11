@@ -165,12 +165,12 @@ def test_region_mask_match_file(tmp_path):
     assert all(val == 1 for val in m)
 
 
-def test_region_combine():
+def test_region_union():
     """Adding two regions together"""
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(100,100,200,200)'
-    r = Region(r1).combine(Region(r2))
+    r = Region(r1).union(Region(r2))
 
     r2 = r2.replace('rect', 'rectangle')
     expected = r1.capitalize() + '&' + r2.capitalize()
@@ -186,7 +186,7 @@ def test_region_ignore_no_overlap():
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(100,100,200,200)'
-    r = Region(r1).combine(Region(r2), True)
+    r = Region(r1).subtract(Region(r2))
 
     r2 = r2.replace('rect', 'rectangle')
     expected = r1.capitalize() + '&!' + r2.capitalize()
@@ -198,7 +198,7 @@ def test_region_ignore_overlap():
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(5,5,7,10)'
-    r = Region(r1).combine(Region(r2), True)
+    r = Region(r1).subtract(Region(r2))
 
     r2 = r2.replace('rect', 'rectangle')
     expected = r1.capitalize() + '&!' + r2.capitalize()
@@ -206,14 +206,14 @@ def test_region_ignore_overlap():
 
 
 def test_region_combine_combined():
-    """Check multiple calls to region_combine"""
+    """Check multiple calls to union regions"""
 
     r1 = 'circle(10,10,10)'
     r2 = 'rect(100,100,200,200)'
     r3 = 'ellipse(70,70,10,12,45)'
 
-    rcomb = Region(r1).combine(Region(r2))
-    rcomb = rcomb.combine(Region(r3))
+    rcomb = Region(r1).union(Region(r2))
+    rcomb = rcomb.union(Region(r3))
 
     r2 = r2.replace('rect', 'rectangle')
     expected = '&'.join([x.capitalize() for x in [r1, r2, r3]])
@@ -221,7 +221,7 @@ def test_region_combine_combined():
 
 
 def test_region_ignore_combined():
-    """Check multiple calls to region_combine
+    """Check multiple calls to union/subtract
 
     I am not sure I agree with the result but I just want
     to check the results.
@@ -231,44 +231,23 @@ def test_region_ignore_combined():
     r2 = 'rect(100,100,200,200)'
     r3 = 'ellipse(70,70,10,12,45)'
 
-    rcomb = Region(r1).combine(Region(r2), True)
-    rcomb = rcomb.combine(Region(r3))
+    rcomb = Region(r1).subtract(Region(r2))
+    rcomb = rcomb.union(Region(r3))
 
     r2 = '!' + r2.replace('rect', 'rectangle').capitalize()
     expected = '&'.join([r1.capitalize(), r2, r3.capitalize()])
     assert expected == str(rcomb)
 
 
-def test_region_combine_kwargs():
-    """Adding two regions together with keyword arguments"""
-
-    r1 = 'circle(10,10,10)'
-    r2 = 'rect(100,100,200,200)'
-    r = Region(r1).combine(exclude=0, region=Region(r2))
-
-    r2 = r2.replace('rect', 'rectangle')
-    expected = r1.capitalize() + '&' + r2.capitalize()
-    assert expected == str(r)
-
-
-def test_region_ignore_kwargs():
-    """Removing a regions with keyword arguments"""
-
-    r1 = 'circle(10,10,10)'
-    r2 = 'rect(100,100,200,200)'
-    r = Region(r1).combine(exclude=1, region=Region(r2))
-
-    r2 = r2.replace('rect', 'rectangle')
-    expected = r1.capitalize() + '&!' + r2.capitalize()
-    assert expected == str(r)
-
-
+@pytest.mark.parametrize("ignore", [False, True])
 @pytest.mark.parametrize("arg", [None, "circle(0,0,1)"])
-def test_region_combine_invalid(arg):
+def test_region_combine_invalid(ignore, arg):
     """Check we error out if not sent a region."""
 
+    r = Region('field()')
+    method = r.subtract if ignore else r.union
     with pytest.raises(TypeError):
-        Region('field()').combine(arg)
+        method(arg)
 
 
 def test_region_invert():
@@ -323,7 +302,7 @@ def test_region_invert_compare_steps():
     """
 
     shape = "rect(100, 100, 104, 106)"
-    r = Region("field()").combine(Region(shape), exclude=True)
+    r = Region("field()").subtract(Region(shape))
     check_region_invert_compare(r)
 
 
@@ -443,7 +422,7 @@ def test_complex_region_manual_explicit():
     """
 
     rmanual = Region(COMPLEX_REGION[0] + COMPLEX_REGION[2])
-    rmanual = rmanual.combine(Region(COMPLEX_REGION[1] + COMPLEX_REGION[2]))
+    rmanual = rmanual.union(Region(COMPLEX_REGION[1] + COMPLEX_REGION[2]))
 
     assert str(rmanual) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
     check_complex_region_1245(rmanual)
@@ -457,8 +436,8 @@ def test_complex_region_manual_implicit():
     """
 
     rmanual = Region(COMPLEX_REGION[0])
-    rmanual = rmanual.combine(Region(COMPLEX_REGION[1]))
-    rmanual = rmanual.combine(Region(COMPLEX_REGION[2][1:]), exclude=True)
+    rmanual = rmanual.union(Region(COMPLEX_REGION[1]))
+    rmanual = rmanual.subtract(Region(COMPLEX_REGION[2][1:]))
 
     assert str(rmanual) == 'Circle(50,50,30)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
     check_complex_region_1245(rmanual)

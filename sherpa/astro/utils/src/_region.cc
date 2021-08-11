@@ -37,7 +37,8 @@ typedef struct {
 
 
 // Declare symbols
-static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs );
+static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs );
+static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwargs );
 static PyObject* region_invert( PyRegion* self, PyObject* args );
 
 
@@ -164,8 +165,11 @@ static PyMethodDef pyRegion_methods[] = {
   { (char*)"mask", (PyCFunction) region_mask,
     METH_VARARGS | METH_KEYWORDS, (char*)"Calculate the mask for a set of points: mask = r.mask(x0, x1)" },
 
-  { (char*)"combine", (PyCFunction) region_combine,
-    METH_VARARGS | METH_KEYWORDS, (char*)"Combine regions: rnew = r.combine(region, exclude=0)" },
+  { (char*)"union", (PyCFunction) region_union,
+    METH_VARARGS | METH_KEYWORDS, (char*)"Take the union of two regions: r3 = r1.union(r2)" },
+
+  { (char*)"subtract", (PyCFunction) region_subtract,
+    METH_VARARGS | METH_KEYWORDS, (char*)"Remove r2 from r1: r3 = r1.subtract(r2)" },
 
   { (char*)"invert", (PyCFunction) region_invert,
     METH_NOARGS, (char*)"Invert the region: r.invert()" },
@@ -222,23 +226,19 @@ static PyTypeObject pyRegion_Type = {
 };
 
 
-// If reverse is 0 then       reg1&reg2
-//                 otherwise  reg1&!reg2
-// where reg1 is self.
-//
 // Needs to be defined after pyRegion_type is defined.
 //
-static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs )
+// Take the union of the the argument with the object.
+//
+static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs )
 {
 
   PyObject *reg_obj2 = NULL;
-  int reverse = 0;
 
-  static const char *kwlist[] = {"region", "exclude", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!|i",
+  static const char *kwlist[] = {"region", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!",
                                      const_cast<char**>(kwlist),
-				     &pyRegion_Type, &reg_obj2,
-				     &reverse))
+				     &pyRegion_Type, &reg_obj2))
     return NULL;
 
   PyRegion *reg2 = (PyRegion*)(reg_obj2);
@@ -246,19 +246,49 @@ static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwarg
   regRegion *r1 = self->region;
   regRegion *r2 = reg2->region;
 
-  if( reverse ) {
-    r2 = regInvert( r2 );
-  }
-
   regRegion *combined = regCombineRegion( r1, r2 );
   if ( NULL == combined ) {
     PyErr_SetString( PyExc_TypeError,
-		     (char*)"unable to combine regions successfully" );
+		     (char*)"unable to union the regions" );
     return NULL;
   }
 
-  if( reverse ) {
-    regFree( r2 );
+  // I assume we use "N" rather than "O" because, from the docs,
+  // "Useful when the object is created by a call to an object
+  // constructor in the argument list." so we don't want to
+  // increase the reference count (and if "O" is used it
+  // leaks memory...)
+  //
+  PyRegion *out = (PyRegion*) pyRegion_build( &pyRegion_Type, combined );
+  return Py_BuildValue((char*)"N", out);
+
+}
+
+// Remove the argument region from the object.
+//
+static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwargs )
+{
+
+  PyObject *reg_obj2 = NULL;
+
+  static const char *kwlist[] = {"region", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!",
+                                     const_cast<char**>(kwlist),
+				     &pyRegion_Type, &reg_obj2))
+    return NULL;
+
+  PyRegion *reg2 = (PyRegion*)(reg_obj2);
+
+  regRegion *r1 = self->region;
+  regRegion *r2 = regInvert( reg2->region );
+
+  regRegion *combined = regCombineRegion( r1, r2 );
+  regFree( r2 );
+
+  if ( NULL == combined ) {
+    PyErr_SetString( PyExc_TypeError,
+		     (char*)"unable to subtract a region" );
+    return NULL;
   }
 
   // I assume we use "N" rather than "O" because, from the docs,

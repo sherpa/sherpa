@@ -4212,8 +4212,10 @@ class DataIMG(Data2D):
                 reg.invert()
 
             self._region = reg
+        elif ignore:
+            self._region = self._region.subtract(reg)
         else:
-            self._region = self._region.combine(reg, ignore)
+            self._region = self._region.union(reg)
 
     def get_bounding_mask(self):
         mask = self.mask
