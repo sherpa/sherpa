@@ -1555,6 +1555,141 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     assert d4 == pytest.approx([2, 3])
 
 
+def test_pha_grouping_changed_1160_grped_no_filter(make_grouped_pha):
+    """Test based on work on #1160
+
+    This is probably no different to
+    test_pha_grouping_changed_no_filter_1160 and
+    test_pha_grouping_changed_filter_1160 but separated out
+    as more tests here are probably useful.
+    """
+
+    # Do we care about adding a response?
+    pha = make_grouped_pha
+
+    # why does this not understand the "bad quality" filter?
+    ofilter = "1:5"
+    assert pha.get_filter() == ofilter
+
+    # Change the grouping
+    pha.grouping = [1] * 5
+
+    # Although no grouping, we still have the bad filter in place
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([1, 2, 0, 3])
+
+    assert pha.get_filter() == ofilter
+
+
+@pytest.mark.xfail
+def test_pha_grouping_changed_1160_grped_with_filter(make_grouped_pha):
+    """Test based on work on #1160
+
+    See test_pha_grouping_changed_1160_grped_no_filter
+    """
+
+    pha = make_grouped_pha
+
+    # Can not say
+    #   pha.notice(2, 4)
+    # as we have already done a filter, so this would not
+    # act to ignore the first channel.
+    #
+    # The ignore(lo=5) line is not needed as it is already excluded by
+    # a bad-quality channel, but users can say this, so check the the
+    # response.
+    #
+    pha.ignore(hi=1)
+    pha.ignore(lo=5)
+
+    # Dropping channel 1 means the first group gets dropped, so we
+    # only have channel 4 left.
+    #
+    assert pha.get_filter() == "4"
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    # Change the grouping
+    pha.grouping = [1] * 5
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+
+    # This fails with DataErr: size mismatch between mask and data array: 2 vs 4
+    assert pha.get_dep(filter=True) == pytest.approx([2, 0, 3])
+
+    assert pha.get_filter() == "2:4"
+
+
+def test_pha_grouping_changed_1160_ungrped_with_filter(make_grouped_pha):
+    """Test based on work on #1160
+
+    A version of
+    test_pha_grouping_changed_1160_grped_with_filter
+    but the data is not grouped, even though the grouping
+    is set/changed.
+
+    """
+
+    pha = make_grouped_pha
+
+    # Apply the filter whilst still grouped
+    pha.ignore(hi=1)
+    pha.ignore(lo=5)
+
+    pha.ungroup()
+
+    # The filtering does not change because of the ungroup call,
+    # although we might like it too.
+    assert pha.get_filter() == "4"
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    # Change the grouping
+    pha.grouping = [1] * 5
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    assert pha.get_filter() == "4"
+
+
+@pytest.mark.xfail
+@requires_fits
+@requires_data
+def test_1160(make_data_path):
+    """Use the dataset we reported this with just as an extra check
+
+    It is slightly different to the other #1160 tests above because
+
+    a) we do not have a non-zero quality bin
+    b) we have an instrument response (this should not really
+       matter here)
+
+    """
+
+    from sherpa.astro.io import read_pha
+    pha = read_pha(make_data_path("3c273.pi"))
+
+    fexpr = "0.47:6.57"
+
+    pha.notice(0.5, 6)
+    assert pha.get_dep(filter=False).shape == (1024, )
+    assert pha.get_dep(filter=True).shape == (41, )
+    assert pha.mask.shape == (46, )
+    assert pha.mask.sum() == 41
+    assert pha.get_filter(format="%.2f") == fexpr
+
+    pha.grouping = [1] * 1024
+    assert pha.get_dep(filter=False).shape == (1024, )
+    # This fails with a DataErr: size mismatch between mask and data array
+    assert pha.get_dep(filter=True).shape == (418, )
+    assert pha.mask.shape == (1024, )
+    assert pha.mask.sum() == 418
+    assert pha.get_filter(format="%.2f") == fexpr
+
+
 @pytest.mark.xfail
 def test_pha_remove_grouping(make_test_pha):
     """Check we can remove the grouping array."""
@@ -1579,6 +1714,18 @@ def test_pha_remove_grouping(make_test_pha):
     assert not pha.grouped
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx(no_data)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("grouping", [True, [1, 1], np.ones(10)])
+def test_pha_grouping_size(grouping, make_test_pha):
+    """Check we error out if grouping has the wrong size"""
+
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.grouping = grouping
+
+    assert str(de.value) == 'size mismatch between channel and grouping'
 
 
 def test_pha_remove_quality(make_test_pha):
@@ -1663,6 +1810,34 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     # At the moment the filter still includes the quality filter
     pha.quality = None
     assert pha.get_filter() == "2:4"
+
+
+def test_pha_change_quality_values():
+    """What happens if we change the quality column?
+
+    This is a regression test as it is likely we should change the filter,
+    but we have not thought through the consequences. See also #1427
+    """
+
+    pha = DataPHA('ex', [1, 2, 3, 4, 5, 6, 7], [1, 2, 1, 0, 2, 2, 1])
+    pha.group_counts(5)
+    assert pha.quality == pytest.approx([0, 0, 0, 0, 0, 2, 2])
+    assert pha.get_dep(filter=True) == pytest.approx([6, 3])
+    assert pha.get_filter() == '1:7'
+
+    assert pha.quality_filter is None
+    pha.ignore_bad()
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.get_dep(filter=True) == pytest.approx([6])
+    assert pha.get_filter() == '1:7'
+
+    pha.group_counts(4)
+    assert pha.quality == pytest.approx([0, 0, 0, 0, 0, 0, 2])
+
+    # Should quality filter be reset?
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2])
+    assert pha.get_filter() == '1:7'
 
 
 @pytest.mark.parametrize("field", ["grouping", "quality"])
