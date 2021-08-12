@@ -2101,8 +2101,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_stat()).__name__.lower()
 
-    # DOC-TODO: remove the list of supported methods once the
-    # relevant documenation has been updated.
     def set_stat(self, stat):
         """Set the statistical method.
 
@@ -2112,9 +2110,10 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        stat : str
-           The name of the statistic (case is not important). The
-           `list_stats` function returns the list of supported values.
+        stat : str or sherpa.stats.Stat instance
+           When a string, the name of the statistic (case is not
+           important): see `list_stats()` for supported
+           values. Otherwise an instance of the statistic to use.
 
         Raises
         ------
@@ -2152,8 +2151,8 @@ class Session(NoNewAttributesAfterInit):
            Chi-squared with model amplitude variance.
 
         chi2xspecvar
-           Chi-squared with data variance (XSPEC-style,
-           variance = 1.0 if data less than or equal to 0.0).
+           Chi-squared with data variance (XSPEC-style, variance = 1.0
+           if data less than or equal to 0.0).
 
         cstat
            A maximum likelihood function (the XSPEC implementation of
@@ -2161,14 +2160,14 @@ class Session(NoNewAttributesAfterInit):
            for including the background.
 
         wstat
-           A maximum likelihood function which includes
-           the background data as part of the fit (i.e. for
-           when it is not being explicitly modelled)
-           (the XSPEC implementation of the Cash function) [3]_.
+           A maximum likelihood function which includes the background
+           data as part of the fit (i.e. for when it is not being
+           explicitly modelled) (the XSPEC implementation of the Cash
+           function) [3]_.
 
         leastsq
-           The least-squares statisic (the error is not used in
-           this statistic).
+           The least-squares statisic (the error is not used in this
+           statistic).
 
         References
         ----------
