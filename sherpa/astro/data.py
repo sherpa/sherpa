@@ -1612,20 +1612,29 @@ class DataPHA(Data1D):
         if val and self.grouping is None:
             raise DataErr('nogrouping', self.name)
 
-        if self._grouped == val:
+        # Short cut if the grouping isn't changing.
+        #
+        # This could be dangerous, as there may be times we
+        # would want to generate things, but it is believed
+        # that we have identified all these changes, such
+        # as changing the grouping field.
+        #
+        if val == self._grouped:
             return
 
-        # As the grouping status is being changed, we need to reset the mask
-        # to be correct size, while still noticing groups within the filter
-        #
-        if numpy.iterable(self.mask):
-            old_filter = self.get_filter(group=val)
+        if not numpy.iterable(self.mask):
             self._grouped = val
-            self.ignore()
-            for vals in parse_expr(old_filter):
-                self.notice(*vals)
+            return
 
+        # As the grouping has changed AND there's a partial filter
+        # then it is important to re-apply the filter so that the mask
+        # matches the new grouping scheme.
+        #
+        old_filter = self.get_filter()
         self._grouped = val
+        self.ignore()
+        for vals in parse_expr(old_filter):
+            self.notice(*vals)
 
     grouped = property(_get_grouped, _set_grouped,
                        doc='Are the data grouped?')
@@ -3388,22 +3397,9 @@ must be an integer.""")
             if kwargs[key] is None:
                 kwargs.pop(key)
 
-        old_filter = self.get_filter(group=False)
-        do_notice = numpy.iterable(self.mask)
-
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()
         self._original_groups = False
-
-        if do_notice:
-            # self.group() above has cleared the filter if applicable
-            # No, that just sets a flag.  So manually clear filter
-            # here
-            self.ignore()
-            for vals in parse_expr(old_filter):
-                self.notice(*vals)
-
-        # warning('grouping flags have changed, noticing all bins')
 
     def group_bins(self, num, tabStops=None):
         """Group into a fixed number of bins.
