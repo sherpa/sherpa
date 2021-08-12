@@ -1322,10 +1322,14 @@ def print_fields(names, vals, converters=None):
                       numpy.uint8: 'UInt8',
                       numpy.void: 'Void0'
                       }
-        if platform.processor() != 'arm' or platform.machine() != 'arm64':
+        try:
             converters[numpy.complex256] = 'Complex256'
+        except AttributeError:
+            pass
+        try:
             converters[numpy.float128] = 'Float128'
-
+        except AttributeError:
+            pass
 
     width = max(len(n) for n in names)
     fmt = '%%-%ds = %%s' % width
