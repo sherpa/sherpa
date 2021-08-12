@@ -3992,3 +3992,54 @@ def test_pha_model_plot_filter_range_1024(make_data_path, clean_astro_ui):
 
     f = ui.get_filter()
     assert f == '0.518300011754:4.869099855423'
+
+
+@requires_fits
+@requires_data
+@requires_plotting
+@pytest.mark.parametrize("mask", [True, np.ones(46, dtype=bool)])
+def test_pha_model_plot_filter_range_1024_true(mask, make_data_path, clean_astro_ui):
+    """Special-case handling of mask: all selected.
+    """
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_source(ui.powlaw1d.pl)
+
+    d = ui.get_data()
+    d.mask = mask
+    ui.plot_model()
+    f = ui.get_filter()
+    assert f == '0.124829999695:12.410000324249'
+
+
+@requires_fits
+@requires_data
+@requires_plotting
+@pytest.mark.parametrize("mask,expected",
+                         [(False, 'No noticed bins'),
+                          pytest.param(np.zeros(46, dtype=bool), '', marks=pytest.mark.xfail)])
+def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path, clean_astro_ui):
+    """Special-case handling of mask: all masked out.
+    """
+
+    ui.load_pha(make_data_path('3c273.pi'))
+    ui.set_source(ui.powlaw1d.pl)
+
+    d = ui.get_data()
+    d.mask = mask
+
+    # See #1220 for why we don't have a unique value for the filter
+    assert ui.get_filter() == expected
+
+    # We can not guarantee what error wil be raised here because of
+    # issue #1220 so just pick a generic exception which will catch
+    # both SherpaErr cases and general Pythonic ones.
+    #
+    # Note that thanks to #1024 the array of False values doesn't
+    # cause an error, but instead drops all the filters on the
+    # dataset.
+    #
+    with pytest.raises(Exception):
+        ui.plot_model()
+
+    assert ui.get_filter() == expected
