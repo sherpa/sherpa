@@ -333,8 +333,10 @@ def _handle_filter(state, id, fh):
         cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
         _output(cmd, fh)
     elif ndims == 2:
-        cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
-        _output(cmd, fh)
+        # Only output the filter if it does anything
+        if fvals != '':
+            cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
+            _output(cmd, fh)
     else:
         # just in case
         _output('print("Set notice range of id={} to {}")'.format(cmd_id,
