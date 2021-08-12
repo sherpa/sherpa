@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021
+#  Copyright (C) 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1191,7 +1191,7 @@ def test_pha_grouping_changed_no_filter_1160(make_test_pha):
 def test_pha_grouping_changed_filter_1160(make_test_pha):
     """What happens when the grouping is changed?
 
-    See also test_pha_grouping_changed_filter_1160
+    See also test_pha_grouping_changed_no_filter_1160
     """
 
     pha = make_test_pha
@@ -1210,9 +1210,49 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     d3 = pha.get_dep(filter=True)
     assert d3 == pytest.approx([2, 0, 3])
 
+    # This currently raises a DataErr due to
+    # 'size mismatch between mask and data array'
     pha.grouping = [1, 1, -1, 1]
     d4 = pha.get_dep(filter=True)
     assert d4 == pytest.approx([2, 3])
+
+
+@pytest.mark.xfail
+def test_pha_remove_grouping(make_test_pha):
+    """Check we can remove the grouping array."""
+
+    pha = make_test_pha
+    assert pha.grouping is None
+    assert not pha.grouped
+
+    no_data = [1, 2, 0, 3]
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx(no_data)
+
+    pha.grouping = [1, -1, 1, -1]
+    assert not pha.grouped
+    pha.grouped = True
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([3, 3])
+
+    # Can we remove the grouping column?
+    pha.grouping = None
+    assert not pha.grouped
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx(no_data)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("grouping", [True, [1, 1], np.ones(10)])
+def test_pha_grouping_size(grouping, make_test_pha):
+    """Check we error out if grouping has the wrong size"""
+
+    # These currently do not raise an error
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.grouping = grouping
+
+    assert str(de.value) == 'size mismatch between channel and grouping'
 
 
 @requires_fits
