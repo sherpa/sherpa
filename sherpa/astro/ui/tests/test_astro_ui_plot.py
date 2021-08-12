@@ -3973,14 +3973,13 @@ def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
     assert f == '0.775000000000:1.210000000000'
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 @requires_plotting
 def test_pha_model_plot_filter_range_1024(make_data_path, clean_astro_ui):
     """Check if issue #1024 is fixed.
 
-    Unlike test_pha_model_plot_fitler_range_manual_1024
+    Unlike test_pha_model_plot_filter_range_manual_1024
     this test does show issue #1024.
     """
 
@@ -4017,7 +4016,7 @@ def test_pha_model_plot_filter_range_1024_true(mask, make_data_path, clean_astro
 @requires_plotting
 @pytest.mark.parametrize("mask,expected",
                          [(False, 'No noticed bins'),
-                          pytest.param(np.zeros(46, dtype=bool), '', marks=pytest.mark.xfail)])
+                          (np.zeros(46, dtype=bool), '')])
 def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path, clean_astro_ui):
     """Special-case handling of mask: all masked out.
     """

@@ -204,32 +204,57 @@ class ModelPHAHistogram(HistogramPlot):
 class ModelHistogram(ModelPHAHistogram):
     """Plot a model for a PHA dataset with no grouping.
 
-    The model is drawn at the native resolution of
-    the instrument response, or ungrouped channels.
-    The model is filtered to the minimum and maximum
-    of the PHA dataset but any ignored ranges within
-    this are ignored.
+    The model is drawn at the native resolution of the instrument
+    response, or ungrouped channels.
+
     """
 
     def prepare(self, data, model, stat=None):
 
-        old_filter = parse_expr(data.get_filter())
-        old_group = data.grouped
+        # We could fit this into a single try/finally group but
+        # it makes it harder to see what is going on so split
+        # it out into separate plot types:
+        #   - ungrouped
+        #   - all data has been masked out (we let prepare
+        #     throw any errors or plot no data)
+        #   - grouped but no filter (or the filter doesn't
+        #     remove any points).
+        #   - grouped and filtered
+        #
+        if not data.grouped or data.mask is False or \
+           (data.mask is not True and not data.mask.any()):
+            super().prepare(data, model, stat=stat)
+            return
+
+        # At this point mask can be True or an array.
+        #
+        if data.mask is True or data.mask.all():
+            try:
+                data.ungroup()
+                super().prepare(data, model, stat=stat)
+
+            finally:
+                data.group()
+
+            return
+
+        # We need to convert the filter expression from grouped
+        # to ungrouped, apply it, create the plot, then restore
+        # the old expression. Note that we can just copy over
+        # the original mask value to restore the old filter.
+        #
+        old_mask = data.mask.copy()
         new_filter = parse_expr(data.get_filter(group=False))
         try:
-            if old_group:
-                data.ungroup()
-                for interval in new_filter:
-                    data.notice(*interval)
+            data.ungroup()
+            for interval in new_filter:
+                data.notice(*interval)
 
             super().prepare(data, model, stat=stat)
 
         finally:
-            if old_group:
-                data.ignore()
-                data.group()
-                for interval in old_filter:
-                    data.notice(*interval)
+            data.group()
+            data.mask = old_mask
 
 
 class SourcePlot(HistogramPlot):
