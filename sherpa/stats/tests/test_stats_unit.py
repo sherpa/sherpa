@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,7 @@ import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
 
 from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Polynom1D
@@ -252,8 +253,8 @@ def setup_single_pha(stat, sys, background=True,
                      areascal="none"):
     """Return a single data set and model.
 
-    This is aimed at wstat calculation, and so the DataPHA object has
-    no attached response. The data set is grouped.
+    This is aimed at wstat calculation. The data set is grouped
+    which is a bit against the ethos of WSTAT (fit all the channels).
 
     Parameters
     ----------
@@ -298,6 +299,9 @@ def setup_single_pha(stat, sys, background=True,
     channels = np.arange(1, 6, dtype=np.int16)
     counts = np.asarray([10, 13, 9, 17, 21], dtype=np.int16)
 
+    rlo = channels - 0.5
+    rhi = channels + 0.5
+
     if stat:
         staterror = np.asarray([3.0, 4.0, 3.0, 4.0, 5.0])
     else:
@@ -323,6 +327,10 @@ def setup_single_pha(stat, sys, background=True,
                    syserror=syserror, grouping=grouping,
                    quality=quality, exposure=exposure,
                    backscal=backscal, areascal=ascal)
+
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    data.set_rmf(rmf)
+    data.units = 'energy'
 
     if background:
         bgcounts = np.asarray([2, 1, 0, 2, 2], dtype=np.int16)

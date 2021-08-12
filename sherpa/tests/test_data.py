@@ -1364,3 +1364,62 @@ def test_data1dint_get_x_xerr():
 
     assert d.get_x(True) == pytest.approx([])
     assert d.get_xerr(True) == pytest.approx([])
+
+
+@pytest.mark.parametrize('ignore', [False, True])
+@pytest.mark.parametrize('lo,hi,evals',
+                         [(0.5, 2.3, (0, 10, 0)),
+                          (0.7, 2.1, (1, 8, 1)),
+                          (0.5, 0.7, (0, 2, 8)),
+                          (1.1, 1.3, (3, 2, 5)),
+                          (2.1, 2.3, (8, 2, 0)),
+                          # special case filters that are within a single bin
+                          (0.45, 0.55, (0, 1, 9)),
+                          (0.65, 0.75, (1, 1, 8)),
+                          (1.05, 1.15, (3, 1, 6)),
+                          (2.25, 2.35, (9, 1, 0)),
+                          # outside the limits
+                          (0.1, 0.4, (0, 1, 9)),
+                          (0.1, 0.5, (0, 1, 9)),
+                          (2.41, 2.8, (10, 0, 0)),
+                          # Now queries on the edge of each bin; these would ideally
+                          # only match 1 bin
+                          (0.4, 0.6, (0, 2, 8)),
+                          (0.6, 0.8, (0, 3, 7)),
+                          (0.8, 1.0, (1, 3, 6)),
+                          (1.0, 1.2, (2, 3, 5)),
+                          (1.2, 1.4, (3, 3, 4)),
+                          (1.4, 1.6, (4, 3, 3)),
+                          (1.6, 1.8, (5, 3, 2)),
+                          (1.8, 2.0, (6, 3, 1)),
+                          (2.0, 2.2, (7, 3, 0)),
+                          (2.2, 2.4, (8, 2, 0)),
+                          # check last upper limit
+                          (2.4, 2.6, (9, 1, 0))
+                         ])
+def test_data1dint_check_limit(ignore, lo, hi, evals):
+    """Does Data1DInt handle limits (in particular upper limits).
+
+    This is based on sherpa/astro/tests/test_astro_data.py::test_pha_check_limit
+    but without the need for an ARF. It selects different bins than the
+    PHA case!
+    """
+
+    egrids = 0.2 + 0.2 * numpy.arange(1, 12)
+    d = Data1DInt('exammple', egrids[:-1], egrids[1:],
+                  numpy.ones(10))
+
+    assert d.mask is True
+
+    func = d.ignore if ignore else d.notice
+    func(lo, hi)
+    if ignore:
+        vout = True
+        vin = False
+    else:
+        vout = False
+        vin = True
+
+    c1, c2, c3 = evals
+    expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+    assert d.mask == pytest.approx(expected)

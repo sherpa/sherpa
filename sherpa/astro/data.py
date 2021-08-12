@@ -1923,6 +1923,9 @@ class DataPHA(Data1D):
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 
+            if len(elo) == 0:
+                raise DataErr('notmask')
+
         # apply_grouping applies a quality filter to the output
         # but if we get here then there is no equivalent. This
         # is likely confusing, at best, but we don't have good
@@ -2116,12 +2119,6 @@ class DataPHA(Data1D):
 
     def _energy_to_channel(self, val):
         elo, ehi = self._get_ebins()
-
-        # special case handling no noticed data (e.g. ignore_bad
-        # removes all bins); assume if elo is empty then so is ehi.
-        #
-        if len(elo) == 0:
-            raise DataErr('notmask')
 
         val = numpy.asarray(val)
         res = []
@@ -3416,7 +3413,6 @@ class DataPHA(Data1D):
         return self._fix_y_units(err, filter, response_id)
 
     def get_xerr(self, filter=False, response_id=None):
-        elo, ehi = self._get_ebins(response_id=response_id)
         filter = bool_cast(filter)
         if filter:
             # If we apply a filter, make sure that
@@ -3425,6 +3421,15 @@ class DataPHA(Data1D):
             elo, ehi = self._get_ebins(response_id, group=False)
             elo = self.apply_filter(elo, self._min)
             ehi = self.apply_filter(ehi, self._max)
+
+        else:
+            try:
+                elo, ehi = self._get_ebins(response_id=response_id)
+            except DataErr:
+                # What should we do here? This indicates that all bins
+                # have been marked as bad (and grouping is present).
+                #
+                return numpy.asarray([])
 
         return ehi - elo
 
@@ -3689,6 +3694,31 @@ class DataPHA(Data1D):
             if isinstance(val, str):
                 # match the error seen from other data classes here
                 raise DataErr('typecheck', f'{label} bound')
+
+        # Validate input
+        #
+        if lo is not None and hi is not None and lo > hi:
+            raise DataErr('bad', 'hi argument', 'must be >= lo')
+
+        # Ensure the limits are physically meaningful, that is
+        # energy and wavelengths are >= 0. Technically it should be
+        # > but using 0 is a nice value for a minimum. We do not
+        # enforce limits if channels are being used because it's
+        # not clear if channels can technically be negative.
+        #
+        # For channels we just require the numbers are integers.
+        #
+        if self.units == 'channel':
+            if lo is not None and not float(lo).is_integer():
+                raise DataErr('bad', 'lo argument', 'must be an integer channel value')
+            if hi is not None and not float(hi).is_integer():
+                raise DataErr('bad', 'hi argument', 'must be an integer channel value')
+
+        else:
+            if lo is not None and lo < 0:
+                raise DataErr('bad', 'lo argument', 'must be >= 0')
+            if hi is not None and hi < 0:
+                raise DataErr('bad', 'hi argument', 'must be >= 0')
 
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do

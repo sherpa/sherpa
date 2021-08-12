@@ -2696,6 +2696,21 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui):
     fig = plt.gcf()
     axes = fig.axes
 
+    # This test occasionally fails because len(axes) == 3
+    # but it's not obvious why - so let's print some
+    # info in the hope it's informative
+    print(plt.get_current_fig_manager())
+    print(fig)
+    print(axes)
+    for ax in axes:
+        print(ax.get_xlabel())
+        print(ax.get_ylabel())
+        print(ax.get_title())
+        print(ax.lines)
+        print(ax.get_xlim())
+        print(ax.get_ylim())
+        print('---')
+
     assert len(axes) == 2
     assert axes[0].xaxis.get_label().get_text() == ''
 

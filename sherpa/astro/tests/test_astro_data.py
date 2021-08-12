@@ -1524,10 +1524,10 @@ def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, '0.1248:12.4100'),
+                         [(0, 2000, '0.1248:12.4100'),
                           (0.7, 2000, '0.6716:12.4100'),
-                          (-5, 4.2, '0.1248:4.1391'),
-                          (-20, -5, '0.1248:12.4100'),
+                          (0, 4.2, '0.1248:4.1391'),
+                          (0, 1e-10, '0.1248:12.4100'),
                           (2000, 3000, '0.1248:12.4100')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1545,10 +1545,10 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, '0.0080:14.9431'),
+                         [(0, 2000, '0.0080:14.9431'),
                           (0.7, 2000, '0.6935:14.9431'),
-                          (-5, 4.2, '0.0080:4.1975'),
-                          (-20, -5, '0.0080:14.9431'),
+                          (0, 4.2, '0.0080:4.1975'),
+                          (0, 1e-10, '0.0080:14.9431'),
                           (2000, 3000, '0.0080:14.9431')])
 def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1566,10 +1566,10 @@ def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_dat
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 8000, '0.9991:99.3224'),
+                         [(0, 8000, '0.9991:99.3224'),
                           (20, 8000, '20.4628:99.3224'),
-                          (-5, 15, '0.9991:14.7688'),
-                          (-20, -5, '0.9991:99.3224'),
+                          (0, 15, '0.9991:14.7688'),
+                          (0, 1e-10, '0.9991:99.3224'),
                           (8000, 9000, '99.3224')])
 def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1587,10 +1587,10 @@ def test_notice_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 8000, '0.8297:1544.0123'),
+                         [(0, 8000, '0.8297:1544.0123'),
                           (20, 8000, '19.9813:1544.0123'),
-                          (-5, 15, '0.8297:15.0302'),
-                          (-20, -5, '0.8297:1544.0123'),
+                          (0, 15, '0.8297:15.0302'),
+                          (0, 1e-10, '0.8297:1544.0123'),
                           (8000, 9000, '1544.0123')])
 def test_notice_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1650,10 +1650,10 @@ def test_ignore_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (0.8, 2000, '0.1248:0.7665'),
-                          (-5, 3.5, '3.6792:12.4100'),
-                          (-20, -5, '0.1248:12.4100'),
+                          (0, 3.5, '3.6792:12.4100'),
+                          (0, 1e-10, '0.1248:12.4100'),
                           (2000, 3000, '0.1248:12.4100')])
 def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1671,10 +1671,10 @@ def test_ignore_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (0.8, 2000, '0.0080:0.7811'),
-                          (-5, 3.5, '3.5113:14.9431'),
-                          (-20, -5, '0.0080:14.9431'),
+                          (0, 3.5, '3.5113:14.9431'),
+                          (0, 1e-10, '0.0080:14.9431'),
                           (2000, 3000, '0.0080:14.9431')])
 def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1692,10 +1692,10 @@ def test_ignore_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_dat
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (20, 2000, '0.9991:18.4610'),
-                          (-5, 15, '15.4401:99.3224'),
-                          (-20, -5, '0.9991:99.3224'),
+                          (0, 15, '15.4401:99.3224'),
+                          (0, 1e-10, '0.9991:99.3224'),
                           (2000, 3000, '0.9991:44.6951')])
 def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1713,10 +1713,10 @@ def test_ignore_wave_grouping_outofbounds(lo, hi, expected, make_data_path):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("lo,hi,expected",
-                         [(-5, 2000, ''),
+                         [(0, 2000, ''),
                           (20, 2000, '0.8297:19.5220'),
-                          (-5, 15, '15.3010:1544.0123'),
-                          (-20, -5, '0.8297:1544.0123'),
+                          (0, 15, '15.3010:1544.0123'),
+                          (0, 1e-10, '0.8297:1544.0123'),
                           (2000, 3000, '0.8297:566.1378')])
 def test_ignore_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
@@ -1729,6 +1729,43 @@ def test_ignore_wave_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_
 
     pha.ignore(lo, hi)
     assert pha.get_filter(format='%.4f') == expected
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("units", ["energy", "wave"])
+@pytest.mark.parametrize("notice", [True, False])
+@pytest.mark.parametrize("lo,hi",
+                         [(-5, -2), (-5, 2), (-5, None), (0, -2), (None, -2)])
+def test_pha_validates_limits(units, notice, lo, hi, make_data_path):
+    """Check the limits are validated."""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    pha.units = units
+    func = pha.notice if notice else pha.ignore
+
+    with pytest.raises(DataErr) as de:
+        func(lo, hi)
+
+    assert str(de.value).startswith('unknown ')
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("notice", [True, False])
+def test_pha_validates_range(notice, make_data_path):
+    """Ensure lo <= hi check is made"""
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+    func = pha.notice if notice else pha.ignore
+    with pytest.raises(DataErr) as de:
+        func(3, 2)
+
+    assert str(de.value) == "unknown hi argument: 'must be >= lo'"
 
 
 @requires_data
@@ -1746,12 +1783,21 @@ def test_channel_changing_limits(make_data_path):
 
     pha.set_analysis('channel')
 
+    assert pha.mask is True
+
     # selects
     #    group 11 (channels 60-61, mid=60)
     # to
     #    group 42 (channsls 345-368, mid=356)
     #
     pha.notice(60, 350)
+
+    mexpected1 = np.zeros(46, dtype=bool)
+    mexpected1[10:42] = True
+    mexpected2 = np.zeros(1024, dtype=bool)
+    mexpected2[59:368] = True
+    assert pha.mask == pytest.approx(mexpected1)
+    assert pha.get_mask() == pytest.approx(mexpected2)
 
     expected1 = '60:356'
     expected2 = '60:368'
@@ -1762,11 +1808,15 @@ def test_channel_changing_limits(make_data_path):
     # group, even when group=False.
     #
     pha.ungroup()
+    assert pha.mask == pytest.approx(mexpected2)
+    assert pha.get_mask() == pytest.approx(mexpected2)
     assert pha.get_filter() == expected2
     assert pha.get_filter(group=False) == expected2
 
     # We go back to the original filter
     pha.group()
+    assert pha.mask == pytest.approx(mexpected1)
+    assert pha.get_mask() == pytest.approx(mexpected2)
     assert pha.get_filter() == expected1
     assert pha.get_filter(group=False) == expected2
 
@@ -1999,22 +2049,22 @@ def test_energy_filter_roundtrip(make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
-    fall = pha.get_filter()
-    assert fall == '0.124829999695:12.410000324249'
+    fall = pha.get_filter(format='%.5f')
+    assert fall == '0.12483:12.41000'
 
     pha.notice(0.5, 7)
     pha.ignore(1, 2)
 
-    expected = '0.518300011754:0.970899999142,2.058600068092:8.219800233841'
-    f1 = pha.get_filter()
+    expected = '0.51830:0.97090,2.05860:8.21980'
+    f1 = pha.get_filter(format='%.5f')
     assert f1 == expected
 
     pha.ungroup()
-    f2 = pha.get_filter()
-    assert f2 == '0.474500000477:0.985500007868,2.036700010300:9.862299919128'
+    f2 = pha.get_filter(format='%.5f')
+    assert f2 == '0.47450:0.98550,2.03670:9.86230'
 
     pha.group()
-    f3 = pha.get_filter()
+    f3 = pha.get_filter(format='%.5f')
     assert f3 == expected
 
 
@@ -2165,3 +2215,374 @@ def test_pha_creation_warns_about_non_numpy_counts():
     assert isinstance(d.counts, np.ndarray)
 
     assert d.counts == pytest.approx(counts)
+
+
+@requires_fits
+@requires_data
+def test_pha_check_filter(make_data_path):
+    """Added a test found useful when changing get_filter."""
+
+    import sherpa.astro.io
+
+    infile = make_data_path('3c273.pi')
+    pha = sherpa.astro.io.read_pha(infile)
+
+    pha.notice(0.5, 7)
+    assert pha.get_filter(format='%.4f') == '0.5183:8.2198'
+
+    pha.ignore(None, 1)
+    assert pha.get_filter(format='%.4f') == '1.0658:8.2198'
+
+    pha.ignore(5, None)
+    assert pha.get_filter(format='%.4f') == '1.0658:4.4822'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 26
+
+    pha.ungroup()
+
+    assert pha.get_filter(format='%.4f') == '1.0439:4.7085'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 252
+
+
+@requires_fits
+@requires_data
+def test_pha_check_filter_channel(make_data_path):
+    """test_pha_check_filter with channel units"""
+
+    import sherpa.astro.io
+
+    infile = make_data_path('3c273.pi')
+    pha = sherpa.astro.io.read_pha(infile)
+    pha.units = 'channel'
+
+    # The data is grouped so it doesn't quite match
+    pha.notice(35, 480)
+    assert pha.get_filter(format='%i') == '36:563'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '0.5183:8.2198'
+    pha.units = 'channel'
+
+    pha.ignore(None, 69)
+    assert pha.get_filter(format='%i') == '73:563'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '1.0658:8.2198'
+    pha.units = 'channel'
+
+    pha.ignore(343, None)
+    assert pha.get_filter(format='%i') == '73:307'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '1.0658:4.4822'
+    pha.units = 'channel'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 26
+
+    pha.ungroup()
+
+    assert pha.get_filter(format='%i') == '72:323'
+    pha.units = 'energy'
+    assert pha.get_filter(format='%.4f') == '1.0439:4.7085'
+    pha.units = 'channel'
+
+    plot = pha.to_plot()
+    assert plot[0].size == 252
+
+
+def test_pha_filter_simple_channel1():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_energy
+    """
+
+    chans = np.arange(1, 7, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    assert pha.get_filter() == '1:6'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter() == '1:6'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter() == '1,3:4,6'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter() == '2,5'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter() == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter() == '1'
+
+    pha.mask[-1] = True
+    assert pha.get_filter() == '1,6'
+
+    pha.mask[0] = False
+    assert pha.get_filter() == '6'
+
+
+def test_pha_filter_simple_channel0():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_energy
+    """
+
+    chans = np.arange(0, 6, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    assert pha.get_filter() == '0:5'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter() == '0:5'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter() == '0,2:3,5'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter() == '1,4'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter() == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter() == '0'
+
+    pha.mask[-1] = True
+    assert pha.get_filter() == '0,5'
+
+    pha.mask[0] = False
+    assert pha.get_filter() == '5'
+
+
+def test_pha_filter_simple_energy1():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_channel1
+    """
+
+    chans = np.arange(1, 7, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    rmf = create_delta_rmf(chans, chans + 1,
+                           e_min=chans, e_max=chans + 1)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_filter(format='%.1f') == '1.5:6.5'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == '1.5:6.5'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter(format='%.1f') == '1.5,3.5:4.5,6.5'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter(format='%.1f') == '2.5,5.5'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter(format='%.1f') == '1.5'
+
+    pha.mask[-1] = True
+    assert pha.get_filter(format='%.1f') == '1.5,6.5'
+
+    pha.mask[0] = False
+    assert pha.get_filter(format='%.1f') == '6.5'
+
+
+def test_pha_filter_simple_energy0():
+    """Simple tests of get_filter
+
+    See also test_pha_filter_simple_channel0
+
+    It is not at all clear what is going on here - DJB doesn't
+    think the test is wrong.
+    """
+
+    chans = np.arange(0, 6, dtype=int)
+    pha = DataPHA('d', chans, np.zeros_like(chans))
+
+    # use integer bins as easy to check but ensure
+    # the first bin is not 0
+    rmf = create_delta_rmf(chans + 10, chans + 11,
+                           e_min=chans + 10, e_max=chans + 11)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_filter(format='%.1f') == '14.5:15.5'
+
+    # Fake filter/notice calls
+    pha.mask = np.ones(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == '14.5:15.5'
+
+    pha.mask[1] = False
+    pha.mask[4] = False
+    assert pha.get_filter(format='%.1f') == '14.5,12.5:11.5,15.5'
+
+    pha.mask = ~pha.mask
+    assert pha.get_filter(format='%.1f') == '10.5,13.5'
+
+    pha.mask = np.zeros(6, dtype=bool)
+    assert pha.get_filter(format='%.1f') == ''
+
+    pha.mask[0] = True
+    assert pha.get_filter(format='%.1f') == '15.5'
+
+    pha.mask[-1] = True
+    assert pha.get_filter(format='%.1f') == '14.5,15.5'
+
+    pha.mask[0] = False
+    assert pha.get_filter(format='%.1f') == '14.5'
+
+
+@pytest.mark.parametrize('ignore', [False, True])
+@pytest.mark.parametrize('lo,hi,evals',
+                         [(0.5, 2.3, (0, 10, 0)),
+                          (0.7, 2.1, (1, 8, 1)),
+                          (0.5, 0.7, (0, 2, 8)),
+                          (1.1, 1.3, (3, 2, 5)),
+                          (2.1, 2.3, (8, 2, 0)),
+                          # special case filters that are within a single bin
+                          (0.45, 0.55, (0, 1, 9)),
+                          (0.65, 0.75, (1, 1, 8)),
+                          (1.05, 1.15, (3, 1, 6)),
+                          (2.25, 2.35, (9, 1, 0)),
+                          # outside the limits
+                          (0.1, 0.4, None),
+                          (0.1, 0.5, (0, 1, 9)),
+                          (2.41, 2.8, None),
+                          # Now queries on the edge of each bin; these would ideally
+                          # only match 1 bin
+                          (0.4, 0.6, (0, 1, 9)),
+                          (0.6, 0.8, (0, 3, 7)),
+                          (0.8, 1.0, (2, 2, 6)),
+                          (1.0, 1.2, (3, 2, 5)),
+                          (1.2, 1.4, (4, 1, 5)),
+                          (1.4, 1.6, (4, 3, 3)),
+                          (1.6, 1.8, (6, 2, 2)),
+                          (1.8, 2.0, (7, 2, 1)),
+                          (2.0, 2.2, (8, 2, 0)),
+                          (2.2, 2.4, (9, 1, 0)),
+                          # check last upper limit
+                          (2.4, 2.6, (9, 1, 0))
+                         ])
+def test_pha_check_limit(ignore, lo, hi, evals):
+    """What happens when we hit values at bin edges [energy]?
+
+    This includes some non-bin-edge tests for fun. Fortunately
+    ignore and notice are inverses here so we can use the
+    same pattern to generate the expected mask signal.
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = chans * 2
+    pha = DataPHA('example', chans, counts)
+
+    egrids = 0.2 + 0.2 * np.arange(1, 12)
+    arf = DataARF('arf', egrids[:-1], egrids[1:],
+                  np.ones(10))
+    pha.set_arf(arf)
+    pha.units = 'energy'
+
+    assert pha.mask is True
+    assert pha.get_mask() is None
+
+    func = pha.ignore if ignore else pha.notice
+    func(lo, hi)
+    if evals is None:
+        assert pha.mask is True
+        assert pha.get_mask() is None
+    else:
+        if ignore:
+            vout = True
+            vin = False
+        else:
+            vout = False
+            vin = True
+
+        c1, c2, c3 = evals
+        expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+        assert pha.mask == pytest.approx(pha.get_mask())
+        assert pha.mask == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('ignore', [False, True])
+@pytest.mark.parametrize('lo,hi,evals',
+                         [(1, 10, (0, 10, 0)),
+                          (2, 9, (1, 8, 1)),
+                          (1, 2, (0, 2, 8)),
+                          (4, 5, (3, 2, 5)),
+                          (9, 10, (8, 2, 0)),
+                          # outside the limits
+                          (0, 1, None),
+                          (11, 12, None),
+                          # Now queries on the edge of each bin; these would ideally
+                          # only match 1 bin
+                          (1, 1, None),
+                          # (1, 1, (0, 1, 9)),
+                          (2, 2, (1, 1, 8)),
+                          (3, 3, (2, 1, 7)),
+                          (4, 4, (3, 1, 6)),
+                          (5, 5, (4, 1, 5)),
+                          (6, 6, (5, 1, 4)),
+                          (7, 7, (6, 1, 3)),
+                          (8, 8, (7, 1, 2)),
+                          (9, 9, (8, 1, 1)),
+                          (10, 10, None),  # (9, 1, 0))
+                          # check last upper limit
+                          (10, 11, None)   # (9, 1, 0))
+                         ])
+def test_pha_check_limit_channel(ignore, lo, hi, evals):
+    """What happens when we hit values at bin edges [channel]?
+
+    Channel filtering behaves differently to energy/wavelength
+    filtering so check.  It's not quite the same since I am
+    restricting the channel ranges to integer values so some of the
+    energy checks don't make sense here.
+
+    The ARF is not necessary but keep in to better match
+    test_pha_check_limit.
+
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = chans * 2
+    pha = DataPHA('example', chans, counts)
+
+    egrids = 0.2 + 0.2 * np.arange(1, 12)
+    arf = DataARF('arf', egrids[:-1], egrids[1:],
+                  np.ones(10))
+    pha.set_arf(arf)
+    pha.units = 'channel'
+
+    assert pha.mask is True
+    assert pha.get_mask() is None
+
+    func = pha.ignore if ignore else pha.notice
+    func(lo, hi)
+    if evals is None:
+        assert pha.mask is True
+        assert pha.get_mask() is None
+    else:
+        if ignore:
+            vout = True
+            vin = False
+        else:
+            vout = False
+            vin = True
+
+        c1, c2, c3 = evals
+        expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+        assert pha.mask == pytest.approx(pha.get_mask())
+        assert pha.mask == pytest.approx(expected)

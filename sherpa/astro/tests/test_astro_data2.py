@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro.data import DataARF, DataIMG, DataPHA
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits
@@ -103,9 +104,10 @@ def test_need_numpy_channels():
                           ("channel", '4', [(False, 5, None), (False, None, 3)]),
                           # a few checks of non-integer channel limits (we don't explicitly
                           # say what this means so just check we know what it does)
-                          ("channel", '3:7', [(True, 2.8, 7.9)]),
-                          ("channel", '3:7', [(True, 2.1, 7.2)]),
-                          ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
+                          # These are no-longer valid
+                          # ("channel", '3:7', [(True, 2.8, 7.9)]),
+                          # ("channel", '3:7', [(True, 2.1, 7.2)]),
+                          # ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
                           # energy
                           ("energy", '0.3:2.1', []),
                           ("energy", '', [(False, 0.3, 2.1)]),
@@ -222,6 +224,114 @@ def test_error_on_invalid_channel_grouped2(chan):
     assert str(exc.value) == 'invalid group number: {}'.format(chan - 1)
 
 
+def test_pha_get_xerr_all_bad_channel_no_group():
+    """get_xerr handles all bad values [channel]
+
+    It's not obvious what it is meant to be doing here.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  quality=[2, 2, 2])
+
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+
+def test_pha_get_xerr_all_bad_channel_group():
+    """get_xerr handles all bad values [channel]
+
+    The behavior with grouping is different, presumably because
+    we assume we have grouping when we have a quality array.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, 1, 1],
+                  quality=[2, 2, 2])
+
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+    assert pha.grouped
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([])
+
+
+def test_pha_get_xerr_all_bad_energy_no_group():
+    """get_xerr handles all bad values [energy]
+
+    It's not obvious what it is meant to be doing here.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  quality=[2, 2, 2])
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+
+def test_pha_get_xerr_all_bad_energy_group():
+    """get_xerr handles all bad values [energy]
+
+    The behavior with grouping is different, presumably because
+    we assume we have grouping when we have a quality array.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, 1, 1],
+                  quality=[2, 2, 2])
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+    assert pha.grouped
+    pha.ignore_bad()
+
+    # Should this error out or not?
+    # assert pha.get_filter() == ''
+    with pytest.raises(DataErr) as de:
+        pha.get_filter()
+
+    assert str(de.value) == 'mask excludes all data'
+
+    assert pha.get_xerr() == pytest.approx([])
+
+
+@pytest.mark.parametrize("ignore", [False, True])
+@pytest.mark.parametrize("lbl,lo,hi", [('lo', 1.5, 2.5),
+                                       ('lo', 1.5, 2),
+                                       ('hi', 1, 2.5)])
+def test_pha_channel_limits_are_integers(ignore, lbl, lo, hi):
+    """Ensure channels are integers."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, -1, 1])
+
+    func = pha.ignore if ignore else pha.notice
+    with pytest.raises(DataErr) as exc:
+        func(lo, hi)
+
+    assert str(exc.value) == f"unknown {lbl} argument: 'must be an integer channel value'"
+
+
 def test_288_a():
     """The issue from #288 which was working"""
 
@@ -241,13 +351,68 @@ def test_288_a():
     assert pha.mask == pytest.approx([True, False, True])
 
 
-def test_288_b():
-    """The issue from #288 which was failing"""
+def test_288_a_energy():
+    """The issue from #288 which was working
+
+    test_288_a but with a response so we test energy filters
+    """
 
     channels = np.arange(1, 6)
     counts = np.asarray([5, 5, 10, 10, 2])
     grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
     pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    rlo = channels
+    rhi = channels + 1
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    assert pha.mask
+    pha.ignore(3, 4)
+
+    # I use approx because it gives a nice answer, even though
+    # I want equality not approximation in this test. Fortunately
+    # with bools the use of approx is okay (it can tell the
+    # difference between 0 and 1, aka False and True).
+    #
+    assert pha.mask == pytest.approx([True, False, True])
+
+
+def test_288_b():
+    """The issue from #288 which was failing
+
+    We now error out with a non-integer channel
+    """
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    assert pha.mask
+    with pytest.raises(DataErr) as de:
+        pha.ignore(3.1, 4)
+
+    assert str(de.value) == "unknown lo argument: 'must be an integer channel value'"
+
+
+def test_288_b_energy():
+    """The issue from #288 which was failing
+
+    test_288_b but with a response so we test energy filters
+    """
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    rlo = channels
+    rhi = channels + 1
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
 
     assert pha.mask
     pha.ignore(3.1, 4)
@@ -277,7 +442,13 @@ def test_grouping_non_numpy():
 
 
 def test_416_a():
-    """The first test case from issue #416"""
+    """The first test case from issue #416
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
+    """
 
     # if y is not a numpy array then group_counts errors out
     # with a strange error. Another reason why DataPHA needs
@@ -287,7 +458,13 @@ def test_416_a():
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
-    pha.notice(3.5, 6.5)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    pha.notice(4.5, 6.5)
 
     mask = [False, False, False, True, True, True, False, False, False, False]
     assert pha.mask == pytest.approx(mask)
@@ -316,12 +493,23 @@ def test_416_b(caplog):
     """The second test case from issue #416
 
     This is to make sure this hasn't changed.
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
     """
 
     x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
     pha.notice(3.5, 6.5)
     pha.group_counts(3)
 
@@ -355,13 +543,29 @@ def test_416_b(caplog):
 
 def test_416_c():
     """The third test case from issue #416
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
     """
 
     x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
-    pha.notice(3.5, 6.5)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    # When using channels this used notice(3.5, 6.5)
+    # but using energy space we need to use a different
+    # range to match the ones the original channel filter
+    # used.
+    #
+    pha.notice(4.5, 6.5)
 
     # this should be ~pha.mask
     tabstops = [True] * 3 + [False] * 3 + [True] * 4
