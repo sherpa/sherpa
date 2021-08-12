@@ -411,7 +411,8 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     # bin.
     #
     # Unfortunately, using a range of 0.3-8.0 gives 771 bins
-    # in XSPEC - channels 30 to 800 - but 772 bins in Sherpa.
+    # in XSPEC - channels 30 to 800 - but 772 bins in Sherpa,
+    # channels 30 to 801.
     #
     # Note that the channel numbering starts at 0:
     # % dmlist target_sr.pha header,clean,raw | grep TLMIN
@@ -439,28 +440,23 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     #        800                  8.0         8.0100002289
     #        801         8.0100002289         8.0200004578
     #
-    # If I use ignore(None, 0.3); ignore(8.0, None) instead
-    # then the result is 771 bins. This is because the e_min/max
-    # of the RMF has channel widths of 0.01 keV, starting at 0,
-    # so both 0.3 and 8.0 fall on a bin boundary. So, it's either
-    # a difference in < or <= (or > vs >=), or a rounding issue
-    # due to floating-point conversion leading to one bin boundary
-    # being slightly different in Sherpa vs XSPEC).
+    # If I use ignore(None, 0.3); ignore(8.0, None) instead then the
+    # result is 771 bins (channels 31 to 800). This is because the
+    # e_min/max of the RMF has channel widths of 0.01 keV, starting at
+    # 0, so both 0.3 and 8.0 fall on a bin boundary. So, it's either a
+    # difference in < or <= (or > vs >=), or a rounding issue due to
+    # floating-point conversion leading to one bin boundary being
+    # slightly different in Sherpa vs XSPEC).
     #
     # When using ui.notice(0.3, 8.0); ui.get_indep(filter=True)
     # returns 772 channels, 30 to 801.
     #
     # Using ui.notice(0.3, 7.995) selects channels 30 to 800. So
     # this range is used. Alternatively, channel 801 could have been
-    # excluded explicitly.
+    # excluded explicitly. Note that notice(0.299, 7.995) selects
+    # the same range as 0.3-7.995.
     #
-    # With changes to PHA filtering we now have to change the
-    # filter range again to include the 0.29-0.30 bin.
-    #
-    # ui.notice(0.3, 8.0)
-    # ui.notice(0.3, 7.995)
-    # ui.notice(0.299, 8.0)
-    ui.notice(0.299, 7.995)  # TODO why has this changed?
+    ui.notice(0.3, 7.995)
 
     # Check the selected range
     pha = ui.get_data()
