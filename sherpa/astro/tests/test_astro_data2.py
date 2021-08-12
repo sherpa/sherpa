@@ -244,7 +244,7 @@ def test_pha_get_xerr_all_bad_channel_group():
     """get_xerr handles all bad values [channel]
 
     The behavior with grouping is different, presumably because
-    we assume we have groping when we have a quality array.
+    we assume we have grouping when we have a quality array.
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
@@ -286,7 +286,7 @@ def test_pha_get_xerr_all_bad_energy_group():
     """get_xerr handles all bad values [energy]
 
     The behavior with grouping is different, presumably because
-    we assume we have groping when we have a quality array.
+    we assume we have grouping when we have a quality array.
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
@@ -561,7 +561,7 @@ def test_416_c():
     pha.set_analysis('energy')
 
     # When using channels this used notice(3.5, 6.5)
-    # but using energy space we need to use a differnt
+    # but using energy space we need to use a different
     # range to match the ones the original channel filter
     # used.
     #
