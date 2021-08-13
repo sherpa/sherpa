@@ -4361,7 +4361,7 @@ class Session(sherpa.ui.utils.Session):
 
         # Leave this check as d.mask is False since d.mask need not be a boolean
         # and we want different errors if mask is True or False (and leave as
-        # the iterable check to catch 'd.mask is True or any other value that
+        # the iterable check to catch 'd.mask' is True or any other value that
         # could cause the following code to fall over).
         #
         if d.mask is False:
