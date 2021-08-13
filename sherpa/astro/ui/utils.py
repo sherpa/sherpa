@@ -4364,7 +4364,7 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('nomask', id)
 
         x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, numpy.int)
+        mask = numpy.asarray(d.mask, int)
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
 

@@ -202,7 +202,6 @@ def test_get_syserror_missing(bid):
     assert str(exc.value) == "data set '1' does not specify systematic errors"
 
 
-@pytest.mark.xfail
 @requires_fits
 @pytest.mark.parametrize("ascii,reader",
                          [(True, ui.unpack_ascii), (False, ui.unpack_table)])

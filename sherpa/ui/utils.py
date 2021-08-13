@@ -4391,7 +4391,7 @@ class Session(NoNewAttributesAfterInit):
         if not numpy.iterable(d.mask):
             raise sherpa.utils.err.DataErr('nomask', id)
         x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, numpy.int)
+        mask = numpy.asarray(d.mask, int)
         self.save_arrays(filename, [x, mask], ['X', 'FILTER'],
                          clobber, sep, comment, linebreak, format)
 

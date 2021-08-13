@@ -102,7 +102,6 @@ def test_filter_no_data_is_an_error(func, lo, hi, clean_ui):
     assert str(ie.value) == 'No data sets found'
 
 
-@pytest.mark.xfail
 def test_save_filter_data1d(tmp_path, clean_ui):
     """Check save_filter [Data1D]"""
 
