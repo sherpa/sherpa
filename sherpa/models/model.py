@@ -564,7 +564,8 @@ class Model(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__getattribute__(self, name)
 
     def __setattr__(self, name, val):
-        par = getattr(self, name.lower(), None)
+        lname = name.lower()
+        par = getattr(self, lname, None)
         if (par is not None) and isinstance(par, Parameter):
             # When setting an attribute that is a Parameter, set the parameter's
             # value instead.
@@ -572,8 +573,16 @@ class Model(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
             if isinstance(val, Parameter):
+                vname = val.name.lower()
+
+                # Check the parameter names match - as this is a
+                # 'development' error then just make this an assert.
+                # Ideally it should be exact but support lower case
+                # comparison only
+                assert lname == vname, (name, val.name, self.name)
+
                 # Update parameter index
-                self._par_index[val.name.lower()] = val
+                self._par_index[vname] = val
                 if val.aliases:
                     # Update index of aliases, if necessary
                     for alias in val.aliases:
