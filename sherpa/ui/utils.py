@@ -4392,8 +4392,9 @@ class Session(NoNewAttributesAfterInit):
             raise sherpa.utils.err.DataErr('nomask', id)
         x = d.get_indep(filter=False)[0]
         mask = numpy.asarray(d.mask, int)
-        self.save_arrays(filename, [x, mask], ['X', 'FILTER'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
@@ -4470,8 +4471,9 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, string_types, 'filename', 'a string')
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_staterror(id, filter=False)
-        self.save_arrays(filename, [x, err], ['X', 'STAT_ERR'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
@@ -4546,8 +4548,9 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, string_types, 'filename', 'a string')
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_syserror(id, filter=False)
-        self.save_arrays(filename, [x, err], ['X', 'SYS_ERR'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_error(self, id, filename=None, clobber=False, sep=' ',
@@ -4629,8 +4632,9 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, string_types, 'filename', 'a string')
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_error(id, filter=False)
-        self.save_arrays(filename, [x, err], ['X', 'ERR'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     def _notice_expr(self, expr=None, **kwargs):
         ids = self.list_data_ids()

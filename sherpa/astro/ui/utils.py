@@ -4352,24 +4352,32 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
+        if bkg_id is not None:
+            d = self.get_bkg(id, bkg_id)
+        else:
+            d = self.get_data(id)
+
         # Leave this check as d.mask is False since d.mask need not be a boolean
+        # and we want different errors if mask is True or False (and leave as
+        # the iterable check to catch 'd.mask is True or any other value that
+        # could cause the following code to fall over).
+        #
         if d.mask is False:
             raise DataErr('notmask')
         if not numpy.iterable(d.mask):
             raise DataErr('nomask', id)
 
-        x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, int)
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
 
-        self.save_arrays(filename, [x, mask], ['X', 'FILTER'],
-                         ascii, clobber)
+        mask = numpy.asarray(d.mask, int)
+
+        self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
+                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4454,12 +4462,14 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        x = d.get_indep(filter=False)[0]
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
+
         err = self.get_staterror(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], ['X', 'STAT_ERR'],
-                         ascii, clobber)
+        self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
+                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4542,12 +4552,14 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        x = d.get_indep(filter=False)[0]
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
+
         err = self.get_syserror(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], ['X', 'SYS_ERR'],
-                         ascii, clobber)
+        self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
+                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4637,12 +4649,14 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        x = d.get_indep(filter=False)[0]
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
+
         err = self.get_error(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], ['X', 'ERR'],
-                         ascii, clobber)
+        self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
+                         ascii=ascii, clobber=clobber)
 
     def save_pha(self, id, filename=None, bkg_id=None, ascii=False,
                  clobber=False):
@@ -4794,9 +4808,10 @@ class Session(sherpa.ui.utils.Session):
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
         id = self._fix_id(id)
-        d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+        else:
+            d = self._get_pha_data(id)
 
         if d.grouping is None or not numpy.iterable(d.grouping):
             raise DataErr('nogrouping', id)
@@ -4878,9 +4893,10 @@ class Session(sherpa.ui.utils.Session):
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
         id = self._fix_id(id)
-        d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+        else:
+            d = self._get_pha_data(id)
 
         if d.quality is None or not numpy.iterable(d.quality):
             raise DataErr('noquality', id)
@@ -5022,6 +5038,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
+        id = self._fix_id(id)
         _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
@@ -5103,9 +5120,10 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
-        d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+        else:
+            d = self.get_data(id)
 
         try:
             sherpa.astro.io.write_pha(filename, d, ascii=ascii,
