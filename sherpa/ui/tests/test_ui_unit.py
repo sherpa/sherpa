@@ -25,6 +25,8 @@ Note that this test is almost duplicated in
 sherpa/astro/ui/tests/test_astro_ui_unit.py
 """
 
+import numpy as np
+
 import pytest
 
 from sherpa import ui
@@ -98,3 +100,26 @@ def test_filter_no_data_is_an_error(func, lo, hi, clean_ui):
         func(lo, hi)
 
     assert str(ie.value) == 'No data sets found'
+
+
+@pytest.mark.xfail
+def test_save_filter_data1d(tmp_path, clean_ui):
+    """Check save_filter [Data1D]"""
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(1, x, x)
+
+    ui.notice(2, 4)
+    ui.notice(6, 8)
+
+    outfile = tmp_path / "filter.dat"
+    ui.save_filter(str(outfile))
+
+    expected = [0, 1, 1, 1, 0, 1, 1, 1, 0, 0]
+
+    d = ui.unpack_data(str(outfile), colkeys=['X', 'FILTER'])
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(expected)
+    assert d.staterror is None
+    assert d.syserror is None
