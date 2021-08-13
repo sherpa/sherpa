@@ -2491,3 +2491,100 @@ def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
     # fluxes.
     #
     assert (bvals[:, 1:] == vals[:, 1:]).all()
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, 2])
+def test_sample_flux_pha_full_model(idval, make_data_path, clean_astro_ui,
+                                    hide_logging, reset_seed, caplog):
+    """When using set_full_model we error out. Is it a nice error?"""
+
+    np.random.seed(9783)
+
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+
+    rsp = ui.get_response(idval)
+
+    ui.set_full_model(idval, rsp(ui.const1d.scal * ui.powlaw1d.p1))
+
+    p1 = ui.get_model_component('p1')
+    scal = ui.get_model_component('scal')
+    scal.c0 = 0.8
+    scal.integrate = False
+    scal.c0.frozen = True
+
+    ui.fit(idval)
+    ui.covar(idval)
+
+    scal = ui.get_covar_results().parmaxes
+
+    with pytest.raises(IdentifierErr) as ie:
+        ui.sample_flux(modelcomponent=p1,
+                       id=idval, lo=1, hi=5, num=niter,
+                       correlated=False, scales=scal)
+
+    toks = str(ie.value).split('\n')
+    assert len(toks) == 3
+    assert toks[0] == 'Convolved model'
+    assert toks[1].startswith("'apply_rmf(apply_arf((38564.6")
+    assert toks[1].endswith(" * (const1d.scal * powlaw1d.p1))))'")
+    assert toks[2] ==  f' is set for dataset {idval}. You should use get_model instead.'
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, 2])
+def test_sample_flux_pha_bkg_full_model(idval, make_data_path, clean_astro_ui,
+                                        hide_logging, reset_seed, caplog):
+    """When using set_bkg_full_model we error out. Is it a nice error?
+
+    This is meant to be the background version of
+    test_sample_flux_pha_full_model but it errors out differently and
+    it's not clear whether this is a different code path or I'm
+    setting up the fit wrong.
+
+    """
+
+    np.random.seed(9783)
+
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+
+    # I don't think we can get covar for just the background data so we have
+    # had to fit the whole dataset.
+    #
+    brsp = ui.get_response(idval, bkg_id=1)
+    ui.set_bkg_full_model(idval, brsp(ui.powlaw1d.bpl))
+
+    bpl = ui.get_model_component('bpl')
+    bpl.gamma = 0.54
+    bpl.ampl = 6.4e-6
+
+    ui.fit_bkg(idval)
+
+    bscale = ui.get_bkg_scale(idval)
+
+    rsp = ui.get_response(idval)
+    ui.set_full_model(idval, rsp(ui.powlaw1d.pl) + bscale * rsp(bpl))
+
+    ui.fit(idval)
+    ui.covar(idval) # , bkg_id=1)
+
+    scal = ui.get_covar_results().parmaxes
+
+    with pytest.raises(ModelErr) as me:
+        ui.sample_flux(modelcomponent=bpl, bkg_id=1,
+                       id=idval, lo=1, hi=5, num=niter,
+                       correlated=False, scales=scal)
+
+    assert str(me.value) == f'background model 1 for data set {idval} has not been set'
