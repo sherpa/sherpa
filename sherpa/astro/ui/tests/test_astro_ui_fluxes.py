@@ -2529,12 +2529,7 @@ def test_sample_flux_pha_full_model(idval, make_data_path, clean_astro_ui,
                        id=idval, lo=1, hi=5, num=niter,
                        correlated=False, scales=scal)
 
-    toks = str(ie.value).split('\n')
-    assert len(toks) == 3
-    assert toks[0] == 'Convolved model'
-    assert toks[1].startswith("'apply_rmf(apply_arf((38564.6")
-    assert toks[1].endswith(" * (const1d.scal * powlaw1d.p1))))'")
-    assert toks[2] ==  f' is set for dataset {idval}. You should use get_model instead.'
+    assert str(ie.value) == 'Please use calc_energy_flux as set_full_model was used'
 
 
 @requires_data
@@ -2542,14 +2537,7 @@ def test_sample_flux_pha_full_model(idval, make_data_path, clean_astro_ui,
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_bkg_full_model(idval, make_data_path, clean_astro_ui,
                                         hide_logging, reset_seed, caplog):
-    """When using set_bkg_full_model we error out. Is it a nice error?
-
-    This is meant to be the background version of
-    test_sample_flux_pha_full_model but it errors out differently and
-    it's not clear whether this is a different code path or I'm
-    setting up the fit wrong.
-
-    """
+    """When using set_bkg_full_model we error out. Is it a nice error?"""
 
     np.random.seed(9783)
 
@@ -2582,9 +2570,9 @@ def test_sample_flux_pha_bkg_full_model(idval, make_data_path, clean_astro_ui,
 
     scal = ui.get_covar_results().parmaxes
 
-    with pytest.raises(ModelErr) as me:
+    with pytest.raises(IdentifierErr) as ie:
         ui.sample_flux(modelcomponent=bpl, bkg_id=1,
                        id=idval, lo=1, hi=5, num=niter,
                        correlated=False, scales=scal)
 
-    assert str(me.value) == f'background model 1 for data set {idval} has not been set'
+    assert str(ie.value) == 'Please use calc_energy_flux as set_bkg_full_model was used'

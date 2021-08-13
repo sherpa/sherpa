@@ -13370,7 +13370,6 @@ class Session(sherpa.ui.utils.Session):
                                              numcores=numcores,
                                              samples=scales, clip=clip)
 
-    # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
                     numcores=None, bkg_id=None, Xrays=True, confidence=68):
@@ -13480,6 +13479,9 @@ class Session(sherpa.ui.utils.Session):
         logging to a level greater than "INFO" (e.g. with
         `sherpa.utils.logging.SherpaVerbosity`).
 
+        This routine can not be used if you have used set_full_model:
+        the calc_energy_flux routine should be used instead.
+
         Examples
         --------
 
@@ -13540,6 +13542,26 @@ class Session(sherpa.ui.utils.Session):
            not isinstance(modelcomponent, sherpa.models.model.Model):
             raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
+        # We can not have a "full model" expression so error-out nicely here.
+        # Thanks to _get_fit we know we have a model so any error below can
+        # not be because no model is set but must be a "need full model"
+        # error. TODO: should we have a nicer way to determine this?
+        # Also note that it appears we have different ways the two code
+        # paths can error out
+        #
+        if bkg_id is not None:
+            try:
+                self.get_bkg_source(id, bkg_id)
+            except (IdentifierErr, ModelErr):
+                # At present ModelErr is thrown but keep in IdentifierErr
+                # just in case
+                raise IdentifierErr('Please use calc_energy_flux as set_bkg_full_model was used') from None
+        else:
+            try:
+                self.get_source(id)
+            except IdentifierErr:
+                raise IdentifierErr('Please use calc_energy_flux as set_full_model was used') from None
+
         correlated = sherpa.utils.bool_cast(correlated)
 
         # Why is this +1? The original comment was
@@ -13555,6 +13577,9 @@ class Session(sherpa.ui.utils.Session):
             samples = self.calc_energy_flux(lo=lo, hi=hi, id=id,
                                             bkg_id=bkg_id)
         else:
+            # NOTE: the samples are drawn from the full model expression
+            #       as this is how it was originally written
+            #
             samples = self.sample_energy_flux(lo=lo, hi=hi, id=id, num=niter,
                                               scales=scales, clip='soft',
                                               correlated=correlated,
