@@ -55,3 +55,4 @@ Reference/API
    io
    astro
    astro_io
+   astro_utils_xspec
