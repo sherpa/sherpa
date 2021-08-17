@@ -535,38 +535,6 @@ def test_proj(run_thread, fix_xspec):
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize('parallel', [False, True])
-def test_proj_bubble(parallel, run_thread, fix_xspec):
-
-    # fit_results is unused
-    def cmp_thread(fit_results, mek1, covarerr):
-
-        assert covarerr[0] == approx(0, rel=1e-4)
-        assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
-        assert mek1.kt.val == approx(17.8849, rel=1e-2)
-        assert mek1.norm.val == approx(4.15418e-06, rel=1e-2)
-
-    check_thread(run_thread, 'proj_bubble', parallel, cmp_thread,
-                 ['mek1'])
-
-    # Proj -- Upper bound of kT can't be found
-    #
-    proj = ui.get_proj_results()
-    assert proj.parmins[0] == approx(-12.048069, rel=0.01)
-    assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
-    assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
-    assert proj.parmaxes[0] is None
-
-    conf = ui.get_conf_results()
-    assert conf.parmins[0] == approx(-12.1073, rel=0.01)
-    assert conf.parmaxes[0] == approx(62.0585, rel=0.01)
-    assert conf.parmins[1] == approx(-9.5568e-07, rel=0.01)
-    assert conf.parmaxes[1] == approx(2.39937e-06, rel=0.01)
-
-
-@requires_data
-@requires_fits
-@requires_xspec
 def test_counts(run_thread, fix_xspec):
     tlocals = run_thread('counts')
 
@@ -776,13 +744,13 @@ def test_thread_pileup(run_thread):
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.usefixtures("clean_astro_ui")
-def test_proj_bubble(run_thread):
+@pytest.mark.parametrize('parallel', [False, True])
+def test_proj_bubble(parallel, clean_astro_ui, fix_xspec, run_thread):
 
     # How sensitive are the results to the change from bcmc to vern
     # made in XSPEC 12.10.1? It looks like the mekal best-fit
     # temperature can jump from ~17.9 to 18.6, so require bcmc
-    # in this test.
+    # in this test (handled by fix_xspec).
     #
     # Note that the error on kT is large, so we can expect that
     # changes to the system could change these results. In particular,
@@ -790,20 +758,6 @@ def test_proj_bubble(run_thread):
     # analysis they are > 10 or even unbound, so it is likely that the
     # covariance error results can change significantly.
     #
-    xspec.set_xsxsect('bcmc')
-    models = run_thread('proj_bubble')
-
-    fit_results = ui.get_fit_results()
-    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-    assert covarerr[0] == approx(0, rel=1e-4)
-    assert covarerr[1] == approx(8.74608e-07, rel=1e-2)
-
-    # Fit -- Results from reminimize
-    assert models['mek1'].kt.val == approx(17.8849, rel=1e-2)
-    assert models['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
-
-    # Fit -- Results from reminimize
-
     # The fit results change in XSPEC 12.10.0 since the mekal model
     # was changed (FORTRAN to C++). A 1% difference is used for the
     # parameter ranges from covar and proj (matches the tolerance for
@@ -811,6 +765,16 @@ def test_proj_bubble(run_thread):
     # 10% for the kT errors, as there is a significant change seen
     # with different XSPEC versions for the covariance results.
     #
+    # fit_results is unused
+    def cmp_thread(fit_results, mek1, covarerr):
+
+        assert covarerr[0] == approx(0, rel=1e-4)
+        assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
+        assert mek1.kt.val == approx(17.8849, rel=1e-2)
+        assert mek1.norm.val == approx(4.15418e-06, rel=1e-2)
+
+    check_thread(run_thread, 'proj_bubble', parallel, cmp_thread,
+                 ['mek1'])
 
     # Covar
     #
@@ -826,6 +790,13 @@ def test_proj_bubble(run_thread):
     proj = ui.get_proj_results()
     assert proj.parmins[0] == approx(-12.048069, rel=0.01)
     assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
+    assert proj.parmaxes[0] is None
     assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
 
-    assert proj.parmaxes[0] is None
+    # Conf
+    #
+    conf = ui.get_conf_results()
+    assert conf.parmins[0] == approx(-12.1073, rel=0.01)
+    assert conf.parmins[1] == approx(-9.5568e-07, rel=0.01)
+    assert conf.parmaxes[0] is None
+    assert conf.parmaxes[1] == approx(2.39937e-06, rel=0.01)
