@@ -100,16 +100,30 @@ int _sherpa_init_xspec_library();
 // gammap
 // gammq
 //
+
+// structure has changed in the newest xspec J. Michael 
+#ifdef XSPEC_12_12_0
+
+
+#include "XSFunctions/funcWrappers.h"
+#include "XSFunctions/Utilities/xsFortran.h"
+
+#else
+
 #include "xsFortran.h"
-
-// TODO: is this defined in an XSPEC header file?
-#define ABUND_SIZE (30) // number of elements in Solar Abundance table
-
 // C_<model> are declared here; the other models are defined in
 // functionMap.h but that requires using the XSPEC build location
 // rather than install location.
 //
 #include "funcWrappers.h"
+
+#endif
+
+
+
+// TODO: is this defined in an XSPEC header file?
+#define ABUND_SIZE (30) // number of elements in Solar Abundance table
+
 
 extern "C" {
 
