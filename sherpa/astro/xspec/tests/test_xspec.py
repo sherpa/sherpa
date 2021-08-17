@@ -96,7 +96,8 @@ def get_xspec_models():
     # Could just exclude any names that end in 'Model', but this
     # could remove valid model names, so be explicit.
     for n in ['XSModel', 'XSMultiplicativeModel', 'XSAdditiveModel',
-              'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel']:
+              'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel',
+              'XSBaseParameter', 'XSParameter']:
         remove_item(model_names, n)
 
     # The sirf model - in 12.8.2 and up to 12.9.0d at least - includes

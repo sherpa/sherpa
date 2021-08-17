@@ -22,6 +22,7 @@
 #
 
 import copy
+import logging
 import os
 from tempfile import NamedTemporaryFile, gettempdir
 
@@ -30,11 +31,11 @@ import pytest
 import numpy as np
 from numpy.testing import assert_almost_equal
 
-from sherpa.astro import ui
+from sherpa.models.basic import Const1D
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
 
-from sherpa.models.basic import Const1D
 
 # It is hard to test many of the state routines, since it requires
 # a full understanding of how they are implemented; the simplest
@@ -1173,3 +1174,237 @@ def test_integrate_setting_con(clsname):
     y1 = np.log10(y1)
     y2 = np.log10(y2)
     assert y2 == pytest.approx(y1)
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [1.5, 7.5])
+def test_xsparameter_within_limit(val):
+    """What happens if we pass outside soft but within hard range?
+
+    """
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    assert not p.frozen
+
+    p.val = val
+    assert p.val == pytest.approx(val)
+    assert not p.frozen
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [1, 8])
+def test_xsparameter_at_limit(val):
+    """What happens if we pass outside soft but within hard range?
+
+    """
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    assert not p.frozen
+
+    p.val = val
+    assert p.val == pytest.approx(val)
+    assert not p.frozen
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsbaseparameter_exceed_limit(val, caplog):
+    """What happens if we set a value outside the hard range?
+
+    """
+
+    from sherpa.astro.xspec import XSBaseParameter
+
+    p = XSBaseParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    assert not p.frozen
+
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with pytest.raises(ParameterErr):
+            p.val = val
+
+    assert len(caplog.records) == 0
+
+    assert p.val == pytest.approx(4)
+    assert not p.frozen
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsparameter_exceed_limit_thawed(val, caplog):
+    """What happens if we set a value outside the hard range? [thawed]
+
+    """
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    assert not p.frozen
+
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        p.val = val
+
+    assert len(caplog.records) == 1
+
+    assert p.val == pytest.approx(val)
+    assert p.frozen
+
+    module, level, msg = caplog.record_tuples[0]
+    assert module == 'sherpa.astro.xspec'
+    assert level == logging.INFO
+    assert msg == 'Parameter temp.p is outside limits; freezing'
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsparameter_exceed_limit_frozen(val, caplog):
+    """What happens if we set a value outside the hard range? [frozen]
+
+    """
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    p.freeze()
+    assert p.frozen
+
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        p.val = val
+
+    assert len(caplog.records) == 0
+
+    assert p.val == pytest.approx(val)
+    assert p.frozen
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsparameter_return_from_outside_limit_thawed(val, caplog):
+    """What happens if we go outside the hard limit and then return? [not frozen]
+
+    """
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    assert not p.frozen
+
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('ERROR'):
+        p.val = val
+
+    assert len(caplog.records) == 0
+
+    assert p.val == pytest.approx(val)
+    assert p.frozen
+
+    p.val = 5
+
+    assert len(caplog.records) == 1
+
+    assert p.val == pytest.approx(5)
+    assert not p.frozen
+
+    module, level, msg = caplog.record_tuples[0]
+    assert module == 'sherpa.astro.xspec'
+    assert level == logging.INFO
+    assert msg == 'Parameter temp.p is back inside limits; thawing'
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsparameter_return_from_outside_limit_frozen(val, caplog):
+    """What happens if we go outside the hard limit and then return? [frozen]
+
+    """
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8, frozen=True)
+    assert p.frozen
+
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('ERROR'):
+        p.val = val
+
+    assert len(caplog.records) == 0
+
+    assert p.val == pytest.approx(val)
+    assert p.frozen
+
+    print(p)
+    p.val = 5
+    print(p)
+
+    assert len(caplog.records) == 0
+
+    assert p.val == pytest.approx(5)
+    assert p.frozen
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsparameter_exceed_limit_freeze(val, caplog):
+    """It's not an error to freeze this frozen value?"""
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    with SherpaVerbosity('ERROR'):
+        p.val = val
+
+    assert p.frozen
+    p.frozen = True
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+@pytest.mark.parametrize("val", [0, 10])
+def test_xsparameter_exceed_limit_thaw(val):
+    """Can we thaw a parameter outside the range?"""
+
+    from sherpa.astro.xspec import XSParameter
+
+    p = XSParameter('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+    with SherpaVerbosity('ERROR'):
+        p.val = val
+
+    assert p.frozen
+    with pytest.raises(ParameterErr) as pe:
+        p.thaw()
+
+    assert str(pe.value) == "parameter 'temp.p' is frozen"
+
+
+@requires_xspec
+@pytest.mark.parametrize("base", [True, False])
+def test_xsparameter_limits(base):
+    """Do we record the limits correctly?"""
+
+    from sherpa.astro.xspec import XSBaseParameter, XSParameter
+
+    cls = XSBaseParameter if base else XSParameter
+
+    p = cls('temp', 'p', 4, min=2, max=7, hard_min=1, hard_max=8)
+
+    # Note that there's no "API" for this, just these attributes
+    assert p._xspec_soft_min == pytest.approx(2)
+    assert p._xspec_soft_max == pytest.approx(7)
+
+    assert p.min == pytest.approx(1)
+    assert p.hard_min == pytest.approx(1)
+
+    assert p.max == pytest.approx(8)
+    assert p.hard_max == pytest.approx(8)
