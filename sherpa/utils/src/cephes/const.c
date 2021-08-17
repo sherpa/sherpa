@@ -91,8 +91,6 @@ double TWOOPI =  6.36619772367581343075535E-1; /* 2/pi */
 #ifdef INFINITIES
 #ifndef INFINITY
 double INFINITY = 1.0/0.0;
-#else
-double INFINITY =  1.79769313486231570815E308;    /* 2**1024*(1-MACHEP) */
 #endif
 #endif
 #ifdef NANS
