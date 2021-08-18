@@ -202,8 +202,150 @@ def test_get_syserror_missing(bid):
     assert str(exc.value) == "data set '1' does not specify systematic errors"
 
 
+@requires_fits
+@pytest.mark.parametrize("ascii,reader",
+                         [(True, ui.unpack_ascii), (False, ui.unpack_table)])
 @pytest.mark.parametrize("bid", [None, 1])
-def test_save_filter_ignored(bid):
+def test_save_filter_pha(ascii, reader, bid, tmp_path, clean_astro_ui):
+    """Does save_filter work? [PHA]
+
+    Does background copy the source filter by default?  No, hence we
+    get different filters.
+
+    """
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(1, x, x, ui.DataPHA)
+    bkg = ui.DataPHA('bkg', x, x)
+    ui.set_bkg(bkg)
+
+    ui.notice(2, 4)
+    ui.notice(6, 8)
+
+    outfile = tmp_path / "filter.dat"
+    ui.save_filter(str(outfile), bkg_id=bid, ascii=ascii)
+
+    expected = [0, 1, 1, 1, 0, 1, 1, 1, 0, 0]
+
+    d = reader(str(outfile), colkeys=['X', 'FILTER'])
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(expected)
+    assert d.staterror is None
+    assert d.syserror is None
+
+
+@requires_fits
+@pytest.mark.parametrize("ascii,reader",
+                         [(True, ui.unpack_ascii), (False, ui.unpack_table)])
+@pytest.mark.parametrize("bid,expected",
+                         [(None, [1, -1, 1, 1, 1, -1, -1, 1, 1, -1]),
+                          (1, [1] * 10)])
+def test_save_grouping_pha(ascii, reader, bid, expected, tmp_path, clean_astro_ui):
+    """Does save_grouping work? [PHA]"""
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(1, x, x, ui.DataPHA)
+    bkg = ui.DataPHA('bkg', x, x)
+    ui.set_bkg(bkg)
+
+    ui.set_grouping([1, -1, 1, 1, 1, -1, -1, 1, 1, -1])
+    ui.set_grouping([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], bkg_id=1)
+
+    outfile = tmp_path / "grouping.dat"
+    ui.save_grouping(str(outfile), bkg_id=bid, ascii=ascii)
+
+    d = reader(str(outfile), colkeys=['CHANNEL', 'GROUPS'])
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(expected)
+    assert d.staterror is None
+    assert d.syserror is None
+
+
+@requires_fits
+@pytest.mark.parametrize("ascii,reader",
+                         [(True, ui.unpack_ascii), (False, ui.unpack_table)])
+@pytest.mark.parametrize("bid,expected",
+                         [(None, [0] * 10),
+                          (1, [5, 0, 0, 0, 0, 0, 0, 0, 0, 2])])
+def test_save_quality_pha(ascii, reader, bid, expected, tmp_path, clean_astro_ui):
+    """Does save_quality work? [PHA]"""
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(1, x, x, ui.DataPHA)
+    bkg = ui.DataPHA('bkg', x, x)
+    ui.set_bkg(bkg)
+
+    ui.set_quality([0] * 10)
+    ui.set_quality([5, 0, 0, 0, 0, 0, 0, 0, 0, 2], bkg_id=1)
+
+    outfile = tmp_path / "quality.dat"
+    ui.save_quality(str(outfile), bkg_id=bid, ascii=ascii)
+
+    d = reader(str(outfile), colkeys=['CHANNEL', 'QUALITY'])
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(expected)
+    assert d.staterror is None
+    assert d.syserror is None
+
+
+@requires_fits
+@pytest.mark.parametrize("ascii,reader",
+                         [(True, ui.unpack_ascii), (False, ui.unpack_table)])
+def test_save_table_data1d(ascii, reader, tmp_path, clean_astro_ui):
+    """Does save_table work? [Data1D]"""
+
+    x = np.asarray([1, 2, 5])
+    y = np.asarray([2, -3, 5])
+    ui.load_arrays(1, x, y)
+
+    outfile = tmp_path / "table.dat"
+    ui.save_table(str(outfile), ascii=ascii)
+
+    d = reader(str(outfile))
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(y)
+    assert d.staterror is None
+    assert d.syserror is None
+
+
+@pytest.mark.xfail  # see issue #47
+@requires_fits
+@pytest.mark.parametrize("ascii,reader",
+                         [(True, ui.unpack_ascii), (False, ui.unpack_table)])
+@pytest.mark.parametrize("bid,expected",
+                         [(None, [0] * 10),
+                          (1, [5, 0, 0, 0, 0, 0, 0, 0, 0, 2])])
+def test_save_table_pha(ascii, reader, bid, expected, tmp_path, clean_astro_ui):
+    """Does save_table work? [PHA]"""
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(1, x, x, ui.DataPHA)
+    bkg = ui.DataPHA('bkg', x, x)
+    ui.set_bkg(bkg)
+
+    ui.set_quality([0] * 10)
+    ui.set_quality([5, 0, 0, 0, 0, 0, 0, 0, 0, 2], bkg_id=1)
+
+    outfile = tmp_path / "table.dat"
+    ui.save_table(str(outfile), bkg_id=bid, ascii=ascii)
+
+    # How do we check the save_table output? At the moment the
+    # code is broken so it's not obvious what it's meant to
+    # be.
+    d = reader(str(outfile))
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(x)
+    assert d.staterror is None
+    assert d.syserror is None
+
+
+@pytest.mark.parametrize("bid", [None, 1])
+def test_save_filter_ignored(bid, tmp_path):
     """Does save_filter error out if everything is masked?
 
     We should be able to write out the filter in this case,
@@ -216,9 +358,9 @@ def test_save_filter_ignored(bid):
 
     ui.ignore(None, None)
 
+    outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(DataErr) as exc:
-        ui.save_filter("temp-file-that-should-not-be-created",
-                       bkg_id=bid)
+        ui.save_filter(str(outfile), bkg_id=bid)
 
     assert str(exc.value) == "mask excludes all data"
 
@@ -230,6 +372,12 @@ def test_save_filter_ignored(bid):
                            "data set '1' does not specify grouping flags"),
                           (ui.save_quality,  DataErr,
                            "data set '1' does not specify quality flags"),
+                          (ui.save_staterror,  StatErr,
+                           "If you select chi2 as the statistic, all datasets must provide a staterror column"),
+                          (ui.save_syserror,  DataErr,
+                           "data set '1' does not specify systematic errors"),
+                          (ui.save_error,  StatErr,
+                           "If you select chi2 as the statistic, all datasets must provide a staterror column"),
                           (ui.save_source,  IdentifierErr,
                            "source 1 has not been set, consider using set_source() or set_model()"),
                           (ui.save_model,  IdentifierErr,
@@ -238,7 +386,7 @@ def test_save_filter_ignored(bid):
                            "model 1 has not been set"),
                           (ui.save_delchi,  IdentifierErr,
                            "model 1 has not been set")])
-def test_save_xxx_nodata(func, etype, emsg):
+def test_save_xxx_nodata(func, etype, emsg, tmp_path):
     """Does save_xxx error out if there's no data to save? DataPHA
     """
 
@@ -246,14 +394,18 @@ def test_save_xxx_nodata(func, etype, emsg):
     bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
+    # Without this we can't check save_staterror or save_error
+    ui.set_stat('chi2')
+
+    outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(etype) as exc:
-        func("temp-file-that-should-not-be-created")
+        func(str(outfile))
 
     assert str(exc.value) == emsg
 
 
 @requires_fits
-def test_save_image_nodata():
+def test_save_image_nodata(tmp_path):
     """Does save_image error out if there's no data to save? DataPHA
 
     Unlike the other calls, this requires a FITS library
@@ -263,28 +415,35 @@ def test_save_image_nodata():
     bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
+    outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(IOErr) as exc:
-        ui.save_image("temp-file-that-should-not-be-created")
+        ui.save_image(str(outfile))
 
     assert str(exc.value) == "data set '' does not contain an image"
 
 
 @pytest.mark.parametrize("func,etype,emsg",
                          [(ui.save_filter, DataErr,
-                           "data set '1' has no filter"),
+                          "data set '1' has no filter"),
                           (ui.save_grouping, DataErr,
                            "data set '1' does not specify grouping flags"),
                           (ui.save_quality,  DataErr,
                            "data set '1' does not specify quality flags"),
                           (ui.save_source,  ModelErr,
                            "background model 1 for data set 1 has not been set"),
+                          (ui.save_staterror,  StatErr,
+                           "If you select chi2 as the statistic, all datasets must provide a staterror column"),
+                          (ui.save_syserror,  DataErr,
+                           "data set '1' does not specify systematic errors"),
+                          (ui.save_error,  StatErr,
+                           "If you select chi2 as the statistic, all datasets must provide a staterror column"),
                           (ui.save_model,  ModelErr,
                            "background model 1 for data set 1 has not been set"),
                           (ui.save_resid,  ModelErr,
                            "background model 1 for data set 1 has not been set"),
                           (ui.save_delchi,  ModelErr,
                            "background model 1 for data set 1 has not been set")])
-def test_save_xxx_bkg_nodata(func, etype, emsg):
+def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path):
     """Does save_xxx error out if there's no data to save? DataPHA + bkg
 
     Note that save_image does not support a bkg_id parameter so is
@@ -295,8 +454,12 @@ def test_save_xxx_bkg_nodata(func, etype, emsg):
     bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
+    # Without this we can't check save_staterror or save_error
+    ui.set_stat('chi2')
+
+    outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(etype) as exc:
-        func("temp-file-that-should-not-be-created", bkg_id=1)
+        func(str(outfile), bkg_id=1)
 
     assert str(exc.value) == emsg
 
@@ -316,20 +479,21 @@ def test_save_xxx_bkg_nodata(func, etype, emsg):
                            "model 1 has not been set"),
                           (ui.save_delchi,  IdentifierErr,
                            "model 1 has not been set")])
-def test_save_xxx_data1d_nodata(func, etype, emsg):
+def test_save_xxx_data1d_nodata(func, etype, emsg, tmp_path):
     """Does save_xxx error out if there's no data to save? Data1D
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
 
+    outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(etype) as exc:
-        func("temp-file-that-should-not-be-created")
+        func(str(outfile))
 
     assert str(exc.value) == emsg
 
 
 @requires_fits
-def test_save_image_data1d_nodata():
+def test_save_image_data1d_nodata(tmp_path):
     """Does save_image error out if there's no data to save? Data1D
 
     Unlike the other cases we need a FITS backend.
@@ -337,8 +501,9 @@ def test_save_image_data1d_nodata():
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
 
+    outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(IOErr) as exc:
-        ui.save_image("temp-file-that-should-not-be-created")
+        ui.save_image(str(outfile))
 
     assert str(exc.value) == "data set '' does not contain an image"
 
