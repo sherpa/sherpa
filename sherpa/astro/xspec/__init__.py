@@ -50,6 +50,10 @@ are now taken from the user's XSPEC configuration file - either
 for these settings. The default value for the photo-ionization table
 in this case is now ``vern`` rather than ``bcmc``.
 
+The default chatter setting - used by models to inform users of
+issues - was set to 0 (which hid the messages) until Sherpa 4.14.0,
+when it was changed to 10 (to match XSPEC).
+
 Supported models
 ----------------
 
@@ -167,7 +171,7 @@ def get_xschatter():
     --------
 
     >>> get_xschatter()
-    0
+    10
     """
 
     return _xspec.get_xschatter()
@@ -335,13 +339,18 @@ def set_xschatter(level):
     what information gets printed to the screen. It is equivalent to
     the X-Spec ``chatter`` command [1]_.
 
+    .. versionchanged:: 4.14.0
+       The default chatter setting has been bumped from 0 to 10 to
+       match XSPEC. Users will see extra screen output the first
+       time some XSPEC models are evaluated.
+
     Parameters
     ----------
     level : int
        The higher the value of ``level``, the more screen output will
-       be created by X-Spec routines. A value of ``0`` hides
-       most information while ``25`` will generate a lot of
-       debug output.
+       be created by X-Spec routines. A value of ``0`` hides most
+       information while ``25`` will generate a lot of debug
+       output. The starting value is ``10``.
 
     See Also
     --------
@@ -349,10 +358,6 @@ def set_xschatter(level):
 
     Notes
     -----
-    The default chatter setting used by Sherpa is ``0``, which is lower
-    than - so, creates less screen output - the default value used by
-    X-Spec (``10``).
-
     There is no way to change the X-Spec "log chatter" setting.
 
     References
@@ -365,9 +370,11 @@ def set_xschatter(level):
     Examples
     --------
 
-    Set the chatter level to the default used by X-Spec:
+    Set the chatter level to hide most, if not all, output from X-Spec
+    models:
 
-    >>> set_xschatter(10)
+    >>> set_xschatter(0)
+
     """
 
     _xspec.set_xschatter(level)
