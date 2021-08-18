@@ -179,10 +179,13 @@ static unsigned short Q[] = {
 0x0000,0x0000,0x0000,0x3ff0
 };
 #define MAXGAM 171.624376956302725
+/*
 static unsigned short LPI[4] = {
 0xa1bd,0x48e7,0x50d0,0x3ff2,
 };
 #define LOGPI *(double *)LPI
+*/
+#define LOGPI 1.14472988584940017414
 #endif 
 
 #ifdef MIEEE
@@ -247,10 +250,13 @@ static unsigned short STIR[20] = {
 0x5986,0x5555,0x5555,0x3fb5,
 };
 #define MAXSTIR 143.01608
+/*
 static unsigned short SQT[4] = {
 0x2706,0x1ff6,0x0d93,0x4004,
 };
 #define SQTPI *(double *)SQT
+*/
+#define SQTPI 2.50662827463100050242E0
 #endif
 #if MIEEE
 static unsigned short STIR[20] = {
@@ -520,10 +526,13 @@ static unsigned short C[] = {
 0xe14a,0x6a11,0xce4b,0xc13e
 };
 /* log( sqrt( 2*pi ) ) */
+/*
 static unsigned short LS2P[] = {
 0xbeb5,0xc864,0x67f1,0x3fed
 };
 #define LS2PI *(double *)LS2P
+*/
+#define LS2PI 0.91893853320467274178
 #define MAXLGM 2.556348e305
 #endif
 
