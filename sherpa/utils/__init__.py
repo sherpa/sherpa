@@ -2295,18 +2295,22 @@ def get_valley(y, x, xhi=None):
 def get_fwhm(y, x, xhi=None):
     """Estimate the width of the data.
 
+    This is only valid for positive data values (``y``).
+
     Parameters
     ----------
     y, x : array_like
-       The data points.
+       The data points. The x array must be in ascending order.
     xhi : None or array_like, optional
        If given then the x array is taken to be the low-edge
-       of each bin.
+       of each bin. This is unused.
 
     Returns
     -------
     ans : scalar
-       The full-width half-maximum of the peak.
+       An estimate of the full-width half-maximum of the peak. If the
+       data is negative, or no edge is found then half the X range is
+       returned.
 
     See Also
     --------
@@ -2314,16 +2318,73 @@ def get_fwhm(y, x, xhi=None):
 
     Notes
     -----
-    If there are multiple peaks of the same height then
-    the first peak is used.
+    If there are multiple peaks of the same height then the first peak
+    is used.
+
+    The approach is to find the maximum position and then extend out
+    to the first bins which fall below half the height. The difference
+    of the two points is used. If only one side falls below the value
+    then twice this separation is used. If the half-height is not
+    reached then the value is set to be half the width of the
+    x array. In all cases the upper-edge of the x arrays is ignored,
+    if given.
+
     """
+
+    # Pick half the width of the X array, purely as a guess.
+    # The x array is required to be ordered, so we can just
+    # take the first and last points.
+    #
+    guess_fwhm = (x[-1] - x[0]) / 2
+
     y_argmax = y.argmax()
+    if y[y_argmax] <= 0:
+        return guess_fwhm
+
     half_max_val = y[y_argmax] / 2.0
     x_max = x[y_argmax]
-    for ii, val in enumerate(y[y_argmax:]):
-        if val < half_max_val:
-            return 2.0 * ii
-    return x_max
+
+    # Where do the values fall below the half-height? The assumption
+    # is that the arrays are not so large that evaluating the whole
+    # array, rather than just looping out from the maximum location,
+    # is not an expensive operation.
+    #
+    flags = (y - half_max_val) < 0
+
+    # Find the distances from these points to the
+    # maximum location.
+    #
+    dist = x[flags] - x_max
+
+    # We want the maximum value of the negative distances,
+    # and the minimum value of the positive distances.
+    # There's no guarantee either exist.
+    #
+    try:
+        ldist = -1 * max(dist[dist < 0])
+    except ValueError:
+        ldist = None
+
+    try:
+        rdist = min(dist[dist > 0])
+    except ValueError:
+        rdist = None
+
+    # If we have both HWHM values then sum them and use that,
+    # otherwise if we have one then double it.
+    #
+    if ldist is not None and rdist is not None:
+        return ldist + rdist
+
+    if ldist is not None:
+        return 2 * ldist
+
+    if rdist is not None:
+        return 2 * rdist
+
+    # No value, so use the guess.
+    #
+    return guess_fwhm
 
 
 def guess_fwhm(y, x, xhi=None, scale=1000):
