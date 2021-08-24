@@ -41,6 +41,9 @@ include sherpa/sherpa-standalone.rc
 # HTML/notebook representation
 recursive-include sherpa/static *
 
+# Scripts (only .py versions)
+recursive-include scripts *.py
+
 # Sphinx documentation
 recursive-include docs *
 
