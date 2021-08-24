@@ -248,7 +248,6 @@ def setup_imgdata_file(tmp_path, recwarn):
     w = recwarn.pop()
     assert issubclass(w.category, UserWarning)
 
-    # NOTE: there's a typo (missing space) in this warning
     wmsg = 'PSF Image does not have a pixel size. Sherpa ' + \
         'will assume the pixel size is the same as the data'
     assert str(w.message) == wmsg

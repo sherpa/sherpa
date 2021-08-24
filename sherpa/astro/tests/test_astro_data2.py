@@ -1189,8 +1189,7 @@ def test_pickle_image_filter_none(make_test_image):
 
     This test assumes we have region support, but we do not
     currently have any test builds without it so do not
-    bother skipping (as many tests would need to be fixed
-    if we add a no-region build, which we probably should).
+    bother skipping.
 
     """
 
@@ -1212,8 +1211,7 @@ def test_pickle_image_filter(ignore, region, expected, make_test_image):
 
     This test assumes we have region support, but we do not
     currently have any test builds without it so do not
-    bother skipping (as many tests would need to be fixed
-    if we add a no-region build, which we probably should).
+    bother skipping.
 
     """
 
