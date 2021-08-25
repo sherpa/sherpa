@@ -1234,7 +1234,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
-        CompositeModel.__init__(self, ('%s(%s)' % (opstr, self.arg.name)),
+        CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
 
     def calc(self, p, *args, **kwargs):
@@ -1290,8 +1290,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.opstr = opstr
 
         CompositeModel.__init__(self,
-                                ('(%s %s %s)' %
-                                 (self.lhs.name, opstr, self.rhs.name)),
+                                f'({self.lhs.name} {opstr} {self.rhs.name})',
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
@@ -1342,7 +1341,7 @@ class FilterModel(CompositeModel, ArithmeticModel):
             filter_str = self._make_filter_str(filter)
 
         CompositeModel.__init__(self,
-                                ('(%s)[%s]' % (self.model.name, filter_str)),
+                                f'({self.model.name})[{filter_str}]',
                                 (self.model,))
 
     @staticmethod
@@ -1438,8 +1437,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
         self.otherargs = otherargs
         self.otherkwargs = otherkwargs
         CompositeModel.__init__(self,
-                                ('%s(%s)' %
-                                 (self.outer.name, self.inner.name)),
+                                f'{self.outer.name}({self.inner.name})',
                                 (self.outer, self.inner))
 
     def startup(self, cache=False):
@@ -1489,8 +1487,7 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
             self.wrapper.integrate = model.integrate
 
         CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
+                                f"{self.wrapper.name}({self.model.name})",
                                 (self.model, ))
 
     def calc(self, p, *args, **kwargs):
