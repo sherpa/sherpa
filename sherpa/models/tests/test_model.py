@@ -36,8 +36,8 @@ import pytest
 
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
-    UnaryOpModel, RegridWrappedModel, modelCacher1d
+    ArithmeticFunctionModel, BinaryOpModel, CompositeModel, FilterModel, \
+    Model, NestedModel, UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D, Scale1D, \
     Integrate1D
@@ -1224,3 +1224,43 @@ def test_cache_clear_multiple(caplog):
     assert c._cache_ctr['check'] == 0
     assert c._cache_ctr['hits'] == 0
     assert c._cache_ctr['misses'] == 0
+
+
+def test_compositemodel_create():
+    c = CompositeModel('bob', ())
+    with pytest.raises(NotImplementedError):
+        c.create()
+
+
+def test_unaryopmodel_create():
+    b = Box1D()
+    b.xlow = 10
+    b.xhi = 20
+    b.ampl.set(12, max=13)
+    c = -b
+
+    x = numpy.arange(5, 25, 2)
+
+    n = c.create(b)
+
+    assert n(x) == pytest.approx(c(x))
+
+
+def test_binaryopmodel_create():
+    b1 = Box1D()
+    b1.xlow = 10
+    b1.xhi = 20
+    b1.ampl.set(12, max=13)
+
+    b2 = Box1D()
+    b2.xlow = 12
+    b2.xhi = 22
+    b2.ampl.set(-5, min=-5)
+
+    c = b1 + b2
+
+    x = numpy.arange(5, 25, 2)
+
+    n = c.create(b1, b2)
+
+    assert n(x) == pytest.approx(c(x))

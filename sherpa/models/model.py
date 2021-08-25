@@ -927,6 +927,15 @@ class CompositeModel(Model):
             except AttributeError:
                 pass
 
+    def create(self, *args):
+        """Create a copy of the object.
+
+        Note that it will re-use model components rather than
+        re-creating them.
+        """
+
+        raise NotImplementedError()
+
 
 class SimulFitModel(CompositeModel):
     """Store multiple models.
@@ -1240,6 +1249,23 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
+    def create(self, *args):
+        """Create a version of unary-op model applied to model.
+
+        Parameters
+        ----------
+        model : Model instance
+
+        Returns
+        -------
+        applied : UnaryOpModel instance
+        """
+
+        if len(args) != 1:
+            raise TypeError("create() missing 1 required positional argument: model")
+
+        return self.__class__(args[0], self.op, self.opstr)
+
 
 class BinaryOpModel(CompositeModel, RegriddableModel):
     """Combine two model expressions.
@@ -1323,6 +1349,24 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                              (type(self.lhs).__name__, len(lhs),
                               type(self.rhs).__name__, len(rhs)))
         return val
+
+    def create(self, *args):
+        """Create a version of binary-op model applied to the models.
+
+        Parameters
+        ----------
+        lhs, rhs : Model instance
+
+        Returns
+        -------
+        applied : BinaryOpModel instance
+        """
+
+        if len(args) != 2:
+            raise TypeError("create() missing 2 required positional arguments: lhs, rhs")
+
+        return self.__class__(args[0], args[1], self.op, self.opstr)
+
 
 
 # TODO: do we actually make use of this functionality anywhere?
