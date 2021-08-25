@@ -581,7 +581,7 @@ def test_source_component_arbitrary_grid_int(session):
     assert ui._compsrchistplot.y == pytest.approx([0.0, 0.0, 0.0])
 
 
-def test_numpy_histogram_density_vs_normed():
+def test_numpy_histogram_density_vs_normed(clean_astro_ui):
     from sherpa.astro import ui
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
