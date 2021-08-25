@@ -192,14 +192,11 @@ def assert_is_finite(vals, modelcls, label):
     # mis-match, APEC-style models return all 0 values, so check
     # for this.
     #
-    # Some models seem to return 0's, so skip them for now.
+    # Some models seem to return 0's, so skip them for now:
+    # these models have a default redshift parameter of 0 but
+    # the code complains if z <= 0 and returns 0's.
     #
-    # The *cflow models return 0's because:
-    #     XSVMCF: Require z > 0 for cooling flow models
-    # but the default value is 0 but mkcflox/vmcflow
-    # have a default redshift of 0 in XSPEC 12.10.0 model.dat
-    #
-    if modelcls in [xs.XSmkcflow, xs.XSvmcflow]:
+    if modelcls in [xs.XScph, xs.XSvcph, xs.XSmkcflow, xs.XSvmcflow]:
         # Catch the case when this condition is no longer valid
         #
         assert (vals == 0.0).all(), \

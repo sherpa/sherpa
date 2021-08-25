@@ -1531,6 +1531,10 @@ class XSagnslim(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The default logmdot parameter value has changed from -1 to 1 to
+       match XSPEC.
+
     Attributes
     ----------
     mass
@@ -1598,8 +1602,8 @@ class XSagnslim(XSAdditiveModel):
                               'solar', frozen=True)
         self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
                               'Mpc', frozen=True)
-        self.logmdot = Parameter(name, 'logmdot', -1, -10, 3, -10, 3)
-        self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
+        self.logmdot = Parameter(name, 'logmdot', 1, -10, 3, -10, 3)
+        self.astar = Parameter(name, 'astar', 0.0, 0, 0.998, 0, 0.998,
                                frozen=True)
         self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
                               frozen=True)
@@ -1808,7 +1812,7 @@ class XSbbody(XSAdditiveModel):
 
     def __init__(self, name='bbody'):
         self.kT = Parameter(name, 'kT', 3.0, 1.e-2, 100., 0.0, hugeval, units='keV')
-        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval, 'L39 / (D10)**2')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.norm))
 
 
@@ -2387,19 +2391,19 @@ class XSbvtapec(XSAdditiveModel):
     def __init__(self, name='bvtapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0808, 68.447, units='keV')
         self.kTi = Parameter(name, 'kTi', 6.5, 0.0808, 68.447, 0.0808, 68.447, units='keV')
-        self.He = Parameter(name, 'He', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.C = Parameter(name, 'C', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.N = Parameter(name, 'N', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.O = Parameter(name, 'O', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ne = Parameter(name, 'Ne', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Mg = Parameter(name, 'Mg', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Al = Parameter(name, 'Al', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Si = Parameter(name, 'Si', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.S = Parameter(name, 'S', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ar = Parameter(name, 'Ar', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ca = Parameter(name, 'Ca', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Fe = Parameter(name, 'Fe', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ni = Parameter(name, 'Ni', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.He = Parameter(name, 'He', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
         self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
         self.Velocity = Parameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, units='km/s')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
@@ -3570,6 +3574,10 @@ class XScph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The default Redshift parameter value has changed from 0.1 to 0
+       to match XSPEC.
+
     Attributes
     ----------
     peakT
@@ -3605,9 +3613,7 @@ class XScph(XSAdditiveModel):
                                units='keV')
         self.Abund = Parameter(name, 'Abund', 1, 0, 1000, 0, 1000,
                                frozen=True)
-        # In XSPEC 12.10.1 the redshift value defaults to 0 but the
-        # minimum is 1e-6, so switch to 0.1
-        self.Redshift = Parameter(name, 'Redshift', 0.1, 1e-6, 50, 1e-6, 50,
+        self.Redshift = Parameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
                                   frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2,
                                 alwaysfrozen=True)
@@ -4858,7 +4864,7 @@ class XSjet(XSAdditiveModel):
         self.Dco = Parameter(name, 'Dco', 3350.6, 1., 1e8, 1., 1e8,
                              units='Mpc', frozen=True)
         self.log_mdot = Parameter(name, 'log_mdot', -1., -5., 2., -5., 2.,
-                                  units='logL/lEdd')
+                                  units='logL/LEdd')
         self.thetaobs = Parameter(name, 'thetaobs', 3., 0., 90., 0., 90.,
                                   units='deg', frozen=True)
         self.BulkG = Parameter(name, 'BulkG', 13., 1., 100., 1., 100, frozen=True)
@@ -6708,7 +6714,7 @@ class XSqsosed(XSAdditiveModel):
                               'solar', frozen=True)
         self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
                               'Mpc', frozen=True)
-        self.logmdot = Parameter(name, 'logmdot', -1, -1.65, 0.39, -1.65, 0.39)
+        self.logmdot = Parameter(name, 'logmdot', -1, -1.65, 0.39, -1.65, 0.39, units='Ledd')
         self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
                                frozen=True)
         self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
@@ -6861,7 +6867,7 @@ class XSrefsch(XSAdditiveModel):
         self.Fe_abund = Parameter(name, 'Fe_abund', 1., 0.1, 10., 0.0, hugeval, frozen=True)
         self.Incl = Parameter(name, 'Incl', 30., 19., 87., 0.0, hugeval, units='deg', frozen=True)
         self.T_disk = Parameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 0.0, hugeval, units='K', frozen=True)
-        self.xi = Parameter(name, 'xi', 1., 0., 1.e3, 0.0, hugeval, units='erg cm/s')
+        self.xi = Parameter(name, 'xi', 1., 0., 1.e3, 0.0, hugeval, units='ergcm/s')
         self.Betor10 = Parameter(name, 'Betor10', -2., -10., 20., -hugeval, hugeval, frozen=True)
         self.Rin = Parameter(name, 'Rin', 10., 6., 1000., 0.0, hugeval, units='R_g', frozen=True)
         self.Rout = Parameter(name, 'Rout', 1000., 0., 1000000., 0.0, hugeval, units='R_g', frozen=True)
@@ -7468,6 +7474,10 @@ class XSvcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The default Redshift parameter value has changed from 0.1 to 0
+       to match XSPEC.
+
     Attributes
     ----------
     peakT
@@ -7530,10 +7540,7 @@ class XSvcph(XSAdditiveModel):
                             frozen=True)
         self.Ni = Parameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000.0,
                             frozen=True)
-
-        # In XSPEC 12.10.1 the redshift value defaults to 0 but the
-        # minimum is 1e-6, so switch to 0.1
-        self.Redshift = Parameter(name, 'Redshift', 0.1, 1e-6, 50, 1e-6, 50,
+        self.Redshift = Parameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
                                   frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2,
                                 alwaysfrozen=True)
@@ -7909,7 +7916,7 @@ class XSvmcflow(XSAdditiveModel):
         self.Ca = Parameter(name, 'Ca', 1., 0., 1000., 0.0, hugeval, frozen=True)
         self.Fe = Parameter(name, 'Fe', 1., 0., 1000., 0.0, hugeval, frozen=True)
         self.Ni = Parameter(name, 'Ni', 1., 0., 1000., 0.0, hugeval, frozen=True)
-        self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
@@ -8365,19 +8372,19 @@ class XSvtapec(XSAdditiveModel):
     def __init__(self, name='vtapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0808, 68.447, units='keV')
         self.kTi = Parameter(name, 'kTi', 6.5, 0.0808, 68.447, 0.0808, 68.447, units='keV')
-        self.He = Parameter(name, 'He', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.C = Parameter(name, 'C', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.N = Parameter(name, 'N', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.O = Parameter(name, 'O', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ne = Parameter(name, 'Ne', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Mg = Parameter(name, 'Mg', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Al = Parameter(name, 'Al', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Si = Parameter(name, 'Si', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.S = Parameter(name, 'S', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ar = Parameter(name, 'Ar', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ca = Parameter(name, 'Ca', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Fe = Parameter(name, 'Fe', 1.0, 0., 10., 0.0, hugeval, frozen=True)
-        self.Ni = Parameter(name, 'Ni', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.He = Parameter(name, 'He', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
         self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
@@ -9276,6 +9283,10 @@ class XSzkerrbb(XSAdditiveModel):
        The fcol parameter was incorrectly labelled as hd: both names
        can be used to access this parameter.
 
+       The default a, Mbh, fcol, and lflag parameter values have
+       changed from 0, 1, 1.7, and 0 to 0.5, 1e7, 2.0, and 1 to match
+       XSPEC.
+
     Attributes
     ----------
     eta
@@ -9330,16 +9341,16 @@ class XSzkerrbb(XSAdditiveModel):
 
     def __init__(self, name='zkerrbb'):
         self.eta = Parameter(name, 'eta', 0., 0., 1.0, 0.0, hugeval, frozen=True)
-        self.a = Parameter(name, 'a', 0., -1., 0.9999, -hugeval, hugeval)
+        self.a = Parameter(name, 'a', 0.5, -0.99, 0.9999, -hugeval, hugeval)
         self.i = Parameter(name, 'i', 30., 0., 85., 0.0, hugeval, units='deg', frozen=True)
-        self.Mbh = Parameter(name, 'Mbh', 1., 0., 100., 0.0, hugeval, units='M_sun')
-        self.Mdd = Parameter(name, 'Mdd', 1., 0., 1000., 0.0, hugeval, units='M0yr')
+        self.Mbh = Parameter(name, 'Mbh', 1e7, 3, 1e10, 3.0, hugeval, units='M_sun')
+        self.Mdd = Parameter(name, 'Mdd', 1., 1e-4, 1e4, 0.0, hugeval, units='M0yr')
         self.z = Parameter(name, 'z', 0.01, 0., 10., 0.0, 10, frozen=True)
-        self.fcol = Parameter(name, 'fcol', 1.7, 1., 10., 0.0, hugeval, frozen=True,
+        self.fcol = Parameter(name, 'fcol', 2.0, -100, 100, -100, hugeval, frozen=True,
                               # Parameter was mis-labelled until 4.14.0
                               aliases=['hd'])
-        self.rflag = Parameter(name, 'rflag', 1., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
-        self.lflag = Parameter(name, 'lflag', 0., -100., 100., -hugeval, hugeval, alwaysfrozen=True)
+        self.rflag = Parameter(name, 'rflag', 1., alwaysfrozen=True)
+        self.lflag = Parameter(name, 'lflag', 1., alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.z, self.fcol, self.rflag, self.lflag, self.norm))
 
@@ -10882,6 +10893,10 @@ class XSTBrel(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The default nH parameter value has changed from 1.0 to 0.0 to
+       match XSPEC.
+
     Attributes
     ----------
     nH
@@ -10926,7 +10941,7 @@ class XSTBrel(XSMultiplicativeModel):
     __function__ = "C_tbrel"
 
     def __init__(self, name='tbrel'):
-        self.nH = Parameter(name, 'nH', 1., -1e5, 1e5, -1e6, 1.0e6, units='10^22')
+        self.nH = Parameter(name, 'nH', 0.0, -1e5, 1e5, -1e6, 1.0e6, units='10^22 atoms / cm^2')
         self.He = Parameter(name, 'He', 1., 0., 5., 0.0, hugeval, frozen=True)
         self.C = Parameter(name, 'C', 1., 0., 5., 0.0, hugeval, frozen=True)
         self.N = Parameter(name, 'N', 1., 0., 5., 0.0, hugeval, frozen=True)
@@ -11385,7 +11400,7 @@ class XSzdust(XSMultiplicativeModel):
         self.method = Parameter(name, 'method', 1, 1, 3, 1, 3, alwaysfrozen=True)
         self.E_BmV = Parameter(name, 'E_BmV', 0.1, 0.0, 100., 0.0, hugeval, aliases=["EBV"])
         self.Rv = Parameter(name, 'Rv', 3.1, 0.0, 10., 0.0, hugeval, frozen=True)
-        self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 20., 0.0, hugeval, units='z', frozen=True)
+        self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 20., 0.0, hugeval, frozen=True)
 
         XSMultiplicativeModel.__init__(self, name, (self.method, self.E_BmV, self.Rv, self.redshift))
 
@@ -12009,6 +12024,10 @@ class XSclumin(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The default lg10Lum parameter value has changed from -40 to 40
+       to match XSPEC.
+
     .. versionadded:: 4.12.2
 
     Attributes
@@ -12072,7 +12091,7 @@ class XSclumin(XSConvolutionKernel):
                               units='keV')
         self.Redshift = Parameter(name, 'Redshift', 0, min=-0.999, max=10,
                                   hard_min=-0.999, hard_max=10, frozen=True)
-        self.lg10Lum = Parameter(name, 'lg10Lum', -40.0, min=-100.0,
+        self.lg10Lum = Parameter(name, 'lg10Lum', 40.0, min=-100.0,
                                  max=100.0, hard_min=-100.0, hard_max=100.0,
                                  frozen=False, units='cgs')
         XSConvolutionKernel.__init__(self, name, (self.Emin,
@@ -12141,11 +12160,16 @@ class XSgsmooth(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The XSPEC model parameter was renamed from Sig@6keV to Sig_6keV
+       so this is now the name of the parameter. The old name (SigAt6keV)
+       can still be used but will be removed in a future release.
+
     .. versionadded:: 4.12.2
 
     Attributes
     ----------
-    SigAt6keV
+    Sig_6keV
         gaussian sigma at 6 keV
     Index
         power of energy for sigma variation
@@ -12169,12 +12193,12 @@ class XSgsmooth(XSConvolutionKernel):
     _calc = _xspec.C_gsmooth
 
     def __init__(self, name='xsgsmooth'):
-        self.SigAt6keV = Parameter(name, 'SigAt6keV', 1.0, min=0.0, max=10.0,
-                                   hard_min=0.0, hard_max=20.0,
-                                   frozen=False, units='keV')
+        self.Sig_6keV = Parameter(name, 'Sig_6keV', 1.0, min=0.0, max=10.0,
+                                  hard_min=0.0, hard_max=20.0,
+                                  frozen=False, units='keV', aliases=['SigAt6keV'])
         self.Index = Parameter(name, 'Index', 0.0, min=-1.0, max=1.0,
                                hard_min=-1.0, hard_max=1.0, frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.SigAt6keV, self.Index))
+        XSConvolutionKernel.__init__(self, name, (self.Sig_6keV, self.Index))
 
 
 class XSireflect(XSConvolutionKernel):
@@ -12415,6 +12439,8 @@ class XSkerrconv(XSConvolutionKernel):
     _calc = _xspec.C_spinconv
 
     def __init__(self, name='xskerrconv'):
+        # ARGH: they are labelled Index1/Index2 but I used Index/Index1 here
+        #
         self.Index = Parameter(name, 'Index', 3.0, min=-10.0, max=10.0,
                                hard_min=-10.0, hard_max=10.0, frozen=True)
         self.Index1 = Parameter(name, 'Index1', 3.0, min=-10.0, max=10.0,
@@ -12445,11 +12471,16 @@ class XSlsmooth(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The XSPEC model parameter was renamed from Sig@6keV to Sig_6keV
+       so this is now the name of the parameter. The old name (SigAt6keV)
+       can still be used but will be removed in a future release.
+
     .. versionadded:: 4.12.2
 
     Attributes
     ----------
-    SigAt6keV
+    Sig_6keV
         lorentzian sigma at 6 keV
     Index
         power of energy for sigma variation
@@ -12473,12 +12504,12 @@ class XSlsmooth(XSConvolutionKernel):
     _calc = _xspec.C_lsmooth
 
     def __init__(self, name='xslsmooth'):
-        self.SigAt6keV = Parameter(name, 'SigAt6keV', 1.0, min=0.0, max=10.0,
-                                   hard_min=0.0, hard_max=20.0, frozen=False,
-                                   units='keV')
+        self.Sig_6keV = Parameter(name, 'Sig_6keV', 1.0, min=0.0, max=10.0,
+                                  hard_min=0.0, hard_max=20.0, frozen=False,
+                                  units='keV', aliases=['SigAt6keV'])
         self.Index = Parameter(name, 'Index', 0.0, min=-1.0, max=1.0,
                                hard_min=-1.0, hard_max=1.0, frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.SigAt6keV, self.Index))
+        XSConvolutionKernel.__init__(self, name, (self.Sig_6keV, self.Index))
 
 
 class XSpartcov(XSConvolutionKernel):
@@ -13003,8 +13034,8 @@ class XSxilconv(XSConvolutionKernel):
                                   hard_min=0.5, hard_max=3.0, frozen=True)
         self.cosIncl = Parameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
                                  hard_min=0.05, hard_max=0.95, frozen=True)
-        self.log_xi = Parameter(name, 'log_xi', 1.0, min=1.0, max=1e6,
-                                hard_min=1.0, hard_max=1e6)
+        self.log_xi = Parameter(name, 'log_xi', 1.0, min=1.0, max=6,
+                                hard_min=1.0, hard_max=6)
         self.cutoff = Parameter(name, 'cutoff', 300.0, min=20.0, max=300.0,
                                 hard_min=20.0, hard_max=300.0,
                                 units='keV', frozen=True)
@@ -13097,6 +13128,10 @@ class XSbwcycl(XSAdditiveModel):
     on the model and parameter values at this reference before using
     the model.
 
+    .. versionchanged:: 4.14.0
+       The D parameter now displays the correct units (kpc) rather
+       than km.
+
     Attributes
     ----------
     Radius
@@ -13152,7 +13187,7 @@ class XSbwcycl(XSAdditiveModel):
         self.Mdot = Parameter(name, 'Mdot', 1, 1e-6, 1e6, 1e-6, 1e6, units='1e17g/s')
         self.Te = Parameter(name, 'Te', 5, 0.1, 100, 0.1, 100, units='keV')
         self.r0 = Parameter(name, 'r0', 44, 10, 1000, 10, 1000, units='m')
-        self.D = Parameter(name, 'D', 5, 1, 20, 1, 20, units='km', frozen=True)
+        self.D = Parameter(name, 'D', 5, 1, 20, 1, 20, units='kpc', frozen=True)
         self.BBnorm = Parameter(name, 'BBnorm', 0.0, 0, 100, 0, 100, frozen=True)
         self.CYCnorm = Parameter(name, 'CYCnorm', 1.0, -1, 100, -1, 100, frozen=True)
         self.FFnorm = Parameter(name, 'FFnorm', 1.0, -1, 100, -1, 100, frozen=True)
