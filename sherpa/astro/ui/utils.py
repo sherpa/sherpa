@@ -10591,7 +10591,7 @@ class Session(sherpa.ui.utils.Session):
 
         return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
                                        conv_model=conv_model, id=id, otherids=otherids,
-                                       num=num, bins=25, numcores=numcores,
+                                       num=num, bins=bins, numcores=numcores,
                                        recalc=recalc)
 
     get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__

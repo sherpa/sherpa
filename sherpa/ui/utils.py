@@ -8338,20 +8338,6 @@ class Session(NoNewAttributesAfterInit):
     # Simulation functions
     #
 
-    def _run_pvalue(self, null_model, alt_model, conv_model=None,
-                    id=1, otherids=(), num=500, bins=25, numcores=None):
-        ids, fit = self._get_fit(id, otherids)
-
-        pvalue = sherpa.sim.LikelihoodRatioTest.run
-        results = pvalue(fit, null_model, alt_model, conv_model,
-                         niter=num,
-                         stat=self._current_stat,
-                         method=self._current_method,
-                         numcores=numcores)
-
-        info(results.format())
-        self._pvalue_results = results
-
     def get_pvalue_results(self):
         """Return the data calculated by the last plot_pvalue call.
 
@@ -8517,7 +8503,7 @@ class Session(NoNewAttributesAfterInit):
 
         lrplot = self.get_pvalue_plot(null_model=null_model, alt_model=alt_model,
                                       conv_model=conv_model, id=id, otherids=otherids,
-                                      num=num, bins=25, numcores=numcores,
+                                      num=num, bins=bins, numcores=numcores,
                                       recalc=not replot)
         self._plot(lrplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
@@ -8596,11 +8582,21 @@ class Session(NoNewAttributesAfterInit):
         if alt_model is None:
             raise TypeError("alternative model cannot be None")
 
-        self._run_pvalue(null_model, alt_model, conv_model,
-                         id, otherids, num, bins, numcores)
-        results = self._pvalue_results
-        lrplot.prepare(results.ratios, bins,
-                       num, results.lr, results.ppp)
+        ids, fit = self._get_fit(id, otherids)
+
+        pvalue = sherpa.sim.LikelihoodRatioTest.run
+        results = pvalue(fit, null_model, alt_model,
+                         conv_mdl=conv_model,
+                         stat=self._current_stat,
+                         method=self._current_method,
+                         niter=num,
+                         numcores=numcores)
+
+        info(results.format())
+        self._pvalue_results = results
+
+        lrplot.prepare(ratios=results.ratios, bins=bins,
+                       niter=num, lr=results.lr, ppp=results.ppp)
         return lrplot
 
     #
