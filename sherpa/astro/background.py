@@ -80,7 +80,7 @@ def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
     model for the dataset.
 
     This is essentially the object-oriented version of
-    `shera.astro.background.add_response`.
+    `sherpa.astro.background.add_response`.
 
     Parameters
     ----------

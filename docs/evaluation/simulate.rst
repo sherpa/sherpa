@@ -44,21 +44,21 @@ NumPy or SciPy to evaluate noise, such as ``numpy.random.standard_normal``.
 
 .. _data_pha_fake:
 
-X-ray data (`~sherpa.astro.data.DataPHA`)
-=========================================
+X-ray data (:py:mod:`~sherpa.astro.data.DataPHA`)
+=================================================
 
 In principle, the same steps apply when simulating :term:`PHA` data
-(`~sherpa.astro.data.DataPHA` objects), however, the mechanics are a
+(:py:class:`~sherpa.astro.data.DataPHA` objects), however, the mechanics are a
 little more complicated because we need to account for the
 instrumental response (:term:`ARF` and :term:`RMF`) and possibly also
 the background, which may contribute to the source spectrum that we
 want to simulate.  Readers not interested in X-ray data analysis may
 want to skip this section.
 
-Sherpa offers a dedicated function `sherpa.astro.io.fake_pha` for
-simulations of :term:`PHA` data. A `~sherpa.astro.data.DataPHA` object
+Sherpa offers a dedicated function :py:func:`sherpa.astro.io.fake_pha` for
+simulations of :term:`PHA` data. A :py:class:`~sherpa.astro.data.DataPHA` object
 needs to be set up with the responses for the source and an exposure
-time. So, we first create a `~sherpa.astro.data.DataPHA` object with
+time. So, we first create a :py:class:`~sherpa.astro.data.DataPHA` object with
 the correct exposure time, but we can leave the settings for channel
 and counts empty, because these will be filled in by the simulation::
 
@@ -101,7 +101,7 @@ calculate the expected number of counts in each spectral channel
 and then draw from a Poisson distribution with this expected
 number. Thus, the simulated number of counts in each channel is always
 an integer and includes Poisson noise - running
-`~sherpa.astro.io.fake_pha` twice with identical settings will give
+:py:func:`~sherpa.astro.io.fake_pha` twice with identical settings will give
 slightly different answers. With default settings, the input model is
 convolved with the RMF and multiplied by the ARF, and properly scaled
 for the exposure time.
@@ -110,7 +110,8 @@ for the exposure time.
   >>> fake_pha(data, srcmdl)
 
 We bin the counts into bins of at least 5 counts per bin and display
-an image of the simulated spectrum (see :ref:`data_pha` for details)::
+an image of the simulated spectrum (see :ref:`model_evaluate_example_pha`
+for details)::
 
   >>> data.set_analysis('energy')
   >>> data.notice(0.3, 8)
@@ -123,14 +124,14 @@ an image of the simulated spectrum (see :ref:`data_pha` for details)::
 Sometimes, more than one response is needed, e.g. in Chandra LETG/HRC-S
 different orders of the grating overlap on the detector, so they all
 contribute to the observed source
-spectrum. `~sherpa.astro.fake.fake_pha` works if one or more responses
-are set for the input `~sherpa.astro.data.DataPHA` object.
+spectrum. :py:func:`~sherpa.astro.fake.fake_pha` works if one or more responses
+are set for the input :py:class:`~sherpa.astro.data.DataPHA` object.
 
 It is also possible that the input model already includes the
 appropriate responses and scalings. In this case, ``is_source=False``
 can be set to indicate to sherpa that the model is not a naked source
 model, but includes all required instrumental effects. In this
-way, `~sherpa.astro.fake.fake_pha` can be used with arbitrarily
+way, :py:func:`~sherpa.astro.fake.fake_pha` can be used with arbitrarily
 complex models which may include such components as the instrumental
 backgound (which should not be folded through the ARF) or arbitary
 other components::
@@ -151,7 +152,7 @@ Sample background from a PHA file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 One way to include background is to sample it from a
-`~sherpa.astro.data.DataPHA` object. To do so, a background need to be
+:py:class:`~sherpa.astro.data.DataPHA` object. To do so, a background need to be
 loaded into the dataset before running the simluation and, if not done
 before, the scale of the background scaling has to be set::
 
@@ -163,7 +164,7 @@ The ``fake_pha`` function simulates the source spectrum as above, but
 then it samples from the background PHA. For each bin, it treats the
 background count number as the expected value and performs a Poisson
 draw. The background drawn from the Poisson distribution is than added
-to the simulated source spectrum (the sum of two Poisson distribution
+to the simulated source spectrum (the sum of two Poisson distributiona
 is a Poisson distribution again). This works best if the background is
 well exposed and has a large number or counts.
 
@@ -202,7 +203,6 @@ If more than one background is set up, then the expected backgrounds
 will be averaged before the Poisson draw. For some backgrounds that
 expected value might be the value of the counts in a PHA file,
 while for others the expected value might be calculated from a model.
-
 
 
 Reference/API

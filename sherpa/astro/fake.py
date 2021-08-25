@@ -18,8 +18,8 @@
 #
 '''Simulate PHA datasets
 
-This module contains the epynoumous function used to simulate
-`~sherpa.astro.data.DataPHA` datasets.
+The ``fake_pha`` routine is used to create simulated
+`sherpa.astro.data.DataPHA` data objects.
 '''
 import numpy as np
 import sherpa
@@ -42,7 +42,7 @@ def fake_pha(data, model,
 
     Including a background component is optional; if requested, the background
     will be a Poisson draw from the average of all backgrounds that have been
-    set for the input `~sherpa.astro.data.DataPHA`. For each background
+    set for the input `sherpa.astro.data.DataPHA`. For each background
     component, the method can use either the PHA distribution in that
     background component or a model that is evaluated using the response
     set for that background component.
@@ -55,7 +55,7 @@ def fake_pha(data, model,
 
     Parameters
     ----------
-    data : sherpa.astro.data.DataPHA instance
+    data : sherpa.astro.data.DataPHA
         The dataset (may be a background dataset).
     model : sherpa.models.model.ArithmeticModel instance
         The model that will be used for simulations.
@@ -82,11 +82,11 @@ def fake_pha(data, model,
         For all background ids not listed in this dictionary, the
         counts will be drawn from the PHA data of the background data set.
     id : str
-        String with id number if called fomr UI layer. This is only used for
+        String with id number if called from UI layer. This is only used for
         certain error messages.
 
-        Examples
-        --------
+    Examples
+    --------
         Estimate the signal from a 5000 second observation using the
         ARF and RMF from "src.arf" and "src.rmf" respectively:
 
