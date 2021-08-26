@@ -936,6 +936,15 @@ class CompositeModel(Model):
 
         raise NotImplementedError()
 
+    def expand(self):
+        """Expand the model expression to separate out "additive" terms.
+
+        Note that it will re-use model components rather than
+        re-creating them.
+        """
+
+        raise NotImplementedError()
+
 
 class SimulFitModel(CompositeModel):
     """Store multiple models.
@@ -1266,6 +1275,45 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
 
         return self.__class__(args[0], self.op, self.opstr)
 
+    def expand(self):
+        """Expand the model expression to separate out "additive" terms.
+
+        Returns
+        -------
+        expanded : UnaryOpModel instance
+        """
+
+        try:
+            expanded = self.arg.expand()
+        except AttributeError:
+            return self
+
+        return self.create(expanded)
+
+    def separate(self):
+        """Separate out the 'additive' terms in the model expression.
+
+        Returns
+        -------
+        models : list of Model instances
+            The additive terms of the model. Summing the elements will
+            return the equivalent model expression to that stored in the
+            object.
+
+        Notes
+        -----
+        We separate out the components and then apply the operator to
+        each term.
+
+        """
+
+        try:
+            out = self.arg.separate()
+        except AttributeError:
+            return [self]
+
+        return [self.create(m) for m in out]
+
 
 class BinaryOpModel(CompositeModel, RegriddableModel):
     """Combine two model expressions.
@@ -1367,6 +1415,182 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 
         return self.__class__(args[0], args[1], self.op, self.opstr)
 
+    def expand(self):
+        """Expand the model expression.
+
+        Returns
+        -------
+        expanded : BinaryOpModel instance
+        """
+
+        if is_add(self):
+            try:
+                lhs = self.lhs.expand()
+            except AttributeError:
+                lhs = self.lhs
+
+            try:
+                rhs = self.rhs.expand()
+            except AttributeError:
+                rhs = self.rhs
+
+            return self.create(lhs, rhs)
+
+        if not is_mul(self):
+            # This is technically possible but requires using BinaryOpModel
+            # in a way that Sherpa doesn't do.
+            #
+            return self
+
+        # Try to avoid isinstance checks and be more python-like.
+        #
+        try:
+            is_lhs_binop = len(self.lhs.parts) == 2
+            lhs_add = is_add(self.lhs)
+            lhs_mul = is_mul(self.lhs)
+        except AttributeError:
+            is_lhs_binop = False
+            lhs_add = False
+            lhs_mul = False
+
+        try:
+            is_rhs_binop = len(self.rhs.parts) == 2
+            rhs_add = is_add(self.rhs)
+            rhs_mul = is_mul(self.rhs)
+        except AttributeError:
+            is_rhs_binop = False
+            rhs_add = False
+            rhs_mul = False
+
+        def mcomb(a, b):
+            """Multiply/Divide/... the two components
+
+            Note we expand the components and then expand the
+            result - ie expand(expand(a) * expand(b))
+            for a multiplicative model.
+            """
+            lhs = expand(a)
+            rhs = expand(b)
+            mul = self.create(lhs, rhs)
+            return expand(mul)
+
+        # The idea is that we expand the components and then, if
+        # we create a (a * b) term, we expand that. We don't expand
+        # addition terms.
+        #
+        # In the following I use + and * but they are meant to be
+        # generic, since it could be - or /. We therefore use
+        # mcomb and acomb to combine the components.
+        #
+
+        # (l1 + l2) * notbinop =
+        #    expand (expand l1 * notbinop) +
+        #    expand (expand l2 * notbinop)
+        #
+        if lhs_add and not is_rhs_binop:
+            a = mcomb(self.lhs.lhs, self.rhs)
+            b = mcomb(self.lhs.rhs, self.rhs)
+            return self.lhs.create(a, b)
+
+        # notbinop * (r1 + r2) =
+        #   expand (notbinop * expand r1) +
+        #   expand (notbinop * expand r2)
+        #
+        if not is_lhs_binop and rhs_add:
+            a = mcomb(self.lhs, self.rhs.lhs)
+            b = mcomb(self.lhs, self.rhs.rhs)
+            return self.rhs.create(a, b)
+
+        # (l1 + l2) * (r1 + r2) =
+        #   expand (expand l1 * expand r1) +
+        #   expand (expand l1 * expand r2) +
+        #   expand (expand l2 * expand r1) +
+        #   expand (expand l2 * expand r2) +
+        #
+        # Need to handle potentially different addition terms for the
+        # two sides, so
+        #
+        # (l1 `f` l2) * (r1 `g` r2) =
+        #   (l1 * r1) `f` (l2 * r1) `g` (l1 * r2) `g` (l2 * r2)
+        #
+        if lhs_add and rhs_add:
+            # This duplicates the expanson of the components
+            # but it is unlikely to be expensive and I think
+            # the simplification in the code is worth it.
+            #
+            l1 = self.lhs.lhs
+            l2 = self.lhs.rhs
+            r1 = self.rhs.lhs
+            r2 = self.rhs.rhs
+            t1 = self.lhs.create(mcomb(l1, r1), mcomb(l2, r1))
+            t2 = self.rhs.create(t1, mcomb(l1, r2))
+            t3 = self.rhs.create(t2, mcomb(l2, r2))
+            return t3
+
+        # Can this be handled by (l1 + l2) * notbinop?
+        #
+        # (l1 + l2) * (r1 * r2) =
+        #   expand (expand l1 * expand (expand r1 * expand r2)) +
+        #   expand (expand l2 * expand (expand r1 * expand r2)) +
+        #
+        if lhs_add and rhs_mul:
+            # er gets deconstructed and reconstructed in mcomb
+            er = mcomb(self.rhs.lhs, self.rhs.rhs)
+            return self.lhs.create(mcomb(self.lhs.lhs, er),
+                                   mcomb(self.lhs.rhs, er))
+
+        # Can this be handled by notbinop * (r1 + r2)?
+        #
+        # (l1 * l2) * (r1 + r2) =
+        #   expand (expand (expand l1 * expand l2) * expand r1) +
+        #   expand (expand (expand l1 * expand l2) * expand r2) +
+        #
+        if lhs_mul and rhs_add:
+            # el gets deconstructed and reconstructed in mcomb
+            el = mcomb(self.lhs.lhs, self.lhs.rhs)
+            return self.rhs.create(mcomb(el, self.rhs.lhs),
+                                   mcomb(el, self.rhs.rhs))
+
+        # Just expand the children. We don't use mcomb() as that
+        # calls expand on the result, and we don't want that here,
+        # to avoid infinite loops.
+        #
+        a = self.lhs.expand()
+        b = self.rhs.expand()
+        return self.create(a, b)
+
+    def separate(self):
+        """Separate out the 'additive' terms in the model expression.
+
+        Returns
+        -------
+        models : list of Model instances
+            The additive terms of the model. Summing the elements will
+            return the equivalent model expression to that stored in the
+            object.
+
+        Notes
+        -----
+        The expansion is only at the top-most level, so an expression
+        like 'a * (b - c)' will return only a list with a single
+        component, whereas 'a * b - a * c' will return two components
+        ('a * b' and '-(a * c)').
+        """
+
+        if self.op not in [numpy.add, numpy.subtract]:
+            return [self]
+
+        out = []
+        out.extend(separate(self.lhs))
+
+        # Do we have to convert 'a - b' to 'a + (-b)'?
+        #
+        rhs = self.rhs
+        if self.op == numpy.subtract:
+            rhs = -rhs
+
+        out.extend(separate(rhs))
+        return out
 
 
 # TODO: do we actually make use of this functionality anywhere?
@@ -1678,3 +1902,144 @@ def html_model(mdl):
 
     ls = ['<details open><summary>Model</summary>' + out + '</details>']
     return formatting.html_from_sections(mdl, ls)
+
+
+# Model expansion
+#
+# Operators include
+#    numpy.add, numpy.subtract
+#    numpy.multiply, numpy.divide, numpy.floor_divide, numpy.true_divide
+#
+def is_add(mdl):
+    """Does the model represent addition or subtraction?
+
+    Paramerters
+    -----------
+    mdl : BinaryOpModel instance
+
+    Returns
+    -------
+    flag : bool
+    """
+    return mdl.op in [numpy.add, numpy.subtract]
+
+
+def is_mul(mdl):
+    """Does the model represent multiplication or division?
+
+    Paramerters
+    -----------
+    mdl : BinaryOpModel instance
+
+    Returns
+    -------
+    flag : bool
+    """
+    return mdl.op in [numpy.multiply, numpy.divide,
+                      numpy.floor_divide, numpy.true_divide]
+
+
+# Experiment in "expanding out" model expressions which is useful
+# when we want to try and combine all the "emission" components
+# (that is, components combined with * or /).
+#
+def expand(model):
+    """Expand the model expression.
+
+    This is not guaranteed to support all CompositeModel sub-classes.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model instance
+        The model expression to expand.
+
+    Returns
+    -------
+    expanded : sherpa.models.model.Model instance
+        The expanded expression. It can be the same as the input, and
+        will reference the same model components.
+
+    See Also
+    --------
+    separate
+
+    Examples
+    --------
+
+    >>> box = sherpa.models.basic.Box1D()
+    >>> line = sherpa.models.basic.Gauss1D()
+    >>> bgnd = sherpa.models.basic.Polynom1D()
+    >>> orig1 = box * (line + bgnd)
+    >>> orig2 = box * (bgnd - line)
+    >>> expand(box * line).name
+    '(box1d * gauss1d)'
+    >>> expand(line + bgnd).name
+    '(gauss1d + polynom1d)'
+    >>> expand(orig1).name
+    '((box1d * gauss1d) + (box1d * polynom1d))'
+    >>> expand(orig2).name
+    '((box1d * polynom1d) - (box1d * gauss1d))'
+
+    """
+
+    try:
+        return model.expand()
+    except AttributeError:
+        return model
+
+
+def separate(mdl):
+    """Separate out the additive terms of the model.
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model instance
+        The model expression. It is expected to be the output of
+        `expand` but it does not have to be.
+
+    Returns
+    -------
+    terms : list of sherpa.models.model.Model instances
+        The individual additive terms. They are added together
+        to create the full model expression.
+
+    See Also
+    --------
+    expand
+
+    Examples
+    --------
+
+    >>> box = sherpa.models.basic.Box1D()
+    >>> line = sherpa.models.basic.Gauss1D()
+    >>> bgnd = sherpa.models.basic.Polynom1D()
+    >>> orig1 = box * (line + bgnd)
+    >>> orig2 = box * (bgnd - line)
+    >>> separate(box * line)
+    [<BinaryOpModel model instance '(box1d * gauss1d)'>]
+    >>> separate(line + bgnd)
+    [<BinaryOpModel model instance '(gauss1d + polynom1d)'>]
+    >>> separate(orig1)
+    [<BinaryOpModel model instance '(box1d * (gauss1d + polynom1d))'>]
+    >>> separate(expand(orig1))
+    [<BinaryOpModel model instance '(box1d * gauss1d)'>,
+     <BinaryOpModel model instance '(box1d * polynom1d)'>]
+    >>> separate(expand(orig2))
+    [<BinaryOpModel model instance '(box1d * polynom1d)'>,
+     <UnaryOpModel model instance '-((box1d * gauss1d))'>]
+    >>> [c.name for c in separate(expand(orig1))]
+    ['(box1d * gauss1d)', '(box1d * polynom1d)']
+    >>> [c.name for c in separate(expand(orig2))]
+    ['(box1d * polynom1d)', '-((box1d * gauss1d))']
+
+    """
+
+    # Since we can't guarantee all model components will contain
+    # a separate method. In fact only BinaryOpModels do at present,
+    # which is why this is left as a top-level function rather
+    # than an interface-like call.
+    #
+    try:
+        return mdl.separate()
+    except AttributeError:
+        return [mdl]

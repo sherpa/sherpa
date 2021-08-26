@@ -37,10 +37,11 @@ import pytest
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, CompositeModel, FilterModel, \
-    Model, NestedModel, UnaryOpModel, RegridWrappedModel, modelCacher1d
+    Model, NestedModel, UnaryOpModel, RegridWrappedModel, modelCacher1d, \
+    expand, separate
 from sherpa.models.parameter import Parameter, hugeval, tinyval
-from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D, Scale1D, \
-    Integrate1D
+from sherpa.models.basic import Sin, Const1D, Box1D, Gauss1D, Polynom1D, \
+    Scale1D, Integrate1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -1226,10 +1227,11 @@ def test_cache_clear_multiple(caplog):
     assert c._cache_ctr['misses'] == 0
 
 
-def test_compositemodel_create():
+@pytest.mark.parametrize("method", ["create", "expand"])
+def test_compositemodel_not_implented(method):
     c = CompositeModel('bob', ())
     with pytest.raises(NotImplementedError):
-        c.create()
+        getattr(c, method)()
 
 
 def test_unaryopmodel_create():
@@ -1244,6 +1246,15 @@ def test_unaryopmodel_create():
     n = c.create(b)
 
     assert n(x) == pytest.approx(c(x))
+
+
+def test_unaryopmodel_create_invalid():
+    c = -Box1D()
+    with pytest.raises(TypeError):
+        c.create()
+
+    with pytest.raises(TypeError):
+        c.create(c, c)
 
 
 def test_binaryopmodel_create():
@@ -1264,3 +1275,86 @@ def test_binaryopmodel_create():
     n = c.create(b1, b2)
 
     assert n(x) == pytest.approx(c(x))
+
+
+def test_binaryopmodel_create_invalid():
+    c = Box1D() + Box1D()
+    with pytest.raises(TypeError):
+        c.create()
+
+    with pytest.raises(TypeError):
+        c.create(c)
+
+    with pytest.raises(TypeError):
+        c.create(c, c, c)
+
+
+BOX = Box1D()
+LINE = Gauss1D()
+LINE2 = Gauss1D('other')
+BGND = Polynom1D()
+
+
+@pytest.mark.parametrize("expression,expected",
+                         [(BOX, 'box1d'),
+                          (abs(BOX), 'abs(box1d)'),
+                          (BOX + LINE, '(box1d + gauss1d)'),
+                          (BOX - LINE, '(box1d - gauss1d)'),
+                          (BOX * LINE, '(box1d * gauss1d)'),
+                          (BOX / LINE, '(box1d / gauss1d)'),
+                          (BOX * (LINE + BGND), '((box1d * gauss1d) + (box1d * polynom1d))'),
+                          (BOX * (LINE - BGND), '((box1d * gauss1d) - (box1d * polynom1d))'),
+                          ((LINE + BGND) * BOX, '((gauss1d * box1d) + (polynom1d * box1d))'),
+                          ((LINE - BGND) * BOX, '((gauss1d * box1d) - (polynom1d * box1d))'),
+                          (BOX - (LINE + BGND), '(box1d - (gauss1d + polynom1d))'),
+                          (BOX - (LINE * BGND), '(box1d - (gauss1d * polynom1d))'),
+                          (BOX * (LINE - (LINE2 + BGND)), '((box1d * gauss1d) - ((box1d * other) + (box1d * polynom1d)))'),
+                          ((LINE - (LINE2 + BGND)) * BOX, '((gauss1d * box1d) - ((other * box1d) + (polynom1d * box1d)))'),
+                          (BOX * (LINE - (LINE2 // BGND)), '((box1d * gauss1d) - (box1d * (other // polynom1d)))'),
+                          ((LINE - (LINE2 // BGND)) * BOX, '((gauss1d * box1d) - ((other // polynom1d) * box1d))'),
+                          (BGND + BOX + (LINE + LINE2) * BOX - 2 * BGND, '(((polynom1d + box1d) + ((gauss1d * box1d) + (other * box1d))) - (2.0 * polynom1d))')])
+def test_model_expand(expression, expected):
+
+    # Note we compare the name field as easiest thing to do
+    answer = expand(expression)
+    assert answer.name == expected
+
+
+@pytest.mark.parametrize("expression,expected",
+                         [(BOX, ['box1d']),
+                          (abs(BOX), ['abs(box1d)']),
+                          (BOX + LINE, ['box1d', 'gauss1d']),
+                          (BOX - LINE, ['box1d', '-(gauss1d)']),
+                          (BOX * LINE, ['(box1d * gauss1d)']),
+                          (BOX / LINE, ['(box1d / gauss1d)']),
+                          (BOX * (LINE + BGND), ['(box1d * gauss1d)', '(box1d * polynom1d)']),
+                          (BOX * (LINE - BGND), ['(box1d * gauss1d)', '-((box1d * polynom1d))']),
+                          ((LINE + BGND) * BOX, ['(gauss1d * box1d)', '(polynom1d * box1d)']),
+                          ((LINE - BGND) * BOX, ['(gauss1d * box1d)', '-((polynom1d * box1d))']),
+                          (BOX + (LINE + BGND), ['box1d', 'gauss1d', 'polynom1d']),
+                          (BOX - (LINE + BGND), ['box1d', '-(gauss1d)', '-(polynom1d)']),
+                          (BOX - (LINE - BGND), ['box1d', '-(gauss1d)', '-(-(polynom1d))']),
+                          (BOX - (LINE * BGND), ['box1d', '-((gauss1d * polynom1d))']),
+                          (BOX * (LINE + (LINE2 + BGND)), ['(box1d * gauss1d)', '(box1d * other)', '(box1d * polynom1d)']),
+                          (BOX * (LINE - (LINE2 + BGND)), ['(box1d * gauss1d)', '-((box1d * other))', '-((box1d * polynom1d))']),
+                          ((LINE - (LINE2 + BGND)) * BOX, ['(gauss1d * box1d)', '-((other * box1d))', '-((polynom1d * box1d))']),
+                          (BOX * (LINE - (LINE2 // BGND)), ['(box1d * gauss1d)', '-((box1d * (other // polynom1d)))']),
+                          ((LINE - (LINE2 // BGND)) * BOX, ['(gauss1d * box1d)', '-(((other // polynom1d) * box1d))']),
+                          (BGND + BOX + (LINE + LINE2) * BOX - 2 * BGND, ['polynom1d', 'box1d', '(gauss1d * box1d)', '(other * box1d)', '-((2.0 * polynom1d))']),
+                          ((BOX + LINE) * (LINE2 + BGND), ['(box1d * other)', '(gauss1d * other)', '(box1d * polynom1d)', '(gauss1d * polynom1d)']),
+                          ((BOX + LINE) * (LINE2 - BGND), ['(box1d * other)', '(gauss1d * other)', '-((box1d * polynom1d))', '-((gauss1d * polynom1d))']),
+                          ((BOX + LINE) * (LINE2 * BGND), ['(box1d * (other * polynom1d))', '(gauss1d * (other * polynom1d))']),
+                          ((BOX - LINE) * (LINE2 * BGND), ['(box1d * (other * polynom1d))', '-((gauss1d * (other * polynom1d)))']),
+                          ((BOX * LINE) * (LINE2 + BGND), ['((box1d * gauss1d) * other)', '((box1d * gauss1d) * polynom1d)']),
+                          ((BOX * LINE) * (LINE2 - BGND), ['((box1d * gauss1d) * other)', '-(((box1d * gauss1d) * polynom1d))']),
+                          ])
+def test_model_separate(expression, expected):
+
+    # Note we compare the name field as easiest thing to do
+    answer = separate(expand(expression))
+    print(expression.name)
+    print(answer)
+    for ans, eans in zip(answer, expected):
+        assert ans.name == eans
+
+    assert len(answer) == len(expected)
