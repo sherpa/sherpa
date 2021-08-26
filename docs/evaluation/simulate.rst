@@ -164,7 +164,7 @@ The ``fake_pha`` function simulates the source spectrum as above, but
 then it samples from the background PHA. For each bin, it treats the
 background count number as the expected value and performs a Poisson
 draw. The background drawn from the Poisson distribution is than added
-to the simulated source spectrum (the sum of two Poisson distributiona
+to the simulated source spectrum (the sum of two Poisson distributions
 is a Poisson distribution again). This works best if the background is
 well exposed and has a large number or counts.
 
