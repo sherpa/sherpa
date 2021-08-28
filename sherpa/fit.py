@@ -70,7 +70,7 @@ class StatInfoResults(NoNewAttributesAfterInit):
     ids : sequence of int or str
        The data set ids (it may be a tuple or array) included in the
        results.
-    bkg_ids: sequence of int or str, or `None`
+    bkg_ids: sequence of int or str, or None
        The background data set ids (it may be a tuple or array)
        included in the results, if any.
     statname : str
@@ -82,16 +82,15 @@ class StatInfoResults(NoNewAttributesAfterInit):
     dof: int
        The number of degrees of freedom in the fit (the number of
        bins minus the number of free parameters).
-    qval: number or `None`
+    qval: number or None
        The Q-value (probability) that one would observe the reduced
        statistic value, or a larger value, if the assumed model is
        true and the current model parameters are the true parameter
        values. This will be `None` if the value can not be calculated
        with the current statistic (e.g. the Cash statistic).
-    rstat: number of `None`
+    rstat: number or None
        The reduced statistic value (the `statval` field divided by
        `dof`). This is not calculated for all statistics.
-
     """
 
     # The fields to include in the __str__ output.
@@ -158,8 +157,8 @@ def _cleanup_chi2_name(stat, data):
 
     Parameters
     ----------
-    stat : a sherpa.stats.Stat instance
-    data : a sherpa.data.Data or sherpa.data.DataSimulFit instance
+    stat : `sherpa.stats.Stat`
+    data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
 
     Returns
     -------
@@ -197,9 +196,9 @@ class FitResults(NoNewAttributesAfterInit):
 
     Attributes
     ----------
-    datasets : sequence of int or str, or `None`
+    datasets : sequence of int or str, or None
        A sequence of the data set ids included in the results.
-    itermethodname : str or `None`
+    itermethodname : str or None
        What iterated-fit scheme was used, if any.
     methodname : str
        The name of the optimisation method used (in lower case).
@@ -217,19 +216,19 @@ class FitResults(NoNewAttributesAfterInit):
     istatval : number
        The statistic value at the start of the fit.
     dstatval : number
-       The change in the statistic value (`istatval - statval`).
+       The change in the statistic value (``istatval - statval``).
     numpoints : int
        The number of bins used in the fits.
     dof : int
        The number of degrees of freedom in the fit (the number of
        bins minus the number of free parameters).
-    qval : number or `None`
+    qval : number or None
        The Q-value (probability) that one would observe the reduced
        statistic value, or a larger value, if the assumed model is
        true and the current model parameters are the true parameter
        values. This will be `None` if the value can not be calculated
        with the current statistic (e.g.  the Cash statistic).
-    rstat : number or `None`
+    rstat : number or None
        The reduced statistic value (the `statval` field divided by
        `dof`). This is not calculated for all statistics.
     message : str
@@ -240,10 +239,10 @@ class FitResults(NoNewAttributesAfterInit):
        The number of model evaluations made during the fit.
     extra_output
        The ``extra_output`` field from the fit.
-    covar : tuple or `None`
+    covar : tuple or None
        The covariance matrix from the best-fit location, if provided
        by the optimiser.
-    modelvals : NumPy array
+    modelvals : `array`
        The values of the best-fit model evaluated for the data.
 
     """
@@ -391,7 +390,6 @@ class ErrorEstResults(NoNewAttributesAfterInit):
        The number of fits performed during the error analysis.
     extra_output
        The ``extra_output`` field from the fit.
-
     """
 
     # The fields to include in the __str__ output.
@@ -637,7 +635,7 @@ class IterFit(NoNewAttributesAfterInit):
 
         Raises
         ------
-        sherpa.utils.err.FitErr
+        `sherpa.utils.err.FitErr`
             This exception is raised if the statistic is not supported.
             This method can only be used with Chi-Square statistics
             with errors.
@@ -775,9 +773,9 @@ class IterFit(NoNewAttributesAfterInit):
                  statkwargs=None, cache=True):
         """Exclude points that are significately far away from the best fit.
 
-        The `sigmarej` scheme is based on the IRAF `sfit` function
+        The `sigmarej` scheme is based on the IRAF ``sfit`` function
         [3]_, where after a fit data points are excluded if the value
-        of `(data-model) / error` exceeds a threshold, and the data
+        of ``(data-model) / error`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
         has converged or a maximum number of iterations has been reached.
         The error removal can be asymmetric, since there are separate
@@ -785,7 +783,7 @@ class IterFit(NoNewAttributesAfterInit):
 
         Raises
         ------
-        sherpa.utils.err.FitErr
+        `sherpa.utils.err.FitErr`
             This exception is raised if the statistic is not
             supported. This method can only be used with
             Chi-Square statistics with errors.
@@ -1000,23 +998,22 @@ class Fit(NoNewAttributesAfterInit):
 
     Parameters
     ----------
-    data : sherpa.data.Data or sherpa.data.DataSimulFit instance
+    data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
        The data to be fit.
-    model : sherpa.models.model.Model or sherpa.models.model.SimulFitModel instance
-       The model to fit to the data. It should match the `data` parameter
-       (i.e. be a SimulFitModel object when data is a DataSimulFit).
-    stat : sherpa.stats.Stat instance or None, optional
+    model : `sherpa.models.model.Model` or `sherpa.models.model.SimulFitModel`
+       The model to fit to the data. It should match the ``data`` parameter
+       (i.e. be a `SimulFitModel` object when data is a `DataSimulFit`).
+    stat : `sherpa.stats.Stat` or `None`, optional
        The statistic object to use. If not given then
-       :py:class:`~sherpa.stats.Chi2Gehrels` is used.
+       `Chi2Gehrels` is used.
     method : sherpa.optmethods.OptMethod instance or None, optional
-       The optimiser to use. If not given then
-       :py:class:`~sherpa.optmethods.LevMar` is used.
+       The optimiser to use. If not given then `LevMar` is used.
     estmethod : sherpa.estmethod.EstMethod instance or None, optional
        The class used to calculate errors. If not given then
-       :py:class:`~sherpa.estmethods.Covariance` is used.
+       `Covariance` is used.
     itermethod_opts : dict or None, optional
        If set, defines the iterated-fit method and options to use.
-       It is passed through to :py:class:`~sherpa.fit.IterFit`.
+       It is passed through to `IterFit`.
 
     """
 
@@ -1085,7 +1082,7 @@ class Fit(NoNewAttributesAfterInit):
     def guess(self, **kwargs):
         """Guess parameter values and limits.
 
-        The model's :py:meth:`~sherpa.models.model.Model.guess` method
+        The model's `sherpa.models.model.Model.guess` method
         is called with the data values (the dependent axis of the
         data set) and the ``kwargs`` arguments.
         """
@@ -1118,7 +1115,7 @@ class Fit(NoNewAttributesAfterInit):
 
         See Also
         --------
-        calc_chisqr, calc_stat_info
+        `calc_chisqr`, `calc_stat_info`
 
         """
 
@@ -1132,16 +1129,15 @@ class Fit(NoNewAttributesAfterInit):
 
         Returns
         -------
-        chisq : array or `None`
+        chisq : array or None
            The chi-square value for each bin of the data, using the
-           current statistic (as set by `set_stat`).  A value of
-           `None` is returned if the statistic is not a chi-square
+           current statistic.
+           A value of `None` is returned if the statistic is not a chi-square
            distribution.
 
         See Also
         --------
         calc_stat, calc_stat_info
-
         """
 
         # Since there is some setup work needed before calling
@@ -1161,7 +1157,7 @@ class Fit(NoNewAttributesAfterInit):
 
         Returns
         -------
-        statinfo : StatInfoResults instance
+        statinfo : `StatInfoResults` instance
            The current statistic value.
 
         See Also
@@ -1191,7 +1187,7 @@ class Fit(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        outfile : str or `None`, optional
+        outfile : str or None, optional
            If not `None` then information on the fit is written to
            this file.
         clobber : bool, optional
@@ -1201,12 +1197,12 @@ class Fit(NoNewAttributesAfterInit):
 
         Returns
         -------
-        fitres : FitResults instance
+        fitres : `FitResults`
 
         Raises
         ------
-        sherpa.utils.err.FitErr
-           This is raised if `clobber` is `False` and `outfile` already
+        `sherpa.utils.err.FitErr`
+           This is raised if ``clobber`` is ``False`` and ``outfile`` already
            exists or if all the bins have been masked out of the fit.
 
         See Also
@@ -1215,7 +1211,7 @@ class Fit(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The file created when `outfile` is set is a simple ASCII
+        The file created when ``outfile`` is set is a simple ASCII
         file with a header line containing the text
         "# nfev statistic" and then a list of the thawed parameters,
         and then one line for each iteration, with the values separated
@@ -1291,13 +1287,13 @@ class Fit(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        *others : sherpa.fit.Fit instances
+        *others : :py:class:`sherpa.fit.Fit` instances
             The ``data`` and ``model`` attributes of these arguments
             are used, along with those from the object.
 
         Returns
         -------
-        fitres : FitResults instance
+        fitres : `FitResults`
 
         See Also
         --------
@@ -1323,26 +1319,26 @@ class Fit(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        methoddict : dict or `None`, optional
+        methoddict : dict or None, optional
             A dictionary mapping from lower-cased method name to
             the associated optimisation method instance to use. This
             is only used if the method is changed, as described in
             the Notes section below.
-        parlist : seqquence of sherpa.model.parameter.Parameter instances or `None`, optional
+        parlist : sequence of `sherpa.model.parameter.Parameter` or None, optional
             The names of the parameters for which the errors should
             be calculated. If set to `None` then all the thawed
             parameters are used.
 
         Returns
         -------
-        res : ErrorEstResults instance
+        res : ErrorEstResults
 
         Raises
         ------
-        sherpa.utils.err.EstErr
+        `sherpa.utils.err.EstErr`
            If any parameter in parlist is not valid (i.e. is not
            thawed or is not a member of the model expression being
-           fit), or if the statistic is :py:class:`~sherpa.stats.LeastSq`,
+           fit), or if the statistic is `LeastSq`,
            or if the reduced chi-square value of the current parameter
            values is larger than the ``max_rstat`` option (for
            chi-square statistics).
@@ -1358,10 +1354,10 @@ class Fit(NoNewAttributesAfterInit):
         new best-fit location. This can repeat until the ``maxfits``
         option is reached.
 
-        Unless the :py:class:`~sherpa.estmethods.Covariance` estimator
-        is being used, ot the ``fast`` option is unset, then the method
-        will be changed to :py:class:`~sherpa.optmethods.NelderMead` (for
-        likelihood-based statistics) or :py:class:`~sherpa.optmethods.LevMar`
+        Unless the `~sherpa.estmethods.Covariance` estimator
+        is being used, or the ``fast`` option is unset, then the method
+        will be changed to `~sherpa.optmethods.NelderMead` (for
+        likelihood-based statistics) or `~sherpa.optmethods.LevMar`
         (for chi-square based statistics) whilst calculating the
         errors.
         """
