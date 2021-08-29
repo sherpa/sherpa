@@ -123,8 +123,10 @@ def test_fake_pha_basic(has_bkg, is_source, reset_seed):
         assert data.counts.sum() >=4
 
 
-def test_fake_pha_background_pha():
+def test_fake_pha_background_pha(reset_seed):
     '''Sample from background pha'''
+    np.random.seed(1234)
+
     data = DataPHA('any', channels, counts, exposure=1000.)
     bkg = DataPHA('bkg', channels, bcounts, exposure=2000, backscal=2.5)
     data.set_background(bkg, id='used-bkg')
