@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2014-2017, 2018, 2020
-#       Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014-2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,9 +17,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-import sys
-import os
 
 from distutils.version import LooseVersion
 from distutils.cmd import Command
@@ -107,16 +104,19 @@ class xspec_config(Command):
                 #
                 for major, minor, patch in [(12, 9, 0), (12, 9, 1),
                                             (12, 10, 0), (12, 10, 1),
-                                            (12, 11, 0), (12, 11, 1)]:
+                                            (12, 11, 0), (12, 11, 1),
+                                            (12, 12, 0)]:
                     version = '{}.{}.{}'.format(major, minor, patch)
                     macro = 'XSPEC_{}_{}_{}'.format(major, minor, patch)
                     if xspec_version >= LooseVersion(version):
                         macros += [(macro, None)]
 
-                # Since there are patches (e.g. 12.10.0c), look for the
-                # "next highest version.
-                if xspec_version >= LooseVersion("12.11.2"):
-                    self.warn("XSPEC Version is greater than 12.11.1, which is the latest supported version for Sherpa")
+                # Since there are patches (e.g. 12.10.0c), look for
+                # the "next highest" version (i.e. increase the
+                # "patch" value by 1).
+                #
+                if xspec_version >= LooseVersion("12.12.1"):
+                    self.warn("XSPEC Version is greater than 12.12.0, which is the latest supported version for Sherpa")
 
             extension = build_ext('xspec', ld, inc, l, define_macros=macros)
 

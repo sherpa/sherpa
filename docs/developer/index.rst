@@ -256,7 +256,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.11.1 down to 12.9.0. It may build against
+:term:`XSPEC` versions 12.12.0 down to 12.9.0. It may build against
 newer versions, but if it does it will not provide access to any new
 models in the release. The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
