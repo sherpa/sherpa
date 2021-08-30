@@ -295,6 +295,8 @@ def set_xsabund(abundance):
      - 'wilm', from [7]_, except for elements not listed which
        are given zero abundance
      - 'lodd', from [8]_
+     - 'lpgp', from [9]_ (photospheric, requires XSPEC 12.12.0 or later)
+     - 'lpgs', from [9]_ (proto-solar, requires XSPEC 12.12.0 or later)
 
     The values for these tables are given at [1]_.
 
@@ -336,6 +338,10 @@ def set_xsabund(abundance):
 
     .. [8] Lodders, K (2003, ApJ 591, 1220)
            https://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+
+    .. [9] Lodders K., Palme H., Gail H.P., Landolt-Börnstein,
+           New Series, vol VI/4B, pp 560–630 (2009)
+           https://ui.adsabs.harvard.edu/abs/2009LanB...4B..712L/abstract
 
     Examples
     --------
