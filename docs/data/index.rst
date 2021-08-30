@@ -247,6 +247,7 @@ preferred approach is to use the classes defined in the
 
 Although the data represented by ``d2`` is
 a histogram, the values are displayed at the center of the bin.
+
 Plot preferences can be changed in the `plot` call:
 
     >>> pdata.plot(linestyle='solid', marker='')
@@ -314,6 +315,7 @@ any :ref:`filtering <data_filter>` applied to the data.
 
 .. image:: ../_static/data/data_eval_model.png
 
+
 Astronomy data
 ==============
 
@@ -326,6 +328,7 @@ Astronomy data
 .. todo::
 
    Want an image section.
+
 
 Reference/API
 =============

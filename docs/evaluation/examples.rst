@@ -149,15 +149,18 @@ is used to show the grid used by
 
 .. _model_evaluate_example_pha:
 
-Handling PHA datasets
-=====================
+X-ray data (:py:mod:`~sherpa.astro.data.DataPHA`)
+=================================================
 
-:term:`PHA` data is more complicated than other data types in Sherpa because
-of the need to convert between the units used by the model (energy
-or wavelength) and the units of the data (channel). As a user you
-will generally be thinking in keV or Angstroms, but the
-:py:class:`~sherpa.astro.data.DataPHA` class has to convert to
-channel units internally.
+:term:`PHA` data is more complicated than other data types in Sherpa
+because of the need to convert between the units used by the model
+(energy or wavelength) and the units of the data (channel). As a user
+you will generally be thinking in keV or Angstroms, but the
+:py:class:`~sherpa.astro.data.DataPHA` class has to convert to channel
+units internally. The :term:`PHA` data format is mainly used for
+astronomical X-ray observatories, such as `Chandra
+<https://cxc.harvard.edu/>`_, `XMM-Newton
+<https://sci.esa.int/web/xmm-newton>`_ or about a dozen other missions.
 
 First we will load in a PHA dataset, along with its response
 files (:term:`ARF` and :term:`RMF`), and have a look at how we can

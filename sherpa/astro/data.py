@@ -1286,6 +1286,8 @@ class DataPHA(Data1D):
     backscal : scalar or array or None, optional
     areascal : scalar or array or None, optional
     header : dict or None, optional
+        If ``None`` the header will be pre-populated with a minimal set of
+        keywords that would be found in an OGIP compliant PHA I file.
 
     Attributes
     ----------
@@ -1488,7 +1490,15 @@ class DataPHA(Data1D):
         self.exposure = exposure
         self.backscal = backscal
         self.areascal = areascal
-        self.header = {} if header is None else header
+        if header is None:
+            self.header = {'HDUCLASS': "OGIP", 'HDUCLAS1': "SPECTRUM",
+                           'HDUCLAS2': "TOTAL", 'HDUCLAS3': "TYPE:I",
+                           'HDUCLAS4': "COUNT", 'HDUVERS': "1.2.1",
+                           'TELESCOP': "UNKNOWN", 'INTRUME': "UNKNOWN",
+                           "FILTER": "UNKNOWN", "POISSERR": True}
+
+        else:
+            self.header = header
         self._grouped = (grouping is not None)
         # _original_groups is set False if the grouping is changed via
         # the _dynamic_groups method. This is currently only used by the
@@ -1723,7 +1733,7 @@ class DataPHA(Data1D):
 
         See Also
         --------
-        get_response, get_rmf
+        get_response, get_rmf, get_full_responses
 
         """
         return self.get_response(id)[0]
@@ -1744,7 +1754,7 @@ class DataPHA(Data1D):
 
         See Also
         --------
-        get_arf, get_response
+        get_arf, get_response, get_full_responses
 
         """
         return self.get_response(id)[1]
@@ -1826,6 +1836,44 @@ class DataPHA(Data1D):
                 newarf = self.apply_filter(newarf, self._middle)
 
         return newarf
+
+    def get_full_response(self, pileup_model=None):
+        """Calculate the response for the dataset.
+
+        Unlike `get_response`, which returns a single response, this function
+        returns all responses for datasets that have multiple responses set
+        and it offers the possibility to include a pile-up model.
+
+        Parameters
+        ----------
+        pileup_model : None or a `sherpa.astro.models.JDPileup` instance
+            If a pileup model shall be included in the return, then it needs
+            to be passed in.
+
+        Returns
+        -------
+        response
+           The return value depends on whether an ARF, RMF, or pile up
+           model has been associated with the data set.
+
+        See Also
+        --------
+        get_response, get_arf, get_rmf
+        """
+        # import is here because sherpa.astro.instrument depends on
+        # sherpa.astro.data. Importing here instead of on the top
+        # avoids a circular import.
+        from sherpa.astro import instrument
+
+        if pileup_model is not None:
+            resp = instrument.PileupResponse1D(self, pileup_model)
+        elif len(self._responses) > 1:
+            resp = instrument.MultipleResponse1D(self)
+        else:
+            resp = instrument.Response1D(self)
+
+        return resp
+
 
     def _get_ebins(self, response_id=None, group=True):
         """Return the low and high edges of the independent axis.

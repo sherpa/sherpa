@@ -40,6 +40,8 @@ from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
+from sherpa.astro import fake
+from sherpa.astro.data import DataPHA
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -8648,23 +8650,24 @@ class Session(sherpa.ui.utils.Session):
         time, along with a Poisson noise term. A background component can
         be included.
 
-        .. versionchanged:: 4.13.1
-           Using an id parameter of None now means that the default
-           dataset identifier is used, rather than creating a
-           completely new dataset.
-
         Parameters
         ----------
         id : int or str
            The identifier for the data set to create. If it already
            exists then it is assumed to contain a PHA data set and the
            counts will be over-written.
-        arf : filename or ARF object
+        arf : filename or ARF object or list of filenames
            The name of the ARF, or an ARF data object (e.g.  as
-           returned by `get_arf` or `unpack_arf`).
-        rmf : filename or RMF object
+           returned by `get_arf` or `unpack_arf`). A list of filenames
+           can be passed in for instruments that require multile ARFs.
+           Set this to `None` to use any arf that is already set for
+           the data set given by id.
+        rmf : filename or RMF object or list of filenames
            The name of the RMF, or an RMF data object (e.g.  as
-           returned by `get_arf` or `unpack_arf`).
+           returned by `get_arf` or `unpack_arf`).  A list of filenames
+           can be passed in for instruments that require multile RMFs.
+           Set this to `None` to use any arf that is already set for
+           the data set given by id.
         exposure : number
            The exposure time, in seconds.
         backscal : number, optional
@@ -8683,7 +8686,11 @@ class Session(sherpa.ui.utils.Session):
            If left empty, then only the source emission is simulated.
            If set to a PHA data object, then the counts from this data
            set are scaled appropriately and added to the simulated
-           source signal.
+           source signal. To use background model, set ``bkg="model"`. In that
+           case a background dataset with ``bkg_id=1`` has to be set before
+           calling ``fake_pha``. That background dataset needs to include
+           the data itself (not used in this function), the background model,
+           and the response.
 
         Raises
         ------
@@ -8745,20 +8752,29 @@ class Session(sherpa.ui.utils.Session):
         ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
 
+        Sometimes, the background dataset is noisy because there are not
+        enough photons in the background region. In this case, the background
+        model can be used to generate the photons that the background
+        contributes to the source spectrum. To do this, a background model
+        must be passed in. This model is then convolved with the ARF and RMF
+        (which must be set before) of the default background data set:
+
+        >>> set_bkg_source('sim', 'const1d.con1')
+        >>> load_arf('sim', 'bkg.arf.fits', bkg_id=1)
+        >>> load_rmf('sim', 'bkg_rmf.fits', bkg_id=1)
+        >>> fake_pha('sim', arf, rmf, texp, backscal=bscal, bkg='model',
+        ...          grouping=grp, quality=qual, grouped=True)
+        >>> save_pha('sim', 'sim.pi')
         """
         id = self._fix_id(id)
-        d = sherpa.astro.data.DataPHA('', None, None)
+
         if id in self._data:
             d = self._get_pha_data(id)
         else:
-            # Make empty header OGIP compliant
-            # And add appropriate values to header from input values
-            d.header = dict(HDUCLASS="OGIP", HDUCLAS1="SPECTRUM",
-                            HDUCLAS2="TOTAL", HDUCLAS3="TYPE:I",
-                            HDUCLAS4="COUNT", HDUVERS="1.1.0")
+            d = sherpa.astro.data.DataPHA('', None, None)
             self.set_data(id, d)
 
-        if rmf is None:
+        if rmf is None and len(d.response_ids) == 0:
             raise DataErr('normffake', id)
 
         if type(rmf) in (str, numpy.string_):
@@ -8767,11 +8783,46 @@ class Session(sherpa.ui.utils.Session):
             else:
                 raise IOErr("filenotfound", rmf)
 
-        if arf is not None and type(arf) in (str, numpy.string_):
+        if type(arf) in (str, numpy.string_):
             if os.path.isfile(arf):
                 arf = self.unpack_arf(arf)
             else:
                 raise IOErr("filenotfound", arf)
+
+        if not (rmf is None and arf is None):
+            for resp_id in d.response_ids:
+                d.delete_response(resp_id)
+
+        # Get one rmf for testing the channel number
+        # This would be a lot simpler if I could just raise the
+        # incombatiblersp error on the OO layer (that happens, but the id
+        # is not in the error messaage).
+        if rmf is None:
+            rmf0 = d.get_rmf()
+        elif numpy.iterable(rmf):
+            rmf0 = self.unpack_rmf(rmf[0])
+        else:
+            rmf0 = rmf
+
+        if d.channel is None:
+            d.channel = sao_arange(1, rmf0.detchans)
+
+        else:
+            if len(d.channel) != rmf0.detchans:
+                raise DataErr('incompatibleresp', rmf.name, str(id))
+
+        # at this point, we can be sure that arf is not a string, because
+        # if it was, it would have gone through load_arf already above.
+        if not (rmf is None and arf is None):
+            if numpy.iterable(arf):
+                self.load_multi_arfs(id, arf, range(len(arf)))
+            else:
+                self.set_arf(id, arf)
+
+            if numpy.iterable(rmf):
+                self.load_multi_rmfs(id, rmf, range(len(rmf)))
+            else:
+                self.set_rmf(id, rmf)
 
         d.exposure = exposure
 
@@ -8784,13 +8835,6 @@ class Session(sherpa.ui.utils.Session):
         if quality is not None:
             d.quality = quality
 
-        if d.channel is None:
-            d.channel = sao_arange(1, rmf.detchans)
-
-        else:
-            if len(d.channel) != rmf.detchans:
-                raise DataErr('incompatibleresp', rmf.name, str(id))
-
         if grouping is not None:
             d.grouping = grouping
 
@@ -8800,58 +8844,27 @@ class Session(sherpa.ui.utils.Session):
             else:
                 d.ungroup()
 
-        for resp_id in d.response_ids:
-            d.delete_response(resp_id)
-
-        if arf is not None:
-            self.set_arf(id, arf)
-
-        self.set_rmf(id, rmf)
-
         # Update background here.  bkg contains a new background;
         # delete the old background (if any) and add the new background
         # to the simulated data set, BEFORE simulating data, and BEFORE
         # adding scaled background counts to the simulated data.
+        bkg_models = {}
         if bkg is not None:
-            for bkg_id in d.background_ids:
-                d.delete_background(bkg_id)
-            self.set_bkg(id, bkg)
+            if bkg == 'model':
+                bkg_models = {1: self.get_bkg_source(id)}
+            else:
+                for bkg_id in d.background_ids:
+                    d.delete_background(bkg_id)
+                self.set_bkg(id, bkg)
 
         # Calculate the source model, and take a Poisson draw based on
         # the source model.  That becomes the simulated data.
         m = self.get_model(id)
-        d.counts = sherpa.utils.poisson_noise(d.eval_model(m))
 
-        # Add in background counts:
-        #  -- Scale each background properly given data's
-        #     exposure time, BACKSCAL and AREASCAL
-        #  -- Take average of scaled backgrounds
-        #  -- Take a Poisson draw based on the average scaled background
-        #  -- Add that to the simulated data counts
-        #
-        # Adding background counts is OPTIONAL, only done if user sets
-        # "bkg" argument to fake_pha.  The reason is that the user could
-        # well set a "source" model that does include a background
-        # component.  In that case users should have the option to simulate
-        # WITHOUT background counts being added in.
-        #
-        # If bkg is not None, then backgrounds were previously updated
-        # above, so it is OK to use "bkg is not None" as the condition
-        # here.
-        if bkg is not None:
-            nbkg = len(d.background_ids)
-            b = 0
-            for bkg_id in d.background_ids:
-                # we do (probably) want to filter and group the scale array
-                b += d.get_background_scale(bkg_id) * \
-                    d.get_background(bkg_id).counts
-
-            if nbkg > 0:
-                b = b / nbkg
-                b_poisson = sherpa.utils.poisson_noise(b)
-                d.counts = d.counts + b_poisson
-
+        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
+                      id=str(id), bkg_models=bkg_models)
         d.name = 'faked'
+
 
     ###########################################################################
     # PSF
@@ -9005,9 +9018,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
 
         # Add any convolution components from the sherpa.ui layer
-        model = \
-            sherpa.ui.utils.Session._add_convolution_models(self, id, data,
-                                                            model, is_source)
+        model = super()._add_convolution_models(id, data, model, is_source)
 
         # If we don't need to deal with DataPHA issues we can return
         if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
@@ -9032,16 +9043,8 @@ class Session(sherpa.ui.utils.Session):
            model has been associated with the data set.
 
         """
-
         pileup_model = self._pileup_models.get(id)
-        if pileup_model is not None:
-            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
-        elif len(pha._responses) > 1:
-            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
-        else:
-            resp = sherpa.astro.instrument.Response1D(pha)
-
-        return resp
+        return pha.get_full_response(pileup_model)
 
     def get_response(self, id=None, bkg_id=None):
         """Return the response information applied to a PHA data set.
@@ -9373,7 +9376,7 @@ class Session(sherpa.ui.utils.Session):
         if not is_source:
             return src
 
-        # The background response is set bu the DataPHA.set_background
+        # The background response is set by the DataPHA.set_background
         # method (copying one over, if it does not exist), which means
         # that the only way to get to this point is if the user has
         # explicitly deleted the background response. In this case
