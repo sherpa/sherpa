@@ -360,6 +360,14 @@ void kyconv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void thcompf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 #endif
 
+// XSPEC 12.12.0 changes
+#ifdef XSPEC_12_12_0
+// Note: have dropped the leading 'c_' for this model to follow xsgrbcomp
+void xsgrbjet(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+void zxipab_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 }
 
 // This routine could be called when the module is being initialized,
@@ -368,7 +376,11 @@ void thcompf_(float* ear, int* ne, float* param, int* ifl, float* photar, float*
 // that they call _sherpa_init_xspec_library before calling any
 // XSPEC routine.
 //
-// Sun's C++ compiler complains if this is declared static
+// Sun's C++ compiler complains if this is declared static.
+//
+// TODO: should we expose this so that anyone who wants to use a user-model
+//       can access it?
+//
 int _sherpa_init_xspec_library()
 {
 
@@ -1409,6 +1421,15 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(olivineabs, 2),
   XSPECMODELFCT_C(C_logconst, 1),
   XSPECMODELFCT_C(C_log10con, 1),
+#endif
+
+#ifdef XSPEC_12_12_0
+  XSPECMODELFCT_C_NORM( xsgrbjet, 14 ),  // follow xsgrbcomp and drop the leading c_
+  XSPECMODELFCT_C_NORM( C_vvwDem, 37 ),
+  XSPECMODELFCT_C_NORM( C_vwDem, 21 ),
+  XSPECMODELFCT_C_NORM( C_wDem, 8 ),
+
+  XSPECMODELFCT(zxipab, 5),
 #endif
 
   { NULL, NULL, 0, NULL }
