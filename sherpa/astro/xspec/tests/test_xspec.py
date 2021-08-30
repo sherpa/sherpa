@@ -37,7 +37,7 @@ from sherpa.utils.err import ParameterErr
 #    '(XSConvolutionKernel)'
 # in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 225
+XSPEC_MODELS_COUNT = 230
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -106,6 +106,12 @@ def get_xspec_models():
     # for now. This problem has been reported to the XSPEC developers,
     # so it will hopefully be fixed in one of ther 12.9.0 patches.
     remove_item(model_names, 'XSsirf')
+
+    # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
+    # occasionally evaluate to all 0's. This has been reported, but for now
+    # skip this model.
+    #
+    remove_item(model_names, 'XSgrbjet')
 
     models = [getattr(xs, model_name) for model_name in model_names]
     models = list(filter(lambda mod: mod.version_enabled, models))
@@ -228,6 +234,28 @@ def test_create_model_instances(clean_astro_ui):
             count += 1
 
     assert count == XSPEC_MODELS_COUNT
+
+
+@requires_xspec
+def test_check_default_name():
+    import sherpa.astro.xspec as xs
+
+    for clname in dir(xs):
+        if not clname.startswith('XS'):
+            continue
+
+        cls = getattr(xs, clname)
+        if is_proper_subclass(cls, (xs.XSAdditiveModel,
+                                    xs.XSMultiplicativeModel,
+                                    xs.XSConvolutionKernel)):
+
+            # At the moment we have some defaulting to xs... and some just ...
+            # (the forner are convolution cases which should probably be
+            # switched to drop the leading xs).
+            #
+            mdl = cls()
+            expected = clname.lower()
+            assert mdl.name in [expected, expected[2:]]
 
 
 @requires_xspec

@@ -1930,7 +1930,7 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec
+    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec, XSwdem
 
     References
     ----------
@@ -4934,7 +4934,7 @@ class XSgrbcomp(XSAdditiveModel):
 
     See Also
     --------
-    XSgrbm
+    XSgrbjet, XSgrbm
 
     Notes
     -----
@@ -4963,6 +4963,86 @@ class XSgrbcomp(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kTs, self.gamma, self.kTe, self.tau, self.beta, self.fbflag, self.log_A, self.z, self.a_boost, self.norm))
 
 
+@version_at_least("12.12.0")
+class XSgrbjet(XSAdditiveModel):
+    """The XSPEC grbjet model: Two-phase Comptonization model of soft thermal seed photons for GRB prompt emission
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    thobs
+        The observing viewing angle in degrees.
+    thjet
+        The jet half-opening angle in degrees.
+    gamma
+        The jet gamma Lorentz factor.
+    r12
+        The jet radius in 10^12 cm.
+    p1
+        The low-energy index of the coming frame broken powerlaw
+        spectrum.
+    p2
+        The high-energy index of the coming frame broken powerlaw
+        spectrum.
+    E0
+        The break energy in keV.
+    delta
+        The smoothness of the transition between the two powerlaws.
+    index_pl
+        The energy index of the comoving-frame cutoff powerlaw
+        spectrum.
+    ecut
+        The cut-off energy in keV.
+    ktbb
+        The comoving frame blackbody temperature in keV.
+    model
+        The comoving frame emissivity law: 1 is broken powerlaw,
+        2 is cutoff powerlaw, and 3 is blackbody.
+    redshift
+        The source redshift.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSgrbcomp, XSgrbm
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGrbjet.html
+
+    """
+
+    __function__ = "xsgrbjet"
+
+    def __init__(self, name='grbjet'):
+        self.thobs = XSParameter(name, 'thobs', 5.0, min=0.0, max=30.0, hard_min=0.0, hard_max=30.0, frozen=True)
+        self.thjet = XSParameter(name, 'thjet', 10.0, min=2.0, max=20.0, hard_min=2.0, hard_max=20.0, frozen=True)
+        self.gamma = XSParameter(name, 'gamma', 200.0, min=1.0, max=500.0, hard_min=1.0, hard_max=500.0)
+        self.r12 = XSParameter(name, 'r12', 1.0, min=0.1, max=100.0, hard_min=0.1, hard_max=100.0, frozen=True)
+        self.p1 = XSParameter(name, 'p1', 0.0, min=-2.0, max=1.0, hard_min=-2.0, hard_max=1.0)
+        self.p2 = XSParameter(name, 'p2', 1.5, min=1.1, max=10.0, hard_min=1.1, hard_max=10.0)
+        self.E0 = XSParameter(name, 'E0', 1.0, min=0.1, max=1000.0, hard_min=0.1, hard_max=1000.0, units='keV')
+        self.delta = XSParameter(name, 'delta', 0.2, min=0.01, max=1.5, hard_min=0.01, hard_max=1.5, frozen=True)
+        self.index_pl = XSParameter(name, 'index_pl', 0.8, min=0.0, max=1.5, hard_min=0.0, hard_max=1.5, frozen=True)
+        self.ecut = XSParameter(name, 'ecut', 20.0, min=0.1, max=1000.0, hard_min=0.1, hard_max=1000.0, frozen=True, units='keV')
+        self.ktbb = XSParameter(name, 'ktbb', 1.0, min=0.1, max=1000.0, hard_min=0.1, hard_max=1000.0, frozen=True, units='keV')
+        self.model = XSParameter(name, 'model', 1, alwaysfrozen=True)
+        self.redshift = XSParameter(name, 'redshift', 2.0, min=0.01, max=10.0, hard_min=0.001, hard_max=10.0, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.thobs, self.thjet, self.gamma, self.r12,
+                                              self.p1, self.p2, self.E0, self.delta,
+                                              self.index_pl, self.ecut, self.ktbb,
+                                              self.model, self.redshift, self.norm))
+
+
 class XSgrbm(XSAdditiveModel):
     """The XSPEC grbm model: gamma-ray burst continuum.
 
@@ -4987,7 +5067,7 @@ class XSgrbm(XSAdditiveModel):
 
     See Also
     --------
-    XSgrbcomp
+    XSgrbcomp, XSgrbjet
 
     References
     ----------
@@ -9286,6 +9366,233 @@ class XSvvtapec(XSAdditiveModel):
                                  (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.norm))
 
 
+@version_at_least("12.12.0")
+class XSvvwdem(XSAdditiveModel):
+    """The XSPEC vvwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        What model to use: 0 calculates with MEKAL, 1 interpolates
+        with MEKAL, and 2 interpoates with APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvwdem, XSwdem
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_vvwDem"
+
+    def __init__(self, name='vvwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        # can not use p for the name as it conflicts with P
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.Tmax, self.beta, self.inv_slope, self.nH,
+                                              self.H, self.He, self.Li, self.Be, self.B,
+                                              self.C, self.N, self.O, self.F, self.Ne,
+                                              self.Na, self.Mg, self.Al, self.Si, self.P,
+                                              self.S, self.Cl, self.Ar, self.K, self.Ca,
+                                              self.Sc, self.Ti, self.V, self.Cr, self.Mn,
+                                              self.Fe, self.Co, self.Ni, self.Cu, self.Zn,
+                                              self.redshift, self.switch, self.norm))
+
+
+@version_at_least("12.12.0")
+class XSvwdem(XSAdditiveModel):
+    """The XSPEC vwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        What model to use: 0 calculates with MEKAL, 1 interpolates
+        with MEKAL, and 2 interpoates with APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvvwdem, XSwdem
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_vwDem"
+
+    def __init__(self, name='vwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        # can not use p for the name as it conflicts with P for the XSvvwdem model
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.Tmax, self.beta, self.inv_slope, self.nH,
+                                              self.He, self.C, self.N, self.O, self.Ne,
+                                              self.Na, self.Mg, self.Al, self.Si, self.S,
+                                              self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
+
+
+@version_at_least("12.12.0")
+class XSwdem(XSAdditiveModel):
+    """The XSPEC wdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    abundanc
+        The abundance relative to solar.
+    Redshift
+        The redshift of the plasma.
+    switch
+        What model to use: 0 calculates with MEKAL, 1 interpolates
+        with MEKAL, and 2 interpoates with APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSmekal, XSvwdem, XSvvdem
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_wDem"
+
+    def __init__(self, name='wdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        # can not use p for the name as it conflicts with P for the XSvvwdem model
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.Tmax, self.beta, self.inv_slope, self.nH,
+                                              self.abundanc, self.redshift, self.switch,
+                                              self.norm))
+
+
 class XSzagauss(XSAdditiveModel):
     """The XSPEC zagauss model: gaussian line profile in wavelength space.
 
@@ -10618,7 +10925,7 @@ class XSpwab(XSMultiplicativeModel):
 
     See Also
     --------
-    XSpcfabs, XSwabs
+    XSpcfabs, XSwabs, XSzxipab
 
     References
     ----------
@@ -11835,6 +12142,50 @@ class XSzphabs(XSMultiplicativeModel):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+
+
+@version_at_least("12.12.0")
+class XSzxipab(XSMultiplicativeModel):
+    """The XSPEC zxipab model: power-law distribution of ionized absorbers.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHmin
+        The minimum equivalent hydrogen column (in units of
+        10^22 atoms/cm^2).
+    nHmax
+        The maximum equivalent hydrogen column (in units of
+        10^22 atoms/cm^2).
+    beta
+        The power law index for the covering fraction.
+
+    See Also
+    --------
+    XSpwab
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZxipab.html
+
+    """
+
+    __function__ = "zxipab"
+
+    def __init__(self, name='zxipab'):
+        self.nHmin = XSParameter(name, 'nHmin', 0.01, min=1e-07, max=1000.0, hard_min=1e-07, hard_max=1000000.0, units='10^22')
+        self.nHmax = XSParameter(name, 'nHmax', 10.0, min=1e-07, max=1000.0, hard_min=1e-07, hard_max=1000000.0, units='10^22')
+        self.beta = XSParameter(name, 'beta', 0.0, min=-10.0, max=10.0, hard_min=-10.0, hard_max=10.0)
+        self.log_xi = XSParameter(name, 'log_xi', 3.0, min=-3.0, max=6.0, hard_min=-3.0, hard_max=6.0)
+        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        XSMultiplicativeModel.__init__(self, name, (self.nHmin, self.nHmax, self.beta,
+                                                    self.log_xi, self.redshift))
 
 
 class XSzxipcf(XSMultiplicativeModel):
