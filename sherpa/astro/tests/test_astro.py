@@ -784,6 +784,12 @@ def test_proj_bubble(run_thread):
     # temperature can jump from ~17.9 to 18.6, so require bcmc
     # in this test.
     #
+    # Note that the error on kT is large, so we can expect that
+    # changes to the system could change these results. In particular,
+    # the covariance errors on kt are < 1 but from other error
+    # analysis they are > 10 or even unbound, so it is likely that the
+    # covariance error results can change significantly.
+    #
     xspec.set_xsxsect('bcmc')
     models = run_thread('proj_bubble')
 
@@ -810,10 +816,10 @@ def test_proj_bubble(run_thread):
     #
     # TODO: should this check that parmaxes is -1 * parmins instead?
     covar = ui.get_covar_results()
-    assert covar.parmins[0] == approx(-0.328832, rel=0.1)
-    assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
-    assert covar.parmaxes[0] == approx(0.328832, rel=0.1)
-    assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
+    assert covar.parmins[0] == approx(-0.653884, rel=0.1)
+    assert covar.parmins[1] == approx(-8.94436e-07, rel=0.01)
+    assert covar.parmaxes[0] == approx(0.653884, rel=0.1)
+    assert covar.parmaxes[1] == approx(8.94436e-07, rel=0.01)
 
     # Proj -- Upper bound of kT can't be found
     #
