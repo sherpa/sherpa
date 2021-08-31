@@ -1060,6 +1060,14 @@ class XSParameter(XSBaseParameter):
                     default_min=default_min,
                     default_max=default_max)
 
+    def hard_min_changed(self):
+        """Has the hard limit (min) been changed from it's default value?"""
+        return self._xspec_hard_min != self.hard_min
+
+    def hard_max_changed(self):
+        """Has the hard limit (max) been changed from it's default value?"""
+        return self._xspec_hard_max != self.hard_max
+
 
 class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     """The base class for XSPEC models.
