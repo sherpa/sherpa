@@ -97,6 +97,7 @@ from . import _xspec
 
 
 info = logging.getLogger(__name__).info
+warning = logging.getLogger(__name__).warning
 
 # Python wrappers around the exported functions from _xspec. This
 # provides a more-accurate function signature to the user, makes
@@ -886,6 +887,8 @@ class XSBaseParameter(Parameter):
 
         self._xspec_soft_min = min
         self._xspec_soft_max = max
+        self._xspec_hard_min = hard_min
+        self._xspec_hard_max = hard_max
         super().__init__(modelname, name, val, min=hard_min, max=hard_max,
                          hard_min=hard_min, hard_max=hard_max, units=units,
                          frozen=frozen, alwaysfrozen=alwaysfrozen,
@@ -895,12 +898,10 @@ class XSBaseParameter(Parameter):
 class XSParameter(XSBaseParameter):
     """An XSPEC parameter where you exceed the hard limits.
 
-    This parameter allows the value to be set *outside* the hard
-    limits of the parameter. When this is done a message is logged to
-    the screen *and* the parameter is frozen (if needed). Parameters
-    outside the hard limits can not be thawed until they are set back
-    to a value within the hard limits, at which time the value will be
-    automatically thawed if it was thawed originally.
+    This parameter allows a user to change the hard limits (``hard_min``
+    and ``hard_max``). XSPEC allows the hard limits to be extended,
+    and this is used in a few models to trigger different behavior (e.g.
+    setting the value negative).
 
     See Also
     --------
@@ -912,13 +913,20 @@ class XSParameter(XSBaseParameter):
     when the value is outside the XSPEC hard limits from the model.dat
     file (normally the hard minimum is 0 and setting the parameter
     negative changes the model in some way). XSPEC allows a user to
-    change the hard limits but in Sherpa we want to keep the limits as
-    is, so we over-ride the handling of the parameter value field.
+    change the hard limits so we do the same here.
+
+    Setting the hard limit will also change the corresponding soft limit.
+
+    Setting a value outside the original hard limits can cause models
+    to fail or even crash the interpreter. These parameters should
+    probably be frozen.
 
     Examples
     --------
 
     >>> p = XSParameter('mod', 'p', 2, min=1, max=9, hard_min=0, hard_max=10)
+    >>> p.frozen
+    False
     >>> p.min
     0.0
     >>> p.hard_min
@@ -928,109 +936,129 @@ class XSParameter(XSBaseParameter):
     >>> p.hard_max
     10.0
     >>> p.val = 20
-    Parameter mod.p is outside limits; freezing
-    >>> p.frozen
-    True
-    >>> p.val = 5
-    Parameter mod.p is back inside limits; thawing
+    sherpa.utils.err.ParameterErr: parameter mod.p has a maximum of 10
+    >>> p.max = 30
+    sherpa.utils.err.ParameterErr: parameter mod.p has a hard maximum of 10
+    >>> p.hard_max = 30
+    >>> p.max
+    30.0
+    >>> p.hard_max
+    30.0
+    >>> p.val = 20
     >>> p.frozen
     False
 
-    >>> p = XSParameter('mod', 'p', 2, min=1, max=9, hard_min=0, hard_max=10)
-    >>> p.freeze()
-    >>> p.val = 20
-    >>> p.frozen
-    True
-    >>> p.val = 5
-    >>> p.frozen
-    True
-
     """
 
-    def __init__(self, modelname, name, val, min=-hugeval, max=hugeval,
-                 hard_min=-hugeval, hard_max=hugeval, units='',
-                 frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
+    def _set_hard_min(self, val):
 
-        # _xspec_frozen_state is used to store the frozen flag when a value
-        # is set out of bounds, and cleared when it goes back to a valid
-        # range so we can tell if we are "invalid" by checking whether it is
-        # not None.
+        # Ensure we are not selecting a value that doesn't make sense.
         #
-        self._xspec_frozen_state = None
-
-        super().__init__(modelname, name, val, min=hard_min, max=hard_max,
-                         hard_min=hard_min, hard_max=hard_max, units=units,
-                         frozen=frozen, alwaysfrozen=alwaysfrozen,
-                         hidden=hidden, aliases=aliases)
-
-        # The parent class (XSBaseParameter) will over-write these values
-        # as it is sent the hard limits, so we need to reset them. This is
-        # ugly.
-        #
-        self._xspec_soft_min = min
-        self._xspec_soft_max = max
-
-    def _set_val(self, val):
-
-        if isinstance(val, Parameter):
-            self.link = val
-            self._xspec_frozen_state = None
-            return
-
-        # Reset link
-        self.link = None
-
         val = SherpaFloat(val)
-        self._val = val
-        self._default_val = val
+        if val >= self.max:
+            raise ParameterErr('edge', self.fullname,
+                               'maximum', self.max)
 
-        # Are we being set outside the hard range?
+        # If we have increased the minimum value so that the current
+        # value is now excluded we need to update it.
         #
-        if (val < self.hard_min) or (val > self.hard_max):
+        if self.val < val:
+            self.val = val
+            warning(f'parameter {self.fullname} less than new minimum; reset to {self.val}')
 
-            # Is this the first time we are going from "okay" to outside
-            # the valid range.
-            #
-            if self._xspec_frozen_state is None:
-                self._xspec_frozen_state = self.frozen
-
-            if not self.frozen:
-                info(f"Parameter {self.fullname} is outside limits; freezing")
-                self.frozen = True
-
-            return
-
-        # We are not going from outside the hard limits to within the hard limits,
-        # so can return now.
+        # Set both soft and hard limits. We use _min so we don't
+        # trigger any validation of the value (e.g. when the new
+        # minimum is larger than the old minimum).
         #
-        if self._xspec_frozen_state is None:
-            return
+        self._min = val
+        self._hard_min = val
 
-        oldstate = self._xspec_frozen_state
+    hard_min = property(Parameter._get_hard_min, _set_hard_min,
+                        doc='The hard minimum of the parameter.\n\n' +
+                        'Unlike normal parameters the ``hard_min`` value can be changed (and\n' +
+                        'will also change the correspondnig ``min`` value at the same time).\n' +
+                        'This is needed to support the small-number of XSPEC models that\n' +
+                        'use a value outside the default hard range as a way to control the\n' +
+                        'model. Unfortunately some models can crash when using values like\n' +
+                        'this so take care.\n\n' +
+                        'See Also\n' +
+                        '--------\n' +
+                        'hard_max\n')
 
-        # Remove the "state" check so that we can call _set_frozen
+    def _set_hard_max(self, val):
+
+        # Ensure we are not selecting a value that doesn't make sense.
         #
-        self._xspec_frozen_state = None
+        val = SherpaFloat(val)
+        if val <= self.min:
+            raise ParameterErr('edge', self.fullname,
+                               'minimum', self.min)
 
-        # Only need to change the state if the parameter was originally thawed.
+        # If we have decreased the maximum value so that the current
+        # value is now excluded we need to update it.
         #
-        if not oldstate:
-            info(f"Parameter {self.fullname} is back inside limits; thawing")
-            self.frozen = False
+        if self.val > val:
+            self.val = val
+            warning(f'parameter {self.fullname} greater than new maximum; reset to {self.val}')
 
-    # DOC: do we want to note the change in behavior to _set_val
-    val = property(Parameter._get_val, _set_val, doc=Parameter.val.__doc__)
+        # Set both soft and hard limits. We use _max so we don't
+        # trigger any validation of the value (e.g. when the new
+        # maximum is smaller than the old maximum).
+        #
+        self._max = val
+        self._hard_max = val
 
-    # We can not thaw a parameter when it is outside the min/max range
-    #
-    def _set_frozen(self, val):
-        val = bool(val)
-        if (not val) and (self._xspec_frozen_state is not None):
-            raise ParameterErr('frozen', self.fullname)
+    hard_max = property(Parameter._get_hard_max, _set_hard_max,
+                        doc='The hard maximum of the parameter.\n\n' +
+                        'Unlike normal parameters the ``hard_max`` value can be changed (and\n' +
+                        'will also change the correspondnig ``max`` value at the same time).\n' +
+                        'This is needed to support the small-number of XSPEC models that\n' +
+                        'use a value outside the default hard range as a way to control the\n' +
+                        'model. Unfortunately some models can crash when using values like\n' +
+                        'this so take care.\n\n' +
+                        'See Also\n' +
+                        '--------\n' +
+                        'hard_min\n')
 
-        super()._set_frozen(val)
+    def set(self, val=None, min=None, max=None, frozen=None,
+            default_val=None, default_min=None, default_max=None,
+            hard_min=None, hard_max=None):
+        """Change a parameter setting.
 
-    frozen = property(Parameter._get_frozen, _set_frozen, doc=Parameter.frozen.__doc__)
+        The hard limits can be changed, which will also change the
+        matching soft limit. Note that XSPEC models can cause a crash
+        if sent an un-supported value so use this feature carefully;
+        it is likely that these parameters should also be frozen but
+        this is not enforced.
+
+        Parameters
+        ----------
+        val : number or None, optional
+            The new parameter value.
+        min, max : number or None, optional
+            The new parameter range.
+        frozen : bool or None, optional
+            Should the frozen flag be set?
+        default_val : number or None, optional
+            The new default parameter value.
+        default_min, default_max : number or None, optional
+            The new default parameter limits.
+        hard_min, hard_max : numer or None, optional
+            Changing the hard limits will also change the matching
+            soft limit (``min`` or ``max``).
+
+        """
+
+        if hard_min is not None:
+            self.hard_min = hard_min
+
+        if hard_max is not None:
+            self.hard_max = hard_max
+
+        super().set(val=val, min=min, max=max, frozen=frozen,
+                    default_val=default_val,
+                    default_min=default_min,
+                    default_max=default_max)
 
 
 class XSModel(RegriddableModel1D, metaclass=ModelMeta):
