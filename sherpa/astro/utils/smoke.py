@@ -24,7 +24,7 @@ from tempfile import NamedTemporaryFile
 import unittest
 
 import numpy as np
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_allclose
 
 from sherpa.astro import ui
 from sherpa.utils.testing import has_package_from_list
@@ -198,7 +198,7 @@ class SmokeTest(unittest.TestCase):
         model = ui.get_model_component("p")
         expected = [-1.2940997851602858, 0.5969328003146177]
         observed = [model.PhoIndex.val, model.norm.val]
-        assert_almost_equal(observed, expected)
+        assert_allclose(observed, expected, rtol=1e-6)
 
     def test_failure(self):
         """

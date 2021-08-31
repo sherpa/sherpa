@@ -403,8 +403,14 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     # when used in the test suite it appears that the tmod
     # global symbol is not created, so need to access the component
     tmod = ui.get_model_component('tmod')
+    elo = numpy.arange(1, 5)
+    ehi = elo + 1
+
+    print(tmod)
+
     with pytest.raises(ParameterErr) as e:
-        tmod.calc([0., .2, 1., 1.], numpy.arange(1, 5), numpy.arange(2, 6))
+        tmod.calc([0., .2, 1., 1.], elo, ehi)
+
     assert 'minimum' in str(e)
 
 

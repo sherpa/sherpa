@@ -331,10 +331,10 @@ gal.integrate = True
 
 gal.nH.default_val = 1.0
 gal.nH.default_min = 0.0
-gal.nH.default_max = 100000.0
+gal.nH.default_max = 1000000.0
 gal.nH.val     = 1.0
 gal.nH.min     = 0.0
-gal.nH.max     = 100000.0
+gal.nH.max     = 1000000.0
 gal.nH.units   = "10^22 atoms / cm^2"
 gal.nH.frozen  = False
 
@@ -462,10 +462,10 @@ ggal.integrate = True
 
 ggal.nH.default_val = 2.0
 ggal.nH.default_min = 0.0
-ggal.nH.default_max = 100000.0
+ggal.nH.default_max = 1000000.0
 ggal.nH.val     = 2.0
 ggal.nH.min     = 0.0
-ggal.nH.max     = 100000.0
+ggal.nH.max     = 1000000.0
 ggal.nH.units   = "10^22 atoms / cm^2"
 ggal.nH.frozen  = True
 
@@ -584,10 +584,10 @@ ggal.integrate = True
 
 ggal.nH.default_val = 2.0
 ggal.nH.default_min = 0.0
-ggal.nH.default_max = 100000.0
+ggal.nH.default_max = 1000000.0
 ggal.nH.val     = 2.0
 ggal.nH.min     = 0.0
-ggal.nH.max     = 100000.0
+ggal.nH.max     = 1000000.0
 ggal.nH.units   = "10^22 atoms / cm^2"
 ggal.nH.frozen  = True
 
