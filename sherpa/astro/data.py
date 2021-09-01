@@ -1266,7 +1266,7 @@ class DataRosatRMF(DataRMF):
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
-    The PHA format is described in an OGIP document [1]_.
+    The PHA format is described in an OGIP document [1]_ and [2]_.
 
     Parameters
     ----------
@@ -1307,31 +1307,54 @@ class DataPHA(Data1D):
 
     Notes
     -----
-    The original data is stored in the attributes - e.g. `counts` - and
-    the data-access methods, such as `get_dep` and `get_staterror`,
-    provide any necessary data manipulation to handle cases such as:
-    background subtraction, filtering, and grouping.
+    The original data is stored in the attributes - e.g. `counts` -
+    and the data-access methods, such as `get_dep` and
+    `get_staterror`, provide any necessary data manipulation to handle
+    cases such as: background subtraction, filtering, and grouping.
+
+    There is additional complexity compared to the Data1D case when
+    filtering data because:
+
+    * although the data uses channel numbers, users will often want to
+      filter the data using derived values (in energy or wavelength
+      units, such as 0.5 to 7.0 keV or 16 to 18 Angstroms);
+
+    * although derived from the Data1D case, PHA data is more-properly
+      thought about as being an integrated data set, so each channel
+      maps to a range of energy or wavelength values;
+
+    * the data is often grouped to improve the signal-to-noise, and so
+      requests for values need to determine whether to filter the data
+      or not, whether to group the data or not, and how to combine the
+      data within each group;
+
+    * and there is also the quality array, which indicates whether or
+      not a channel is trust-worthy or not (and so acts as an
+      additional filtering term).
 
     The handling of the AREASCAl value - whether it is a scalar or
-    array - is currently in flux. It is a value that is stored with the
-    PHA file, and the OGIP PHA standard ([1]_) describes the observed
-    counts being divided by the area scaling before comparison to the
-    model. However, this is not valid for Poisson-based statistics, and
-    is also not how XSPEC handles AREASCAL ([2]_); the AREASCAL values
-    are used to scale the exposure times instead. The aim is to add
-    this logic to the instrument models in `sherpa.astro.instrument`,
-    such as `sherpa.astro.instrument.RMFModelPHA`. The area scaling still
-    has to be applied when calculating the background contribution to
-    a spectrum, as well as when calculating the data and model values used
-    for plots (following XSPEC so as to avoid sharp discontinuities where
-    the area-scaling factor changes strongly).
+    array - is currently in flux. It is a value that is stored with
+    the PHA file, and the OGIP PHA standard ([1]_, [2]_) describes the
+    observed counts being divided by the area scaling before
+    comparison to the model. However, this is not valid for
+    Poisson-based statistics, and is also not how XSPEC handles
+    AREASCAL ([3]_); the AREASCAL values are used to scale the
+    exposure times instead. The aim is to add this logic to the
+    instrument models in `sherpa.astro.instrument`, such as
+    `sherpa.astro.instrument.RMFModelPHA`. The area scaling still has
+    to be applied when calculating the background contribution to a
+    spectrum, as well as when calculating the data and model values
+    used for plots (following XSPEC so as to avoid sharp
+    discontinuities where the area-scaling factor changes strongly).
 
     References
     ----------
 
     .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-    .. [2] Private communication with Keith Arnaud
+    .. [2] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
+
+    .. [3] Private communication with Keith Arnaud
 
     """
     _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
@@ -2545,16 +2568,102 @@ class DataPHA(Data1D):
         return areascal
 
     def apply_filter(self, data, groupfunc=numpy.sum):
-        """
+        """Group and filter the supplied data to match the data set.
 
-        Filter the array data, first passing it through apply_grouping()
-        (using groupfunc) and then applying the general filters
+        Parameters
+        ----------
+        data : ndarray or None
+            The data to group, which must match either the number of
+            channels of the data set or the number of filtered
+            channels.
+        groupfunc : function reference
+            The grouping function. See apply_grouping for the
+            supported values.
+
+        Returns
+        -------
+        result : ndarray or None
+            The grouped and filtered data, or None if the input was
+            None.
+
+        Raises
+        ------
+        TypeError
+            If the data size does not match the number of channels.
+        ValueError
+            If the name of groupfunc is not supported or the data
+            does not match the filtered data.
+
+        See Also
+        --------
+        apply_grouping, ignore, ignore_bad, notice
+
+        Examples
+        --------
+
+        Group and filter the counts array with no filter and then
+        with a filter:
+
+        >>> pha.grouped
+        True
+        >>> pha.notice()
+        >>> pha.apply_filter(pha.counts)
+        array([17., 15., 16., 15., ...
+        >>> pha.notice(0.5, 7)
+        >>> pha.apply_filter(pha.counts)
+        array([15., 16., 15., 18., ...
+
+        As the previous example but with no grouping:
+
+        >>> pha.ungroup()
+        >>> pha.notice()
+        >>> pha.apply_filter(pha.counts)[0:5]
+        array([0., 0., 0., 0., 0.])
+        >>> pha.notice(0.5, 7)
+        >>> pha.apply_filter(pha.counts)[0:5]
+        array([4., 3., 0., 1., 1.])
+
+        Rather than group the counts, use the channel numbers and
+        return the first and last channel number in each of the
+        filtered groups (for the first five groups):
+
+        >>> pha.group()
+        >>> pha.notice(0.5, 7.0)
+        >>> pha.apply_filter(pha.channel, pha._min)[0:5]
+        array([33., 40., 45., 49., 52.])
+        >>> pha.apply_filter(pha.channel, pha._max)[0:5]
+        array([39., 44., 48., 51., 54.])
+
+        Find the approximate energy range of each selected group from
+        the RMF EBOUNDS extension:
+
+        >>> rmf = pha.get_rmf()
+        >>> elo = pha.apply_filter(rmf.e_min, pha._min)
+        >>> ehi = pha.apply_filter(rmf.e_max, pha._max)
+
+        Calculate the grouped data, after filtering, if the counts were
+        increased by 2 per channel. Note that in this case the data to
+        apply_filter contains the channel counts after applying the
+        current filter:
+
+        >>> orig = pha.counts[pha.get_mask()]
+        >>> new = orig + 2
+        >>> cts = pha.apply_filter(new)
 
         """
         if data is None:
             return data
 
         if len(data) != len(self.counts):
+            # Two possible error cases here:
+            # - mask is None, in which case the apply_grouping call will
+            #   fail with a TypeError
+            # - mask is not None but the filter does not match the data
+            #   size, which causes a ValueError from the assignment below
+            # Both could be caught here, but there used to be an attempt
+            # to do this (for the first case) which has been commented out
+            # since the initial git commit, so leave as is.
+            #
             counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
             mask = self.get_mask()
             if mask is not None:
@@ -2566,12 +2675,98 @@ class DataPHA(Data1D):
         return super().apply_filter(self.apply_grouping(data, groupfunc))
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
-        """
+        """Apply the grouping scheme of the data set to the supplied data.
 
-        Apply the data set's grouping scheme to the array data,
-        combining the grouped data points with groupfunc, and return
-        the grouped array.  If the data set has no associated grouping
-        scheme or the data are ungrouped, data is returned unaltered.
+        Parameters
+        ----------
+        data : ndarray or None
+            The data to group, which must match the number of channels
+            of the data set.
+        groupfunc : function reference
+            The grouping function. Note that what matters is the name
+            of the function, not its code. The supported function
+            names are: "sum", "_sum_sq", "_min", "_max", "_middle",
+            and "_make_groups".
+
+        Returns
+        -------
+        grouped : ndarray or None
+            The grouped data, unless the data set is not grouped or
+            the input array was None, when the input data is returned.
+
+        Raises
+        ------
+        TypeError
+            If the data size does not match the number of channels.
+        ValueError
+            If the name of groupfunc is not supported.
+
+        See Also
+        --------
+        apply_filter, ignore_bad
+
+        Notes
+        -----
+        The supported grouping schemes are:
+
+        ============ ======================================================
+        Name         Description
+        ============ ======================================================
+        sum          Sum all the values in the group.
+        _min         The minimum value in the group.
+        _max         The maximum value in the group.
+        _middle      The average of the minimum and maximum values.
+        _sum_sq      The square root of the sum of the squared values.
+        _make_groups The group number, starting at the first value of data.
+        ============ ======================================================
+
+        There are methods of the DataPHA class that can be used for
+        all other than "sum" (the default value).
+
+        The grouped data is not filtered unless a quality filter has
+        been applied (e.g. by ignore_bad) in which case the quality
+        filter will be applied to the result. In general apply_filter
+        should be used if the data is to be filtered as well as
+        grouped.
+
+        Examples
+        --------
+
+        Sum up the counts in each group (note that the data has not
+        been filtered so using get_dep with the filter argument set to
+        True is generally preferred to using this method):
+
+        >>> gcounts = pha.apply_grouping(pha.counts)
+
+        The grouping for an unfiltered PHA data set with 1024 channels
+        is used to calculate the number of channels in each group, the
+        lowest channel number in each group, the highest channel
+        number in each group, and the mid-point between the two:
+
+        >>> pha.grouped
+        True
+        >>> pha.mask
+        True
+        >>> len(pha.channel)
+        1024
+        >>> pha.apply_grouping(np.ones(1024))
+        array([ 17.,   4.,  11.,   ...
+        >>> pha.apply_grouping(np.arange(1, 1025), pha._min)
+        array([  1.,  18.,  22.,  ...
+        >>> pha.apply_grouping(np.arange(1, 1025), pha._max)
+        array([  17.,   21.,   32.,   ...
+        >>> pha.apply_grouping(np.arange(1, 1025), pha._middle)
+        array([  9. ,  19.5,  27. ,  ...
+
+        The grouped data is not filtered (unless ignore_bad has been
+        used):
+
+        >>> pha.notice()
+        >>> v1 = pha.apply_grouping(dvals)
+        >>> pha.notice(1.2, 4.5)
+        >>> v2 = pha.apply_grouping(dvals)
+        >>> np.all(v1 == v2)
+        True
 
         """
         if data is None or not self.grouped:
@@ -2587,12 +2782,7 @@ class DataPHA(Data1D):
 
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]
-        grouped_data = do_group(filtered_data, groups, groupfunc.__name__)
-
-        if data is self.channel and groupfunc is self._make_groups:
-            return numpy.arange(1, len(grouped_data) + 1, dtype=int)
-
-        return grouped_data
+        return do_group(filtered_data, groups, groupfunc.__name__)
 
     def ignore_bad(self):
         """Exclude channels marked as bad.
