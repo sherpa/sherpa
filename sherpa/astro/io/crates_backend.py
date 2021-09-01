@@ -98,7 +98,7 @@ def get_filename_from_dmsyntax(filename, blockname=None):
                 last = line
                 line = fd.readline().strip()
             if (last is not None and
-                    (len(last.split(' ')) != len(line.split(' ')))):
+                    (len(last.strip('#').strip().split(' ')) != len(line.strip().split(' ')))):
                 colnames = False
         finally:
             fd.close()
