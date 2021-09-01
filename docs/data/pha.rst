@@ -376,14 +376,13 @@ filtered range to the requested range becomes larger::
 Manipulating data
 =================
 
-Methods like :py:meth:`~sherpa.astro.data.DataPHA.get_dep` will
-apply the necessary grouping and filters, but it can be useful to
-convert other arrays, which can be done with
-:py:meth:`~sherpa.astro.data.DataPHA.apply_filter` and
-:py:meth:`~sherpa.astro.data.DataPHA.apply_grouping`.
-The default behavior for ``apply_filter`` is to sum the
-data values with each group, so we can re-create the
-``get_dep`` call::
+Methods like :py:meth:`~sherpa.astro.data.DataPHA.get_dep` will apply
+the necessary grouping and filters to the data. It can be useful to
+convert other arrays - such as counts or energy bins - directly, which
+can be done with :py:meth:`~sherpa.astro.data.DataPHA.apply_filter`
+and :py:meth:`~sherpa.astro.data.DataPHA.apply_grouping`.  The default
+behavior for ``apply_filter`` is to sum the data values with each
+group, so we can re-create the ``get_dep`` call::
 
   >>> d1 = pha.get_dep(filter=True)
   >>> d2 = pha.apply_filter(pha.counts)

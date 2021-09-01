@@ -220,11 +220,10 @@ to ensure we only group the data within this range::
    >>> pha.group_counts(20, tabStops=tabs)
 
 The standard :doc:`Sherpa plotting <../plots/index>` setup can
-be used to display the data, which has the advantage of picking
-up the filtering, grouping, and analysis setting. We do however
-take advantage of the PHA plot class (the results are **not**
-significantly different if we use
-:py:class:`sherpa.plot.DataPlot`)::
+be used to display the data. However we
+have a PHA-specific class, :py:class:`~sherpa.astro.plot.DataPHAPlot`,
+which has better support for PHA data, as
+:ref:`discussed below <examples_pha_plot_options>`::
 
    >>> from sherpa.astro.plot import DataPHAPlot
    >>> dplot = DataPHAPlot()
@@ -299,8 +298,10 @@ to wavelength will create a plot in Angstroms::
 
 .. image:: ../_static/evaluation/pha_data_wave.png
 
+.. _examples_pha_plot_options:
+
 .. note::
-   By setting the `linestyle` option we get, along with a point
+   By setting the ``linestyle`` option we get, along with a point
    at the center of each group, a histogram-style line is drawn
    indicating each group. Note that this is the major difference
    to the :py:class:`sherpa.plot.DataPlot` class, which would
