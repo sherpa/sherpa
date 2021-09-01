@@ -22,6 +22,7 @@
 #include "sherpa/astro/utils.hh"
 #include <sstream>
 #include <iostream>
+#include <stdexcept>
 
 extern "C" {
   void init_utils();
@@ -155,7 +156,7 @@ namespace sherpa { namespace astro { namespace utils {
 			 (char*)"group data is invalid or inconsistent" );
 	return NULL;
       }
-    } catch ( std::out_of_range& e ) {
+    } catch ( std::out_of_range& ) {
       ostringstream err;
       err << "unsupported group function: " << type;
       PyErr_SetString( PyExc_ValueError, err.str().c_str() );

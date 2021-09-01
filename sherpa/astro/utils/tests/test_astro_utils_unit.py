@@ -173,7 +173,7 @@ def test_do_group_check_lengths():
                           ("_make_groups", [1, 2, 3])
                          ])
 def test_do_group_check_func(func, expected):
-    """Check we error out if lengths do not match."""
+    """Test grouping functions on simple input."""
 
     ans = do_group([1, 2, 3, 4, 5, 6], [1, -1, 1, -1, -1, 1], func)
     assert ans == pytest.approx(expected)
