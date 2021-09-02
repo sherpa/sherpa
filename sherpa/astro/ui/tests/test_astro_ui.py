@@ -33,7 +33,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import RMFModelPHA
 from sherpa.astro import ui
 from sherpa.data import Data1D
-from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, StatErr
+from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, IOErr, StatErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
@@ -712,6 +712,23 @@ def test_save_arrays_ASCII(colnames):
         return ui.unpack_ascii(filename, ncols=3)
 
     save_arrays(colnames=colnames, fits=False, read_func=read_func)
+
+
+
+@requires_fits
+@pytest.mark.parametrize("ascii_type", [False, True])
+def test_save_arrays_colmismatch_errs(ascii_type):
+    with pytest.raises(IOErr) as exc:
+        a = numpy.asarray([1, 3, 5])
+        b = numpy.asarray([4, 6, 8])
+        c = a*b
+        fields = ["odd", "even"]
+        #ofh = tempfile.NamedTemporaryFile(suffix='sherpa_test')
+        #ui.save_arrays(ofh.name, [a, b, c], fields=fields,
+        ui.save_arrays("bogus_tempfile_name", [a, b, c], fields=fields,
+                   ascii=ascii_type, clobber=True)
+    assert 'Expected 3 columns but found 2' in str(exc.value)
+
 
 
 @requires_fits

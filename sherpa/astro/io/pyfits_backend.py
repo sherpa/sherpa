@@ -1135,10 +1135,6 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
-    if ascii:
-        write_arrays(filename, args, fields, clobber=clobber)
-        return
-
     if not clobber and os.path.isfile(filename):
         raise IOErr("filefound", filename)
 
@@ -1155,11 +1151,15 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         if len(arg) != size:
             raise IOErr('arraysnoteq')
 
-    if fields is None:
+    if not ascii and fields is None:
         fields = ['col%i' % (ii + 1) for ii in range(len(args))]
 
-    if len(args) != len(fields):
+    if fields is not None and len(args) != len(fields):
         raise IOErr("wrongnumcols", len(args), len(fields))
+
+    if ascii:
+        write_arrays(filename, args, fields, clobber=clobber)
+        return
 
     cols = []
     for val, name in zip(args, fields):
