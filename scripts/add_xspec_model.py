@@ -28,9 +28,9 @@ Aim:
 
 Given an XSPEC model.dat file report and an XSPEC model name
 (e.g. without the xs prefix), output the necessary code to create the
-Python and C++ wrapper interface. This does the minimum and you still
-need to add the code to the necessary files and update them to add
-documentation and deal with any possible version updates.
+Python and C++ wrapper interface. You still need to add the code to
+the necessary files and update them to add documentation and deal with
+any possible version updates.
 
 """
 
@@ -50,13 +50,11 @@ def create_xspec_model(models, modelname):
 
     """
 
-    model = None
     for amodel in models:
         if amodel.name == modelname:
             model = amodel
             break
-
-    if model is None:
+    else:
         raise ValueError(f"Unknown model name: {modelname}")
 
     code = xspec.create_xspec_code([model])

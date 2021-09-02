@@ -22,6 +22,7 @@ Tests for sherpa.astro.utils.xspec
 """
 
 from io import StringIO
+import logging
 import os
 import pathlib
 
@@ -31,33 +32,175 @@ from sherpa.astro.utils import xspec
 from sherpa.utils.testing import requires_xspec
 
 
-@requires_xspec
-@pytest.mark.parametrize("path", [False, True])
-def test_parse_model_dat(path):
-    """Can we parse the model.dat file (via string or pathlike)
+@pytest.mark.parametrize("namefunc", [None, True, lambda x: 3])
+def test_fail_invalid_namefunc(namefunc):
+    """We do basic checking on namefunc"""
 
-    There's limited checking of the data since we can't
-    guarantee it won't change significantly over time.
+    # The contents shouldn't be checked
+    model = '/dev/null'
+
+    with pytest.raises(ValueError) as ve:
+        xspec.parse_xspec_model_description(model, namefunc)
+
+    assert str(ve.value) == 'namefunc must be a callable which takes and returns a string'
+
+
+def test_fail_invalid_model_line():
+    """There is some check of a model line"""
+
+    model = StringIO("""apec           3  0.         1.e20           C_apec    add
+Abundanc " "    1.    0.      0.      5.        5.        -0.001
+
+""")
+
+    with pytest.raises(ValueError) as ve:
+        xspec.parse_xspec_model_description(model)
+
+    assert str(ve.value).startswith('Expected: modelname npars ')
+
+
+def test_fail_missing_parameters():
+    """We have less parameters than required"""
+
+    model = StringIO("""apec           3  0.         1.e20           C_apec    add  0
+Abundanc " "    1.    0.      0.      5.        5.        -0.001
+
+""")
+
+    with pytest.raises(ValueError) as ve:
+        xspec.parse_xspec_model_description(model)
+
+    assert str(ve.value) == 'model=apec missing 2 parameters'
+
+
+def test_fail_toomany_parameters():
+    """We have more parameters than required
+
+    This actually errors out as it tries to parse the extra
+    parameter as a model (that is, this is only checked for
+    indirectly).
+
     """
 
-    from sherpa.astro.xspec import get_xspath_manager
+    model = StringIO("""apec           1  0.         1.e20           C_apec    add  0
+Abundanc " "    1.    0.      0.      5.        5.        -0.001
+Redshift " "    0.   -0.999  -0.999   10.       10.       -0.01
 
-    path = get_xspath_manager()
-    mfile = os.path.join(path, 'model.dat')
+""")
 
-    if path:
-        mfile = pathlib.PurePath(mfile)
-
-    parsed = xspec.parse_xspec_model_description(mfile)
-    assert len(parsed) > 0
-
-    # Check we only have Add, Mul, Con, and Acn types
+    # As we don't have an explicit check the actual error depends on the
+    # next line so it's not worth checking the message.
     #
-    mtypes = set()
-    for model in parsed:
-        mtypes.add(model.modeltype)
+    with pytest.raises(ValueError):
+        xspec.parse_xspec_model_description(model)
 
-    assert mtypes == set(["Add", "Mul", "Con", "Acn"])
+
+def test_fail_unknown_model():
+    """There is some check of model types
+
+    It mmight be better to just skip these.
+    """
+
+    model = StringIO("""apec           1  0.         1.e20           C_apec    sub  0
+Abundanc " "    1.    0.      0.      5.        5.        -0.001
+
+""")
+
+    with pytest.raises(ValueError) as ve:
+        xspec.parse_xspec_model_description(model)
+
+    assert str(ve.value).startswith('Unexpected model type sub in:\n')
+
+
+def test_fail_invalid_basic_parameter():
+    """There is a check of model types.
+
+    It might be better to just skip these.
+    """
+
+    model = StringIO("""apec           1  0.         1.e20           C_apec    sub  0
+Abundanc " "    1.
+
+""")
+
+    with pytest.raises(ValueError) as ve:
+        xspec.parse_xspec_model_description(model)
+
+    assert str(ve.value).startswith('Expected 6 values after units; model=apec\n')
+
+
+def test_fail_periodic_parameter():
+    """We may add support for these in the future.
+
+    """
+
+    model = StringIO("""apec           1  0.         1.e20           C_apec    add  0
+Abundanc " "    1.    0.      0.      5.        5.        -0.001 P
+""")
+
+    with pytest.raises(ValueError) as ve:
+        xspec.parse_xspec_model_description(model)
+
+    assert str(ve.value).startswith('Periodic parameters are unsupported; model=apec:\n')
+
+
+def test_warn_parse_repeated_parname(caplog):
+    """Check we warn if the parameter name is repeated"""
+
+    model = StringIO("""apec           3  0.         1.e20           C_apec    add  0
+Abundanc " "    1.    0.      0.      5.        5.        -0.001
+kT      keV     1.    0.008   0.008   64.0      64.0      .01
+abundanc " "    0.   -0.999  -0.999   10.       10.       -0.01
+
+""")
+
+    assert len(caplog.records) == 0
+    xspec.parse_xspec_model_description(model)
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == 'sherpa.astro.utils.xspec'
+    assert lvl == logging.WARNING
+    assert msg == 'model=apec re-uses parameter name abundanc'
+
+
+def test_skip_repeated_model(caplog):
+    """Technically we could use the same model but with different
+    parameters but there was a bug in a version of XSPEC where
+    the same model was used incorrectly, so check we handle this.
+
+    We only skip it when we come to creating the code.
+
+    """
+
+    model = StringIO("""apec           1  0.         1.e20           C_foo     mul  0
+Abundanc " "    1.    0.      0.      5.        5.        -0.001
+
+fred           0  0.         1.e20           C_foo     mul  0
+""")
+
+    parsed = xspec.parse_xspec_model_description(model)
+    assert len(parsed) == 2
+    assert len(caplog.records) == 0
+
+    # As an extra benefit as we skip both models we can check the
+    # 'no valid models' error.
+    #
+    with pytest.raises(ValueError) as ve:
+        xspec.create_xspec_code(parsed)
+
+    assert str(ve.value) == 'No supported models were found!'
+
+    assert len(caplog.records) == 2
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == 'sherpa.astro.utils.xspec'
+    assert lvl == logging.WARNING
+    assert msg == 'Skipping model apec as it calls foo which is used by 2 different models'
+
+    lname, lvl, msg = caplog.record_tuples[1]
+    assert lname == 'sherpa.astro.utils.xspec'
+    assert lvl == logging.WARNING
+    assert msg == 'Skipping model fred as it calls foo which is used by 2 different models'
 
 
 def test_parse_additive_model():
@@ -267,3 +410,54 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
 
     assert '  void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled
     assert '  XSPECMODELFCT_CON_F77(rgsxsrc, 1),' in compiled
+
+
+@requires_xspec
+@pytest.mark.parametrize("path", [False, True])
+def test_parse_model_dat(path):
+    """Can we parse the model.dat file (via string or pathlike)
+
+    There's limited checking of the data since we can't
+    guarantee it won't change significantly over time.
+    """
+
+    from sherpa.astro.xspec import get_xspath_manager
+
+    path = get_xspath_manager()
+    mfile = os.path.join(path, 'model.dat')
+
+    if path:
+        mfile = pathlib.PurePath(mfile)
+
+    parsed = xspec.parse_xspec_model_description(mfile)
+    assert len(parsed) > 0
+
+    # Check we only have Add, Mul, Con, and Acn types
+    #
+    mtypes = set()
+    for model in parsed:
+        mtypes.add(model.modeltype)
+
+    assert mtypes == set(["Add", "Mul", "Con", "Acn"])
+
+
+@requires_xspec
+def test_convert_model_dat():
+    """Can we convert the model.dat file?
+
+    This is more just an existence test (i.e. does it work) with
+    limited checking of the output. Checking the warnings that
+    are created by parsing/converting the XSPEC model.dat is
+    tricky to do reliably as it depends on the XSPEC version,
+    so we do not check them (there are specific tests above).
+
+    """
+
+    from sherpa.astro.xspec import get_xspath_manager
+
+    path = get_xspath_manager()
+    mfile = os.path.join(path, 'model.dat')
+
+    # We do not check the return value, just that it runs
+    parsed = xspec.parse_xspec_model_description(mfile)
+    xspec.create_xspec_code(parsed)

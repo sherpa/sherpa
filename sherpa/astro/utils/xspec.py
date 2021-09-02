@@ -21,9 +21,9 @@
 """Parser for XSPEC model files.
 
 The XSPEC library [1]_ uses ASCII files to define models [2]_, and it
-can be useful to be able to read these files either to update the
-Sherpa code to support a new XSPEC release [3]_ or to build support
-local for a user model.
+can be useful to be able to read these files either to identify
+changes to the Sherpa code to support a new XSPEC release [3]_ or for
+writing a module for an XSPEC user model.
 
 References
 ----------
@@ -36,12 +36,15 @@ References
 
 """
 
-from collections import defaultdict, namedtuple
+from collections import Counter, namedtuple
+import logging
 import string
-import warnings
 
 
 __all__ = ("parse_xspec_model_description", "create_xspec_code")
+
+
+warning = logging.getLogger(__name__).warning
 
 
 class ModelDefinition():
@@ -315,7 +318,7 @@ class BasicParameterDefinition(ParameterDefinition):
         self.softmin = softmin
         self.softmax = softmax
 
-        # What do do with hard limits?
+        # What to do with hard limits?
         #
         if hardmin is None:
             raise ValueError(f"{name} - missing hardmin")
@@ -426,10 +429,12 @@ def read_model_definition(fh, namefunc):
     pars = []
     while len(pars) < npars:
         pline = fh.readline().strip()
-        # not sure if it's technically valid to have a blank line here,
-        # but allow it for now
+
+        # When using StringIO we don't get an EOF error, instead it
+        # returns the empty string.
         if pline == '':
-            continue
+            nmiss = npars - len(pars)
+            raise ValueError(f'model={name} missing {nmiss} parameters')
 
         pars.append(process_parameter_definition(pline, model=name))
 
@@ -457,20 +462,16 @@ def read_model_definition(fh, namefunc):
         raise ValueError("Unexpected model type {} in:\n{}".format(modeltype,
                                                                    hdrline))
 
-    # safety check on the parameter names.
+    # Safety check on the parameter names. We do not make this an
+    # error because the user can change the Python parameter names
+    # (which we have to do for the XSPEC ismabs model).
     #
-    pnames = [(par.name.lower(), par.name) for par in pars]
-    lnames = set(pnames)
-    if len(lnames) != len(pars):
-        d = defaultdict(list)
-        for (k, v) in pnames:
-            d[k].append(v)
+    ctr = Counter([par.name.lower() for par in pars])
+    for pname, count in ctr.items():
+        if count == 1:
+            continue
 
-        multiple = [vs for (k, vs) in d.items() if len(vs) > 1]
-        mstr = [" and ".join(v) for v in multiple]
-        raise ValueError("The parameters in model={}".format(name) +
-                         " do not have unique names:\n  " +
-                         "{}".format("\n  ".join(mstr)))
+        warning(f"model={name} re-uses parameter name {pname}")
 
     return factory(name, clname, funcname, flags, elo, ehi, pars,
                    initString=initString)
@@ -519,7 +520,7 @@ def process_parameter_definition(pline, model):
     Parameter names are automatically converted to support Python
     attribute-name rules (XSPEC has, as of XSPEC 12.11 or so, got
     better about removing such characters but occasionally it is
-    needed, and user models have had no-such vetting).
+    needed, and anything goes with user models).
 
     """
 
@@ -674,7 +675,7 @@ def add_xs_prefix(inval):
     return f"XS{inval}"
 
 
-def parse_xspec_model_description(modelfile, namefunc=None):
+def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
     """Given an XSPEC model file - e.g. the lmodel.dat file -
     return information about the models it contains.
 
@@ -685,9 +686,8 @@ def parse_xspec_model_description(modelfile, namefunc=None):
         lmodel.dat) or a file-like object containing the file
     namefunc : callable or None, optional
         The routine used to convert an XSPEC model name, such as
-        "apec", into the Sherpa class name. If None then a routine is
-        used which prepends 'XS' to the name, which is suitable for
-        the Sherpa XSPEC module.
+        "apec", into the Sherpa class name. The default function
+        prepends 'XS' to the name.
 
     Returns
     -------
@@ -703,16 +703,14 @@ def parse_xspec_model_description(modelfile, namefunc=None):
 
     """
 
-    if namefunc is None:
-        namefunc = add_xs_prefix
-    else:
-        try:
-            ans = namefunc('x')
-        except TypeError:
-            raise ValueError('namefunc must be a callable which takes and returns a string.')
+    emsg = 'namefunc must be a callable which takes and returns a string'
+    try:
+        ans = namefunc('x')
+    except TypeError:
+        raise ValueError(emsg) from None
 
-        if not isinstance(ans, str):
-            raise ValueError('namefunc must return a string.')
+    if not isinstance(ans, str):
+        raise ValueError(emsg)
 
     def process_fh(fh):
         out = []
@@ -1009,11 +1007,8 @@ def create_xspec_code(models):
 
     """
 
-    funcnames = defaultdict(int)
-    for mdl in models:
-        funcnames[mdl.funcname] += 1
-
-    invalidnames = [k for (k, v) in funcnames.items() if v > 1]
+    ctr = Counter([mdl.funcname for mdl in models])
+    invalidnames = [n for n, c in ctr.items() if c > 1]
     if len(invalidnames) > 0:
         newmodels = []
         for mdl in models:
@@ -1021,9 +1016,9 @@ def create_xspec_code(models):
                 newmodels.append(mdl)
                 continue
 
-            print(f"Skipping model {mdl.name} as it calls " +
-                  f"{mdl.funcname} which is used by " +
-                  f"{funcnames[mdl.funcname]} different models")
+            warning(f"Skipping model {mdl.name} as it calls " +
+                    f"{mdl.funcname} which is used by " +
+                    f"{ctr[mdl.funcname]} different models")
 
         models = newmodels
         del newmodels
@@ -1034,23 +1029,23 @@ def create_xspec_code(models):
     langs = set()
     for mdl in models:
         if mdl.modeltype in ['Mix', 'Acn']:
-            print(f"Skipping {mdl.name} as model type = {mdl.modeltype}")
+            warning(f"Skipping {mdl.name} as model type = {mdl.modeltype}")
             continue
 
         # The following check should never fire, but leave in
         if mdl.language not in ['Fortran - single precision',
                                 'Fortran - double precision',  # un-tested
                                 'C style', 'C++ style']:
-            print(f"Skipping {mdl.name} as language = {mdl.language}")
+            warning(f"Skipping {mdl.name} as language = {mdl.language}")
             continue
 
         nflags = len(mdl.flags)
         if nflags > 0:
             if mdl.flags[0] == 1:
-                warnings.warn(f"{mdl.name} calculates model variances; this is untested/unsupported in Sherpa")
+                warning(f"{mdl.name} calculates model variances; this is untested/unsupported in Sherpa")
 
             if nflags > 1 and mdl.flags[1] == 1:
-                warnings.warn(f"{mdl.name} needs to be re-calculated per spectrum; this is untested.")
+                warning(f"{mdl.name} needs to be re-calculated per spectrum; this is untested.")
 
         langs.add(mdl.language)
         mdls.append(mdl)
