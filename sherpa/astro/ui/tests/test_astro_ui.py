@@ -723,8 +723,6 @@ def test_save_arrays_colmismatch_errs(ascii_type):
         b = numpy.asarray([4, 6, 8])
         c = a*b
         fields = ["odd", "even"]
-        #ofh = tempfile.NamedTemporaryFile(suffix='sherpa_test')
-        #ui.save_arrays(ofh.name, [a, b, c], fields=fields,
         ui.save_arrays("bogus_tempfile_name", [a, b, c], fields=fields,
                    ascii=ascii_type, clobber=True)
     assert 'Expected 3 columns but found 2' in str(exc.value)
