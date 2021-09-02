@@ -41,7 +41,7 @@ at this time.
 
 import sys
 
-from sherpa.astro.utils.xspec import parse_xspec_model_file
+from sherpa.astro.utils.xspec import parse_xspec_model_description
 from sherpa.astro import xspec
 
 
@@ -175,5 +175,5 @@ if __name__ == "__main__":
     # issue with a poorly-specified interchange format (the model.dat
     # file) which may just need changes to this routine.
     #
-    models = parse_xspec_model_file(argv[0])
+    models = parse_xspec_model_description(argv[0])
     compare_xspec_models(models, hard=hard)

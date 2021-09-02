@@ -41,7 +41,7 @@ import string
 import warnings
 
 
-__all__ = ("parse_xspec_model_file", "create_xspec_code")
+__all__ = ("parse_xspec_model_description", "create_xspec_code")
 
 
 class ModelDefinition():
@@ -304,7 +304,7 @@ class BasicParameterDefinition(ParameterDefinition):
 
     """
 
-    modeltype = "Basic"
+    paramtype = "Basic"
 
     def __init__(self, name, default, units, softmin, softmax,
                  hardmin, hardmax, delta):
@@ -674,15 +674,15 @@ def add_xs_prefix(inval):
     return f"XS{inval}"
 
 
-def parse_xspec_model_file(modelfile, namefunc=None):
+def parse_xspec_model_description(modelfile, namefunc=None):
     """Given an XSPEC model file - e.g. the lmodel.dat file -
     return information about the models it contains.
 
     Parameters
     ----------
-    modelfile : str
+    modelfile : str or os.PathLike or file-like
         The name of the model file (often called model.dat or
-        lmodel.dat).
+        lmodel.dat) or a file-like object containing the file
     namefunc : callable or None, optional
         The routine used to convert an XSPEC model name, such as
         "apec", into the Sherpa class name. If None then a routine is
@@ -714,9 +714,8 @@ def parse_xspec_model_file(modelfile, namefunc=None):
         if not isinstance(ans, str):
             raise ValueError('namefunc must return a string.')
 
-    out = []
-    with open(modelfile, "r") as fh:
-
+    def process_fh(fh):
+        out = []
         while True:
             # If there is a problem reading in a model definition then
             # we do not try to recover - e.g. by wrapping this in a
@@ -734,6 +733,17 @@ def parse_xspec_model_file(modelfile, namefunc=None):
                 break
 
             out.append(mdl)
+
+        return out
+
+    # Check if we have a StringIO instance
+    #
+    if hasattr(modelfile, 'read'):
+        with modelfile as fh:
+            out = process_fh(fh)
+    else:
+        with open(modelfile, "r") as fh:
+            out = process_fh(fh)
 
     return out
 

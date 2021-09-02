@@ -36,7 +36,7 @@ documentation and deal with any possible version updates.
 
 import sys
 
-from sherpa.astro.utils.xspec import parse_xspec_model_file, create_xspec_code
+from sherpa.astro.utils import xspec
 
 
 def create_xspec_model(models, modelname):
@@ -59,7 +59,7 @@ def create_xspec_model(models, modelname):
     if model is None:
         raise ValueError(f"Unknown model name: {modelname}")
 
-    code = create_xspec_code([model])
+    code = xspec.create_xspec_code([model])
     print("# C++ code for sherpa/astro/xspec/src/_xspec.cc\n")
     print(code.compiled)
     print("\n# Python code for sherpa/astro/xspec/__init__.py\n")
@@ -77,5 +77,5 @@ if __name__ == "__main__":
     # issue with a poorly-specified interchange format (the model.dat
     # file) which may just need changes to this routine.
     #
-    models = parse_xspec_model_file(sys.argv[1])
+    models = xspec.parse_xspec_model_description(sys.argv[1])
     create_xspec_model(models, sys.argv[2])
