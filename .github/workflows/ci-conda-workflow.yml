@@ -33,6 +33,7 @@ jobs:
 
           - name: Linux Full Build (Python 3.9)
             os: ubuntu-latest
+            ostype: linux
             python-version: 3.9
             install-type: develop
             fits: astropy
