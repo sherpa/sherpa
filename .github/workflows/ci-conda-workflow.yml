@@ -27,7 +27,7 @@ jobs:
             os: ubuntu-latest
             ostype: linux
             python-version: 3.8.*
-            numpy-version: 1.18
+            numpy-version: 1.19
             install-type: develop 
             test-data: none
 
