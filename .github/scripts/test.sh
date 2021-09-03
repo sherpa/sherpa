@@ -50,7 +50,6 @@ sherpa_smoke ${smokevars} || exit 1
 if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     echo "*** Running sherpa_test ***"
     cd $HOME;
-    conda install -yq pytest-cov codecov;
     # This automatically picks up the sherpatest modile when TEST==package
     sherpa_test --cov sherpa --cov-report term || exit 1;
     codecov;
