@@ -127,7 +127,7 @@ jobs:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
         use-only-tar-bz2: true
-        environment-file: etc/environment-${{ matrix.ostype }}.yml
+        environment-file: etc/test-environment-${{ matrix.ostype }}.yml
 
     - name: Install OTS
       env:
