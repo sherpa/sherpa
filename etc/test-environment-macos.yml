@@ -1,3 +1,4 @@
+name: build
 channels:
   - sherpa
   - defaults

@@ -118,7 +118,7 @@ jobs:
       with:
         path: ~/conda_pkgs_dir
         key:
-          ${{ format('{0}-conda-{1}-{2}', runner.os, env.CACHE_NUMBER, hashFiles(format('etc/environment-{0}.yml', matrix.ostype))) }}
+          ${{ format('{0}-conda-{1}-{2}', runner.os, env.CACHE_NUMBER, hashFiles(format('etc/test-environment-{0}.yml', matrix.ostype))) }}
 
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v2
