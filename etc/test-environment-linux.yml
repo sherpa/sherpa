@@ -10,5 +10,4 @@ dependencies:
   - pytest
   - pytest-cov
   - codecov
-  - pip:
-    - pytest-xvfb
+  - pytest-xvfb
