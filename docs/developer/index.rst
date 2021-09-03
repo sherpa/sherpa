@@ -25,10 +25,87 @@ describes several ways to build Sherpa from source, but one
 particularly comfortable way is described in detail in the next
 section.
 
+Pull requests
+=============
+
+We welcome pull requests on
+`github <https://github.com/sherpa/sherpa/issues/>`_.
+
+For each pull request, a set of continuous integration tests is run
+automatically, including a build of the documentation on readthedocs.
+
+Skip the continuous integration
+-------------------------------
+
+Sometimes a PR is still in development and known to fail the tests or
+simply does not touch any code, because it only modifies docstrings
+and the documentation. In that case, `[skip ci]` can be added to the
+commit message to prevent running the github actions tests to save
+time, energy, and limited resources.
+
+Run tests locally
+-----------------
+Before you issue a pull request, we ask to run the test suite locally.
+Assuming everything is set up to install Sherpa from source, it can be
+installed in development mode with ``pip``::
+
+  pip install -e .
+
+"Development mode" means that the tests will pick up changes in the
+Python source files without running ``pip`` again (which can take some
+time). Only if you change the C++ code, you will have to explicitly run
+the installation again to see the changes in the tests. After the installation,
+``pytest`` can run all the tests. In the sherpa root directory call::
+
+  pytest
+
+``pytest`` supports a number of options which are
+`detailed in the pytest documentation <https://docs.pytest.org/>`_. A
+particularly useful option is to run only the tests in a specific file.
+For example, if you changed the code and the tests in the `sherpa.astro.ui`
+module, one might expect tests for this module to be the most likely to fail::
+
+  pytest sherpa/astro/ui/tests/test_astro_ui.py
+
+Once everything looks good, you can do a final run of the entire test suite. A
+second option useful for develoment is ``--pdb`` which drops into the
+`interactive Python debugger <https://docs.python.org/3/library/pdb.html>`_
+when a test fails so that you can move up and down the stack and inspect the
+value of individual variables.
+
+The test suite can be sped up by running tests in parallel. After installing
+the `pytest-xdist <https://pypi.org/project/pytest-xdist>`_ module
+(``pip install pytest-xdist``), tests can be run in parallel on several cores::
+
+  pytest -n auto
+
+will autoselect the number of cores, an explicit number can also be given
+(``pytest -n 4``). Note that if you have :term:`DS9` and :term:`XPA`
+installed then it is possible that the DS9 tests may fail when running
+tests in parallel (since multiple tests can end up over-writing the
+DS9 data before it can be checked).
+
+Test coverage can be included as part of the tests by installing the
+`coverage <https://coverage.readthedocs.io/en/latest/index.html>`_
+(``pip install coverage``) and
+`pytest-cov <https://pypi.org/project/pytest-cov/>`_ packages
+(``pip install pytest-cov``). Adding the ``--cov=sherpa`` option to the test
+run allows us to generate a coverage report after that::
+
+  pytest --cov=sherpa
+  coverage html -d report
+
+The report is in ``report/index.html``, which links to individual
+files and shows exactly which lines were excuted while running the tests.
+
+
+How do I ...
+============
+
 .. _source-install-with-conda:
 
 Install from source in conda
-============================
+----------------------------
 
 Conda can be used to install all the dependencies for Sherpa.
 
@@ -116,9 +193,6 @@ can be activated and Sherpa can be build from source.
    That is, the variable is set to a space, not the empty string.
 
 
-How do I ...
-============
-
 Update the Zenodo citation information
 --------------------------------------
 
@@ -170,13 +244,13 @@ The ``sherpa/conftest.py`` file contains general-purpose testing
 routines, fixtures, and configuration support for the test suite.
 To add a new command-line option:
 
- - add to the ``pytest_addoption`` routine, to add the option;
+* add to the ``pytest_addoption`` routine, to add the option;
 
- - add to ``pytest_collection_modifyitems`` if the option adds
-   a new mark;
+* add to ``pytest_collection_modifyitems`` if the option adds
+  a new mark;
 
- - and add support in ``pytest_configure``, such as registering
-   a new mark.
+* and add support in ``pytest_configure``, such as registering
+  a new mark.
 
 Update the XSPEC bindings?
 --------------------------
@@ -477,14 +551,14 @@ the class hierarchy included 1D- and 2D- specific classes, but there
 was still no check on model expressions. This section describes the
 current way that models are checked:
 
-- the :py:class:`sherpa.models.model.Model` class defines a
+* the :py:class:`sherpa.models.model.Model` class defines a
   :py:attr:`sherpa.models.model.Model.ndim` attribute, which is set
   to ``None`` by default.
-- the :py:class:`sherpa.models.model.RegriddableModel1D` and
+* the :py:class:`sherpa.models.model.RegriddableModel1D` and
   :py:class:`sherpa.models.model.RegriddableModel2D` classes set
   this attribute to 1 or 2, respectively (most user-callable classes
   are derived from one of these two classes).
-- the :py:class:`sherpa.models.model.CompositeModel` class checks
+* the :py:class:`sherpa.models.model.CompositeModel` class checks
   the ``ndim`` attribute for the components it is given (the
   ``parts`` argument) and checks that they all have the same
   ``ndim`` value (ignoring those models whose dimensionality
@@ -497,6 +571,54 @@ parent classes to match. This was not attempted as it would require
 significantly-larger changes to Sherpa (but this change could still be
 made in the future).
 
+.. _pha_filter:
+
+PHA Filtering
+-------------
+
+Filtering of a :py:class:`~sherpa.astro.data.DataPHA` object has four
+complications compared to :py:class:`~sherpa.data.Data1D` objects:
+
+* the independent axis can be referred to in channel units (normally 1
+  to the maximum number of channels), energy units (e.g. 0.5 to 7
+  keV), or wavelength units (e.g. 20 to 22 Angstroms);
+
+* each channel has a width of 1, so channel filters - which are
+  generally going to be integer values - map exactly, but each channel
+  has a finite width in the derived units (that is, energy or
+  wavelength) so multiple values will map to the same channel;
+
+* the data can be dynamically grouped via the
+  :py:attr:`~sherpa.astro.data.DataPHA.grouping` attribute, normally set
+  by methods like :py:meth:`~sherpa.astro.data.DataPHA.group_counts` and
+  controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
+  which means that the desired filter, when mapped to channel units,
+  is likely to end up partially overlapping the first and last groups,
+  which means that ``notice(a, b)`` and ``ignore(None, a); ignore(b, None)``
+  are not guaranteed to select the same range;
+
+* and there is the concept of the
+  :py:attr:`~sherpa.astro.data.DataPHA.quality` array, which defines whether
+  channels should either always be, or can temporarily be, ignored.
+
+This means that a :py:meth:`~sherpa.astro.data.DataPHA.notice` or
+:py:meth:`~sherpa.astro.data.DataPHA.ignore` call has to convert from
+the units of the input - which is defined by the
+:py:attr:`~sherpa.astro.data.DataPHA.units` attribute, changeable with
+:py:attr:`~sherpa.astro.data.DataPHA.set_analysis` - to the "group
+number" which then gets sent to the
+:py:attr:`~sherpa.data.Data._data_space` attribute to track
+the filter.
+
+One result is that the :py:attr:`~sherpa.data.Data.mask` attribute
+will now depend on the grouping scheme. The
+:py:attr:`~sherpa.astro.data.DataPHA.get_mask` method can be used to
+calculate a mask for all channels (e.g. the ungrouped data).
+
+There are complications to this from the quality concept introduced
+by the OGIP grouping scheme, which I have not been able to fully
+trace through in the code.
+
 .. _model_combination:
 
 Combining model expressions
@@ -505,9 +627,9 @@ Combining model expressions
 Models can be combined in several ways (for models derived from the
 :py:class:`sherpa.models.model.ArithmeticModel` class):
 
-- a unary operator, taking advantage of the ``__neg__`` and
+* a unary operator, taking advantage of the ``__neg__`` and
   ``__abs__`` special methods of a class;
-- a binary operator, using the ``__add__``, ``__sub__``, ``__mul__``,
+* a binary operator, using the ``__add__``, ``__sub__``, ``__mul__``,
   ``__div__``, ``__floordiv__``, ``__truediv__``, ``__mod__`` and ``__pow__``
   methods.
 
@@ -552,11 +674,11 @@ The plotting routines, such as
 :py:meth:`~sherpa.ui.utils.Session.plot_fit`,
 follow the same scheme:
 
-- The plot object is retrieved by the appropriate ``get_xxx_plot`` routine,
+* The plot object is retrieved by the appropriate ``get_xxx_plot`` routine,
   such as :py:meth:`~sherpa.ui.utils.Session.get_data_plot` and
   :py:meth:`~sherpa.ui.utils.Session.get_fit_plot`.
 
-- These ``get_xxx_plot`` calls retrieve the correct plot object -
+* These ``get_xxx_plot`` calls retrieve the correct plot object -
   which is normally a sub-class of :py:class:`~sherpa.plot.Plot`
   or :py:class:`~sherpa.plot.Histogram` - from the session object.
 
@@ -584,7 +706,7 @@ follow the same scheme:
   so they can be set and returned even without Matplotlib
   installed.
 
-- Once the plot object has been retrieved, is is sent to a plotting
+* Once the plot object has been retrieved, is is sent to a plotting
   routine - :py:meth:`sherpa.ui.utils.Session._plot` - which calls
   the ``plot`` method of the object, passing
   through the plot options. It is at this point that the plot

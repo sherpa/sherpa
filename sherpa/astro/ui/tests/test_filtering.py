@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,47 +23,10 @@ import logging
 
 import pytest
 
+import numpy as np
+
 from sherpa.astro import ui
 from sherpa.utils.testing import requires_data, requires_fits
-
-
-# Check that a logging message is created: this is based on the
-# code in https://stackoverflow.com/a/1049375 and
-# https://stackoverflow.com/a/20553331
-#
-# Alternatively, we could require textfixtures. Can this be
-# simplified once we drop Python versions < 3.4?
-#
-# Could this cause problems when running the whole test suite?
-#
-class MockLoggingHandler(logging.Handler):
-    """Mock logging handler to check for expected logs.
-
-    Messages are available from an instance's ``messages`` dict,
-    in order, indexed by a lowercase log level string (e.g., 'debug',
-    'info', etc.).
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.messages = {'debug': [], 'info': [], 'warning': [], 'error': [],
-                         'critical': []}
-        super(MockLoggingHandler, self).__init__(*args, **kwargs)
-
-    def emit(self, record):
-        "Store a message from ``record`` in the instance's ``messages`` dict."
-        self.acquire()
-        try:
-            self.messages[record.levelname.lower()].append(record.getMessage())
-        finally:
-            self.release()
-
-    def reset(self):
-        self.acquire()
-        try:
-            for message_list in self.messages.values():
-                message_list.clear()
-        finally:
-            self.release()
 
 
 def setup_model(make_data_path):
@@ -123,29 +86,36 @@ def test_filter_basic(make_data_path):
 
 @requires_fits
 @requires_data
-def test_filter_notice_bad_361(make_data_path):
+def test_filter_notice_bad_361(make_data_path, caplog):
     """Test out issue 361: notice then ignore bad.
 
     Since the data is grouped, the ignore_bad call is expected to
     drop the filter expression, with a warning message.
     """
 
-    logger = logging.getLogger('sherpa')
-    hdlr = MockLoggingHandler(level='WARNING')
-    logger.addHandler(hdlr)
-
     stats = setup_model(make_data_path)
 
+    # We don't care about these warnings, so I could just
+    # store the number and check that we get an extra one
+    # below, but use this as a canary to check when the
+    # system changes.
+    #
+    assert len(caplog.records) == 5
+
     ui.notice(0.5, 8.0)
-    ui.ignore_bad()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.ignore_bad()
+
+    assert len(caplog.records) == 6
+
+    lname, lvl, msg = caplog.record_tuples[5]
+    assert lname == 'sherpa.astro.data'
+    assert lvl == logging.WARNING
+    assert msg == 'filtering grouped data with quality ' + \
+        'flags, previous filters deleted'
+
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['bad'])
-
-    msgs = hdlr.messages
-    assert msgs['warning'] == ['filtering grouped data with quality ' +
-                               'flags, previous filters deleted']
-    for k in ['debug', 'info', 'error', 'critical']:
-        assert msgs[k] == []
 
 
 @requires_fits
@@ -164,3 +134,99 @@ def test_filter_bad_notice_361(make_data_path):
     ui.notice(0.5, 8.0)
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['0.5-8.0'])
+
+
+@requires_fits
+@requires_data
+def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
+    """Check behavior when the data is ungrouped.
+
+    This is a test of the current behavior, to check that
+    values still hold. It may be necessary to change this
+    test if we change the quality handling.
+    """
+
+    infile = make_data_path('q1127_src1_grp30.pi')
+    ui.load_pha(infile)
+    pha = ui.get_data()
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    assert ui.get_dep().shape == (439, )
+    ui.ungroup()
+    assert ui.get_dep().shape == (1024, )
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    ui.ignore_bad()
+    assert ui.get_dep().shape == (1024, )
+    assert pha.quality_filter is None
+
+    expected = np.ones(1024, dtype=bool)
+    expected[996:1025] = False
+    assert pha.mask == pytest.approx(expected)
+
+    # At this point we've changed the mask array so Sherpa thinks
+    # we've applied a filter, so a notice is not going to change
+    # anything. See issue #1169
+    #
+    ui.notice(0.5, 7)
+    assert pha.mask == pytest.approx(expected)
+
+    # We need to ignore to change the mask.
+    #
+    ui.ignore(None, 0.5)
+    ui.ignore(7, None)
+    expected[0:35] = False
+    expected[479:1025] = False
+    assert pha.mask == pytest.approx(expected)
+
+
+@requires_fits
+@requires_data
+def test_filter_bad_grouped(make_data_path, clean_astro_ui):
+    """Check behavior when the data is grouped.
+
+    This is a test of the current behavior, to check that
+    values still hold. It may be necessary to change this
+    test if we change the quality handling.
+    """
+
+    infile = make_data_path('q1127_src1_grp30.pi')
+    ui.load_pha(infile)
+    pha = ui.get_data()
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    assert ui.get_dep().shape == (439, )
+    assert pha.quality_filter is None
+    assert pha.mask is True
+
+    # The last group is marked as quality=2 and so calling
+    # ignore_bad means we lose that group.
+    #
+    ui.ignore_bad()
+    assert ui.get_dep().shape == (438, )
+    assert pha.mask is True
+
+    expected = np.ones(1024, dtype=bool)
+    expected[996:1025] = False
+    assert pha.quality_filter == pytest.approx(expected)
+
+    # What happens when we filter the data? Unlike #1169
+    # we do change the noticed range.
+    #
+    ui.notice(0.5, 7)
+    assert pha.quality_filter == pytest.approx(expected)
+
+    # The mask has been filtered to remove the bad channels
+    # (this is grouped data)
+    expected = np.ones(438, dtype=bool)
+    expected[0:15] = False
+    expected[410:438] = False
+    assert pha.mask == pytest.approx(expected)
+
+    expected = np.ones(996, dtype=bool)
+    expected[0:34] = False
+    expected[481:996] = False
+    assert pha.get_mask() == pytest.approx(expected)

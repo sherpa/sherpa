@@ -22,7 +22,8 @@ from numpy.testing import assert_almost_equal, assert_array_equal, \
 
 import pytest
 
-from sherpa.utils import _utils, is_binary_file, pad_bounding_box
+from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
+    get_fwhm
 from sherpa.utils.testing import requires_data
 
 
@@ -333,3 +334,47 @@ def test_pad_bounding_box_mask_too_large():
     # ignored).
     exp = numpy.asarray([0, 1, 2, 3, 4, 0, 0, 0, 0, 0]).astype(numpy.float64)
     assert_array_equal(ans, exp)
+
+
+# This is a gaussian with FWHM of 50 positioned so we can get
+# values from both sides, the left only, the right only, and then
+# a flat distribution. For reference the model was:
+#   (gauss1d + scale1d)
+#     Param        Type          Value          Min          Max      Units
+#     -----        ----          -----          ---          ---      -----
+#     gauss1d.fwhm thawed           50  1.17549e-38  3.40282e+38
+#     gauss1d.pos  thawed           12 -3.40282e+38  3.40282e+38
+#     gauss1d.ampl thawed           50 -3.40282e+38  3.40282e+38
+#     scale1d.c0   thawed            5 -3.40282e+38  3.40282e+38
+#
+# for pos=52, 105, 12 - and then poisson noise was added.
+#
+# The width is irrelevant of whether the X axis is positive or
+# negative, so run the test with x and x-200 (where all bins are
+# negative).
+#
+# If the values are <= 0 then we just use the fall-through value
+# of half the x range.
+#
+fwhm_x = numpy.asarray([10, 22, 30, 45, 50, 61, 70, 90, 100, 120])
+fwhm_y_both = numpy.asarray([9, 28, 25, 52, 53, 49, 33, 10, 10, 6])
+fwhm_y_left = numpy.asarray([10, 5, 3, 5, 7, 13, 8, 42, 57, 43])
+fwhm_y_right = numpy.asarray([46, 45, 40, 16, 20, 7, 6, 5, 3, 7])
+fwhm_y_flat = numpy.ones(fwhm_x.size)
+
+@pytest.mark.parametrize("x,y,expected",
+                         [(fwhm_x, fwhm_y_both, 60),
+                          (fwhm_x - 200, fwhm_y_both, 60),
+                          (fwhm_x, fwhm_y_left, 60),
+                          (fwhm_x - 200, fwhm_y_left, 60),
+                          (fwhm_x, fwhm_y_right, 70),
+                          (fwhm_x - 200, fwhm_y_right, 70),
+                          (fwhm_x, fwhm_y_flat, 55),
+                          (fwhm_x - 200, fwhm_y_flat, 55),
+                          (fwhm_x, - fwhm_y_both, 55),
+                          (fwhm_x, fwhm_y_both - fwhm_y_both.max(), 55)])
+def test_get_fwhm(x, y, expected):
+    """Check the FWHM algorithm."""
+
+    ans = get_fwhm(y, x)
+    assert ans == pytest.approx(expected)

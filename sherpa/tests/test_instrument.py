@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -95,6 +95,57 @@ def test_psf1d_show():
     check(out, 5, CENTER)
     check(out, 6, RADIAL)
     check(out, 7, NORM)
+
+
+def test_psf1d_empty_pars():
+    """What does .pars mean for an empty PSFModel?"""
+
+    m = PSFModel()
+    assert m.pars == ()
+
+
+def test_psf1d_pars():
+    """What does .pars mean for a PSFModel?"""
+
+    b = Box1D()
+    m = PSFModel(kernel=b)
+    assert m.pars == ()
+
+
+def test_psf1d_convolved_pars():
+    """What does .pars mean for a PSFModel applied to a model?"""
+
+    b1 = Box1D('b1')
+    m = PSFModel(kernel=b1)
+    b2 = Box1D('b2')
+    c = m(b2)
+
+    b1.xlow = 1
+    b1.xhi = 10
+    b1.ampl = 0.2
+
+    b2.xlow = 4
+    b2.xhi = 8
+    b2.ampl = 0.4
+
+    bpars = b1.pars + b2.pars
+    assert len(bpars) == 6
+
+    cpars = c.pars
+    assert len(cpars) == 6
+    for bpar, cpar in zip(bpars, cpars):
+        assert cpar == bpar
+
+
+def test_psf1d_no_kernel():
+    """Error out if there's no kernel"""
+
+    m = PSFModel('bob')
+    b = Box1D()
+    with pytest.raises(PSFErr) as exc:
+        m(b)
+
+    assert "PSF kernel has not been set" == str(exc.value)
 
 
 def test_psf1d_fold_no_kernel():

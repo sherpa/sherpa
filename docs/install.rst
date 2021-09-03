@@ -84,7 +84,7 @@ Citing Sherpa
 -------------
 
 Information on citing Sherpa can be found from the
-`CITATION document <https://github.com/sherpa/sherpa/blob/master/CITATION>`_
+`CITATION document <https://github.com/sherpa/sherpa/blob/main/CITATION>`_
 in the Sherpa repository, or from the
 `Sherpa Zenodo page <https://doi.org/10.5281/zenodo.593753>`_.
 
@@ -138,7 +138,7 @@ The prerequisites for building from source are:
 
 * Python versions: 3.6, 3.7, 3.8
 * Python packages: ``setuptools``, ``numpy``
-* System: ``gcc``, ``g++``, ``make``, ``flex``,
+* System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these
   tools; please report problems to the
   `Sherpa issue tracker <https://github.com/sherpa/sherpa/issues/>`_).
@@ -167,7 +167,7 @@ or from
 either a release version,
 such as the
 `4.10.0 <https://github.com/sherpa/sherpa/tree/4.10.0>`_ tag,
-or the ``master`` branch (which is not guaranteed to be stable).
+or the ``main`` branch (which is not guaranteed to be stable).
 
 For example::
 
@@ -368,6 +368,9 @@ or that provided by
 `Virtualenv <https://virtualenv.pypa.io/en/stable/>`_,
 be used when building and installing Sherpa.
 
+The ``CC`` and ``CXX`` environment variables can be set to the C and
+C++ compilers to use if not found by ``setup.py``.
+
 .. warning::
 
    When building Sherpa on macOS within a conda environment, the following
@@ -377,6 +380,20 @@ be used when building and installing Sherpa.
      export PYTHON_LDFLAGS=' '
 
    That is, the variable is set to a space, not the empty string.
+
+.. note::
+
+   If you are building with Clang version 12, you will
+   encounter build issues in the region area related to an implicit
+   declaration. If so, pre-pending the following to your pip install
+   or python setup.py install line should resolve the build issues::
+
+     CFLAGS='-Wno-implicit-function-declaration'
+
+   (Note that on MacOS, "gcc" is usually just an alias to Clang. Unless
+   you specifically install a gcc from a different source, you are
+   likely to run into this problem, even if you believe that your
+   compiler is invoked with `gcc`.)
 
 A standard installation
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -536,12 +553,3 @@ provides a number of data files in ASCII and :term:`FITS` formats. This is
 only useful when developing Sherpa, since the package is large. It
 will automatically be picked up by the ``sherpa_test`` script
 once it is installed.
-
-Testing the documentation with Travis
--------------------------------------
-
-There is a documentation build included as part of the Travis-CI test suite,
-but it is not set up to do much validation. That is, you need to do something
-quite severe to break this build. Please see
-`issue 491 <https://github.com/sherpa/sherpa/issues/491>`_
-for more information.

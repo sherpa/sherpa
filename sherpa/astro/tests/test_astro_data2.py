@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,12 +21,14 @@
 """Continued testing of sherpa.astro.data."""
 
 import logging
+import pickle
 
 import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.astro.data import DataARF, DataIMG, DataPHA
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits
@@ -72,19 +74,107 @@ def test_get_filter_is_empty():
     assert pha.get_filter() == 'No noticed bins'
 
 
-@pytest.mark.xfail
 def test_need_numpy_channels():
-    """We need to convert the  input to NumPy arrrays.
-
-    This should be done in the constructor to DataPHA, but
-    for now error out if not set.
+    """We didn't used to convert channels to a NumPy array which broke
+    this logic - the ignore line would error out due to an operation on
+    self.channel
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     assert pha.get_filter() == '1:3'
-    # This errors out with a TypeError on 'elo = self.channel - 0.5'
+
     pha.ignore()
     assert pha.get_filter() == 'No noticed bins'
+
+
+@pytest.mark.parametrize("chtype,expected,args",
+                         [("channel", '1:10', []),
+                          ("channel", '', [(False, 1, 10)]),
+                          ("channel", '2:9', [(True, 2, 9)]),
+                          ("channel", '2:3,7:9', [(True, 2, 9), (False, 4, 6)]),
+                          ("channel", '1:4,7:9', [(True, 2, 9), (False, 4, 6), (True, 0, 4)]),
+                          ("channel", '2:3,5:10', [(True, 2, 9), (False, 4, 6), (True, 5, 13)]),
+                          ("channel", '', [(True, 2, 9), (False, 4, 6), (True, 5, 13), (False, 0, 13)]),
+                          ("channel", '1:10', [(True, 2, 9), (False, 4, 6), (True, 0, 13)]),
+                          # None checks
+                          ("channel", '1:3', [(True, None, 3)]),
+                          ("channel", '4:10', [(False, None, 3)]),
+                          ("channel", '5:10', [(True, 5, None)]),
+                          ("channel", '1:4', [(False, 5, None)]),
+                          ("channel", '1:3,5:10', [(True, 5, None), (True, None, 3)]),
+                          ("channel", '4', [(False, 5, None), (False, None, 3)]),
+                          # a few checks of non-integer channel limits (we don't explicitly
+                          # say what this means so just check we know what it does)
+                          # These are no-longer valid
+                          # ("channel", '3:7', [(True, 2.8, 7.9)]),
+                          # ("channel", '3:7', [(True, 2.1, 7.2)]),
+                          # ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
+                          # energy
+                          ("energy", '0.3:2.1', []),
+                          ("energy", '', [(False, 0.3, 2.1)]),
+                          ("energy", '', [(False, 0, 3)]),
+                          ("energy", '0.5:1.9', [(True, 0.51, 1.98)]),
+                          ("energy", '0.5:1.1,1.7:1.9', [(True, 0.51, 1.98), (False, 1.24, 1.51)]),
+                          ("energy", '0.3:1.3,1.7:1.9', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.001, 1.32)]),
+                          ("energy", '0.5:1.1,1.5:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2)]),
+                          ("energy", '', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2), (False, 0.01, 13)]),
+                          ("energy", '0.3:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.01, 13)]),
+                          # None checks
+                          ("energy", '0.3:0.7', [(True, None, 0.65)]),
+                          ("energy", '0.9:2.1', [(False, None, 0.65)]),
+                          ("energy", '0.9:2.1', [(True, 0.95, None)]),
+                          ("energy", '0.3:0.7', [(False, 0.95, None)]),
+                          ("energy", '0.3:0.7,1.1:2.1', [(True, 1.05, None), (True, None, 0.65)]),
+                          ("energy", '0.3:2.1', [(True, 0.95, None), (True, None, 0.65)]),
+                          ("energy", '0.9', [(False, 1.05, None), (False, None, 0.65)]),
+                          ("energy", '', [(False, 0.95, None), (False, None, 0.65)]),
+                          # wavelength
+                          ("wave", '5.9:41.3', []),
+                          ("wave", '', [(False, 1, 70)]),
+                          ("wave", '6.5:24.8', [(True, 6.5, 25)]),
+                          ("wave", '6.5:8.3,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12)]),
+                          ("wave", '5.9:9.5,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 10)]),
+                          ("wave", '6.5:8.3,11.3:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 12, 70)]),
+                          ("wave", '5.9:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 70)]),
+                          # None checks
+                          ("wave", '5.9:9.5', [(True, None, 9.1)]),
+                          ("wave", '11.3:41.3', [(False, None, 9.1)]),
+                          ("wave", '11.3:41.3', [(True, 12.0, None)]),
+                          ("wave", '5.9:9.5', [(False, 12.0, None)]),
+                          ("wave", '5.9:9.5,13.8:41.3', [(True, 12.5, None), (True, None, 9.1)]),
+                          ("wave", '5.9:41.3', [(True, 12.0, None), (True, None, 9.1)]),
+                          ("wave", '11.3', [(False, 12.5, None), (False, None, 9.1)]),
+                          ("wave", '', [(False, 12.0, None), (False, None, 9.1)]),
+                         ])
+def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
+    """Check we get the filter we expect
+
+    chtype is channel, energy, or wavelength
+    expected is the expected response
+    args is a list of 3-tuples of (flag, loval, hival) where
+    flag is True for notice and False for ignore; they define
+    the filter to apply
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = np.ones(10, dtype=int)
+    pha = DataPHA('data', chans, counts)
+
+    # Use an ARF to create a channel to energy mapping
+    # The 0.2-2.2 keV range maps to 5.636-61.992 Angstrom
+    #
+    egrid = 0.2 * np.arange(1, 12)
+    arf = DataARF('arf', egrid[:-1], egrid[1:], np.ones(10))
+    pha.set_arf(arf)
+
+    pha.units = chtype
+    for (flag, lo, hi) in args:
+        if flag:
+            pha.notice(lo, hi)
+        else:
+            pha.ignore(lo, hi)
+
+    assert pha.get_filter(format='%.1f') == expected
 
 
 @pytest.mark.parametrize("chan", [0, -1, 4])
@@ -135,6 +225,114 @@ def test_error_on_invalid_channel_grouped2(chan):
     assert str(exc.value) == 'invalid group number: {}'.format(chan - 1)
 
 
+def test_pha_get_xerr_all_bad_channel_no_group():
+    """get_xerr handles all bad values [channel]
+
+    It's not obvious what it is meant to be doing here.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  quality=[2, 2, 2])
+
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+
+def test_pha_get_xerr_all_bad_channel_group():
+    """get_xerr handles all bad values [channel]
+
+    The behavior with grouping is different, presumably because
+    we assume we have grouping when we have a quality array.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, 1, 1],
+                  quality=[2, 2, 2])
+
+    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+
+    assert pha.grouped
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([])
+
+
+def test_pha_get_xerr_all_bad_energy_no_group():
+    """get_xerr handles all bad values [energy]
+
+    It's not obvious what it is meant to be doing here.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  quality=[2, 2, 2])
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == ''
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+
+def test_pha_get_xerr_all_bad_energy_group():
+    """get_xerr handles all bad values [energy]
+
+    The behavior with grouping is different, presumably because
+    we assume we have grouping when we have a quality array.
+    """
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, 1, 1],
+                  quality=[2, 2, 2])
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_rmf(rmf)
+    pha.units = 'energy'
+
+    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+
+    assert pha.grouped
+    pha.ignore_bad()
+
+    # Should this error out or not?
+    # assert pha.get_filter() == ''
+    with pytest.raises(DataErr) as de:
+        pha.get_filter()
+
+    assert str(de.value) == 'mask excludes all data'
+
+    assert pha.get_xerr() == pytest.approx([])
+
+
+@pytest.mark.parametrize("ignore", [False, True])
+@pytest.mark.parametrize("lbl,lo,hi", [('lo', 1.5, 2.5),
+                                       ('lo', 1.5, 2),
+                                       ('hi', 1, 2.5)])
+def test_pha_channel_limits_are_integers(ignore, lbl, lo, hi):
+    """Ensure channels are integers."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
+                  grouping=[1, -1, 1])
+
+    func = pha.ignore if ignore else pha.notice
+    with pytest.raises(DataErr) as exc:
+        func(lo, hi)
+
+    assert str(exc.value) == f"unknown {lbl} argument: 'must be an integer channel value'"
+
+
 def test_288_a():
     """The issue from #288 which was working"""
 
@@ -154,8 +352,39 @@ def test_288_a():
     assert pha.mask == pytest.approx([True, False, True])
 
 
+def test_288_a_energy():
+    """The issue from #288 which was working
+
+    test_288_a but with a response so we test energy filters
+    """
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    rlo = channels
+    rhi = channels + 1
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    assert pha.mask
+    pha.ignore(3, 4)
+
+    # I use approx because it gives a nice answer, even though
+    # I want equality not approximation in this test. Fortunately
+    # with bools the use of approx is okay (it can tell the
+    # difference between 0 and 1, aka False and True).
+    #
+    assert pha.mask == pytest.approx([True, False, True])
+
+
 def test_288_b():
-    """The issue from #288 which was failing"""
+    """The issue from #288 which was failing
+
+    We now error out with a non-integer channel
+    """
 
     channels = np.arange(1, 6)
     counts = np.asarray([5, 5, 10, 10, 2])
@@ -163,16 +392,41 @@ def test_288_b():
     pha = DataPHA('x', channels, counts, grouping=grouping)
 
     assert pha.mask
+    with pytest.raises(DataErr) as de:
+        pha.ignore(3.1, 4)
+
+    assert str(de.value) == "unknown lo argument: 'must be an integer channel value'"
+
+
+def test_288_b_energy():
+    """The issue from #288 which was failing
+
+    test_288_b but with a response so we test energy filters
+    """
+
+    channels = np.arange(1, 6)
+    counts = np.asarray([5, 5, 10, 10, 2])
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    pha = DataPHA('x', channels, counts, grouping=grouping)
+
+    rlo = channels
+    rhi = channels + 1
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    assert pha.mask
     pha.ignore(3.1, 4)
 
     assert pha.mask == pytest.approx([True, False, True])
 
 
-@pytest.mark.xfail
 def test_grouping_non_numpy():
-    """Historically the group* calls will fail oddly if y is not numpy
+    """Historically the group* calls would fail oddly if y is not numpy
 
     TypeError: grpNumCounts() Could not parse input arguments, please check input for correct type(s)
+
+    This has now been addressed but the test has been left in.
     """
 
     x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -189,7 +443,13 @@ def test_grouping_non_numpy():
 
 
 def test_416_a():
-    """The first test case from issue #416"""
+    """The first test case from issue #416
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
+    """
 
     # if y is not a numpy array then group_counts errors out
     # with a strange error. Another reason why DataPHA needs
@@ -199,7 +459,13 @@ def test_416_a():
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
-    pha.notice(3.5, 6.5)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    pha.notice(4.5, 6.5)
 
     mask = [False, False, False, True, True, True, False, False, False, False]
     assert pha.mask == pytest.approx(mask)
@@ -228,12 +494,23 @@ def test_416_b(caplog):
     """The second test case from issue #416
 
     This is to make sure this hasn't changed.
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
     """
 
     x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
     pha.notice(3.5, 6.5)
     pha.group_counts(3)
 
@@ -267,13 +544,29 @@ def test_416_b(caplog):
 
 def test_416_c():
     """The third test case from issue #416
+
+    This used to use channels but it has been changed to add an RMF so
+    we can filter in energy space, as it is not clear what non-integer
+    channels should mean.
+
     """
 
     x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
 
     pha = DataPHA('416', x, y)
-    pha.notice(3.5, 6.5)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    # When using channels this used notice(3.5, 6.5)
+    # but using energy space we need to use a different
+    # range to match the ones the original channel filter
+    # used.
+    #
+    pha.notice(4.5, 6.5)
 
     # this should be ~pha.mask
     tabstops = [True] * 3 + [False] * 3 + [True] * 4
@@ -287,7 +580,7 @@ def test_416_c():
 
     # the second grouped bin has a quality of 2 as
     # it only contains 1 count
-    quality = np.zeros(10, dtype=np.int)
+    quality = np.zeros(10, dtype=int)
     quality[5] = 2
     assert pha.quality == pytest.approx(quality)
 
@@ -329,6 +622,15 @@ def make_test_image():
     x1 = x1.flatten()
     y = np.ones(x0.size)
     return DataIMG('d', x0, x1, y, shape=shape)
+
+
+@pytest.fixture
+def make_test_pha():
+    """A simple PHA"""
+
+    chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
+    return DataPHA('p', chans, counts)
 
 
 def test_img_set_coord_invalid(make_test_image):
@@ -605,7 +907,7 @@ def test_img_get_bounding_mask_filtered(make_test_image):
     ans = d.get_bounding_mask()
     print(np.where(ans[0]))
 
-    mask = np.zeros(5 * 7, dtype=np.bool)
+    mask = np.zeros(5 * 7, dtype=bool)
     for i in [3,  8,  9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24,
               25, 26, 31]:
         mask[i] = True
@@ -687,13 +989,13 @@ def check_ignore_ignore(d):
     shape1 = 'ellipse(4260,3840,3,2,0)'
     d.notice2d(shape1, ignore=True)
 
-    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(np.bool)
+    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1)
 
     shape2 = 'rect(4258,3830,4264,3841)'
     d.notice2d(shape2, ignore=True)
 
-    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(np.bool)
+    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1 & mask2)
 
     shape2 = shape2.replace('rect', 'rectangle')
@@ -707,13 +1009,13 @@ def check_ignore_ignore2(d):
     shape1 = 'ellipse(4260,3840,3,2,0)'
     d.notice2d(shape1, ignore=True)
 
-    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(np.bool)
+    mask1 = ~Region(shape1).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1)
 
     shape2 = 'rect(4258,3830,4264,3841)'
     d.notice2d(shape2, ignore=True)
 
-    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(np.bool)
+    mask2 = ~Region(shape2).mask(d.x0, d.x1).astype(bool)
     assert d.mask == pytest.approx(mask1 & mask2)
 
     shape2 = shape2.replace('rect', 'rectangle')
@@ -780,3 +1082,144 @@ def test_img_get_filter_compare_filtering(make_test_image):
     # just check we have some True and False values
     assert maska.min() == 0
     assert maska.max() == 1
+
+
+@pytest.mark.parametrize("requested,expected",
+                         [("bin", "channel"), ("Bin", "channel"),
+                          ("channel", "channel"), ("ChannelS", "channel"),
+                          ("chan", "channel"),
+                          ("energy", "energy"), ("ENERGY", "energy"),
+                          ("Energies", "energy"),
+                          ("WAVE", "wavelength"), ("wavelength", "wavelength"),
+                          ("Wavelengths", "wavelength"),
+                          ("chan This Is Wrong", "channel"),  # should this be an error?
+                          ("WAVEY GRAVY", "wavelength")  # shouls this be an error?
+                          ])
+def test_pha_valid_units(requested, expected, make_test_pha):
+    """Check we can set the units field of a PHA object"""
+    pha = make_test_pha
+    pha.units = requested
+    assert pha.units == expected
+
+
+@pytest.mark.parametrize("invalid", ["Bins", "BINNING", "wavy", "kev", "angstrom"])
+def test_pha_invalid_units(invalid, make_test_pha):
+    """Check we can not set units to an invalid value"""
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.units = invalid
+
+    assert str(de.value) == f"unknown quantity: '{invalid}'"
+
+
+def test_pha_grouping_changed_no_filter_1160(make_test_pha):
+    """What happens when the grouping is changed?
+
+    See also test_pha_grouping_changed_filter_1160
+    """
+
+    pha = make_test_pha
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([1, 2, 0, 3])
+
+    # grouping set but not grouped
+    pha.grouping = [1, 1, 1, 1]
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([1, 2, 0, 3])
+
+    # now grouped
+    pha.grouped = True
+    d3 = pha.get_dep(filter=True)
+    assert d3 == pytest.approx([1, 2, 0, 3])
+
+    pha.grouping = [1, 1, -1, 1]
+    d4 = pha.get_dep(filter=True)
+    assert d4 == pytest.approx([1, 2, 3])
+
+
+@pytest.mark.xfail
+def test_pha_grouping_changed_filter_1160(make_test_pha):
+    """What happens when the grouping is changed?
+
+    See also test_pha_grouping_changed_filter_1160
+    """
+
+    pha = make_test_pha
+    pha.notice(2, 5)
+
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([2, 0, 3])
+
+    # grouping set but not grouped
+    pha.grouping = [1, 1, 1, 1]
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([2, 0, 3])
+
+    # now grouped
+    pha.grouped = True
+    d3 = pha.get_dep(filter=True)
+    assert d3 == pytest.approx([2, 0, 3])
+
+    pha.grouping = [1, 1, -1, 1]
+    d4 = pha.get_dep(filter=True)
+    assert d4 == pytest.approx([2, 3])
+
+
+@requires_fits
+@requires_data
+def test_xmmrgs_notice(make_data_path):
+    '''Test that notice and ignore works on XMMRGS dataset, which is
+    ordered in increasing wavelength, not energy'''
+    from sherpa.astro.io import read_pha, read_rmf
+    dat = read_pha(make_data_path('xmmrgs/P0112880201R1S004SRSPEC1003.FTZ'))
+    rmf = read_rmf(make_data_path('xmmrgs/P0112880201R1S004RSPMAT1003.FTZ'))
+    dat.set_rmf(rmf)
+    dat.units = 'wave'
+    dat.notice(18.8, 19.2)
+    assert len(dat.get_dep(filter=True)) == 41
+    assert dat.get_filter(format='%.2f') == '18.80:19.20'
+
+    dat.ignore(10, 19.)
+    assert len(dat.get_dep(filter=True)) == 20
+    assert dat.get_filter(format='%.2f') == '19.01:19.20'
+
+
+def test_pickle_image_filter_none(make_test_image):
+    """Check we can pickle/unpickle without a region filter.
+
+    This test assumes we have region support, but we do not
+    currently have any test builds without it so do not
+    bother skipping.
+
+    """
+
+    d = make_test_image
+    assert d._region is None
+
+    d2 = pickle.loads(pickle.dumps(d))
+    assert d2._region is None
+
+
+@pytest.mark.parametrize("ignore,region,expected",
+                         [(False, 'circle(4255, 3840, 20)', 'Circle(4255,3840,20)'),
+                          (True, 'circle(4255, 3840, 20)', '!Circle(4255,3840,20)'),
+                          (False, 'circle(4255, 3840, 20) - field()', 'Circle(4255,3840,20)&!Field()'),
+                          (True, 'circle(4255, 3840, 20) - field()', '!Circle(4255,3840,20)|Field()'),
+                          ])
+def test_pickle_image_filter(ignore, region, expected, make_test_image):
+    """Check we can pickle/unpickle with a region filter.
+
+    This test assumes we have region support, but we do not
+    currently have any test builds without it so do not
+    bother skipping.
+
+    """
+
+    d = make_test_image
+    d.notice2d(region, ignore=ignore)
+    assert isinstance(d._region, Region)
+    assert str(d._region) == expected
+
+    d2 = pickle.loads(pickle.dumps(d))
+    assert isinstance(d2._region, Region)
+    assert str(d2._region) == expected

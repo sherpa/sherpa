@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1200,3 +1201,225 @@ def test_manual_setting_mask():
     with pytest.raises(DataErr) as e:
         d.mask = None
     assert 'True, False, or a mask array' in str(e.value)
+
+
+def test_data_filter_no_data():
+    """Check we get a excludes-all-data error"""
+
+    x = numpy.asarray([1, 2, 5])
+    d = Data1D('x', x, x)
+    assert d.mask
+    d.ignore()
+    assert d.mask is False
+
+    with pytest.raises(DataErr) as de:
+        d.apply_filter([1, 2, 3])
+
+    assert str(de.value) == 'mask excludes all data'
+
+
+@pytest.mark.parametrize("vals", [4, [4], [[2, 3, 4]], [[2, 3], [3, 2]]])
+def test_data_filter_invalid_size(vals):
+    """Check we get a size-mismatch error"""
+
+    x = numpy.asarray([1, 2, 5])
+    d = Data1D('x', x, x)
+    d.ignore(None, 2)
+    assert d.mask == pytest.approx([False, False, True])
+
+    with pytest.raises(DataErr) as de:
+        d.apply_filter(vals)
+
+    assert str(de.value) == 'size mismatch between mask and data array'
+
+
+@pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
+@pytest.mark.parametrize("ignore", [False, True])
+def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
+    """Check we get an error if lo or hi are strings."""
+
+    xlo = numpy.asarray([1, 2, 5])
+    xhi = numpy.asarray([2, 3, 8])
+    y = numpy.zeros(3)
+    d = Data1D('tmp', xlo, xhi, y)
+    with pytest.raises(DataErr) as de:
+        d.notice(lo, hi, ignore=ignore)
+
+    err = f'strings not allowed in {emsg} bound list'
+    assert str(de.value) == err
+
+
+@pytest.mark.parametrize("expected,args",
+                         [('2.0:20.0', []),
+                          ('', [(False, 1, 30)]),
+                          ('10.0:17.0', [(True, 7.1, 18)]),
+                          ('10.0:12.0,17.0', [(True, 7.1, 18), (False, 13, 16)]),
+                          ('2.0:12.0,17.0', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
+                          ('10.0:12.0,17.0:20.0', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
+                          ('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)]),
+                          ('2.0:20.0', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
+                         ])
+def test_data1d_get_filter_calls(expected, args):
+    """Basic check of get_filter
+
+    expected is the expected response
+    args is a list of 3-tuples of (flag, loval, hival) where
+    flag is True for notice and False for ignore; they define
+    the filter to apply
+    """
+
+    xs = numpy.asarray([2, 5, 10, 12, 15, 17, 20])
+    ys = numpy.ones(xs.size)
+
+    d = Data1D('data', xs, ys)
+
+    for (flag, lo, hi) in args:
+        if flag:
+            d.notice(lo, hi)
+        else:
+            d.ignore(lo, hi)
+
+    assert d.get_filter(format='%.1f') == expected
+
+
+@pytest.mark.parametrize("expected,args",
+                         [('3.5:22.5', []),
+                          ('', [(False, 1, 30)]),
+                          ('6.5:18.5', [(True, 7.1, 18)]),
+                          ('6.5:11.0,18.5', [(True, 7.1, 18), (False, 13, 16)]),
+                          # The following is interesting because the final notice(0, 12)
+                          # hits the 12-15 bin, but should it?
+                          ('3.5:13.5,18.5', [(True, 7.1, 18), (False, 13, 16), (True, 0, 12)]),
+                          ('6.5:11.0,15.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 15.5, 30)]),
+                          ('', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (False, 1, 40)]),
+                          ('3.5:22.5', [(True, 7.1, 18), (False, 13, 16), (True, 6, 17), (True, 1, 40)]),
+                         ])
+def test_data1dint_get_filter_calls(expected, args):
+    """Basic check of get_filter
+
+    expected is the expected response
+    args is a list of 3-tuples of (flag, loval, hival) where
+    flag is True for notice and False for ignore; they define
+    the filter to apply
+    """
+
+    # Note this is not a contiguous grid
+    xlos = numpy.asarray([2, 5, 10, 12, 15, 17, 20])
+    xhis = numpy.asarray([5, 8, 12, 15, 16, 20, 25])
+
+    ys = numpy.ones(xlos.size)
+
+    d = Data1DInt('data', xlos, xhis, ys)
+
+    for (flag, lo, hi) in args:
+        if flag:
+            d.notice(lo, hi)
+        else:
+            d.ignore(lo, hi)
+
+    assert d.get_filter(format='%.1f') == expected
+
+
+def test_data1dint_get_x_xerr():
+    """Check get_x/get_xerr when filtering
+
+    This was added because there was a bug when all data had been
+    filtered out. It is essentially the same as
+    test_data1dint_get_filter_calls since get_filter calls get_x,
+    but it does add explicit checks and a check of get_xerr.
+
+    """
+
+    # Note this is not a contiguous grid
+    xlos = numpy.asarray([2, 5, 10, 12, 15, 17, 20])
+    xhis = numpy.asarray([5, 8, 12, 15, 16, 20, 25])
+
+    ys = numpy.ones(xlos.size)
+
+    d = Data1DInt('data', xlos, xhis, ys)
+
+    x = [3.5, 6.5, 11, 13.5, 15.5, 18.5, 22.5]
+    xerr = xhis - xlos
+    assert d.get_x() == pytest.approx(x)
+    assert d.get_xerr() == pytest.approx(xerr)
+
+    assert d.get_x(True) == pytest.approx(x)
+    assert d.get_xerr(True) == pytest.approx(xerr)
+
+    # Ignore a few points at the start and end
+    d.notice(11, 18)
+
+    # Just check that the default behavior doesn't change with the filter
+    assert d.get_x() == pytest.approx(x)
+    assert d.get_xerr() == pytest.approx(xerr)
+
+    assert d.get_x(True) == pytest.approx(x[2:-1])
+    assert d.get_xerr(True) == pytest.approx(xerr[2:-1])
+
+    # Now ignore all points
+    d.ignore(0, 1000)
+
+    assert d.get_x() == pytest.approx(x)
+    assert d.get_xerr() == pytest.approx(xerr)
+
+    assert d.get_x(True) == pytest.approx([])
+    assert d.get_xerr(True) == pytest.approx([])
+
+
+@pytest.mark.parametrize('ignore', [False, True])
+@pytest.mark.parametrize('lo,hi,evals',
+                         [(0.5, 2.3, (0, 10, 0)),
+                          (0.7, 2.1, (1, 8, 1)),
+                          (0.5, 0.7, (0, 2, 8)),
+                          (1.1, 1.3, (3, 2, 5)),
+                          (2.1, 2.3, (8, 2, 0)),
+                          # special case filters that are within a single bin
+                          (0.45, 0.55, (0, 1, 9)),
+                          (0.65, 0.75, (1, 1, 8)),
+                          (1.05, 1.15, (3, 1, 6)),
+                          (2.25, 2.35, (9, 1, 0)),
+                          # outside the limits
+                          (0.1, 0.4, (0, 1, 9)),
+                          (0.1, 0.5, (0, 1, 9)),
+                          (2.41, 2.8, (10, 0, 0)),
+                          # Now queries on the edge of each bin; these would ideally
+                          # only match 1 bin
+                          (0.4, 0.6, (0, 2, 8)),
+                          (0.6, 0.8, (0, 3, 7)),
+                          (0.8, 1.0, (1, 3, 6)),
+                          (1.0, 1.2, (2, 3, 5)),
+                          (1.2, 1.4, (3, 3, 4)),
+                          (1.4, 1.6, (4, 3, 3)),
+                          (1.6, 1.8, (5, 3, 2)),
+                          (1.8, 2.0, (6, 3, 1)),
+                          (2.0, 2.2, (7, 3, 0)),
+                          (2.2, 2.4, (8, 2, 0)),
+                          # check last upper limit
+                          (2.4, 2.6, (9, 1, 0))
+                         ])
+def test_data1dint_check_limit(ignore, lo, hi, evals):
+    """Does Data1DInt handle limits (in particular upper limits).
+
+    This is based on sherpa/astro/tests/test_astro_data.py::test_pha_check_limit
+    but without the need for an ARF. It selects different bins than the
+    PHA case!
+    """
+
+    egrids = 0.2 + 0.2 * numpy.arange(1, 12)
+    d = Data1DInt('exammple', egrids[:-1], egrids[1:],
+                  numpy.ones(10))
+
+    assert d.mask is True
+
+    func = d.ignore if ignore else d.notice
+    func(lo, hi)
+    if ignore:
+        vout = True
+        vin = False
+    else:
+        vout = False
+        vin = True
+
+    c1, c2, c3 = evals
+    expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+    assert d.mask == pytest.approx(expected)

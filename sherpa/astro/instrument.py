@@ -49,8 +49,8 @@ from sherpa.models.model import ArithmeticModel, CompositeModel, Model
 from sherpa.instrument import PSFModel as _PSFModel
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.data import Data1D
-from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
-    DataIMG
+from sherpa.astro import hc
+from sherpa.astro.data import DataARF, DataRMF, _notice_resp, DataIMG
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
 
@@ -142,7 +142,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi = self.rmf.get_indep()
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = hc / self.ehi, hc / self.elo
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -191,7 +191,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi = self.arf.get_indep()
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = hc / self.ehi, hc / self.elo
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -243,7 +243,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi = self.arf.get_indep()
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = hc / self.ehi, hc / self.elo
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -291,8 +291,8 @@ class RMFModelPHA(RMFModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = DataPHA._hc / pha.bin_hi
-                bin_hi = DataPHA._hc / pha.bin_lo
+                bin_lo = hc / pha.bin_hi
+                bin_hi = hc / pha.bin_lo
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -305,7 +305,7 @@ class RMFModelPHA(RMFModel):
             self.elo, self.ehi = bin_lo, bin_hi
 
             # Wavelength grid (angstroms)
-            self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+            self.lo, self.hi = hc / self.ehi, hc / self.elo
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -395,8 +395,8 @@ class ARFModelPHA(ARFModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = DataPHA._hc / pha.bin_hi
-                bin_hi = DataPHA._hc / pha.bin_lo
+                bin_lo = hc / pha.bin_hi
+                bin_hi = hc / pha.bin_lo
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -503,8 +503,8 @@ class RSPModelPHA(RSPModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = DataPHA._hc / pha.bin_hi
-                bin_hi = DataPHA._hc / pha.bin_lo
+                bin_lo = hc / pha.bin_hi
+                bin_hi = hc / pha.bin_lo
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -895,7 +895,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
             grid.append(indep)
 
         self.elo, self.ehi, self.table = compile_energy_grid(grid)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = hc / self.ehi, hc / self.elo
 
     def startup(self, cache=False):
         pha = self.pha
@@ -962,8 +962,8 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                 for model, args in zip(self.models, self.grid):
                     elo, ehi = lo, hi = args
                     if pha.units == 'wavelength':
-                        lo = DataPHA._hc / ehi
-                        hi = DataPHA._hc / elo
+                        lo = hc / ehi
+                        hi = hc / elo
                     vals.append(model(src(lo, hi)))
                 self.orders = vals
             # Fast
@@ -1042,7 +1042,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.rmf = rmf
 
         self.elo, self.ehi = rmf.get_indep()
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = hc / self.ehi, hc / self.elo
         self.model = model
         self.otherargs = None
         self.otherkwargs = None
@@ -1234,7 +1234,8 @@ class PSFModel(_PSFModel):
         return dataset
 
 
-def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-arf'):
+def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
+               name='user-arf', header=None):
     """Create an ARF.
 
     .. versionadded:: 4.10.1
@@ -1256,6 +1257,8 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
         zero-energy bins are replaced.
     name : str, optional
         The name of the ARF data set
+    header : dict
+        Header for the created ARF
 
     Returns
     -------
@@ -1269,7 +1272,8 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
     if specresp is None:
         specresp = numpy.ones(elo.size, dtype=numpy.float32)
 
-    return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp, exposure=exposure, ethresh=ethresh)
+    return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp,
+                   exposure=exposure, ethresh=ethresh, header=header)
 
 
 # Notes for create*rmf:
@@ -1279,7 +1283,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
 
 def create_delta_rmf(rmflo, rmfhi, offset=1,
                      e_min=None, e_max=None, ethresh=None,
-                     name='delta-rmf'):
+                     name='delta-rmf', header=None):
     """Create an ideal RMF.
 
     The RMF has a unique mapping from channel to energy, in
@@ -1309,6 +1313,8 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
         zero-energy bins are replaced.
     name : str, optional
         The name of the RMF data set
+    header : dict
+        Header for the created RMF
 
     Returns
     -------
@@ -1333,12 +1339,12 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
                                      f_chan=f_chan, matrix=matrix,
                                      offset=offset,
                                      e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh)
+                                     ethresh=ethresh, header=header)
 
 
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                          e_min=None, e_max=None, ethresh=None,
-                         name='delta-rmf'):
+                         name='delta-rmf', header=None):
     """
     Create a RMF using a matrix from a file.
 
@@ -1372,6 +1378,8 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         zero-energy bins are replaced.
     name : str
         The name of the RMF data set
+    header : dict
+        Header for the created RMF
 
     Returns
     -------
@@ -1404,7 +1412,8 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                                      f_chan=f_chan, matrix=matrix,
                                      offset=offset,
                                      e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh)
+                                     ethresh=ethresh,
+                                     header=header)
 
 
 def calc_grp_chan_matrix(fname):
@@ -1432,3 +1441,57 @@ def calc_grp_chan_matrix(fname):
     except sherpa.utils.err.IOErr as ioerr:
         print(ioerr)
         raise ioerr
+
+
+def has_pha_response(model):
+    """Does the model contain a PHA response?
+
+    Parameters
+    ----------
+    model : Model instance
+        The model expression to check.
+
+    Returns
+    -------
+    flag : bool
+        True if there is a PHA response included anywhere in the
+        expression.
+
+    Examples
+    --------
+
+    >>> rsp = Response1D(pha)
+    >>> m1 = Gauss1D()
+    >>> m2 = PowLaw1D()
+    >>> has_pha_response(m1)
+    False
+    >>> has_pha_response(rsp(m1))
+    True
+    >>> has_pha_response(m1 + m2)
+    False
+    >>> has_pha_response(rsp(m1 + m2))
+    True
+    >>> has_pha_response(m1 + rsp(m2))
+    True
+
+    """
+
+    # The following check should probably include ResponseNestedModel
+    # but it's not obvious if this is currently used.
+    #
+    def wanted(c):
+        return isinstance(c, (RSPModel, ARFModel, RMFModel))
+
+    if wanted(model):
+        return True
+
+    # This check relies on a composite class like the RSPModel is
+    # included in the __iter__ method (see CompositeModel._get_parts)
+    # otherwise the following would have had to be a recursive call
+    # to has_pha_instance.
+    #
+    for cpt in model:
+        if wanted(cpt):
+            return True
+
+    return False

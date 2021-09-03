@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,7 @@ import string
 import sys
 from configparser import ConfigParser, NoSectionError
 import pydoc
+import platform
 
 import numpy
 import numpy.random
@@ -1303,10 +1304,8 @@ def print_fields(names, vals, converters=None):
         converters = {numpy.bool_: 'Bool',
                       numpy.bytes_: 'Bytes0',
                       numpy.complex128: 'Complex128',
-                      numpy.complex256: 'Complex256',
                       numpy.complex64: 'Complex64',
                       numpy.datetime64: 'Datetime64',
-                      numpy.float128: 'Float128',
                       numpy.float16: 'Float16',
                       numpy.float32: 'Float32',
                       numpy.float64: 'Float64',
@@ -1323,6 +1322,14 @@ def print_fields(names, vals, converters=None):
                       numpy.uint8: 'UInt8',
                       numpy.void: 'Void0'
                       }
+        try:
+            converters[numpy.complex256] = 'Complex256'
+        except AttributeError:
+            pass
+        try:
+            converters[numpy.float128] = 'Float128'
+        except AttributeError:
+            pass
 
     width = max(len(n) for n in names)
     fmt = '%%-%ds = %%s' % width
@@ -1400,7 +1407,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
         #
-        mask = numpy.asarray(mask, dtype=numpy.bool)
+        mask = numpy.asarray(mask, dtype=bool)
 
         # Ensure that the vals and mask array match: the number of
         # mask=True elements should equal the number of input values.
@@ -1605,7 +1612,7 @@ def quantile(sorted_array, f):
     n = sorted_array.size
 
     q = (n - 1) * f
-    i = numpy.int(numpy.floor(q))
+    i = int(numpy.floor(q))
     delta = q - i
 
     return (1.0 - delta) * sorted_array[i] + delta * sorted_array[i + 1]
@@ -1902,8 +1909,8 @@ def dataspace2d(dim):
         raise TypeError("dimensions should be > 0, found dim0 %s dim1 %s"
                         % (dim[0], dim[1]))
 
-    x0 = numpy.arange(dim[0], dtype=numpy.float) + 1.0
-    x1 = numpy.arange(dim[1], dtype=numpy.float) + 1.0
+    x0 = numpy.arange(dim[0], dtype=float) + 1.0
+    x1 = numpy.arange(dim[1], dtype=float) + 1.0
 
     x0, x1 = numpy.meshgrid(x0, x1)
     shape = tuple(x0.shape)
@@ -2288,18 +2295,22 @@ def get_valley(y, x, xhi=None):
 def get_fwhm(y, x, xhi=None):
     """Estimate the width of the data.
 
+    This is only valid for positive data values (``y``).
+
     Parameters
     ----------
     y, x : array_like
-       The data points.
+       The data points. The x array must be in ascending order.
     xhi : None or array_like, optional
        If given then the x array is taken to be the low-edge
-       of each bin.
+       of each bin. This is unused.
 
     Returns
     -------
     ans : scalar
-       The full-width half-maximum of the peak.
+       An estimate of the full-width half-maximum of the peak. If the
+       data is negative, or no edge is found then half the X range is
+       returned.
 
     See Also
     --------
@@ -2307,16 +2318,73 @@ def get_fwhm(y, x, xhi=None):
 
     Notes
     -----
-    If there are multiple peaks of the same height then
-    the first peak is used.
+    If there are multiple peaks of the same height then the first peak
+    is used.
+
+    The approach is to find the maximum position and then extend out
+    to the first bins which fall below half the height. The difference
+    of the two points is used. If only one side falls below the value
+    then twice this separation is used. If the half-height is not
+    reached then the value is set to be half the width of the
+    x array. In all cases the upper-edge of the x arrays is ignored,
+    if given.
+
     """
+
+    # Pick half the width of the X array, purely as a guess.
+    # The x array is required to be ordered, so we can just
+    # take the first and last points.
+    #
+    guess_fwhm = (x[-1] - x[0]) / 2
+
     y_argmax = y.argmax()
+    if y[y_argmax] <= 0:
+        return guess_fwhm
+
     half_max_val = y[y_argmax] / 2.0
     x_max = x[y_argmax]
-    for ii, val in enumerate(y[y_argmax:]):
-        if val < half_max_val:
-            return 2.0 * ii
-    return x_max
+
+    # Where do the values fall below the half-height? The assumption
+    # is that the arrays are not so large that evaluating the whole
+    # array, rather than just looping out from the maximum location,
+    # is not an expensive operation.
+    #
+    flags = (y - half_max_val) < 0
+
+    # Find the distances from these points to the
+    # maximum location.
+    #
+    dist = x[flags] - x_max
+
+    # We want the maximum value of the negative distances,
+    # and the minimum value of the positive distances.
+    # There's no guarantee either exist.
+    #
+    try:
+        ldist = -1 * max(dist[dist < 0])
+    except ValueError:
+        ldist = None
+
+    try:
+        rdist = min(dist[dist > 0])
+    except ValueError:
+        rdist = None
+
+    # If we have both HWHM values then sum them and use that,
+    # otherwise if we have one then double it.
+    #
+    if ldist is not None and rdist is not None:
+        return ldist + rdist
+
+    if ldist is not None:
+        return 2 * ldist
+
+    if rdist is not None:
+        return 2 * rdist
+
+    # No value, so use the guess.
+    #
+    return guess_fwhm
 
 
 def guess_fwhm(y, x, xhi=None, scale=1000):
@@ -3079,7 +3147,7 @@ class NumDerivFowardPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
@@ -3144,7 +3212,7 @@ class NumDerivCentralPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
@@ -4058,7 +4126,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
         xc = xa
         fc = fa
-        DBL_EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
+        DBL_EPSILON = numpy.finfo(numpy.float32).eps
         while nfev[0] < maxfev:
 
             prev_step = xb - xa

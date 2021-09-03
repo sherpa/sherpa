@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2017, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2017, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +19,178 @@
 #
 
 """Support for model parameter values.
+
+Parameter creation, evaluation, and combination are normally done as
+part of the model interface provided by
+sherpa.models.model.ArithmeticModel.
+
+In the following the p variable corresponds to
+
+    >>> from sherpa.models.parameter import Parameter
+    >>> p = Parameter('model', 'eta', 2)
+    >>> print(p)
+    val         = 2.0
+    min         = -3.4028234663852886e+38
+    max         = 3.4028234663852886e+38
+    units       =
+    frozen      = False
+    link        = None
+    default_val = 2.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+Naming
+======
+
+The first two arguments to a parameter are the model name and then the
+parameter name, so `"model"` and `"eta"` here. They are used to
+display the `name` and `fullname` attributes:
+
+    >>> p.name
+    'eta'
+    >>> p.fullname
+    'model.eta'
+
+A units field can be attached to the parameter, but this is used purely
+for screen output by the sherpa.models.model.ArithmeticModel class and
+is not used when changing or evaluating the parameter.
+
+Changing parameter values
+=========================
+
+The `val` attribute is used to retrieve or change the parameter value:
+
+    >>> p.val
+    2.0
+    >>> p.val = 3
+
+Parameter limts
+===============
+
+The parameter is forced to lie within the `min` and `max` attributes
+of the parameter (known as the "soft" limits). The default values
+for these are the 32-bit floating point maximum value, and it's
+negative:
+
+    >>> p.max
+    3.4028234663852886e+38
+    >>> p.min
+    -3.4028234663852886e+38
+
+Setting a value outside this range will raise a sherpa.utils.err.ParameterErr
+
+    >>> p.val = 1e40
+    ParameterErr: parameter model.eta has a maximum of 3.40282e+38
+
+These limits can be changed, as shown below, but they must lie
+within the `hard_min` to `hard_max` range of the parameter (the
+"hard" limits), which can not be changed:
+
+    >>> p.min = 0
+    >>> p.max = 10
+
+Freezing and thawing
+====================
+
+When fitting a model expression it is useful to be able to restrict
+the fit to a subset of parameters. This is done by only selecting
+those parameters which are not "frozen". This can be indicated by
+calling the `freeze` and `thaw` methods, or changing the `frozen`
+attribute directly:
+
+    >>> p.frozen
+    False
+    >>> p.freeze()
+    >>> p.frozen
+    True
+    >>> p.thaw()
+    >>> p.frozen
+    False
+
+Note that the `frozen` flag is used to indicate what parameters to
+vary in a fit, but it is still possible to directly change a parameter
+value when it is frozen:
+
+    >>> p.freeze()
+    >>> p.val = 6
+    >>> print(p)
+    val         = 6.0
+    min         = 0.0
+    max         = 10.0
+    units       =
+    frozen      = True
+    link        = None
+    default_val = 6.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+Changing multiple settings at once
+==================================
+
+The `set` method should be used when multiple settings need to be
+changed at once, as it allows for changes to both the value and
+limits, such as changing the value to be 20 and the limits to 8 to 30:
+
+    >>> p.val = 20
+    ParameterErr: parameter model.eta has a maximum of 10
+    >>> p.set(val=20, min=8, max=30)
+    >>> print(p)
+    val         = 20.0
+    min         = 8.0
+    max         = 30.0
+    units       =
+    frozen      = True
+    link        = None
+    default_val = 20.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+Linking parameters
+==================
+
+A parameter can be "linked" to another parameter, in which case the
+value of the parameter is calculated based on the link expression,
+such as being twice the other parameter:
+
+    >>> q = Parameter('other', 'beta', 4)
+    >>> p.val = 2 * p
+    >>> print(p)
+    val         = 8.0
+    min         = 8.0
+    max         = 30.0
+    units       =
+    frozen      = True
+    link        = (2 * other.beta)
+    default_val = 8.0
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
+
+The `link` attribute stores the expression:
+
+    >>> p.link
+    <BinaryOpParameter '(2 * other.beta)'>
+
+A ParameterErr exception will be raised whenever the linked expression
+is evaluated and the result lies outside the parameters soft limits
+(the `min` to `max` range). For this example, p must lie between 8 and
+30 and so changing parameter q to a value of 3 will cause an error,
+but only when parameter p is checked, not when the related parameter
+(here q) is changed:
+
+    >>> q.val = 3
+    >>> print(p)
+    ParameterErr: parameter model.eta has a minimum of 8
+    >>> p.val
+    ParameterErr: parameter model.eta has a minimum of 8
+
+Resetting a parameter
+=====================
+
+The `reset` method is used to restore the parameter value and soft
+limits to a known state. The idea is that if the values were changed
+in a fit then `reset` will change them back to the values before a
+fit.
+
 """
 
 import logging
@@ -41,8 +214,8 @@ __all__ = ('Parameter', 'CompositeParameter', 'ConstantParameter',
 # hugeval = 1.0e+38
 #
 # Use FLT_TINY and FLT_MAX
-tinyval = numpy.float(numpy.finfo(numpy.float32).tiny)
-hugeval = numpy.float(numpy.finfo(numpy.float32).max)
+tinyval = float(numpy.finfo(numpy.float32).tiny)
+hugeval = float(numpy.finfo(numpy.float32).max)
 
 
 def _make_set_limit(name):
@@ -135,17 +308,25 @@ class Parameter(NoNewAttributesAfterInit):
 
     def _get_alwaysfrozen(self):
         return self._alwaysfrozen
-    alwaysfrozen = property(_get_alwaysfrozen)
+    alwaysfrozen = property(_get_alwaysfrozen,
+                            doc='Is the parameter always frozen?')
 
     def _get_hard_min(self):
         return self._hard_min
-    hard_min = property(_get_hard_min)
+    hard_min = property(_get_hard_min,
+                        doc='The hard minimum of the parameter.\n\n' +
+                        'See Also\n' +
+                        '--------\n' +
+                        'hard_max')
 
     def _get_hard_max(self):
         return self._hard_max
-    hard_max = property(_get_hard_max)
+    hard_max = property(_get_hard_max,
+                        doc='The hard maximum of the parameter.\n\n' +
+                        'See Also\n' +
+                        '--------\n' +
+                        'hard_min')
 
-    #
     # 'val' property
     #
     # Note that _get_val has to check the parameter value when it
@@ -183,7 +364,14 @@ class Parameter(NoNewAttributesAfterInit):
             self._val = val
             self._default_val = val
 
-    val = property(_get_val, _set_val)
+    val = property(_get_val, _set_val,
+                   doc='The current value of the parameter.\n\n' +
+                   'If the parameter is a link then it is possible that accessing\n' +
+                   'the value will raise a ParamaterErr in cases where the link\n' +
+                   'expression falls outside the soft limits of the parameter.\n\n' +
+                   'See Also\n' +
+                   '--------\n' +
+                   'default_val, link, max, min')
 
     #
     # '_default_val' property
@@ -212,7 +400,11 @@ class Parameter(NoNewAttributesAfterInit):
 
             self._default_val = default_val
 
-    default_val = property(_get_default_val, _set_default_val)
+    default_val = property(_get_default_val, _set_default_val,
+                           doc='The default value of the parameter.\n\n' +
+                           'See Also\n' +
+                           '--------\n' +
+                           'val')
 
     #
     # 'min' and 'max' properties
@@ -220,11 +412,21 @@ class Parameter(NoNewAttributesAfterInit):
 
     def _get_min(self):
         return self._min
-    min = property(_get_min, _make_set_limit('_min'))
+    min = property(_get_min, _make_set_limit('_min'),
+                   doc='The minimum value of the parameter.\n\n' +
+                   'The minimum must lie between the hard_min and hard_max limits.\n\n' +
+                   'See Also\n' +
+                   '--------\n' +
+                   'max, val')
 
     def _get_max(self):
         return self._max
-    max = property(_get_max, _make_set_limit('_max'))
+    max = property(_get_max, _make_set_limit('_max'),
+                   doc='The maximum value of the parameter.\n\n' +
+                   'The maximum must lie between the hard_min and hard_max limits.\n\n' +
+                   'See Also\n' +
+                   '--------\n' +
+                   'min, val')
 
     #
     # 'default_min' and 'default_max' properties
@@ -252,7 +454,13 @@ class Parameter(NoNewAttributesAfterInit):
         if self._alwaysfrozen and (not val):
             raise ParameterErr('alwaysfrozen', self.fullname)
         self._frozen = val
-    frozen = property(_get_frozen, _set_frozen)
+    frozen = property(_get_frozen, _set_frozen,
+                      doc='Is the parameter currently frozen?\n\n' +
+                      'Those parameters created with `alwaysfrozen` set can not\n' +
+                      'be changed.\n\n' +
+                      'See Also\n' +
+                      '--------\n' +
+                      'alwaysfrozen\n')
 
     #
     # 'link' property'
@@ -286,7 +494,23 @@ class Parameter(NoNewAttributesAfterInit):
                 link.link = None
 
         self._link = link
-    link = property(_get_link, _set_link)
+    link = property(_get_link, _set_link,
+                    doc='The link expression to other parameters, if set.\n\n' +
+                    'The link expression defines if the parameter is not\n' +
+                    'a free parameter but is actually defined in terms of\n'
+                    'other parameters.\n\n' +
+                    'See Also\n' +
+                    '--------\n' +
+                    'val\n\n' +
+                    'Examples\n' +
+                    '--------\n\n' +
+                    '>>> a = Parameter("mdl", "a", 2)\n' +
+                    '>>> b = Parameter("mdl", "b", 1)\n' +
+                    '>>> b.link = 10 - a\n' +
+                    '>>> a.val\n' +
+                    '2.0\n' +
+                    '>>> b.val\n' +
+                    '8.0\n')
 
     #
     # Methods
@@ -439,12 +663,17 @@ class Parameter(NoNewAttributesAfterInit):
         self.frozen = False
 
     def unlink(self):
+        """Remove any link to other parameters."""
         self.link = None
 
     def reset(self):
+        """Reset the parameter value and limits to their default values."""
         # circumvent the attr checks for simplicity, as the defaults have
         # already passed (defaults either set by user or through self.set).
         if self._guessed:
+            # TODO: It is not clear the logic for when _guessed gets set
+            # (see sherpa.utils.param_apply_limits) so we do not
+            # describe the logic in the docstring yet.
             self._min = self.default_min
             self._max = self.default_max
             self._guessed = False
@@ -452,8 +681,28 @@ class Parameter(NoNewAttributesAfterInit):
 
     def set(self, val=None, min=None, max=None, frozen=None,
             default_val=None, default_min=None, default_max=None):
-        """Change a parameter setting."""
+        """Change a parameter setting.
 
+        Parameters
+        ----------
+        val : number or None, optional
+            The new parameter value.
+        min, max : number or None, optional
+            The new parameter range.
+        frozen : bool or None, optional
+            Should the frozen flag be set?
+        default_val : number or None, optional
+            The new default parameter value.
+        default_min, default_max : number or None, optional
+            The new default parameter limits.
+        """
+
+        # The validation checks are left to the individual properties.
+        # However, it means that the logic here has to handle cases
+        # of 'set(val=1, min=0, max=2)' but a value of 1 lies
+        # outside the min/max of the object before the call, and
+        # we don't want the call to fail because of this.
+        #
         if max is not None and max > self.max:
             self.max = max
         if default_max is not None and default_max > self.default_max:
@@ -484,6 +733,37 @@ class Parameter(NoNewAttributesAfterInit):
 
 
 class CompositeParameter(Parameter):
+    """Represent a parameter with composite parts.
+
+    This is the base class for representing expressions that combine
+    multiple parameters and values.
+
+    Parameters
+    ----------
+    name : str
+        The name for the collection.
+    parts : sequence of Parameter objects
+        The parameters.
+
+    Notes
+    -----
+    Composite parameters can be iterated through to find their
+    components:
+
+       >>> p = Parameter('m', 'p', 2)
+       >>> q = Parameter('m', 'q', 4)
+       >>> c = (p + q) / 2
+       >>> c
+       <BinaryOpParameter '((m.p + m.q) / 2)'>
+       >>> for cpt in c:
+       ...     print(type(cpt))
+       ...
+       <class 'BinaryOpParameter'>
+       <class 'Parameter'>
+       <class 'Parameter'>
+       <class 'ConstantParameter'>
+
+    """
 
     def __init__(self, name, parts):
         self.parts = tuple(parts)
@@ -510,10 +790,12 @@ class CompositeParameter(Parameter):
         return parts
 
     def eval(self):
+        """Evaluate the composite expression."""
         raise NotImplementedError
 
 
 class ConstantParameter(CompositeParameter):
+    """Represent an expression containing 1 or more parameters."""
 
     def __init__(self, value):
         self.value = SherpaFloat(value)
@@ -524,6 +806,20 @@ class ConstantParameter(CompositeParameter):
 
 
 class UnaryOpParameter(CompositeParameter):
+    """Apply an operator to a parameter expression.
+
+    Parameters
+    ----------
+    arg : Parameter instance
+    op : function reference
+        The ufunc to apply to the parameter value.
+    opstr : str
+        The symbol used to represent the operator.
+
+    See Also
+    --------
+    BinaryOpParameter
+    """
 
     def __init__(self, arg, op, opstr):
         self.arg = arg
@@ -537,6 +833,23 @@ class UnaryOpParameter(CompositeParameter):
 
 
 class BinaryOpParameter(CompositeParameter):
+    """Combine two parameter expressions.
+
+    Parameters
+    ----------
+    lhs : Parameter instance
+        The left-hand side of the expression.
+    rhs : Parameter instance
+        The right-hand side of the expression.
+    op : function reference
+        The ufunc to apply to the two parameter values.
+    opstr : str
+        The symbol used to represent the operator.
+
+    See Also
+    --------
+    UnaryOpParameter
+    """
 
     @staticmethod
     def wrapobj(obj):

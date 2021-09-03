@@ -27,7 +27,7 @@ import numpy
 
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
-    create_non_delta_rmf
+    create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _argument_type_error, _check_type
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
@@ -40,6 +40,8 @@ from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
+from sherpa.astro import fake
+from sherpa.astro.data import DataPHA
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -3882,7 +3884,7 @@ class Session(sherpa.ui.utils.Session):
             args = [obj.x, obj.y]
             fields = ["X", str(objtype).upper()]
 
-        sherpa.astro.io.write_arrays(filename, args, fields, **kwargs)
+        sherpa.astro.io.write_arrays(filename, args, fields=fields, **kwargs)
 
 # To fix bug report 13536, save many kinds of data to ASCII by default,
 # and let user override if they want FITS (or vice-versa).  The new defaults
@@ -3969,7 +3971,8 @@ class Session(sherpa.ui.utils.Session):
         """
         clobber = sherpa.utils.bool_cast(clobber)
         ascii = sherpa.utils.bool_cast(ascii)
-        sherpa.astro.io.write_arrays(filename, args, fields, ascii, clobber)
+        sherpa.astro.io.write_arrays(filename, args, fields=fields,
+                                     ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different API
     def save_source(self, id, filename=None, bkg_id=None, ascii=False,
@@ -4351,24 +4354,32 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
+        if bkg_id is not None:
+            d = self.get_bkg(id, bkg_id)
+        else:
+            d = self.get_data(id)
+
         # Leave this check as d.mask is False since d.mask need not be a boolean
+        # and we want different errors if mask is True or False (and leave as
+        # the iterable check to catch 'd.mask' is True or any other value that
+        # could cause the following code to fall over).
+        #
         if d.mask is False:
             raise DataErr('notmask')
         if not numpy.iterable(d.mask):
             raise DataErr('nomask', id)
 
-        x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, numpy.int)
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
 
-        self.save_arrays(filename, [x, mask], ['X', 'FILTER'],
-                         ascii, clobber)
+        mask = numpy.asarray(d.mask, int)
+
+        self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
+                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4453,12 +4464,14 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        x = d.get_indep(filter=False)[0]
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
+
         err = self.get_staterror(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], ['X', 'STAT_ERR'],
-                         ascii, clobber)
+        self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
+                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4541,12 +4554,14 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        x = d.get_indep(filter=False)[0]
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
+
         err = self.get_syserror(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], ['X', 'SYS_ERR'],
-                         ascii, clobber)
+        self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
+                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4636,12 +4651,14 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        x = d.get_indep(filter=False)[0]
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
+        else:
+            x = d.get_indep(filter=False)[0]
+
         err = self.get_error(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], ['X', 'ERR'],
-                         ascii, clobber)
+        self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
+                         ascii=ascii, clobber=clobber)
 
     def save_pha(self, id, filename=None, bkg_id=None, ascii=False,
                  clobber=False):
@@ -4718,7 +4735,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        sherpa.astro.io.write_pha(filename, d, ascii, clobber)
+        sherpa.astro.io.write_pha(filename, d, ascii=ascii, clobber=clobber)
 
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the grouping scheme to a file.
@@ -4793,15 +4810,17 @@ class Session(sherpa.ui.utils.Session):
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
         id = self._fix_id(id)
-        d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+        else:
+            d = self._get_pha_data(id)
 
         if d.grouping is None or not numpy.iterable(d.grouping):
             raise DataErr('nogrouping', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
-                                     ['CHANNEL', 'GROUPS'], ascii, clobber)
+                                     fields=['CHANNEL', 'GROUPS'], ascii=ascii,
+                                     clobber=clobber)
 
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the quality array to a file.
@@ -4876,15 +4895,17 @@ class Session(sherpa.ui.utils.Session):
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
         id = self._fix_id(id)
-        d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+        else:
+            d = self._get_pha_data(id)
 
         if d.quality is None or not numpy.iterable(d.quality):
             raise DataErr('noquality', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
-                                     ['CHANNEL', 'QUALITY'], ascii, clobber)
+                                     fields=['CHANNEL', 'QUALITY'], ascii=ascii,
+                                     clobber=clobber)
 
     # DOC-TODO: setting ascii=True is not supported for crates
     # and in pyfits it seems to just be a 1D array (needs thinking about)
@@ -4953,7 +4974,7 @@ class Session(sherpa.ui.utils.Session):
         _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_image(filename, self.get_data(id),
-                                    ascii, clobber)
+                                    ascii=ascii, clobber=clobber)
 
     # DOC-TODO: the output for an image is "excessive"
     def save_table(self, id, filename=None, ascii=False, clobber=False):
@@ -5019,10 +5040,11 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
+        id = self._fix_id(id)
         _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
-                                    ascii, clobber)
+                                    ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils
     def save_data(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
@@ -5100,21 +5122,25 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_type(filename, string_types, 'filename', 'a string')
-        d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+        else:
+            d = self.get_data(id)
 
         try:
-            sherpa.astro.io.write_pha(filename, d, ascii, clobber)
+            sherpa.astro.io.write_pha(filename, d, ascii=ascii,
+                                      clobber=clobber)
         except IOErr:
             try:
-                sherpa.astro.io.write_image(filename, d, ascii, clobber)
+                sherpa.astro.io.write_image(filename, d, ascii=ascii,
+                                            clobber=clobber)
             except IOErr:
                 try:
-                    sherpa.astro.io.write_table(filename, d, ascii, clobber)
-                except:
+                    sherpa.astro.io.write_table(filename, d, ascii=ascii,
+                                                clobber=clobber)
+                except IOErr:
                     # If this errors out then so be it
-                    sherpa.io.write_data(filename, d, clobber)
+                    sherpa.io.write_data(filename, d, clobber=clobber)
 
     def pack_pha(self, id=None):
         """Convert a PHA data set into a file structure.
@@ -5716,11 +5742,15 @@ class Session(sherpa.ui.utils.Session):
     def load_multi_arfs(self, id, filenames, resp_ids=None):
         """Load multiple ARFs for a PHA data set.
 
-        A grating observation - such as a Chandra HETG data set - may
-        require multiple responses. This function lets the multiple
-        ARFs for such a data set be loaded with one command. The
-        `load_arf` function can instead be used to load them in
-        individually.
+        A grating observation - such as a Chandra LETGS data set - may
+        require multiple responses if the detector has insufficient energy
+        resolution to sort the photons into orders. In this case, the
+        extracted spectrum will contain the signal from more than one
+        diffraction orders.
+
+        This function lets the multiple ARFs for such a data set be
+        loaded with one command. The `load_arf` function can instead
+        be used to load them in individually.
 
         Parameters
         ----------
@@ -5755,16 +5785,16 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Load two ARFs into the default data set, using response ids of
-        1 and 2 for 'm1.arf' and 'p1.arf' respectively:
+        Load three ARFs into the default data set, using response ids of
+        1, 2, and 3 for the LETG/HRC-S orders 1, 2, and 3 respectively:
 
-        >>> arfs = ['m1.arf', 'p1.arf']
-        >>> load_multi_arfs(arfs, [1,2])
+        >>> arfs = ['leg_p1.arf', 'leg_p2.arf', 'leg_p3.arf']
+        >>> load_multi_arfs(arfs, [1, 2, 3])
 
         Load in the ARFs to the data set with the identifier
         'lowstate':
 
-        >>> load_multi_arfs('lowstate', arfs, [1,2])
+        >>> load_multi_arfs('lowstate', arfs, [1, 2, 3])
 
         """
 # if type(filenames) not in (list, tuple):
@@ -6180,11 +6210,15 @@ class Session(sherpa.ui.utils.Session):
     def load_multi_rmfs(self, id, filenames, resp_ids=None):
         """Load multiple RMFs for a PHA data set.
 
-        A grating observation - such as a Chandra HETG data set - may
-        require multiple responses. This function lets the multiple
-        RMFs for such a data set be loaded with one command. The
-        `load_rmf` function can instead be used to load them in
-        individually.
+        A grating observation - such as a Chandra LETGS data set - may
+        require multiple responses if the detector has insufficient energy
+        resolution to sort the photons into orders. In this case, the
+        extracted spectrum will contain the signal from more than one
+        diffraction orders.
+
+        This function lets the multiple RMFs for such a data set be loaded
+        with one command. The `load_rmf` function can instead be used
+        to load them in individually.
 
         Parameters
         ----------
@@ -6219,16 +6253,16 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Load two RMFs into the default data set, using response ids of
-        1 and 2 for 'm1.rmf' and 'p1.rmf' respectively:
+        Load three ARFs into the default data set, using response ids of
+        1, 2, and 3 for the LETG/HRC-S orders 1, 2, and 3 respectively:
 
-        >>> rmfs = ['m1.rmf', 'p1.rmf']
-        >>> load_multi_rmfs(rmfs, [1,2])
+        >>> arfs = ['leg_p1.rmf', 'leg_p2.rmf', 'leg_p3.rmf']
+        >>> load_multi_rmfs(rmfs, [1, 2, 3])
 
         Load in the RMFs to the data set with the identifier
         'lowstate':
 
-        >>> load_multi_rmfs('lowstate', rmfs, [1,2])
+        >>> load_multi_rmfs('lowstate', rmfs, [1, 2, 3])
 
         """
 # if type(filenames) not in (list, tuple):
@@ -8619,15 +8653,21 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         id : int or str
-           The identifier for the data set to create. If it
-           already exists then it is assumed to contain a PHA
-           data set and the counts will be over-written.
-        arf : filename or ARF object
-           The name of the ARF, or an ARF data object (e.g.
-           as returned by `get_arf` or `unpack_arf`).
-        rmf : filename or RMF object
-           The name of the RMF, or an RMF data object (e.g.
-           as returned by `get_arf` or `unpack_arf`).
+           The identifier for the data set to create. If it already
+           exists then it is assumed to contain a PHA data set and the
+           counts will be over-written.
+        arf : filename or ARF object or list of filenames
+           The name of the ARF, or an ARF data object (e.g.  as
+           returned by `get_arf` or `unpack_arf`). A list of filenames
+           can be passed in for instruments that require multile ARFs.
+           Set this to `None` to use any arf that is already set for
+           the data set given by id.
+        rmf : filename or RMF object or list of filenames
+           The name of the RMF, or an RMF data object (e.g.  as
+           returned by `get_arf` or `unpack_arf`).  A list of filenames
+           can be passed in for instruments that require multile RMFs.
+           Set this to `None` to use any arf that is already set for
+           the data set given by id.
         exposure : number
            The exposure time, in seconds.
         backscal : number, optional
@@ -8637,16 +8677,20 @@ class Session(sherpa.ui.utils.Session):
         grouping : array, optional
            The grouping array for the data (see `set_grouping`).
         grouped : bool, optional
-           Should the simulated data be grouped (see `group`)?
-           The default is ``False``. This value is only used if
-           the `grouping` parameter is set.
+           Should the simulated data be grouped (see `group`)?  The
+           default is ``False``. This value is only used if the
+           `grouping` parameter is set.
         quality : array, optional
            The quality array for the data (see `set_quality`).
         bkg : optional
            If left empty, then only the source emission is simulated.
            If set to a PHA data object, then the counts from this data
            set are scaled appropriately and added to the simulated
-           source signal.
+           source signal. To use background model, set ``bkg="model"`. In that
+           case a background dataset with ``bkg_id=1`` has to be set before
+           calling ``fake_pha``. That background dataset needs to include
+           the data itself (not used in this function), the background model,
+           and the response.
 
         Raises
         ------
@@ -8671,14 +8715,15 @@ class Session(sherpa.ui.utils.Session):
         expresion is evaluated for each channel to create the expectation
         values, which is then passed to a Poisson random number generator
         to determine the observed number of counts per channel. Any
-        background component is scaled by appropriate terms (exsposure
-        time, area scaling, and the backscal value) before adding to the
-        simulated date. That is, the background component is not simulated.
+        background component is scaled by appropriate terms (exposure
+        time, area scaling, and the backscal value) before it is passed to
+        a Poisson random number generator. The simulated background is
+        added to the simulated data.
 
         Examples
         --------
-        Estimate the signal from a 5000 second observation using
-        the ARF and RMF from "src.arf" and "src.rmf" respectively:
+        Estimate the signal from a 5000 second observation using the
+        ARF and RMF from "src.arf" and "src.rmf" respectively:
 
         >>> set_source(1, xsphabs.gal * xsapec.clus)
         >>> gal.nh = 0.12
@@ -8707,19 +8752,29 @@ class Session(sherpa.ui.utils.Session):
         ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
 
+        Sometimes, the background dataset is noisy because there are not
+        enough photons in the background region. In this case, the background
+        model can be used to generate the photons that the background
+        contributes to the source spectrum. To do this, a background model
+        must be passed in. This model is then convolved with the ARF and RMF
+        (which must be set before) of the default background data set:
+
+        >>> set_bkg_source('sim', 'const1d.con1')
+        >>> load_arf('sim', 'bkg.arf.fits', bkg_id=1)
+        >>> load_rmf('sim', 'bkg_rmf.fits', bkg_id=1)
+        >>> fake_pha('sim', arf, rmf, texp, backscal=bscal, bkg='model',
+        ...          grouping=grp, quality=qual, grouped=True)
+        >>> save_pha('sim', 'sim.pi')
         """
-        d = sherpa.astro.data.DataPHA('', None, None)
+        id = self._fix_id(id)
+
         if id in self._data:
             d = self._get_pha_data(id)
         else:
-            # Make empty header OGIP compliant
-            # And add appropriate values to header from input values
-            d.header = dict(HDUCLASS="OGIP", HDUCLAS1="SPECTRUM",
-                            HDUCLAS2="TOTAL", HDUCLAS3="TYPE:I",
-                            HDUCLAS4="COUNT", HDUVERS="1.1.0")
+            d = sherpa.astro.data.DataPHA('', None, None)
             self.set_data(id, d)
 
-        if rmf is None:
+        if rmf is None and len(d.response_ids) == 0:
             raise DataErr('normffake', id)
 
         if type(rmf) in (str, numpy.string_):
@@ -8728,11 +8783,46 @@ class Session(sherpa.ui.utils.Session):
             else:
                 raise IOErr("filenotfound", rmf)
 
-        if arf is not None and type(arf) in (str, numpy.string_):
+        if type(arf) in (str, numpy.string_):
             if os.path.isfile(arf):
                 arf = self.unpack_arf(arf)
             else:
                 raise IOErr("filenotfound", arf)
+
+        if not (rmf is None and arf is None):
+            for resp_id in d.response_ids:
+                d.delete_response(resp_id)
+
+        # Get one rmf for testing the channel number
+        # This would be a lot simpler if I could just raise the
+        # incombatiblersp error on the OO layer (that happens, but the id
+        # is not in the error messaage).
+        if rmf is None:
+            rmf0 = d.get_rmf()
+        elif numpy.iterable(rmf):
+            rmf0 = self.unpack_rmf(rmf[0])
+        else:
+            rmf0 = rmf
+
+        if d.channel is None:
+            d.channel = sao_arange(1, rmf0.detchans)
+
+        else:
+            if len(d.channel) != rmf0.detchans:
+                raise DataErr('incompatibleresp', rmf.name, str(id))
+
+        # at this point, we can be sure that arf is not a string, because
+        # if it was, it would have gone through load_arf already above.
+        if not (rmf is None and arf is None):
+            if numpy.iterable(arf):
+                self.load_multi_arfs(id, arf, range(len(arf)))
+            else:
+                self.set_arf(id, arf)
+
+            if numpy.iterable(rmf):
+                self.load_multi_rmfs(id, rmf, range(len(rmf)))
+            else:
+                self.set_rmf(id, rmf)
 
         d.exposure = exposure
 
@@ -8745,13 +8835,6 @@ class Session(sherpa.ui.utils.Session):
         if quality is not None:
             d.quality = quality
 
-        if d.channel is None:
-            d.channel = sao_arange(1, rmf.detchans)
-
-        else:
-            if len(d.channel) != rmf.detchans:
-                raise DataErr('incompatibleresp', rmf.name, str(id))
-
         if grouping is not None:
             d.grouping = grouping
 
@@ -8761,58 +8844,27 @@ class Session(sherpa.ui.utils.Session):
             else:
                 d.ungroup()
 
-        for resp_id in d.response_ids:
-            d.delete_response(resp_id)
-
-        if arf is not None:
-            self.set_arf(id, arf)
-
-        self.set_rmf(id, rmf)
-
         # Update background here.  bkg contains a new background;
         # delete the old background (if any) and add the new background
         # to the simulated data set, BEFORE simulating data, and BEFORE
         # adding scaled background counts to the simulated data.
+        bkg_models = {}
         if bkg is not None:
-            for bkg_id in d.background_ids:
-                d.delete_background(bkg_id)
-            self.set_bkg(id, bkg)
+            if bkg == 'model':
+                bkg_models = {1: self.get_bkg_source(id)}
+            else:
+                for bkg_id in d.background_ids:
+                    d.delete_background(bkg_id)
+                self.set_bkg(id, bkg)
 
         # Calculate the source model, and take a Poisson draw based on
         # the source model.  That becomes the simulated data.
         m = self.get_model(id)
-        d.counts = sherpa.utils.poisson_noise(d.eval_model(m))
 
-        # Add in background counts:
-        #  -- Scale each background properly given data's
-        #     exposure time, BACKSCAL and AREASCAL
-        #  -- Take average of scaled backgrounds
-        #  -- Take a Poisson draw based on the average scaled background
-        #  -- Add that to the simulated data counts
-        #
-        # Adding background counts is OPTIONAL, only done if user sets
-        # "bkg" argument to fake_pha.  The reason is that the user could
-        # well set a "source" model that does include a background
-        # component.  In that case users should have the option to simulate
-        # WITHOUT background counts being added in.
-        #
-        # If bkg is not None, then backgrounds were previously updated
-        # above, so it is OK to use "bkg is not None" as the condition
-        # here.
-        if bkg is not None:
-            nbkg = len(d.background_ids)
-            b = 0
-            for bkg_id in d.background_ids:
-                # we do (probably) want to filter and group the scale array
-                b += d.get_background_scale(bkg_id) * \
-                    d.get_background(bkg_id).counts
-
-            if nbkg > 0:
-                b = b / nbkg
-                b_poisson = sherpa.utils.poisson_noise(b)
-                d.counts = d.counts + b_poisson
-
+        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
+                      id=str(id), bkg_models=bkg_models)
         d.name = 'faked'
+
 
     ###########################################################################
     # PSF
@@ -8966,9 +9018,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
 
         # Add any convolution components from the sherpa.ui layer
-        model = \
-            sherpa.ui.utils.Session._add_convolution_models(self, id, data,
-                                                            model, is_source)
+        model = super()._add_convolution_models(id, data, model, is_source)
 
         # If we don't need to deal with DataPHA issues we can return
         if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
@@ -8993,16 +9043,8 @@ class Session(sherpa.ui.utils.Session):
            model has been associated with the data set.
 
         """
-
         pileup_model = self._pileup_models.get(id)
-        if pileup_model is not None:
-            resp = sherpa.astro.instrument.PileupResponse1D(pha, pileup_model)
-        elif len(pha._responses) > 1:
-            resp = sherpa.astro.instrument.MultipleResponse1D(pha)
-        else:
-            resp = sherpa.astro.instrument.Response1D(pha)
-
-        return resp
+        return pha.get_full_response(pileup_model)
 
     def get_response(self, id=None, bkg_id=None):
         """Return the response information applied to a PHA data set.
@@ -9334,7 +9376,7 @@ class Session(sherpa.ui.utils.Session):
         if not is_source:
             return src
 
-        # The background response is set bu the DataPHA.set_background
+        # The background response is set by the DataPHA.set_background
         # method (copying one over, if it does not exist), which means
         # that the only way to get to this point is if the user has
         # explicitly deleted the background response. In this case
@@ -9637,12 +9679,17 @@ class Session(sherpa.ui.utils.Session):
 
         return (x, y)
 
-    def load_xstable_model(self, modelname, filename):
+    def load_xstable_model(self, modelname, filename, etable=False):
         """Load a XSPEC table model.
 
-        Create an additive (``atable``, [1]_) or multiplicative
-        (``mtable``, [2]_) XSPEC table model component. These models
-        may have multiple model parameters.
+        Create an additive (``atable``, [1]_), multiplicative
+        (``mtable``, [2]_), or exponential (``etable``, [3]_) XSPEC
+        table model component. These models may have multiple model
+        parameters.
+
+        .. versionchanged:: 4.13.2
+           The etable argument has been added to allow exponential table
+           models to be used.
 
         Parameters
         ----------
@@ -9650,7 +9697,10 @@ class Session(sherpa.ui.utils.Session):
            The identifier for this model component.
         filename : str
            The name of the FITS file containing the data, which should
-           match the XSPEC table model definition [3]_.
+           match the XSPEC table model definition [4]_.
+        etable : bool, optional
+           Set if this is an etable (as there's no way to determine this
+           from the file itself). Defaults to False.
 
         Raises
         ------
@@ -9669,7 +9719,7 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
         NASA's HEASARC site contains a link to community-provided
-        XSPEC table models [4]_.
+        XSPEC table models [5]_.
 
         References
         ----------
@@ -9678,9 +9728,11 @@ class Session(sherpa.ui.utils.Session):
 
         .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-        .. [3] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+        .. [3] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
 
-        .. [4] https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html
+        .. [4] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+
+        .. [5] https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html
 
         Examples
         --------
@@ -9693,6 +9745,10 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(xsphabs.gal * xtbl)
         >>> print(xtbl)
 
+        Load in an XSPEC etable model
+
+        >>> load_xstable_model('etbl', 'etable.mod', etable=True)
+
         """
 
         try:
@@ -9701,7 +9757,7 @@ class Session(sherpa.ui.utils.Session):
             # TODO: what is the best error to raise here?
             raise ImportErr('notsupported', 'XSPEC') from exc
 
-        tablemodel = xspec.read_xstable_model(modelname, filename)
+        tablemodel = xspec.read_xstable_model(modelname, filename, etable=etable)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
@@ -10410,13 +10466,77 @@ class Session(sherpa.ui.utils.Session):
 
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
 
-    # copy doc string from sherpa.utils
     def get_model_component_plot(self, id, model=None, recalc=True):
+        """Return the data used to create the model-component plot.
+
+        For PHA data, the response model is automatically added by the
+        routine unless the model contains a response.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to use (the name, if a string).
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_model_component` (or `get_model_component_plot`)
+           are returned, otherwise the data is re-generated.
+
+        Returns
+        -------
+        instance
+           An object representing the data used to create the plot by
+           `plot_model_component`. The return value depends on the
+           data set (e.g. PHA, 1D binned, or 1D un-binned).
+
+        See Also
+        --------
+        get_model_plot : Return the data used to create the model plot.
+        plot_model : Plot the model for a data set.
+        plot_model_component : Plot a component of the model for a data set.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
+        Examples
+        --------
+
+        Return the plot data for the ``pl`` component used in the
+        default data set:
+
+        >>> cplot = get_model_component_plot(pl)
+
+        Return the full source model (``fplot``) and then for the
+        components ``gal * pl`` and ``gal * gline``, for the data set
+        'jet':
+
+        >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
+        >>> set_source('jet', fmodel)
+        >>> fit('jet')
+        >>> fplot = get_model_plot('jet')
+        >>> plot1 = get_model_component_plot('jet', pl*gal)
+        >>> plot2 = get_model_component_plot('jet', gline*gal)
+
+        For PHA data sets the response is automatically added, but it
+        can also be manually specified. In the following plot1 and
+        plot2 contain the same data:
+
+        >>> plot1 = get_model_component_plot(pl)
+        >>> rsp = get_response()
+        >>> plot2 = get_model_component_plot(rsp(pl))
+
+        """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -10428,20 +10548,24 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(d, sherpa.astro.data.DataPHA):
             plotobj = self._astrocompmdlplot
             if recalc:
+                if not has_pha_response(model):
+                    try:
+                        rsp = self.get_response(id)  # TODO: bkg_id?
+                        model = rsp(model)
+                    except DataErr:
+                        # no response
+                        pass
+
                 plotobj.prepare(d, model, self.get_stat())
             return plotobj
 
         return super().get_model_component_plot(id, model=model, recalc=recalc)
 
-    get_model_component_plot.__doc__ = sherpa.ui.utils.Session.get_model_component_plot.__doc__
-
     # copy doc string from sherpa.utils
     def get_source_component_plot(self, id, model=None, recalc=True):
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -10470,7 +10594,7 @@ class Session(sherpa.ui.utils.Session):
 
         return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
                                        conv_model=conv_model, id=id, otherids=otherids,
-                                       num=num, bins=25, numcores=numcores,
+                                       num=num, bins=bins, numcores=numcores,
                                        recalc=recalc)
 
     get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__

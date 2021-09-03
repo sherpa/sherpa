@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -413,7 +414,7 @@ def test_746(make_data_path, clean_astro_ui):
 
     # Add in the line
     d10 = ui.get_data(10)
-    idx = np.arange(4068, 4075, dtype=np.int)
+    idx = np.arange(4068, 4075, dtype=int)
     d10.counts[idx] = [1, 1, 1, 2, 3, 1, 1]
 
     # group the data

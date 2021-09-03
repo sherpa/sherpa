@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -104,9 +105,8 @@ def calc_errors(ys):
     return Chi2Gehrels.calc_staterror(ys)
 
 
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
-def test_get_fit_plot(idval):
+def test_get_fit_plot(idval, clean_ui):
     """Basic testing of get_fit_plot
     """
 
@@ -602,10 +602,9 @@ _plot_change_opts = [(p['plot'], p['change'], p['check_changed'])
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("pfunc, checkfunc", _plot_opts)
-def test_plot_xxx(idval, pfunc, checkfunc):
+def test_plot_xxx(idval, pfunc, checkfunc, clean_ui):
     """Can we call a plot_xxx routine?
 
     There is limited testing that the plot call worked (this
@@ -639,10 +638,9 @@ def test_plot_xxx(idval, pfunc, checkfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_replot_opts)
-def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
+def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc, clean_ui):
     """Can we plot, change data, plot with replot and see no difference?
 
     Parameters
@@ -684,10 +682,9 @@ def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,changefunc,checkfunc", _plot_change_opts)
-def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc):
+def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc, clean_ui):
     """Can we plot, change data, plot and see a difference?
 
     Unlike test_plot_xxx_replot, this does not set replot to True,
@@ -736,10 +733,9 @@ _mplot = (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("getprefs,attr,plotfunc",
                          [_dplot, _mplot])
-def test_prefs_change_session_objects(getprefs, attr, plotfunc):
+def test_prefs_change_session_objects(getprefs, attr, plotfunc, clean_ui):
     """Is a plot-preference change also reflected in the session object?
 
     This is intended to test an assumption that will be used in the
@@ -782,8 +778,7 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
-def test_prefs_change_session_objects_fit():
+def test_prefs_change_session_objects_fit(clean_ui):
     """Is plot-preference change reflected in the fitplot session object?
 
     This is test_prefs_change_session_objects but for the _fitplot
@@ -1003,12 +998,11 @@ def test_get_kernel_plot_recalc(session):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("plotobj,plotfunc",
                          [("_residplot", ui.plot_resid),
                           ("_delchiplot", ui.plot_delchi)
                           ])
-def test_plot_resid_ignores_ylog(plotobj, plotfunc):
+def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?
 
     Note that plot_chisqr is not included in support for ignoring
@@ -1036,12 +1030,11 @@ def test_plot_resid_ignores_ylog(plotobj, plotfunc):
 
 
 @requires_plotting
-@pytest.mark.usefixtures("clean_ui")
 @pytest.mark.parametrize("plotobj,plotfunc",
                          [("_residplot", ui.plot_fit_resid),
                           ("_delchiplot", ui.plot_fit_delchi)
                           ])
-def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc):
+def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?"""
 
     # access it this way to ensure have access to the actual
@@ -1110,7 +1103,7 @@ def test_plot_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == ''
     assert ax.xaxis.get_label().get_text() == 'x'
     assert ax.yaxis.get_label().get_text() == 'y'
@@ -1124,7 +1117,7 @@ def test_plot_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == 'Model'
     assert ax.xaxis.get_label().get_text() == 'x'
     assert ax.yaxis.get_label().get_text() == 'y'
@@ -1176,7 +1169,8 @@ def test_plot_multiple(session):
                                                  'Data / Model']),
                                             1):
 
-        assert ax.get_geometry() == (2, 3, i)
+        w = i - 1
+        assert ax.get_subplotspec().get_geometry() == (2, 3, w, w)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x'
         assert ax.yaxis.get_label().get_text() == ylabel
@@ -1223,7 +1217,7 @@ def test_contour_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == ''
     assert ax.xaxis.get_label().get_text() == 'x0'
     assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1237,7 +1231,7 @@ def test_contour_single(session):
 
     ax = fig.axes[0]
 
-    assert ax.get_geometry() == (1, 1, 1)
+    assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
     assert ax.get_title() == 'Model'
     assert ax.xaxis.get_label().get_text() == 'x0'
     assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1284,7 +1278,8 @@ def test_contour_multiple(session):
                                          'Ratio of Data to Model']),
                                     1):
 
-        assert ax.get_geometry() == (2, 3, i)
+        w = i - 1
+        assert ax.get_subplotspec().get_geometry() == (2, 3, w, w)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x0'
         assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1340,7 +1335,8 @@ def test_contour_xxx(plotfunc, title, pcls, session):
                                             ['', 'Residuals']),
                                         1):
 
-            assert ax.get_geometry() == (2, 1, i)
+            w = i - 1
+            assert ax.get_subplotspec().get_geometry() == (2, 1, w, w)
             assert ax.get_title() == title
             assert ax.xaxis.get_label().get_text() == 'x0'
             assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1349,7 +1345,7 @@ def test_contour_xxx(plotfunc, title, pcls, session):
         assert len(fig.axes) == 1
 
         ax = fig.axes[0]
-        assert ax.get_geometry() == (1, 1, 1)
+        assert ax.get_subplotspec().get_geometry() == (1, 1, 0, 0)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x0'
         assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1792,10 +1788,10 @@ def test_plot_pdf_replot_no_data(session):
     x = np.asarray([2, 8, 4, 6])
 
     # check on the error so we know when the code has changed
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(TypeError) as exc:
         s.plot_pdf(x, replot=True)
 
-    assert str(exc.value) == "'NoneType' object has no attribute 'size'"
+    assert "'NoneType' has no len" in str(exc.value)
 
 
 @requires_pylab
@@ -2699,6 +2695,22 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui):
 
     fig = plt.gcf()
     axes = fig.axes
+
+    # This test occasionally fails because len(axes) == 3
+    # but it's not obvious why - so let's print some
+    # info in the hope it's informative
+    print(plt.get_current_fig_manager())
+    print(fig)
+    print(axes)
+    for ax in axes:
+        print(ax.get_xlabel())
+        print(ax.get_ylabel())
+        print(ax.get_title())
+        print(ax.lines)
+        print(ax.get_xlim())
+        print(ax.get_ylim())
+        print('---')
+
     assert len(axes) == 2
     assert axes[0].xaxis.get_label().get_text() == ''
 
@@ -2719,7 +2731,7 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui):
 @requires_pylab
 @pytest.mark.parametrize("ptype",
                          ["resid", "ratio", "delchi"])
-def test_plot_fit_xxx_overplot_pylab(ptype, caplog):
+def test_plot_fit_xxx_overplot_pylab(ptype, caplog, clean_ui):
     """Just ensure we can create a plot_fit_xxx(overplot=True) call."""
 
     from matplotlib import pyplot as plt

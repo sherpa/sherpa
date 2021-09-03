@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -334,10 +334,10 @@ namespace sherpa { namespace astro { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType EoverkTlo = elo/t;
-    register DataType EoverkThi = ehi/t;
-    register DataType ylo = 0.0;
-    register DataType yhi = 0.0;
+    DataType EoverkTlo = elo/t;
+    DataType EoverkThi = ehi/t;
+    DataType ylo = 0.0;
+    DataType yhi = 0.0;
 
     if(integrate && EoverkThi <= 1.0e-4) {
       ylo = elo*t;
@@ -376,10 +376,10 @@ namespace sherpa { namespace astro { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType hcoverlamkTlo = H_KEV*C_ANG/wlo/t;
-    register DataType hcoverlamkThi = H_KEV*C_ANG/whi/t;
-    register DataType ylo = 0.0;
-    register DataType yhi = 0.0;
+    DataType hcoverlamkTlo = H_KEV*C_ANG/wlo/t;
+    DataType hcoverlamkThi = H_KEV*C_ANG/whi/t;
+    DataType ylo = 0.0;
+    DataType yhi = 0.0;
 
     if(integrate && hcoverlamkTlo <= 1.0e-4) {
       ylo = t/POW(wlo,3.0)/H_KEV/C_ANG;
@@ -406,7 +406,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int bbody_point( const ConstArrayType& p, DataType x, DataType& val )
   {
 
-    register int bbunit = (int)((floor)(p[0]+0.5));
+    int bbunit = (int)((floor)(p[0]+0.5));
     DataType wave;
     DataType energy;
 
@@ -468,7 +468,7 @@ namespace sherpa { namespace astro { namespace models {
 	val = p[4]*POW((x/p[3]),-p[0]);
 	return EXIT_SUCCESS;
       } else {
-	register DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
+	DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
 	val = a*POW(x/p[3],-p[1]);
 	return EXIT_SUCCESS;
       }
@@ -494,9 +494,9 @@ namespace sherpa { namespace astro { namespace models {
 	  val = p[4]*p[3]*(LOG(xhi)-LOG(xlo));
 	  return EXIT_SUCCESS;
 	} else {
-	  register DataType p1 = POW(xlo,1.0-p[0]);
-	  register DataType p2 = POW(xhi,1.0-p[0]);
-	  register DataType a1 = p[4]/POW(p[3],-p[0])/(1.0-p[0]);
+	  DataType p1 = POW(xlo,1.0-p[0]);
+	  DataType p2 = POW(xhi,1.0-p[0]);
+	  DataType a1 = p[4]/POW(p[3],-p[0])/(1.0-p[0]);
 	  val = a1*(p2-p1);
 	  return EXIT_SUCCESS;
 	}
@@ -506,20 +506,20 @@ namespace sherpa { namespace astro { namespace models {
 	  return EXIT_FAILURE;
 	}
 	if ( p[1] == 1.0 ) {
-	  register DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
+	  DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
 	  val = a*p[3]*(LOG(xhi)-LOG(xlo));
 	  return EXIT_SUCCESS;
 	} else {
-	  register DataType p1 = POW(xlo,1.0-p[1]);
-	  register DataType p2 = POW(xhi,1.0-p[1]);
-	  register DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
-	  register DataType a2 = a/POW(p[3],-p[1])/(1.0-p[1]);
+	  DataType p1 = POW(xlo,1.0-p[1]);
+	  DataType p2 = POW(xhi,1.0-p[1]);
+	  DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
+	  DataType a2 = a/POW(p[3],-p[1])/(1.0-p[1]);
 	  val = a2*(p2-p1);
 	  return EXIT_SUCCESS;
 	}
       } else {
-	register DataType out1 = 0.0;
-	register DataType out2 = 0.0;
+	DataType out1 = 0.0;
+	DataType out2 = 0.0;
 	if ( p[0] == 1.0 ) {
 	  if ( p[2] <= 0.0 || xlo <= 0.0 ) {
 	    // val = NAN;
@@ -527,9 +527,9 @@ namespace sherpa { namespace astro { namespace models {
 	  }
 	  out1 = p[4]*p[3]*(LOG(p[2])-LOG(xlo));
 	} else {
-	  register DataType p1 = POW(xlo,1.0-p[0]);
-	  register DataType p2 = POW(p[2],1.0-p[0]);
-	  register DataType a1 = p[4]/POW(p[3],-p[0])/(1.0-p[0]);
+	  DataType p1 = POW(xlo,1.0-p[0]);
+	  DataType p2 = POW(p[2],1.0-p[0]);
+	  DataType a1 = p[4]/POW(p[3],-p[0])/(1.0-p[0]);
 	  out1 = a1*(p2-p1);
 	}
 	if ( 0.0 == p[3] ) {
@@ -537,13 +537,13 @@ namespace sherpa { namespace astro { namespace models {
 	  return EXIT_FAILURE;
 	}
 	if ( p[1] == 1.0 ) {
-	  register DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
+	  DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
 	  out2 = a*p[3]*(LOG(xhi)-LOG(p[2]));
 	} else {
-	  register DataType p1 = POW(p[2],1.0-p[1]);
-	  register DataType p2 = POW(xhi,1.0-p[1]);
-	  register DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
-	  register DataType a2 = a/POW(p[3],-p[1])/(1.0-p[1]);
+	  DataType p1 = POW(p[2],1.0-p[1]);
+	  DataType p2 = POW(xhi,1.0-p[1]);
+	  DataType a = p[4]*POW((p[2]/p[3]),p[1])*POW((p[2]/p[3]),-p[0]);
+	  DataType a2 = a/POW(p[3],-p[1])/(1.0-p[1]);
 	  out2 = a2*(p2-p1);
 	}
 	val = (out1 + out2);
@@ -562,19 +562,19 @@ namespace sherpa { namespace astro { namespace models {
   inline int dered_point( const ConstArrayType& p, DataType x, DataType& val )
   {
 
-    register DataType ebv = p[1]/58.0;
-    register DataType fa;
-    register DataType fb;
-    register DataType a = 0.0;
-    register DataType b = 0.0;
-    register DataType xarg;
+    DataType ebv = p[1]/58.0;
+    DataType fa;
+    DataType fb;
+    DataType a = 0.0;
+    DataType b = 0.0;
+    DataType xarg;
     // Here's where things get ugly.  Values of a and b are functions
     // of wavelength xtmp in units of inverse microns.  I put the
     // formulae from Cardelli, J. A., Clayton, G. C., \& Mathis,
     // J. S. 1989, ApJ, 345, 245 into Fortran for the hell of it.
     // determine a and b for wavelength x (in inverse microns) between
     // 0.3um-1 and 10um-1 (33333 to 1000 Angstroms)
-    register DataType xtemp = 1.e+4/x;
+    DataType xtemp = 1.e+4/x;
     if ( xtemp <= 5.9 || xtemp > 8.0 ) {
       fa = 0.0; fb = 0.0;
     } else {
@@ -601,9 +601,9 @@ namespace sherpa { namespace astro { namespace models {
     }
     // UV   (3.3 < xtemp < 8) (3030 > lambda > 1250)
     if ( xtemp > 3.3 && xtemp <= 8.0 ) {
-      register DataType adenom = POW(xtemp-4.67,2.0) + 0.341;
+      DataType adenom = POW(xtemp-4.67,2.0) + 0.341;
       a = 1.752 - (0.316*xtemp) - (0.104/adenom) + fa;
-      register DataType bdenom = POW(xtemp-4.62,2.0) + 0.263;
+      DataType bdenom = POW(xtemp-4.62,2.0) + 0.263;
       b = -3.090 + (1.825*xtemp) + (1.206/bdenom) + fb;
     }
     // determine a and b for wavelength xtemp (in inverse microns)
@@ -619,7 +619,7 @@ namespace sherpa { namespace astro { namespace models {
     //    and derive the absolute extinction at any wavelength
     //    (Alambda) via
     //                Alambda = E(B-V) * [a*Rv + b]
-    register DataType alambda = ebv*((a*p[0])+b);
+    DataType alambda = ebv*((a*p[0])+b);
     //   Then relate to fluxes via    I(lambda) = I(o)e^-tau(lambda)
     //   and   Alambda = 1.086 * tau(lambda)
     //   FINAL OUTPUT
@@ -633,7 +633,7 @@ namespace sherpa { namespace astro { namespace models {
   inline int edge_point( const ConstArrayType& p, DataType x, DataType& val )
   {
 
-    register int u = (int)((floor)(p[0] + 0.5));
+    int u = (int)((floor)(p[0] + 0.5));
     if( u == 0 && x < p[1] ) {
       val = 1.0;
       return EXIT_SUCCESS;
@@ -749,9 +749,9 @@ namespace sherpa { namespace astro { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType prefix = 2.0*C_KM*p[0]/(PI*p[2]*p[1]);
-    register DataType inside = POW(C_KM,2.0)/(POW(p[2],2.0)*POW(p[1],2.0));
-    register DataType z = 1.0 - POW((x-p[1]),2.0)*inside;
+    DataType prefix = 2.0*C_KM*p[0]/(PI*p[2]*p[1]);
+    DataType inside = POW(C_KM,2.0)/(POW(p[2],2.0)*POW(p[1],2.0));
+    DataType z = 1.0 - POW((x-p[1]),2.0)*inside;
     if( z < 0.0 ) {
       // val = NAN;
       return EXIT_FAILURE;
@@ -768,20 +768,20 @@ namespace sherpa { namespace astro { namespace models {
 				   DataType xlo, DataType xhi, DataType& val )
   {
 
-    register DataType prefix = 2.0*C_KM*p[0]/(PI*p[2]*p[1]);
-    register DataType inside = POW(C_KM,2.0)/(POW(p[2],2.0)*POW(p[1],2.0));
+    DataType prefix = 2.0*C_KM*p[0]/(PI*p[2]*p[1]);
+    DataType inside = POW(C_KM,2.0)/(POW(p[2],2.0)*POW(p[1],2.0));
 
     if( inside < 0 ) {
       //val = NAN;
       return EXIT_FAILURE;
     }
 
-    register DataType sub0 = xlo - p[1];
-    register DataType sub1 = xhi - p[1];
-    register DataType frac0 = 1 - inside*sub0*sub0;
-    register DataType frac1 = 1 - inside*sub1*sub1;
-    register DataType theta0 = SQRT(inside)*sub0;
-    register DataType theta1 = SQRT(inside)*sub1;
+    DataType sub0 = xlo - p[1];
+    DataType sub1 = xhi - p[1];
+    DataType frac0 = 1 - inside*sub0*sub0;
+    DataType frac1 = 1 - inside*sub1*sub1;
+    DataType theta0 = SQRT(inside)*sub0;
+    DataType theta1 = SQRT(inside)*sub1;
 
     if( (frac0 < 0) || (frac1 < 0) ) {
       //val = NAN;
@@ -798,8 +798,8 @@ namespace sherpa { namespace astro { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType val0 = SQRT(frac0) * sub0 + ASIN(theta0)/SQRT(inside);
-    register DataType val1 = SQRT(frac1) * sub1 + ASIN(theta1)/SQRT(inside);
+    DataType val0 = SQRT(frac0) * sub0 + ASIN(theta0)/SQRT(inside);
+    DataType val1 = SQRT(frac1) * sub1 + ASIN(theta1)/SQRT(inside);
     val = 0.5*prefix*(val1 - val0);
     return EXIT_SUCCESS;
 
@@ -868,8 +868,8 @@ namespace sherpa { namespace astro { namespace models {
 				   DataType xlo, DataType xhi, DataType& val )
   {
 
-    register DataType angle1 = 0.0;
-    register DataType angle2 = 0.0;
+    DataType angle1 = 0.0;
+    DataType angle2 = 0.0;
     if ( xhi - p[1] != 0.0 ) {
       angle2 = atan2( p[0] / 2.0, xhi - p[1] );
     } else {
@@ -897,8 +897,8 @@ namespace sherpa { namespace astro { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     else {
-      register DataType gammaratio = EXP(LGAMMA(p[2]-0.5)-LGAMMA(p[2]));
-      register DataType norm = p[3]/(p[1]*SQRT_PI*gammaratio);
+      DataType gammaratio = EXP(LGAMMA(p[2]-0.5)-LGAMMA(p[2]));
+      DataType norm = p[3]/(p[1]*SQRT_PI*gammaratio);
       val = norm*POW((1.0+(x-p[0])*(x-p[0])/p[1]/p[1]),-p[2]);
       return EXIT_SUCCESS;
     }
@@ -928,8 +928,8 @@ namespace sherpa { namespace astro { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     else {
-      register DataType xthis = xlo/p[1];
-      register DataType xnext = xhi/p[1];
+      DataType xthis = xlo/p[1];
+      DataType xnext = xhi/p[1];
       val = p[2]*POW(xthis, p[0])*EXP(-xthis)*(xnext - xthis);
       return EXIT_SUCCESS;
     }
@@ -945,7 +945,7 @@ namespace sherpa { namespace astro { namespace models {
 			   DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r;
+    DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
@@ -967,7 +967,7 @@ namespace sherpa { namespace astro { namespace models {
 			  DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r;
+    DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius(p,x0,x1,r)) {
       return EXIT_FAILURE;
@@ -989,7 +989,7 @@ namespace sherpa { namespace astro { namespace models {
 		       DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r;
+    DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
@@ -1010,7 +1010,7 @@ namespace sherpa { namespace astro { namespace models {
 			      DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r;
+    DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius2(p,x0,x1, r)) {
       return EXIT_FAILURE;
@@ -1030,7 +1030,7 @@ namespace sherpa { namespace astro { namespace models {
 			   DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r;
+    DataType r;
 
     if( EXIT_SUCCESS != sherpa::utils::radius(p,x0,x1,r)) {
       return EXIT_FAILURE;

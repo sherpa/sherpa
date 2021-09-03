@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
-from sherpa.astro.utils import filter_resp, range_overlap_1dint
+from sherpa.astro.utils import do_group, filter_resp, range_overlap_1dint
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -143,3 +144,79 @@ def test_range_overlap_1dint_ascending(lo, hi, expected, reverse):
         return
 
     assert got == pytest.approx(expected)
+
+
+def test_do_group_invalid_scheme():
+    """Check we error out and not segfault if the name is unknown."""
+
+    with pytest.raises(ValueError) as ve:
+        do_group([1, 2, 3], [1, 1, 1], 'foo')
+
+    assert str(ve.value) == 'unsupported group function: foo'
+
+
+def test_do_group_check_lengths():
+    """Check we error out if lengths do not match."""
+
+    with pytest.raises(TypeError) as te:
+        do_group([1, 2, 3], [1, 1], 'sum')
+
+    assert str(te.value) == 'input array sizes do not match, data: 3 vs group: 2'
+
+
+@pytest.mark.parametrize("func,expected",
+                         [("sum", [3, 12, 6]),
+                          ("_sum_sq", np.sqrt([5, 50, 36])),
+                          ("_min", [1, 3, 6]),
+                          ("_max", [2, 5, 6]),
+                          ("_middle", [1.5, 4, 6]),
+                          ("_make_groups", [1, 2, 3])
+                         ])
+def test_do_group_check_func(func, expected):
+    """Test grouping functions on simple input."""
+
+    ans = do_group([1, 2, 3, 4, 5, 6], [1, -1, 1, -1, -1, 1], func)
+    assert ans == pytest.approx(expected)
+
+
+# Note that the grouping code expects the data to be >= 0 so
+# support for -1 in the following is basically "an extra" (i.e. we
+# could decide to error out if values < 0 are included, which
+# would mean the test would fail, but for now it is supported).
+#
+@pytest.mark.parametrize("func", ["sum", "_min", "_max", "_middle"])
+def test_do_group_nothing_func(func):
+    """Special case: no grouping"""
+
+    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], func)
+    assert ans == pytest.approx([6, 4, 2, 1, -1, 3])
+
+
+def test_do_group_nothing_sumsq():
+    """Special case: no grouping"""
+
+    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "_sum_sq")
+    assert ans == pytest.approx([6, 4, 2, 1, 1, 3])
+
+
+def test_do_group_nothing_group():
+    """Special case: no grouping
+
+    The _make_groups uses the first element in the input as the starting
+    term, adding 1 to each element.
+    """
+
+    ans = do_group([6, 4, 2, 1, -1, 3], [1, 1, 1, 1, 1, 1], "_make_groups")
+    assert ans == pytest.approx([6, 7, 8, 9, 10, 11])
+
+
+@pytest.mark.parametrize("func,expected",
+                         [('sum', 15),
+                          ('_sum_sq', np.sqrt(67)),
+                          ('_min', -1), ('_max', 6),
+                          ('_middle', 2.5), ('_make_groups', 6)])
+def test_do_group_single_group(func, expected):
+    """There's only one group."""
+
+    ans = do_group([6, 4, 2, 1, -1, 3], [1, -1, -1, -1, -1, -1], func)
+    assert ans == pytest.approx([expected])

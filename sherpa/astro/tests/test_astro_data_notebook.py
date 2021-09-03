@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,11 +31,6 @@ from sherpa.astro.instrument import create_delta_rmf
 from sherpa.utils.testing import requires_data, requires_fits
 
 
-# This was meant to be a sherpa.astro.io.meta.Meta object,
-# but that requires a valid io_pkg setting. Fortunately
-# it isn't needed.
-#
-# TEST_HEADER = Meta()
 TEST_HEADER = {}
 TEST_HEADER['OBJECT'] = 'The best object'
 TEST_HEADER['TELESCOP'] = 'Chandra'
@@ -67,7 +62,7 @@ def check(r, summary, name, label, nmeta):
     assert '<div class="dataval">{}</div>'.format(name) in r
 
 
-@pytest.mark.parametrize('header', [None, TEST_HEADER])
+@pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
 def test_arf(header, override_plot_backend):
     ebins = np.arange(0.1, 1, 0.1)
 
@@ -80,7 +75,7 @@ def test_arf(header, override_plot_backend):
                      exposure=100.1, header=header)
     r = d._repr_html_()
 
-    nmeta = 0 if header is None else 2
+    nmeta = 0 if (header is None) or (header == {}) else 2
     check(r, 'ARF', 'arf 1', 'SPECRESP', nmeta=nmeta)
 
     assert '<div class="dataname">Energy range</div>' in r
@@ -89,27 +84,31 @@ def test_arf(header, override_plot_backend):
     assert '<div class="dataval">12.5 - 50 &#8491;, bin size 1.38889 - 50 &#8491;</div>' in r
 
 
-@pytest.mark.parametrize('header', [None, TEST_HEADER])
+@pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
 def test_rmf(header, override_plot_backend):
     ebins = np.arange(0.1, 1, 0.1)
     elo, ehi = ebins[:-1], ebins[1:]
-    d = create_delta_rmf(elo, ehi)
-    d.header = header
+    d = create_delta_rmf(elo, ehi, header=header)
     r = d._repr_html_()
 
-    nmeta = 0 if header is None else 4
+    nmeta = 0 if (header is None) or (header == {}) else 4
     check(r, 'RMF', 'delta-rmf', 'MATRIX', nmeta=nmeta)
 
 
-@pytest.mark.parametrize('header', [None, TEST_HEADER])
+
+@pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
 def test_pha(header, override_plot_backend):
     d = data.DataPHA('x x',
                      np.arange(1, 5, dtype=np.int16),
                      np.arange(1, 5, dtype=np.int16),
                      header=header)
     r = d._repr_html_()
-
-    nmeta = 0 if header is None else 4
+    if header is None:
+        nmeta = 5
+    elif header == {}:
+        nmeta = 0
+    else:
+        nmeta = 4
     check(r, 'PHA', 'x x', 'COUNTS', nmeta=nmeta)
 
 
@@ -132,7 +131,7 @@ def test_pha_real(subtract, group, make_data_path, override_plot_backend):
 
     r = d._repr_html_()
 
-    check(r, 'PHA', '3c273.pi', 'COUNTS', nmeta=10)
+    check(r, 'PHA', '3c273.pi', 'COUNTS', nmeta=11)
 
     assert '<div class="dataval">2000-01-10T06:47:15</div>' in r
     assert '<div class="dataname">Background</div>' in r
@@ -195,7 +194,7 @@ def test_rmf_real(make_data_path, override_plot_backend):
     assert '<div class="dataname">Matrix contents</div><div class="dataval">REDIST</div>' in r
 
 
-@pytest.mark.parametrize('header', [None, TEST_HEADER])
+@pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
 def test_img(header,
              override_plot_backend, old_numpy_printing):
     y, x = np.mgrid[1:4, 2:4]
@@ -216,7 +215,7 @@ def test_img(header,
         assert '<div class="dataname">X0</div>' in r
         assert '<svg ' not in r
 
-    if header is None:
+    if (header is None) or (header == {}):
         assert '<summary>Metadata' not in r
     else:
         assert '<summary>Metadata (3)</summary>' in r

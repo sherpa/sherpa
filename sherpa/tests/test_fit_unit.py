@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -96,6 +97,7 @@ import pytest
 from sherpa.fit import Fit, StatInfoResults
 from sherpa.data import Data1D, DataSimulFit
 from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, StepLo1D
 from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr
@@ -228,7 +230,8 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi,
     """Set up a single PHA dataset.
 
     A sherpa.data.DataPHA instance is used, with an associated
-    background data set.
+    background data set. A RMF is added so that we can filter
+    the data with non-integer values.
 
     Parameters
     ----------
@@ -260,15 +263,23 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi,
     # The channel starts at 1 just to follow the expected PHA
     # behavior, but it should not matter here.
     #
-    channels = np.arange(1, 6, dtype=np.int)
-    src_counts = np.asarray([14, 15, 11, 3, 8], dtype=np.int)
-    bg_counts = np.asarray([2, 0, 2, 3, 4], dtype=np.int)
+    channels = np.arange(1, 6, dtype=int)
+    src_counts = np.asarray([14, 15, 11, 3, 8], dtype=int)
+    bg_counts = np.asarray([2, 0, 2, 3, 4], dtype=int)
 
     # TODO: can add a grouping flag; if given use a larger set of bins and set
     # up grouping
 
     src = DataPHA('tst', channels, src_counts,
                   exposure=100.0, backscal=0.01)
+
+    # Add a RMF so that we can filter with non-interger values
+    #
+    rlo = channels - 0.5
+    rhi = channels + 0.5
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+    src.set_rmf(rmf)
+    src.units = 'energy'
 
     if scalar:
         backscal = 0.03
@@ -1172,18 +1183,18 @@ wstat_single_array_mid_stat = 13.468744214842486
     # with flo/fhi options
     #
     # Start with some edge cases
-    (True, False, False, -10, 10, wstat_single_scalar_stat),
+    (True, False, False, 0, 10, wstat_single_scalar_stat),
     (True, False, False, 1, 5, wstat_single_scalar_stat),
     #
     # Now some more-general choices
     (True, False, False, 2, None, wstat_single_scalar_lo_stat),
-    (True, False, False, 1.2, None, wstat_single_scalar_lo_stat),
+    (True, False, False, 1.7, None, wstat_single_scalar_lo_stat),
     (True, True, True, 2, None, wstat_single_scalar_lo_stat),
     (True, False, False, None, 4.1, wstat_single_scalar_hi_stat),
     (True, True, True, None, 4.1, wstat_single_scalar_hi_stat),
-    (True, False, False, 1.2, 4.1, wstat_single_scalar_mid_stat),
+    (True, False, False, 1.7, 4.1, wstat_single_scalar_mid_stat),
     (True, False, False, 2, 4.1, wstat_single_scalar_mid_stat),
-    (True, True, True, 1.2, 4.1, wstat_single_scalar_mid_stat),
+    (True, True, True, 1.7, 4.1, wstat_single_scalar_mid_stat),
 
     # switch to an array for the background backscal
     (False, False, False, None, None, wstat_single_array_stat),
@@ -1191,14 +1202,14 @@ wstat_single_array_mid_stat = 13.468744214842486
     (False, False, True, None, None, wstat_single_array_stat),
     (False, True, True, None, None, wstat_single_array_stat),
 
-    (False, False, False, -1, 6, wstat_single_array_stat),
+    (False, False, False, 0, 6, wstat_single_array_stat),
     (False, False, False, 1, 5, wstat_single_array_stat),
 
-    (False, True, False, 1.2, None, wstat_single_array_lo_stat),
+    (False, True, False, 1.7, None, wstat_single_array_lo_stat),
     (False, False, True, 2, None, wstat_single_array_lo_stat),
 
     (False, False, False, None, 4.1, wstat_single_array_hi_stat),
-    (False, False, False, 1.2, 4.1, wstat_single_array_mid_stat),
+    (False, False, False, 1.7, 4.1, wstat_single_array_mid_stat),
     (False, False, False, 2, 4.1, wstat_single_array_mid_stat),
     (False, False, False, 2, 4, wstat_single_array_mid_stat)
 ])
@@ -1235,12 +1246,12 @@ qval_array_mid = 0.00118932173205
     (True, False, True, None, None, 5, wstat_single_scalar_stat, qval_scalar),
     (True, True, True, None, None, 5, wstat_single_scalar_stat, qval_scalar),
 
-    (True, False, False, -10, 10, 5, wstat_single_scalar_stat, qval_scalar),
+    (True, False, False, 0, 10, 5, wstat_single_scalar_stat, qval_scalar),
     (True, False, False, 1, 5, 5, wstat_single_scalar_stat, qval_scalar),
 
     (True, False, False, 2, None, 4, wstat_single_scalar_lo_stat,
      qval_scalar_lo),
-    (True, False, False, 1.2, None, 4, wstat_single_scalar_lo_stat,
+    (True, False, False, 1.7, None, 4, wstat_single_scalar_lo_stat,
      qval_scalar_lo),
     (True, True, True, 2, None, 4, wstat_single_scalar_lo_stat,
      qval_scalar_lo),
@@ -1250,11 +1261,11 @@ qval_array_mid = 0.00118932173205
     (True, True, True, None, 4.1, 4, wstat_single_scalar_hi_stat,
      qval_scalar_hi),
 
-    (True, False, False, 1.2, 4.1, 3, wstat_single_scalar_mid_stat,
+    (True, False, False, 1.7, 4.1, 3, wstat_single_scalar_mid_stat,
      qval_scalar_mid),
     (True, False, False, 2, 4.1, 3, wstat_single_scalar_mid_stat,
      qval_scalar_mid),
-    (True, True, True, 1.2, 4.1, 3, wstat_single_scalar_mid_stat,
+    (True, True, True, 1.7, 4.1, 3, wstat_single_scalar_mid_stat,
      qval_scalar_mid),
 
     (False, False, False, None, None, 5, wstat_single_array_stat, qval_array),
@@ -1262,10 +1273,10 @@ qval_array_mid = 0.00118932173205
     (False, False, True, None, None, 5, wstat_single_array_stat, qval_array),
     (False, True, True, None, None, 5, wstat_single_array_stat, qval_array),
 
-    (False, False, False, -1, 6, 5, wstat_single_array_stat, qval_array),
+    (False, False, False, 0, 6, 5, wstat_single_array_stat, qval_array),
     (False, False, False, 1, 5, 5, wstat_single_array_stat, qval_array),
 
-    (False, True, False, 1.2, None, 4, wstat_single_array_lo_stat,
+    (False, True, False, 1.7, None, 4, wstat_single_array_lo_stat,
      qval_array_lo),
     (False, False, True, 2, None, 4, wstat_single_array_lo_stat,
      qval_array_lo),
@@ -1273,7 +1284,7 @@ qval_array_mid = 0.00118932173205
     (False, False, False, None, 4.1, 4, wstat_single_array_hi_stat,
      qval_array_hi),
 
-    (False, False, False, 1.2, 4.1, 3, wstat_single_array_mid_stat,
+    (False, False, False, 1.7, 4.1, 3, wstat_single_array_mid_stat,
      qval_array_mid),
     (False, False, False, 2, 4.1, 3, wstat_single_array_mid_stat,
      qval_array_mid),
@@ -1317,26 +1328,26 @@ def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
     (True, True, False, None, None),
     (True, False, True, None, None),
     (True, True, True, None, None),
-    (True, False, False, -10, 10),
+    (True, False, False, 0, 10),
     (True, False, False, 1, 5),
     (True, False, False, 2, None),
-    (True, False, False, 1.2, None),
+    (True, False, False, 1.7, None),
     (True, True, True, 2, None),
     (True, False, False, None, 4.1),
     (True, True, True, None, 4.1),
-    (True, False, False, 1.2, 4.1),
+    (True, False, False, 1.7, 4.1),
     (True, False, False, 2, 4.1),
-    (True, True, True, 1.2, 4.1),
+    (True, True, True, 1.7, 4.1),
     (False, False, False, None, None),
     (False, True, False, None, None),
     (False, False, True, None, None),
     (False, True, True, None, None),
-    (False, False, False, -1, 6),
+    (False, False, False, 0, 6),
     (False, False, False, 1, 5),
-    (False, True, False, 1.2, None),
+    (False, True, False, 1.7, None),
     (False, False, True, 2, None),
     (False, False, False, None, 4.1),
-    (False, False, False, 1.2, 4.1),
+    (False, False, False, 1.7, 4.1),
     (False, False, False, 2, 4.1),
     (False, False, False, 2, 4)
 ])
@@ -1385,7 +1396,7 @@ def test_fit_calc_stat_wstat_grouped_single(flo, fhi, expected):
     """
 
     nbins = 20
-    channels = np.arange(1, nbins + 1, dtype=np.int)
+    channels = np.arange(1, nbins + 1, dtype=int)
     src_counts = (10 + 5 * np.sin(channels / 2.0)).astype(np.int8)
     bg_counts = np.ones(nbins, dtype=np.int8)
 
@@ -1981,7 +1992,7 @@ def test_fit_single_pha(stat, scalar, usestat, usesys, filtflag, finalstat):
 
     numpoints = 5
     if filtflag:
-        fit.data.ignore(3.8, 4.5)
+        fit.data.ignore(3.8, 4.4)
         numpoints -= 1
 
     fr = fit.fit()

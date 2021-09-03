@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021
-#                Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -116,10 +116,6 @@ known_warnings = {
             r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
             r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working",
 
-            # numpy 1.20 bool/float issue
-            r'`np.bool` is a deprecated alias for the builtin `bool`. .*',
-            r'`np.int` is a deprecated alias for the builtin `int`. .*',
-            r'`np.float` is a deprecated alias for the builtin `float`. .*',
         ],
     UserWarning:
         [
@@ -352,7 +348,8 @@ def run_thread_function(name, scriptname, test_data_path):
     Returns
     -------
     localsyms : dict
-        Any model parameters created by the script.
+        Any variables created by the script (includes model
+        components).
 
     Examples
     --------
@@ -374,16 +371,10 @@ def run_thread_function(name, scriptname, test_data_path):
     cwd = os.getcwd()
     os.chdir(test_data_path)
 
-    # Need to add to localsyms so that the scripts can work, but we
-    # do not need (for now) to return all the local symbols, so
-    # also have a version just for model parameters.
-    #
     localsyms = {}
-    modelsyms = {}
 
     def assign_model(name, val):
         localsyms[name] = val
-        modelsyms[name] = val
 
     old_assign_model = ui.get_model_autoassign_func()
 
@@ -396,7 +387,7 @@ def run_thread_function(name, scriptname, test_data_path):
         ui.set_model_autoassign_func(old_assign_model)
         os.chdir(cwd)
 
-    return modelsyms
+    return localsyms
 
 
 @pytest.fixture

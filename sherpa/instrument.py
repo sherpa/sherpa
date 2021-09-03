@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021
-#        Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -411,6 +411,16 @@ def _create_tail_grid(axis_list):
 
 
 class PSFModel(Model):
+    """Convolve a model by another model or data set.
+
+    Notes
+    -----
+    A number of attributes are displayed as parameters, if set, but
+    are not handled as parameters. The attributes are: kernel, size,
+    centre, and origin.
+
+    """
+
     def __init__(self, name='psfmodel', kernel=None):
         self._name = name
         self._size = None
@@ -721,15 +731,15 @@ class PSFModel(Model):
                 psf_pixel_size = self.kernel.sky.cdelt
             except AttributeError:
                 # If the kernel does not have a pixel size, issue a warning and keep going
-                warnings.warn("PSF Image does not have a pixel size. Sherpa will assume the pixel size is the same"
-                              "as the data")
+                warnings.warn("PSF Image does not have a pixel size. Sherpa will assume "
+                              "the pixel size is the same as the data")
                 return self.SAME_RESOLUTION
 
             try:
                 data_pixel_size = data.sky.cdelt
             except AttributeError:
-                warnings.warn("Data Image does not have a pixel size. Sherpa will assume the pixel size is the same"
-                              "as the PSF")
+                warnings.warn("Data Image does not have a pixel size. Sherpa will assume "
+                              "the pixel size is the same as the PSF")
                 return self.SAME_RESOLUTION
 
             if numpy.allclose(psf_pixel_size, data_pixel_size):

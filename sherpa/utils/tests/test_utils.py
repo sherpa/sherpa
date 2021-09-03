@@ -347,7 +347,7 @@ def test_filter_bins_scalar_array_empty():
     """Edge case: do we care about this result?"""
 
     f = utils.filter_bins([1], [2], [[]])
-    assert f.dtype == numpy.bool
+    assert f.dtype == bool
     assert len(f) == 0
 
 
@@ -367,7 +367,7 @@ def test_filter_bins_scalar_array(axval, flag):
     assert f == flag
 
 
-@pytest.mark.parametrize("lo, hi, res",
+@pytest.mark.parametrize("lo,hi,res",
                          [(0, 10, [True] * 5),
                           (1, 5, [True] * 5),
                           (2, 5, [False, True, True, True, True]),
@@ -383,11 +383,58 @@ def test_filter_bins_scalar_array(axval, flag):
                           # Have minimum = maximum, not equal to a bin value
                           (3.1, 3.1, [False, False, False, False, False])])
 def test_filter_bins_one(lo, hi, res):
-    """Can we filter the array between lo and hi?"""
+    """Can we filter the array between [lo,hi] [unintegrated]?
+
+    This test is a regression test rather than a from-first-principles
+    test: this is mainly relevant for the edge cases like: lo=hi and
+    lo>hi.
+    """
 
     dvals = numpy.asarray([1, 2, 3, 4, 5])
     flags = utils.filter_bins([lo], [hi], [dvals])
-    assert (flags == res).all()
+    assert flags == pytest.approx(res)
+
+    # We can also check an identity: that
+    #    a <= x <= b
+    # is the same as
+    #    a <= x
+    #    x <= b
+    #
+    flags = utils.filter_bins([lo, None], [None, hi], [dvals, dvals])
+    assert flags == pytest.approx(res)
+
+
+
+@pytest.mark.parametrize("lo,hi,res",
+                         [(0, 10, [False] * 0 + [True] * 5 + [False] * 0),
+                          (1, 5, [False] * 0 + [True] * 5 + [False] * 0),
+                          (2, 5, [False] * 0 + [True] * 5 + [False] * 0),
+                          (2, None, [False] * 0 + [True] * 5 + [False] * 0),
+                          (1, 4, [False] * 0 + [True] * 4 + [False] * 1),
+                          (None, 4, [False] * 0 + [True] * 4 + [False] * 1),
+                          (1.1, 4.9, [False] * 0 + [True] * 4 + [False] * 1),
+                          (2, 4, [False] * 0 + [True] * 4 + [False] * 1),
+                          # Have minimum > maximum, which is technically invalid
+                          (4, 3, [False] * 2 + [True] * 1 + [False] * 2),
+                          # Have minimum = maximum = bin value
+                          (4, 4, [False] * 2 + [True] * 2 + [False] * 1),
+                          # Have minimum = maximum, not equal to a bin value
+                          (3.1, 3.1, [False] * 2 + [True] * 1 + [False] * 2)])
+def test_filter_bins_one_int(lo, hi, res):
+    """Can we filter the array between [lo,hi) [integrated]?
+
+    This test is a regression test rather than a from-first-principles
+    test: this is mainly relevant for the edge cases like: lo=hi and
+    lo>hi.
+
+    The test replicates the logic of Data1DInt.notice
+    """
+
+    lovals = numpy.asarray([1, 2, 3, 4, 5])
+    hivals = lovals + 1
+    flags = utils.filter_bins([None, lo], [hi, None], [lovals, hivals])
+    assert flags == pytest.approx(res)
+
 
 
 def test_filter_bins_two_none():
@@ -401,7 +448,7 @@ def test_filter_bins_two_none():
     assert flags is None
 
 
-@pytest.mark.parametrize("lo1, lo2, hi1, hi2, expected",
+@pytest.mark.parametrize("lo1,lo2,hi1,hi2,expected",
                          [(1.5, 21, 3.6, 44, [False, False, True, False, False]),
                           (1.5, None, None, 44, [False, True, True, True, False]),
                           (None, None, None, 44, [True, True, True, True, False]),
@@ -574,15 +621,15 @@ def test_create_expr_empty():
 
 def test_create_expr_empty_mask():
     """What happens if the mask is all masked out"""
-    mask = numpy.zeros(5, dtype=numpy.bool)
+    mask = numpy.zeros(5, dtype=bool)
 
     out = utils.create_expr([], mask)
     assert out == ""
 
 
 @pytest.mark.parametrize("mask",
-                         [numpy.zeros(5, dtype=numpy.bool),
-                          numpy.ones(2, dtype=numpy.bool)])
+                         [numpy.zeros(5, dtype=bool),
+                          numpy.ones(2, dtype=bool)])
 def test_create_expr_mask_size_error(mask):
     """What happens when the mask][True] and vals arrays have different sizes?
 
@@ -617,7 +664,7 @@ def test_create_expr_mask():
     """Simple test of create_expr with an identity mask."""
 
     chans = numpy.arange(1, 10, dtype=numpy.int16)
-    mask = numpy.ones(9, dtype=numpy.bool)
+    mask = numpy.ones(9, dtype=bool)
     out = utils.create_expr(chans, mask)
     assert out == "1-9"
 
@@ -634,7 +681,7 @@ def test_create_expr_mask_delim():
     """Simple test of create_expr with an identity mask."""
 
     chans = numpy.arange(1, 10, dtype=numpy.int16)
-    mask = numpy.ones(9, dtype=numpy.bool)
+    mask = numpy.ones(9, dtype=bool)
     out = utils.create_expr(chans, mask, delim='::')
     assert out == "1::9"
 
@@ -810,7 +857,7 @@ def test_create_expr_mask_drop():
 def test_create_expr_mask_singlebin(idx):
     """mask all the things (but leave one bin)"""
 
-    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt = numpy.zeros(19, dtype=bool)
     filt[idx] = True
 
     vals = numpy.arange(19) * 0.01 + 0.4
@@ -822,7 +869,7 @@ def test_create_expr_mask_singlebin(idx):
 def test_create_expr_mask_singlebins():
     """several single bin"""
 
-    filt = numpy.zeros(19, dtype=numpy.bool)
+    filt = numpy.zeros(19, dtype=bool)
     filt[0] = True
     filt[2] = True
     filt[16] = True

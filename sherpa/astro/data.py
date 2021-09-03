@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#            Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,75 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Classes for storing, inspecting, and manipulating astronomical data sets
+"""Classes for storing, inspecting, and manipulating astronomical data sets.
+
+The two types of Astronomical data supported in this module are
+two-dimensional images (:py:class:`DataIMG`) and X-ray spectra
+(:py:class:`DataPHA`), along with associated response information
+(:py:class:`DataARF` and :py:class:`DataRMF`). These objects can be
+constructed directly or read from :term:`FITS` files using the
+:py:mod:`sherpa.astro.io` routines.
+
+Both types of data extend the capabilities of the
+:py:class:`sherpa.data.Data` class:
+
+- using geometric shapes (regions) to filter images;
+
+- support different units for filtering images (logical, physical, and
+  :term:`WCS`), depending on the available metadata;
+
+- support different analysis units for filtering and display for
+  :term:`PHA` files (channels, energy, and wavelengths);
+
+- dynamically re-bin PHA data to improve the signal to noise (grouping
+  and quality);
+
+- and automatically support one or more spectra that define the
+  background for the observation (for PHA files) that can then be
+  subtracted from the data or a background model fit to them.
+
+Notes
+-----
+
+Some functionality depends on the presence of the region and grouping
+Sherpa modules, which are optional components of Sherpa.
+
+Notebook support
+----------------
+
+The Data objects support the rich display protocol of IPython, with
+HTML display of a table of information highlighting the relevant data
+and, for some classes, SVG images. Examples can be found at
+[AstroNoteBook]_.
+
+References
+----------
+
+.. [AstroNoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+
+Examples
+--------
+
+Read in a 2D dataset from the file 'clus.fits' and then filter it to
+only use those pixels that lie within 45 units from the physical
+coordinate 3150,4515:
+
+>>> from sherpa.astro.io import read_image
+>>> img = read_image('clus.fits')
+>>> img.set_coord('physical')
+>>> img.notice2d('circle(3150,4515,45)')
+
+Read in a PHA dataset from the file 'src.pi', subtract the background,
+filter to only use the data 0.5 to 7 keV, and re-group the data within
+this range to have at least 20 counts per group:
+
+>>> from sherpa.astro.io import read_pha
+>>> pha = read_pha('src.pi')
+>>> pha.subtract()
+>>> pha.set_analysis('energy')
+>>> pha.notice(0.5, 7)
+>>> pha.group_counts(20, tabStops=~pha.mask)
+
 """
 
 import os.path
@@ -29,12 +96,13 @@ import warnings
 import numpy
 
 from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
-    IntegratedDataSpace2D
+    IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
+from sherpa.astro import hc
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
@@ -148,8 +216,7 @@ def make_metadata(header, items):
     Parameters
     ----------
     header : dict-like
-        The header. Expected to be a sherpa.astro.io.meta.Meta
-        object but just needs to act like a dictionary.
+        The header.
     items : list of (str, str)
         The keys to display (in order), if set. The first element
         is the key name, and the second is the label in the header
@@ -286,22 +353,24 @@ def html_pha(pha):
     # Display a subset of header values
     # - maybe don't display the FITLER if NONE
     # - how about RESPFILE / PHAFILE
-    if pha.header is not None:
-        meta = make_metadata(pha.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the PHA'),
-                              ('CHANTYPE', 'The channel type'),
-                              ('HDUCLAS2', 'Data stored'),
-                              ('HDUCLAS3', 'Data format'),
-                              ('HDUCLAS4', 'PHA format')])
+    meta = make_metadata(pha.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('GRATING', 'Grating type'),
+                          ('ORDER', 'Diffraction order'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the PHA'),
+                          ('CHANTYPE', 'The channel type'),
+                          ('HDUCLAS2', 'Data stored'),
+                          ('HDUCLAS3', 'Data format'),
+                          ('HDUCLAS4', 'PHA format'),
+                          ('XFLT0001', 'XEPC filter 0001')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(pha, ls)
 
@@ -440,18 +509,20 @@ def html_arf(arf):
     # Display a subset of header values
     # - maybe don't display the FITLER if NONE
     # - how about RESPFILE / PHAFILE
-    if arf.header is not None:
-        meta = make_metadata(arf.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the ARF')])
+    meta = make_metadata(arf.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('GRATING', 'Grating type'),
+                          ('ORDER', 'Diffraction order'),
+                          ('TG_M', 'Diffraction order'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the ARF')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(arf, ls)
 
@@ -497,21 +568,22 @@ def html_rmf(rmf):
 
     # Display a subset of header values
     # - how about PHAFILE
-    if rmf.header is not None:
-        meta = make_metadata(rmf.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the RMF'),
-                              ('CHANTYPE', 'The channel type'),
-                              ('LO_THRES', 'The minimum probability threshold'),
-                              ('HDUCLAS3', 'Matrix contents')])
+    meta = make_metadata(rmf.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('GRATING', 'Grating type'),
+                          ('ORDER', 'Diffraction order'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the RMF'),
+                          ('CHANTYPE', 'The channel type'),
+                          ('LO_THRES', 'The minimum probability threshold'),
+                          ('HDUCLAS3', 'Matrix contents')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(rmf, ls)
 
@@ -590,20 +662,19 @@ def html_img(img):
         ls.append(formatting.html_section(meta,
                                           summary='Coordinates: {}'.format(img.eqpos.name)))
 
-    if img.header is not None:
-        meta = make_metadata(img.header,
-                             [('TELESCOP', 'Mission or Satellite'),
-                              ('INSTRUME', 'Instrument or Detector'),
-                              ('FILTER', 'Instrument filter'),
-                              ('OBJECT', 'Object'),
-                              ('TITLE', 'Program description'),
-                              ('OBSERVER', 'Observer'),
-                              ('EXPOSURE', 'Exposure time'),
-                              ('DATE-OBS', 'Observation date'),
-                              ('CREATOR', 'Program that created the image')])
+    meta = make_metadata(img.header,
+                         [('TELESCOP', 'Mission or Satellite'),
+                          ('INSTRUME', 'Instrument or Detector'),
+                          ('FILTER', 'Instrument filter'),
+                          ('OBJECT', 'Object'),
+                          ('TITLE', 'Program description'),
+                          ('OBSERVER', 'Observer'),
+                          ('EXPOSURE', 'Exposure time'),
+                          ('DATE-OBS', 'Observation date'),
+                          ('CREATOR', 'Program that created the image')])
 
-        if meta is not None:
-            ls.append(formatting.html_section(meta, summary='Metadata'))
+    if meta is not None:
+        ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(img, ls)
 
@@ -951,7 +1022,7 @@ class DataARF(DataOgipResponse):
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.exposure = exposure
-        self.header = header
+        self.header = {} if header is None else header
         self.ethresh = ethresh
         energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
         self._lo, self._hi = energ_lo, energ_hi
@@ -974,7 +1045,7 @@ class DataARF(DataOgipResponse):
 
     def __setstate__(self, state):
         if 'header' not in state:
-            self.header = None
+            self.header = {}
         self.__dict__.update(state)
 
         if '_specresp' not in state:
@@ -1076,7 +1147,7 @@ class DataRMF(DataOgipResponse):
         self.detchans = detchans
         self.e_min = e_min
         self.e_max = e_max
-        self.header = header
+        self.header = {} if header is None else header
         self.n_grp = n_grp
         self.f_chan = f_chan
         self.n_chan = n_chan
@@ -1109,7 +1180,7 @@ class DataRMF(DataOgipResponse):
 
     def __setstate__(self, state):
         if 'header' not in state:
-            self.header = None
+            self.header = {}
         self.__dict__.update(state)
 
     def _validate(self, name, energy_lo, energy_hi, ethresh):
@@ -1195,7 +1266,7 @@ class DataRosatRMF(DataRMF):
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
-    The PHA format is described in an OGIP document [1]_.
+    The PHA format is described in an OGIP document [1]_ and [2]_.
 
     Parameters
     ----------
@@ -1215,6 +1286,8 @@ class DataPHA(Data1D):
     backscal : scalar or array or None, optional
     areascal : scalar or array or None, optional
     header : dict or None, optional
+        If ``None`` the header will be pre-populated with a minimal set of
+        keywords that would be found in an OGIP compliant PHA I file.
 
     Attributes
     ----------
@@ -1234,35 +1307,59 @@ class DataPHA(Data1D):
 
     Notes
     -----
-    The original data is stored in the attributes - e.g. `counts` - and
-    the data-access methods, such as `get_dep` and `get_staterror`,
-    provide any necessary data manipulation to handle cases such as:
-    background subtraction, filtering, and grouping.
+    The original data is stored in the attributes - e.g. `counts` -
+    and the data-access methods, such as `get_dep` and
+    `get_staterror`, provide any necessary data manipulation to handle
+    cases such as: background subtraction, filtering, and grouping.
+
+    There is additional complexity compared to the Data1D case when
+    filtering data because:
+
+    * although the data uses channel numbers, users will often want to
+      filter the data using derived values (in energy or wavelength
+      units, such as 0.5 to 7.0 keV or 16 to 18 Angstroms);
+
+    * although derived from the Data1D case, PHA data is more-properly
+      thought about as being an integrated data set, so each channel
+      maps to a range of energy or wavelength values;
+
+    * the data is often grouped to improve the signal-to-noise, and so
+      requests for values need to determine whether to filter the data
+      or not, whether to group the data or not, and how to combine the
+      data within each group;
+
+    * and there is also the quality array, which indicates whether or
+      not a channel is trust-worthy or not (and so acts as an
+      additional filtering term).
 
     The handling of the AREASCAl value - whether it is a scalar or
-    array - is currently in flux. It is a value that is stored with the
-    PHA file, and the OGIP PHA standard ([1]_) describes the observed
-    counts being divided by the area scaling before comparison to the
-    model. However, this is not valid for Poisson-based statistics, and
-    is also not how XSPEC handles AREASCAL ([2]_); the AREASCAL values
-    are used to scale the exposure times instead. The aim is to add
-    this logic to the instrument models in `sherpa.astro.instrument`,
-    such as `sherpa.astro.instrument.RMFModelPHA`. The area scaling still
-    has to be applied when calculating the background contribution to
-    a spectrum, as well as when calculating the data and model values used
-    for plots (following XSPEC so as to avoid sharp discontinuities where
-    the area-scaling factor changes strongly).
+    array - is currently in flux. It is a value that is stored with
+    the PHA file, and the OGIP PHA standard ([1]_, [2]_) describes the
+    observed counts being divided by the area scaling before
+    comparison to the model. However, this is not valid for
+    Poisson-based statistics, and is also not how XSPEC handles
+    AREASCAL ([3]_); the AREASCAL values are used to scale the
+    exposure times instead. The aim is to add this logic to the
+    instrument models in `sherpa.astro.instrument`, such as
+    `sherpa.astro.instrument.RMFModelPHA`. The area scaling still has
+    to be applied when calculating the background contribution to a
+    spectrum, as well as when calculating the data and model values
+    used for plots (following XSPEC so as to avoid sharp
+    discontinuities where the area-scaling factor changes strongly).
 
     References
     ----------
 
     .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-    .. [2] Private communication with Keith Arnaud
+    .. [2] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
+
+    .. [3] Private communication with Keith Arnaud
 
     """
-    _fields = ("name", "channel", "counts", "bin_lo", "bin_hi", "grouping", "quality",
-               "exposure", "backscal", "areascal")
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
+               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
+               'background_ids')
 
     def _get_grouped(self):
         return self._grouped
@@ -1341,7 +1438,7 @@ class DataPHA(Data1D):
         self._units = units
 
     units = property(_get_units, _set_units,
-                     doc='Units of the independent axis')
+                     doc="Units of the independent axis: one of 'channel', 'energy', 'wavelength'.")
 
     def _get_rate(self):
         return self._rate
@@ -1400,13 +1497,13 @@ class DataPHA(Data1D):
     background_ids = property(_get_background_ids, _set_background_ids,
                               doc='IDs of defined background data sets')
 
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
-               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
-               'background_ids')
-
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
+
+        channel = _check(channel)
+        counts = _check(counts)
+
         self.channel = channel
         self.counts = counts
         self.bin_lo = bin_lo
@@ -1416,8 +1513,21 @@ class DataPHA(Data1D):
         self.exposure = exposure
         self.backscal = backscal
         self.areascal = areascal
-        self.header = header
+        if header is None:
+            self.header = {'HDUCLASS': "OGIP", 'HDUCLAS1': "SPECTRUM",
+                           'HDUCLAS2': "TOTAL", 'HDUCLAS3': "TYPE:I",
+                           'HDUCLAS4': "COUNT", 'HDUVERS': "1.2.1",
+                           'TELESCOP': "UNKNOWN", 'INTRUME': "UNKNOWN",
+                           "FILTER": "UNKNOWN", "POISSERR": True}
+
+        else:
+            self.header = header
         self._grouped = (grouping is not None)
+        # _original_groups is set False if the grouping is changed via
+        # the _dynamic_groups method. This is currently only used by the
+        # serialization code (sherpa.astro.ui.serialize) to determine
+        # whether to write out the grouping data.
+        #
         self._original_groups = True
         self._subtracted = False
         self._response_ids = []
@@ -1459,14 +1569,14 @@ class DataPHA(Data1D):
         self._set_units(state['_units'])
 
         if 'header' not in state:
-            self.header = None
+            self.header = {}
         self.__dict__.update(state)
 
     primary_response_id = 1
     """The identifier for the response component when not set."""
 
     def set_analysis(self, quantity, type='rate', factor=0):
-        """Return the units used when fitting spectral data.
+        """Set the units used when fitting and plotting spectral data.
 
         Parameters
         ----------
@@ -1493,7 +1603,9 @@ class DataPHA(Data1D):
 
         >>> pha.set_analysis('energy')
 
-        >>> pha.set_analysis('wave', type='counts' factor=1)
+        >>> pha.set_analysis('wave', type='counts', factor=1)
+        >>> pha.units
+        'wavelength'
 
         """
         self.plot_fac = factor
@@ -1644,7 +1756,7 @@ class DataPHA(Data1D):
 
         See Also
         --------
-        get_response, get_rmf
+        get_response, get_rmf, get_full_responses
 
         """
         return self.get_response(id)[0]
@@ -1665,7 +1777,7 @@ class DataPHA(Data1D):
 
         See Also
         --------
-        get_arf, get_response
+        get_arf, get_response, get_full_responses
 
         """
         return self.get_response(id)[1]
@@ -1748,45 +1860,148 @@ class DataPHA(Data1D):
 
         return newarf
 
-    # The energy bins can be grouped or ungrouped.  By default,
-    # they should be grouped if the data are grouped.  There are
-    # certain contexts (e.g., plotting) where we will retrieve the
-    # energy bins, and later filter the data; but filtering
-    # is automatically followed by grouping.  Grouping the data
-    # twice is an error.
+    def get_full_response(self, pileup_model=None):
+        """Calculate the response for the dataset.
+
+        Unlike `get_response`, which returns a single response, this function
+        returns all responses for datasets that have multiple responses set
+        and it offers the possibility to include a pile-up model.
+
+        Parameters
+        ----------
+        pileup_model : None or a `sherpa.astro.models.JDPileup` instance
+            If a pileup model shall be included in the return, then it needs
+            to be passed in.
+
+        Returns
+        -------
+        response
+           The return value depends on whether an ARF, RMF, or pile up
+           model has been associated with the data set.
+
+        See Also
+        --------
+        get_response, get_arf, get_rmf
+        """
+        # import is here because sherpa.astro.instrument depends on
+        # sherpa.astro.data. Importing here instead of on the top
+        # avoids a circular import.
+        from sherpa.astro import instrument
+
+        if pileup_model is not None:
+            resp = instrument.PileupResponse1D(self, pileup_model)
+        elif len(self._responses) > 1:
+            resp = instrument.MultipleResponse1D(self)
+        else:
+            resp = instrument.Response1D(self)
+
+        return resp
+
+
     def _get_ebins(self, response_id=None, group=True):
+        """Return the low and high edges of the independent axis.
+
+        This method is badly named as it will return values in either
+        channel or energy units, depending on the units setting and
+        the associated response information. When the response
+        includes a RMF then it returns the approximation of the
+        mapping from channel space to energy - that is the E_MIN and
+        E_MAX columns from the RMF EBOUNDS block rather than from the
+        ENERG_LO and ENERG_HI columns from the MATRIX block.
+
+        Parameters
+        ----------
+        response_id : int or None, optional
+            The response to use when units are not "channel". The
+            default is to use the default response identifier.
+        group : bool, optional
+            Should the current grouping setting be applied. This is
+            only used if the "grouped" attribute is set.
+
+        Returns
+        -------
+        lo, hi : ndarray
+            The low and high edges of each bin, in either channels or
+            keV: energy is used unless the units setting is channel or
+            there is no associated response. If the group flag is set
+            and the data set is grouped then it uses the grouping
+            settings, otherwise the data is for each channel. No
+            filtering is applied.
+
+        See Also
+        --------
+        _get_indep
+
+        Examples
+        --------
+
+        >>> pha.ungroup()
+        >>> pha.units = 'channel'
+        >>> clo, chi = pha._get_ebins()
+        >>> (clo == pha.channel).all()
+        True
+        >>> (chi == clo + 1).all()
+        True
+
+        >>> pha.units = 'energy'
+        >>> elo, ehi = pha._get_ebins()
+        >>> elo.size == pha.channel.size
+        True
+        >>> elo[0:5]
+        array([0.00146, 0.0146 , 0.0292 , 0.0438 , 0.0584 ])
+        >>> (elo[1:] == ehi[:-1]).all()
+        True
+
+        >>> pha.group()
+        >>> glo, ghi = pha._get_ebins()
+        >>> glo[0:5]
+        array([0.00146   , 0.2482    , 0.3066    , 0.46720001, 0.56940001])
+
+        Note that the returned units are energy even if units is set
+        to "wavelength":
+
+        >>> pha.units = 'wave'
+        >>> wlo, whi = pha._get_ebins()
+        >>> (wlo == glo).all()
+
+        """
         group = bool_cast(group)
-        arf, rmf = self.get_response(response_id)
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
+
+        if self.units == 'channel':
+            elo = self.channel
+            ehi = self.channel + 1
+        elif (self.bin_lo is not None) and (self.bin_hi is not None):
             elo = self.bin_lo
             ehi = self.bin_hi
             if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
-        elif rmf is not None:
-            if (rmf.e_min is None) or (rmf.e_max is None):
-                raise DataErr('noenergybins', 'RMF')
-            elo = rmf.e_min
-            ehi = rmf.e_max
-        elif arf is not None:
-            elo = arf.energ_lo
-            ehi = arf.energ_hi
+                elo = hc / self.bin_hi
+                ehi = hc / self.bin_lo
         else:
-            elo = self.channel - 0.5
-            ehi = self.channel + 0.5
+            arf, rmf = self.get_response(response_id)
+            if rmf is not None:
+                if (rmf.e_min is None) or (rmf.e_max is None):
+                    raise DataErr('noenergybins', 'RMF')
+                elo = rmf.e_min
+                ehi = rmf.e_max
+            elif arf is not None:
+                elo = arf.energ_lo
+                ehi = arf.energ_hi
+            else:
+                elo = self.channel
+                ehi = self.channel + 1
 
-        if self.units == 'channel':
-            elo = self.channel - 0.5
-            ehi = self.channel + 0.5
-
-        # If the data are grouped, then we should group up
-        # the energy bins as well.  E.g., if group 1 is
-        # channels 1-5, then the energy boundaries for the
-        # *group* should be elo[0], ehi[4].
         if self.grouped and group:
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 
+            if len(elo) == 0:
+                raise DataErr('notmask')
+
+        # apply_grouping applies a quality filter to the output
+        # but if we get here then there is no equivalent. This
+        # is likely confusing, at best, but we don't have good
+        # tests to check what we should be doing.
+        #
         return (elo, ehi)
 
     def get_indep(self, filter=True):
@@ -1796,6 +2011,65 @@ class DataPHA(Data1D):
         return (self.channel,)
 
     def _get_indep(self, filter=False):
+        """Return the low and high edges of the independent axis.
+
+        Unlike _get_ebins, this returns values in the "native" space
+        of the response - i.e. for a RMF, it returns the bounds from
+        the MATRIX rather than EBOUNDS extension of the RMF - and not
+        the approximation used in _get_ebins.
+
+        Parameters
+        ----------
+        filter : bool, optional
+            It is not clear what this option means.
+
+        Returns
+        -------
+        lo, hi : ndarray
+            The low and high edges of each bin, in either keV or
+            Angstroms.
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+            The data set does not contain a response.
+
+        See Also
+        --------
+        _get_ebins
+
+        Notes
+        -----
+        If the PHA file contains multiple responses then they are
+        combined to create the overall grid.
+
+        Examples
+        --------
+
+        >>> pha.units = 'energy'
+        >>> elo, eho = pha._get_indep()
+        >>> elo.shape
+        (1090,)
+        >>> pha.channel.shape
+        (1024,)
+        >>> elo[0:5]
+        array([0.1 , 0.11, 0.12, 0.13, 0.14])
+        >>> ehi[0:5]
+        array([0.11      , 0.12      , 0.13      , 0.14      , 0.15000001])
+        >>> (elo[1:] == ehi[:-1]).all()
+        True
+
+        >>> pha.units = 'wave'
+        >>> wlo, who = pha._get_indep()
+        >>> wlo[0:4]
+        array([112.71289825, 103.32015848,  95.37245534,  88.56013348])
+        >>> whi[0:4]
+        array([123.98418555, 112.71289825, 103.32015848,  95.37245534])
+        >>> (wlo[:-1] == whi[1:]).all()
+        True
+
+        """
+
         if (self.bin_lo is not None) and (self.bin_hi is not None):
             elo = self.bin_lo
             ehi = self.bin_hi
@@ -1803,8 +2077,8 @@ class DataPHA(Data1D):
                 if self.units == 'wavelength':
                     return (elo, ehi)
 
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
+                elo = hc / self.bin_hi
+                ehi = hc / self.bin_lo
 
         else:
             energylist = []
@@ -1828,6 +2102,8 @@ class DataPHA(Data1D):
                 energylist.append((lo, hi))
 
             if len(energylist) > 1:
+                # TODO: This is only tested by test_eval_multi_xxx and not with
+                # actual (i.e. real world) data
                 elo, ehi, lookuptable = compile_energy_grid(energylist)
             elif (not energylist or
                   (len(energylist) == 1 and
@@ -1838,8 +2114,8 @@ class DataPHA(Data1D):
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
-            lo = self._hc / ehi
-            hi = self._hc / elo
+            lo = hc / ehi
+            hi = hc / elo
 
         return (lo, hi)
 
@@ -1915,12 +2191,6 @@ class DataPHA(Data1D):
     def _energy_to_channel(self, val):
         elo, ehi = self._get_ebins()
 
-        # special case handling no noticed data (e.g. ignore_bad
-        # removes all bins); assume if elo is empty then so is ehi.
-        #
-        if len(elo) == 0:
-            raise DataErr('notmask')
-
         val = numpy.asarray(val)
         res = []
         for v in val.flat:
@@ -1947,8 +2217,6 @@ class DataPHA(Data1D):
 
         return numpy.asarray(res, SherpaFloat)
 
-    _hc = 12.39841874  # nist.gov in [keV-Angstrom]
-
     def _channel_to_wavelength(self, val, group=True, response_id=None):
         tiny = numpy.finfo(numpy.float32).tiny
         vals = numpy.asarray(self._channel_to_energy(val, group, response_id))
@@ -1957,18 +2225,24 @@ class DataPHA(Data1D):
                 vals = tiny
         else:
             vals[vals == 0.0] = tiny
-        vals = self._hc / vals
+        vals = hc / vals
         return vals
 
     def _wavelength_to_channel(self, val):
+        """Convert a wavelength to group or channel number.
+
+        Note that values of 0 or less are replaced by a
+        small value (~1e-38).
+
+        """
         tiny = numpy.finfo(numpy.float32).tiny
         vals = numpy.asarray(val)
         if vals.shape == ():
-            if vals == 0.0:
+            if vals <= 0.0:
                 vals = tiny
         else:
-            vals[vals == 0.0] = tiny
-        vals = self._hc / vals
+            vals[vals <= 0.0] = tiny
+        vals = hc / vals
         return self._energy_to_channel(vals)
 
     default_background_id = 1
@@ -2294,16 +2568,102 @@ class DataPHA(Data1D):
         return areascal
 
     def apply_filter(self, data, groupfunc=numpy.sum):
-        """
+        """Group and filter the supplied data to match the data set.
 
-        Filter the array data, first passing it through apply_grouping()
-        (using groupfunc) and then applying the general filters
+        Parameters
+        ----------
+        data : ndarray or None
+            The data to group, which must match either the number of
+            channels of the data set or the number of filtered
+            channels.
+        groupfunc : function reference
+            The grouping function. See apply_grouping for the
+            supported values.
+
+        Returns
+        -------
+        result : ndarray or None
+            The grouped and filtered data, or None if the input was
+            None.
+
+        Raises
+        ------
+        TypeError
+            If the data size does not match the number of channels.
+        ValueError
+            If the name of groupfunc is not supported or the data
+            does not match the filtered data.
+
+        See Also
+        --------
+        apply_grouping, ignore, ignore_bad, notice
+
+        Examples
+        --------
+
+        Group and filter the counts array with no filter and then
+        with a filter:
+
+        >>> pha.grouped
+        True
+        >>> pha.notice()
+        >>> pha.apply_filter(pha.counts)
+        array([17., 15., 16., 15., ...
+        >>> pha.notice(0.5, 7)
+        >>> pha.apply_filter(pha.counts)
+        array([15., 16., 15., 18., ...
+
+        As the previous example but with no grouping:
+
+        >>> pha.ungroup()
+        >>> pha.notice()
+        >>> pha.apply_filter(pha.counts)[0:5]
+        array([0., 0., 0., 0., 0.])
+        >>> pha.notice(0.5, 7)
+        >>> pha.apply_filter(pha.counts)[0:5]
+        array([4., 3., 0., 1., 1.])
+
+        Rather than group the counts, use the channel numbers and
+        return the first and last channel number in each of the
+        filtered groups (for the first five groups):
+
+        >>> pha.group()
+        >>> pha.notice(0.5, 7.0)
+        >>> pha.apply_filter(pha.channel, pha._min)[0:5]
+        array([33., 40., 45., 49., 52.])
+        >>> pha.apply_filter(pha.channel, pha._max)[0:5]
+        array([39., 44., 48., 51., 54.])
+
+        Find the approximate energy range of each selected group from
+        the RMF EBOUNDS extension:
+
+        >>> rmf = pha.get_rmf()
+        >>> elo = pha.apply_filter(rmf.e_min, pha._min)
+        >>> ehi = pha.apply_filter(rmf.e_max, pha._max)
+
+        Calculate the grouped data, after filtering, if the counts were
+        increased by 2 per channel. Note that in this case the data to
+        apply_filter contains the channel counts after applying the
+        current filter:
+
+        >>> orig = pha.counts[pha.get_mask()]
+        >>> new = orig + 2
+        >>> cts = pha.apply_filter(new)
 
         """
         if data is None:
             return data
 
         if len(data) != len(self.counts):
+            # Two possible error cases here:
+            # - mask is None, in which case the apply_grouping call will
+            #   fail with a TypeError
+            # - mask is not None but the filter does not match the data
+            #   size, which causes a ValueError from the assignment below
+            # Both could be caught here, but there used to be an attempt
+            # to do this (for the first case) which has been commented out
+            # since the initial git commit, so leave as is.
+            #
             counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
             mask = self.get_mask()
             if mask is not None:
@@ -2315,12 +2675,98 @@ class DataPHA(Data1D):
         return super().apply_filter(self.apply_grouping(data, groupfunc))
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
-        """
+        """Apply the grouping scheme of the data set to the supplied data.
 
-        Apply the data set's grouping scheme to the array data,
-        combining the grouped data points with groupfunc, and return
-        the grouped array.  If the data set has no associated grouping
-        scheme or the data are ungrouped, data is returned unaltered.
+        Parameters
+        ----------
+        data : ndarray or None
+            The data to group, which must match the number of channels
+            of the data set.
+        groupfunc : function reference
+            The grouping function. Note that what matters is the name
+            of the function, not its code. The supported function
+            names are: "sum", "_sum_sq", "_min", "_max", "_middle",
+            and "_make_groups".
+
+        Returns
+        -------
+        grouped : ndarray or None
+            The grouped data, unless the data set is not grouped or
+            the input array was None, when the input data is returned.
+
+        Raises
+        ------
+        TypeError
+            If the data size does not match the number of channels.
+        ValueError
+            If the name of groupfunc is not supported.
+
+        See Also
+        --------
+        apply_filter, ignore_bad
+
+        Notes
+        -----
+        The supported grouping schemes are:
+
+        ============ ======================================================
+        Name         Description
+        ============ ======================================================
+        sum          Sum all the values in the group.
+        _min         The minimum value in the group.
+        _max         The maximum value in the group.
+        _middle      The average of the minimum and maximum values.
+        _sum_sq      The square root of the sum of the squared values.
+        _make_groups The group number, starting at the first value of data.
+        ============ ======================================================
+
+        There are methods of the DataPHA class that can be used for
+        all other than "sum" (the default value).
+
+        The grouped data is not filtered unless a quality filter has
+        been applied (e.g. by ignore_bad) in which case the quality
+        filter will be applied to the result. In general apply_filter
+        should be used if the data is to be filtered as well as
+        grouped.
+
+        Examples
+        --------
+
+        Sum up the counts in each group (note that the data has not
+        been filtered so using get_dep with the filter argument set to
+        True is generally preferred to using this method):
+
+        >>> gcounts = pha.apply_grouping(pha.counts)
+
+        The grouping for an unfiltered PHA data set with 1024 channels
+        is used to calculate the number of channels in each group, the
+        lowest channel number in each group, the highest channel
+        number in each group, and the mid-point between the two:
+
+        >>> pha.grouped
+        True
+        >>> pha.mask
+        True
+        >>> len(pha.channel)
+        1024
+        >>> pha.apply_grouping(np.ones(1024))
+        array([ 17.,   4.,  11.,   ...
+        >>> pha.apply_grouping(np.arange(1, 1025), pha._min)
+        array([  1.,  18.,  22.,  ...
+        >>> pha.apply_grouping(np.arange(1, 1025), pha._max)
+        array([  17.,   21.,   32.,   ...
+        >>> pha.apply_grouping(np.arange(1, 1025), pha._middle)
+        array([  9. ,  19.5,  27. ,  ...
+
+        The grouped data is not filtered (unless ignore_bad has been
+        used):
+
+        >>> pha.notice()
+        >>> v1 = pha.apply_grouping(dvals)
+        >>> pha.notice(1.2, 4.5)
+        >>> v2 = pha.apply_grouping(dvals)
+        >>> np.all(v1 == v2)
+        True
 
         """
         if data is None or not self.grouped:
@@ -2336,12 +2782,7 @@ class DataPHA(Data1D):
 
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]
-        grouped_data = do_group(filtered_data, groups, groupfunc.__name__)
-
-        if data is self.channel and groupfunc is self._make_groups:
-            return numpy.arange(1, len(grouped_data) + 1, dtype=int)
-
-        return grouped_data
+        return do_group(filtered_data, groups, groupfunc.__name__)
 
     def ignore_bad(self):
         """Exclude channels marked as bad.
@@ -3160,7 +3601,7 @@ class DataPHA(Data1D):
             if self.units == 'energy':
                 ebin = ehi - elo
             elif self.units == 'wavelength':
-                ebin = self._hc / elo - self._hc / ehi
+                ebin = hc / elo - hc / ehi
             elif self.units == 'channel':
                 ebin = ehi - elo
             else:
@@ -3210,7 +3651,6 @@ class DataPHA(Data1D):
         return self._fix_y_units(err, filter, response_id)
 
     def get_xerr(self, filter=False, response_id=None):
-        elo, ehi = self._get_ebins(response_id=response_id)
         filter = bool_cast(filter)
         if filter:
             # If we apply a filter, make sure that
@@ -3219,6 +3659,15 @@ class DataPHA(Data1D):
             elo, ehi = self._get_ebins(response_id, group=False)
             elo = self.apply_filter(elo, self._min)
             ehi = self.apply_filter(ehi, self._max)
+
+        else:
+            try:
+                elo, ehi = self._get_ebins(response_id=response_id)
+            except DataErr:
+                # What should we do here? This indicates that all bins
+                # have been marked as bad (and grouping is present).
+                #
+                return numpy.asarray([])
 
         return ehi - elo
 
@@ -3407,7 +3856,7 @@ class DataPHA(Data1D):
 
         # Ensure the data is in ascending order for create_expr.
         #
-        if self.units == 'wavelength':
+        if len(x) > 0 and x[-1] < x[0]:
             x = x[::-1]
             mask = mask[::-1]
 
@@ -3431,6 +3880,84 @@ class DataPHA(Data1D):
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
+        """Notice or ignore the given range.
+
+        Parameters
+        ----------
+        lo, hi : number or None, optional
+            The range to change. A value of None means the minimum or
+            maximum permitted value. The units of lo and hi are set by
+            the units field.
+        ignore : bool, optional
+            Set to True if the range should be ignored. The default is
+            to notice the range.
+        bkg_id : int or sequence of int or None, optional
+            If not None then apply the filter to the given background
+            dataset or datasets, otherwise change the object and all
+            its background datasets.
+
+        See Also
+        --------
+        get_filter, get_filter_expr, get_mask
+
+        Notes
+        -----
+        If no channels have been ignored then a call to `notice` with
+        `ignore=False` will select just the `lo` to `hi` range, and
+        exclude any channels outside this range. If there has been a
+        filter applied then the range `lo` to `hi` will be added to the
+        range of noticed data (when `ignore=False`).
+
+        So, for an ungrouped PHA file with 1024 channels:
+
+        >>> pha.units = 'channel'
+        >>> pha.get_filter()
+        '1:1024'
+        >>> pha.notice(20, 200)
+        >>> pha.get_filter()
+        '20:200'
+        >>> pha.notice(300, 500)
+        '20:200,300:500'
+
+        """
+
+        ignore = bool_cast(ignore)
+
+        # This condition is checked for in the _data_space.filter call
+        # at the end of the method, but it is easier to enforce it
+        # here so we do not need to worry about possible type errors
+        # when comparing string and number values.
+        #
+        for val, label in zip([lo, hi], ['lower', 'upper']):
+            if isinstance(val, str):
+                # match the error seen from other data classes here
+                raise DataErr('typecheck', f'{label} bound')
+
+        # Validate input
+        #
+        if lo is not None and hi is not None and lo > hi:
+            raise DataErr('bad', 'hi argument', 'must be >= lo')
+
+        # Ensure the limits are physically meaningful, that is
+        # energy and wavelengths are >= 0. Technically it should be
+        # > but using 0 is a nice value for a minimum. We do not
+        # enforce limits if channels are being used because it's
+        # not clear if channels can technically be negative.
+        #
+        # For channels we just require the numbers are integers.
+        #
+        if self.units == 'channel':
+            if lo is not None and not float(lo).is_integer():
+                raise DataErr('bad', 'lo argument', 'must be an integer channel value')
+            if hi is not None and not float(hi).is_integer():
+                raise DataErr('bad', 'hi argument', 'must be an integer channel value')
+
+        else:
+            if lo is not None and lo < 0:
+                raise DataErr('bad', 'lo argument', 'must be >= 0')
+            if hi is not None and hi < 0:
+                raise DataErr('bad', 'hi argument', 'must be >= 0')
+
         # If any background IDs are actually given, then impose
         # the filter on those backgrounds *only*, and return.  Do
         # *not* impose filter on data itself.  (Revision possibly
@@ -3464,35 +3991,97 @@ class DataPHA(Data1D):
             return
 
         # Go on if we are also supposed to filter the source data
-        ignore = bool_cast(ignore)
         if lo is None and hi is None:
             self.quality_filter = None
             self.notice_response(False)
 
+        # When convert_limit is called, any limit that is outside the
+        # supported range (e.g. lo = 0.01 when the response is 0.1 to
+        # 11 keV) will get clamped to the minumum or maximum value.
+        # This is okay when lo is smaller and hi is larger than the
+        # supported values but is a problem when they are both
+        # smaller or larger than the range, since the result is then
+        # that the first or last group would be filtered. It is
+        # therefore necessary to check for this condition.
+        #
+        # This would be easier if _to_channel were to identify that
+        # the range had been (or should be) clamped, but that is a
+        # larger change than I want to implement, so instead we repeat
+        # some of the checks that the _xxx_to_channel methods make to
+        # see what the minimum and maximum allowed values are.
+        #
+        try:
+            elo, ehi = self._get_ebins(group=False)
+        except DataErr as de:
+            info(f"Skipping dataset {self.name}: {de}")
+            return
+
+        if self.units == 'energy':
+            # It's not guaranteed that channels are in increasing energy
+            # but we can certainly assume that they are monotonic.
+            # Thus, the min of the first and last entry is the minimum
+            # energy of the elo array
+            umin = min(elo[0], elo[-1])
+            umax = max(ehi[0], ehi[-1])
+        elif self.units == 'wavelength':
+            umin = min(hc / ehi[[0, -1]])
+            umax = max(hc / elo[[0, -1]])
+        else:
+            # assume channel units
+            umin = self.channel[0]
+            umax = self.channel[-1]
+
+        assert umin < umax, (self.units, umin, umax)
+
+        # Finally we can check that the request is not
+        # outside the valid range "on the same side".
+        #
+        if lo is not None and hi is not None:
+            assert lo <= hi, (lo, hi)
+            if hi <= umin:
+                return
+            if lo >= umax:
+                return
+
         # We do not want a "all data are masked out" error to cause
         # this to fail; it should just do nothing (as trying to set
         # a noticed range to include masked-out ranges would also
-        # be ignored).
+        # be ignored). Note that originally this try/except caught
+        # errors like "RMF has no ebounds data", but this is now
+        # caught earlier in the call to _get_ebins, so it is possible
+        # that the check is no-longer needed.
         #
         # Convert to "group number" (which, for ungrouped data,
         # is just channel number).
         #
-        if lo is not None and type(lo) != str:
+        def convert_limit(x):
+            """Convert the limit to 'group number'.
+
+            x must not be None or a string. The return value is None if
+            the value is invalid (and so should be skipped).
+            """
+
             try:
-                lo = self._to_channel(lo)
+                return self._to_channel(x)
             except DataErr as de:
-                info("Skipping dataset {}: {}".format(self.name,
-                                                      de))
-                return
-        if hi is not None and type(hi) != str:
-            try:
-                hi = self._to_channel(hi)
-            except DataErr as de:
-                info("Skipping dataset {}: {}".format(self.name,
-                                                      de))
+                info(f"Skipping dataset {self.name}: {de}")
+                return None
+
+        if lo is not None:
+            lo = convert_limit(lo)
+            if lo is None:
                 return
 
-        elo, ehi = self._get_ebins()
+        if hi is not None:
+            hi = convert_limit(hi)
+            if hi is None:
+                return
+
+        # At this point lo and hi are in "group number".
+        #
+        # When do we need to flip the limits? It is not clear whether
+        # we always need lo <= hi.
+        #
         if ((self.units == "wavelength" and
              elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
             (self.units == "energy" and
@@ -3514,8 +4103,8 @@ class DataPHA(Data1D):
         elo = self.apply_filter(elo, self._min)
         ehi = self.apply_filter(ehi, self._max)
         if self.units == "wavelength":
-            lo = self._hc / ehi
-            hi = self._hc / elo
+            lo = hc / ehi
+            hi = hc / elo
             elo = lo
             ehi = hi
         cnt = self.get_dep(True)
@@ -3544,19 +4133,46 @@ class DataPHA(Data1D):
                 self.get_ylabel())
 
     def group(self):
-        "Group the data according to the data set's grouping scheme"
+        """Group the data according to the data set's grouping scheme.
+
+        This sets the grouping flag which means that the value of the
+        grouping attribute will be used when accessing data values. This
+        can be called even if the grouping attribute is empty.
+
+        See Also
+        --------
+        ungroup
+        """
         self.grouped = True
 
     def ungroup(self):
-        "Ungroup the data"
+        """Remove any data grouping.
+
+        This un-sets the grouping flag which means that the grouping
+        attribute will not be used when accessing data values.
+
+        See Also
+        --------
+        group
+        """
         self.grouped = False
 
     def subtract(self):
-        "Subtract the background data"
+        """Subtract the background data.
+
+        See Also
+        --------
+        unsubtract
+        """
         self.subtracted = True
 
     def unsubtract(self):
-        "Remove background subtraction"
+        """Remove background subtraction.
+
+        See Also
+        --------
+        subtract
+        """
         self.subtracted = False
 
 
@@ -3600,7 +4216,7 @@ class DataIMG(Data2D):
         self.sky = sky
         self.eqpos = eqpos
         self.coord = coord
-        self.header = header
+        self.header = {} if header is None else header
         self._region = None
         Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
 
@@ -3632,7 +4248,10 @@ class DataIMG(Data2D):
 
         # PyRegion objects (of type 'extension') are NOT picklable, yet.
         # preserve the region string and restore later with constructor
-        state['_region'] = state['_region'].__str__()
+        # (but correctly handling the "None" case, to avoid #1214)
+        #
+        if state['_region'] is not None:
+            state['_region'] = state['_region'].__str__()
         return state
 
     def __setstate__(self, state):
@@ -3643,22 +4262,30 @@ class DataIMG(Data2D):
         # self.__dict__['_get_world']=(lambda : None)
 
         if 'header' not in state:
-            self.header = None
+            self.header = {}
 
         self.__dict__.update(state)
 
         # _set_coord will correctly define the _get_* WCS function pointers.
         self._set_coord(state['_coord'])
+
+        # This used to always use the _region setting to create a
+        # Region filter, but it doesn't make sense if the filter is
+        # _None, so we now skip this case (it lead to #1214).
+        #
+        if self._region is None:
+            return
+
         if regstatus:
-            self._region = Region(self._region)
+            # Should we allow '' to be sent to Region?
+            if self._region == '':
+                self._region = Region()
+            else:
+                self._region = Region(self._region)
         else:
-            # An ImportErr could be raised rather than display a
-            # warnng, but that would make it harder for the user
-            # to extract useful data (e.g. in the case of triggering
-            # this when loading a pickled file).
-            #
-            if self._region is not None and self._region != '':
-                warning("Unable to restore region={} as region module is not avaialable.".format(self._region))
+            # If the region is "" then str() will produce '' so we want
+            # double quotes about it.
+            warning(f'Unable to restore region="{self._region}" as region module is not avaialable.')
 
             self._region = None
 
@@ -3840,7 +4467,7 @@ class DataIMG(Data2D):
         # region.
         #
         mask = reg.mask(self.get_x0(), self.get_x1())
-        mask = mask.astype(numpy.bool)
+        mask = mask.astype(bool)
 
         # Apply the new mask to the existing mask.
         #
@@ -3987,7 +4614,7 @@ class DataIMGInt(DataIMG):
         self.sky = sky
         self.eqpos = eqpos
         self.coord = coord
-        self.header = header
+        self.header = {} if header is None else header
         self.shape = shape
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 

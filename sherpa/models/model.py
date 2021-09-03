@@ -18,9 +18,308 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Allow models to be defined and combined.
 
+A single model is defined by the parameters of the model - represented
+as sherpa.models.model.Parameter instances - and the function that
+takes the parameter values along with an array of grid values. The
+main classes are:
+
+* Model which is the base class and defines most of the interfaces.
+
+* ArithmeticConstantModel and ArithmeticFunctionModel for representing
+  a constant value or a function.
+
+* ArithmeticModel is the main base class for deriving user models since
+  it supports combining models (e.g. by addition or multiplication) and
+  a cache to reduce evaluation time at the expense of memory use.
+
+* RegriddableModel builds on ArithmeticModel to allow a model to be
+  evaluated on a different grid to that requested: most model classes
+  are derived from the 1D and 2D variants of RegriddableModel.
+
+* CompositeModel which is used to represent a model expression, that
+  is combined models, such as `m1 * (m2 + m3)`
+
+  * UnaryOpModel for model expressions such as `- m1`.
+
+  * BinaryOpModel for model expressions such as `m1 + m2`.
+
+  * NestedModel for applying one model to another.
+
+* SimulFitModel for fitting multiple models and datasets.
+
+Creating a model
+================
+
+Models can be created with an optional name, which is useful for
+identifying a component in an expression:
+
+    >>> from sherpa.models.basic import Gauss1D
+    >>> m1 = Gauss1D()
+    >>> m2 = Gauss1D('gmdl')
+    >>> print(m1)
+    gauss1d
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gauss1d.fwhm thawed           10  1.17549e-38  3.40282e+38
+       gauss1d.pos  thawed            0 -3.40282e+38  3.40282e+38
+       gauss1d.ampl thawed            1 -3.40282e+38  3.40282e+38
+
+    >>> print(m2)
+    gmdl
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gmdl.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       gmdl.pos     thawed            0 -3.40282e+38  3.40282e+38
+       gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
+
+Changing parameters
+===================
+
+The parameters are the model values that control the output of the
+model. A particular model has a fixed set of parameters that can
+be inspected with print or the pars attribute:
+
+    >>> print(m2)
+    gmdl
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       gmdl.fwhm    thawed           10  1.17549e-38  3.40282e+38
+       gmdl.pos     thawed            0 -3.40282e+38  3.40282e+38
+       gmdl.ampl    thawed            1 -3.40282e+38  3.40282e+38
+
+    >>> print(m2.pars)
+    (<Parameter 'fwhm' of model 'gmdl'>, <Parameter 'pos' of model 'gmdl'>, <Parameter 'ampl' of model 'gmdl'>)
+
+The parameters are instances of the sherpa.models.parameter.Parameter
+class:
+
+    >>> print(m2.fwhm)
+    val         = 10.0
+    min         = 1.1754943508222875e-38
+    max         = 3.4028234663852886e+38
+    units       =
+    frozen      = False
+    link        = None
+    default_val = 10.0
+    default_min = 1.1754943508222875e-38
+    default_max = 3.4028234663852886e+38
+
+    >>> print(m2.fwhm.val)
+    10.0
+
+Setting the model parameter does not require going through the val
+attribute as you can say:
+
+    >>> m2.fwhm = 20
+
+Accessing parameter values
+--------------------------
+
+The model class is set up so that any attribute access is case
+insensitive, so the following are all ways to change the ``fwhm``
+parameter:
+
+    >>> m2.fwhm = 10
+    >>> m2.FWHM = 10
+    >>> m2.FwHm = 10
+
+Linking parameters
+------------------
+
+One parameter can be made to reference one or more other parameters, a
+process called "linking". The lniked is no-longer considered a free
+parameter in a fit since it's value is derived from the other
+parameters. This link can be a simple one-to-one case, such as
+ensuring the fwhm parameter of one model is the same as the other:
+
+    >>> m2.fwhm = m1.fwhm
+
+It can be more complex, such as ensuring the position of one line
+is a fixed distance from another:
+
+    >>> l2.pos = l1.pos + 23.4
+
+It can even include multiple parameters:
+
+    >>> l3.ampl = (l1.ampl + l2.ampl) / 2
+
+Requesting the parameter value will return the evaluated expression,
+and the expression is stored in the link attribute:
+
+    >>> l1.ampl = 10
+    >>> l2.ampl = 12
+    >>> l3.ampl.val
+    11.0
+    >>> l3.ampl.link
+    <BinaryOpParameter '((l1.ampl + l2.ampl) / 2)'>
+
+The string representation of the model changes for linked parameters
+to indicate the expression:
+
+    >>> print(l3)
+    l3
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       l3.fwhm      thawed           10  1.17549e-38  3.40282e+38
+       l3.pos       thawed            0 -3.40282e+38  3.40282e+38
+       l3.ampl      linked           11 expr: ((l1.ampl + l2.ampl) / 2)
+
+Model evaluation
+================
+
+With a sherpa.data.Data instance a model can be evaluated with the
+eval_model method of the object. For example:
+
+    >>> import numpy as np
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.models.basic import Gauss1D
+    >>> x = np.asarray([4000, 4100, 4250, 4300, 4400])
+    >>> y = np.asarray([10, 20, 50, 40, 30])
+    >>> d = Data1D('example', x, y)
+    >>> mdl = Gauss1D()
+    >>> mdl.pos = 4200
+    >>> mdl.fwhm = 200
+    >>> mdl.ampl = 50
+    >>> ymdl1 = d.eval_model(mdl)
+    >>> print(ymdl1)
+    [ 3.125      25.         42.04482076 25.          3.125     ]
+
+The model can also be evaluated directly with the independent axis
+values:
+
+    >>> ymdl2 = mdl(x)
+    >>> print(ymdl2)
+    [ 3.125      25.         42.04482076 25.          3.125     ]
+
+Integrated bins
+---------------
+
+If given the low and high edges of the bins then the model will - if
+supported - evaluate the integral of the model across the bins:
+
+    >>> xlo = np.asarray([4180, 4190, 4195, 4200, 4210])
+    >>> xhi = np.asarray([4190, 4194, 4200, 4210, 4220])
+    >>> y = mdl(xlo, xhi)
+    >>> print(y)
+    [491.98725233 199.0964993  249.85566938 498.847153   491.98725233]
+
+Note that the bins are expected to be in ascending order and do not
+overlap, but they do not need to be consecutive.
+
+The behavior of a model when given low and high edges depends on
+whether the model is written to support this mode - that is,
+integrating the model across the bin - and the setting of the
+integrate flag of the model. The Gauss1D model does support an
+integrated mode, so switching the integrate flag will change the model
+output:
+
+    >>> print(mdl.integrate)
+    True
+    >>> mdl.integrate = False
+    >>> y2 = mdl(xlo, xhi)
+    >>> print(y2)
+    [48.63274737 49.65462477 49.91343163 50.         49.65462477]
+
+The behavior when the integrate flag is False depends on the model but
+it normally just uses the low edge, as shown for the Gauss1D case:
+
+    >>> y3 = mdl(xlo)
+    >>> print(y2 == y3)
+    [ True  True  True  True  True]
+
+Direct access
+-------------
+
+The calc method of a model can also be used to evaluate the model, and
+this requires a list of the parameters and the independent axes:
+
+    >>> pars = [200, 4200, 50]
+    >>> y4 = mdl.calc(pars, x)
+    >>> y5 = mdl.calc(pars, xlo, xhi)
+
+The parameter order matches the pars attribute of the model:
+
+    >>> print([p.fullname for p in mdl.pars])
+    ['gauss1d.fwhm', 'gauss1d.pos', 'gauss1d.ampl']
+
+Model expressions
+=================
+
+The CompositeModel class is the base class for creating model
+expressions - that is the overall model that is combined of one or
+more model objects along with possible numeric terms, such as a
+model containing two gaussians and a polynomial:
+
+    >>> from sherpa.models.basic import Gauss1D, Polynom1D
+    >>> l1 = Gauss1D('l1')
+    >>> l2 = Gauss1D('l2')
+    >>> l1.pos = 5
+    >>> l2.pos = 20
+    >>> l2.ampl = l1.ampl
+    >>> c = Polynom1D('c')
+    >>> mdl = l1 + (0.5 * l2) + c
+
+The resulting model can be evaluated just like an individual
+component:
+
+    >>> x = np.arange(-10, 40, 2)
+    >>> y = mdl(x)
+
+This model is written so that the amplitude of the `l2` component is
+half the `l1` component by linking the two `ampl` parameters and then
+including a scaling factor in the model expression for `l2`. An
+alternative would have been to include this scaling factor in the link
+expression:
+
+    >>> l2.ampl = l1.ampl / 2
+
+Model cache
+===========
+
+The ArithmeticModel class and modelCacher1d decorator provide basic
+support for caching one-dimensional model evaluations - that is, to
+avoid re-calculating the model. The idea is to save the results of the
+latest calls to a model and return the values from the cache,
+hopefully saving time at the expense of using more memory. This is
+most effective when the same model is used with multiple datasets
+which all have the same grid.
+
+The _use_caching attribute of the model is used to determine whether
+the cache is used, but this setting can be over-ridden by the startup
+method, which is automatically called by the fit and est_errors
+methods of a sherpa.fit.Fit object.
+
+The cache_clear and cache_status methods of ArithmeticModel and
+CompositeModel allow you to clear the cache and display to the
+standard output the cache status of each model component.
+
+Example
+=======
+
+The following class implements a simple scale model which has a single
+parameter (`scale`) which defaults to 1. It can be used for both
+non-integrated and integrated datasets of any dimensionality (see
+sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
+
+    class ScaleND(ArithmeticModel):
+        '''A constant value per element.'''
+
+        def __init__(self, name='scalend'):
+            self.scale = Parameter(name, 'scale', 1)
+            self.integrate = False
+            pars = (self.scale, )
+            ArithmeticModel.__init__(self, name, pars)
+
+        def calc(self, *args, **kwargs):
+            return self.scale.val * np.ones(len(args[0]))
+
+"""
+
+
+import functools
 import logging
-import hashlib
 import warnings
 
 import numpy
@@ -32,7 +331,18 @@ from sherpa.utils import formatting
 
 from .parameter import Parameter
 
+# What routine do we use for the hash in modelCacher1d?  As we do not
+# need cryptographic security go for a "quick" algorithm, but md5 is
+# not guaranteed to always be present.  There has been no attempt to
+# check the run times of these routines for the expected data sizes
+# they will be used with.
+#
+try:
+    from hashlib import md5 as hashfunc
+except ImportError:
+    from hashlib import sha256 as hashfunc
 
+info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 
@@ -82,10 +392,15 @@ def modelCacher1d(func):
 
     """
 
+    @functools.wraps(func)
     def cache_model(cls, pars, xlo, *args, **kwargs):
         use_caching = cls._use_caching
         cache = cls._cache
+        cache_ctr = cls._cache_ctr
         queue = cls._queue
+
+        # Counts all accesses, even those that do not use the cache.
+        cache_ctr['check'] += 1
 
         digest = ''
         if use_caching:
@@ -119,8 +434,9 @@ def modelCacher1d(func):
                 data.append(numpy.asarray(args[0]).tobytes())
 
             token = b''.join(data)
-            digest = hashlib.sha256(token).digest()
+            digest = hashfunc(token).digest()
             if digest in cache:
+                cache_ctr['hits'] += 1
                 return cache[digest].copy()
 
         vals = func(cls, pars, xlo, *args, **kwargs)
@@ -134,10 +450,10 @@ def modelCacher1d(func):
             queue.append(digest)
             cache[digest] = vals.copy()
 
+            cache_ctr['misses'] += 1
+
         return vals
 
-    cache_model.__name__ = func.__name__
-    cache_model.__doc__ = func.__doc__
     return cache_model
 
 
@@ -248,7 +564,8 @@ class Model(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__getattribute__(self, name)
 
     def __setattr__(self, name, val):
-        par = getattr(self, name.lower(), None)
+        lname = name.lower()
+        par = getattr(self, lname, None)
         if (par is not None) and isinstance(par, Parameter):
             # When setting an attribute that is a Parameter, set the parameter's
             # value instead.
@@ -256,8 +573,16 @@ class Model(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
             if isinstance(val, Parameter):
+                vname = val.name.lower()
+
+                # Check the parameter names match - as this is a
+                # 'development' error then just make this an assert.
+                # Ideally it should be exact but support lower case
+                # comparison only
+                assert lname == vname, (name, val.name, self.name)
+
                 # Update parameter index
-                self._par_index[val.name.lower()] = val
+                self._par_index[vname] = val
                 if val.aliases:
                     # Update index of aliases, if necessary
                     for alias in val.aliases:
@@ -351,7 +676,13 @@ class Model(NoNewAttributesAfterInit):
                 p._val = v
 
     thawedpars = property(_get_thawed_pars, _set_thawed_pars,
-                          doc='Access to the thawed parameters of the model')
+                          doc='The thawed parameters of the model.\n\n' +
+                          'Get or set the thawed parameters of the model as a list of\n' +
+                          'numbers. If there are no thawed parameters then [] is used.\n' +
+                          'The ordering matches that of the pars attribute.\n\n' +
+                          'See Also\n' +
+                          '--------\n' +
+                          'thawedparmaxes, thawedparmins\n')
 
     def _get_thawed_par_mins(self):
         return [p.min for p in self.pars if not p.frozen]
@@ -380,7 +711,14 @@ class Model(NoNewAttributesAfterInit):
                 p._min = v
 
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
-                             doc='Access to the minimum limits for the thawed parameters')
+                             doc='The minimum limits of the thawed parameters.\n\n' +
+                             'Get or set the minimum limits of the thawed parameters\n' +
+                             'of the model as a list of numbers. If there are no\n' +
+                             'thawed parameters then [] is used. The ordering matches\n' +
+                             'that of the pars attribute.\n\n' +
+                             'See Also\n' +
+                             '--------\n' +
+                             'thawedpars, thawedarhardmins, thawedparmaxes\n')
 
     def _get_thawed_par_maxes(self):
         return [p.max for p in self.pars if not p.frozen]
@@ -409,22 +747,48 @@ class Model(NoNewAttributesAfterInit):
                 p._max = v
 
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
-                              doc='Access to the maximum limits for the thawed parameters')
+                              doc='The maximum limits of the thawed parameters.\n\n' +
+                              'Get or set the maximum limits of the thawed parameters\n' +
+                              'of the model as a list of numbers. If there are no\n' +
+                              'thawed parameters then [] is used. The ordering matches\n' +
+                              'that of the pars attribute.\n\n' +
+                              'See Also\n' +
+                              '--------\n' +
+                              'thawedpars, thawedarhardmaxes, thawedparmins\n')
 
     def _get_thawed_par_hardmins(self):
         return [p.hard_min for p in self.pars if not p.frozen]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
-                                 doc='The hard minimum values for the thawed parameters.')
+                                 doc='The hard minimum values for the thawed parameters.\n\n' +
+                                 'The minimum and maximum range of the parameters can be\n' +
+                                 'changed with thawedparmins and thawedparmaxes but only\n' +
+                                 'within the range given by thawedparhardmins\n' +
+                                 'to thawparhardmaxes.\n\n' +
+                                 'See Also\n' +
+                                 '--------\n' +
+                                 'thawedparhardmaxes, thawedparmins\n')
 
     def _get_thawed_par_hardmaxes(self):
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                  doc='The hard maximum values for the thawed parameters.')
+                                  doc='The hard maximum values for the thawed parameters.\n\n' +
+                                 'The minimum and maximum range of the parameters can be\n' +
+                                 'changed with thawedparmins and thawedparmaxes but only\n' +
+                                 'within the range given by thawedparhardmins\n' +
+                                 'to thawparhardmaxes.\n\n' +
+                                  'See Also\n' +
+                                  '--------\n' +
+                                  'thawedparhardmins, thawedparmaxes\n')
 
     def reset(self):
-        """Reset the parameter values."""
+        """Reset the parameter values.
+
+        Restores each parameter to the last value it was set to.
+        This allows the parameters to be easily reset after a
+        fit.
+        """
 
         for p in self.pars:
             p.reset()
@@ -432,6 +796,9 @@ class Model(NoNewAttributesAfterInit):
 
 class CompositeModel(Model):
     """Represent a model with composite parts.
+
+    This is the base class for representing expressions that combine
+    multiple models and values.
 
     Parameters
     ----------
@@ -443,6 +810,27 @@ class CompositeModel(Model):
     Attributes
     ----------
     parts : sequence of Model
+
+    Notes
+    -----
+    Composite models can be iterated through to find their
+    components:
+
+       >>> l1 = Gauss1D('l1')
+       >>> l2 = Gauss1D('l2')
+       >>> b = Polynom1D('b')
+       >>> mdl = l1 + (0.5 * l2) + b
+       >>> mdl
+       <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
+       >>> for cpt in mdl:
+       ...     print(type(c))
+       ...
+       <class 'BinaryOpModel'>
+       <class 'sherpa.models.basic.Gauss1D'>
+       <class 'BinaryOpModel'>
+       <class 'ArithmeticConstantModel'>
+       <class 'sherpa.models.basic.Gauss1D'>
+       <class 'sherpa.models.basic.Polynom1D'>
 
     """
 
@@ -493,6 +881,10 @@ class CompositeModel(Model):
             assert (p is not self), (("'%s' object holds a reference to " +
                                       "itself") % type(self).__name__)
 
+            # Including itself seems a bit strange if it's a CompositeModel
+            # but is used by sherpa.astro.instrument.has_pha_instance (and
+            # possibly elsewhere).
+            #
             parts.append(p)
             if isinstance(p, CompositeModel):
                 parts.extend(p._get_parts())
@@ -506,6 +898,34 @@ class CompositeModel(Model):
 
     def teardown(self):
         pass
+
+    def cache_clear(self):
+        """Clear the cache for each component."""
+        for p in self.parts:
+            try:
+                p.cache_clear()
+            except AttributeError:
+                pass
+
+    def cache_status(self):
+        """Display the cache status of each component.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> mdl.cache_status()
+         xsphabs.gal                size:    5  hits:   715  misses:   158  check=  873
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
+        for p in self.parts:
+            try:
+                p.cache_status()
+            except AttributeError:
+                pass
 
 
 class SimulFitModel(CompositeModel):
@@ -649,9 +1069,33 @@ class ArithmeticModel(Model):
         # Model caching ability
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
+        self.cache_clear()
+        Model.__init__(self, name, pars)
+
+    def cache_clear(self):
+        """Clear the cache."""
+        # It is not obvious what to set the queue length to
         self._queue = ['']
         self._cache = {}
-        Model.__init__(self, name, pars)
+        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+
+    def cache_status(self):
+        """Display the cache status.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> pl.cache_status()
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
+        c = self._cache_ctr
+        info(f" {self.name:25s}  size: {len(self._queue):4d}  " +
+             f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
+             f"check: {c['check']:5d}")
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
@@ -678,6 +1122,7 @@ class ArithmeticModel(Model):
 
         if '_cache' not in state:
             self.__dict__['_cache'] = {}
+            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
 
         if 'cache' not in state:
             self.__dict__['cache'] = 5
@@ -686,8 +1131,7 @@ class ArithmeticModel(Model):
         return FilterModel(self, filter)
 
     def startup(self, cache=False):
-        self._queue = ['']
-        self._cache = {}
+        self.cache_clear()
         self._use_caching = cache
         if int(self.cache) > 0:
             self._queue = [''] * int(self.cache)
@@ -803,9 +1247,9 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     Parameters
     ----------
     lhs : Model instance
-        The left-hand sides of the expression.
+        The left-hand side of the expression.
     rhs : Model instance
-        The right-hand sides of the expression.
+        The right-hand side of the expression.
     op : function reference
         The ufunc which combines two array values.
     opstr : str

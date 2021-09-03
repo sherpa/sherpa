@@ -12,13 +12,13 @@ jobs:
           - name: Linux Minimum Setup 
             os: ubuntu-latest
             python-version: 3.8
-            numpy-pkg: 'numpy>=1.17,<1.18'
+            numpy-pkg: 'numpy>=1.18,<1.19'
             install-type: develop 
             test-data: none
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: 3.6 
+            python-version: 3.9
             numpy-pkg: 'numpy'
             install-type: install
             test-data: package

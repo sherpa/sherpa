@@ -221,6 +221,7 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     return dstype(name, *cols)
 
 
+# TODO: should this be exported?
 def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     """Create a dataset from an ASCII tabular file.
 

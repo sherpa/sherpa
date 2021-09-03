@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2018, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,8 +20,9 @@
 
 import numpy
 
+import pytest
+
 from sherpa.estmethods import Covariance, Projection
-from sherpa.utils.testing import SherpaTestCase
 
 
 # Test data arrays -- together this makes a line best fit with a
@@ -103,73 +105,107 @@ def fitter(scb, pars, parmins, parmaxs):
     return (1, pars, scb(pars)[0])
 
 
-class test_estmethods(SherpaTestCase):
+def test_covar_failures1():
+    with pytest.raises(TypeError):
+        Covariance().compute(None, fitter, fittedpars,
+                             minpars, maxpars,
+                             hardminpars, hardmaxpars,
+                             limit_parnums, freeze_par, thaw_par,
+                             report_progress)
 
-    def test_covar_failures(self):
-        self.assertRaises(TypeError, Covariance().compute,
-                          None, fitter, fittedpars,
+
+def test_covar_failures2():
+    with pytest.raises(RuntimeError):
+        Covariance().compute(stat, fitter, None, minpars, maxpars,
+                             hardminpars, hardmaxpars, limit_parnums, freeze_par,
+                             thaw_par, report_progress, get_par_name)
+
+
+def test_covar_failures3():
+    with pytest.raises(RuntimeError):
+        Covariance().compute(stat, fitter, numpy.array([1, 2]),
+                             minpars, maxpars, hardminpars, hardmaxpars,
+                             limit_parnums, freeze_par, thaw_par,
+                             report_progress, get_par_name)
+
+
+def test_covar_failures4():
+    with pytest.raises(RuntimeError):
+        Covariance().compute(stat, fitter, fittedpars, numpy.array([1, 2]),
+                             maxpars, hardminpars, hardmaxpars, limit_parnums,
+                             freeze_par, thaw_par, report_progress, get_par_name)
+
+
+def test_projection_failures1():
+    with pytest.raises(TypeError):
+        Projection().compute(stat, None, fittedpars, minpars, maxpars,
+                             hardminpars, hardmaxpars, limit_parnums, freeze_par,
+                             thaw_par, report_progress, get_par_name)
+
+
+def test_projection_failures2():
+    with pytest.raises(RuntimeError):
+        Projection().compute(stat, fitter, None, minpars, maxpars,
+                             hardminpars, hardmaxpars, limit_parnums,
+                             freeze_par, thaw_par, report_progress, get_par_name)
+
+
+def test_projection_failures3():
+    with pytest.raises(RuntimeError):
+        Projection().compute(stat, fitter, numpy.array([1, 2]),
+                             minpars, maxpars, hardminpars, hardmaxpars,
+                             limit_parnums, freeze_par, thaw_par,
+                             report_progress, get_par_name)
+
+
+def test_projection_failures4():
+    with pytest.raises(RuntimeError):
+        Projection().compute(stat, fitter, fittedpars, numpy.array([1, 2]),
+                             maxpars, hardminpars, hardmaxpars, limit_parnums,
+                             freeze_par, thaw_par, report_progress, get_par_name)
+
+
+# Unlike projection, covariance does not have a "parallel" option.
+#
+def test_covar():
+    standard = numpy.array([[0.4935702,  0.06857833, numpy.nan],
+                            [0.06857833, 0.26405554, numpy.nan],
+                            [numpy.nan,  numpy.nan,  2.58857314]])
+
+    cov = Covariance()
+    results = cov.compute(stat, None, fittedpars,
                           minpars, maxpars,
                           hardminpars, hardmaxpars,
-                          limit_parnums, freeze_par, thaw_par, report_progress)
-
-        self.assertRaises(RuntimeError, Covariance().compute,
-                          stat, fitter, None, minpars, maxpars,
-                          hardminpars, hardmaxpars, limit_parnums, freeze_par,
-                          thaw_par, report_progress, get_par_name)
-
-        self.assertRaises(RuntimeError, Covariance().compute,
-                          stat, fitter, numpy.array([1, 2]),
-                          minpars, maxpars, hardminpars, hardmaxpars,
                           limit_parnums, freeze_par, thaw_par,
                           report_progress, get_par_name)
 
-        self.assertRaises(RuntimeError, Covariance().compute,
-                          stat, fitter, fittedpars, numpy.array([1, 2]),
-                          maxpars, hardminpars, hardmaxpars, limit_parnums,
-                          freeze_par, thaw_par, report_progress, get_par_name)
+    # These tests used to have a tolerance of 1e-4 but it appears to
+    # be able to use a more-restrictive tolerance.
+    #
+    expected = standard.diagonal()
+    assert results[1] == pytest.approx(expected)
 
-    def test_projection_failures(self):
-        self.assertRaises(TypeError, Projection().compute,
-                          stat, None, fittedpars, minpars, maxpars,
-                          hardminpars, hardmaxpars, limit_parnums, freeze_par,
-                          thaw_par, report_progress, get_par_name)
 
-        self.assertRaises(RuntimeError, Projection().compute,
-                          stat, fitter, None, minpars, maxpars,
-                          hardminpars, hardmaxpars, limit_parnums,
-                          freeze_par, thaw_par, report_progress, get_par_name)
+# There is no guarantee we can run with parallel=True but try to do so.
+#
+@pytest.mark.parametrize("parallel", [True, False])
+def test_projection(parallel):
+    standard_elo = numpy.array([-0.39973743, -0.26390339, -2.08784716])
+    standard_ehi = numpy.array([0.39580942,  0.26363223,  2.08789851])
 
-        self.assertRaises(RuntimeError, Projection().compute,
-                          stat, fitter, numpy.array([1, 2]),
-                          minpars, maxpars, hardminpars, hardmaxpars,
-                          limit_parnums, freeze_par, thaw_par,
-                          report_progress, get_par_name)
+    proj = Projection()
+    proj.parallel = parallel
+    assert proj.parallel == parallel
 
-        self.assertRaises(RuntimeError, Projection().compute,
-                          stat, fitter, fittedpars, numpy.array([1, 2]),
-                          maxpars, hardminpars, hardmaxpars, limit_parnums,
-                          freeze_par, thaw_par, report_progress, get_par_name)
+    results = proj.compute(stat, fitter, fittedpars,
+                           minpars, maxpars,
+                           hardminpars, hardmaxpars,
+                           limit_parnums, freeze_par, thaw_par,
+                           report_progress, get_par_name)
 
-    def test_covar(self):
-        standard = numpy.array([[0.4935702,  0.06857833, numpy.nan],
-                                [0.06857833, 0.26405554, numpy.nan],
-                                [numpy.nan,  numpy.nan,  2.58857314]])
-        results = Covariance().compute(stat, None, fittedpars,
-                                       minpars, maxpars,
-                                       hardminpars, hardmaxpars,
-                                       limit_parnums, freeze_par, thaw_par,
-                                       report_progress, get_par_name)
-        self.assertEqualWithinTol(standard.diagonal(),
-                                  # results[2].diagonal(), 1e-4)
-                                  results[1], 1e-4)
-
-    def test_projection(self):
-        standard_elo = numpy.array([-0.39973743, -0.26390339, -2.08784716])
-        standard_ehi = numpy.array([0.39580942,  0.26363223,  2.08789851])
-        results = Projection().compute(stat, fitter, fittedpars,
-                                       minpars, maxpars,
-                                       hardminpars, hardmaxpars,
-                                       limit_parnums, freeze_par, thaw_par,
-                                       report_progress, get_par_name)
-        self.assertEqualWithinTol(standard_elo, results[0], 1e-4)
-        self.assertEqualWithinTol(standard_ehi, results[1], 1e-4)
+    # These tests used to have a tolerance of 1e-4 but it appears to
+    # be able to use a more-restrictive tolerance (given that the
+    # "fitter" doesn't do a fit here).
+    #
+    assert results[0] == pytest.approx(standard_elo)
+    assert results[1] == pytest.approx(standard_ehi)

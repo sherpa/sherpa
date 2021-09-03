@@ -32,6 +32,9 @@ import numpy as np
 
 import pytest
 
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_plotting
+
 from sherpa.astro import ui
 from sherpa.astro.instrument import create_arf
 from sherpa.astro.data import DataRMF
@@ -452,3 +455,89 @@ def test_eval_multi_arfrmf_reorder(clean_astro_ui):
     ui.set_arf(id=1, arf=arf1, resp_id=1)
 
     check_eval_multi_arfrmf()
+
+
+@requires_data
+@requires_fits
+@requires_plotting
+def test_plot_order_multi(make_data_path, clean_astro_ui):
+    """Rather than fake data, use a known dataset.
+
+    Here we pretend we have three orders but with the same
+    response (except that the ARF is 0.5, 0.4, 0.25 of the
+    normal ARF).
+    """
+
+    pha = make_data_path('3c273.pi')
+    ui.load_pha(pha)
+
+    # It has already loaded in one response
+    arf = ui.get_arf(resp_id=1)
+    arf.specresp *= 0.5
+
+    for order, scale in enumerate([0.4, 0.25], 2):
+        ui.load_arf(make_data_path('3c273.arf'), resp_id=order)
+        ui.load_rmf(make_data_path('3c273.rmf'), resp_id=order)
+
+        arf = ui.get_arf(resp_id=order)
+        arf.specresp *= scale
+
+    ui.set_source(ui.powlaw1d.pl)
+
+    ui.notice(0.5, 7)
+    ui.ignore(3, 4)
+
+    fplot = ui.get_fit_plot()
+    oplot = ui.get_order_plot()
+
+    # The idea is to compare the X range of plot_fit to plot_order
+    # (but accessed just using the plot objects rather than creating
+    # an actual plot).
+    #
+    # First some safety checks
+    assert fplot.dataplot.xlo == pytest.approx(fplot.modelplot.xlo)
+    assert fplot.dataplot.xhi == pytest.approx(fplot.modelplot.xhi)
+
+    assert len(oplot.xlo) == 3
+    assert len(oplot.xhi) == 3
+    assert len(oplot.y) == 3
+
+    assert oplot.xlo[1] == pytest.approx(oplot.xlo[0])
+    assert oplot.xlo[2] == pytest.approx(oplot.xlo[0])
+
+    assert oplot.xhi[1] == pytest.approx(oplot.xhi[0])
+    assert oplot.xhi[2] == pytest.approx(oplot.xhi[0])
+
+    # We know the y values are 0.5, 0.4, 0.25 times the original arf
+    # so we can compare them.
+    #
+    assert oplot.y[1] == pytest.approx(oplot.y[0] * 0.4 / 0.5)
+    assert oplot.y[2] == pytest.approx(oplot.y[0] * 0.25 / 0.5)
+
+    xlo = oplot.xlo[0]
+    xhi = oplot.xhi[0]
+    assert len(xlo) == 564
+    assert xlo[0] == pytest.approx(0.46720001101493835)
+    assert xhi[-1] == pytest.approx(9.869600296020508)
+
+    # The model plot is technically drawn the same way as the order plot
+    # (ungrouped) but it uses different code (sherpa.astro.plot.ModelHistogram)
+    # so let's compare.
+    #
+    mplot = ui.get_model_plot()
+    assert mplot.xlo[0] == pytest.approx(0.46720001101493835)
+    assert mplot.xhi[-1] == pytest.approx(9.869600296020508)
+
+    # Also compare to the fit plot (which is grouped)
+    #
+    assert fplot.modelplot.xlo[0] == pytest.approx(0.46720001101493835)
+    assert fplot.modelplot.xhi[-1] == pytest.approx(9.869600296020508)
+
+    # How does the overall model plot y values compare to the three
+    # orders?
+    #
+    # Unfortunately the selected groups are different so can not
+    # directly compare.
+    #
+    # y = oplot.y[0] + oplot.y[1] + oplot.y[2]
+    # assert y == pytest.approx(mplot.y)

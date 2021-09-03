@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2015, 2017, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2015, 2017, 2020, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -192,7 +192,7 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
             << " and cell " << (i+1)
             << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
         PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-        return NULL;
+        return false;
         ***/
       }
     }
@@ -245,7 +245,7 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
         std::ostringstream err;
         err << "Wavelength must be > 0, sent " << ear[i];
         PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-        return NULL;
+        return false;
       }
       ear[i] = hc / ear[i];
     }
@@ -268,7 +268,7 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
       err << "Grid is not monotonic: " << ear[i] << " to " <<
         ear[i+1];
       PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-      return NULL;
+      return false;
     }
   }
   ***/
@@ -363,7 +363,7 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
         std::ostringstream err;
         err << "Wavelength must be > 0, sent " << ear[i];
         PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-        return NULL;
+        return false;
       }
       ear[i] = hc / ear[i];
     }
@@ -386,7 +386,7 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
       err << "Grid is not monotonic: " << ear[i] << " to " <<
         ear[i+1];
       PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-      return NULL;
+      return false;
     }
   }
   ***/

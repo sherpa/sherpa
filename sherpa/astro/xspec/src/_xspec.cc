@@ -1,5 +1,5 @@
-//  Copyright (C) 2007, 2015-2018, 2019, 2020
-//      Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015-2018, 2019, 2020, 2021
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -429,8 +429,13 @@ int _sherpa_init_xspec_library()
     fout.clear();
     fout.close();
 
-    // Try to minimize model chatter for normal operation.
-    FPCHAT( 0 );
+    // We used to set the chatter to 0 but this misses useful info
+    // (like XSPEC can't find the data files) that would be reported
+    // by XSPEC, so use the default XSPEC setting. It does not appear
+    // that this value is read in from ~/.xspec/Xspec.init so set
+    // it here so we have repeatable behavior.
+    //
+    FPCHAT( 10 );
 
     // Set cosmology initial values to XSPEC initial values
     csmph0( 70.0 );

@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,46 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Tools for creating, storing, inspecting, and manipulating data sets
+"""Tools for creating, storing, inspecting, and manipulating data sets.
+
+The main classes for representing data sets are :py:class:`Data1D`,
+:py:class:`Data1DInt`, and :py:class:`Data2D`, to handle (x, y), (xlo,
+xhi, y), and (x1, x2, y) data, although there are also
+more-specialized cases, such as :py:class:`Data1DAsymmetricErrs`. These
+classes build on the :py:class:`Data` class, which supports dynamic
+filtering of data - to select a subset of the data range - as well as
+data access and model evaluation to match the data range.
+
+The :py:class:`Filter` class is used to handle data filtering - that
+is, to combine filters such as selecting the range a to b (`notice`)
+and hiding the range c to d (`ignore`). This is used with the
+:py:class:`DataSpace1D` and :py:class:`DataSpace2D` classes to handle
+evaluating models on different grids to the data, and then converting
+back to the data space, whether by rebinnig or interpolation.
+
+Notebook support
+----------------
+
+The Data objects support the rich display protocol of IPython, with
+HTML display of a table of information highlighting the relevant data.
+Examples can be found at [NoteBook]_.
+
+References
+----------
+
+.. [NoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+
+Examples
+--------
+
+Create a data set representing the independent axis (`x`) and
+dependent axis (`y`) then filter to select only those values between
+500-520 and 530-700:
+
+>>> d1 = Data1D('example', x, y)
+>>> d1.notice(500, 700)
+>>> d1.ignore(520, 530)
+
 """
 import warnings
 from abc import ABCMeta
@@ -437,25 +475,24 @@ class Filter():
         if array is None:
             return
 
+        # Note that mask may not be a boolean but an array.
         if self.mask is False:
             raise DataErr('notmask')
 
-        if self.mask is not True:  # mask is not False and not True, so it's something else we'll try to use as an array
-            array = numpy.asarray(array)
-            if array.shape != self.mask.shape:
-                raise DataErr('mismatch', 'mask', 'data array')
-            return array[self.mask]
+        if self.mask is True:
+            return array
 
-        return array
+        array = numpy.asarray(array)
+        if array.shape != self.mask.shape:
+            raise DataErr('mismatch', 'mask', 'data array')
+        return array[self.mask]
 
     def notice(self, mins, maxes, axislist, ignore=False):
         ignore = bool_cast(ignore)
-        if str in [type(min) for min in mins]:
-            raise DataErr('typecheck', 'lower bound')
-        elif str in [type(max) for max in maxes]:
-            raise DataErr('typecheck', 'upper bound')
-        elif str in [type(axis) for axis in axislist]:
-            raise DataErr('typecheck', 'grid')
+        for vals, label in zip([mins, maxes, axislist],
+                               ['lower bound', 'upper bound', 'grid']):
+            if any([isinstance(val, str) for val in vals]):
+                raise DataErr('typecheck', label)
 
         mask = filter_bins(mins, maxes, axislist)
 
@@ -1082,10 +1119,11 @@ class Data1D(Data):
         # for derived intergrated classes, this will return values in center of
         # bin.
         x = self.get_x(filter=True)
-        mask = numpy.ones(len(x), dtype=bool)
         if numpy.iterable(self.mask):
             mask = self.mask
-        return create_expr(x, mask, format, delim)
+        else:
+            mask = numpy.ones(len(x), dtype=bool)
+        return create_expr(x, mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
         return self.get_filter(delim='-') + ' ' + self.get_xlabel()
@@ -1162,10 +1200,19 @@ class Data1DInt(Data1D):
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
+        if len(indep) == 1:
+            # assume all data has been filtered out
+            return numpy.asarray([])
+
         return (indep[0] + indep[1]) / 2.0
 
     def get_xerr(self, filter=False, model=None):
-        xlo, xhi = self.get_evaluation_indep(filter, model)
+        indep = self.get_evaluation_indep(filter, model)
+        if len(indep) == 1:
+            # assume all data has been filtered out
+            return numpy.asarray([])
+
+        xlo, xhi = indep
         return xhi - xlo
 
     def notice(self, xlo=None, xhi=None, ignore=False):

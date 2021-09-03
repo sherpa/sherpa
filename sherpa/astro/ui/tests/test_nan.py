@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2013, 2015, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2013, 2015, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,37 +17,15 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
-from sherpa.astro import ui
-import logging
 import numpy
-logger = logging.getLogger("sherpa")
+
+from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.astro import ui
 
 
+# bug 12784
 @requires_data
 @requires_fits
-class test_more_ui(SherpaTestCase):
-    def assign_model(self, name, obj):
-        self.locals[name] = obj
-
-    def run_thread(self, name, scriptname='fit.py'):
-        ui.clean()
-        ui.set_model_autoassign_func(self.assign_model)
-        super(test_more_ui, self).run_thread(name, scriptname=scriptname)
-
-    def setUp(self):
-        self.img = self.make_path('img.fits')
-        self.pha = self.make_path('pi2286.fits')
-        self.rmf = self.make_path('rmf2286.fits')
-        self.nan = self.make_path('with_nan.fits')
-        self.loggingLevel = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-
-    def tearDown(self):
-        if hasattr(self, 'loggingLevel'):
-            logger.setLevel(self.loggingLevel)
-
-    # bug 12784
-    def test_filter_nan(self):
-        self.run_thread('filternan')
-        self.assertFalse(numpy.isnan(ui.get_fit_results().statval))
+def test_filter_nan(run_thread, clean_astro_ui):
+    run_thread('filternan')
+    assert not numpy.isnan(ui.get_fit_results().statval)

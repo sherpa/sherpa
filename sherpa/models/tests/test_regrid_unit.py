@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2017, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1091,3 +1091,12 @@ def test_wrong_kwargs():
         d.eval_model(mdl.regrid(requested, fubar='wrong_kwargs'))
 
     assert "unknown keyword argument: 'fubar'" in str(excinfo.value)
+
+
+def test_interp_method_is_callable():
+    """Check that method is callable."""
+    rmdl = ModelDomainRegridder1D()
+    with pytest.raises(TypeError) as exc:
+        rmdl.method = True
+
+    assert str(exc.value) == "method argument 'True' is not callable"

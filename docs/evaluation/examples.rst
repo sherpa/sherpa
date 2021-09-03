@@ -149,15 +149,18 @@ is used to show the grid used by
 
 .. _model_evaluate_example_pha:
 
-Handling PHA datasets
-=====================
+X-ray data (:py:mod:`~sherpa.astro.data.DataPHA`)
+=================================================
 
-:term:`PHA` data is more complicated than other data types in Sherpa because
-of the need to convert between the units used by the model (energy
-or wavelength) and the units of the data (channel). As a user you
-will generally be thinking in keV or Angstroms, but the
-:py:class:`~sherpa.astro.data.DataPHA` class has to convert to
-channel units internally.
+:term:`PHA` data is more complicated than other data types in Sherpa
+because of the need to convert between the units used by the model
+(energy or wavelength) and the units of the data (channel). As a user
+you will generally be thinking in keV or Angstroms, but the
+:py:class:`~sherpa.astro.data.DataPHA` class has to convert to channel
+units internally. The :term:`PHA` data format is mainly used for
+astronomical X-ray observatories, such as `Chandra
+<https://cxc.harvard.edu/>`_, `XMM-Newton
+<https://sci.esa.int/web/xmm-newton>`_ or about a dozen other missions.
 
 First we will load in a PHA dataset, along with its response
 files (:term:`ARF` and :term:`RMF`), and have a look at how we can
@@ -220,11 +223,13 @@ to ensure we only group the data within this range::
    >>> pha.group_counts(20, tabStops=tabs)
 
 The standard :doc:`Sherpa plotting <../plots/index>` setup can
-be used to display the data, which has the advantage of picking
-up the filtering, grouping, and analysis setting::
+be used to display the data. However we
+have a PHA-specific class, :py:class:`~sherpa.astro.plot.DataPHAPlot`,
+which has better support for PHA data, as
+:ref:`discussed below <examples_pha_plot_options>`::
 
-   >>> from sherpa.plot import DataPlot
-   >>> dplot = DataPlot()
+   >>> from sherpa.astro.plot import DataPHAPlot
+   >>> dplot = DataPHAPlot()
    >>> dplot.prepare(pha)
    >>> dplot.plot(xlog=True, ylog=True)
 
@@ -283,7 +288,7 @@ show they match::
 
 .. image:: ../_static/evaluation/pha_data_compare.png
 
-As mentioned, the :py:class:`~sherpa.plot.DataPlot` class
+As mentioned, the :py:class:`~sherpa.astro.plot.DataPHAPlot` class
 handles the units for you. Switching the analysis setting
 to wavelength will create a plot in Angstroms::
 
@@ -292,9 +297,18 @@ to wavelength will create a plot in Angstroms::
    1544.0122577477066
    >>> wplot = DataPlot()
    >>> wplot.prepare(pha)
-   >>> wplot.plot()
+   >>> wplot.plot(linestyle='solid', xlog=True, ylog=True)
 
 .. image:: ../_static/evaluation/pha_data_wave.png
+
+.. _examples_pha_plot_options:
+
+.. note::
+   By setting the ``linestyle`` option we get, along with a point
+   at the center of each group, a histogram-style line is drawn
+   indicating each group. Note that this is the major difference
+   to the :py:class:`sherpa.plot.DataPlot` class, which would
+   just draw a line connecting the points.
 
 For now we want to make sure we complete our analysis in
 energy units::
@@ -437,8 +451,7 @@ attributes of the
 :py:class:`~sherpa.astro.data.DataRMF` object returned by
 :py:meth:`~sherpa.astro.data.DataPHA.get_rmf`, and we can
 group them as we did earlier (except for chosing the
-``pha._min`` and ``pha._max`` functions for defining the
-bounds)::
+``min`` and ``max`` labels for defining the bounds)::
 
    >>> rmf = pha.get_rmf()
    >>> rmf.e_min.size, rmf.e_max.size
@@ -501,15 +514,11 @@ consider)::
 
 We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
 which should make the predicted counts a lot more believable!
-We can display the data and model together, this time using
-the :py:class:`~sherpa.plot.ModelPlot` class (since the
-:py:class:`~sherpa.astro.plot.ModelHistogram` class used
-earlier doesn't group the model to match the data)::
+We can display the data and model together::
 
-   >>> from sherpa.plot ModelPlot
    >>> dplot.prepare(pha)
    >>> dplot.plot(xlog=True)
-   >>> mplot2 = ModelPlot()
+   >>> mplot2 = ModelHistogram()
    >>> mplot2.prepare(pha, full)
    >>> mplot2.overplot()
 

@@ -93,6 +93,7 @@ The last version of Sherpa compatible with Python 2.7 was the
 
    SherpaQuickStart
    NotebookSupport
+   ExamplePlots
 
 .. toctree::
    :maxdepth: 2

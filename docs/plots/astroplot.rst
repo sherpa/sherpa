@@ -11,31 +11,29 @@ The sherpa.astro.plot module
    .. autosummary::
       :toctree: api
 
-      ChisqrPlot
-      BkgChisqrPlot
-      DataPlot
-      BkgDataPlot
-      DelchiPlot
-      BkgDelchiPlot
-      FitPlot
-      BkgFitPlot
-      HistogramPlot
-      ARFPlot
+      DataPHAPlot
       ModelPHAHistogram
       ModelHistogram
+      SourcePlot
+      ComponentModelPlot
+      ComponentSourcePlot
+      ARFPlot
+      BkgDataPlot
       BkgModelPHAHistogram
       BkgModelHistogram
-      OrderPlot
-      SourcePlot
-      BkgSourcePlot
-      ModelPlot
-      RatioPlot
-      BkgRatioPlot
-      ResidPlot
+      BkgFitPlot
+      BkgDelchiPlot
       BkgResidPlot
+      BkgRatioPlot
+      BkgChisqrPlot
+      BkgSourcePlot
+      OrderPlot
+      FluxHistogram
+      EnergyFluxHistogram
+      PhotonFluxHistogram
 
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::  ChisqrPlot BkgChisqrPlot DataPlot BkgDataPlot DelchiPlot BkgDelchiPlot FitPlot BkgFitPlot HistogramPlot ARFPlot ModelPHAHistogram ModelHistogram BkgModelPHAHistogram BkgModelHistogram OrderPlot SourcePlot BkgSourcePlot ModelPlot RatioPlot BkgRatioPlot ResidPlot BkgResidPlot
+.. inheritance-diagram::  DataPHAPlot ModelPHAHistogram ModelHistogram SourcePlot ComponentModelPlot ComponentSourcePlot ARFPlot BkgDataPlot BkgModelPHAHistogram BkgModelHistogram BkgFitPlot BkgDelchiPlot BkgResidPlot BkgRatioPlot BkgChisqrPlot BkgSourcePlot OrderPlot FluxHistogram EnergyFluxHistogram PhotonFluxHistogram
    :parts: 1

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -35,14 +36,17 @@ from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
+from sherpa.astro import hc
 
 warning = logging.getLogger(__name__).warning
 
-__all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
-           'ComponentSourcePlot', 'ARFPlot', 'BkgDataPlot',
-           'BkgFitPlot', 'BkgSourcePlot', 'BkgDelchiPlot', 'BkgResidPlot',
-           'BkgRatioPlot', 'BkgChisqrPlot',
-           'OrderPlot', 'ModelHistogram', 'BkgModelHistogram',
+__all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
+           'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'ARFPlot',
+           'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
+           'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
+           'BkgChisqrPlot', 'BkgSourcePlot',
+           'OrderPlot',
            'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
 
 
@@ -50,7 +54,7 @@ __all__ = ('DataPHAPlot', 'SourcePlot', 'ComponentModelPlot',
 _tol = np.finfo(np.float32).eps
 
 
-def _check_hist_bins(plot):
+def _check_hist_bins(xlo, xhi):
     """Ensure lo/hi edges that are "close" are merged.
 
     Ensure that "close-enough" bin edges use the same value.  We do
@@ -61,25 +65,49 @@ def _check_hist_bins(plot):
 
     Parameters
     ----------
-    plot
-        The plot structure, which must have xlo and xhi attributes.
+    xlo, xhi : array
+        Lower and upper bin boundaries. Typically, ``xlo`` will contain the
+        lower boundary and ``xhi`` the upper boundary, but this function can
+        deal with situations where that is reversed. Both arrays have to be
+        monotonically increasing or decreasing.
+
+    Returns
+    -------
+    xlo, xhi : array
+        xlo and xhi with values that were very close (within numerical
+        tolerance) before changed such that they now match exactly.
 
     Notes
     -----
     Note that this holds even when plotting wavelength values, who
     have xlo/xhi in decreasing order, since the lo/hi values still
     hold.
-
     """
+    if len(xlo) != len(xhi):
+        # Not a Sherpa specific error, because this is more for developers.
+        raise ValueError('Input arrays must have same length.')
+    # Nothing to compare if input arrays are empty.
+    if len(xlo) == 0:
+        return xlo, xhi
 
     # Technically idx should be 0 or 1, with no -1 values. We
     # do not enforce this. What we do is to take all bins that
     # appear similar (sao_fcmp==0) and set the xlo[i+1] bin
     # to the xhi[i] value.
     #
-    equal = sao_fcmp(plot.xlo[1:], plot.xhi[:-1], _tol)
+    # Deal with xhi <-> xlo switches. Those can occor when converting
+    # from energy to wavelength.
+    # Deal with reversed order. Can happen when converting from energy
+    # to wavelength, or if input PHA is not ordered in increasing energy.
+    # But is both are happening at the same time, need to switch twice, which
+    # is a no-op. So, we get to use the elusive Python XOR operator.
+    if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
+        xlo, xhi = xhi, xlo
+    equal = sao_fcmp(xlo[1:], xhi[:-1], _tol)
     idx, = np.where(equal == 0)
-    plot.xlo[idx + 1] = plot.xhi[idx]
+    xlo[idx + 1] = xhi[idx]
+
+    return xlo, xhi
 
 
 def to_latex(txt):
@@ -131,10 +159,10 @@ class DataPHAPlot(sherpa.plot.DataHistogramPlot):
         self.xlo = data.apply_filter(elo, data._min)
         self.xhi = data.apply_filter(ehi, data._max)
         if data.units == 'wavelength':
-            self.xlo = data._hc / self.xlo
-            self.xhi = data._hc / self.xhi
+            self.xlo = hc / self.xlo
+            self.xhi = hc / self.xhi
 
-        _check_hist_bins(self)
+        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
 
 
 class ModelPHAHistogram(HistogramPlot):
@@ -167,10 +195,10 @@ class ModelPHAHistogram(HistogramPlot):
         self.xlo = data.apply_filter(elo, data._min)
         self.xhi = data.apply_filter(ehi, data._max)
         if data.units == 'wavelength':
-            self.xlo = data._hc / self.xlo
-            self.xhi = data._hc / self.xhi
+            self.xlo = hc / self.xlo
+            self.xhi = hc / self.xhi
 
-        _check_hist_bins(self)
+        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
 
 
 class ModelHistogram(ModelPHAHistogram):
@@ -242,9 +270,17 @@ class SourcePlot(HistogramPlot):
             self.units = "energy"
 
         self.xlabel = data.get_xlabel()
-        self.title = 'Source Model of %s' % data.name
+        self.title = f'Source Model of {data.name}'
         self.xlo, self.xhi = data._get_indep(filter=False)
+
+        # Why do we not apply the mask at the end of prepare?
+        #
         self.mask = filter_bins((lo,), (hi,), (self.xlo,))
+
+        # The source model is assumed to not contain an instrument model,
+        # and so it evaluates the expected number of photons/cm^2/s in
+        # each bin (or it can be thought of as a 1 second exposure).
+        #
         self.y = src(self.xlo, self.xhi)
         prefix_quant = 'E'
         quant = 'keV'
@@ -262,23 +298,21 @@ class SourcePlot(HistogramPlot):
 
         sqr = to_latex('^2')
 
-        self.xlabel = '%s (%s)' % (self.units.capitalize(), quant)
-        self.ylabel = '%s  Photons/sec/cm' + sqr + '%s'
+        self.xlabel = f'{self.units.capitalize()} ({quant})'
+        self.ylabel = f'%s  Photons/sec/cm{sqr}%s'
 
         if data.plot_fac == 0:
             self.y /= xmid
-            self.ylabel = self.ylabel % ('f(%s)' % prefix_quant,
-                                         '/%s ' % quant)
+            self.ylabel = self.ylabel % (f'f({prefix_quant})',
+                                         f'/{quant} ')
 
         elif data.plot_fac == 1:
-            self.ylabel = self.ylabel % ('%s f(%s)' % (prefix_quant,
-                                                       prefix_quant), '')
+            self.ylabel = self.ylabel % (f'{prefix_quant} f({prefix_quant})', '')
 
         elif data.plot_fac == 2:
             self.y *= xmid
-            self.ylabel = self.ylabel % ('%s%s f(%s)' % (prefix_quant, sqr,
-                                                         prefix_quant),
-                                         ' %s ' % quant)
+            self.ylabel = self.ylabel % (f'{prefix_quant}{sqr} f({prefix_quant})',
+                                         f' {quant} ')
         else:
             raise PlotErr('plotfac', 'Source', data.plot_fac)
 
@@ -386,8 +420,8 @@ class ARFPlot(HistogramPlot):
                 raise PlotErr('notpha', data.name)
             if data.units == "wavelength":
                 self.xlabel = 'Wavelength (Angstrom)'
-                self.xlo = data._hc / self.xlo
-                self.xhi = data._hc / self.xhi
+                self.xlo = hc / self.xlo
+                self.xhi = hc / self.xhi
 
 
 class BkgDataPlot(DataPHAPlot):
@@ -506,8 +540,8 @@ class OrderPlot(ModelHistogram):
                 self.colors.append(top_color)
                 top_color = hex(int(top_color, 16) - jump)
 
-        if not self.use_default_colors and len(colors) != len(orders):
-            raise PlotErr('ordercolors', len(orders), len(colors))
+        if not self.use_default_colors and len(self.colors) != len(self.orders):
+            raise PlotErr('ordercolors', len(self.orders), len(self.colors))
 
         old_filter = parse_expr(data.get_filter())
         old_group = data.grouped
@@ -529,14 +563,16 @@ class OrderPlot(ModelHistogram):
                 xlo = data.apply_filter(elo, data._min)
                 xhi = data.apply_filter(ehi, data._max)
                 if data.units == 'wavelength':
-                    xlo = data._hc / xlo
-                    xhi = data._hc / xhi
+                    xlo = hc / xlo
+                    xhi = hc / xhi
             else:
                 xhi = xlo + 1.
 
             for order in self.orders:
                 self.xlo.append(xlo)
                 self.xhi.append(xhi)
+                # QUS: why check that response_ids > 2 and not 1 here?
+                #
                 if len(data.response_ids) > 2:
                     if order < 1 or order > len(model.rhs.orders):
                         raise PlotErr('notorder', order)
@@ -607,16 +643,16 @@ class FluxHistogram(ModelHistogram):
             flux = array2string(asarray(self.flux), separator=',',
                                 precision=4, suppress_small=False)
 
-        return '\n'.join(['modelvals = {}'.format(vals),
-                          'clipped = {}'.format(clip),
-                          'flux = {}'.format(flux),
+        return '\n'.join([f'modelvals = {vals}',
+                          f'clipped = {clip}',
+                          f'flux = {flux}',
                           ModelHistogram.__str__(self)])
 
     def prepare(self, fluxes, bins):
         """Define the histogram plot.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fluxes : numpy array
             The data, stored in a niter by (npar + 2) matrix, where
             each row is an iteration, the first column is the flux for
@@ -645,8 +681,7 @@ class EnergyFluxHistogram(FluxHistogram):
     def __init__(self):
         FluxHistogram.__init__(self)
         self.title = "Energy flux distribution"
-        self.xlabel = "Energy flux (ergs cm{} sec{})".format(
-            to_latex('^{-2}'), to_latex('^{-1}'))
+        self.xlabel = f"Energy flux (ergs cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
         self.ylabel = "Frequency"
 
 
@@ -656,6 +691,5 @@ class PhotonFluxHistogram(FluxHistogram):
     def __init__(self):
         FluxHistogram.__init__(self)
         self.title = "Photon flux distribution"
-        self.xlabel = "Photon flux (Photons cm{} sec{})".format(
-            to_latex('^{-2}'), to_latex('^{-1}'))
+        self.xlabel = f"Photon flux (Photons cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
         self.ylabel = "Frequency"

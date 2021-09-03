@@ -82,16 +82,31 @@ backend.init()
 
 plotter = backend
 
-__all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
-           'DataPlot', 'DataHistogramPlot', 'DataContour', 'DelchiPlot', 'ComponentModelPlot',
-           'ModelPlot', 'ModelContour', 'FitPlot', 'FitContour',
-           'ResidPlot', 'ResidContour', 'RatioPlot', 'RatioContour',
-           'IntervalProjection', 'IntervalUncertainty', 'ChisqrPlot',
-           'RegionProjection', 'RegionUncertainty', 'ComponentSourcePlot',
-           'PSFPlot', 'PSFContour', 'begin', 'end', 'exceptions', 'backend',
-           'SourcePlot', 'SourceContour', 'Histogram',
-           'HistogramPlot', 'ModelHistogramPlot', 'SourceHistogramPlot',
-           'plotter')
+__all__ = ('Plot', 'Contour', 'Point', 'Histogram',
+           'HistogramPlot', 'DataHistogramPlot',
+           'ModelHistogramPlot', 'SourceHistogramPlot',
+           'PDFPlot', 'CDFPlot', 'LRHistogram',
+           'SplitPlot', 'JointPlot',
+           'DataPlot', 'TracePlot', 'ScatterPlot',
+           'PSFKernelPlot',
+           'DataContour', 'PSFKernelContour',
+           'ModelPlot', 'ComponentModelPlot',
+           'ComponentModelHistogramPlot', 'ComponentTemplateModelPlot',
+           'SourcePlot', 'ComponentSourcePlot',
+           'ComponentSourceHistogramPlot', 'ComponentTemplateSourcePlot',
+           'PSFPlot',
+           'ModelContour', 'PSFContour', 'SourceContour',
+           'FitPlot',
+           'FitContour',
+           'DelchiPlot', 'ChisqrPlot', 'ResidPlot',
+           'ResidContour',
+           'RatioPlot',
+           'RatioContour',
+           'Confidence1D', 'Confidence2D',
+           'IntervalProjection', 'IntervalUncertainty',
+           'RegionProjection', 'RegionUncertainty',
+           'begin', 'end', 'exceptions', 'backend', 'plotter')
+
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 

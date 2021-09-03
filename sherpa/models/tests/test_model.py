@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,10 +19,16 @@
 #
 
 from collections import namedtuple
-import hashlib
 import logging
 import operator
 import warnings
+
+# Repeat the logic from sherpa/models/model.py
+#
+try:
+    from hashlib import md5 as hashfunc
+except ImportError:
+    from hashlib import sha256 as hashfunc
 
 import numpy
 
@@ -32,7 +39,8 @@ from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
-from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D
+from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D, Scale1D, \
+    Integrate1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -623,6 +631,106 @@ def test_constant_show(value, name, expected):
     assert m.name == expected
 
 
+def test_integrate1d_show_no_model():
+    """Check Integrate1D show"""
+
+    imdl = Integrate1D()
+    out = str(imdl).split('\n')
+    assert out[0] == 'integrate1d'
+    assert out[3].strip().startswith('integrate1d.epsabs frozen ')
+    assert out[4].strip().startswith('integrate1d.epsrel frozen ')
+    assert out[5].strip().startswith('integrate1d.maxeval frozen ')
+    assert len(out) == 6
+
+
+def test_integrate1d_show_model():
+    """Check Integrate1D show when applied to a model
+
+    Note that we do not show the integrate1d settings in this version.
+    """
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+
+    out = str(mdl).split('\n')
+    assert out[0] == 'integrate1d(scale1d)'
+    assert out[3].strip().startswith('scale1d.c0   thawed ')
+    assert len(out) == 4
+
+
+def test_integrate1d_fail_not_integrated():
+    """Check Integrate1D requires an integrated grid"""
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+    with pytest.raises(ModelErr) as exc:
+        mdl([1.1, 1.2, 1.3, 1.4])
+
+    assert str(exc.value).startswith('A non-overlapping integrated grid is required ')
+
+
+def test_integrate1d_basic(caplog):
+    """Check Integrate1D works
+
+    There is no documentation on how it's supposed to work, so
+    this is more a "this currently works, let's hope it continues
+    to do so" approach than a test from first principles.
+    """
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+    bmdl.c0 = 4
+
+    xlo = numpy.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
+    xhi = numpy.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
+
+    # I don't know what the rule is for creating this warning, but
+    # check we see it.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        y = mdl(xlo, xhi)
+
+    expected = 4 * numpy.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
+    assert y == pytest.approx(expected)
+
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.models.basic'
+    assert lvl == logging.WARNING
+    assert msg.startswith('Gauss-Kronrod integration failed with tolerance ')
+
+
+def test_integrate1d_basic_epsabs(caplog):
+    """Check Integrate1D works
+
+    This time adjust epsabs so that we don't get the Gauss-Kronrod
+    warning.
+    """
+
+    imdl = Integrate1D()
+    bmdl = Scale1D()
+    mdl = imdl(bmdl)
+    bmdl.c0 = 4
+    imdl.epsabs = numpy.finfo(numpy.float32).eps
+
+    xlo = numpy.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
+    xhi = numpy.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
+
+    # I don't know what the rule is for creating this warning, but
+    # check we see it.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        y = mdl(xlo, xhi)
+
+    expected = 4 * numpy.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
+    assert y == pytest.approx(expected)
+
+    assert len(caplog.records) == 0
+
+
 def check_cache(mdl, expected, x, xhi=None):
     """Check the cache contents.
 
@@ -642,7 +750,7 @@ def check_cache(mdl, expected, x, xhi=None):
         data.append(xhi.tobytes())
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -845,6 +953,7 @@ class DoNotUseModel(Model):
     # We need this for modelCacher1d
     _use_caching = True
     _cache = {}
+    _cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
     _queue = ['']
 
     @modelCacher1d
@@ -879,7 +988,7 @@ def test_cache_integrate_fall_through_no_integrate():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -906,7 +1015,7 @@ def test_cache_integrate_fall_through_integrate_true():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
@@ -933,6 +1042,185 @@ def test_cache_integrate_fall_through_integrate_false():
             x.tobytes()]
 
     token = b''.join(data)
-    digest = hashlib.sha256(token).digest()
+    digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
+
+
+def test_cache_status_single(caplog):
+    """Check cache_status for a single model."""
+
+    p = Polynom1D()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        p.cache_status()
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == 'sherpa.models.model'
+    assert lvl == logging.INFO
+    toks = msg.split()
+    assert toks[0] == 'polynom1d'
+    assert toks[1] == 'size:'
+    assert toks[2] == '1'
+    assert toks[3] == 'hits:'
+    assert toks[4] == '0'
+    assert toks[5] == 'misses:'
+    assert toks[6] == '0'
+    assert toks[7] == 'check:'
+    assert toks[8] == '0'
+    assert len(toks) == 9
+
+
+def test_cache_status_multiple(caplog):
+    """Check cache_status for a multi-component model.
+
+    Unlike test_cache_syayus_single we also have evaluated the model
+    so we can check that the cache status has changed.
+    """
+
+    # The model expression includes an ArithmeticConstant model (the
+    # term 2) which does not have a cache and so is ignored by
+    # cache_status.
+    #
+    p = Polynom1D()
+    b = Box1D()
+    c = Const1D()
+    mdl = c * (2 * p + b)
+
+    # One model is not cached
+    b._use_caching = False
+
+    mdl([0.1, 0.2, 0.3])
+    mdl([0.1, 0.2, 0.3])
+    mdl([0.1, 0.2, 0.3, 0.4])
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.cache_status()
+
+    assert len(caplog.records) == 3
+
+    tokens = []
+    for lname, lvl, msg in caplog.record_tuples:
+        assert lname == 'sherpa.models.model'
+        assert lvl == logging.INFO
+        toks = msg.split()
+        assert len(toks) == 9
+        assert toks[1] == 'size:'
+        assert toks[2] == '1'
+        assert toks[3] == 'hits:'
+        assert toks[5] == 'misses:'
+        assert toks[7] == 'check:'
+        assert toks[8] == '3'
+
+        tokens.append(toks)
+
+    toks = tokens[0]
+    assert toks[0] == 'const1d'
+    assert toks[4] == '1'
+    assert toks[6] == '2'
+
+    toks = tokens[1]
+    assert toks[0] == 'polynom1d'
+    assert toks[4] == '1'
+    assert toks[6] == '2'
+
+    toks = tokens[2]
+    assert toks[0] == 'box1d'
+    assert toks[4] == '0'
+    assert toks[6] == '0'
+
+
+def test_cache_clear_single(caplog):
+    """Check cache_clear for a single model."""
+
+    p = Polynom1D()
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    p([1, 2, 3])
+    p([1, 2, 3])
+    p([1, 2, 3, 4])
+
+    assert len(p._cache) == 1
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    p.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+
+def test_cache_clear_multiple(caplog):
+    """Check cache_clear for a combined model."""
+
+    p = Polynom1D()
+    b = Box1D()
+    c = Const1D()
+    mdl = c * (p + 2 * b)
+
+    # Ensure one component doesn't use the cache
+    c._use_caching = False
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    assert len(b._cache) == 0
+    assert b._cache_ctr['check'] == 0
+    assert b._cache_ctr['hits'] == 0
+    assert b._cache_ctr['misses'] == 0
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 0
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
+
+    mdl([1, 2, 3])
+    mdl([1, 2, 3])
+    mdl([1, 2, 3, 4])
+
+    assert len(p._cache) == 1
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    assert len(b._cache) == 1
+    assert b._cache_ctr['check'] == 3
+    assert b._cache_ctr['hits'] == 1
+    assert b._cache_ctr['misses'] == 2
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 3
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0
+
+    mdl.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    assert len(b._cache) == 0
+    assert b._cache_ctr['check'] == 0
+    assert b._cache_ctr['hits'] == 0
+    assert b._cache_ctr['misses'] == 0
+
+    assert len(c._cache) == 0
+    assert c._cache_ctr['check'] == 0
+    assert c._cache_ctr['hits'] == 0
+    assert c._cache_ctr['misses'] == 0

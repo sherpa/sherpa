@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -68,7 +69,7 @@ class Strategy:
         arg[-1] = self.func(arg[:-1])
         tmp = numpy.empty(self.npar + 2)
         tmp[1:] = arg[:]
-        if numpy.float_(numpy.finfo(numpy.float_).max) == arg[-1]:
+        if numpy.finfo(numpy.float_).max == arg[-1]:
             tmp[0] = 0
         else:
             tmp[0] = 1

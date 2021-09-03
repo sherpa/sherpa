@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,10 @@ import signal
 
 from functools import wraps
 
+import numpy as np
+
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, any, int
+    ones_like, isnan, isinf, any
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -48,11 +50,9 @@ def evaluates_model(func):
     """
     @wraps(func)
     def run(fit, *args, **kwargs):
-        if 'cache' in kwargs:
-            fit.model.startup(kwargs['cache'])
-            kwargs.pop('cache', None)
-        else:
-            fit.model.startup(True)
+
+        cache = kwargs.pop('cache', True)
+        fit.model.startup(cache=cache)
         result = func(fit, *args, **kwargs)
         fit.model.teardown()
         return result
@@ -724,7 +724,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Keep record of current and previous statistics;
         # when these are within some tolerace, Primini's method
         # is done.
-        previous_stat = float32(finfo(float32).max)
+        previous_stat = np.finfo(np.float32).max
         current_stat = statfunc(pars)[0]
         nfev = 0
         iters = 0
@@ -1256,7 +1256,7 @@ class Fit(NoNewAttributesAfterInit):
 
         # check if any parameter values are at boundaries,
         # and warn user.
-        tol = finfo(float32).eps
+        tol = np.finfo(np.float32).eps
         param_warnings = ""
         for par in self.model.pars:
             if not par.frozen:

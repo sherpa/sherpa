@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1115,7 +1115,7 @@ def test_grouped_pha_all_bad_channel(clean_astro_ui):
 @pytest.mark.parametrize("chantype,exp_counts,exp_xlo,exp_xhi,lo1,hi1,lo2,hi2",
                          [("channel", 0.8, 1.0, 6, 0, 7, 2, 6),
                           ("energy", 8.0, 0.1, 0.6, 0.05, 1.0, 0.2, 0.8),
-                          ("wave", 0.03871461, 123.9841874, 20.66403123, 20, 90, 30, 85)])
+                          ("wave", 0.03871461, 20.66403123, 123.9841874, 20, 90, 30, 85)])
 def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xlo, exp_xhi, lo1, hi1, lo2, hi2, clean_astro_ui):
     """Helpdesk ticket: low-count data had no valid bins after grouping #790
 
@@ -1196,7 +1196,7 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
     name, lvl, msg = caplog.record_tuples[0]
     assert name == 'sherpa.astro.data'
     assert lvl == logging.INFO
-    assert msg.startswith('Skipping dataset /')
+    assert msg.startswith('Skipping dataset ')
     assert msg.endswith('/3c273_bg.pi: mask excludes all data')
 
 

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -202,13 +203,13 @@ class Walk():
         niter = self.niter
         nelem = niter+1
 
-        proposals = np.zeros((nelem, npars), dtype=np.float)
+        proposals = np.zeros((nelem, npars), dtype=float)
         proposals[0] = pars.copy()
 
-        stats = np.zeros(nelem, dtype=np.float)
+        stats = np.zeros(nelem, dtype=float)
         stats[0] = stat
 
-        acceptflag = np.zeros(nelem, dtype=np.bool)
+        acceptflag = np.zeros(nelem, dtype=bool)
 
         # Iterations
         # - no burn in at present

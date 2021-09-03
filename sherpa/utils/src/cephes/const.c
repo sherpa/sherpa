@@ -89,14 +89,14 @@ double LOGSQ2 =  3.46573590279972654709E-1;    /* log(2)/2 */
 double THPIO4 =  2.35619449019234492885;       /* 3*pi/4 */
 double TWOOPI =  6.36619772367581343075535E-1; /* 2/pi */
 #ifdef INFINITIES
-double INFINITY = strtod("INF");  /* 99e999; */
-#else
-double INFINITY =  1.79769313486231570815E308;    /* 2**1024*(1-MACHEP) */
+#ifndef INFINITY
+double INFINITY = 1.0/0.0;
+#endif
 #endif
 #ifdef NANS
-double NAN = strtod("NAN");
-#else
-double NAN = 0.0;
+#ifndef NAN
+double NAN = 1.0/0.0 - 1.0/0.0;
+#endif
 #endif
 #ifdef MINUSZERO
 double NEGZERO = -0.0;

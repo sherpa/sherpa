@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -101,7 +101,7 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType tmp = TWOPI*(x-p[1])/p[0];
+    DataType tmp = TWOPI*(x-p[1])/p[0];
     val = p[2]*COS(tmp);
     return EXIT_SUCCESS;
 
@@ -117,8 +117,8 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType tmp1 = TWOPI*(xlo-p[1])/p[0];
-    register DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
+    DataType tmp1 = TWOPI*(xlo-p[1])/p[0];
+    DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
     val = p[2]*p[0]*(SIN(tmp2)-SIN(tmp1))/TWOPI;
     return EXIT_SUCCESS;
 
@@ -192,7 +192,7 @@ namespace sherpa { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline DataType _erf_sub1( const ConstArrayType& p, DataType x )
   {
-    register DataType arg = ( x - p[1] ) / p[2];
+    DataType arg = ( x - p[1] ) / p[2];
     return arg * ERF( arg ) + EXP( -arg*arg )
       / constants::sqrt_pi< DataType >();
   }
@@ -201,7 +201,7 @@ namespace sherpa { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline DataType _erf_sub2( const ConstArrayType& p, DataType x )
   {
-    register DataType arg = ( x - p[1] ) / p[2];
+    DataType arg = ( x - p[1] ) / p[2];
     if ( x < p[1] )  arg *= -1.0;
     return arg;
   }
@@ -271,7 +271,7 @@ namespace sherpa { namespace models {
   template <typename DataType, typename ConstArrayType>
   inline DataType _erfc_sub1( const ConstArrayType& p, DataType x )
   {
-    register DataType arg = ( x - p[1] ) / p[2];
+    DataType arg = ( x - p[1] ) / p[2];
     return arg * ERFC( arg ) - EXP( -arg*arg )
       / constants::sqrt_pi< DataType >();
   }
@@ -328,8 +328,8 @@ namespace sherpa { namespace models {
   {
 
     if ( p[1] != 0.0 ) {
-      register DataType y2 = p[1]*(xhi-p[0]);
-      register DataType y1 = p[1]*(xlo-p[0]);
+      DataType y2 = p[1]*(xhi-p[0]);
+      DataType y1 = p[1]*(xlo-p[0]);
       val = (p[2]/p[1])*(EXP(y2)-EXP(y1));
       return EXIT_SUCCESS;
     } else {
@@ -357,8 +357,8 @@ namespace sherpa { namespace models {
   {
 
     if ( p[1] != 0.0 ) {
-      register DataType y2 = LOGTEN*p[1]*(xhi-p[0]);
-      register DataType y1 = LOGTEN*p[1]*(xlo-p[0]);
+      DataType y2 = LOGTEN*p[1]*(xhi-p[0]);
+      DataType y1 = LOGTEN*p[1]*(xlo-p[0]);
       val = (p[2]/p[1]/LOGTEN)*(EXP(y2)-EXP(y1));
       return EXIT_SUCCESS;
     } else {
@@ -403,8 +403,8 @@ namespace sherpa { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType z2 = SQRT_GFACTOR * ( xhi - p[1] ) / p[0];
-    register DataType z1 = SQRT_GFACTOR * ( xlo - p[1] ) / p[0];
+    DataType z2 = SQRT_GFACTOR * ( xhi - p[1] ) / p[0];
+    DataType z1 = SQRT_GFACTOR * ( xlo - p[1] ) / p[0];
 
     val =
       p[2] * p[0] * SQRT_PI * ( ERF(z2) - ERF(z1) ) / ( 2. * SQRT_GFACTOR );
@@ -438,8 +438,8 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType y1 = p[1]*(xlo-p[0]);
-    register DataType y2 = p[1]*(xhi-p[0]);
+    DataType y1 = p[1]*(xlo-p[0]);
+    DataType y2 = p[1]*(xhi-p[0]);
 
     if ( y1 > 0.0 && y2 > 0.0 ) {
       val = p[2]*(y2*LOG(y2)-y1*LOG(y1)-y2+y1)/p[1];
@@ -477,8 +477,8 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType y1 = p[1]*(xlo-p[0]);
-    register DataType y2 = p[1]*(xhi-p[0]);
+    DataType y1 = p[1]*(xlo-p[0]);
+    DataType y2 = p[1]*(xhi-p[0]);
 
     if ( y1 > 0.0 && y2 > 0.0 ) {
       val = p[2]*(y2*LOG(y2)-y1*LOG(y1)-y2+y1)/p[1]/LOG(10.0);
@@ -503,7 +503,7 @@ namespace sherpa { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType norm = SQRT(PI/GFACTOR)*p[0];
+    DataType norm = SQRT(PI/GFACTOR)*p[0];
     val = (p[2]/norm)*EXP(-GFACTOR*(x-p[1])*(x-p[1])/p[0]/p[0]);
     return EXIT_SUCCESS;
 
@@ -519,8 +519,8 @@ namespace sherpa { namespace models {
       // val = NAN
       return EXIT_FAILURE;
     else {
-      register DataType z2 = SQRT_GFACTOR*((xhi-p[1])/p[0]);
-      register DataType z1 = SQRT_GFACTOR*((xlo-p[1])/p[0]);
+      DataType z2 = SQRT_GFACTOR*((xhi-p[1])/p[0]);
+      DataType z1 = SQRT_GFACTOR*((xlo-p[1])/p[0]);
       val = (p[2]*(ERF(z2)-ERF(z1))/2.0);
       return EXIT_SUCCESS;
     }
@@ -533,8 +533,8 @@ namespace sherpa { namespace models {
 			    DataType& val )
   {
 
-    register DataType p_zero_fact;
-    register DataType x_fact;
+    DataType p_zero_fact;
+    DataType x_fact;
 
     if( EXIT_SUCCESS != lfactorial(p[0], p_zero_fact)) {
       return EXIT_FAILURE;
@@ -560,8 +560,8 @@ namespace sherpa { namespace models {
   inline int poly1d_point( const ConstArrayType& p, DataType x, DataType& val )
   {
 
-    register DataType xtemp = x - p[9];
-    register DataType retval = p[8];
+    DataType xtemp = x - p[9];
+    DataType retval = p[8];
     int ii;
     for ( ii = 7; ii >= 0; ii--) {
       retval = retval*xtemp + p[ii];
@@ -577,12 +577,12 @@ namespace sherpa { namespace models {
 				DataType xlo, DataType xhi, DataType& val )
   {
 
-    register DataType xtemp1 = xlo - p[9];
-    register DataType xtemp2 = xhi - p[9];
-    register DataType retval = 0.0;
+    DataType xtemp1 = xlo - p[9];
+    DataType xtemp2 = xhi - p[9];
+    DataType retval = 0.0;
     int ii;
     for( ii = 0; ii <= 8; ii++) {
-      register DataType pexp = (DataType)(ii+1);
+      DataType pexp = (DataType)(ii+1);
       retval += p[ii]*(POW(xtemp2,pexp)-POW(xtemp1,pexp))/pexp;
     }
     val = retval;
@@ -634,8 +634,8 @@ namespace sherpa { namespace models {
 	val = p[2] * p[1] * ( LOG(xhi) - LOG(xlo) );
 	return EXIT_SUCCESS;
       } else {
-	register DataType p1 = POW( xlo, 1.0-p[0] ) / (1.0-p[0]);
-	register DataType p2 = POW( xhi, 1.0-p[0] ) / (1.0-p[0]);
+	DataType p1 = POW( xlo, 1.0-p[0] ) / (1.0-p[0]);
+	DataType p2 = POW( xhi, 1.0-p[0] ) / (1.0-p[0]);
 	val = p[2] / POW( p[1], -p[0] ) * ( p2 - p1 );
 	return EXIT_SUCCESS;
       }
@@ -659,7 +659,7 @@ namespace sherpa { namespace models {
 
     if ( p[0] != 0 ) {
 
-      register DataType frac = (x / p[0]);
+      DataType frac = (x / p[0]);
 
       if ( frac > 0.0 ) {
 	val = p[3] * POW( frac, - p[1] - p[2] * LOG10( frac ) );
@@ -681,7 +681,7 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType tmp = TWOPI*(x-p[1])/p[0];
+    DataType tmp = TWOPI*(x-p[1])/p[0];
     val = p[2]*SIN(tmp);
     return EXIT_SUCCESS;
 
@@ -697,8 +697,8 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType tmp1 = TWOPI*(xlo-p[1])/p[0];
-    register DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
+    DataType tmp1 = TWOPI*(xlo-p[1])/p[0];
+    DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
     val = -1.0*p[2]*p[0]*(COS(tmp2)-COS(tmp1))/TWOPI;
     return EXIT_SUCCESS;
 
@@ -732,8 +732,8 @@ namespace sherpa { namespace models {
       return EXIT_FAILURE;
     }
 
-    register DataType tmp1 = POW(xlo-p[0], 1.50);
-    register DataType tmp2 = POW(xhi-p[0], 1.50);
+    DataType tmp1 = POW(xlo-p[0], 1.50);
+    DataType tmp2 = POW(xhi-p[0], 1.50);
     val = 2.0*p[1]*(tmp2-tmp1)/3.0;
     return EXIT_SUCCESS;
 
@@ -824,7 +824,7 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType tmp = TWOPI*(x-p[1])/p[0];
+    DataType tmp = TWOPI*(x-p[1])/p[0];
     val = p[2]*TAN(tmp);
     return EXIT_SUCCESS;
 
@@ -840,8 +840,8 @@ namespace sherpa { namespace models {
       // val = NAN;
       return EXIT_FAILURE;
     }
-    register DataType tmp1 = TWOPI*(xlo-p[1])/p[0];
-    register DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
+    DataType tmp1 = TWOPI*(xlo-p[1])/p[0];
+    DataType tmp2 = TWOPI*(xhi-p[1])/p[0];
     val = -1.0*p[2]*p[0]*(LOG(COS(tmp2))-LOG(COS(tmp1)))/TWOPI;
     return EXIT_SUCCESS;
 
@@ -875,8 +875,8 @@ namespace sherpa { namespace models {
       val = 0.0;
       return EXIT_SUCCESS;
     } else {
-      register DataType x0frac = (std::min(x0hi,p[1])-std::max(x0lo,p[0]))/(x0hi-x0lo);
-      register DataType x1frac = (std::min(x1hi,p[3])-std::max(x1lo,p[2]))/(x1hi-x1lo);
+      DataType x0frac = (std::min(x0hi,p[1])-std::max(x0lo,p[0]))/(x0hi-x0lo);
+      DataType x1frac = (std::min(x1hi,p[3])-std::max(x1lo,p[2]))/(x1hi-x1lo);
       val = p[4]*x0frac*x1frac;
       return EXIT_SUCCESS;
     }
@@ -945,7 +945,7 @@ namespace sherpa { namespace models {
 			    DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r = 0.0;
+    DataType r = 0.0;
 
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
@@ -963,7 +963,7 @@ namespace sherpa { namespace models {
   inline int sigmagauss2d_point( const ConstArrayType& p,
 				 DataType x0, DataType x1, DataType& val ) {
 
-    register DataType r = 0.0;
+    DataType r = 0.0;
 
     if ( 0 == p[0] || 0 == p[1] )
       return EXIT_FAILURE;
@@ -1041,7 +1041,7 @@ namespace sherpa { namespace models {
 			     DataType x0, DataType x1, DataType& val )
   {
 
-    register DataType r = 0.0;
+    DataType r = 0.0;
 
     if( EXIT_SUCCESS != sherpa::utils::radius2(p, x0, x1, r)) {
       return EXIT_FAILURE;
@@ -1049,7 +1049,7 @@ namespace sherpa { namespace models {
     if( p[0] == 0.0 )
       return EXIT_FAILURE;
     else {
-      register DataType norm = (PI/GFACTOR)*p[0]*p[0]*SQRT(1.0 - (p[3]*p[3]));
+      DataType norm = (PI/GFACTOR)*p[0]*p[0]*SQRT(1.0 - (p[3]*p[3]));
       val = (p[5]/norm)*EXP(-r/(p[0]*p[0])*GFACTOR);
       return EXIT_SUCCESS;
     }
@@ -1062,9 +1062,9 @@ namespace sherpa { namespace models {
 			   DataType x0, DataType x1, DataType& val )
   {
 
-    register int ix;
-    register int iy;
-    register DataType retval = 0.0;
+    int ix;
+    int iy;
+    DataType retval = 0.0;
     for ( ix = 0 ; ix < 3 ; ix++ ) {
       for ( iy = 0 ; iy < 3 ; iy++ ) {
 	retval += POW(x0,(DataType)ix)*POW(x1,(DataType)iy)*p[3*ix+iy];
@@ -1082,11 +1082,11 @@ namespace sherpa { namespace models {
 				DataType x1lo, DataType x1hi, DataType& val )
   {
 
-    register int ix;
-    register int iy;
-    register DataType retval = 0.0;
-    register DataType u[3];
-    register DataType v[3];
+    int ix;
+    int iy;
+    DataType retval = 0.0;
+    DataType u[3];
+    DataType v[3];
     u[0] = x0hi - x0lo;
     u[1] = (POW(x0hi,2.0)/2.0) - (POW(x0lo,2.0)/2.0);
     u[2] = (POW(x0hi,3.0)/3.0) - (POW(x0lo,3.0)/3.0);

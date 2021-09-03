@@ -30,11 +30,11 @@ The basic approach to creating a visualization using these classes is:
  - and plot the data with the
    :py:meth:`~sherpa.plot.Plot.plot` or
    :py:meth:`~sherpa.plot.Contour.contour`
-   methods (or the 
+   methods (or the
    :py:meth:`~sherpa.plot.Plot.overplot`,
    and
    :py:meth:`~sherpa.plot.Contour.overcontour` variants).
-   
+
 .. note::
 
    The `sherpa.plot` module also includes error-estimation
@@ -129,10 +129,10 @@ classes:
     (base - line)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       base.c0      thawed           10 -3.40282e+38  3.40282e+38           
-       line.fwhm    thawed           25  1.17549e-38  3.40282e+38           
-       line.pos     thawed           22 -3.40282e+38  3.40282e+38           
-       line.ampl    thawed           10 -3.40282e+38  3.40282e+38           
+       base.c0      thawed           10 -3.40282e+38  3.40282e+38
+       line.fwhm    thawed           25  1.17549e-38  3.40282e+38
+       line.pos     thawed           22 -3.40282e+38  3.40282e+38
+       line.ampl    thawed           10 -3.40282e+38  3.40282e+38
 
 Displaying the model
 --------------------
@@ -142,7 +142,7 @@ With a Sherpa model, we can now use the
 the data plot, the
 :py:meth:`~sherpa.plot.ModelPlot.prepare` method requires
 the data *and* the model:
-   
+
     >>> from sherpa.plot import ModelPlot
     >>> mplot = ModelPlot()
     >>> mplot.prepare(d, mdl)
@@ -270,4 +270,5 @@ Reference/API
 
    plot
    astroplot
-   
+   image
+   utils

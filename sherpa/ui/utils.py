@@ -400,15 +400,17 @@ class Session(NoNewAttributesAfterInit):
             'kernel': 'kernel',
         }
 
-        self._dataimage = sherpa.image.DataImage()
-        self._modelimage = sherpa.image.ModelImage()
-        self._sourceimage = sherpa.image.SourceImage()
-        self._ratioimage = sherpa.image.RatioImage()
-        self._residimage = sherpa.image.ResidImage()
-        self._psfimage = sherpa.image.PSFImage()
-        self._kernelimage = sherpa.image.PSFKernelImage()
-        self._mdlcompimage = sherpa.image.ComponentModelImage()
-        self._srccompimage = sherpa.image.ComponentSourceImage()
+        self._image_types = {
+            'data': sherpa.image.DataImage(),
+            'model': sherpa.image.ModelImage(),
+            'source': sherpa.image.SourceImage(),
+            'ratio': sherpa.image.RatioImage(),
+            'resid': sherpa.image.ResidImage(),
+            'psf': sherpa.image.PSFImage(),
+            'kernel': sherpa.image.PSFKernelImage(),
+            'model_component': sherpa.image.ComponentModelImage(),
+            'source_component': sherpa.image.ComponentSourceImage()
+        }
 
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
@@ -2099,8 +2101,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_stat()).__name__.lower()
 
-    # DOC-TODO: remove the list of supported methods once the
-    # relevant documenation has been updated.
     def set_stat(self, stat):
         """Set the statistical method.
 
@@ -2110,9 +2110,10 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        stat : str
-           The name of the statistic (case is not important). The
-           `list_stats` function returns the list of supported values.
+        stat : str or sherpa.stats.Stat instance
+           When a string, the name of the statistic (case is not
+           important): see `list_stats()` for supported
+           values. Otherwise an instance of the statistic to use.
 
         Raises
         ------
@@ -2150,8 +2151,8 @@ class Session(NoNewAttributesAfterInit):
            Chi-squared with model amplitude variance.
 
         chi2xspecvar
-           Chi-squared with data variance (XSPEC-style,
-           variance = 1.0 if data less than or equal to 0.0).
+           Chi-squared with data variance (XSPEC-style, variance = 1.0
+           if data less than or equal to 0.0).
 
         cstat
            A maximum likelihood function (the XSPEC implementation of
@@ -2159,14 +2160,14 @@ class Session(NoNewAttributesAfterInit):
            for including the background.
 
         wstat
-           A maximum likelihood function which includes
-           the background data as part of the fit (i.e. for
-           when it is not being explicitly modelled)
-           (the XSPEC implementation of the Cash function) [3]_.
+           A maximum likelihood function which includes the background
+           data as part of the fit (i.e. for when it is not being
+           explicitly modelled) (the XSPEC implementation of the Cash
+           function) [3]_.
 
         leastsq
-           The least-squares statisic (the error is not used in
-           this statistic).
+           The least-squares statisic (the error is not used in this
+           statistic).
 
         References
         ----------
@@ -4389,9 +4390,10 @@ class Session(NoNewAttributesAfterInit):
         if not numpy.iterable(d.mask):
             raise sherpa.utils.err.DataErr('nomask', id)
         x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, numpy.int)
-        self.save_arrays(filename, [x, mask], ['X', 'FILTER'],
-                         clobber, sep, comment, linebreak, format)
+        mask = numpy.asarray(d.mask, int)
+        self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
@@ -4468,8 +4470,9 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, string_types, 'filename', 'a string')
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_staterror(id, filter=False)
-        self.save_arrays(filename, [x, err], ['X', 'STAT_ERR'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
@@ -4544,8 +4547,9 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, string_types, 'filename', 'a string')
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_syserror(id, filter=False)
-        self.save_arrays(filename, [x, err], ['X', 'SYS_ERR'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_error(self, id, filename=None, clobber=False, sep=' ',
@@ -4627,8 +4631,9 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, string_types, 'filename', 'a string')
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_error(id, filter=False)
-        self.save_arrays(filename, [x, err], ['X', 'ERR'],
-                         clobber, sep, comment, linebreak, format)
+        self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
+                         clobber=clobber, sep=sep, comment=comment,
+                         linebreak=linebreak, format=format)
 
     def _notice_expr(self, expr=None, **kwargs):
         ids = self.list_data_ids()
@@ -4729,10 +4734,10 @@ class Session(NoNewAttributesAfterInit):
         array([5, 7])
 
         """
+        if len(self._data) == 0:
+            raise IdentifierErr("nodatasets")
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr(lo, **kwargs)
-        if self._data.items() == []:
-            raise IdentifierErr("nodatasets")
         for d in self._data.values():
             d.notice(lo, hi, **kwargs)
 
@@ -4816,8 +4821,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kwargs['ignore'] = True
-        if lo is not None and type(lo) in (str, numpy.string_):
-            return self._notice_expr(lo, **kwargs)
         self.notice(lo, hi, **kwargs)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
@@ -4971,8 +4974,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kwargs['ignore'] = True
-        if lo is not None and type(lo) in (str, numpy.string_):
-            return self._notice_expr_id(ids, lo, **kwargs)
         self.notice_id(ids, lo, hi, **kwargs)
 
     ###########################################################################
@@ -6439,7 +6440,8 @@ class Session(NoNewAttributesAfterInit):
                                                require_floats=False)
 
         if len(names) > len(cols):
-            raise sherpa.utils.err.IOErr('toomanycols')
+            raise sherpa.utils.err.IOErr('wrongnumcols',
+                                         len(cols), len(names))
 
         names = [name.strip().lower() for name in names]
 
@@ -6486,7 +6488,7 @@ class Session(NoNewAttributesAfterInit):
                 tm.ampl.freeze()
                 templates.append(tm)
             else:
-                raise sherpa.utils.err.IOErr('toomanycols', str(tnames), '2')
+                raise sherpa.utils.err.IOErr('wrongnumcols', 2, len(tnames))
 
         assert(len(templates) == parvals.shape[0])
 
@@ -8336,20 +8338,6 @@ class Session(NoNewAttributesAfterInit):
     # Simulation functions
     #
 
-    def _run_pvalue(self, null_model, alt_model, conv_model=None,
-                    id=1, otherids=(), num=500, bins=25, numcores=None):
-        ids, fit = self._get_fit(id, otherids)
-
-        pvalue = sherpa.sim.LikelihoodRatioTest.run
-        results = pvalue(fit, null_model, alt_model, conv_model,
-                         niter=num,
-                         stat=self._current_stat,
-                         method=self._current_method,
-                         numcores=numcores)
-
-        info(results.format())
-        self._pvalue_results = results
-
     def get_pvalue_results(self):
         """Return the data calculated by the last plot_pvalue call.
 
@@ -8515,7 +8503,7 @@ class Session(NoNewAttributesAfterInit):
 
         lrplot = self.get_pvalue_plot(null_model=null_model, alt_model=alt_model,
                                       conv_model=conv_model, id=id, otherids=otherids,
-                                      num=num, bins=25, numcores=numcores,
+                                      num=num, bins=bins, numcores=numcores,
                                       recalc=not replot)
         self._plot(lrplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
@@ -8594,11 +8582,21 @@ class Session(NoNewAttributesAfterInit):
         if alt_model is None:
             raise TypeError("alternative model cannot be None")
 
-        self._run_pvalue(null_model, alt_model, conv_model,
-                         id, otherids, num, bins, numcores)
-        results = self._pvalue_results
-        lrplot.prepare(results.ratios, bins,
-                       num, results.lr, results.ppp)
+        ids, fit = self._get_fit(id, otherids)
+
+        pvalue = sherpa.sim.LikelihoodRatioTest.run
+        results = pvalue(fit, null_model, alt_model,
+                         conv_mdl=conv_model,
+                         stat=self._current_stat,
+                         method=self._current_method,
+                         niter=num,
+                         numcores=numcores)
+
+        info(results.format())
+        self._pvalue_results = results
+
+        lrplot.prepare(ratios=results.ratios, bins=bins,
+                       niter=num, lr=results.lr, ppp=results.ppp)
         return lrplot
 
     #
@@ -10841,7 +10839,6 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None, recalc=True):
         """Return the data used to create the model-component plot.
 
@@ -10894,16 +10891,14 @@ class Session(NoNewAttributesAfterInit):
         >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
         >>> set_source('jet', fmodel)
         >>> fit('jet')
-        >>> fplot = get_model('jet')
+        >>> fplot = get_model_plot('jet')
         >>> plot1 = get_model_component_plot('jet', pl*gal)
         >>> plot2 = get_model_component_plot('jet', gline*gal)
 
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -10982,9 +10977,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
         try:
             d = self.get_data(id)
@@ -12626,8 +12619,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
-    #           but does the astro version support a bkg_id parameter?
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the model for a data set.
@@ -12635,6 +12626,8 @@ class Session(NoNewAttributesAfterInit):
         This function evaluates and plots a component of the model
         expression for a data set, including any instrument response.
         Use `plot_source_component` to display without any response.
+        For PHA data, the response model is automatically added by the
+        routine unless the model contains a response.
 
         Parameters
         ----------
@@ -12693,6 +12686,14 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit('jet')
         >>> plot_model_component('jet', pl, overplot=True)
         >>> plot_model_component('core', pl, overplot=True)
+
+        For PHA data sets the response is automatically added, but it
+        can also be explicitly included, which will create the same
+        plot:
+
+        >>> plot_model_component(pl)
+        >>> rsp = get_response()
+        >>> plot_model_component(rsp(pl))
 
         """
 
@@ -15412,21 +15413,6 @@ class Session(NoNewAttributesAfterInit):
     # Basic imaging
     ###########################################################################
 
-    def _prepare_imageobj(self, id, imageobj, model=None):
-        if(isinstance(imageobj, sherpa.image.ComponentModelImage) or
-                isinstance(imageobj, sherpa.image.ComponentSourceImage)):
-            imageobj.prepare_image(self.get_data(id), model)
-        elif (isinstance(imageobj, sherpa.image.PSFImage) or
-              isinstance(imageobj, sherpa.image.PSFKernelImage)):
-            imageobj.prepare_image(self.get_psf(id), self.get_data(id))
-        elif isinstance(imageobj, sherpa.image.DataImage):
-            imageobj.prepare_image(self.get_data(id))
-        elif isinstance(imageobj, sherpa.image.SourceImage):
-            imageobj.prepare_image(self.get_data(id), self.get_source(id))
-        else:
-            imageobj.prepare_image(self.get_data(id), self.get_model(id))
-        return imageobj
-
     #
     # Image object access
     #
@@ -15469,8 +15455,10 @@ class Session(NoNewAttributesAfterInit):
         (150, 175)
 
         """
-        self._prepare_imageobj(id, self._dataimage)
-        return self._dataimage
+        imageobj = self._image_types['data']
+        data = self.get_data(id)
+        imageobj.prepare_image(data)
+        return imageobj
 
     def get_model_image(self, id=None):
         """Return the data used by image_model.
@@ -15515,8 +15503,12 @@ class Session(NoNewAttributesAfterInit):
         >>> resid = dinfo.y - minfo.y
 
         """
-        self._prepare_imageobj(id, self._modelimage)
-        return self._modelimage
+        imageobj = self._image_types['model']
+        data = self.get_data(id)
+        model = self.get_model(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
+
 
     # DOC-TODO: it looks like get_source_image doesn't raise DataErr with
     # a non-2D data set
@@ -15560,8 +15552,12 @@ class Session(NoNewAttributesAfterInit):
         (150, 175)
 
         """
-        self._prepare_imageobj(id, self._sourceimage)
-        return self._sourceimage
+        imageobj = self._image_types['source']
+        data = self.get_data(id)
+        source = self.get_source(id)
+        imageobj.prepare_image(data, source)
+        return imageobj
+
 
     def get_model_component_image(self, id, model=None):
         """Return the data used by image_model_component.
@@ -15616,12 +15612,17 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
-        self._prepare_imageobj(id, self._mdlcompimage, model=model)
-        return self._mdlcompimage
+        # Ensure the convolution models get applied
+        is_source = self._get_model_status(id)[1]
+        model = self._add_convolution_models(id, self.get_data(id),
+                                             model, is_source)
+
+        imageobj = self._image_types['model_component']
+        data = self.get_data(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_source_component_image(self, id, model=None):
         """Return the data used by image_source_component.
@@ -15676,12 +15677,12 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
+        model = self._check_model(model)
 
-        self._prepare_imageobj(id, self._srccompimage, model=model)
-        return self._srccompimage
+        imageobj = self._image_types['source_component']
+        data = self.get_data(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_ratio_image(self, id=None):
         """Return the data used by image_ratio.
@@ -15720,8 +15721,11 @@ class Session(NoNewAttributesAfterInit):
         >>> rinfo = get_ratio_image()
 
         """
-        self._prepare_imageobj(id, self._ratioimage)
-        return self._ratioimage
+        imageobj = self._image_types['ratio']
+        data = self.get_data(id)
+        model = self.get_model(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_resid_image(self, id=None):
         """Return the data used by image_resid.
@@ -15760,8 +15764,11 @@ class Session(NoNewAttributesAfterInit):
         >>> rinfo = get_resid_image()
 
         """
-        self._prepare_imageobj(id, self._residimage)
-        return self._residimage
+        imageobj = self._image_types['resid']
+        data = self.get_data(id)
+        model = self.get_model(id)
+        imageobj.prepare_image(data, model)
+        return imageobj
 
     def get_psf_image(self, id=None):
         """Return the data used by image_psf.
@@ -15797,8 +15804,11 @@ class Session(NoNewAttributesAfterInit):
         (175, 200)
 
         """
-        self._prepare_imageobj(id, self._psfimage)
-        return self._psfimage
+        imageobj = self._image_types['psf']
+        psf = self.get_psf(id)
+        data = self.get_data(id)
+        imageobj.prepare_image(psf, data)
+        return imageobj
 
     def get_kernel_image(self, id=None):
         """Return the data used by image_kernel.
@@ -15834,16 +15844,15 @@ class Session(NoNewAttributesAfterInit):
         (51, 51)
 
         """
-        self._prepare_imageobj(id, self._kernelimage)
-        return self._kernelimage
+        imageobj = self._image_types['kernel']
+        psf = self.get_psf(id)
+        data = self.get_data(id)
+        imageobj.prepare_image(psf, data)
+        return imageobj
 
     #
     # Images
     #
-
-    def _image(self, id, imageobj, shape, newframe, tile, model=None):
-        self._prepare_imageobj(id, imageobj, model).image(
-            shape, newframe, tile)
 
     def image_data(self, id=None, newframe=False, tile=False):
         """Display a data set in the image viewer.
@@ -15905,8 +15914,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_data('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._dataimage, None,
-                    newframe, tile)
+        imageobj = self.get_data_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_model(self, id=None, newframe=False, tile=False):
         """Display the model for a data set in the image viewer.
@@ -15977,8 +15986,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_model('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._modelimage, None,
-                    newframe, tile)
+        imageobj = self.get_model_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_source_component(self, id, model=None, newframe=False,
                                tile=False):
@@ -16055,13 +16064,8 @@ class Session(NoNewAttributesAfterInit):
         ...                        tile=True)
 
         """
-        if model is None:
-            id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
-
-        self._image(id, self._srccompimage, None, newframe, tile, model=model)
+        imageobj = self.get_source_component_image(id, model)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_model_component(self, id, model=None, newframe=False, tile=False):
         """Display a component of the model in the image viewer.
@@ -16138,17 +16142,8 @@ class Session(NoNewAttributesAfterInit):
         ...                       tile=True)
 
         """
-        if model is None:
-            id, model = model, id
-        self._check_model(model)
-        if isinstance(model, string_types):
-            model = self._eval_model_expression(model)
-
-        is_source = self._get_model_status(id)[1]
-        model = self._add_convolution_models(id, self.get_data(id),
-                                             model, is_source)
-
-        self._image(id, self._mdlcompimage, None, newframe, tile, model=model)
+        imageobj = self.get_model_component_image(id, model)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_source(self, id=None, newframe=False, tile=False):
         """Display the source expression for a data set in the image viewer.
@@ -16218,7 +16213,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_source('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._sourceimage, None, newframe, tile)
+        imageobj = self.get_source_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: does newframe make sense here?
     def image_fit(self, id=None, newframe=True, tile=True, deleteframes=True):
@@ -16285,16 +16281,16 @@ class Session(NoNewAttributesAfterInit):
         >>> image_xpaset('frame 2')
 
         """
-        self._prepare_imageobj(id, self._dataimage)
-        self._prepare_imageobj(id, self._modelimage)
-        self._prepare_imageobj(id, self._residimage)
+        data = self.get_data_image(id)
+        model = self.get_model_image(id)
+        resid = self.get_resid_image(id)
         deleteframes = sherpa.utils.bool_cast(deleteframes)
         if deleteframes is True:
             sherpa.image.Image.open()
             sherpa.image.Image.delete_frames()
-        self._dataimage.image(None, False, tile)
-        self._modelimage.image(None, newframe, tile)
-        self._residimage.image(None, newframe, tile)
+        data.image(None, False, tile)
+        model.image(None, newframe, tile)
+        resid.image(None, newframe, tile)
 
     def image_resid(self, id=None, newframe=False, tile=False):
         """Display the residuals (data - model) for a data set in the image viewer.
@@ -16365,8 +16361,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_resid('i2', newframe=True, tile=True)
 
         """
-        self._image(id, self._residimage, None,
-                    newframe, tile)
+        imageobj = self.get_resid_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     def image_ratio(self, id=None, newframe=False, tile=False):
         """Display the ratio (data/model) for a data set in the image viewer.
@@ -16424,8 +16420,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_ratio()
 
         """
-        self._image(id, self._ratioimage, None,
-                    newframe, tile)
+        imageobj = self.get_ratio_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self, id=None, newframe=False, tile=False):
@@ -16480,7 +16476,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_psf(2)
 
         """
-        self._image(id, self._psfimage, None, newframe, tile)
+        imageobj = self.get_psf_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
     # DOC-TODO: where to point to for PSF/kernel discussion/description
@@ -16537,7 +16534,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_kernel(2)
 
         """
-        self._image(id, self._kernelimage, None, newframe, tile)
+        imageobj = self.get_kernel_image(id)
+        imageobj.image(newframe=newframe, tile=tile)
 
     # Manage these functions (open, close, delete frames, regions, XPA)
     # through unbound functions of the Image class--always talking to

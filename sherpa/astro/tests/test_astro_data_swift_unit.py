@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -172,12 +172,8 @@ def test_read_pha_fails_rmf(make_data_path):
     assert emsg in str(excinfo.value)
 
 
-def validate_replacement_warning(ws, rtype, label, is_known_warning):
+def validate_replacement_warning(ws, rtype, label):
     """Check that there is one expected warning."""
-
-    # Filter out the "allowed" warnings.
-    #
-    ws = [w for w in ws if not is_known_warning(w)]
 
     assert len(ws) == 1
     w = ws[0]
@@ -190,7 +186,7 @@ def validate_replacement_warning(ws, rtype, label, is_known_warning):
 
 @requires_data
 @requires_fits
-def test_read_arf(make_data_path, is_known_warning):
+def test_read_arf(make_data_path):
     """Can we read in a Swift ARF."""
 
     infile = make_data_path(ARFFILE)
@@ -199,7 +195,7 @@ def test_read_arf(make_data_path, is_known_warning):
         warnings.simplefilter("always")
         arf = io.read_arf(infile)
 
-    validate_replacement_warning(ws, 'ARF', infile, is_known_warning)
+    validate_replacement_warning(ws, 'ARF', infile)
 
     assert isinstance(arf, DataARF)
 
@@ -267,7 +263,7 @@ def test_read_arf_fails_rmf(make_data_path):
 
 @requires_data
 @requires_fits
-def test_read_rmf(make_data_path, is_known_warning):
+def test_read_rmf(make_data_path):
     """Can we read in a Swift RMF."""
 
     infile = make_data_path(RMFFILE)
@@ -276,7 +272,7 @@ def test_read_rmf(make_data_path, is_known_warning):
         warnings.simplefilter("always")
         rmf = io.read_rmf(infile)
 
-    validate_replacement_warning(ws, 'RMF', infile, is_known_warning)
+    validate_replacement_warning(ws, 'RMF', infile)
 
     assert isinstance(rmf, DataRMF)
 
@@ -367,16 +363,12 @@ def test_read_rmf_fails_arf(make_data_path):
 
 @requires_data
 @requires_fits
-def test_can_use_swift_data(make_data_path, is_known_warning):
+def test_can_use_swift_data(make_data_path, clean_astro_ui):
     """A basic check that we can read in and use the Swift data.
 
     Unlike the previous tests, that directly access the io module,
     this uses the ui interface.
     """
-
-    # QUS are there pytest fixtures that ensure the state is
-    # clean on entry and exit?
-    ui.clean()
 
     # The Swift PHA file does not have the ANCRFILE/RESPFILE keywords
     # set up, so the responses have to be manually added.
@@ -388,14 +380,14 @@ def test_can_use_swift_data(make_data_path, is_known_warning):
         warnings.simplefilter("always")
         ui.load_rmf(rmffile)
 
-    validate_replacement_warning(ws, 'RMF', rmffile, is_known_warning)
+    validate_replacement_warning(ws, 'RMF', rmffile)
 
     arffile = make_data_path(ARFFILE)
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
         ui.load_arf(arffile)
 
-    validate_replacement_warning(ws, 'ARF', arffile, is_known_warning)
+    validate_replacement_warning(ws, 'ARF', arffile)
 
     assert ui.get_analysis() == 'energy'
 
@@ -419,24 +411,59 @@ def test_can_use_swift_data(make_data_path, is_known_warning):
     # bin.
     #
     # Unfortunately, using a range of 0.3-8.0 gives 771 bins
-    # in XSPEC - channels 30 to 800 - but 772 bins in Sherpa.
-    # If I use ignore(None, 0.3); ignore(8.0, None) instead
-    # then the result is 771 bins. This is because the e_min/max
-    # of the RMF has channel widths of 0.01 keV, starting at 0,
-    # so both 0.3 and 8.0 fall on a bin boundary. So, it's either
-    # a difference in < or <= (or > vs >=), or a rounding issue
-    # due to floating-point conversion leading to one bin boundary
-    # being slightly different in Sherpa vs XSPEC).
+    # in XSPEC - channels 30 to 800 - but 772 bins in Sherpa,
+    # channels 30 to 801.
+    #
+    # Note that the channel numbering starts at 0:
+    # % dmlist target_sr.pha header,clean,raw | grep TLMIN
+    # TLMIN1       = 0                    / Lowest legal channel number
+    #
+    # and so it's not clear when XSPEC says 30-800 what it
+    # means. From https://github.com/sherpa/sherpa/issues/1211#issuecomment-881647128
+    # we have that the first bin it is using is
+    #     0.29-0.30
+    # and the last bin is
+    #     7.99-8.00
+    # and I've checked with iplot that it has renumbered the
+    # channels to 1-1024 from 0-1023
+    #
+    # % dmlist swxpc0to12s6_20130101v014.rmf.gz"[ebounds][channel=28:31]" data,clean
+    #  CHANNEL    E_MIN                E_MAX
+    #         28     0.28000000119209     0.28999999165535
+    #         29     0.28999999165535     0.30000001192093
+    #         30     0.30000001192093     0.31000000238419
+    #         31     0.31000000238419     0.31999999284744
+    # % dmlist swxpc0to12s6_20130101v014.rmf.gz"[ebounds][channel=798:801]" data,clean
+    #  CHANNEL    E_MIN                E_MAX
+    #        798         7.9800000191         7.9899997711
+    #        799         7.9899997711                  8.0
+    #        800                  8.0         8.0100002289
+    #        801         8.0100002289         8.0200004578
+    #
+    # If I use ignore(None, 0.3); ignore(8.0, None) instead then the
+    # result is 771 bins (channels 31 to 800). This is because the
+    # e_min/max of the RMF has channel widths of 0.01 keV, starting at
+    # 0, so both 0.3 and 8.0 fall on a bin boundary. So, it's either a
+    # difference in < or <= (or > vs >=), or a rounding issue due to
+    # floating-point conversion leading to one bin boundary being
+    # slightly different in Sherpa vs XSPEC).
     #
     # When using ui.notice(0.3, 8.0); ui.get_indep(filter=True)
     # returns 772 channels, 30 to 801.
     #
     # Using ui.notice(0.3, 7.995) selects channels 30 to 800. So
     # this range is used. Alternatively, channel 801 could have been
-    # excluded explicitly.
+    # excluded explicitly. Note that notice(0.299, 7.995) selects
+    # the same range as 0.3-7.995.
     #
-    # ui.notice(0.3, 8.0)
     ui.notice(0.3, 7.995)
+
+    # Check the selected range
+    pha = ui.get_data()
+    expected = np.zeros(1024, dtype=bool)
+    expected[29:800] = True
+    assert pha.mask == pytest.approx(expected)
+    assert pha.get_mask() == pytest.approx(expected)
 
     # XSPEC 12.9.1b calculation of the statistic:
     #   chi sq = 203.88 from 771 bins with 769 dof
@@ -466,5 +493,3 @@ def test_can_use_swift_data(make_data_path, is_known_warning):
     assert stat_cstat.dof == 769
     assert_allclose(stat_cstat.statval, 568.52,
                     rtol=0, atol=0.005)
-
-    ui.clean()

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,7 @@ from sherpa.utils.err import IOErr, DataErr
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
     filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
 from ._pileup import apply_pileup
+from sherpa.astro import hc, charge_e
 
 
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
@@ -42,12 +43,6 @@ __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
 warning = logging.getLogger(__name__).warning
 
 
-# Useful constants
-#
-_hc = 12.39841874  # nist.gov in [keV-Angstrom]
-_charge_e = 1.60217653e-09  # elementary charge [ergs] 1 keV, nist.gov
-
-
 def reshape_2d_arrays(x0, x1):
     new_x0, new_x1 = numpy.meshgrid(x0, x1)
     return new_x0.ravel(), new_x1.ravel()
@@ -56,30 +51,65 @@ def reshape_2d_arrays(x0, x1):
 def get_xspec_position(y, x, xhi=None):
     if xhi is not None:
         if x[0] > x[-1] and xhi[0] > xhi[-1]:
-            lo = _hc / xhi
-            hi = _hc / x
+            lo = hc / xhi
+            hi = hc / x
             x, xhi = lo, hi
     else:
         if x[0] > x[-1]:
-            x = _hc / x
+            x = hc / x
     return get_position(y, x, xhi)
 
 
 def compile_energy_grid(arglist):
+    '''Combine several grids (energy, channel, wavelength) into one
+
+    This function combines several grids into one, such that the model
+    does not have to be evaluated several times, just because the same energy
+    point occurs in every grid.
+
+    This function works under the assumption that evaluating the model
+    is expensive and it is is worthwhile to do some bookkeeping to be
+    able to derive the model for all intervals needed with the minimum
+    number of model points.
+
+    Parameters
+    ----------
+    arglist : list of tuples
+        The list contains the input energy grids. Each tuple is a pair
+        of arrays specifying the lower and upper limits for the bins in
+        each input grid.
+
+    Returns
+    -------
+    out : list
+        The elements of the list are:
+        - elo : array of lower bin values
+        - ehi : array of upper bin values
+        - htable : list of tuples, in the same format as the input.
+             The entries in ``htable`` are indices into ``elo`` and ``ehi``
+             that return the original input arrays.
+
+    Examples
+    --------
+
+    >>> compile_energy_grid([([1,3,5], [3, 5, 7]), ([0, 1, 2], [1, 2, 3])])
+    [array([0, 1, 2, 3, 5]),
+     array([1, 2, 3, 5, 7]),
+     [(array([1, 3, 4], dtype=int32), array([2, 3, 4], dtype=int32)),
+      (array([0, 1, 2], dtype=int32), array([0, 1, 2], dtype=int32))]]
+
+    '''
     elo = numpy.unique(numpy.concatenate([indep[0] for indep in arglist]))
     ehi = numpy.unique(numpy.concatenate([indep[1] for indep in arglist]))
 
     in_elo = numpy.setdiff1d(elo, ehi)
     in_ehi = numpy.setdiff1d(ehi, elo)
     if len(in_elo) > 1:
-        ehi = numpy.concatenate((ehi, in_elo[-(len(in_elo) - 1):]))
+        ehi = numpy.concatenate((ehi, in_elo[1:]))
+        ehi.sort()
     if len(in_ehi) > 1:
-        elo = numpy.concatenate((elo, in_ehi[0:len(in_ehi) - 1]))
-
-    # FIXME since numpy.unique calls sort() underneath, may not need to
-    # sort again here...
-    elo.sort()
-    ehi.sort()
+        elo = numpy.concatenate((elo, in_ehi[:- 1]))
+        elo.sort()
 
     # determine index intervals using binary search in large src model
     # for n_th ARF energy bounds and populate a table to use later for
@@ -289,7 +319,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
         for axis in axislist:
             grid = axis
             if convert:
-                grid = data._hc / grid
+                grid = hc / grid
             energ.append(grid)
 
         if dim == 2:
@@ -332,7 +362,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
 
     flux = (scale * y).sum()
     if eflux:
-        flux *= _charge_e
+        flux *= charge_e
 
     return flux
 

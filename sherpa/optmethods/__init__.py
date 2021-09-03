@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +17,94 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+"""Optimization classes.
+
+The `OptMethod` class provides an interface to a number of optimisers.
+When creating an optimizer an optional name can be added; this name is
+only used in string representations of the class:
+
+>>> from sherpa.optmethods import NelderMead
+>>> opt = NelderMead()
+>>> print(opt)
+name         = simplex
+ftol         = 1.1920928955078125e-07
+maxfev       = None
+initsimplex  = 0
+finalsimplex = 9
+step         = None
+iquad        = 1
+verbose      = 0
+
+A model is fit by providing the ``fit`` method a callback, the starting
+point (parameter values), and parameter ranges. The callback should
+match::
+
+    callback(pars, *statargs, **statkwargs)
+
+and return the statistic value to minimise.
+
+Notes
+-----
+
+Each optimizer has certain classes of problem where it is more, or
+less, successful. For instance, the `NelderMead` class should
+only be used with chi-square based statistics.
+
+Examples
+--------
+
+Using Sherpa classes for data, models, and statistics we can create a
+callback, in this case using a least-squared statistic to fit a
+constant model to a 1D dataset (we do not need to send any extra
+arguments to the callback other than the parameter values in this
+case):
+
+>>> from sherpa.data import Data1D
+>>> from sherpa.models.basic import Const1D
+>>> from sherpa.stats import LeastSq
+>>> x = np.asarray([1, 2, 5])
+>>> y = np.asarray([3, 2, 7])
+>>> d = Data1D('data', x, y)
+>>> mdl = Const1D()
+>>> stat = LeastSq()
+>>> def cb(pars):
+...     mdl.thawedpars = pars
+...     return stat.calc_stat(d, mdl)
+
+We can check the model before the optimisaton run:
+
+>>> print(mdl)
+const1d
+   Param        Type          Value          Min          Max      Units
+   -----        ----          -----          ---          ---      -----
+   const1d.c0   thawed            1 -3.40282e+38  3.40282e+38
+
+The model can be fit using the ``fit`` method:
+
+>>> from sherpa.optmethods import NelderMead
+>>> opt = NelderMead()
+>>> res = opt.fit(cb, mdl.thawedpars, mdl.thawedparmins, mdl.thawedparmaxes)
+
+The return from ``fit`` is a tuple where the first element indicates
+whether the fit was successful, then the best-fit parameters, the
+best-fit statistic, a string message, along with a dictionary
+depending on the optimiser:
+
+>>> print(res)
+(True, array([4.]), 14.0, 'Optimization terminated successfully', {'info': True, 'nfev': 98})
+>>> print(f"Best-fit value: {res[1][0]}")
+Best-fit value: 4.0
+
+We can see that the model has been updated thanks to this:
+
+>>> print(mdl)
+const1d
+   Param        Type          Value          Min          Max      Units
+   -----        ----          -----          ---          ---      -----
+   const1d.c0   thawed            4 -3.40282e+38  3.40282e+38
+
+"""
 
 import logging
 
@@ -130,7 +219,12 @@ class OptMethod(NoNewAttributesAfterInit):
         Returns
         -------
         newpars : tuple
-           The model parameters after the optimiser has run.
+           The tuple contains: boolean indicating whether the
+           optimization succeeded or not, the best fit parameters as a
+           NumPy array, the statistic value at the best-fit location,
+           a string message indicating the status, and a dictionary
+           containing information about the optimisation (this depends
+           on the optimiser).
 
         """
 
@@ -430,6 +524,8 @@ class LevMar(OptMethod):
        initial step bound is set to the product of `factor` and the
        euclidean norm of diag*x if nonzero, or else to factor itself.
        In most cases, `factor` should be from the interval (.1,100.).
+    numcores : int
+       The number of CPU cores to use. The default is `1`.
     verbose: int
        The amount of information to print during the fit. The default
        is `0`, which means no output.
@@ -494,6 +590,8 @@ class MonCar(OptMethod):
        the weighting_factor, coupled with an increase in the
        population_size, gives a more robust search at the cost of
        efficiency.
+    numcores : int
+       The number of CPU cores to use. The default is `1`.
 
     References
     ----------
@@ -517,8 +615,8 @@ class NelderMead(OptMethod):
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
     R. Mead [1]_, is a direct search method of optimization for
-    finding local minimum of an objective function of several
-    variables. The implementation of Nelder-Mead Simplex algorithm is
+    finding a local minimum of an objective function of several
+    variables. The implementation of the Nelder-Mead Simplex algorithm is
     a variation of the algorithm outlined in [2]_ and [3]_. As noted,
     terminating the simplex is not a simple task:
 

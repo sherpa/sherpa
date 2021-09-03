@@ -236,7 +236,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     colkeys = list(colkeys)
 
     if len(names) > len(args):
-        raise IOErr('toomanycols')
+        raise IOErr('wrongnumcols', len(args), len(names))
 
     assert(len(names) <= len(args))
 
