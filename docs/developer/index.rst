@@ -257,18 +257,119 @@ Update the XSPEC bindings?
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
 :term:`XSPEC` versions 12.11.1 down to 12.9.0. It may build against
-newer versions, but if it does it will not provide access
-to any new models in the release. The following steps are needed
-to update to a newer version, and assume that you have the new version
-of XSPEC, or its model library, available. The following
-sections of the
-`XSPEC manual <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
-should be reviewed:
-"Appendix F: Using the XSPEC Models Library in Other Programs",
-and
-"Appendix C: Adding Models to XSPEC"
-(direct links are not provided as there are no obvious stable URIs for
-them).
+newer versions, but if it does it will not provide access to any new
+models in the release. The following sections of the `XSPEC manual
+<https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
+should be reviewed: `Appendix F: Using the XSPEC Models Library in
+Other Programs
+<https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSappendixExternal.html>`_,
+and `Appendix C: Adding Models to XSPEC
+<http://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_.
+
+Checking against a previous XSPEC version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you have a version of Sherpa compiled with a previous XSPEC
+version then you can use two helper scripts:
+
+#. ``scripts/check_xspec_update.py``
+
+   This will compare the supported XSPEC model classes to those
+   from a ``model.dat`` file, and report on the needed changes.
+
+#. ``scripts/add_xspec_model.py``
+
+   This will report the basic code needed to be added to both
+   the compiled code (``sherpa/astro/xspec/src/_xspec.cc``) and
+   Python (``sherpa/astro/xspec/__init__.py``). Note that it
+   does not deal with conditional compilation, the need to
+   add a decorator to the Python class, or missing documentation
+   for the class.
+
+These routines are designed to simplify the process but are not
+guaranteed to handle all cases (as the model.dat file syntax is not
+strongly specified).
+
+As an example of their use, the following output is from before
+XSPEC 12.12.0 (released in HEASOFT 6.29) support was added::
+
+  % ./scripts/check_xspec_update.py ~/local/heasoft-6.29/spectral/manager/model.dat | grep support
+  We do not support grbjet (Add; xsgrbjet)
+  We do not support smaug (Add; xsmaug)
+  We do not support vvwdem (Add; vvwDem)
+  We do not support vwdem (Add; vwDem)
+  We do not support wdem (Add; wDem)
+  We do not support zxipab (Mul; zxipab)
+  We do not support pileup (Acn; pileup)
+
+.. note::
+   There can be other output due to parameter-value changes
+   which are also important to review but this is just focussing
+   on the list of models that could be added to
+   :py:mod:`sherpa.astro.xspec`
+
+The code needed to add support for the wdem module can be found with::
+
+  % ./scripts/check_xspec_update.py ~/local/heasoft-6.29/spectral/manager/model.dat wdem
+  # C++ code for sherpa/astro/xspec/src/_xspec.cc
+
+  // Defines
+
+  extern "C" {
+
+  }
+
+  // Wrapper
+
+  static PyMethodDef Wrappers[] = {
+    XSPECMODELFCT_C_NORM(C_wDem, 8),
+    { NULL, NULL, 0, NULL }
+  }
+
+
+  # Python code for sherpa/astro/xspec/__init__.py
+
+
+  class XSwdem(XSAdditiveModel):
+      """XSPEC AdditiveModel: wdem
+
+      Parameters
+      ----------
+      Tmax
+      beta
+      p
+      nH
+      abundanc
+      Redshift
+      switch
+      norm
+
+      """
+      _calc = _models.C_wDem
+
+      def __init__(self, name='wdem'):
+          self.Tmax = Parameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+          self.beta = Parameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+          self.p = Parameter(name, 'p', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+          self.nH = Parameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+          self.abundanc = Parameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+          self.Redshift = Parameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+          self.switch = Parameter(name, '_switch', 2, alwaysfrozen=True)
+          self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+          XSAdditiveModel.__init__(self, name, (self.Tmax,self.beta,self.p,self.nH,self.abundanc,self.Redshift,self.switch,self.norm))
+
+
+This code then can then be added to
+``sherpa/astro/xspec/src/_xspec.cc`` and
+``sherpa/astro/xspec/__init__.py`` and then refined so that the tests
+pass.
+
+Updating the code
+^^^^^^^^^^^^^^^^^
+
+The following steps are needed to update to a newer version, and
+assume that you have the new version of XSPEC, or its model library,
+available.
 
 #. Add a new version define in ``helpers/xspec_config.py``.
 
@@ -326,6 +427,10 @@ them).
    such changes are often not included in the release notes).
 
 #. Identify changes in the XSPEC models.
+
+   .. note::
+      The ``scripts/check_xspec_update.py`` and ``scripts/add_xspec_model.py``
+      scripts can be used to automate some - but unfortunately not all - of this.
 
    A new XSPEC release can add models, change parameter settings in
    existing models, change how a model is called, or even delete a
