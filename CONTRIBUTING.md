@@ -58,7 +58,7 @@ include the following:
   in a ``Release Note`` section at the start of the request (please see
   the [accepted requests](https://github.com/sherpa/sherpa/pulls?q=is%3Apr+is%3Aclosed)
   for examples of style and format.
-  
+
 Checklist for Contributed Code
 ------------------------------
 
@@ -78,7 +78,7 @@ without a failure.
 The changes should be made in a branch which is based off of the ``main``
 branch of the [Sherpa repository](https://github.com/sherpa/sherpa), and
 should have a descriptive name. For bug fixes, the name should include the
-bug ID and a short description of the bug fix. For new - or updated - 
+bug ID and a short description of the bug fix. For new - or updated -
 functionality, the name should be descriptive.
 
 Example: fix for [bug #64](https://github.com/sherpa/sherpa/issues/64)
@@ -96,9 +96,9 @@ Example: new functionality, such as
 
 **Software versions**
 
-Development should use Python 3.6 or later.
+Development should use Python 3.7 or later.
 
-Ideally, NumPy support should be 1.6 or greater, but please include a comment
+Ideally, NumPy support should be 1.17 or greater, but please include a comment
 if you need to restrict (or relax) this further.
 
 Sherpa requires a C compiler, along with related tools, to build. Additional
