@@ -434,8 +434,7 @@ class Filter():
 
     @property
     def mask(self):
-        """
-        Mask array for dependent variable
+        """Mask array for dependent variable
 
         Returns
         -------
@@ -460,8 +459,7 @@ class Filter():
             self._mask = numpy.asarray(val, numpy.bool_)
 
     def apply(self, array):
-        """
-        Apply this filter to an array
+        """Apply this filter to an array
 
         Parameters
         ----------
@@ -471,6 +469,12 @@ class Filter():
         Returns
         -------
         array_like : filtered array
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+            The filter has removed all elements or there is a
+            mis-match between the `mask` and the ``array`` argument.
 
         See Also
         --------
@@ -494,6 +498,14 @@ class Filter():
 
     def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
         """Select a range to notice or ignore (remove).
+
+        The ``axislist`` argument is expected to be sent the
+        independent axis of a `Data` object - so ``(x, )`` for
+        one-dimensional data, ``(xlo, xhi)`` for integrated
+        one-dimensional data, ``(x0, x1)`` for two-dimensional data,
+        and ``(x0lo, x1lo, x0hi, x1hi)`` for integrated two-dimensinal
+        data. The ``mins`` and ``maxes`` must then be set to match
+        this ordering.
 
         Parameters
         ----------
@@ -529,7 +541,7 @@ class Filter():
         Examples
         --------
 
-        Calculate those points in xs which are in the range 1.5 <= x <= 4.
+        Select points in xs which are in the range 1.5 <= x <= 4:
 
         >>> f = Filter()
         >>> f.mask
@@ -539,14 +551,14 @@ class Filter():
         >>> f.mask
         array([False,  True,  True,  True, False])
 
-        Repeat the above calculation by combining filters for x >= 1.5
-        and x <= 4 (note that the grid must be repeated for each
-        filter as this is now a 2D filter):
+        Filter the data to select all points with x0 >= 1.5 and x1 <= 4:
 
         >>> f = Filter()
-        >>> f.notice([1.5, None], [None, 4], (xs, xs))
+        >>> x0 = [1, 1.4, 1.6, 2, 3]
+        >>> x1 = [2, 2, 4, 4, 6]
+        >>> f.notice([1.5, None], [None, 4], (x0, x1))
         >>> f.mask
-        array([False,  True,  True,  True, False])
+        array([False, False,  True,  True, False])
 
         For integrated data sets the lower and upper edges should be
         sent separately with the max and min limits, along with
