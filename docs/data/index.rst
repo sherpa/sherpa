@@ -164,7 +164,7 @@ the bins between 21 and 23 have been ignored::
 
 .. note::
    The filter does not record the requested changes - that is here
-   the 21.2 to 21.8 arguments to :py:meth:`~sherpa.data.Data.ignore` -
+   the 21.2 to 22.8 arguments to :py:meth:`~sherpa.data.Data.ignore` -
    but instead reflects the selected bins in the data set.
 
 After this, a fit to the data will ignore these values, as shown
