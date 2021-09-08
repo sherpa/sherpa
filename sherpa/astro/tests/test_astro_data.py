@@ -2571,6 +2571,11 @@ def test_pha_channel0_grouping():
     assert p1.grouping == pytest.approx(expected)
     assert p0.grouping == pytest.approx(expected)
 
+    expected = np.zeros(9)
+    expected[-1] = 2
+    assert p1.quality == pytest.approx(expected)
+    assert p0.quality == pytest.approx(expected)
+
     expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected)
     assert p0.get_dep(filter=True) == pytest.approx(expected)
@@ -2582,16 +2587,13 @@ def test_pha_channel0_grouping():
     expected[1:6] = True
     assert p1.get_mask() == pytest.approx(expected)
 
-    # I do not understand this behavior
     expected = np.zeros(9, dtype=bool)
-    # expected[2:7] = True
-    expected[5:9] = True
+    expected[2:8] = True  # Why is this not 2:7 since the p1 case used 1:6?
     assert p0.get_mask() == pytest.approx(expected)
 
     expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
-    # assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
-    assert p0.get_dep(filter=True) == pytest.approx(expected[3:6])
+    assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
 
 
 def test_pha_channel0_subtract():
@@ -2631,5 +2633,4 @@ def test_pha_channel0_subtract():
     expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16) - \
         np.array([0, 1, 2, 0, 3, 1], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
-    # assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
-    assert p0.get_dep(filter=True) == pytest.approx(expected[3:6])
+    assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
