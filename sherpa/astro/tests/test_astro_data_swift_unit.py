@@ -411,7 +411,7 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     # bin.
     #
     # Unfortunately, using a range of 0.3-8.0 gives 771 bins
-    # in XSPEC - channels 30 to 800 - but a 770 bins in Sherpa,
+    # in XSPEC - channels 30 to 800 - but 770 bins in Sherpa,
     # channels 31 to 800.
     #
     # Note that the channel numbering starts at 0:

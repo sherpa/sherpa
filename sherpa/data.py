@@ -493,19 +493,19 @@ class Filter():
         return array[self.mask]
 
     def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
-        """Select a range.
+        """Select a range to notice or ignore (remove).
 
         Parameters
         ----------
         mins : sequence of values
-           The minimum value of the valid range (elements may be
-           None).  When not None, it is treated as an inclusive limit,
-           so points >= min are included.
+           The minimum value of the valid range (elements may be None
+           to indicate no lower bound). When not None, it is treated
+           as an inclusive limit, so points >= min are included.
         maxes : sequence of values
-           The maximum value of the valid range (elements may be
-           None).  When not None, it is treated as an inclusive limit,
-           so points <= max are included, when upper is True,
-           otherwise points < max are included.
+           The maximum value of the valid range (elements may be None
+           to indicate no upper bound). It is treated as an inclusive
+           limit (points <= max) when integrated is False, and an
+           exclusive limit (points < max) when integrated is True.
         axislist: sequence of arrays
            The axis to apply the range to. There must be the same
            number of elements in mins, maxes, and axislist.  The
@@ -514,15 +514,59 @@ class Filter():
         ignore : bool, optional
            If True the range is to be ignored, otherwise it is
            included.  The default is to include the range.
+        integrated : bool, optional
+           Is the data integrated (we have low and high bin edges)?  The
+           default is False. When True it is expected that axislist
+           contains a even number of rows, where the odd values are the
+           low edges and the even values the upper edges, and that the
+           mins and maxes only ever contain a single value, given in
+           (None, hi) and (lo, None) ordering.
 
         See Also
         --------
         apply
 
+        Examples
+        --------
+
+        Calculate those points in xs which are in the range 1.5 <= x <= 4.
+
+        >>> f = Filter()
+        >>> f.mask
+        True
+        >>> xs = [1, 2, 3, 4, 5]
+        >>> f.notice([1.5], [4], (xs, ))
+        >>> f.mask
+        array([False,  True,  True,  True, False])
+
+        Repeat the above calculation by combining filters for x >= 1.5
+        and x <= 4 (note that the grid must be repeated for each
+        filter as this is now a 2D filter):
+
+        >>> f = Filter()
+        >>> f.notice([1.5, None], [None, 4], (xs, xs))
+        >>> f.mask
+        array([False,  True,  True,  True, False])
+
+        For integrated data sets the lower and upper edges should be
+        sent separately with the max and min limits, along with
+        setting the integrated flag. The following selects the bins
+        that cover the range 2 to 4 and 1.5 to 3.5:
+
+        >>> xlo = [1, 2, 3, 4, 5]
+        >>> xhi = [2, 3, 4, 5, 6]
+        >>> f = Filter()
+        >>> f.notice([None, 2], [4, None], (xlo, xhi), integrated=True)
+        >>> f.mask
+        array([False,  True,  True,  False, False])
+        >>> f.notice([None, 1.5], [3.5, None], (xlo, xhi), integrated=True)
+        >>> f.mask
+        array([True,  True,  True,  False, False])
+
         """
 
         # If integrated is True then we should have an even number
-        # of axisist elements, but we do not require this.
+        # of axislist elements, but we do not require this.
         #
         ignore = bool_cast(ignore)
         for vals, label in zip([mins, maxes, axislist],

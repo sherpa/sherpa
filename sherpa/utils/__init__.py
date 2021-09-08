@@ -1044,7 +1044,7 @@ def filter_bins(mins, maxes, axislist, integrated=False):
     array([False,  True,  True,  True, False])
 
     For integrated data sets the lower and upper edges should be sent
-    separately with the max and min limits, alng with setting the
+    separately with the max and min limits, along with setting the
     integrated flag. The following selects the bins that cover the
     range 2 to 4 and 1.5 to 3.5:
 
