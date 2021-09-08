@@ -1458,8 +1458,8 @@ def test_notice_channel_grouping(make_data_path):
                          [(-5, 2000, '9:850'),
                           (30, 2000, '27:850'),
                           (-5, 350, '9:356'),
-                          (-20, -5, '9:850'),
-                          (2000, 3000, '9:850')])
+                          (-20, -5, ''),
+                          (2000, 3000, '')])
 def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results
 
@@ -1504,8 +1504,8 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
                          [(-5, 2000, '1:1024'),
                           (30, 2000, '30:1024'),
                           (-5, 350, '1:350'),
-                          (-20, -5, '1:1024'),
-                          (2000, 3000, '1:1024')])
+                          (-20, -5, ''),
+                          (2000, 3000, '')])
 def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results
     """
@@ -1526,8 +1526,8 @@ def test_notice_channel_grouping_outofbounds_ungrouped(lo, hi, expected, make_da
                          [(0, 2000, '0.1248:12.4100'),
                           (0.7, 2000, '0.6716:12.4100'),
                           (0, 4.2, '0.1248:4.1391'),
-                          (0, 1e-10, '0.1248:12.4100'),
-                          (2000, 3000, '0.1248:12.4100')])
+                          (0, 1e-10, ''),
+                          (2000, 3000, '')])
 def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -1547,8 +1547,8 @@ def test_notice_energy_grouping_outofbounds(lo, hi, expected, make_data_path):
                          [(0, 2000, '0.0080:14.9431'),
                           (0.7, 2000, '0.6935:14.9431'),
                           (0, 4.2, '0.0080:4.1975'),
-                          (0, 1e-10, '0.0080:14.9431'),
-                          (2000, 3000, '0.0080:14.9431')])
+                          (0, 1e-10, ''),
+                          (2000, 3000, '')])
 def test_notice_energy_grouping_outofbounds_ungrouped(lo, hi, expected, make_data_path):
     """Check what happens with silly results"""
 
@@ -2348,13 +2348,13 @@ def test_pha_filter_simple_energy0():
                           (1.05, 1.15, (3, 1, 6)),
                           (2.25, 2.35, (9, 1, 0)),
                           # outside the limits
-                          (0.1, 0.3, None),
-                          (0.1, 0.4, None),
+                          (0.1, 0.3, (10, 0, 0)),
+                          (0.1, 0.4, (10, 0, 0)),
                           (0.1, 0.5, (0, 1, 9)),
                           (None, 0.5, (0, 1, 9)),
                           (2.3, 3.0, (9, 1, 0)),
                           (2.3, None, (9, 1, 0)),
-                          (2.41, 2.8, None),
+                          (2.41, 2.8, (10, 0, 0)),
                           # Now queries on the edge of each bin; these would ideally
                           # only match 1 bin
                           (0.4, 0.6, (0, 1, 9)),
@@ -2376,8 +2376,8 @@ def test_pha_filter_simple_energy0():
                           (0.6, 2.0, (1, 7, 2)),
                           (1.4, 2.2, (5, 4, 1)),
                           # 0 values
-                          (0, 0, None),
-                          (0, 0.01, None),
+                          (0, 0, (10, 0, 0)),
+                          (0, 0.01, (10, 0, 0)),
                           (0, 0.5, (0, 1, 9)),
                           (0, 1, (0, 3, 7)),
                           (0, 2.4, (0, 10, 0)),
@@ -2406,21 +2406,18 @@ def test_pha_check_limit(ignore, lo, hi, evals):
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
-    if evals is None:
-        assert pha.mask is True
-        assert pha.get_mask() is None
-    else:
-        if ignore:
-            vout = True
-            vin = False
-        else:
-            vout = False
-            vin = True
 
-        c1, c2, c3 = evals
-        expected = [vout] * c1 + [vin] * c2 + [vout] * c3
-        assert pha.mask == pytest.approx(pha.get_mask())
-        assert pha.mask == pytest.approx(expected)
+    if ignore:
+        vout = True
+        vin = False
+    else:
+        vout = False
+        vin = True
+
+    c1, c2, c3 = evals
+    expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+    assert pha.mask == pytest.approx(pha.get_mask())
+    assert pha.mask == pytest.approx(expected)
 
 
 @pytest.mark.parametrize('ignore', [False, True])
@@ -2431,12 +2428,12 @@ def test_pha_check_limit(ignore, lo, hi, evals):
                           (4, 5, (3, 2, 5)),
                           (9, 10, (8, 2, 0)),
                           # outside the limits
-                          (0, 0, None),
+                          (0, 0, (10, 0, 0)),
                           (0, 1, (0, 1, 9)),
                           (None, 1, (0, 1, 9)),
                           (10, 12, (9, 1, 0)),
                           (10, None, (9, 1, 0)),
-                          (11, 12, None),
+                          (11, 12, (10, 0, 0)),
                           # Now queries on the edge of each bin; these would ideally
                           # only match 1 bin
                           (1, 1, (0, 1, 9)),
@@ -2458,7 +2455,7 @@ def test_pha_check_limit(ignore, lo, hi, evals):
                           (2, 8, (1, 7, 2)),
                           (6, 9, (5, 4, 1)),
                           # 0 values
-                          (0, 0, None),
+                          (0, 0, (10, 0, 0)),
                           (0, 3, (0, 3, 7)),
                           (0, 10, (0, 10, 0)),
                           (0, 12, (0, 10, 0))
@@ -2491,21 +2488,18 @@ def test_pha_check_limit_channel(ignore, lo, hi, evals):
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
-    if evals is None:
-        assert pha.mask is True
-        assert pha.get_mask() is None
-    else:
-        if ignore:
-            vout = True
-            vin = False
-        else:
-            vout = False
-            vin = True
 
-        c1, c2, c3 = evals
-        expected = [vout] * c1 + [vin] * c2 + [vout] * c3
-        assert pha.mask == pytest.approx(pha.get_mask())
-        assert pha.mask == pytest.approx(expected)
+    if ignore:
+        vout = True
+        vin = False
+    else:
+        vout = False
+        vin = True
+
+    c1, c2, c3 = evals
+    expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+    assert pha.mask == pytest.approx(pha.get_mask())
+    assert pha.mask == pytest.approx(expected)
 
 
 def test_pha_channel0_filtering():

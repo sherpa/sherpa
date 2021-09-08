@@ -3901,10 +3901,14 @@ class DataPHA(Data1D):
         dataset.
 
         If no channels have been ignored then a call to `notice` with
-        `ignore=False` will select just the `lo` to `hi` range, and
-        exclude any channels outside this range. If there has been a
-        filter applied then the range `lo` to `hi` will be added to the
-        range of noticed data (when `ignore=False`).
+        ``ignore=False`` will select just the ``lo`` to ``hi`` range,
+        and exclude any channels outside this range. If there has been
+        a filter applied then the range ``lo`` to ``hi`` will be added
+        to the range of noticed data (when ``ignore=False``). One
+        consequence to the above is that if the first call to `notice`
+        (with ``ignore=False``) selects a range outside the data set -
+        such as a channel range of 2000 to 3000 when the valid range
+        is 1 to 1024 - then all points will be ignored.
 
         Examples
         --------
@@ -3918,6 +3922,32 @@ class DataPHA(Data1D):
         '20:200'
         >>> pha.notice(300, 500)
         '20:200,300:500'
+
+        Calling `notice` with no arguments removes all the filters:
+
+        >>> pha.notice()
+        >>> pha.get_filter()
+        '1:1024'
+
+        Ignore the first 30 channels (this is the same as calling
+        ```pha.ignore(hi=30)``:
+
+        >>> pha.notice(hi=30, ignore=True)
+        >>> pha.get_filter()
+        '31:1024'
+
+        When using wavelength or energy units the noticed (or ignored)
+        range will not always match the requested range because each
+        channel has a finite width in these spaces:
+
+        >>> pha.grouped
+        True
+        >>> pha.get_analysis()
+        'energy'
+        >>> pha.notice()
+        >>> pha.notice(0.5, 7)
+        >>> pha.get_filter(format='%.3f')
+        '0.518:8.220'
 
         """
 
@@ -4028,11 +4058,6 @@ class DataPHA(Data1D):
             # and not <= hi.
             #
             hi += 1
-
-        # We skip if the filter lies outside the valid range.
-        #
-        if (lo is not None and lo >= emax) or (hi is not None and hi <= emin):
-            return
 
         self._data_space.filter.notice((None, lo), (hi, None),
                                        (elo, ehi), ignore=ignore,
