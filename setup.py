@@ -1,6 +1,6 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019, 2020
-#               Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -64,10 +64,6 @@ versioneer.versionfile_build = 'sherpa/_version.py'
 versioneer.tag_prefix = ''
 versioneer.parentdir_prefix = 'sherpa-'
 
-# Restrict to python 3.5 or later for pip, but see
-# https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-# for limitations
-#
 meta = dict(name='sherpa',
             version=versioneer.get_version(),
             author='Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
@@ -78,9 +74,9 @@ meta = dict(name='sherpa',
             long_description=open('README.md', 'rt').read(),
             long_description_content_type='text/markdown',
             platforms='Linux, Mac OS X',
-            python_requires='~=3.5',
+            python_requires='~=3.7',
             install_requires=['numpy'],
-            tests_require=['pytest-xvfb', 'pytest>=3.3'],
+            tests_require=['pytest-xvfb', 'pytest>=5.0,!=5.2.3'],
             packages=['sherpa',
                       'sherpa.estmethods',
                       'sherpa.image',
@@ -102,31 +98,34 @@ meta = dict(name='sherpa',
                       'sherpa.astro.utils',
                       'sherpa.astro.xspec',
                       ],
-            package_data={'sherpa': ['include/sherpa/*.hh',
-                                     'include/sherpa/astro/*.hh',
-                                     'tests/*',
-                                     'static/css/*'],
-                          'sherpa.estmethods': ['tests/test_*.py'],
-                          'sherpa.image': ['tests/test_*.py'],
-                          'sherpa.models': ['tests/test_*.py'],
-                          'sherpa.optmethods': ['tests/test_*.py'],
-                          'sherpa.plot': ['tests/test_*.py'],
-                          'sherpa.sim': ['tests/test_*.py'],
-                          'sherpa.stats': ['tests/test_*.py'],
-                          'sherpa.ui': ['tests/test_*.py'],
-                          'sherpa.utils': ['tests/test_*.py'],
-                          'sherpa.astro': ['tests/test_*.py'],
+            package_data={# Ordered to match 'find sherpa -name tests | sort'
                           'sherpa.astro.datastack': ['tests/data/*', 'tests/*.py'],
                           'sherpa.astro.io': ['tests/test_*.py'],
                           'sherpa.astro.models': ['tests/test_*.py'],
                           'sherpa.astro.optical': ['tests/test_*.py'],
                           'sherpa.astro.sim': ['tests/test_*.py'],
+                          'sherpa.astro': ['tests/test_*.py'],
                           'sherpa.astro.ui': ['tests/data/*', 'tests/test_*.py'],
                           'sherpa.astro.utils': ['tests/test_*.py'],
+                          'sherpa.astro.xspec': ['tests/test_*.py'],
+                          'sherpa.estmethods': ['tests/test_*.py'],
+                          'sherpa.image': ['tests/test_*.py'],
+                          'sherpa.models': ['tests/test_*.py'],
+                          'sherpa.optmethods': ['tests/*.hh', 'tests/_tstoptfct.cc', 'tests/test_*.py'],
+                          'sherpa.plot': ['tests/test_*.py'],
+                          'sherpa.sim': ['tests/test_*.py'],
+                          'sherpa.stats': ['tests/test_*.py'],
+                          'sherpa': ['include/sherpa/*.hh',
+                                     'include/sherpa/astro/*.hh',
+                                     'tests/*',
+                                     'static/css/*'],
+                          'sherpa.ui': ['tests/test_*.py'],
+                          'sherpa.utils': ['tests/test_*.py'],
                           },
             data_files=[('sherpa',
                          ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
-            ext_modules=static_ext_modules, cmdclass=versioneer.get_cmdclass(),
+            ext_modules=static_ext_modules,
+            cmdclass=versioneer.get_cmdclass(),
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
