@@ -151,7 +151,7 @@ hides those values where the independent axis values are between
    The meaning of the range selected by the `notice` and `ignore` calls
    depends on the data class: :py:class:`sherpa.data.Data1DInt` and
    :py:class:`sherpa.astro.data.DataPHA` classes can treat the
-   upper limit differently (it in inclusive or exclusive)
+   upper limit differently (it can be inclusive or exclusive)
    and 2D datasets such as :py:class:`sherpa.data.Data2D` can
    use filters that use both axes.
 

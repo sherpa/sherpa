@@ -330,12 +330,13 @@ We can switch temporarily to channel units and see differences in the
 Filtering and limits
 --------------------
 
-When using energy or wavelength units (e.g. with
+When using energy or wavelength units - e.g. with
 :py:meth:`~sherpa.astro.data.DataPHA.set_analysis`, as
-:ref:`described above <analysis_units>`) the meaning of the
+:ref:`described above <analysis_units>` - the meaning of the
 arguments to
 :py:meth:`~sherpa.astro.data.DataPHA.notice` and
-:py:meth:`~sherpa.astro.data.DataPHA.ignore` differ to channel units.
+:py:meth:`~sherpa.astro.data.DataPHA.ignore` are slightly different
+than when using channel units.
 When using channels:
 
 - the low and high limits must be integers,
@@ -431,9 +432,7 @@ as it makes it easier to compare::
 .. image:: ../_static/data/pha_grouping_comparison.png
 
 In general, as the grouped bins become larger then the difference of the
-filtered range to the requested range becomes larger (the first two
-files have the same range as the samebins have been selected, it's
-just that pha1 is ungrouped)::
+filtered range to the requested range becomes larger::
 
   >>> print(pha1.get_filter())
   0.467200011015:9.869600296021
@@ -470,10 +469,10 @@ first and last channel value of each group can be calculated with::
   >>> chi[0:7]
   [39. 44. 48. 51. 54. 56. 59.]
 
-The ``apply_grouping`` method is similar but it does not apply
-any filter, so all channels are used. So to get the group
-boundaries for all channels, not just the filtered ones,
-we can say::
+The :py:meth:`~sherpa.astro.data.DataPHA.apply_grouping` method is
+similar but it does not apply any filter, so all channels are used. So
+to get the group boundaries for all channels, not just the filtered
+ones, we can say::
 
   >>> alo = pha.apply_grouping(pha.channel, pha._min)
   >>> ahi = pha.apply_grouping(pha.channel, pha._max)
