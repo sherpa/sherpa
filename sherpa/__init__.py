@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -181,6 +181,14 @@ def _get_citation_hardcoded(version):
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
 
+    add(version='4.13.1', title='sherpa/sherpa: Sherpa 4.13.1',
+        date=todate(2021, 5, 18),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
+                 'Marie-Terrell', 'Hans Moritz Günther', 'Aneta Siemiginowska',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Christoph Deil',
+                 'Brigitta Sipőcz', 'Johannes Buchner', 'Iva Laginja',
+                 'Katrin Leinweber', 'nplee', 'Todd'],
+        idval='4770623')
     add(version='4.13.0', title='sherpa/sherpa: Sherpa 4.13.0',
         date=todate(2021, 1, 8),
         authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
