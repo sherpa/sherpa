@@ -365,7 +365,7 @@ will only select those bins which lie in the range ``0.5 <= energy <
 7.0`` (although as :ref:`just explained <pha_filtering>`, the finite
 width of each channel in energy or wavelength units means that the
 distinction between ``0.5 <= energy < 7.0`` and ``0.5 <= energy <=
-7.0`` generally makes no difference).
+7.0`` makes no difference unless the bin edge is at 7 keV).
 
 .. note::
    The PHA filtering in Sherpa 4.14.0 has been updated to fix a number
