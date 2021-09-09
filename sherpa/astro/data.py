@@ -100,7 +100,7 @@ from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
-    create_expr, create_expr_int, parse_expr, bool_cast, rebin, filter_bins
+    create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
 from sherpa.astro import hc
 
@@ -3881,14 +3881,14 @@ class DataPHA(Data1D):
         if self.units == 'wavelength':
             xlo, xhi = hc / xhi, hc / xlo
 
-        # Ensure the data is in ascending order for create_expr_int.
+        # Ensure the data is in ascending order for create_expr_integrated.
         #
         if xlo[0] > xlo[-1]:
             xlo = xlo[::-1]
             xhi = xhi[::-1]
             mask = mask[::-1]
 
-        return create_expr_int(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
+        return create_expr_integrated(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
         return (self.get_filter(format='%.4f', delim='-') +

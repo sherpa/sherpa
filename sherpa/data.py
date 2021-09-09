@@ -67,7 +67,7 @@ import numpy
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
-    print_fields, create_expr, create_expr_int, calc_total_error, bool_cast, \
+    print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
     filter_bins, parallel_map_funcs
 from sherpa.utils import formatting
 
@@ -1471,8 +1471,8 @@ class Data1DInt(Data1D):
             # a mask in here
             mask = None
 
-        return create_expr_int(indep[0], indep[1], mask=mask,
-                               format=format, delim=delim)
+        return create_expr_integrated(indep[0], indep[1], mask=mask,
+                                      format=format, delim=delim)
 
     def notice(self, xlo=None, xhi=None, ignore=False):
         """Notice or ignore the given range.

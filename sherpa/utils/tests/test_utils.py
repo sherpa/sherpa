@@ -881,27 +881,27 @@ def test_create_expr_mask_singlebins():
     assert out == "0.40,0.42,0.56,0.58"
 
 
-def test_create_expr_int_empty():
+def test_create_expr_integrated_empty():
     """"No data"""
 
-    out = utils.create_expr_int([], [])
+    out = utils.create_expr_integrated([], [])
     assert out == ''
 
 
-def test_create_expr_int_size_error():
+def test_create_expr_integrated_size_error():
     """What happens when lovals and hivals have different sizes?"""
 
     with pytest.raises(ValueError) as exc:
-        utils.create_expr_int([1, 2, 3, 4], [2, 3])
+        utils.create_expr_integrated([1, 2, 3, 4], [2, 3])
 
     assert str(exc.value) == 'hivals array mis-match with lovals'
 
 
-def test_create_expr_int_mask_size_error():
+def test_create_expr_integrated_mask_size_error():
     """What happens when lovals and mask have different sizes?"""
 
     with pytest.raises(ValueError) as exc:
-        utils.create_expr_int([1, 2, 3, 4], [4, 5, 6, 7], [True, True])
+        utils.create_expr_integrated([1, 2, 3, 4], [4, 5, 6, 7], [True, True])
 
     assert str(exc.value) == 'mask array mis-match with lovals'
 
@@ -912,10 +912,10 @@ def test_create_expr_int_mask_size_error():
                           ('0.1-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.8, 1.0]),
                           ('0.1-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0])
                          ])
-def test_create_expr_int_docstring_no_mask(expected, lovals, hivals):
+def test_create_expr_integrated_docstring_no_mask(expected, lovals, hivals):
     """"Check the docstring examples"""
 
-    out = utils.create_expr_int(lovals, hivals)
+    out = utils.create_expr_integrated(lovals, hivals)
     assert out == expected
 
 
@@ -928,10 +928,10 @@ def test_create_expr_int_docstring_no_mask(expected, lovals, hivals):
                           ('0.1-0.3,0.4-0.5,0.8-1.0', [0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [False, True, True, False, True, False, True, False]),
                           ('1-2,2-5', [1, 2, 3, 4], [2, 3, 4, 5], [True, False, True, True, True]),
                          ])
-def test_create_expr_int_docstring_mask(expected, lovals, hivals ,mask):
+def test_create_expr_integrated_docstring_mask(expected, lovals, hivals ,mask):
     """"Check the docstring examples"""
 
-    out = utils.create_expr_int(lovals, hivals, mask)
+    out = utils.create_expr_integrated(lovals, hivals, mask)
     assert out == expected
 
 

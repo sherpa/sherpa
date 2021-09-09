@@ -90,7 +90,8 @@ del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 
 __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
-           'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr', 'create_expr_int',
+           'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
+           'create_expr_integrated',
            'dataspace1d', 'dataspace2d', 'demuller',
            'erf', 'export_method', 'extract_kernel',
            'filter_bins', 'gamma', 'get_fwhm',
@@ -1409,7 +1410,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
     See Also
     --------
-    create_expr_int, parse_expr
+    create_expr_integrated, parse_expr
 
     Examples
     --------
@@ -1460,7 +1461,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     exprs = []
     start = vals[0]
 
-    # We follow create_expr_int but instead of having separate lo/hi
+    # We follow create_expr_integrated but instead of having separate lo/hi
     # always we use the same array
     #
     startbins = vals[1:]
@@ -1484,15 +1485,15 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     return ",".join([filt(*expr) for expr in exprs])
 
 
-def create_expr_int(lovals, hivals, mask=None,
-                    format='%s', delim='-',
-                    eps=numpy.finfo(numpy.float32).eps):
-    """Create a string representation of a filter (integrated)
+def create_expr_integrated(lovals, hivals, mask=None,
+                           format='%s', delim='-',
+                           eps=numpy.finfo(numpy.float32).eps):
+    """Create a string representation of a filter (integrated).
 
     Use the mask to convert the input values into a set of
     comma-separated filters - low value and high value, separated by
     the delimiter - that represent the data. Unlike `create_expr` this
-    routines uses the lovals values for the start of the bin and
+    routine uses the lovals values for the start of the bin and
     hivals for the end of each bin, and assumes that contiguous bins
     should be combined.
 
@@ -1500,11 +1501,11 @@ def create_expr_int(lovals, hivals, mask=None,
     ----------
     lovals, hivals : sequence
         The lower and upper values of each bin. It is required that
-        they are in ascending order and locals < hivals.
+        they are in ascending order and ``lovals`` < ``hivals``.
     mask : sequence of bool or None, optional
         The mask setting for the full dataset, without any filtering
         applied. A value of True indicates the element is included
-        and False means it is excluded. Note that this is opposite to the 
+        and False means it is excluded. Note that this is opposite to the
         numpy convention in numpy masked arrays.
     format : str, optional
         The format used to display each value.
@@ -1528,36 +1529,36 @@ def create_expr_int(lovals, hivals, mask=None,
     When there is no mask, or all mask values are True, we just show
     the full range:
 
-    >>> create_expr_int([1, 2, 3, 4], [2, 3, 4, 5])
+    >>> create_expr_integrated([1, 2, 3, 4], [2, 3, 4, 5])
     '1-5'
-    >>> create_expr_int([1, 2, 4, 5, 7], [2, 3, 5, 6, 8])
+    >>> create_expr_integrated([1, 2, 4, 5, 7], [2, 3, 5, 6, 8])
     '1-8'
-    >>> create_expr_int([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.8, 1.0])
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.8, 1.0])
     '0.1-1.0'
-    >>> create_expr_int([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0], [True, True, True, True])
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0], [True, True, True, True])
     '0.1-1.0'
 
     If a mask is given then it defines the bins that are grouped
     together, even if the bins are not contiguous:
 
-    >>> create_expr_int([1, 2, 4], [2, 3, 5], [True, True, False, True])
+    >>> create_expr_integrated([1, 2, 4], [2, 3, 5], [True, True, False, True])
     '1-3,4-5'
-    >>> create_expr_int([1, 3, 5], [2, 4, 6], [True, True, False])
+    >>> create_expr_integrated([1, 3, 5], [2, 4, 6], [True, True, False])
     '1-4,5-6'
 
     More examples of the mask controlling the grouping:
 
-    >>> create_expr_int([0.1, 0.2, 0.6, 0.8], [0.2, 0.4, 0.8, 1.0], [True, True, False, True, True])
+    >>> create_expr_integrated([0.1, 0.2, 0.6, 0.8], [0.2, 0.4, 0.8, 1.0], [True, True, False, True, True])
     '0.1-0.4,0.6-1.0'
-    >>> create_expr_int([0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [True, True, False, True, False, True])
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [True, True, False, True, False, True])
     '0.1-0.3,0.4-0.5,0.8-1.0'
-    >>> create_expr_int([0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [False, True, True, False, True, False, True, False])
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [False, True, True, False, True, False, True, False])
     '0.1-0.3,0.4-0.5,0.8-1.0'
 
     An interesting case is that you can add a "break" between
     contiguous bins (this behavior may be changed):
 
-    >>> create_expr_int([1, 2, 3, 4], [2, 3, 4, 5], [True, False, True, True, True])
+    >>> create_expr_integrated([1, 2, 3, 4], [2, 3, 4, 5], [True, False, True, True, True])
     '1-2,2-5'
 
     """
