@@ -25,10 +25,12 @@ def savefig(name):
 
 
 np.random.seed(0)
-x = np.arange(20, 40, 0.5)
+x = np.arange(20.25, 40, 0.5)
 y = x**2 + np.random.normal(0, 10, size=x.size)
 d1 = data.Data1D('test', x, y)
 report("d1")
+report("d1.x")
+report("d1.y")
 
 plt.plot(d1.x, d1.y, 'o')
 savefig("data1d.png")
@@ -58,14 +60,14 @@ res1 = fit.fit()
 d1.notice()
 res2 = fit.fit()
 
-report('"Degrees of freedom: {} vs {}".format(res1.dof, res2.dof)')
+report('f"Degrees of freedom: {res1.dof} vs {res2.dof}"')
 
 d1.notice()
-report("d1.get_filter(format='%.1f')")
+report("d1.get_filter(format='%.2f')")
 d1.notice(25, 27)
-report("d1.get_filter(format='%.1f')")
+report("d1.get_filter(format='%.2f')")
 d1.notice(30, 35)
-report("d1.get_filter(format='%.1f')")
+report("d1.get_filter(format='%.2f')")
 
 d1.notice()
 report('d1.get_x()')
