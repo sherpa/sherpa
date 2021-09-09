@@ -437,16 +437,17 @@ def test_xmm(parallel, run_thread, fix_xspec):
 
     def cmp_thread(fres, intrin, phard, covarerr):
         assert fres.nfev == 95
-        assert fres.numpoints == 162
-        assert fres.dof == 159
+        assert fres.numpoints == 161
+        assert fres.dof == 158
 
-        assert covarerr[0] == approx(0.954993, rel=1e-3)
-        assert covarerr[1] == approx(0.142357, rel=1e-3)
-        assert covarerr[2] == approx(0.00038775, rel=1e-3)
-        assert fres.statval == approx(118.085, rel=1e-4)
-        assert intrin.nh.val == approx(11.0769, 1e-2)
-        assert phard.phoindex.val == approx(1.49055, 1e-2)
-        assert phard.norm.val == approx(0.00140301, 1e-2)
+        assert covarerr[0] == approx(0.9582243108294659, rel=1e-3)
+        assert covarerr[1] == approx(0.1429841749646365, rel=1e-3)
+        assert covarerr[2] == approx(0.00039469440047366997, rel=1e-3)
+        assert fres.statval == approx(117.59572388261346, rel=1e-4)
+
+        assert intrin.nh.val == approx(11.1155, 1e-2)
+        assert phard.phoindex.val == approx(1.498, 1e-2)
+        assert phard.norm.val == approx(0.0014224, 1e-2)
 
     check_thread(run_thread, 'xmm', parallel, cmp_thread,
                  ['intrin', 'phard'])

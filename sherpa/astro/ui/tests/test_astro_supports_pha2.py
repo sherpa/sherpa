@@ -424,9 +424,9 @@ def test_746(make_data_path, clean_astro_ui):
     ui.notice(21.4, 21.7)
 
     # internal check that getting the expected data
-    expected = np.zeros(32)
-    expected[[9, 10, 11, 12]] = [2, 3, 4, 1]
-    expected[26] = 1  # this count is from the 3c120 data
+    expected = np.zeros(30)
+    expected[[8, 9, 10, 11]] = [2, 3, 4, 1]
+    expected[25] = 1  # this count is from the 3c120 data
     d = d10.get_dep(filter=True)
     assert d == pytest.approx(expected)
 
@@ -476,8 +476,8 @@ def test_746(make_data_path, clean_astro_ui):
     assert fr.statname == 'cstat'
     assert fr.methodname == 'levmar'
     assert fr.itermethodname == 'none'
-    assert fr.numpoints == 32
-    assert fr.dof == 31
+    assert fr.numpoints == 30
+    assert fr.dof == 29
 
     # Now add in some "absolute" checks to act as regression tests.
     # If these fail then it doesn't necessarily mean something bad
@@ -485,5 +485,5 @@ def test_746(make_data_path, clean_astro_ui):
     #
     assert fr.nfev == 15
     assert sinit == pytest.approx(82.72457294394245)
-    assert sfinal == pytest.approx(15.39963248224592)
-    assert line.ampl.val == pytest.approx(113.95646989927054)
+    assert sfinal == pytest.approx(15.395474325257306)
+    assert line.ampl.val == pytest.approx(113.97801045821409)

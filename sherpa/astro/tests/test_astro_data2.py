@@ -186,7 +186,6 @@ def test_error_on_invalid_channel_ungrouped(chan):
     """
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
-    assert pha._to_channel(chan) == chan
     assert pha._from_channel(chan) == chan
 
 
@@ -203,7 +202,6 @@ def test_error_on_invalid_channel_grouped(chan, exp1, exp2):
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
                   grouping=[1, -1, 1])
     assert pha.grouped
-    assert pha._to_channel(chan) == exp1
     assert pha._from_channel(chan) == exp2
 
 

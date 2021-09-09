@@ -434,8 +434,7 @@ class Filter():
 
     @property
     def mask(self):
-        """
-        Mask array for dependent variable
+        """Mask array for dependent variable
 
         Returns
         -------
@@ -460,8 +459,7 @@ class Filter():
             self._mask = numpy.asarray(val, numpy.bool_)
 
     def apply(self, array):
-        """
-        Apply this filter to an array
+        """Apply this filter to an array
 
         Parameters
         ----------
@@ -471,6 +469,17 @@ class Filter():
         Returns
         -------
         array_like : filtered array
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+            The filter has removed all elements or there is a
+            mis-match between the `mask` and the ``array`` argument.
+
+        See Also
+        --------
+        notice
+
         """
         if array is None:
             return
@@ -487,14 +496,97 @@ class Filter():
             raise DataErr('mismatch', 'mask', 'data array')
         return array[self.mask]
 
-    def notice(self, mins, maxes, axislist, ignore=False):
+    def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
+        """Select a range to notice or ignore (remove).
+
+        The ``axislist`` argument is expected to be sent the
+        independent axis of a `Data` object - so ``(x, )`` for
+        one-dimensional data, ``(xlo, xhi)`` for integrated
+        one-dimensional data, ``(x0, x1)`` for two-dimensional data,
+        and ``(x0lo, x1lo, x0hi, x1hi)`` for integrated two-dimensinal
+        data. The ``mins`` and ``maxes`` must then be set to match
+        this ordering.
+
+        Parameters
+        ----------
+        mins : sequence of values
+           The minimum value of the valid range (elements may be None
+           to indicate no lower bound). When not None, it is treated
+           as an inclusive limit, so points >= min are included.
+        maxes : sequence of values
+           The maximum value of the valid range (elements may be None
+           to indicate no upper bound). It is treated as an inclusive
+           limit (points <= max) when integrated is False, and an
+           exclusive limit (points < max) when integrated is True.
+        axislist: sequence of arrays
+           The axis to apply the range to. There must be the same
+           number of elements in mins, maxes, and axislist.  The
+           number of elements of each element of axislist must also
+           agree (the cell values do not need to match).
+        ignore : bool, optional
+           If True the range is to be ignored, otherwise it is
+           included.  The default is to include the range.
+        integrated : bool, optional
+           Is the data integrated (we have low and high bin edges)?  The
+           default is False. When True it is expected that axislist
+           contains a even number of rows, where the odd values are the
+           low edges and the even values the upper edges, and that the
+           mins and maxes only ever contain a single value, given in
+           (None, hi) and (lo, None) ordering.
+
+        See Also
+        --------
+        apply
+
+        Examples
+        --------
+
+        Select points in xs which are in the range 1.5 <= x <= 4:
+
+        >>> f = Filter()
+        >>> f.mask
+        True
+        >>> xs = [1, 2, 3, 4, 5]
+        >>> f.notice([1.5], [4], (xs, ))
+        >>> f.mask
+        array([False,  True,  True,  True, False])
+
+        Filter the data to select all points with x0 >= 1.5 and x1 <= 4:
+
+        >>> f = Filter()
+        >>> x0 = [1, 1.4, 1.6, 2, 3]
+        >>> x1 = [2, 2, 4, 4, 6]
+        >>> f.notice([1.5, None], [None, 4], (x0, x1))
+        >>> f.mask
+        array([False, False,  True,  True, False])
+
+        For integrated data sets the lower and upper edges should be
+        sent separately with the max and min limits, along with
+        setting the integrated flag. The following selects the bins
+        that cover the range 2 to 4 and 1.5 to 3.5:
+
+        >>> xlo = [1, 2, 3, 4, 5]
+        >>> xhi = [2, 3, 4, 5, 6]
+        >>> f = Filter()
+        >>> f.notice([None, 2], [4, None], (xlo, xhi), integrated=True)
+        >>> f.mask
+        array([False,  True,  True,  False, False])
+        >>> f.notice([None, 1.5], [3.5, None], (xlo, xhi), integrated=True)
+        >>> f.mask
+        array([True,  True,  True,  False, False])
+
+        """
+
+        # If integrated is True then we should have an even number
+        # of axislist elements, but we do not require this.
+        #
         ignore = bool_cast(ignore)
         for vals, label in zip([mins, maxes, axislist],
                                ['lower bound', 'upper bound', 'grid']):
             if any([isinstance(val, str) for val in vals]):
                 raise DataErr('typecheck', label)
 
-        mask = filter_bins(mins, maxes, axislist)
+        mask = filter_bins(mins, maxes, axislist, integrated=integrated)
 
         if mask is None:
             self.mask = not ignore
@@ -863,8 +955,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def apply_filter(self, data):
         return self._data_space.filter.apply(data)
 
-    def notice(self, mins, maxes, ignore=False):
-        self._data_space.filter.notice(mins, maxes, self.get_indep(), ignore)
+    def notice(self, mins, maxes, ignore=False, integrated=False):
+        self._data_space.filter.notice(mins, maxes, self.get_indep(),
+                                       ignore=ignore, integrated=integrated)
 
     def ignore(self, *args, **kwargs):
         kwargs['ignore'] = True
@@ -1156,6 +1249,51 @@ class Data1D(Data):
             return data_space.grid
 
     def notice(self, xlo=None, xhi=None, ignore=False):
+        """Notice or ignore the given range.
+
+        Ranges are inclusive for both the lower and upper limits.
+
+        Parameters
+        ----------
+        xlo, xhi : number or None, optional
+            The range to change. A value of None means the minimum or
+            maximum permitted value.
+        ignore : bool, optional
+            Set to True if the range should be ignored. The default is
+            to notice the range.
+
+        See Also
+        --------
+        get_filter, get_filter_expr
+
+        Notes
+        -----
+        If no ranges have been ignored then a call to `notice` with
+        `ignore=False` will select just the `lo` to `hi` range, and
+        exclude any bins outside this range. If there has been a
+        filter applied then the range `lo` to `hi` will be added to
+        the range of noticed data (when `ignore=False`).
+
+        Examples
+        --------
+
+        >>> x = np.arange(0.4, 2.6, 0.2)
+        >>> y = np.ones_like(x)
+        >>> d = Data1D('example', x, y)
+        >>> d.x[0], d.x[-1]
+        (0.4, 2.4000000000000004)
+        >>> d.notice()
+        >>> d.get_filter(format='%.1f')
+        '0.4:2.4'
+        >>> d.notice(0.8, 1.2)
+        >>> d.get_filter(format='%.1f')
+        '0.8:1.2'
+        >>> d.notice(1.5, 2.1)
+        >>> d.get_filter(format='%.1f')
+        '0.8:1.2,1.6:2.0'
+
+        """
+
         Data.notice(self, (xlo,), (xhi,), ignore)
 
     @property
@@ -1216,7 +1354,52 @@ class Data1DInt(Data1D):
         return xhi - xlo
 
     def notice(self, xlo=None, xhi=None, ignore=False):
-        Data.notice(self, (None, xlo), (xhi, None), ignore)
+        """Notice or ignore the given range.
+
+        Ranges are inclusive for the lower limit and exclusive
+        for the upper limit.
+
+        Parameters
+        ----------
+        xlo, xhi : number or None, optional
+            The range to change. A value of None means the minimum or
+            maximum permitted value.
+        ignore : bool, optional
+            Set to True if the range should be ignored. The default is
+            to notice the range.
+
+        See Also
+        --------
+        get_filter, get_filter_expr
+
+        Notes
+        -----
+        If no ranges have been ignored then a call to `notice` with
+        `ignore=False` will select just the `lo` to `hi` range, and
+        exclude any bins outside this range. If there has been a
+        filter applied then the range `lo` to `hi` will be added to
+        the range of noticed data (when `ignore=False`).
+
+        Examples
+        --------
+
+        >>> edges = np.arange(0.4, 2.6, 0.2)
+        >>> xlo, xhi = edges[:-1], edges[1:]
+        >>> y = np.ones_like(xlo)
+        >>> d = Data1DInt('example', xlo, xhi, y)
+        >>> d.xlo[0], d.xhi[-1]
+        (0.4, 2.4000000000000004)
+        >>> d.notice()
+        >>> d.get_filter(format='%.1f')
+        '0.5:2.3'
+        >>> d.notice(0.8, 1.9)
+        >>> d.get_filter(format='%.1f')
+        '0.7:1.9'
+
+        """
+
+        Data.notice(self, (None, xlo), (xhi, None),
+                    ignore=ignore, integrated=True)
 
     @property
     def xlo(self):
@@ -1347,7 +1530,8 @@ class Data2D(Data):
         return self.get_x1()
 
     def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
-        Data.notice(self, (x0lo, x1lo), (x0hi, x1hi), ignore)
+        Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
+                    ignore=ignore)
 
 
 class Data2DInt(Data2D):
@@ -1372,7 +1556,8 @@ class Data2DInt(Data2D):
         return (indep.x1lo + indep.x1hi) / 2.0
 
     def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
-        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None), ignore)
+        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
+                    ignore=ignore, integrated=True)
 
 
 # Notebook representations

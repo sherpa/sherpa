@@ -407,17 +407,17 @@ def test_filter_bins_one(lo, hi, res):
 
 @pytest.mark.parametrize("lo,hi,res",
                          [(0, 10, [False] * 0 + [True] * 5 + [False] * 0),
-                          (1, 5, [False] * 0 + [True] * 5 + [False] * 0),
-                          (2, 5, [False] * 0 + [True] * 5 + [False] * 0),
-                          (2, None, [False] * 0 + [True] * 5 + [False] * 0),
-                          (1, 4, [False] * 0 + [True] * 4 + [False] * 1),
-                          (None, 4, [False] * 0 + [True] * 4 + [False] * 1),
+                          (1, 5, [False] * 0 + [True] * 4 + [False] * 1),
+                          (2, 5, [False] * 1 + [True] * 3 + [False] * 1),
+                          (2, None, [False] * 1 + [True] * 4 + [False] * 0),
+                          (1, 4, [False] * 0 + [True] * 3 + [False] * 2),
+                          (None, 4, [False] * 0 + [True] * 3 + [False] * 2),
                           (1.1, 4.9, [False] * 0 + [True] * 4 + [False] * 1),
-                          (2, 4, [False] * 0 + [True] * 4 + [False] * 1),
+                          (2, 4, [False] * 1 + [True] * 2 + [False] * 2),
                           # Have minimum > maximum, which is technically invalid
-                          (4, 3, [False] * 2 + [True] * 1 + [False] * 2),
+                          (4, 3, [False] * 5 + [True] * 0 + [False] * 0),
                           # Have minimum = maximum = bin value
-                          (4, 4, [False] * 2 + [True] * 2 + [False] * 1),
+                          (4, 4, [False] * 5 + [True] * 0 + [False] * 0),
                           # Have minimum = maximum, not equal to a bin value
                           (3.1, 3.1, [False] * 2 + [True] * 1 + [False] * 2)])
 def test_filter_bins_one_int(lo, hi, res):
@@ -432,7 +432,8 @@ def test_filter_bins_one_int(lo, hi, res):
 
     lovals = numpy.asarray([1, 2, 3, 4, 5])
     hivals = lovals + 1
-    flags = utils.filter_bins([None, lo], [hi, None], [lovals, hivals])
+    flags = utils.filter_bins([None, lo], [hi, None], [lovals, hivals],
+                              integrated=True)
     assert flags == pytest.approx(res)
 
 

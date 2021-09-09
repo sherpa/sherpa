@@ -994,24 +994,31 @@ def pad_bounding_box(kernel, mask):
 eps = numpy.finfo(numpy.float32).eps
 
 
-def filter_bins(mins, maxes, axislist):
+def filter_bins(mins, maxes, axislist, integrated=False):
     """What mask represents the given set of filters?
+
+    The ranges are treated as inclusive at both ends if integrated is
+    False, the default, otherwise the lower limit is inclusive but the
+    upper limit is exclusive.
 
     Parameters
     ----------
     mins : sequence of values
        The minimum value of the valid range (elements may be None).
-       When not None, it is treated as an inclusive limit, so
-       points >= min are included.
     maxes : sequence of values
        The maximum value of the valid range (elements may be None).
-       When not None, it is treated as an inclusive limit, so
-       points <= max are included.
     axislist: sequence of arrays
        The axis to apply the range to. There must be the same
        number of elements in mins, maxes, and axislist.
        The number of elements of each element of axislist must
        also agree (the cell values do not need to match).
+    integrated : bool, optional
+       Is the data integrated (we have low and high bin edges)?  The
+       default is False. When True it is expected that axislist
+       contains a even number of rows, where the odd values are the
+       low edges and the even values the upper edges, and that the
+       mins and maxes only ever contain a single value, given in
+       (None, hi) and (lo, None) ordering.
 
     Returns
     -------
@@ -1023,36 +1030,60 @@ def filter_bins(mins, maxes, axislist):
     Examples
     --------
 
-    Calculate those points in xs which are in the range 1.5 <= x <= 2.3.
+    Calculate those points in xs which are in the range 1.5 <= x <= 4.
 
-    >>> mask = filter_bins([1.5], [2.3], [xs])
+    >>> xs = [1, 2, 3, 4, 5]
+    >>> filter_bins([1.5], [4], [xs])
+    array([False,  True,  True,  True, False])
 
     Repeat the above calculation by combining filters for x >= 1.5
-    and x <= 2.3.
+    and x <= 4 (note that the grid must be repeated for each
+    filter):
 
-    >>> mask = filter_bins([1.5, None], [None, 2.3], [xs, xs])
+    >>> filter_bins([1.5, None], [None, 4], [xs, xs])
+    array([False,  True,  True,  True, False])
+
+    For integrated data sets the lower and upper edges should be sent
+    separately with the max and min limits, along with setting the
+    integrated flag. The following selects the bins that cover the
+    range 2 to 4 and 1.5 to 3.5:
+
+    >>> xlo = [1, 2, 3, 4, 5]
+    >>> xhi = [2, 3, 4, 5, 6]
+    >>> filter_bins([None, 2], [4, None], [xlo, xhi], integrated=True)
+    array([False,  True,  True,  False, False])
+    >>> filter_bins([None, 1.5], [3.5, None], [xlo, xhi], integrated=True)
+    array([True,  True,  True,  False, False])
 
     """
 
     mask = None
+
+    def locheck(lo, axis):
+        if integrated:
+            return sao_fcmp(lo, axis, eps) < 0
+        else:
+            return sao_fcmp(lo, axis, eps) <= 0
+
+    def hicheck(hi, axis):
+        if integrated:
+            return sao_fcmp(hi, axis, eps) > 0
+        else:
+            return sao_fcmp(hi, axis, eps) >= 0
 
     for lo, hi, axis in zip(mins, maxes, axislist):
 
         if (lo is None) and (hi is None):
             continue
 
-        if lo is None:
-            # axismask = axis <= hi
-            axismask = (sao_fcmp(hi, axis, eps) >= 0)
+        axis = numpy.asarray(axis)
+        axismask = numpy.ones(axis.size, dtype=bool)
 
-        elif hi is None:
-            # axismask = axis >= lo
-            axismask = (sao_fcmp(lo, axis, eps) <= 0)
+        if lo is not None:
+            axismask &= locheck(lo, axis)
 
-        else:
-            # axismask = (lo <= axis) & (axis <= hi)
-            axismask = (sao_fcmp(lo, axis, eps) <= 0) & \
-                       (sao_fcmp(hi, axis, eps) >= 0)
+        if hi is not None:
+            axismask &= hicheck(hi, axis)
 
         if mask is None:
             mask = axismask

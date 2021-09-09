@@ -411,8 +411,8 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     # bin.
     #
     # Unfortunately, using a range of 0.3-8.0 gives 771 bins
-    # in XSPEC - channels 30 to 800 - but 772 bins in Sherpa,
-    # channels 30 to 801.
+    # in XSPEC - channels 30 to 800 - but 770 bins in Sherpa,
+    # channels 31 to 800.
     #
     # Note that the channel numbering starts at 0:
     # % dmlist target_sr.pha header,clean,raw | grep TLMIN
@@ -449,14 +449,13 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     # slightly different in Sherpa vs XSPEC).
     #
     # When using ui.notice(0.3, 8.0); ui.get_indep(filter=True)
-    # returns 772 channels, 30 to 801.
+    # returns 770 channels, 31 to 800.
     #
-    # Using ui.notice(0.3, 7.995) selects channels 30 to 800. So
-    # this range is used. Alternatively, channel 801 could have been
-    # excluded explicitly. Note that notice(0.299, 7.995) selects
-    # the same range as 0.3-7.995.
+    # Using ui.notice(0.3, 7.995) selects channels 31 to 800.
+    # Using ui.notice(0.299, 8.0) selects channels 30 to 800.
+    # Using ui.notice(0.299, 7.995) selects channels 30 to 800.
     #
-    ui.notice(0.3, 7.995)
+    ui.notice(0.299, 8.0)
 
     # Check the selected range
     pha = ui.get_data()
