@@ -369,7 +369,7 @@ distinction between ``0.5 <= energy < 7.0`` and ``0.5 <= energy <=
 
 .. note::
    The PHA filtering in Sherpa 4.14.0 has been updated to fix a number
-   or corner cases which can result in filter expressions changing the
+   of corner cases which can result in filter expressions changing the
    first or last selected bin. This can then cause fit differences as
    the number of degrees of freedom and the fit parameters can change
    slightly.

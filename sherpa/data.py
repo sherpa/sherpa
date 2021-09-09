@@ -1400,12 +1400,12 @@ class Data1DInt(Data1D):
         """Return the data filter as a string.
 
         For each noticed range the filter is reported as
-        starting at the low ege of the first bin and ends
+        starting at the low edge of the first bin and ends
         at the upper edge of the last bin in the range.
 
         .. versionchanged:: 4.14.0
            Prior to 4.14.0 the filter used the mid-point of the bin,
-           not it's low or high value.
+           not its low or high value.
 
         Parameters
         ----------

@@ -3780,7 +3780,7 @@ class DataPHA(Data1D):
 
         .. versionchanged:: 4.14.0
            Prior to 4.14.0 the filter used the mid-point of the bin,
-           not it's low or high value.
+           not its low or high value.
 
         Parameters
         ----------
@@ -3910,8 +3910,8 @@ class DataPHA(Data1D):
         .. versionchanged:: 4.14.0
            PHA filtering has been improved to fix a number of corner
            cases which can result in the same filter now selecting one
-           or two less channels that done in earlier versions of
-           Sherpa. The lo and hi arguments are now restricted based on
+           or two fewer channels that done in earlier versions of
+           Sherpa. The ``lo`` and ``hi`` arguments are now restricted based on
            the units setting.
 
         Parameters
@@ -3935,7 +3935,7 @@ class DataPHA(Data1D):
         Notes
         -----
         Calling notice with no arguments selects all points in the
-        dataset (or, if `ignore=True`, it will remove all points).
+        dataset (or, if ``ignore=True``, it will remove all points).
 
         If no channels have been ignored then a call to `notice` with
         ``ignore=False`` will select just the ``lo`` to ``hi`` range,
@@ -3957,7 +3957,6 @@ class DataPHA(Data1D):
         - the lo and hi arguments, if set, must be >= 0,
         - and the lo limit is inclusive but the hi limit is exclusive.
 
-        For
 
         Examples
         --------

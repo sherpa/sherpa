@@ -1491,7 +1491,7 @@ def create_expr_int(lovals, hivals, mask=None,
 
     Use the mask to convert the input values into a set of
     comma-separated filters - low value and high value, separated by
-    the delimeter - that represent the data. Unlike create_expr this
+    the delimiter - that represent the data. Unlike `create_expr` this
     routines uses the lovals values for the start of the bin and
     hivals for the end of each bin, and assumes that contiguous bins
     should be combined.
@@ -1504,7 +1504,8 @@ def create_expr_int(lovals, hivals, mask=None,
     mask : sequence of bool or None, optional
         The mask setting for the full dataset, without any filtering
         applied. A value of True indicates the element is included
-        and False means it is excluded.
+        and False means it is excluded. Note that this is opposite to the 
+        numpy convention in numpy masked arrays.
     format : str, optional
         The format used to display each value.
     delim : str, optional
@@ -1524,7 +1525,7 @@ def create_expr_int(lovals, hivals, mask=None,
     Examples
     --------
 
-    When there's no mask, or all mask values are True, we just show
+    When there is no mask, or all mask values are True, we just show
     the full range:
 
     >>> create_expr_int([1, 2, 3, 4], [2, 3, 4, 5])
@@ -1536,7 +1537,7 @@ def create_expr_int(lovals, hivals, mask=None,
     >>> create_expr_int([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0], [True, True, True, True])
     '0.1-1.0'
 
-    If there is mask then this defines the bins that are grouped
+    If a mask is given then it defines the bins that are grouped
     together, even if the bins are not contiguous:
 
     >>> create_expr_int([1, 2, 4], [2, 3, 5], [True, True, False, True])

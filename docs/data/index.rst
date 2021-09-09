@@ -139,7 +139,10 @@ whether a filter has been applied: if it returns ``True`` then
 no filter is set, ``False`` when all data has been filtered out,
 otherwise it is a bool array
 where ``False`` values indicate those elements that are to be
-ignored. For example, the following
+ignored. 
+Note that the Sherpa definition is opposite of the convention in numpy, where `True` indicates
+a masked value to be ignored, while Sherpa uses `False` for this purpose. 
+For example, the following
 hides those values where the independent axis values are between
 21.2 and 22.8::
 
@@ -248,7 +251,7 @@ Accessing filtered data
 
 Although the :py:attr:`~sherpa.data.Data.mask` attribure can be used
 to manually filter the data, many data accessors accept a ``filter``
-argument which if set will filter the requested data.  When a filter
+argument which, if set, will filter the requested data.  When a filter
 is applied, :py:meth:`~sherpa.data.Data1D.get_x` and
 :py:meth:`~sherpa.data.Data.get_y` will default to returning all the
 data but if the ``filter`` argument is set then the current filter
