@@ -239,7 +239,7 @@ class NelderMead4(NelderMead0):
         return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0, 1, 1], verbose=0):
+                 step=None, finalsimplex=[0, 1, 1], verbose=0, reflect=True):
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
@@ -253,8 +253,8 @@ class NelderMead4(NelderMead0):
         simp = 1.0e-2 * tol
         step = n * [0.4]
         self.par, self.fmin, tmpnfev, ifault = \
-            _saoopt.minim(verbose, maxnfev - nfev, init, iquad, simp, tol*10,
-                          step, xmin, xmax, x0, fcn)
+            _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
+                          tol*10, step, xmin, xmax, x0, fcn)
         self.nfev = nfev + tmpnfev
         return self.nfev, self.fmin, self.par
 
@@ -266,7 +266,7 @@ class NelderMead5(NelderMead0):
         return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=1.0e-6,  maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0):
+                 step=None, finalsimplex=1, verbose=0, reflect=True):
         init = 0
         iquad = 1
         simp = 1.0e-2 * tol
@@ -276,7 +276,7 @@ class NelderMead5(NelderMead0):
             step = n * [0.4]
         maxnfev = self.get_maxnfev(maxnfev, n)
         par, fmin, nfev, ifault = \
-            _saoopt.minim(verbose, maxnfev, init, iquad, simp, tol*10,
+            _saoopt.minim(reflect, verbose, maxnfev, init, iquad, simp, tol*10,
                           step, xmin, xmax, x0, fcn)
         return nfev, fmin, par
 

@@ -68,16 +68,14 @@ Best-fit value: 4.0
 """
 
 import random
-
 import numpy
 
+from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
 from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
-
-from . import _saoopt
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
@@ -469,10 +467,10 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
 
 #
-# Nelder Mead
+# C-version of minim
 #
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1):
+          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
 
     # TODO: rework so do not have two stat_cb0 functions which
     #       are both used
@@ -497,8 +495,9 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         return orig_fcn(x_new)
 
     init = 0
-    x, fval, neval, ifault = _saoopt.minim(verbose, maxfev, init, iquad, simp,
-                                           ftol, step, xmin, xmax, x, stat_cb0)
+    x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
+                                           iquad, simp, ftol, step, \
+                                           xmin, xmax, x, stat_cb0)
 
     key = {
         0: (True, 'successful termination'),
@@ -739,8 +738,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 #
 def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                initsimplex=0, finalsimplex=9, step=None, iquad=1,
-               verbose=0):
-    r"""Nelder-Mead Simplex optimization method.
+               verbose=0, reflect=True):
+    """Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
     R. Mead [1]_, is a direct search method of optimization for
@@ -1041,7 +1040,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     covarerr = None
     if len(finalsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
-                       maxfev=maxfev - nfev - 12, iquad=1)
+                       maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
         nelmea_x = numpy.asarray(nelmea[1], numpy.float_)
         nelmea_nfev = nelmea[4].get('nfev')
         info = nelmea[4].get('info')
