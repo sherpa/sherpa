@@ -3918,8 +3918,8 @@ class DataPHA(Data1D):
         ----------
         lo, hi : number or None, optional
             The range to change. A value of None means the minimum or
-            maximum permitted value. The units of lo and hi are set by
-            the units field.
+            maximum permitted value. The units of ``lo`` and ``hi``
+            are set by the units field.
         ignore : bool, optional
             Set to True if the range should be ignored. The default is
             to notice the range.
@@ -3949,14 +3949,13 @@ class DataPHA(Data1D):
 
         When filtering with channel units then:
 
-        - the lo and hi arguments, if set, must be integers,
-        - and the lo and hi values are inclusive.
+        - the ``lo`` and ``hi`` arguments, if set, must be integers,
+        - and the ``lo`` and ``hi`` values are inclusive.
 
         For energy and wavelength filters:
 
-        - the lo and hi arguments, if set, must be >= 0,
-        - and the lo limit is inclusive but the hi limit is exclusive.
-
+        - the ``lo`` and ``hi`` arguments, if set, must be >= 0,
+        - and the ``lo`` limit is inclusive but the ``hi`` limit is exclusive.
 
         Examples
         --------
