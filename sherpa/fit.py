@@ -227,7 +227,7 @@ class FitResults(NoNewAttributesAfterInit):
        statistic value, or a larger value, if the assumed model is
        true and the current model parameters are the true parameter
        values. This will be `None` if the value can not be calculated
-       with the current statistic (e.g.  the Cash statistic).
+       with the current statistic (e.g. the Cash statistic).
     rstat : number or None
        The reduced statistic value (the `statval` field divided by
        `dof`). This is not calculated for all statistics.
@@ -1006,11 +1006,12 @@ class Fit(NoNewAttributesAfterInit):
     stat : `sherpa.stats.Stat` or `None`, optional
        The statistic object to use. If not given then
        `Chi2Gehrels` is used.
-    method : sherpa.optmethods.OptMethod instance or None, optional
-       The optimiser to use. If not given then `LevMar` is used.
-    estmethod : sherpa.estmethod.EstMethod instance or None, optional
+    method : `sherpa.optmethods.OptMethod` instance or None, optional
+       The optimiser to use. If not given then `sherpa.optmethods.LevMar`
+       is used.
+    estmethod : `sherpa.estmethods.EstMethod` or None, optional
        The class used to calculate errors. If not given then
-       `Covariance` is used.
+       `sherpa.estmethods.Covariance` is used.
     itermethod_opts : dict or None, optional
        If set, defines the iterated-fit method and options to use.
        It is passed through to `IterFit`.
@@ -1115,7 +1116,7 @@ class Fit(NoNewAttributesAfterInit):
 
         See Also
         --------
-        `calc_chisqr`, `calc_stat_info`
+        calc_chisqr, calc_stat_info
 
         """
 
@@ -1287,7 +1288,7 @@ class Fit(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        *others : :py:class:`sherpa.fit.Fit` instances
+        *others : `sherpa.fit.Fit` instances
             The ``data`` and ``model`` attributes of these arguments
             are used, along with those from the object.
 
@@ -1324,7 +1325,7 @@ class Fit(NoNewAttributesAfterInit):
             the associated optimisation method instance to use. This
             is only used if the method is changed, as described in
             the Notes section below.
-        parlist : sequence of `sherpa.model.parameter.Parameter` or None, optional
+        parlist : sequence of `sherpa.models.parameter.Parameter` or None, optional
             The names of the parameters for which the errors should
             be calculated. If set to `None` then all the thawed
             parameters are used.
@@ -1338,7 +1339,7 @@ class Fit(NoNewAttributesAfterInit):
         `sherpa.utils.err.EstErr`
            If any parameter in parlist is not valid (i.e. is not
            thawed or is not a member of the model expression being
-           fit), or if the statistic is `LeastSq`,
+           fit), or if the statistic is `~sherpa.optmethods.LeastSq`,
            or if the reduced chi-square value of the current parameter
            values is larger than the ``max_rstat`` option (for
            chi-square statistics).

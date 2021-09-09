@@ -79,23 +79,28 @@ class Stat(NoNewAttributesAfterInit):
     def _bundle_inputs(data, model):
         """Convert input into SimulFit instances.
 
-        Convert the inputs into DataSimulFit and SimulFitModel
+        Convert the inputs into `sherpa.data.DataSimulFit` and
+        `sherpa.models.model.SimulFitModel`
         instances.
 
         Parameters
         ----------
-        data : a Data or DataSimulFit instance
+        data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
             The data set, or sets, to use.
-        model : a Model or SimulFitModel instance
-            The model expression, or expressions. If a SimulFitModel
+        model : `sherpa.models.model.Model` or `sherpa.models.model.SimulFitModel`
+            The model expression, or expressions. If a
+            `~sherpa.models.model.SimulFitModel`
             is given then it must match the number of data sets in the
             data parameter.
 
         Returns
         -------
-        data, model : DataSimulFit instance, SimulFitModel instance
-            If the input was a SimulFit object then this is just
-            the input value.
+        data : `sherpa.data.DataSimulFit`
+            If the input was a `~sherpa.data.DataSimulFit` object
+            then this is just the input value.
+        model : `sherpa.models.model.SimulFitModel`
+            If the input was a `~sherpa.models.model.SimulFitModel`
+            object then this is just the input value.
         """
 
         if not isinstance(data, DataSimulFit):
@@ -112,7 +117,7 @@ class Stat(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        data : a DataSimulFit instance
+        data : `sherpa.data.DataSimulFit`
             The data sets to use.
 
         Raises
@@ -143,9 +148,9 @@ class Stat(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        data : a DataSimulFit instance
+        data : `sherpa.data.DataSimulFit`
             The data sets to use.
-        model : a SimulFitModel instance
+        model : `sherpa.models.model.SimulFitModel`
             The model expressions for each data set. It must match
             the data parameter (the models are in the same order
             as the data objects).
@@ -173,18 +178,21 @@ class Stat(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        data : a Data or DataSimulFit instance
+        data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
             The data set, or sets, to use.
-        model : a Model or SimulFitModel instance
+        model : `sherpa.models.model.Model` or `sherpa.models.model.SimulFitModel`
             The model expressions for each data set. It must match
             the data parameter (the models are in the same order
             as the data objects).
 
         Returns
         -------
-        data, model : DataSimulFit instance, SimulFitModel instance
-            If the input was a SimulFit object then this is just
-            the input value.
+        data : `sherpa.data.DataSimulFit`
+            If the input was a `~sherpa.data.DataSimulFit` object
+            then this is just the input value.
+        model : `sherpa.models.model.SimulFitModel`
+            If the input was a `~sherpa.models.model.SimulFitModel`
+            object then this is just the input value.
         """
 
         if self._calc is None:
@@ -235,17 +243,20 @@ class Stat(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        data : a Data or DataSimulFit instance
+        data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
             The data set, or sets, to use.
-        model : a Model or SimulFitModel instance
-            The model expression, or expressions. If a SimulFitModel
+        model :  `sherpa.models.model.Model` or `sherpa.models.model.SimulFitModel`
+            The model expression, or expressions. If a
+            `sherpa.models.model.SimulFitModel`
             is given then it must match the number of data sets in the
             data parameter.
 
         Returns
         -------
-        statval, fvec : number, array of numbers
-            The statistic value and the per-bin "statistic" value.
+        statval : number
+            The value of the statistic.
+        fvec : array of numbers
+            The per-bin "statistic" value.
 
         """
 
@@ -268,11 +279,16 @@ class Stat(NoNewAttributesAfterInit):
 
         Returns
         -------
-        rstat, qval : float or NaN or None, float or NaN or None
-            The reduced statistic and q value. If the statistic does not support
-            a goodness of fit then the return values are None. If it does then
-            NaN is returned if either the number of degrees of freedom is 0
-            (or less), or the statistic value is less than 0.
+        rstat : float or NaN or None
+            The reduced statistic. If the statistic does not support
+            a goodness of fit then the return value is `None`. If it does
+            then NaN is returned if either the number of degrees of freedom is
+            0 (or less), or the statistic value is less than 0.
+        qval : float or NaN or None
+            The q value. If the statistic does not support
+            a goodness of fit then the return values are `None`. If it does
+            then NaN is returned if either the number of degrees of freedom is
+            0 (or less), or the statistic value is less than 0.
 
         """
 
@@ -568,10 +584,11 @@ class Chi2(Stat):
 
         Parameters
         ----------
-        data : a Data or DataSimulFit instance
+        data :  `sherpa.data.Data` or `sherpa.data.DataSimulFit`
             The data set, or sets, to use.
-        model : a Model or SimulFitModel instance
-            The model expression, or expressions. If a SimulFitModel
+        model : `sherpa.models.model.Model` or `sherpa.models.model.SimulFitModel`
+            The model expression, or expressions. If a
+            `sherpa.models.model.SimulFitModel`
             is given then it must match the number of data sets in the
             data parameter.
 

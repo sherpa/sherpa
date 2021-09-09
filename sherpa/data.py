@@ -20,18 +20,18 @@
 
 """Tools for creating, storing, inspecting, and manipulating data sets.
 
-The main classes for representing data sets are :py:class:`Data1D`,
-:py:class:`Data1DInt`, and :py:class:`Data2D`, to handle (x, y), (xlo,
+The main classes for representing data sets are `Data1D`,
+`Data1DInt`, and `Data2D`, to handle (x, y), (xlo,
 xhi, y), and (x1, x2, y) data, although there are also
-more-specialized cases, such as :py:class:`Data1DAsymmetricErrs`. These
-classes build on the :py:class:`Data` class, which supports dynamic
+more-specialized cases, such as `Data1DAsymmetricErrs`. These
+classes build on the `Data` class, which supports dynamic
 filtering of data - to select a subset of the data range - as well as
 data access and model evaluation to match the data range.
 
-The :py:class:`Filter` class is used to handle data filtering - that
-is, to combine filters such as selecting the range a to b (`notice`)
-and hiding the range c to d (`ignore`). This is used with the
-:py:class:`DataSpace1D` and :py:class:`DataSpace2D` classes to handle
+The `Filter` class is used to handle data filtering - that
+is, to combine filters such as selecting the range a to b (``notice``)
+and hiding the range c to d (``ignore``). This is used with the
+`DataSpace1D` and `DataSpace2D` classes to handle
 evaluating models on different grids to the data, and then converting
 back to the data space, whether by rebinnig or interpolation.
 
@@ -50,8 +50,8 @@ References
 Examples
 --------
 
-Create a data set representing the independent axis (`x`) and
-dependent axis (`y`) then filter to select only those values between
+Create a data set representing the independent axis (``x``) and
+dependent axis (``y``) then filter to select only those values between
 500-520 and 530-700:
 
 >>> d1 = Data1D('example', x, y)
@@ -614,6 +614,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         Return the dimensions of this data space as a tuple of tuples.
         The first element in the tuple is a tuple with the dimensions of the data space, while the second element
         provides the size of the dependent array.
+
         Returns
         -------
         tuple
@@ -625,6 +626,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def indep(self):
         """
         Return the grid of the data space associated with this data set.
+
         Returns
         -------
         tuple of array_like
@@ -784,7 +786,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         Returns
         -------
-        axis : array or `None`
+        axis : array or None
            The systematic error for each data point. A value of
            `None` is returned if the data set has no systematic
            errors.
@@ -918,7 +920,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
         The name for the collection of data.
     datasets : sequence of Data objects
         The datasets to be stored; there must be at least one. They are
-        assumed to behave as sherpa.data.Data objects, but there is no
+        assumed to behave as `sherpa.data.Data` objects, but there is no
         check for this condition.
 
     Attributes
@@ -1168,7 +1170,9 @@ class Data1D(Data):
 
 class Data1DAsymmetricErrs(Data1D):
     """1-D data set with asymmetric errors
-    Note: elo and ehi shall be stored as delta values from y"""
+
+    Note: elo and ehi shall be stored as delta values from y
+    """
 
     _fields = ("name", "x", "y", "staterror", "syserror", "elo", "ehi")
 
@@ -1381,7 +1385,6 @@ def html_data1d(data):
     """HTML representation: Data1D
 
     If have matplotlib then plot the data, otherwise summarize it.
-
     """
 
     from sherpa.plot import DataPlot, backend
@@ -1436,7 +1439,6 @@ def html_data1dint(data):
     """HTML representation: Data1DInt
 
     If have matplotlib then plot the data, otherwise summarize it.
-
     """
 
     from sherpa.plot import DataHistogramPlot, backend
