@@ -1218,6 +1218,12 @@ class Data1D(Data):
         delim : str, optional
             The string used to mark the low-to-high range.
 
+        Returns
+        -------
+        filter : str
+           The filter, represented as a collection of single values or
+           ranges, separated by commas.
+
         See Also
         --------
         get_filter_expr, ignore, notice
@@ -1249,7 +1255,14 @@ class Data1D(Data):
     def get_filter_expr(self):
         """Return the data filter as a string along with the units.
 
-        This is a specialised version of get_filter.
+        This is a specialised version of get_filter which adds the
+        axis units.
+
+        Returns
+        -------
+        filter : str
+           The filter, represented as a collection of single values or
+           ranges, separated by commas.
 
         See Also
         --------
@@ -1413,6 +1426,12 @@ class Data1DInt(Data1D):
             The formatting of the numeric values.
         delim : str, optional
             The string used to mark the low-to-high range.
+
+        Returns
+        -------
+        filter : str
+           The filter, represented as a collection of ranges separated
+           by commas.
 
         See Also
         --------
