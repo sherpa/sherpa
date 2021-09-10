@@ -186,7 +186,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     Data lines are separated into columns - splitting by the
     ``sep`` comment - and then converted to NumPy arrays.
     If the ``require_floats`` argument is `True` then the
-    column will be converted to a floating point number
+    column will be converted to a floating-point number
     type, with an error raised if this fails.
 
     An error is raised if the number of columns per row

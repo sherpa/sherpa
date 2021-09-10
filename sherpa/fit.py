@@ -1339,7 +1339,7 @@ class Fit(NoNewAttributesAfterInit):
         `sherpa.utils.err.EstErr`
            If any parameter in parlist is not valid (i.e. is not
            thawed or is not a member of the model expression being
-           fit), or if the statistic is `~sherpa.optmethods.LeastSq`,
+           fit), or if the statistic is `~sherpa.stats.LeastSq`,
            or if the reduced chi-square value of the current parameter
            values is larger than the ``max_rstat`` option (for
            chi-square statistics).
