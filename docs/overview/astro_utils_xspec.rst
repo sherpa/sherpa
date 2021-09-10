@@ -12,4 +12,4 @@ The sherpa.astro.utils.xspec module
       :toctree: api
 
       create_xspec_code
-      parse_xspec_model_file
+      parse_xspec_model_description
