@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -138,7 +138,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
        in the file). This is ignored if ``colkeys`` is given.
     colkeys : array of str, optional
        An array of the column name to read in. The default is
-       ``None``.
+       `None`.
     sep : str, optional
        The separator character. The default is ``' '``.
     dstype : data class to use, optional
@@ -146,7 +146,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     comment : str, optional
        The comment character. The default is ``'#'``.
     require_floats : bool, optional
-       If ``True`` (the default), non-numeric data values will
+       If `True` (the default), non-numeric data values will
        raise a `ValueError`.
 
     Returns
@@ -158,12 +158,12 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
 
     Raises
     ------
-    sherpa.utils.IOErr
+    sherpa.utils.err.IOErr
        Raised if a requested column is missing or the file appears
        to be a binary file.
     ValueError
        If a column value can not be converted into a numeric value
-       and the ``require_floats`` parameter is True.
+       and the `require_floats` parameter is `True`.
 
     See Also
     --------
@@ -185,8 +185,8 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
 
     Data lines are separated into columns - splitting by the
     ``sep`` comment - and then converted to NumPy arrays.
-    If the ``require_floats`` argument is ``True`` then the
-    column will be converted to the `sherpa.utils.SherpaFloat`
+    If the ``require_floats`` argument is `True` then the
+    column will be converted to a floating-point number
     type, with an error raised if this fails.
 
     An error is raised if the number of columns per row
@@ -259,10 +259,10 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
        The name of the ASCII file to read in.
     ncols : int, optional
        The number of columns to read in (the first ``ncols`` columns
-       in the file). This is ignored if ``colkeys`` is given.
+       in the file). This is ignored if `colkeys` is given.
     colkeys : array of str, optional
        An array of the column name to read in. The default is
-       ``None``.
+       `None`.
     sep : str, optional
        The separator character. The default is ``' '``.
     dstype : data class to use, optional
@@ -270,7 +270,7 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
     comment : str, optional
        The comment character. The default is ``'#'``.
     require_floats : bool, optional
-       If ``True`` (the default), non-numeric data values will
+       If `True` (the default), non-numeric data values will
        raise a `ValueError`.
 
     Returns
@@ -281,12 +281,12 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
 
     Raises
     ------
-    sherpa.utils.IOErr
+    sherpa.utils.err.IOErr
        Raised if a requested column is missing or the file appears
        to be a binary file.
     ValueError
        If a column value can not be converted into a numeric value
-       and the ``require_floats`` parameter is True.
+       and the `require_floats` parameter is True.
 
     See Also
     --------
@@ -334,9 +334,9 @@ def read_arrays(*args):
     ----------
     col1, ... coln : array_like
        The data columns.
-    dstype : optional, default=`sherpa.data.Data1D`
+    dstype : optional
        The data type to create. It must be a subclass of
-       `sherpa.data.BaseData`.
+       `sherpa.data.BaseData` and defaults to `sherpa.data.Data1D`
 
     Returns
     -------
@@ -346,7 +346,7 @@ def read_arrays(*args):
 
     Raises
     ------
-    sherpa.utils.IOErr
+    sherpa.utils.err.IOErr
        Raised if no arrays are sent in.
 
     See Also
@@ -396,14 +396,14 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     args : array_like
        The arrays to write out.
     fields : array_like of str
-       The column names (should match the size of ``args`` if given).
+       The column names (should match the size of `args` if given).
     sep : str, optional
        The separator character. The default is ``' '``.
     comment : str, optional
        The comment character. The default is ``'#'``. This is only used
-       to write out the column names when ``fields`` is not None.
+       to write out the column names when `fields` is not `None`.
     clobber : bool, optional
-       If ``filename`` is not ``None``, then this flag controls
+       If `filename` is not `None`, then this flag controls
        whether an existing file can be overwritten (``True``)
        or if it raises an exception (``False``, the default
        setting).
@@ -416,7 +416,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     Raises
     ------
     sherpa.utils.err.IOErr
-       If ``filename`` already exists and ``clobber`` is ``False``
+       If `filename` already exists and `clobber` is `False`
        or if there is no data to write.
 
     See Also
@@ -493,9 +493,9 @@ def write_data(filename, dataset, fields=None, sep=' ', comment='#',
        write out the column names (after converting to upper case)
        before the data.
     clobber : bool, optional
-       If ``filename`` is not ``None``, then this flag controls
-       whether an existing file can be overwritten (``True``)
-       or if it raises an exception (``False``, the default
+       If `filename` is not `None`, then this flag controls
+       whether an existing file can be overwritten (`True`)
+       or if it raises an exception (`False`, the default
        setting).
     linebreak : str, optional
        Indicate a new line. The default is ``'\\n'``.
@@ -506,7 +506,7 @@ def write_data(filename, dataset, fields=None, sep=' ', comment='#',
     Raises
     ------
     sherpa.utils.err.IOErr
-       If ``filename`` already exists and ``clobber`` is ``False``
+       If `filename` already exists and `clobber` is `False`
        or if there is no data to write.
 
     See Also

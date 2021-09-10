@@ -32,7 +32,10 @@ import os
 import shutil
 import sys
 
+from sphinx_astropy.conf.v1 import intersphinx_mapping, default_role
+
 import sphinx_rtd_theme
+
 
 # Based on http://read-the-docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
 #
@@ -146,11 +149,16 @@ extensions = [
     # of warning messages (about missing links) that I don't have time
     # to investigate.
     'sphinx.ext.napoleon',
-    # 'numpydoc.numpydoc'
+    # 'numpydoc.numpydoc',
+    'sphinx.ext.intersphinx',
+    'sphinx_astropy.ext.intersphinx_toggle',
     'sphinx_astropy.ext.edit_on_github',
     # notebooks
     'nbsphinx'
 ]
+# Imported from sphinx_astropy so we don't have to maintain the list
+# of servers
+# intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 # notebook support
 # - for now never execute a notebook
@@ -313,8 +321,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-#
-# default_role = None
+# Imported from sphinx_astropy
+# default_role = 'obj'
+
+# Setting from sphinx_astropy for numpydoc xref settings
+numpydoc_xref_param_type = True
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #
