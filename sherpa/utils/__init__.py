@@ -32,7 +32,6 @@ import string
 import sys
 from configparser import ConfigParser, NoSectionError
 import pydoc
-import platform
 
 import numpy
 import numpy.random
