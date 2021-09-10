@@ -12201,7 +12201,7 @@ class XSzxipcf(XSMultiplicativeModel):
 
     Attributes
     ----------
-    nH
+    Nh
         The column density, in units of 10^22 cm^2.
     log_xi
         The log of xi: see [1]_ for more details.
