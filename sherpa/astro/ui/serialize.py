@@ -547,6 +547,9 @@ def _save_data(state, fh=None):
 def _print_par(par):
     """Convert a Sherpa parameter to a string.
 
+    Note that we have to be careful with XSParameter parameters,
+    to see if the hard limits need updating.
+
     Parameters
     ----------
     par
@@ -554,9 +557,9 @@ def _print_par(par):
 
     Returns
     -------
-    out : str
+    out_pars, out_link : (str, str)
        A multi-line string serializing the contents of the
-       parameter.
+       parameter and then any link setting.
     """
 
     linkstr = ""
@@ -568,22 +571,32 @@ def _print_par(par):
     if isinstance(par.units, string_types):
         unitstr = '"%s"' % par.units
 
-    return ((('%s.default_val = %s\n' +
-              '%s.default_min = %s\n' +
-              '%s.default_max = %s\n' +
-              '%s.val     = %s\n' +
-              '%s.min     = %s\n' +
-              '%s.max     = %s\n' +
-              '%s.units   = %s\n' +
-              '%s.frozen  = %s\n') %
-             (par.fullname, repr(par.default_val),
-              par.fullname, repr(par.default_min),
-              par.fullname, repr(par.default_max),
-              par.fullname, repr(par.val),
-              par.fullname, repr(par.min),
-              par.fullname, repr(par.max),
-              par.fullname, unitstr,
-              par.fullname, par.frozen)), linkstr)
+    # Do we have to worry about XSPEC parameters which have changed their
+    # hard min/max ranges?
+    #
+    parstrs = []
+    try:
+        if par.hard_min_changed():
+            parstrs.append(f'{par.fullname}.hard_min    = {repr(par.hard_min)}')
+    except AttributeError:
+        pass
+
+    try:
+        if par.hard_max_changed():
+            parstrs.append(f'{par.fullname}.hard_max    = {repr(par.hard_max)}')
+    except AttributeError:
+        pass
+
+    parstrs.extend([f'{par.fullname}.default_val = {repr(par.default_val)}',
+                    f'{par.fullname}.default_min = {repr(par.default_min)}',
+                    f'{par.fullname}.default_max = {repr(par.default_max)}',
+                    f'{par.fullname}.val     = {repr(par.val)}',
+                    f'{par.fullname}.min     = {repr(par.min)}',
+                    f'{par.fullname}.max     = {repr(par.max)}',
+                    f'{par.fullname}.units   = {unitstr}',
+                    f'{par.fullname}.frozen  = {par.frozen}'])
+    parstr = '\n'.join(parstrs) + '\n'
+    return (parstr, linkstr)
 
 
 def _save_statistic(state, fh=None):

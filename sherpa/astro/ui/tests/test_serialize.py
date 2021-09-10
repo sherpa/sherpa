@@ -331,10 +331,10 @@ gal.integrate = True
 
 gal.nH.default_val = 1.0
 gal.nH.default_min = 0.0
-gal.nH.default_max = 100000.0
+gal.nH.default_max = 1000000.0
 gal.nH.val     = 1.0
 gal.nH.min     = 0.0
-gal.nH.max     = 100000.0
+gal.nH.max     = 1000000.0
 gal.nH.units   = "10^22 atoms / cm^2"
 gal.nH.frozen  = False
 
@@ -462,10 +462,10 @@ ggal.integrate = True
 
 ggal.nH.default_val = 2.0
 ggal.nH.default_min = 0.0
-ggal.nH.default_max = 100000.0
+ggal.nH.default_max = 1000000.0
 ggal.nH.val     = 2.0
 ggal.nH.min     = 0.0
-ggal.nH.max     = 100000.0
+ggal.nH.max     = 1000000.0
 ggal.nH.units   = "10^22 atoms / cm^2"
 ggal.nH.frozen  = True
 
@@ -584,10 +584,10 @@ ggal.integrate = True
 
 ggal.nH.default_val = 2.0
 ggal.nH.default_min = 0.0
-ggal.nH.default_max = 100000.0
+ggal.nH.default_max = 1000000.0
 ggal.nH.val     = 2.0
 ggal.nH.min     = 0.0
-ggal.nH.max     = 100000.0
+ggal.nH.max     = 1000000.0
 ggal.nH.units   = "10^22 atoms / cm^2"
 ggal.nH.frozen  = True
 
@@ -1026,6 +1026,120 @@ set_source(1, (gauss2d.gmdl + scale2d.bmdl))
 
 """
 
+# Set an XSPEC parameter beyond the default hard limits: min
+_canonical_xspec_hard_limit_min = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1)
+set_method_opt("factor", 1)
+set_method_opt("ftol", 1)
+set_method_opt("gtol", 1)
+set_method_opt("maxfev", 1)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 1)
+set_method_opt("xtol", 1)
+
+
+######### Set Model Components and Parameters
+
+create_model_component("xspowerlaw", "mdl")
+mdl.integrate = True
+
+mdl.PhoIndex.hard_min    = -5.0
+mdl.PhoIndex.default_val = -5.0
+mdl.PhoIndex.default_min = -3.0
+mdl.PhoIndex.default_max = 10.0
+mdl.PhoIndex.val     = -5.0
+mdl.PhoIndex.min     = -5.0
+mdl.PhoIndex.max     = 10.0
+mdl.PhoIndex.units   = ""
+mdl.PhoIndex.frozen  = True
+
+mdl.norm.default_val = 1.0
+mdl.norm.default_min = 0.0
+mdl.norm.default_max = 9.9999999999999998e+23
+mdl.norm.val     = 1.0
+mdl.norm.min     = 0.0
+mdl.norm.max     = 100.0
+mdl.norm.units   = ""
+mdl.norm.frozen  = False
+
+
+
+######### Set Source, Pileup and Background Models
+
+"""
+
+# Set an XSPEC parameter beyond the default hard limits: max
+_canonical_xspec_hard_limit_max = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1)
+set_method_opt("factor", 1)
+set_method_opt("ftol", 1)
+set_method_opt("gtol", 1)
+set_method_opt("maxfev", 1)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 1)
+set_method_opt("xtol", 1)
+
+
+######### Set Model Components and Parameters
+
+create_model_component("xspowerlaw", "mdl")
+mdl.integrate = True
+
+mdl.PhoIndex.hard_max    = 15.0
+mdl.PhoIndex.default_val = 15.0
+mdl.PhoIndex.default_min = -3.0
+mdl.PhoIndex.default_max = 10.0
+mdl.PhoIndex.val     = 15.0
+mdl.PhoIndex.min     = -3.0
+mdl.PhoIndex.max     = 15.0
+mdl.PhoIndex.units   = ""
+mdl.PhoIndex.frozen  = True
+
+mdl.norm.default_val = 1.0
+mdl.norm.default_min = 0.0
+mdl.norm.default_max = 9.9999999999999998e+23
+mdl.norm.val     = 1.0
+mdl.norm.min     = 0.0
+mdl.norm.max     = 100.0
+mdl.norm.units   = ""
+mdl.norm.frozen  = False
+
+
+
+######### Set Source, Pileup and Background Models
+
+"""
+
 if has_xspec:
     _canonical_extra = """
 ######### XSPEC Module Settings
@@ -1044,6 +1158,8 @@ set_xsxsect("bcmc")
     _canonical_usermodel += _canonical_extra
     _canonical_img_no_filter_no_model += _canonical_extra
     _canonical_img_filter_model += _canonical_extra
+    _canonical_xspec_hard_limit_min += _canonical_extra
+    _canonical_xspec_hard_limit_max += _canonical_extra
 
     del _canonical_extra
 
@@ -1570,3 +1686,85 @@ def test_restore_img_filter_model(make_data_path, clean_astro_ui):
     # It should be this, but isn't for some reason
     # assert cnew == pytest.approx(corig)
     assert cnew == pytest.approx(1828.198211697685)
+
+
+@requires_xspec
+def test_canonical_xspec_hard_limit_min():
+    "Can we save an XSPEC model with the hard limit extended: min"
+
+    # Reset the optimiser parameters to make them easy to check,
+    # even if they are un-usable.
+    #
+    for key in ui.get_method_opt().keys():
+        ui.set_method_opt(key, 1)
+
+    ui.create_model_component('xspowerlaw', 'mdl')
+    mdl.phoindex.set(val=-5, hard_min=-5, frozen=True)
+    mdl.norm.max = 100
+
+    compare(_canonical_xspec_hard_limit_min)
+
+
+@requires_xspec
+def test_canonical_xspec_hard_limit_max():
+    "Can we save an XSPEC model with the hard limit extended: max"
+
+    # Reset the optimiser parameters to make them easy to check,
+    # even if they are un-usable.
+    #
+    for key in ui.get_method_opt().keys():
+        ui.set_method_opt(key, 1)
+
+    ui.create_model_component('xspowerlaw', 'mdl')
+    mdl.phoindex.set(val=15, hard_max=15, frozen=True)
+    mdl.norm.max = 100
+
+    compare(_canonical_xspec_hard_limit_max)
+
+
+@requires_xspec
+def test_restore_xspec_hard_limit_min():
+    "Can the reload a XSPEC model with changed hard limits: min"
+
+    # TODO: Why do we need to capture the return value when we
+    # did not need to in test_canonical_xspec_hard_limit_min?
+    #
+    mdl = ui.create_model_component('xspowerlaw', 'mdl')
+    mdl.phoindex.set(val=-5, hard_min=-5, frozen=True)
+    mdl.norm.max = 100
+    mdl = None
+
+    restore()
+
+    mdl = ui.get_model_component('mdl')
+    assert mdl.name == 'xspowerlaw.mdl'
+    assert mdl.PhoIndex.val == pytest.approx(-5)
+    assert mdl.PhoIndex.min == pytest.approx(-5)
+    assert mdl.PhoIndex.hard_min == pytest.approx(-5)
+    assert mdl.PhoIndex.frozen
+
+    assert mdl.norm.max == pytest.approx(100)
+
+
+@requires_xspec
+def test_restore_xspec_hard_limit_max():
+    "Can the reload a XSPEC model with changed hard limits: max"
+
+    # TODO: Why do we need to capture the return value when we
+    # did not need to in test_canonical_xspec_hard_limit_min?
+    #
+    mdl = ui.create_model_component('xspowerlaw', 'mdl')
+    mdl.phoindex.set(val=15, hard_max=15)
+    mdl.norm.max = 100
+    mdl = None
+
+    restore()
+
+    mdl = ui.get_model_component('mdl')
+    assert mdl.name == 'xspowerlaw.mdl'
+    assert mdl.PhoIndex.val == pytest.approx(15)
+    assert mdl.PhoIndex.max == pytest.approx(15)
+    assert mdl.PhoIndex.hard_max == pytest.approx(15)
+    assert not mdl.PhoIndex.frozen
+
+    assert mdl.norm.max == pytest.approx(100)

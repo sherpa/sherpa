@@ -94,7 +94,8 @@ def test_check_no_extra_xspec_convolution_models():
     from sherpa.astro import xspec
 
     exclude = ['XSModel', 'XSAdditiveModel', 'XSMultiplicativeModel',
-               'XSConvolutionModel', 'XSConvolutionKernel']
+               'XSConvolutionModel', 'XSConvolutionKernel',
+               'XSBaseParameter', 'XSParameter']
 
     names = [(n, getattr(xspec, n))
              for n in dir(xspec)
