@@ -5,7 +5,7 @@
 #include <vector>
 
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -276,7 +276,11 @@ public:
 
 private:
 
+#if (__cplusplus < 201103L)
   std::auto_ptr< sherpa::Simplex > simplex;
+#else
+  std::unique_ptr< sherpa::Simplex > simplex;
+#endif
 
 };
 
