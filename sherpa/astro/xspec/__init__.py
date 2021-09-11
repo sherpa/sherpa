@@ -42,13 +42,13 @@ are set to H_0=70, q_0=0.0, and lambda_0=0.73 (they can be changed with
 
 The other settings - for example for the abundance and cross-section
 tables - follow the standard rules for XSPEC. For XSPEC versions prior
-to 12.10.1, this means that the abundance table uses the ``angr``
-setting and the cross sections the ``bcmc`` setting (see `set_xsabund`
+to 12.10.1, this means that the abundance table uses the 'angr'
+setting and the cross sections the 'bcmc' setting (see `set_xsabund`
 and `set_xsxsect` for full details). As of XSPEC 12.10.1, the values
 are now taken from the user's XSPEC configuration file - either
 ``~/.xspec/Xspec.init`` or ``$HEADAS/../spectral/manager/Xspec.init`` -
 for these settings. The default value for the photo-ionization table
-in this case is now ``vern`` rather than ``bcmc``.
+in this case is now 'vern' rather than 'bcmc'.
 
 The default chatter setting - used by models to inform users of
 issues - was set to 0 (which hid the messages) until Sherpa 4.14.0,
@@ -136,7 +136,7 @@ def get_xsabund(element=None):
     Returns
     -------
     val : str or float
-       When ``element`` is ``None``, the abundance table name is
+       When `element` is `None`, the abundance table name is
        returned (see `set_xsabund`); the string 'file' is used
        when the abundances were read from a file. A numeric value
        is returned when an element name is given. This value is the
@@ -573,7 +573,7 @@ def set_xsxset(name, value):
     `set_xschatter` if it is not clear if a setting is being used.
 
     The model settings are stored so that they can be included in the
-    output of `sherpa.astro.ui.utils.save_all`.
+    output of `sherpa.astro.ui.save_all`.
 
     References
     ----------
@@ -771,7 +771,7 @@ def read_xstable_model(modelname, filename, etable=False):
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
 
-    .. versionchanged:: 4.13.2
+    .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
 
@@ -867,19 +867,24 @@ class XSBaseParameter(Parameter):
     """An XSPEC parameter.
 
     XSPEC has soft and hard parameter limits, which are the ones sent
-    in as the ``min``, ``max``, ``hard_min``, and ``hard_max``
-    parameters.  However, Sherpa's soft limits are more-like the XSPEC
-    hard limits, and it is possible in XSPEC to change a model's hard
-    limits. This class therefore:
+    in as the `min`, `max`, `hard_min`, and `hard_max` parameters.
+    However, Sherpa's soft limits are more-like the XSPEC hard limits,
+    and it is possible in XSPEC to change a model's hard limits. This
+    class therefore:
 
-    - stores the input ``min`` and ``max`` values as the
-      _xspec_soft_min and _xspec_soft_max parameters
+    - stores the input `min` and `max` values as the
+      _xspec_soft_min and _xspec_soft_max attributes and the
+      `hard_min` and `hard_max` values as _xspec_hard_min and
+      _xspec_hard_max attributes;
 
-    - sets the underlying ``min`` and ``max`` values to the XSPEC hard
-      limits
+    - sets the underlying `min` and `max` values to the XSPEC hard
+      limits;
 
-    - sets the underlying ``hard_min`` and ``hard_max`` values to the
-      XSPEC hard limits
+    - and sets the underlying `hard_min` and `hard_max` values to
+      the XSPEC hard limits.
+
+    Note that you can not change the hard limits; for that see
+    `XSParameter`.
 
     See Also
     --------
@@ -998,8 +1003,8 @@ class XSParameter(XSBaseParameter):
 
     hard_min = property(Parameter._get_hard_min, _set_hard_min,
                         doc='The hard minimum of the parameter.\n\n' +
-                        'Unlike normal parameters the ``hard_min`` value can be changed (and\n' +
-                        'will also change the correspondnig ``min`` value at the same time).\n' +
+                        'Unlike normal parameters the `hard_min` value can be changed (and\n' +
+                        'will also change the corresponding `min` value at the same time).\n' +
                         'This is needed to support the small-number of XSPEC models that\n' +
                         'use a value outside the default hard range as a way to control the\n' +
                         'model. Unfortunately some models can crash when using values like\n' +
@@ -1033,8 +1038,8 @@ class XSParameter(XSBaseParameter):
 
     hard_max = property(Parameter._get_hard_max, _set_hard_max,
                         doc='The hard maximum of the parameter.\n\n' +
-                        'Unlike normal parameters the ``hard_max`` value can be changed (and\n' +
-                        'will also change the correspondnig ``max`` value at the same time).\n' +
+                        'Unlike normal parameters the `hard_max` value can be changed (and\n' +
+                        'will also change the corresponding `max` value at the same time).\n' +
                         'This is needed to support the small-number of XSPEC models that\n' +
                         'use a value outside the default hard range as a way to control the\n' +
                         'model. Unfortunately some models can crash when using values like\n' +
@@ -1068,7 +1073,7 @@ class XSParameter(XSBaseParameter):
             The new default parameter limits.
         hard_min, hard_max : numer or None, optional
             Changing the hard limits will also change the matching
-            soft limit (``min`` or ``max``).
+            soft limit (`min` or `max`).
 
         """
 
@@ -1103,7 +1108,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     Notes
     -----
     The XSPEC models are evaluated on a one-dimensional, integrated,
-    contiguous grid. When the ``calc`` method is called with both
+    contiguous grid. When the `calc` method is called with both
     low and high bin values, the arrays are converted into a single
     array matching the XSPEC calling convention - that is elo_0,
     elo_1, ..., elo_n for n bins (so the last value is the upper edge
@@ -1113,7 +1118,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     added to account for non-contiguous input values.
 
     If used on an unbinned dataset, so only one array is sent to
-    ``calc``, then the input values are taken to match the XSPEC
+    `calc`, then the input values are taken to match the XSPEC
     calling convention - i.e. a contiguous grid where the last element
     represents the upper edge of the last bin. This means that for
     an input grid of ``n`` points, the returned array will contain
@@ -1203,9 +1208,9 @@ class XSTableModel(XSModel):
     XSPEC supports loading in user-supplied data files for use
     as a table model [1]_. This class provides a low-level
     way to access this functionality. A simpler interface is provided
-    by ``read_xstable_model`` and ``sherpa.astro.ui.load_xstable_model``.
+    by `read_xstable_model` and `sherpa.astro.ui.load_xstable_model`.
 
-    .. versionchanged:: 4.13.2
+    .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
 
@@ -1234,18 +1239,18 @@ class XSTableModel(XSModel):
         The first ``nint`` parameters are marked as thawed by default,
         the remaining default to frozen.
     addmodel : bool
-        Is this an additive model (``True``) or multiplicative model
-        (``False``)? It should be set to the value of the "ADDMODEL"
+        Is this an additive model (`True`) or multiplicative model
+        (`False`)? It should be set to the value of the "ADDMODEL"
         keyword of the primary header of the input file. When False
         the etable keyword is used to distinguish between mtable and
         etable models.
     addredshift : bool
-        If ``True`` then a redshift parameter is added to the parameters.
+        If `True` then a redshift parameter is added to the parameters.
         It should be set to the value of the "REDSHIFT" keyword of the
         primary header of the input file.
     etable : bool
         When addmodel is False this defines whether the file is a
-        mtable model (False, the default) or an etable model (True).
+        mtable model (`False`, the default) or an etable model (`True`).
 
     References
     ----------
@@ -1537,17 +1542,17 @@ class XSConvolutionModel(CompositeModel, XSModel):
 
     Parameters
     ----------
-    model : sherpa.models.model.ArithmeticModel instance
+    model : `sherpa.models.model.ArithmeticModel`
         The model whose results, when evaluated, are passed to
         the convolution model.
-    wrapper : sherpa.astro.xspec.XSConvolutionKernel instance
+    wrapper : `sherpa.astro.xspec.XSConvolutionKernel`
         The XSPEC convolution model.
 
     Examples
     --------
 
     The following evaluates two models (creating the y1 and y2
-    arrays), where y1 applies the `XScfux` convolution model to the
+    arrays), where y1 applies the `XScflux` convolution model to the
     combined absorption times powerlaw model, and y2 applies the
     convolution model to only the power-law model, and then multiples
     this by the absorption model. In the following mdl1 and mdl2
