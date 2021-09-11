@@ -352,7 +352,7 @@ kT      keV     1.    0.008   0.008   64.0      64.0      .01
     assert 'class XSapec(XSAdditiveModel):' in python
     assert '    _calc = _models.C_apec' in python
     assert "    def __init__(self, name='apec'):" in python
-    assert "        self.kT = Parameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')" in python
+    assert "        self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')" in python
     assert "        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)" in python
     assert '        XSAdditiveModel.__init__(self, name, (self.kT,self.norm))' in python
 
@@ -379,7 +379,7 @@ nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
     assert 'class XSabcd(XSMultiplicativeModel):' in python
     assert '    _calc = _models.foos' in python
     assert "    def __init__(self, name='abcd'):" in python
-    assert "        self.nH = Parameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')" in python
+    assert "        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')" in python
     assert '        XSMultiplicativeModel.__init__(self, name, (self.nH,))' in python
 
     assert '  void foos_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled
@@ -405,7 +405,7 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
     assert 'class XSrgsxsrc(XSConvolutionKernel):' in python
     assert '    _calc = _models.rgsxsrc' in python
     assert "    def __init__(self, name='rgsxsrc'):" in python
-    assert "        self.order = Parameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)" in python
+    assert "        self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)" in python
     assert '        XSConvolutionKernel.__init__(self, name, (self.order,))' in python
 
     assert '  void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled

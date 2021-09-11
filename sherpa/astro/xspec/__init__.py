@@ -62,6 +62,21 @@ from the XSPEC model library are supported, except for the `smaug`
 model [5]_, since it requires use of information from the XFLT keywords
 in the data file).
 
+Parameter values
+----------------
+
+XSPEC parameters have soft and hard limits but they are different
+to the Sherpa meaning:
+
+- the XSPEC hard limit is more-like a Sherpa parameter with the
+  same soft and hard limits;
+
+- and it is possible to change the hard limits.
+
+To support these, XSPEC models use the `XSBaseParameter` and
+`XSParameter` classes, while the "norm" parameter added to additive
+models remains a `sherpa.models.parameter.Parameter` instance.
+
 References
 ----------
 
@@ -898,10 +913,12 @@ class XSBaseParameter(Parameter):
 class XSParameter(XSBaseParameter):
     """An XSPEC parameter where you exceed the hard limits.
 
-    This parameter allows a user to change the hard limits (``hard_min``
-    and ``hard_max``). XSPEC allows the hard limits to be extended,
-    and this is used in a few models to trigger different behavior (e.g.
-    setting the value negative).
+    This parameter allows a user to change the hard limits (`hard_min`
+    and `hard_max`). XSPEC allows the hard limits to be extended, and
+    this is used in a few models to trigger different behavior (e.g.
+    setting the value negative). The `hard_min_changed` and
+    `hard_max_changed` methods can be used to determine if the limits
+    have been changed.
 
     See Also
     --------
@@ -1256,6 +1273,10 @@ class XSTableModel(XSModel):
             except TypeError:
                 parname = parnames[ii]
 
+            # For table models we know you can crash the system if you change
+            # the hard limits, so we use XSBaseParameter rather than
+            # XSParameter.
+            #
             parname = parname.strip().lower().translate(tbl)
             par = XSBaseParameter(name, parname, initvals[ii],
                                   mins[ii], maxes[ii],
@@ -1274,6 +1295,9 @@ class XSTableModel(XSModel):
             pars.append(self.redshift)
 
         if addmodel:
+            # Normalization parameters are not true XSPEC parameters and
+            # so we do not need to use XSParameter.
+            #
             self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0,
                                   hugeval)
             pars.append(self.norm)
@@ -1323,6 +1347,10 @@ class XSTableModel(XSModel):
         return func(p, *args, filename=self.filename)
 
 
+# TODO: we should add the norm parameter in the __init__ call, unless
+# the object contains a norm attribute, to avoid having to repeat this
+# for every additive model.
+#
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
