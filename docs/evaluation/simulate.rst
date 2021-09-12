@@ -17,7 +17,7 @@ needs to be added before evaluation by a component.
 The model evaluation would be performed using the techniques
 described in this section, and then the noise term can be
 handled with :py:func:`sherpa.utils.poisson_noise` or routines from
-NumPy or SciPy to evaluate noise, such as ``numpy.random.standard_normal``.
+NumPy or SciPy to evaluate noise, such as `numpy.random.standard_normal`.
 
 ::
 
@@ -55,7 +55,7 @@ the background, which may contribute to the source spectrum that we
 want to simulate.  Readers not interested in X-ray data analysis may
 want to skip this section.
 
-Sherpa offers a dedicated function :py:func:`sherpa.astro.io.fake_pha` for
+Sherpa offers a dedicated function :py:func:`sherpa.astro.fake.fake_pha` for
 simulations of :term:`PHA` data. A :py:class:`~sherpa.astro.data.DataPHA` object
 needs to be set up with the responses for the source and an exposure
 time. So, we first create a :py:class:`~sherpa.astro.data.DataPHA` object with
@@ -101,7 +101,7 @@ calculate the expected number of counts in each spectral channel
 and then draw from a Poisson distribution with this expected
 number. Thus, the simulated number of counts in each channel is always
 an integer and includes Poisson noise - running
-:py:func:`~sherpa.astro.io.fake_pha` twice with identical settings will give
+:py:func:`~sherpa.astro.fake.fake_pha` twice with identical settings will give
 slightly different answers. With default settings, the input model is
 convolved with the RMF and multiplied by the ARF, and properly scaled
 for the exposure time.
@@ -160,7 +160,7 @@ before, the scale of the background scaling has to be set::
   >>> data.backscal = 9.6e-06
   >>> fake_pha(data, srcmdl, add_bkgs=True)
 
-The ``fake_pha`` function simulates the source spectrum as above, but
+The `fake_pha` function simulates the source spectrum as above, but
 then it samples from the background PHA. For each bin, it treats the
 background count number as the expected value and performs a Poisson
 draw. The background drawn from the Poisson distribution is than added
@@ -168,11 +168,11 @@ to the simulated source spectrum (the sum of two Poisson distributions
 is a Poisson distribution again). This works best if the background is
 well exposed and has a large number or counts.
 
-Why do we need to set the ``add_bks=True`` argument and do not simply
+Why do we need to set the ``add_bkgs=True`` argument and do not simply
 use all available backgrounds? The reason for that is it is often
 useful to read in a file with ``data = read_pha('9774_bg.pi')``, which
 might automatically read in the background as well. Using the
-``add_bkgs=True/False`` to switch the background on or off in the simulation
+`add_bkgs` to switch the background on or off in the simulation
 makes it easy to compare the same simulation with and without a
 background.
 
@@ -191,7 +191,7 @@ have. To avoid this problem, a background model may be used instead::
   >>> bkgmdl.c0 = 2
   >>> fake_pha(data, mdl, add_bkgs=True, bkg_models={'1': bkgmdl})
 
-The keys in the ``bkg_models`` dictionary are the identifiers of the
+The keys in the `bkg_models` dictionary are the identifiers of the
 backgrounds. Above, we loaded a background with the default identifyer
 (which is ``1``).
 
