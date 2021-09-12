@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -123,8 +123,13 @@ static PyObject* _apply_pileup( PyObject* self, PyObject* args )
     return NULL;
   }
 
+#if (__cplusplus < 201103L)
   std::auto_ptr< sherpa::PyWrapper >
     wrapper( new sherpa::PyWrapper( py_function ) );
+#else
+  std::unique_ptr< sherpa::PyWrapper >
+    wrapper( new sherpa::PyWrapper( py_function ) );
+#endif
 
   DoubleArray results;
   if ( EXIT_SUCCESS != results.create( arf_source.get_ndim(),
