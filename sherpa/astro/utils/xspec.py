@@ -258,7 +258,7 @@ class ParameterDefinition():
         return f"{self.name} = {self.default}"
 
     def param_string(self):
-        out = f"Parameter(name, '{self.name}', {self.default}"
+        out = f"XSParameter(name, '{self.name}', {self.default}"
 
         for (pval, pname) in [(self.softmin, "min"),
                               (self.softmax, "max"),
@@ -351,7 +351,21 @@ class BasicParameterDefinition(ParameterDefinition):
         return out
 
     def param_string(self):
-        out = f"Parameter(name, '{self.name}', {self.default}, "
+
+        # We need to decide between
+        #   XSParameter
+        #   XSBaseParameter
+        #   Parameter
+        #
+        # For this case we don't need to bother with XSBaseParameter
+        # and Parameter is only for the norm parameter.
+        #
+        if self.name == 'norm':
+            out = "Parameter"
+        else:
+            out = "XSParameter"
+
+        out += f"(name, '{self.name}', {self.default}, "
         out += f"min={self.softmin}, max={self.softmax}, "
         out += f"hard_min={self.hardmin}, hard_max={self.hardmax}"
         if self.frozen:

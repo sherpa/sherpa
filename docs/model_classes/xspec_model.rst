@@ -16,6 +16,8 @@ are described in :doc:`astro_xspec`.
    .. autosummary::
       :toctree: api
 
+      XSBaseParameter
+      XSParameter
       XSModel
       XSAdditiveModel
       XSMultiplicativeModel
@@ -49,5 +51,5 @@ are described in :doc:`astro_xspec`.
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: XSModel XSAdditiveModel XSMultiplicativeModel XSConvolutionKernel XSConvolutionModel XSTableModel
+.. inheritance-diagram:: XSBaseParameter XSParameter XSModel XSAdditiveModel XSMultiplicativeModel XSConvolutionKernel XSConvolutionModel XSTableModel
    :parts: 1

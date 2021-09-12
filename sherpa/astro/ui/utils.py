@@ -9682,12 +9682,12 @@ class Session(sherpa.ui.utils.Session):
     def load_xstable_model(self, modelname, filename, etable=False):
         """Load a XSPEC table model.
 
-        Create an additive (``atable``, [1]_), multiplicative
-        (``mtable``, [2]_), or exponential (``etable``, [3]_) XSPEC
+        Create an additive ('atable', [1]_), multiplicative
+        ('mtable', [2]_), or exponential ('etable', [3]_) XSPEC
         table model component. These models may have multiple model
         parameters.
 
-        .. versionchanged:: 4.13.2
+        .. versionchanged:: 4.14.0
            The etable argument has been added to allow exponential table
            models to be used.
 
@@ -9745,7 +9745,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(xsphabs.gal * xtbl)
         >>> print(xtbl)
 
-        Load in an XSPEC etable model
+        Load in an XSPEC etable model:
 
         >>> load_xstable_model('etbl', 'etable.mod', etable=True)
 

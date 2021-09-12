@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.11.1, 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
+Sherpa supports versions 12.12.0, 12.11.1, 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
 of XSPEC [1]_, and can be built against the model library or the full
 application.  There is no guarantee of support for older or newer
 versions of XSPEC.
@@ -42,13 +42,13 @@ are set to H_0=70, q_0=0.0, and lambda_0=0.73 (they can be changed with
 
 The other settings - for example for the abundance and cross-section
 tables - follow the standard rules for XSPEC. For XSPEC versions prior
-to 12.10.1, this means that the abundance table uses the ``angr``
-setting and the cross sections the ``bcmc`` setting (see `set_xsabund`
+to 12.10.1, this means that the abundance table uses the 'angr'
+setting and the cross sections the 'bcmc' setting (see `set_xsabund`
 and `set_xsxsect` for full details). As of XSPEC 12.10.1, the values
 are now taken from the user's XSPEC configuration file - either
 ``~/.xspec/Xspec.init`` or ``$HEADAS/../spectral/manager/Xspec.init`` -
 for these settings. The default value for the photo-ionization table
-in this case is now ``vern`` rather than ``bcmc``.
+in this case is now 'vern' rather than 'bcmc'.
 
 The default chatter setting - used by models to inform users of
 issues - was set to 0 (which hid the messages) until Sherpa 4.14.0,
@@ -61,6 +61,21 @@ The additive [2]_, multiplicative [3]_, and convolution [4]_ models
 from the XSPEC model library are supported, except for the `smaug`
 model [5]_, since it requires use of information from the XFLT keywords
 in the data file).
+
+Parameter values
+----------------
+
+XSPEC parameters have soft and hard limits but they are different
+to the Sherpa meaning:
+
+- the XSPEC hard limit is more-like a Sherpa parameter with the
+  same soft and hard limits;
+
+- and it is possible to change the hard limits.
+
+To support these, XSPEC models use the `XSBaseParameter` and
+`XSParameter` classes, while the "norm" parameter added to additive
+models remains a `sherpa.models.parameter.Parameter` instance.
 
 References
 ----------
@@ -121,7 +136,7 @@ def get_xsabund(element=None):
     Returns
     -------
     val : str or float
-       When ``element`` is ``None``, the abundance table name is
+       When `element` is `None`, the abundance table name is
        returned (see `set_xsabund`); the string 'file' is used
        when the abundances were read from a file. A numeric value
        is returned when an element name is given. This value is the
@@ -280,6 +295,8 @@ def set_xsabund(abundance):
      - 'wilm', from [7]_, except for elements not listed which
        are given zero abundance
      - 'lodd', from [8]_
+     - 'lpgp', from [9]_ (photospheric, requires XSPEC 12.12.0 or later)
+     - 'lpgs', from [9]_ (proto-solar, requires XSPEC 12.12.0 or later)
 
     The values for these tables are given at [1]_.
 
@@ -321,6 +338,10 @@ def set_xsabund(abundance):
 
     .. [8] Lodders, K (2003, ApJ 591, 1220)
            https://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+
+    .. [9] Lodders K., Palme H., Gail H.P., Landolt-Börnstein,
+           New Series, vol VI/4B, pp 560–630 (2009)
+           https://ui.adsabs.harvard.edu/abs/2009LanB...4B..712L/abstract
 
     Examples
     --------
@@ -552,7 +573,7 @@ def set_xsxset(name, value):
     `set_xschatter` if it is not clear if a setting is being used.
 
     The model settings are stored so that they can be included in the
-    output of `sherpa.astro.ui.utils.save_all`.
+    output of `sherpa.astro.ui.save_all`.
 
     References
     ----------
@@ -750,7 +771,7 @@ def read_xstable_model(modelname, filename, etable=False):
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
 
-    .. versionchanged:: 4.13.2
+    .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
 
@@ -846,19 +867,24 @@ class XSBaseParameter(Parameter):
     """An XSPEC parameter.
 
     XSPEC has soft and hard parameter limits, which are the ones sent
-    in as the ``min``, ``max``, ``hard_min``, and ``hard_max``
-    parameters.  However, Sherpa's soft limits are more-like the XSPEC
-    hard limits, and it is possible in XSPEC to change a model's hard
-    limits. This class therefore:
+    in as the `min`, `max`, `hard_min`, and `hard_max` parameters.
+    However, Sherpa's soft limits are more-like the XSPEC hard limits,
+    and it is possible in XSPEC to change a model's hard limits. This
+    class therefore:
 
-    - stores the input ``min`` and ``max`` values as the
-      _xspec_soft_min and _xspec_soft_max parameters
+    - stores the input `min` and `max` values as the
+      _xspec_soft_min and _xspec_soft_max attributes and the
+      `hard_min` and `hard_max` values as _xspec_hard_min and
+      _xspec_hard_max attributes;
 
-    - sets the underlying ``min`` and ``max`` values to the XSPEC hard
-      limits
+    - sets the underlying `min` and `max` values to the XSPEC hard
+      limits;
 
-    - sets the underlying ``hard_min`` and ``hard_max`` values to the
-      XSPEC hard limits
+    - and sets the underlying `hard_min` and `hard_max` values to
+      the XSPEC hard limits.
+
+    Note that you can not change the hard limits; for that see
+    `XSParameter`.
 
     See Also
     --------
@@ -898,10 +924,12 @@ class XSBaseParameter(Parameter):
 class XSParameter(XSBaseParameter):
     """An XSPEC parameter where you exceed the hard limits.
 
-    This parameter allows a user to change the hard limits (``hard_min``
-    and ``hard_max``). XSPEC allows the hard limits to be extended,
-    and this is used in a few models to trigger different behavior (e.g.
-    setting the value negative).
+    This parameter allows a user to change the hard limits (`hard_min`
+    and `hard_max`). XSPEC allows the hard limits to be extended, and
+    this is used in a few models to trigger different behavior (e.g.
+    setting the value negative). The `hard_min_changed` and
+    `hard_max_changed` methods can be used to determine if the limits
+    have been changed.
 
     See Also
     --------
@@ -975,8 +1003,8 @@ class XSParameter(XSBaseParameter):
 
     hard_min = property(Parameter._get_hard_min, _set_hard_min,
                         doc='The hard minimum of the parameter.\n\n' +
-                        'Unlike normal parameters the ``hard_min`` value can be changed (and\n' +
-                        'will also change the correspondnig ``min`` value at the same time).\n' +
+                        'Unlike normal parameters the `hard_min` value can be changed (and\n' +
+                        'will also change the corresponding `min` value at the same time).\n' +
                         'This is needed to support the small-number of XSPEC models that\n' +
                         'use a value outside the default hard range as a way to control the\n' +
                         'model. Unfortunately some models can crash when using values like\n' +
@@ -1010,8 +1038,8 @@ class XSParameter(XSBaseParameter):
 
     hard_max = property(Parameter._get_hard_max, _set_hard_max,
                         doc='The hard maximum of the parameter.\n\n' +
-                        'Unlike normal parameters the ``hard_max`` value can be changed (and\n' +
-                        'will also change the correspondnig ``max`` value at the same time).\n' +
+                        'Unlike normal parameters the `hard_max` value can be changed (and\n' +
+                        'will also change the corresponding `max` value at the same time).\n' +
                         'This is needed to support the small-number of XSPEC models that\n' +
                         'use a value outside the default hard range as a way to control the\n' +
                         'model. Unfortunately some models can crash when using values like\n' +
@@ -1045,7 +1073,7 @@ class XSParameter(XSBaseParameter):
             The new default parameter limits.
         hard_min, hard_max : numer or None, optional
             Changing the hard limits will also change the matching
-            soft limit (``min`` or ``max``).
+            soft limit (`min` or `max`).
 
         """
 
@@ -1080,7 +1108,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     Notes
     -----
     The XSPEC models are evaluated on a one-dimensional, integrated,
-    contiguous grid. When the ``calc`` method is called with both
+    contiguous grid. When the `calc` method is called with both
     low and high bin values, the arrays are converted into a single
     array matching the XSPEC calling convention - that is elo_0,
     elo_1, ..., elo_n for n bins (so the last value is the upper edge
@@ -1090,7 +1118,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     added to account for non-contiguous input values.
 
     If used on an unbinned dataset, so only one array is sent to
-    ``calc``, then the input values are taken to match the XSPEC
+    `calc`, then the input values are taken to match the XSPEC
     calling convention - i.e. a contiguous grid where the last element
     represents the upper edge of the last bin. This means that for
     an input grid of ``n`` points, the returned array will contain
@@ -1180,9 +1208,9 @@ class XSTableModel(XSModel):
     XSPEC supports loading in user-supplied data files for use
     as a table model [1]_. This class provides a low-level
     way to access this functionality. A simpler interface is provided
-    by ``read_xstable_model`` and ``sherpa.astro.ui.load_xstable_model``.
+    by `read_xstable_model` and `sherpa.astro.ui.load_xstable_model`.
 
-    .. versionchanged:: 4.13.2
+    .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
 
@@ -1211,18 +1239,18 @@ class XSTableModel(XSModel):
         The first ``nint`` parameters are marked as thawed by default,
         the remaining default to frozen.
     addmodel : bool
-        Is this an additive model (``True``) or multiplicative model
-        (``False``)? It should be set to the value of the "ADDMODEL"
+        Is this an additive model (`True`) or multiplicative model
+        (`False`)? It should be set to the value of the "ADDMODEL"
         keyword of the primary header of the input file. When False
         the etable keyword is used to distinguish between mtable and
         etable models.
     addredshift : bool
-        If ``True`` then a redshift parameter is added to the parameters.
+        If `True` then a redshift parameter is added to the parameters.
         It should be set to the value of the "REDSHIFT" keyword of the
         primary header of the input file.
     etable : bool
         When addmodel is False this defines whether the file is a
-        mtable model (False, the default) or an etable model (True).
+        mtable model (`False`, the default) or an etable model (`True`).
 
     References
     ----------
@@ -1256,6 +1284,10 @@ class XSTableModel(XSModel):
             except TypeError:
                 parname = parnames[ii]
 
+            # For table models we know you can crash the system if you change
+            # the hard limits, so we use XSBaseParameter rather than
+            # XSParameter.
+            #
             parname = parname.strip().lower().translate(tbl)
             par = XSBaseParameter(name, parname, initvals[ii],
                                   mins[ii], maxes[ii],
@@ -1274,6 +1306,9 @@ class XSTableModel(XSModel):
             pars.append(self.redshift)
 
         if addmodel:
+            # Normalization parameters are not true XSPEC parameters and
+            # so we do not need to use XSParameter.
+            #
             self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0,
                                   hugeval)
             pars.append(self.norm)
@@ -1323,6 +1358,10 @@ class XSTableModel(XSModel):
         return func(p, *args, filename=self.filename)
 
 
+# TODO: we should add the norm parameter in the __init__ call, unless
+# the object contains a norm attribute, to avoid having to repeat this
+# for every additive model.
+#
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
@@ -1503,17 +1542,17 @@ class XSConvolutionModel(CompositeModel, XSModel):
 
     Parameters
     ----------
-    model : sherpa.models.model.ArithmeticModel instance
+    model : `sherpa.models.model.ArithmeticModel`
         The model whose results, when evaluated, are passed to
         the convolution model.
-    wrapper : sherpa.astro.xspec.XSConvolutionKernel instance
+    wrapper : `sherpa.astro.xspec.XSConvolutionKernel`
         The XSPEC convolution model.
 
     Examples
     --------
 
     The following evaluates two models (creating the y1 and y2
-    arrays), where y1 applies the `XScfux` convolution model to the
+    arrays), where y1 applies the `XScflux` convolution model to the
     combined absorption times powerlaw model, and y2 applies the
     convolution model to only the power-law model, and then multiples
     this by the absorption model. In the following mdl1 and mdl2
@@ -1896,7 +1935,7 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec
+    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec, XSwdem
 
     References
     ----------
@@ -4900,7 +4939,7 @@ class XSgrbcomp(XSAdditiveModel):
 
     See Also
     --------
-    XSgrbm
+    XSgrbjet, XSgrbm
 
     Notes
     -----
@@ -4929,6 +4968,86 @@ class XSgrbcomp(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kTs, self.gamma, self.kTe, self.tau, self.beta, self.fbflag, self.log_A, self.z, self.a_boost, self.norm))
 
 
+@version_at_least("12.12.0")
+class XSgrbjet(XSAdditiveModel):
+    """The XSPEC grbjet model: Two-phase Comptonization model of soft thermal seed photons for GRB prompt emission
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    thobs
+        The observing viewing angle in degrees.
+    thjet
+        The jet half-opening angle in degrees.
+    gamma
+        The jet gamma Lorentz factor.
+    r12
+        The jet radius in 10^12 cm.
+    p1
+        The low-energy index of the coming frame broken powerlaw
+        spectrum.
+    p2
+        The high-energy index of the coming frame broken powerlaw
+        spectrum.
+    E0
+        The break energy in keV.
+    delta
+        The smoothness of the transition between the two powerlaws.
+    index_pl
+        The energy index of the comoving-frame cutoff powerlaw
+        spectrum.
+    ecut
+        The cut-off energy in keV.
+    ktbb
+        The comoving frame blackbody temperature in keV.
+    model
+        The comoving frame emissivity law: 1 is broken powerlaw,
+        2 is cutoff powerlaw, and 3 is blackbody.
+    redshift
+        The source redshift.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSgrbcomp, XSgrbm
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGrbjet.html
+
+    """
+
+    __function__ = "xsgrbjet"
+
+    def __init__(self, name='grbjet'):
+        self.thobs = XSParameter(name, 'thobs', 5.0, min=0.0, max=30.0, hard_min=0.0, hard_max=30.0, frozen=True)
+        self.thjet = XSParameter(name, 'thjet', 10.0, min=2.0, max=20.0, hard_min=2.0, hard_max=20.0, frozen=True)
+        self.gamma = XSParameter(name, 'gamma', 200.0, min=1.0, max=500.0, hard_min=1.0, hard_max=500.0)
+        self.r12 = XSParameter(name, 'r12', 1.0, min=0.1, max=100.0, hard_min=0.1, hard_max=100.0, frozen=True)
+        self.p1 = XSParameter(name, 'p1', 0.0, min=-2.0, max=1.0, hard_min=-2.0, hard_max=1.0)
+        self.p2 = XSParameter(name, 'p2', 1.5, min=1.1, max=10.0, hard_min=1.1, hard_max=10.0)
+        self.E0 = XSParameter(name, 'E0', 1.0, min=0.1, max=1000.0, hard_min=0.1, hard_max=1000.0, units='keV')
+        self.delta = XSParameter(name, 'delta', 0.2, min=0.01, max=1.5, hard_min=0.01, hard_max=1.5, frozen=True)
+        self.index_pl = XSParameter(name, 'index_pl', 0.8, min=0.0, max=1.5, hard_min=0.0, hard_max=1.5, frozen=True)
+        self.ecut = XSParameter(name, 'ecut', 20.0, min=0.1, max=1000.0, hard_min=0.1, hard_max=1000.0, frozen=True, units='keV')
+        self.ktbb = XSParameter(name, 'ktbb', 1.0, min=0.1, max=1000.0, hard_min=0.1, hard_max=1000.0, frozen=True, units='keV')
+        self.model = XSParameter(name, 'model', 1, alwaysfrozen=True)
+        self.redshift = XSParameter(name, 'redshift', 2.0, min=0.01, max=10.0, hard_min=0.001, hard_max=10.0, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.thobs, self.thjet, self.gamma, self.r12,
+                                              self.p1, self.p2, self.E0, self.delta,
+                                              self.index_pl, self.ecut, self.ktbb,
+                                              self.model, self.redshift, self.norm))
+
+
 class XSgrbm(XSAdditiveModel):
     """The XSPEC grbm model: gamma-ray burst continuum.
 
@@ -4953,7 +5072,7 @@ class XSgrbm(XSAdditiveModel):
 
     See Also
     --------
-    XSgrbcomp
+    XSgrbcomp, XSgrbjet
 
     References
     ----------
@@ -9252,6 +9371,233 @@ class XSvvtapec(XSAdditiveModel):
                                  (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.norm))
 
 
+@version_at_least("12.12.0")
+class XSvvwdem(XSAdditiveModel):
+    """The XSPEC vvwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        What model to use: 0 calculates with MEKAL, 1 interpolates
+        with MEKAL, and 2 interpoates with APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvwdem, XSwdem
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_vvwDem"
+
+    def __init__(self, name='vvwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        # can not use p for the name as it conflicts with P
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.Tmax, self.beta, self.inv_slope, self.nH,
+                                              self.H, self.He, self.Li, self.Be, self.B,
+                                              self.C, self.N, self.O, self.F, self.Ne,
+                                              self.Na, self.Mg, self.Al, self.Si, self.P,
+                                              self.S, self.Cl, self.Ar, self.K, self.Ca,
+                                              self.Sc, self.Ti, self.V, self.Cr, self.Mn,
+                                              self.Fe, self.Co, self.Ni, self.Cu, self.Zn,
+                                              self.redshift, self.switch, self.norm))
+
+
+@version_at_least("12.12.0")
+class XSvwdem(XSAdditiveModel):
+    """The XSPEC vwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        What model to use: 0 calculates with MEKAL, 1 interpolates
+        with MEKAL, and 2 interpoates with APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvvwdem, XSwdem
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_vwDem"
+
+    def __init__(self, name='vwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        # can not use p for the name as it conflicts with P for the XSvvwdem model
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.Tmax, self.beta, self.inv_slope, self.nH,
+                                              self.He, self.C, self.N, self.O, self.Ne,
+                                              self.Na, self.Mg, self.Al, self.Si, self.S,
+                                              self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
+
+
+@version_at_least("12.12.0")
+class XSwdem(XSAdditiveModel):
+    """The XSPEC wdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    abundanc
+        The abundance relative to solar.
+    Redshift
+        The redshift of the plasma.
+    switch
+        What model to use: 0 calculates with MEKAL, 1 interpolates
+        with MEKAL, and 2 interpoates with APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSmekal, XSvwdem, XSvvdem
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_wDem"
+
+    def __init__(self, name='wdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        # can not use p for the name as it conflicts with P for the XSvvwdem model
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.Tmax, self.beta, self.inv_slope, self.nH,
+                                              self.abundanc, self.redshift, self.switch,
+                                              self.norm))
+
+
 class XSzagauss(XSAdditiveModel):
     """The XSPEC zagauss model: gaussian line profile in wavelength space.
 
@@ -10584,7 +10930,7 @@ class XSpwab(XSMultiplicativeModel):
 
     See Also
     --------
-    XSpcfabs, XSwabs
+    XSpcfabs, XSwabs, XSzxipab
 
     References
     ----------
@@ -11803,6 +12149,50 @@ class XSzphabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
 
 
+@version_at_least("12.12.0")
+class XSzxipab(XSMultiplicativeModel):
+    """The XSPEC zxipab model: power-law distribution of ionized absorbers.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHmin
+        The minimum equivalent hydrogen column (in units of
+        10^22 atoms/cm^2).
+    nHmax
+        The maximum equivalent hydrogen column (in units of
+        10^22 atoms/cm^2).
+    beta
+        The power law index for the covering fraction.
+
+    See Also
+    --------
+    XSpwab
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.12.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZxipab.html
+
+    """
+
+    __function__ = "zxipab"
+
+    def __init__(self, name='zxipab'):
+        self.nHmin = XSParameter(name, 'nHmin', 0.01, min=1e-07, max=1000.0, hard_min=1e-07, hard_max=1000000.0, units='10^22')
+        self.nHmax = XSParameter(name, 'nHmax', 10.0, min=1e-07, max=1000.0, hard_min=1e-07, hard_max=1000000.0, units='10^22')
+        self.beta = XSParameter(name, 'beta', 0.0, min=-10.0, max=10.0, hard_min=-10.0, hard_max=10.0)
+        self.log_xi = XSParameter(name, 'log_xi', 3.0, min=-3.0, max=6.0, hard_min=-3.0, hard_max=6.0)
+        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        XSMultiplicativeModel.__init__(self, name, (self.nHmin, self.nHmax, self.beta,
+                                                    self.log_xi, self.redshift))
+
+
 class XSzxipcf(XSMultiplicativeModel):
     """The XSPEC zxipcf model: partial covering absorption by partially ionized material.
 
@@ -11816,7 +12206,7 @@ class XSzxipcf(XSMultiplicativeModel):
 
     Attributes
     ----------
-    nH
+    Nh
         The column density, in units of 10^22 cm^2.
     log_xi
         The log of xi: see [1]_ for more details.

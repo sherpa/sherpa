@@ -43,6 +43,7 @@ import sys
 
 from sherpa.astro.utils.xspec import parse_xspec_model_description
 from sherpa.astro import xspec
+from sherpa.models.parameter import hugeval
 
 
 def compare_xspec_models(models, hard=True):
@@ -103,6 +104,11 @@ def compare_xspec_models(models, hard=True):
             reports.append(f"function name change: {xs._calc.__name__} to {funcname}")
 
         # VERY LIMITED CHECK OF PARAMETER VALUES
+        #
+        # We have two settings,the soft/hard limits (which are, as of
+        # #1259, the same) and the original values we set, which are
+        # stored in the _xpsec_xoft/hard_min/max attributes).
+        #
         for i, (xpar, par) in enumerate(zip(xs.pars, mdl.pars), 1):
             if xpar.name != par.name:
                 reports.append(f"par {i} name: {xpar.name} -> {par.name}")
@@ -114,21 +120,47 @@ def compare_xspec_models(models, hard=True):
             if xpar.val != par.default:
                 reports.append(f"par {xpar.name} default: {xpar.val} -> {par.default}")
 
-            # May want to tweak this logic
-            if xpar.min != par.softmin:
-                reports.append(f"par {xpar.name} softmin: {xpar.min} -> {par.softmin}")
-
-            if xpar.max != par.softmax:
-                reports.append(f"par {xpar.name} softmax: {xpar.max} -> {par.softmax}")
-
-            if hard and xpar.hard_min != par.hardmin:
-                reports.append(f"par {xpar.name} hardmin: {xpar.hard_min} -> {par.hardmin}")
-
-            # It's not clear what we should do for the norm parameter: assume 1e24 or hugeval?
-            # So don't bother reporting.
+            # We skip the Parameter instances which are the norm parameters
             #
-            if hard and par.name != 'norm' and xpar.hard_max != par.hardmax:
-                reports.append(f"par {xpar.name} hardmax: {xpar.hard_max} -> {par.hardmax}")
+            if isinstance(xpar, xspec.XSBaseParameter):
+                # How do these values compare to the values from the old model.dat
+                #
+
+                # The actual soft limits should match the model.dat hard limits
+                # (and should also be reported in the _xspec_soft... checks).
+                # We do special case the situation where the par limits are None
+                # (i.e. undefined) as long as the xpar values are +/- hugeval
+                #
+                if [par.softmin, par.hardmin, par.softmax, par.hardmax] == [None] * 4:
+                    for attr in ["min", "hard_min"]:
+                        assert getattr(xpar, attr) == -hugeval
+
+                    for attr in ["max", "hard_max"]:
+                        assert getattr(xpar, attr) == hugeval
+
+                    continue
+
+                if xpar.min != par.hardmin:
+                    reports.append(f"par {xpar.name} min: {xpar.min} -> {par.hardmin}")
+
+                if xpar.max != par.hardmax:
+                    reports.append(f"par {xpar.name} max: {xpar.max} -> {par.hardmax}")
+
+                if xpar._xspec_soft_min != par.softmin:
+                    reports.append(f"par {xpar.name} softmin: {xpar._xspec_soft_min} -> {par.softmin}")
+
+                if xpar._xspec_soft_max != par.softmax:
+                    reports.append(f"par {xpar.name} softmax: {xpar._xspec_soft_max} -> {par.softmax}")
+
+                if hard:
+                    if xpar.hard_min != par.hardmin:
+                        reports.append(f"par {xpar.name} hardmin: {xpar.hard_min} -> {par.hardmin}")
+
+                    if xpar.hard_max != par.hardmax:
+                        reports.append(f"par {xpar.name} hardmax: {xpar.hard_max} -> {par.hardmax}")
+
+            elif xpar.name != 'norm':
+                raise ValueError(f"Unexpected parameter for {mdl.clname}\n{xpar}")
 
         if len(reports) == 0:
             continue
@@ -142,7 +174,8 @@ def compare_xspec_models(models, hard=True):
     # Check to see if we have lost any models.
     #
     for name in dir(xspec):
-        if not name.startswith('XS') or name.endswith('Model') or name.endswith('Kernel'):
+        if not name.startswith('XS') or name.endswith('Model') or \
+           name.endswith('Kernel') or name.endswith('Parameter'):
             continue
 
         try:
