@@ -1704,7 +1704,8 @@ def test_show_cdf_plot_empty(session):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_show_cdf_plot(session, old_numpy_printing):
+@pytest.mark.parametrize("use_numpy", [pytest.param(False, marks=pytest.mark.xfail), True])
+def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
     """This was to show issue #912 that has now been fixed.
 
     The display of the numeric values can depend on the
@@ -1713,7 +1714,10 @@ def test_show_cdf_plot(session, old_numpy_printing):
 
     s = session()
 
-    x = np.asarray([20, 15, 25, 10])
+    x = [20, 15, 25, 10]
+    if use_numpy:
+        x = np.asarray(x)
+
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
