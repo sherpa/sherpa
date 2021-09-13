@@ -4500,11 +4500,16 @@ class DataIMG(Data2D):
         #
         if self._region is None:
             if ignore:
-                reg.invert()
+                # add an explicit "whole field" constructor to avoid
+                # possible issues with stringification of multiple
+                # ignores.
+                reg = Region('field()').subtract(reg)
 
             self._region = reg
+        elif ignore:
+            self._region = self._region.subtract(reg)
         else:
-            self._region = self._region.combine(reg, ignore)
+            self._region = self._region.union(reg)
 
     def get_bounding_mask(self):
         mask = self.mask

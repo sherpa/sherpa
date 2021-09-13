@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2009, 2016, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2016, 2020, 2021
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -36,7 +37,8 @@ typedef struct {
 
 
 // Declare symbols
-static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs );
+static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs );
+static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwargs );
 static PyObject* region_invert( PyRegion* self, PyObject* args );
 
 
@@ -65,7 +67,8 @@ static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
 // The constructor can be given a string and a flag, which if
 // set indicates this is a file name. The file support is
 // unnescessary as we can read the data in Python, so this
-// API could just deal with strings.
+// API could just deal with strings (it lets the C code deal
+// with the length of the region string rather than us).
 //
 static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
 			      PyObject *kwargs)
@@ -75,25 +78,20 @@ static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
   int fileflag = 0;
 
   static const char *kwlist[] = {"region", "fileflag", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "|si",
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "s|p",
                                      const_cast<char**>(kwlist),
 				     &objS, &fileflag ) )
     return NULL;
 
-  if (objS == NULL) {
-    reg = regCreateEmptyRegion();
-  } else {
-    reg = parse_string( objS, fileflag );
-    if (!reg) {
-      std::ostringstream err;
-      if (fileflag) {
-	err << "unable to read region from: " << objS;
-      } else {
-	err << "unable to parse region string: " << objS;
-      }
-      PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-      return NULL;
+  reg = parse_string( objS, fileflag );
+  if (!reg) {
+    const char *fmt;
+    if (fileflag) {
+      fmt = "unable to read region from: %s";
+    } else {
+      fmt = "unable to parse region string: '%s'";
     }
+    return PyErr_Format( PyExc_ValueError, fmt, objS );
   }
 
   return pyRegion_build( type, reg );
@@ -167,8 +165,11 @@ static PyMethodDef pyRegion_methods[] = {
   { (char*)"mask", (PyCFunction) region_mask,
     METH_VARARGS | METH_KEYWORDS, (char*)"Calculate the mask for a set of points: mask = r.mask(x0, x1)" },
 
-  { (char*)"combine", (PyCFunction) region_combine,
-    METH_VARARGS | METH_KEYWORDS, (char*)"Combine regions: rnew = r.combine(region, exclude=0)" },
+  { (char*)"union", (PyCFunction) region_union,
+    METH_VARARGS | METH_KEYWORDS, (char*)"Take the union of two regions: r3 = r1.union(r2)" },
+
+  { (char*)"subtract", (PyCFunction) region_subtract,
+    METH_VARARGS | METH_KEYWORDS, (char*)"Remove r2 from r1: r3 = r1.subtract(r2)" },
 
   { (char*)"invert", (PyCFunction) region_invert,
     METH_NOARGS, (char*)"Invert the region: r.invert()" },
@@ -178,6 +179,9 @@ static PyMethodDef pyRegion_methods[] = {
 };
 
 
+// Unfortunately we can not use C99-style designated initializers here
+// so we need to keep all the "null" values.
+//
 static PyTypeObject pyRegion_Type = {
   // Note that there is no semicolon after the PyObject_HEAD_INIT macro;
   // one is included in the macro definition.
@@ -201,7 +205,7 @@ static PyTypeObject pyRegion_Type = {
   0,                             // tp_setattro
   0,                             // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags  DO NOT REMOVE
-  (char*)"PyRegion reg = Region(region=None, fileflag=0)",      // tp_doc, __doc__
+  (char*)"PyRegion reg = Region(region, fileflag=False)",      // tp_doc, __doc__
   0,		                 // tp_traverse
   0,		                 // tp_clear
   0,		                 // tp_richcompare
@@ -222,23 +226,19 @@ static PyTypeObject pyRegion_Type = {
 };
 
 
-// If reverse is 0 then       reg1&reg2
-//                 otherwise  reg1&!reg2
-// where reg1 is self.
-//
 // Needs to be defined after pyRegion_type is defined.
 //
-static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwargs )
+// Take the union of the the argument with the object.
+//
+static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs )
 {
 
   PyObject *reg_obj2 = NULL;
-  int reverse = 0;
 
-  static const char *kwlist[] = {"region", "exclude", NULL};
-  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!|i",
+  static const char *kwlist[] = {"region", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!",
                                      const_cast<char**>(kwlist),
-				     &pyRegion_Type, &reg_obj2,
-				     &reverse))
+				     &pyRegion_Type, &reg_obj2))
     return NULL;
 
   PyRegion *reg2 = (PyRegion*)(reg_obj2);
@@ -246,19 +246,49 @@ static PyObject* region_combine( PyRegion* self, PyObject* args, PyObject *kwarg
   regRegion *r1 = self->region;
   regRegion *r2 = reg2->region;
 
-  if( reverse ) {
-    r2 = regInvert( r2 );
-  }
-
-  regRegion *combined = regCombineRegion( r1, r2 );
+  regRegion *combined = regUnionRegion( r1, r2 );
   if ( NULL == combined ) {
     PyErr_SetString( PyExc_TypeError,
-		     (char*)"unable to combine regions successfully" );
+		     (char*)"unable to union the regions" );
     return NULL;
   }
 
-  if( reverse ) {
-    regFree( r2 );
+  // I assume we use "N" rather than "O" because, from the docs,
+  // "Useful when the object is created by a call to an object
+  // constructor in the argument list." so we don't want to
+  // increase the reference count (and if "O" is used it
+  // leaks memory...)
+  //
+  PyRegion *out = (PyRegion*) pyRegion_build( &pyRegion_Type, combined );
+  return Py_BuildValue((char*)"N", out);
+
+}
+
+// Remove the argument region from the object.
+//
+static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwargs )
+{
+
+  PyObject *reg_obj2 = NULL;
+
+  static const char *kwlist[] = {"region", NULL};
+  if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!",
+                                     const_cast<char**>(kwlist),
+				     &pyRegion_Type, &reg_obj2))
+    return NULL;
+
+  PyRegion *reg2 = (PyRegion*)(reg_obj2);
+
+  regRegion *r1 = self->region;
+  regRegion *r2 = regInvert( reg2->region );
+
+  regRegion *combined = regIntersectRegion( r1, r2 );
+  regFree( r2 );
+
+  if ( NULL == combined ) {
+    PyErr_SetString( PyExc_TypeError,
+		     (char*)"unable to subtract a region" );
+    return NULL;
   }
 
   // I assume we use "N" rather than "O" because, from the docs,
@@ -319,8 +349,10 @@ PyInit__region(void)
     return NULL;
 
   Py_INCREF(&pyRegion_Type);
-
-  PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type);
+  if (PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type) < 0) {
+    Py_DECREF(&pyRegion_Type);
+    Py_DECREF(m);
+  }
   return m;
 
 }
