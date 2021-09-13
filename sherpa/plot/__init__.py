@@ -18,8 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-A visualization interface to Sherpa
+"""A visualization interface to Sherpa.
+
+Classes provide access to common plotting tasks, which is done by the
+plotting backend defined in the ``options.plot_pkg`` setting of the
+Sherpa configuration file. Note that the plot objects can be created,
+and used, even when there is no available plot backend, it is just
+that no graphical display will be created.
+
 """
 
 import logging
@@ -305,14 +311,14 @@ class Plot(NoNewAttributesAfterInit):
         x, y
            The data values to plot. They should have the same length.
         yerr, xerr : optional
-           The symmetric errors to apply to the y or x values, or ``None``
+           The symmetric errors to apply to the y or x values, or `None`
            for no errors along the axis. If given, they should match the
            length of the data.
         title, xlabel, ylabel : optional, string
            The optional plot title and axis labels. These are ignored
-           if overplot is set to ``True``.
+           if overplot is set to `True`.
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -411,7 +417,7 @@ class Point(NoNewAttributesAfterInit):
         x, y
            The coordinates of the plot.
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -459,14 +465,14 @@ class Histogram(NoNewAttributesAfterInit):
            The data values to plot (the bin edges along the X axis and
            the bin values for the Y axis). They should have the same length.
         yerr : optional
-           The symmetric errors to apply to the y values, or ``None``
+           The symmetric errors to apply to the y values, or `None`
            for no errors along the axis. If given, they should match the
            length of the data.
         title, xlabel, ylabel : optional, string
            The optional plot title and axis labels. These are ignored
-           if overplot is set to ``True``.
+           if overplot is set to `True`.
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -563,7 +569,7 @@ class HistogramPlot(Histogram):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -651,7 +657,7 @@ class DataHistogramPlot(HistogramPlot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -707,6 +713,12 @@ class SourceHistogramPlot(ModelHistogramPlot):
 
 
 class PDFPlot(HistogramPlot):
+    """Display the probability density of an array.
+
+    See Also
+    --------
+    CDFPlot
+    """
 
     def __init__(self):
         self.points = None
@@ -757,15 +769,44 @@ class PDFPlot(HistogramPlot):
 
 
 class CDFPlot(Plot):
+    """Display the cumulative distribution of an array.
+
+    The cumulative distribution of the data is drawn along with
+    vertical lines to indicate the median, 15.87%, and 84.13%
+    percentiles.
+
+    See Also
+    --------
+    PDFPlot
+
+    Examples
+    --------
+
+    Show the cumulative distribution of 1000 randomly-distributed
+    points from a Gumbel distribution:
+
+    >>> rng = np.random.default_rng()  # requires NumPy 1.17 or later
+    >>> pts = rng.gumbel(loc=100, scale=20, size=1000)
+    >>> plot = CDFPlot()
+    >>> plot.prepare(pts)
+    >>> plot.plot()
+
+    """
 
     median_defaults = dict(linestyle='dash', linecolor='orange',
                            linewidth=1.5)
+    """The options used to draw the median line."""
+
     lower_defaults = dict(linestyle='dash', linecolor='blue',
                           linewidth=1.5)
+    """The options used to draw the 15.87% line."""
+
     upper_defaults = dict(linestyle='dash', linecolor='blue',
                           linewidth=1.5)
+    """The options used to draw the 84.13% line."""
 
     plot_prefs = backend.get_cdf_plot_defaults()
+    """The plot options (the CDF and axes)."""
 
     def __init__(self):
         self.x = None
@@ -854,7 +895,7 @@ class CDFPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -930,7 +971,7 @@ class LRHistogram(HistogramPlot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -1259,7 +1300,7 @@ class DataPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -1582,7 +1623,7 @@ class ModelPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
@@ -1836,7 +1877,7 @@ class FitPlot(Plot):
     >>> fplot.prepare(dplot, mplot)
     >>> fplot.plot()
 
-    Keyword arguments can be given in the ``plot`` call, and these
+    Keyword arguments can be given in the `plot` call, and these
     are passed through to both the data and model plots (in the
     following example the Matplotlib backend is assumed to be in use):
 
@@ -1897,7 +1938,7 @@ class FitPlot(Plot):
         Parameters
         ----------
         overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
+           If `True` then add the data to an existing plot, otherwise
            create a new plot.
         clearwindow : bool, optional
            Should the existing plot area be cleared before creating this
