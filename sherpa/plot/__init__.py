@@ -867,7 +867,7 @@ plot_prefs = {self.plot_prefs}"""
         plot
         """
 
-        self.points = points
+        self.points = numpy.asarray(points)
         self.x = numpy.sort(points)
         (self.median, self.lower,
          self.upper) = get_error_estimates(self.x, True)

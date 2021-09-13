@@ -1704,7 +1704,7 @@ def test_show_cdf_plot_empty(session):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-@pytest.mark.parametrize("use_numpy", [pytest.param(False, marks=pytest.mark.xfail), True])
+@pytest.mark.parametrize("use_numpy", [False, True])
 def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
     """This was to show issue #912 that has now been fixed.
 
