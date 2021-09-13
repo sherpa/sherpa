@@ -926,7 +926,7 @@ set_coord(1, 'logical')
 
 ######### Filter Data
 
-notice2d_id(1, "Circle(50,50,30)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)")
+notice2d_id(1, "Circle(50,50,30)&!RotBox(30,30,10,5,45)|Ellipse(40,75,30,20,320)")
 
 
 ######### Set Statistic
@@ -1670,8 +1670,8 @@ def test_restore_img_filter_model(make_data_path, clean_astro_ui):
     corig = ui.calc_stat()
 
     # sanity check
-    assert forig == 'Circle(50,50,30)&Ellipse(40,75,30,20,320)&!RotBox(30,30,10,5,45)'
-    assert sorig == pytest.approx(489.92761)
+    assert forig == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)|Ellipse(40,75,30,20,320)'
+    assert sorig == pytest.approx(1861.978)
     assert corig == pytest.approx(7122.753868262877)
 
     compare(add_datadir_path(_canonical_img_filter_model))
@@ -1682,10 +1682,7 @@ def test_restore_img_filter_model(make_data_path, clean_astro_ui):
     cnew = ui.calc_stat()
     assert fnew == forig
     assert snew == pytest.approx(sorig)
-
-    # It should be this, but isn't for some reason
-    # assert cnew == pytest.approx(corig)
-    assert cnew == pytest.approx(1828.198211697685)
+    assert cnew == pytest.approx(corig)
 
 
 @requires_xspec
