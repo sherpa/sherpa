@@ -82,6 +82,8 @@ initializing the model), which is the lower-case value of the
 model. So the keys are ``'normgauss1d'``, ``'lorentz1d'``,
 ``'pseudovoigt1d'``, and ``'voigt1d'``.
 
+.. _fit_peaked_data_normgauss1d_lorentz1d:
+
 Fitting the NormGauss1D and Lorentz1D models
 ============================================
 
