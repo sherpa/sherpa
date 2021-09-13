@@ -835,9 +835,9 @@ class CDFPlot(Plot):
             points = numpy.array2string(self.points, separator=',',
                                         precision=4, suppress_small=False)
 
-        return f"""points = {x}
-x      = {y}
-y      = {points}
+        return f"""points = {points}
+x      = {x}
+y      = {y}
 median = {self.median}
 lower  = {self.lower}
 upper  = {self.upper}
