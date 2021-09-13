@@ -156,7 +156,7 @@ One way to include background is to sample it from a
 loaded into the dataset before running the simluation and, if not done
 before, the scale of the background scaling has to be set::
 
-  >>> data.set_background(read_pha('9774.arf'))
+  >>> data.set_background(read_pha('9774_bg.pi'))
   >>> data.backscal = 9.6e-06
   >>> fake_pha(data, srcmdl, add_bkgs=True)
 
@@ -170,7 +170,7 @@ well exposed and has a large number or counts.
 
 Why do we need to set the ``add_bkgs=True`` argument and do not simply
 use all available backgrounds? The reason for that is it is often
-useful to read in a file with ``data = read_pha('9774_bg.pi')``, which
+useful to read in a file with ``data = read_pha('9774.pi')``, which
 might automatically read in the background as well. Using the
 `add_bkgs` to switch the background on or off in the simulation
 makes it easy to compare the same simulation with and without a
