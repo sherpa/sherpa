@@ -1704,8 +1704,9 @@ def test_show_cdf_plot_empty(session):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_show_cdf_plot(session, old_numpy_printing):
-    """This is issue #912
+@pytest.mark.parametrize("use_numpy", [False, True])
+def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
+    """This was to show issue #912 that has now been fixed.
 
     The display of the numeric values can depend on the
     NumPy version, so force the legacy output.
@@ -1713,7 +1714,10 @@ def test_show_cdf_plot(session, old_numpy_printing):
 
     s = session()
 
-    x = np.asarray([20, 15, 25, 10])
+    x = [20, 15, 25, 10]
+    if use_numpy:
+        x = np.asarray(x)
+
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
@@ -1722,9 +1726,9 @@ def test_show_cdf_plot(session, old_numpy_printing):
     toks = str(p).split('\n')
     assert len(toks) == 10
 
-    assert toks[0] == 'points = [10,15,20,25]'
-    assert toks[1] == 'x      = [ 0.25, 0.5 , 0.75, 1.  ]'
-    assert toks[2] == 'y      = [20,15,25,10]'
+    assert toks[0] == 'points = [20,15,25,10]'
+    assert toks[1] == 'x      = [10,15,20,25]'
+    assert toks[2] == 'y      = [ 0.25, 0.5 , 0.75, 1.  ]'
     assert toks[3] == 'median = 17.5'
     assert toks[4].startswith('lower  = 12.37')
     assert toks[5].startswith('upper  = 22.62')
