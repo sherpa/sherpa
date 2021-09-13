@@ -144,10 +144,10 @@ def test_pha_real(subtract, group, make_data_path, override_plot_backend):
 
     if group:
         assert '<div class="dataval">Applied (46 groups)</div>' in r
-        assert '<div class="dataval">0.5183-8.2198 Energy (keV) with 42 groups</div>' in r
+        assert '<div class="dataval">0.4672-9.8696 Energy (keV) with 42 groups</div>' in r
     else:
         assert '<div class="dataval">Not applied</div>' in r
-        assert '<div class="dataval">0.5037-7.0007 Energy (keV) with 446 channels</div>' in r
+        assert '<div class="dataval">0.4964-7.0080 Energy (keV) with 446 channels</div>' in r
 
 
 @requires_data

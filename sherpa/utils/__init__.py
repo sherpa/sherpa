@@ -90,6 +90,7 @@ del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
+           'create_expr_integrated',
            'dataspace1d', 'dataspace2d', 'demuller',
            'erf', 'export_method', 'extract_kernel',
            'filter_bins', 'gamma', 'get_fwhm',
@@ -1406,6 +1407,10 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         length of ``vals`` must equal the number of True values in
         ``mask``.
 
+    See Also
+    --------
+    create_expr_integrated, parse_expr
+
     Examples
     --------
 
@@ -1433,6 +1438,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
     if mask is None:
         seq = vals
+
     else:
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
@@ -1451,51 +1457,145 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         index = numpy.arange(len(mask))
         seq = index[mask]
 
-    # diffs has 1 less element than vals
-    #
-    diffs = numpy.apply_along_axis(numpy.diff, 0, seq)
-    diffs = diffs == 1
-
-    def filt(start, end):
-        "What is the filter expression for this range?"
-        vstr = format % start
-        if start != end:
-            vstr += delim + format % end
-        return vstr
-
-    # The trick here is that if diffs is True then we just want to
-    # update the end counter, which gives the end-point of the current
-    # range, and move to the next bin. We only output data when diffs
-    # is False, when we report the previous range and start a new
-    # range.
-    #
-    expr = []
+    exprs = []
     start = vals[0]
-    end = vals[0]
-    for delta, val in zip(diffs, vals[1:]):
 
-        # If this is part of a contiguous sequence then we update
-        # the end value and move on.
-        #
-        if delta:
-            end = val
-            continue
-
-        # If we have a break then output the range we have just
-        # processed.
-        #
-        expr.append(filt(start, end))
-
-        # Start a new range.
-        #
-        start = val
-        end = val
-
-    # Handle the last range.
+    # We follow create_expr_integrated but instead of having separate lo/hi
+    # always we use the same array
     #
-    expr.append(filt(start, end))
+    startbins = vals[1:]
+    endbins = vals[:-1]
 
-    return ','.join(expr)
+    diffs = numpy.diff(seq)
+    idxs, = numpy.where(diffs != 1)
+    for idx in idxs:
+        exprs.append((start, endbins[idx]))
+        start = startbins[idx]
+
+    exprs.append((start, vals[-1]))
+
+    def filt(lo, hi):
+        vstr = format % lo
+        if lo == hi:
+            return vstr
+
+        return vstr + f"{delim}{format % hi}"
+
+    return ",".join([filt(*expr) for expr in exprs])
+
+
+def create_expr_integrated(lovals, hivals, mask=None,
+                           format='%s', delim='-',
+                           eps=numpy.finfo(numpy.float32).eps):
+    """Create a string representation of a filter (integrated).
+
+    Use the mask to convert the input values into a set of
+    comma-separated filters - low value and high value, separated by
+    the delimiter - that represent the data. Unlike `create_expr` this
+    routine uses the lovals values for the start of the bin and
+    hivals for the end of each bin, and assumes that contiguous bins
+    should be combined.
+
+    Parameters
+    ----------
+    lovals, hivals : sequence
+        The lower and upper values of each bin. It is required that
+        they are in ascending order and ``lovals`` < ``hivals``.
+    mask : sequence of bool or None, optional
+        The mask setting for the full dataset, without any filtering
+        applied. A value of True indicates the element is included
+        and False means it is excluded. Note that this is opposite to the
+        numpy convention in numpy masked arrays.
+    format : str, optional
+        The format used to display each value.
+    delim : str, optional
+        The separator for a range.
+    eps : number, optional
+        The tolerance for comparing two numbers with sao_fcmp.
+
+    Raises
+    ------
+    ValueError
+        If the ``lovals`` and ``hivals`` sequences do not match.
+
+    See Also
+    --------
+    create_expr, parse_expr
+
+    Examples
+    --------
+
+    When there is no mask, or all mask values are True, we just show
+    the full range:
+
+    >>> create_expr_integrated([1, 2, 3, 4], [2, 3, 4, 5])
+    '1-5'
+    >>> create_expr_integrated([1, 2, 4, 5, 7], [2, 3, 5, 6, 8])
+    '1-8'
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.8, 1.0])
+    '0.1-1.0'
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.4, 0.6, 1.0], [True, True, True, True])
+    '0.1-1.0'
+
+    If a mask is given then it defines the bins that are grouped
+    together, even if the bins are not contiguous:
+
+    >>> create_expr_integrated([1, 2, 4], [2, 3, 5], [True, True, False, True])
+    '1-3,4-5'
+    >>> create_expr_integrated([1, 3, 5], [2, 4, 6], [True, True, False])
+    '1-4,5-6'
+
+    More examples of the mask controlling the grouping:
+
+    >>> create_expr_integrated([0.1, 0.2, 0.6, 0.8], [0.2, 0.4, 0.8, 1.0], [True, True, False, True, True])
+    '0.1-0.4,0.6-1.0'
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [True, True, False, True, False, True])
+    '0.1-0.3,0.4-0.5,0.8-1.0'
+    >>> create_expr_integrated([0.1, 0.2, 0.4, 0.8], [0.2, 0.3, 0.5, 1.0], [False, True, True, False, True, False, True, False])
+    '0.1-0.3,0.4-0.5,0.8-1.0'
+
+    An interesting case is that you can add a "break" between
+    contiguous bins (this behavior may be changed):
+
+    >>> create_expr_integrated([1, 2, 3, 4], [2, 3, 4, 5], [True, False, True, True, True])
+    '1-2,2-5'
+
+    """
+
+    # Follow create_expr.
+    #
+    if len(lovals) != len(hivals):
+        raise ValueError("hivals array mis-match with lovals")
+
+    if len(lovals) == 0:
+        return ''
+
+    # To identify where there's a break we use an array of consecutive
+    # integers that have missing data masked out.
+    #
+    if mask is None:
+        seq = numpy.arange(len(lovals))
+    else:
+        mask = numpy.asarray(mask, dtype=bool)
+
+        if sum(mask) != len(lovals):
+            raise ValueError("mask array mis-match with lovals")
+
+        seq = numpy.arange(len(mask))
+        seq = seq[mask]
+
+    out = format % lovals[0]
+
+    startbins = lovals[1:]
+    endbins = hivals[:-1]
+
+    diffs = numpy.diff(seq)
+    idxs, = numpy.where(diffs != 1)
+    for idx in idxs:
+        out += f"{delim}{format % endbins[idx]},{format % startbins[idx]}"
+
+    out += f"{delim}{format % hivals[-1]}"
+    return out
 
 
 def parse_expr(expr):
@@ -1517,6 +1617,10 @@ def parse_expr(expr):
     filters : list of pairs
         Each pair gives the lower- and upper-edge of the filter,
         using ``None`` to represent no limit.
+
+    See Also
+    --------
+    create_expr, create_expr_int
 
     Notes
     -----

@@ -43,6 +43,11 @@ arrays with dimensionality greater than one, the internal
 representation used by Sherpa is often a flattened - i.e.
 one-dimensional - version.
 
+The :py:class:`sherpa.astro.data.DataPHA` class can be thought of
+as being either unbinned or binned, depending on the units
+(channels or energy/wavelength), and this is discussed in the
+:doc:`PHA example <pha>` page.
+
 The dependent axis
 ==================
 
@@ -61,7 +66,7 @@ Examples of unbinned data classes are
 :py:class:`~sherpa.data.Data1D` and :py:class:`~sherpa.data.Data2D`.
 
     >>> np.random.seed(0)
-    >>> x = np.arange(20, 40, 0.5)
+    >>> x = np.arange(20.25, 40, 0.5)
     >>> y = x**2 + np.random.normal(0, 10, size=x.size)
     >>> d1 = data.Data1D('test', x, y)
     >>> print(d1)
@@ -70,6 +75,20 @@ Examples of unbinned data classes are
     y         = Float64[40]
     staterror = None
     syserror  = None
+    >>> print(d1.x)
+    [20.25 20.75 21.25 21.75 22.25 22.75 23.25 23.75 24.25 24.75 25.25 25.75
+     26.25 26.75 27.25 27.75 28.25 28.75 29.25 29.75 30.25 30.75 31.25 31.75
+     32.25 32.75 33.25 33.75 34.25 34.75 35.25 35.75 36.25 36.75 37.25 37.75
+     38.25 38.75 39.25 39.75]
+    >>> print(d1.y)
+    [ 427.70302346  434.56407208  461.34987984  495.47143199  513.7380799
+      507.7897212   550.06338418  562.54892792  587.03031148  616.66848502
+      639.00293571  677.60523507  696.67287725  716.77925016  747.00113233
+      773.39924327  813.00329073  824.51091736  858.69317702  876.52154261
+      889.53260184  952.09868595  985.20686199 1000.6408498  1062.76004624
+     1058.01884325 1106.02008517 1137.1906615  1188.39029214 1222.2560877
+     1244.11197426 1281.8441252  1305.18464252 1330.75453532 1384.08337851
+     1426.62598969 1475.36540681 1513.58629849 1536.68923183 1577.03947249]
     >>> plt.plot(d.x, d.y, 'o')
 
 .. image:: ../_static/data/data1d.png
@@ -123,21 +142,47 @@ Filtering data
 
 Sherpa supports filtering data sets; that is, temporarily removing
 parts of the data (perhaps because there are problems, or to help
-restrict parameter values).
+restrict parameter values). There are routines to filter the data
+and to find out what bins have been selected.
 
+The :py:meth:`~sherpa.data.Data.ignore` and
+:py:meth:`~sherpa.data.Data.notice` methods are used to
+define the ranges to exclude or include.
 The :py:attr:`~sherpa.data.Data.mask` attribute indicates
 whether a filter has been applied: if it returns ``True`` then
-no filter is set, otherwise it is a bool array
+no filter is set, ``False`` when all data has been filtered out,
+otherwise it is a bool array
 where ``False`` values indicate those elements that are to be
-ignored. The :py:meth:`~sherpa.data.Data.ignore` and
-:py:meth:`~sherpa.data.Data.notice` methods are used to
-define the ranges to exclude or include. For example, the following
+ignored. 
+Note that the Sherpa definition is opposite of the convention in numpy, where `True` indicates
+a masked value to be ignored, while Sherpa uses `False` for this purpose. 
+For example, the following
 hides those values where the independent axis values are between
 21.2 and 22.8::
 
     >>> d1.ignore(21.2, 22.8)
     >>> d1.x[np.invert(d1.mask)]
-    array([21.5, 22. , 22.5])
+    array([21.25, 21.75, 22.25, 22.75])
+
+.. note::
+   The meaning of the range selected by the `notice` and `ignore` calls
+   depends on the data class: :py:class:`sherpa.data.Data1DInt` and
+   :py:class:`sherpa.astro.data.DataPHA` classes can treat the
+   upper limit differently (it can be inclusive or exclusive)
+   and 2D datasets such as :py:class:`sherpa.data.Data2D` can
+   use filters that use both axes.
+
+The :py:meth:`~sherpa.data.Data1D.get_filter` method will report a
+string representation of the existing filter, so here showing that
+the bins between 21.2 and 22.8 have been ignored::
+
+    >>> print(d1.get_fiter())
+    20.2500:20.7500,23.2500:39.7500
+
+.. note::
+   The filter does not record the requested changes - that is here
+   the 21.2 to 22.8 arguments to :py:meth:`~sherpa.data.Data.ignore` -
+   but instead reflects the selected bins in the data set.
 
 After this, a fit to the data will ignore these values, as shown
 below, where the number of degrees of freedom of the first fit,
@@ -156,8 +201,8 @@ no arguments were given)::
     >>> d1.notice()
     >>> res2 = fit.fit()
 
-    >>> print("Degrees of freedom: {} vs {}".format(res1.dof, res2.dof))
-    Degrees of freedom: 35 vs 38
+    >>> print(f"Degrees of freedom: {res1.dof} vs {res2.dof}")
+    Degrees of freedom: 34 vs 38
 
 .. _filter_reset:
 
@@ -166,7 +211,9 @@ Resetting the filter
 
 The :py:meth:`~sherpa.data.Data.notice` method can be used to
 reset the filter - that is, remove all filters - by calling with no
-arguments (or, equivalently, with two `None` arguments).
+arguments (or, equivalently, with two `None` arguments). Similarly
+the :py:meth:`~sherpa.data.Data.ignore` method called with no
+arguments will remove all points.
 
 The first filter call
 ---------------------
@@ -176,13 +223,26 @@ as a special case (this also holds if the
 :ref:`filters have been reset <filter_reset>`).
 The first call to :py:meth:`~sherpa.data.Data.notice`
 will restrict the data to just the requested range, and subsequent
-calls will add the new data. This means that
+calls will add the new data. So with no filter we see the whole data
+range::
+
+    >>> d1.notice()
+    >>> print(d1.get_fiter(format='%.2f'))
+    20.25:39.75
+
+The first :py:meth:`~sherpa.data.Data.notice` call restricts to just
+this range::
 
     >>> d1.notice(25, 27)
-    >>> d1.notice(30, 35)
+    >>> print(d1.get_fiter(format='%.1f'))
+    25.25:26.75
 
-will restrict the data to the ranges 25-27 and then add in the range
-30-35.
+Subsequent :py:meth:`~sherpa.data.Data.notice` calls add to the selected
+range::
+
+    >>> d1.notice(30, 35)
+    >>> print(d1.get_fiter(format='%.1f'))
+    25.25:26.75,30.25:34.75
 
 The edges of a filter
 ---------------------
@@ -190,7 +250,7 @@ The edges of a filter
 Mathematically the two sets of commands below should select the same
 range, but it can behave slightly different for values at the edge
 of the filter (or within the edge bins for :py:class:`~sherpa.data.Data1DInt`
-objects):
+and :py:class:`~sherpa.astro.data.DataPHA` objects):
 
     >>> d1.notice(25, 35)
     >>> d1.ignore(29, 31)
@@ -199,6 +259,38 @@ objects):
     >>> d1.notice(31, 35)
 
 .. _filter_enhance:
+
+Accessing filtered data
+-----------------------
+
+Although the :py:attr:`~sherpa.data.Data.mask` attribure can be used
+to manually filter the data, many data accessors accept a ``filter``
+argument which, if set, will filter the requested data.  When a filter
+is applied, :py:meth:`~sherpa.data.Data1D.get_x` and
+:py:meth:`~sherpa.data.Data.get_y` will default to returning all the
+data but if the ``filter`` argument is set then the current filter
+will be applied::
+
+  >>> d1.notice()
+  >>> d1.notice(21.1, 23.5)
+  >>> d1.get_x()
+  [20.25 20.75 21.25 21.75 22.25 22.75 23.25 23.75 24.25 24.75 25.25 25.75
+   26.25 26.75 27.25 27.75 28.25 28.75 29.25 29.75 30.25 30.75 31.25 31.75
+   32.25 32.75 33.25 33.75 34.25 34.75 35.25 35.75 36.25 36.75 37.25 37.75
+   38.25 38.75 39.25 39.75]
+  >>> d1.get_y()
+  [ 427.70302346  434.56407208  461.34987984  495.47143199  513.7380799
+    507.7897212   550.06338418  562.54892792  587.03031148  616.66848502
+    639.00293571  677.60523507  696.67287725  716.77925016  747.00113233
+    773.39924327  813.00329073  824.51091736  858.69317702  876.52154261
+    889.53260184  952.09868595  985.20686199 1000.6408498  1062.76004624
+   1058.01884325 1106.02008517 1137.1906615  1188.39029214 1222.2560877
+   1244.11197426 1281.8441252  1305.18464252 1330.75453532 1384.08337851
+   1426.62598969 1475.36540681 1513.58629849 1536.68923183 1577.03947249]
+  >>> d1.get_x(filter=True)
+  [21.25 21.75 22.25 22.75 23.25]
+  >>> d1.get_y(filter=True)
+  [461.34987984 495.47143199 513.7380799  507.7897212  550.06338418]
 
 Enhanced filtering
 ------------------
@@ -216,12 +308,6 @@ filtering capabilities to:
 
 * and dynamically re-binning the data to enhance the signal-to-noise
   of the data for :py:class:`~sherpa.astro.data.DataPHA`.
-
-.. todo::
-
-   It's a bit confusing since not always clear where a given
-   attribute or method is defined. There's also get_filter/get_filter_expr
-   to deal with. Also filter/apply_filter.
 
 .. _data_visualize:
 
@@ -267,6 +353,7 @@ applied to the data, as shown below.
 
     >>> from sherpa.plot import DataPlot
     >>> pdata = DataPlot()
+    >>> d1.notice()
     >>> d1.ignore(25, 30)
     >>> d1.notice(26, 27)
     >>> pdata.prepare(d1)

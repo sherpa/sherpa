@@ -233,7 +233,7 @@ if not get_data(1).subtracted:
 
 ######### Filter Data
 
-notice_id(1, "0.518300011754:8.219800233841")
+notice_id(1, "0.467200011015:9.869600296021")
 
 
 ######### Set Statistic
@@ -403,7 +403,7 @@ if not get_data("grp").subtracted:
 
 ######### Filter Data
 
-notice_id("grp", "0.489099994302:6.131999969482")
+notice_id("grp", "0.467200011015:6.365600109100")
 
 
 ######### Set Statistic
@@ -523,9 +523,9 @@ set_analysis("bgrp", 'energy', "rate", 0)
 
 ######### Filter Data
 
-notice_id("bgrp", "0.518300011754:6.234200000763")
+notice_id("bgrp", "0.467200011015:6.570000171661")
 notice_id("bgrp", None, None, bkg_id=1)
-notice_id("bgrp", "1.890699982643:7.723400115967", bkg_id=1)
+notice_id("bgrp", "1.605999946594:8.760000228882", bkg_id=1)
 
 
 ######### Set Statistic

@@ -162,13 +162,6 @@ created::
   response_ids   = []
   background_ids = []
 
-The units used to analyse the data depend on whether the response
-information has been loaded. For the data loaded from disk (``pha``)
-it is energy units::
-
-  >>> print(pha.units)
-  energy
-
 Visualizing the data
 ====================
 
@@ -194,6 +187,35 @@ can visualize the data with::
    The default plot style has been adjusted to also include the
    bin edges (by setting the matplotlib ``linestyle`` option).
 
+.. _analysis_units:
+
+Analysis units
+==============
+
+The "native" units for analyzing PHA data is in channel space, but this is
+often not the most instructive, so normally the analysis is done with
+energy or wavelength units. If a PHA file is loaded in from disk and
+contains a response then it will default to energy units, otherwise
+it will use channel units.
+
+For this example, the ``3c273.pi`` file includes response information in
+its header - via the ``RESPFILE`` and ``ANCRFILE`` keywords - and so
+the selected units are ``energy``, which can be found using either the
+:py:meth:`~sherpa.astro.data.DataPHA.get_analysis` method or the
+:py:attr:`~sherpa.astro.data.DataPHA.units` attribute::
+
+  >>> pha.get_analysis()
+  'energy'
+  >>> print(pha.units)
+  energy
+
+The :py:attr:`~sherpa.astro.data.DataPHA.set_analysis` method or
+:py:attr:`~sherpa.astro.data.DataPHA.units` attribute can be
+used to switch between ``channel``, ``energy``, and ``wavelength``
+(the latter two will raise an error if no response has been set).
+
+.. _pha_filtering:
+
 Filtering
 =========
 
@@ -208,7 +230,7 @@ shown rather than the 1024 channels this data set has)::
   True
 
 The "dependent axis" - so in this case, the counts - can be retrieved
-with the :py:meth:`~sherpa.astro.data.DataPha.get_dep` method, and we
+with the :py:meth:`~sherpa.astro.data.DataPHA.get_dep` method, and we
 can see the difference the ``filter`` flag makes::
 
   >>> y1 = pha.get_dep()
@@ -238,16 +260,15 @@ is wider, as shown above and with the :py:meth:`~sherpa.astro.data.DataPHA.get_f
 method::
 
   >>> print(pha.get_filter())
-  0.518300011754:8.219800233841
+  0.467200011015:9.869600296021
 
 .. note::
 
    Each channel covers a finite energy range, and so when determining what
    value to display, the :py:meth:`~sherpa.astro.data.DataPHA.get_filter` call
-   uses the mid-point of each bin. This means that the full range covered
-   by the filter is actually larger than displayed (see
-   `issue #1129 <https://github.com/sherpa/sherpa/issues/1129>`_ for more
-   information).
+   uses the full range (this was changed in Sherpa 4.14.0, in earlier versions
+   the mid-point was used so the expression would appear to cover a smaller
+   range but would still reflect the same filter).
 
 The reason for this change is two fold:
 
@@ -290,7 +311,7 @@ We can switch temporarily to channel units and see differences in the
 
   >>> pha.units = 'channel'
   >>> print(pha.get_filter())
-  36:563
+  33:676
   >>> plot.prepare(pha)
   >>> plot.plot(xlog=True, ylog=True)
   >>> pha.units = 'energy'
@@ -305,6 +326,53 @@ We can switch temporarily to channel units and see differences in the
    has been drawn with a log scale because the effective area of this
    instrument is higher at lower energies which tends to result in
    smaller groups at low channel values.
+
+Filtering and limits
+--------------------
+
+When using energy or wavelength units - e.g. with
+:py:meth:`~sherpa.astro.data.DataPHA.set_analysis`, as
+:ref:`described above <analysis_units>` - the meaning of the
+arguments to
+:py:meth:`~sherpa.astro.data.DataPHA.notice` and
+:py:meth:`~sherpa.astro.data.DataPHA.ignore` are slightly different
+than when using channel units.
+When using channels:
+
+- the low and high limits must be integers,
+- and the limits are inclusive on both ends (so ``[lo, hi]``)
+
+whereas for energy and wavelength analysis
+
+- the low and high limits must be >= 0,
+- and the limits are only inclusive on the lower value (so ``[lo, hi)``,
+  that is a
+  `half-open interval <https://en.wikipedia.org/wiki/Interval_(mathematics)>`_).
+
+That is (for an ungrouped dataset)::
+
+  >>> pha.notice()
+  >>> pha.units = 'channel'
+  >>> pha.notice(20, 200)
+
+will select the channels 20 to 200 (inclusive), but
+
+  >>> pha.notice()
+  >>> pha.units = 'energy'
+  >>> pha.notice(0.5, 7.0)
+
+will only select those bins which lie in the range ``0.5 <= energy <
+7.0`` (although as :ref:`just explained <pha_filtering>`, the finite
+width of each channel in energy or wavelength units means that the
+distinction between ``0.5 <= energy < 7.0`` and ``0.5 <= energy <=
+7.0`` makes no difference unless the bin edge is at 7 keV).
+
+.. note::
+   The PHA filtering in Sherpa 4.14.0 has been updated to fix a number
+   of corner cases which can result in filter expressions changing the
+   first or last selected bin. This can then cause fit differences as
+   the number of degrees of freedom and the fit parameters can change
+   slightly.
 
 Grouping
 ========
@@ -367,11 +435,11 @@ In general, as the grouped bins become larger then the difference of the
 filtered range to the requested range becomes larger::
 
   >>> print(pha1.get_filter())
-  0.474500000477:9.862299919128
+  0.467200011015:9.869600296021
   >>> print(pha2.get_filter())
-  0.518300011754:8.219800233841
+  0.467200011015:9.869600296021
   >>> print(pha3.get_filter())
-  0.525600001216:10.906200170517
+  0.394199997187:14.950400352478
 
 Manipulating data
 =================
@@ -401,10 +469,10 @@ first and last channel value of each group can be calculated with::
   >>> chi[0:7]
   [39. 44. 48. 51. 54. 56. 59.]
 
-The ``apply_grouping`` method is similar but it does not apply
-any filter, so all channels are used. So to get the group
-boundaries for all channels, not just the filtered ones,
-we can say::
+The :py:meth:`~sherpa.astro.data.DataPHA.apply_grouping` method is
+similar but it does not apply any filter, so all channels are used. So
+to get the group boundaries for all channels, not just the filtered
+ones, we can say::
 
   >>> alo = pha.apply_grouping(pha.channel, pha._min)
   >>> ahi = pha.apply_grouping(pha.channel, pha._max)
@@ -417,7 +485,7 @@ Background
 ==========
 
 A PHA data set may have one or more associated background
-data sets. For this example there is 1, and the
+data sets. For this example there is one, and the
 :py:meth:`~sherpa.astro.data.DataPHA.get_background` method
 will return a :py:class:`~sherpa.astro.data.DataPHA` object
 representing the background region.
@@ -461,3 +529,22 @@ to account for differences in the source and background apertures). Filtering
 and grouping changes to a source region are automatically propogated to
 the associated background regions, but they can be applied to the background
 data set directly if needed.
+
+For example, the un-subtracted group counts are::
+
+  >>> pha.get_dep(filter=True)
+  [15. 16. 15. 18. 18. 15. 18. 15. 15. 19. 15. 15. 17. 16. 16. 17. 15. 19.
+   15. 16. 15. 16. 17. 15. 18. 16. 15. 15. 16. 15. 15. 15. 16. 16. 15. 15.
+   16. 16. 15. 16. 15. 15.]
+
+and after background subtractuion the values are::
+
+  >>> pha.subtract()
+  >>> pha.get_dep(filter=True)
+  [14.86507936 15.86507936 15.         18.         18.         14.86507936
+   17.86507936 15.         14.59523807 18.86507936 14.86507936 14.86507936
+   17.         16.         15.73015871 16.73015871 15.         18.59523807
+   14.86507936 15.59523807 14.86507936 16.         16.59523807 15.
+   17.59523807 16.         15.         14.46031742 16.         14.59523807
+   14.59523807 14.46031742 15.86507936 15.59523807 14.32539678 14.32539678
+   15.32539678 15.19047614 14.32539678 15.19047614 14.05555549 12.43650777]

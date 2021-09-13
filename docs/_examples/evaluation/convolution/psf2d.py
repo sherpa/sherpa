@@ -1,3 +1,6 @@
+# for evaluation/convolution.rst
+# save in docs/_static/models/combine
+
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -61,12 +64,14 @@ plt.imshow(m1, origin='lower', cmap='viridis')
 plt.colorbar()
 plt.title('Unconvolved')
 plt.savefig('convolution_psf2d_evaluate_unconv.png')
+print('Created: convolution_psf2d_evaluate_unconv.png')
 plt.clf()
 
 plt.imshow(m2, origin='lower', cmap='viridis', vmin=0, vmax=10)
 plt.colorbar()
 plt.title('Convolved')
 plt.savefig('convolution_psf2d_evaluate_conv.png')
+print('Created: convolution_psf2d_evaluate_conv.png')
 plt.clf()
 
 print("Sum: m1 = {}".format(m1.sum()))

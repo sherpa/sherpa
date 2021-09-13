@@ -25,10 +25,12 @@ def savefig(name):
 
 
 np.random.seed(0)
-x = np.arange(20, 40, 0.5)
+x = np.arange(20.25, 40, 0.5)
 y = x**2 + np.random.normal(0, 10, size=x.size)
 d1 = data.Data1D('test', x, y)
 report("d1")
+report("d1.x")
+report("d1.y")
 
 plt.plot(d1.x, d1.y, 'o')
 savefig("data1d.png")
@@ -46,6 +48,7 @@ savefig("data1dint.png")
 d1.ignore(21.2, 22.8)
 dump("d1.x[np.invert(d1.mask)]")
 
+report('d1.get_filter()')
 
 from sherpa.models import Polynom1D
 from sherpa.fit import Fit
@@ -57,8 +60,23 @@ res1 = fit.fit()
 d1.notice()
 res2 = fit.fit()
 
-report('"Degrees of freedom: {} vs {}".format(res1.dof, res2.dof)')
+report('f"Degrees of freedom: {res1.dof} vs {res2.dof}"')
 
+d1.notice()
+report("d1.get_filter(format='%.2f')")
+d1.notice(25, 27)
+report("d1.get_filter(format='%.2f')")
+d1.notice(30, 35)
+report("d1.get_filter(format='%.2f')")
+
+d1.notice()
+report('d1.get_x()')
+report('d1.get_y()')
+
+d1.notice(21.1, 23.5)
+
+report('d1.get_x(filter=True)')
+report('d1.get_y(filter=True)')
 
 from sherpa.plot import DataHistogramPlot
 pdata = DataHistogramPlot()
@@ -72,6 +90,7 @@ savefig('data_int_line_to_plot.png')
 
 from sherpa.plot import DataPlot
 pdata = DataPlot()
+d1.notice()
 d1.ignore(25, 30)
 d1.notice(26, 27)
 pdata.prepare(d1)

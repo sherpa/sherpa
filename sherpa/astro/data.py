@@ -100,7 +100,7 @@ from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
-    create_expr, parse_expr, bool_cast, rebin, filter_bins
+    create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
 from sherpa.astro import hc
 
@@ -3775,8 +3775,12 @@ class DataPHA(Data1D):
         """Return the data filter as a string.
 
         For grouped data, or when the analysis setting is not
-        channel, filter values refer to the center of the
+        channel, filter values refer to the full range of each
         channel or group.
+
+        .. versionchanged:: 4.14.0
+           Prior to 4.14.0 the filter used the mid-point of the bin,
+           not its low or high value.
 
         Parameters
         ----------
@@ -3816,49 +3820,75 @@ class DataPHA(Data1D):
         if self.mask is False:
             return 'No noticed bins'
 
-        if numpy.iterable(self.mask):
-            mask = self.mask
-        else:
-            mask = None
-
-        if group:
-            # grouped noticed channels
-            #
-            x = self.apply_filter(self.channel, self._make_groups)
-
-        else:
-            # ungrouped noticed channels
-            x = self.get_noticed_channels()
-
-            # We need the "ungrouped" mask array. Need to check
-            # issue #361 since get_noticed_channels notes an
-            # issue that may be relevant here (so far this
-            # doesn't seem to be the case).
-            #
-            mask = self.get_mask()
-
-            # Safety check for users. Warn, but continue.
-            #
-            if mask is not None and mask.sum() != x.size:
-                warning("There is a mis-match in the ungrouped mask " +
-                        "and data ({} vs {})".format(mask.sum(), x.size))
-
-        # Convert channels to appropriate quantity if necessary
-        x = self._from_channel(x, group=group)
-
-        if mask is None:
-            mask = numpy.ones(len(x), dtype=bool)
-
-        # Ensure the data is in ascending order for create_expr.
+        # We use get_noticed_channels since it includes quality
+        # filtering, which the 'self.mask is True' check below does
+        # not make.
         #
-        if len(x) > 0 and x[-1] < x[0]:
-            x = x[::-1]
+        chans = self.get_noticed_channels()
+
+        # Special case all data has been masked. Should it
+        # error out or return either '' or 'No noticed bins'?
+        #
+        if len(chans) == 0:
+            # raise DataErr('notmask')
+            # return 'No noticed bins'
+            return ''
+
+        # Special case all channels are selected.
+        #
+        if self.mask is True:
+            elo, ehi = self._get_ebins(group=False, response_id=None)
+            if self.units == 'energy':
+                loval = elo[0]
+                hival = ehi[-1]
+            elif self.units == 'wavelength':
+                loval = hc / ehi[-1]
+                hival = hc / elo[0]
+            else:
+                # Assume channel
+                loval = self.channel[0]
+                hival = self.channel[-1]
+                format = '%i'
+
+            # Check for inversion
+            if loval > hival:
+                loval, hival = hival, loval
+
+            return f"{format % loval}{delim}{format % hival}"
+
+        mask = self.get_mask()
+        # Just to check
+        assert mask is not None
+
+        # What channels are selected - note that it is possible to
+        # get here and have all channels selected (ie all elements
+        # of self.mask are True).
+        #
+        # We handle channel units differently to energy or wavelength,
+        # as channels are treated as Data1D does whereas we want to
+        # use Data1DInt for the units.
+        #
+        # We do everything ungrouped as there is no difference now
+        # (as of Sherpa 4.14.0).
+        #
+        if self.units == 'channel':
+            return create_expr(chans, mask=mask, format='%i', delim=delim)
+
+        # Unfortunately we don't have a usable API for accessing the
+        # energy or wavelength ranges directly.
+        #
+        xlo, xhi = self._get_ebins(group=False)
+        if self.units == 'wavelength':
+            xlo, xhi = hc / xhi, hc / xlo
+
+        # Ensure the data is in ascending order for create_expr_integrated.
+        #
+        if xlo[0] > xlo[-1]:
+            xlo = xlo[::-1]
+            xhi = xhi[::-1]
             mask = mask[::-1]
 
-        if self.units == 'channel':
-            format = '%i'
-
-        return create_expr(x, mask=mask, format=format, delim=delim)
+        return create_expr_integrated(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
         return (self.get_filter(format='%.4f', delim='-') +
@@ -3877,12 +3907,19 @@ class DataPHA(Data1D):
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
         """Notice or ignore the given range.
 
+        .. versionchanged:: 4.14.0
+           PHA filtering has been improved to fix a number of corner
+           cases which can result in the same filter now selecting one
+           or two fewer channels that done in earlier versions of
+           Sherpa. The ``lo`` and ``hi`` arguments are now restricted based on
+           the units setting.
+
         Parameters
         ----------
         lo, hi : number or None, optional
             The range to change. A value of None means the minimum or
-            maximum permitted value. The units of lo and hi are set by
-            the units field.
+            maximum permitted value. The units of ``lo`` and ``hi``
+            are set by the units field.
         ignore : bool, optional
             Set to True if the range should be ignored. The default is
             to notice the range.
@@ -3898,7 +3935,7 @@ class DataPHA(Data1D):
         Notes
         -----
         Calling notice with no arguments selects all points in the
-        dataset.
+        dataset (or, if ``ignore=True``, it will remove all points).
 
         If no channels have been ignored then a call to `notice` with
         ``ignore=False`` will select just the ``lo`` to ``hi`` range,
@@ -3909,6 +3946,16 @@ class DataPHA(Data1D):
         (with ``ignore=False``) selects a range outside the data set -
         such as a channel range of 2000 to 3000 when the valid range
         is 1 to 1024 - then all points will be ignored.
+
+        When filtering with channel units then:
+
+        - the ``lo`` and ``hi`` arguments, if set, must be integers,
+        - and the ``lo`` and ``hi`` values are inclusive.
+
+        For energy and wavelength filters:
+
+        - the ``lo`` and ``hi`` arguments, if set, must be >= 0,
+        - and the ``lo`` limit is inclusive but the ``hi`` limit is exclusive.
 
         Examples
         --------
@@ -3947,7 +3994,7 @@ class DataPHA(Data1D):
         >>> pha.notice()
         >>> pha.notice(0.5, 7)
         >>> pha.get_filter(format='%.3f')
-        '0.518:8.220'
+        '0.467:9.870'
 
         """
 

@@ -67,7 +67,7 @@ import numpy
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
-    print_fields, create_expr, calc_total_error, bool_cast, \
+    print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
     filter_bins, parallel_map_funcs
 from sherpa.utils import formatting
 
@@ -1211,8 +1211,42 @@ class Data1D(Data):
         return err
 
     def get_filter(self, format='%.4f', delim=':'):
-        # for derived intergrated classes, this will return values in center of
-        # bin.
+        """Return the data filter as a string.
+
+        Parameters
+        ----------
+        format : str, optional
+            The formatting of the numeric values.
+        delim : str, optional
+            The string used to mark the low-to-high range.
+
+        Returns
+        -------
+        filter : str
+           The filter, represented as a collection of single values or
+           ranges, separated by commas.
+
+        See Also
+        --------
+        get_filter_expr, ignore, notice
+
+        Examples
+        --------
+
+        >>> x = np.asarray([1, 2, 3, 5, 6])
+        >>> y = np.ones(5)
+        >>> d = Data1D('example', x, y)
+        >>> d.get_filter()
+        '1.0000:6.0000'
+        >>> d.ignore(2.5, 4.5)
+        >>> d.get_filter()
+        '1.0000:2.0000,5.0000:6.0000'
+
+        >>> d.get_filter(format='%i', delim='-')
+        '1-2,5-6'
+
+        """
+
         x = self.get_x(filter=True)
         if numpy.iterable(self.mask):
             mask = self.mask
@@ -1221,6 +1255,28 @@ class Data1D(Data):
         return create_expr(x, mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
+        """Return the data filter as a string along with the units.
+
+        This is a specialised version of get_filter which adds the
+        axis units.
+
+        Returns
+        -------
+        filter : str
+           The filter, represented as a collection of single values or
+           ranges, separated by commas.
+
+        See Also
+        --------
+        get_filter
+
+        Examples
+        --------
+
+        >>> d.get_filter_expr()
+        '1.0000-2.0000,5.0000-6.0000 x'
+
+        """
         return self.get_filter(delim='-') + ' ' + self.get_xlabel()
 
     def to_plot(self, yfunc=None, staterrfunc=None):
@@ -1357,11 +1413,82 @@ class Data1DInt(Data1D):
         xlo, xhi = indep
         return xhi - xlo
 
+    def get_filter(self, format='%.4f', delim=':'):
+        """Return the data filter as a string.
+
+        For each noticed range the filter is reported as
+        starting at the low edge of the first bin and ends
+        at the upper edge of the last bin in the range.
+
+        .. versionchanged:: 4.14.0
+           Prior to 4.14.0 the filter used the mid-point of the bin,
+           not its low or high value.
+
+        Parameters
+        ----------
+        format : str, optional
+            The formatting of the numeric values.
+        delim : str, optional
+            The string used to mark the low-to-high range.
+
+        Returns
+        -------
+        filter : str
+           The filter, represented as a collection of ranges separated
+           by commas.
+
+        See Also
+        --------
+        get_filter_expr, ignore, notice
+
+        Examples
+        --------
+
+        >>> xlo = np.asarray([1, 2, 3, 5, 6])
+        >>> xhi = xlo + 1
+        >>> y = np.ones(5)
+        >>> d = Data1DInt('example', xlo, xhi, y)
+        >>> d.get_filter()
+        '1.0000:7.0000'
+        >>> d.ignore(2.5, 4.5)
+        >>> d.get_filter()
+        '1.0000:2.0000,5.0000:7.0000'
+
+        >>> d.get_filter(format='%i', delim='-')
+        '1-2,5-7'
+
+        """
+
+        # We could just use the middle of each bin (which is what
+        # would happen if we didn't over-ride Data1D.filter) but let's
+        # use the start and end values for each selected bin.
+        #
+        indep = self.get_evaluation_indep(filter=True)
+        if len(indep) == 1:
+            # assume all data has been filtered out
+            return ''
+
+        if numpy.iterable(self.mask):
+            mask = self.mask
+        else:
+            # Unlike create_expr we do not need to send
+            # a mask in here
+            mask = None
+
+        return create_expr_integrated(indep[0], indep[1], mask=mask,
+                                      format=format, delim=delim)
+
     def notice(self, xlo=None, xhi=None, ignore=False):
         """Notice or ignore the given range.
 
         Ranges are inclusive for the lower limit and exclusive
         for the upper limit.
+
+        .. versionchanged:: 4.14.0
+           Filtering Data1DInt datasets has been improved to fix a
+           number of corner cases. As part of this the upper limit has
+           been changed to be exclusive whereas previously it was not
+           obvious what the filter was doing.
 
         Parameters
         ----------
@@ -1392,13 +1519,16 @@ class Data1DInt(Data1D):
         >>> y = np.ones_like(xlo)
         >>> d = Data1DInt('example', xlo, xhi, y)
         >>> d.xlo[0], d.xhi[-1]
-        (0.4, 2.4000000000000004)
-        >>> d.notice()
+        (0.4, 2.400000000000001)
         >>> d.get_filter(format='%.1f')
-        '0.5:2.3'
+        '0.4:2.4'
         >>> d.notice(0.8, 1.9)
         >>> d.get_filter(format='%.1f')
-        '0.7:1.9'
+        '0.8:2.0'
+
+        >>> d.notice()
+        >>> d.get_filter(format='%.1f')
+        '0.4:2.4'
 
         """
 

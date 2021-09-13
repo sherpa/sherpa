@@ -1,3 +1,5 @@
+# for developer/index.rst
+
 from matplotlib import pyplot as plt
 
 from sherpa.ui.utils import Session

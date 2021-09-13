@@ -413,13 +413,15 @@ def test_bug38_filtering_grouping(make_data_path):
     pha.notice(1, 6)
     pha.ignore(3, 4)
 
-    assert pha.get_filter(group=True, format='%.4f') == '1.0147:2.7886,4.1391:6.2342'
-    assert pha.get_filter(group=False, format='%.4f') == '1.0001:2.8543,4.0369:6.5627'
+    expected = '0.9928:2.8616,4.0296:6.5700'
+    assert pha.get_filter(group=True, format='%.4f') == expected
+    assert pha.get_filter(group=False, format='%.4f') == expected
 
     pha.group_width(40)
 
-    assert pha.get_filter(group=True, format='%.4f') == '0.8760:2.6280,3.7960:6.7160'
-    assert pha.get_filter(group=False, format='%.4f') == '0.5913:2.9127,3.5113:7.0007'
+    expected = '0.5840:2.9200,3.5040:7.0080'
+    assert pha.get_filter(group=True, format='%.4f') == expected
+    assert pha.get_filter(group=False, format='%.4f') == expected
 
     assert pha.mask.size == 26
     assert pha.mask.sum() == 10

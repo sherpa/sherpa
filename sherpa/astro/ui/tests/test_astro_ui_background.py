@@ -432,7 +432,7 @@ def test_pha1_show_data(id, exps, bscales, ascales, results, clean_astro_ui):
     msg = out.getvalue().split('\n')
 
     assert msg[0] == 'Data Set: {}'.format(iid)
-    assert msg[1] == 'Filter: 0.6500-2.4500 Energy (keV)'
+    assert msg[1] == 'Filter: 0.6000-2.5000 Energy (keV)'
 
     def check(line, result, bkg_id=None):
         out = 'Bkg Scale'
@@ -480,7 +480,7 @@ def test_pha1_show_data_missing(clean_astro_ui):
     msg = out.getvalue().split('\n')
 
     assert msg[0] == 'Data Set: x'
-    assert msg[1] == 'Filter: 0.6500-2.4500 Energy (keV)'
+    assert msg[1] == 'Filter: 0.6000-2.5000 Energy (keV)'
     assert msg[2] == 'Bkg Scale 2: 0.025'
     assert msg[3] == 'Noticed Channels: 1-19'
     assert msg[4] == 'name           = tst0'

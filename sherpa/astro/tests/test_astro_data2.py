@@ -110,40 +110,40 @@ def test_need_numpy_channels():
                           # ("channel", '3:7', [(True, 2.1, 7.2)]),
                           # ("channel", '1:2,8:10', [(False, 2.8, 7.9)]),
                           # energy
-                          ("energy", '0.3:2.1', []),
+                          ("energy", '0.2:2.2', []),
                           ("energy", '', [(False, 0.3, 2.1)]),
                           ("energy", '', [(False, 0, 3)]),
-                          ("energy", '0.5:1.9', [(True, 0.51, 1.98)]),
-                          ("energy", '0.5:1.1,1.7:1.9', [(True, 0.51, 1.98), (False, 1.24, 1.51)]),
-                          ("energy", '0.3:1.3,1.7:1.9', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.001, 1.32)]),
-                          ("energy", '0.5:1.1,1.5:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2)]),
+                          ("energy", '0.4:2.0', [(True, 0.51, 1.98)]),
+                          ("energy", '0.4:1.2,1.6:2.0', [(True, 0.51, 1.98), (False, 1.24, 1.51)]),
+                          ("energy", '0.2:1.4,1.6:2.0', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.001, 1.32)]),
+                          ("energy", '0.4:1.2,1.4:2.2', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2)]),
                           ("energy", '', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 1.46, 12.2), (False, 0.01, 13)]),
-                          ("energy", '0.3:2.1', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.01, 13)]),
+                          ("energy", '0.2:2.2', [(True, 0.51, 1.98), (False, 1.24, 1.51), (True, 0.01, 13)]),
                           # None checks
-                          ("energy", '0.3:0.7', [(True, None, 0.65)]),
-                          ("energy", '0.9:2.1', [(False, None, 0.65)]),
-                          ("energy", '0.9:2.1', [(True, 0.95, None)]),
-                          ("energy", '0.3:0.7', [(False, 0.95, None)]),
-                          ("energy", '0.3:0.7,1.1:2.1', [(True, 1.05, None), (True, None, 0.65)]),
-                          ("energy", '0.3:2.1', [(True, 0.95, None), (True, None, 0.65)]),
-                          ("energy", '0.9', [(False, 1.05, None), (False, None, 0.65)]),
+                          ("energy", '0.2:0.8', [(True, None, 0.65)]),
+                          ("energy", '0.8:2.2', [(False, None, 0.65)]),
+                          ("energy", '0.8:2.2', [(True, 0.95, None)]),
+                          ("energy", '0.2:0.8', [(False, 0.95, None)]),
+                          ("energy", '0.2:0.8,1.0:2.2', [(True, 1.05, None), (True, None, 0.65)]),
+                          ("energy", '0.2:2.2', [(True, 0.95, None), (True, None, 0.65)]),
+                          ("energy", '0.8:1.0', [(False, 1.05, None), (False, None, 0.65)]),
                           ("energy", '', [(False, 0.95, None), (False, None, 0.65)]),
                           # wavelength
-                          ("wave", '5.9:41.3', []),
+                          ("wave", '5.6:62.0', []),
                           ("wave", '', [(False, 1, 70)]),
-                          ("wave", '6.5:24.8', [(True, 6.5, 25)]),
-                          ("wave", '6.5:8.3,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12)]),
-                          ("wave", '5.9:9.5,13.8:24.8', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 10)]),
-                          ("wave", '6.5:8.3,11.3:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 12, 70)]),
-                          ("wave", '5.9:41.3', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 70)]),
+                          ("wave", '6.2:31.0', [(True, 6.5, 25)]),
+                          ("wave", '6.2:8.9,12.4:31.0', [(True, 6.5, 25), (False, 9.1, 12)]),
+                          ("wave", '5.6:10.3,12.4:31.0', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 10)]),
+                          ("wave", '6.2:8.9,10.3:62.0', [(True, 6.5, 25), (False, 9.1, 12), (True, 12, 70)]),
+                          ("wave", '5.6:62.0', [(True, 6.5, 25), (False, 9.1, 12), (True, 1, 70)]),
                           # None checks
-                          ("wave", '5.9:9.5', [(True, None, 9.1)]),
-                          ("wave", '11.3:41.3', [(False, None, 9.1)]),
-                          ("wave", '11.3:41.3', [(True, 12.0, None)]),
-                          ("wave", '5.9:9.5', [(False, 12.0, None)]),
-                          ("wave", '5.9:9.5,13.8:41.3', [(True, 12.5, None), (True, None, 9.1)]),
-                          ("wave", '5.9:41.3', [(True, 12.0, None), (True, None, 9.1)]),
-                          ("wave", '11.3', [(False, 12.5, None), (False, None, 9.1)]),
+                          ("wave", '5.6:10.3', [(True, None, 9.1)]),
+                          ("wave", '10.3:62.0', [(False, None, 9.1)]),
+                          ("wave", '10.3:62.0', [(True, 12.0, None)]),
+                          ("wave", '5.6:10.3', [(False, 12.0, None)]),
+                          ("wave", '5.6:10.3,12.4:62.0', [(True, 12.5, None), (True, None, 9.1)]),
+                          ("wave", '5.6:62.0', [(True, 12.0, None), (True, None, 9.1)]),
+                          ("wave", '10.3:12.4', [(False, 12.5, None), (False, None, 9.1)]),
                           ("wave", '', [(False, 12.0, None), (False, None, 9.1)]),
                          ])
 def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
@@ -305,11 +305,11 @@ def test_pha_get_xerr_all_bad_energy_group():
     pha.ignore_bad()
 
     # Should this error out or not?
-    # assert pha.get_filter() == ''
-    with pytest.raises(DataErr) as de:
-        pha.get_filter()
+    assert pha.get_filter() == ''
+    # with pytest.raises(DataErr) as de:
+    #     pha.get_filter()
 
-    assert str(de.value) == 'mask excludes all data'
+    # assert str(de.value) == 'mask excludes all data'
 
     assert pha.get_xerr() == pytest.approx([])
 
@@ -1175,11 +1175,11 @@ def test_xmmrgs_notice(make_data_path):
     dat.units = 'wave'
     dat.notice(18.8, 19.2)
     assert len(dat.get_dep(filter=True)) == 41
-    assert dat.get_filter(format='%.2f') == '18.80:19.20'
+    assert dat.get_filter(format='%.2f') == '18.80:19.21'
 
     dat.ignore(10, 19.)
     assert len(dat.get_dep(filter=True)) == 20
-    assert dat.get_filter(format='%.2f') == '19.01:19.20'
+    assert dat.get_filter(format='%.2f') == '19.01:19.21'
 
 
 def test_pickle_image_filter_none(make_test_image):

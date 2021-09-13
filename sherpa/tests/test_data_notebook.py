@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -106,7 +106,7 @@ def test_data1dint(old_numpy_printing, override_plot_backend):
     assert '<summary>Data1DInt Summary (6)</summary>' in r
     assert '<div class="dataname">Identifier</div><div class="dataval">x x</div>' in r
     assert '<div class="dataname">Number of bins</div><div class="dataval">3</div>' in r
-    assert '<div class="dataname">Using</div><div class="dataval">1.5000-6.5000 x with 3 bins</div>' in r
+    assert '<div class="dataname">Using</div><div class="dataval">1.0000-7.0000 x with 3 bins</div>' in r
     assert '<div class="dataname">XLO</div><div class="dataval">[1 3 6]</div>' in r
     assert '<div class="dataname">XHI</div><div class="dataval">[2 6 7]</div>' in r
     assert '<div class="dataname">Y</div><div class="dataval">[3 4 8]</div>' in r
