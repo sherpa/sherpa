@@ -835,26 +835,16 @@ class CDFPlot(Plot):
             points = numpy.array2string(self.points, separator=',',
                                         precision=4, suppress_small=False)
 
-        return (('points = %s\n' +
-                 'x      = %s\n' +
-                 'y      = %s\n' +
-                 'median = %s\n' +
-                 'lower  = %s\n' +
-                 'upper  = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'plot_prefs = %s') %
-                (x,
-                 y,
-                 points,
-                 self.median,
-                 self.lower,
-                 self.upper,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.plot_prefs))
+        return f"""points = {x}
+x      = {y}
+y      = {points}
+median = {self.median}
+lower  = {self.lower}
+upper  = {self.upper}
+xlabel = {self.xlabel}
+ylabel = {self.ylabel}
+title  = {self.title}
+plot_prefs = {self.plot_prefs}"""
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the CDF plot."""
