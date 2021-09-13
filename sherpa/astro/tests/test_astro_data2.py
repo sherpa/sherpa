@@ -1197,9 +1197,9 @@ def test_pickle_image_filter_none(make_test_image):
 
 @pytest.mark.parametrize("ignore,region,expected",
                          [(False, 'circle(4255, 3840, 20)', 'Circle(4255,3840,20)'),
-                          (True, 'circle(4255, 3840, 20)', '!Circle(4255,3840,20)'),
+                          (True, 'circle(4255, 3840, 20)', 'Field()&!Circle(4255,3840,20)'),
                           (False, 'circle(4255, 3840, 20) - field()', 'Circle(4255,3840,20)&!Field()'),
-                          (True, 'circle(4255, 3840, 20) - field()', '!Circle(4255,3840,20)|Field()'),
+                          (True, 'circle(4255, 3840, 20) - field()', 'Field()&!Circle(4255,3840,20)|Field()'),
                           ])
 def test_pickle_image_filter(ignore, region, expected, make_test_image):
     """Check we can pickle/unpickle with a region filter.
