@@ -418,7 +418,7 @@ class ModelDomainRegridder1D():
         The interpolation function: it should accept three arrays: the
         output x values and the x, y values to interpolate, and return
         the interpolated y values. The default is to use
-        sherpa.utils.akima.akima.
+        `sherpa.utils.akima.akima`.
 
     Examples
     --------
@@ -428,7 +428,7 @@ class ModelDomainRegridder1D():
     linearly-interpolated onto the desired grid (1 to 8,
     spacing of 0.7). In this example there is no benefit to
     this approach - it is easier just to evaluate
-    ``internal_mdl`` on the grid ``x`` - but it illustrates
+    `internal_mdl` on the grid `x` - but it illustrates
     the approach.
 
     >>> from sherpa.models import Gauss1D, Const1D
@@ -454,7 +454,7 @@ class ModelDomainRegridder1D():
 
         This is *only* used for point grids, as integrated grids use a
         simple rebinning scheme. The default is
-        sherpa.utils.akima.akima.  The callable should accept `(xout,
+        `sherpa.utils.akima.akima`.  The callable should accept `(xout,
         xin, yin)` arguments and interpolate the `(xin, yin)` data
         onto the `xout` grid, returning the interpolated data.
         """
@@ -565,7 +565,7 @@ class ModelDomainRegridder1D():
             The parameters for the model.
         modelfunc : callable
             The model to evaluate. It is called as
-            modelfunc(pars, x, **kwargs)
+            `modelfunc(pars, x, **kwargs)`
         data_grid : sequence of numbers
             The grid on which to return the values.
         eval_grid : sequence of numbers
@@ -619,7 +619,7 @@ class ModelDomainRegridder1D():
             The parameters for the model.
         modelfunc : callable
             The model to evaluate. It is called as
-            modelfunc(pars, lo, hi, **kwargs)
+            `modelfunc(pars, lo, hi, **kwargs)`
         data_grid : (sequence of numbers, sequence of numbers)
             The grid on which to return the values, as low and
             high edges.
