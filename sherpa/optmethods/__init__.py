@@ -671,6 +671,11 @@ class NelderMead(OptMethod):
     verbose : int
        The amount of information to print during the fit. The default
        is `0`, which means no output.
+    reflect : bool
+       When a parameter exceeds a limit should the parameter be
+       reflected, so moved back within bounds (`True`, the default) or
+       should the model evaluation return DBL_MAX, causing the current
+       set of parameters to be excluded from the simplex.
 
     Notes
     -----
