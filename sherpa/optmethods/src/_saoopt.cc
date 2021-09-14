@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2007, 2018, 2019  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2018, 2019, 2021
+//        Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -23,6 +24,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <memory>
 
 #include "DifEvo.hh"
 #include "minim.hh"
@@ -833,10 +835,11 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
   PyObject* py_function=NULL;
   DoubleArray par, step, lb, ub;
   IntArray finalsimplex;
-  int verbose, maxnfev, nfev, iquad, ierr, initsimplex;
+  int reflect, verbose, maxnfev, nfev, iquad, ierr, initsimplex;
   double fval, ftol, simp;
 
-  if ( !PyArg_ParseTuple( args, (char*) "iiiiddO&O&O&O&O",
+  if ( !PyArg_ParseTuple( args, (char*) "piiiiddO&O&O&O&O",
+                          &reflect,
 			  &verbose,
 			  &maxnfev,
 			  &initsimplex,
@@ -877,14 +880,23 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
     std::vector<double> myub( &ub[0], &ub[0] + npar );
     std::vector<double> mypar( &par[0], &par[0] + npar );
     std::vector<double> mystep( &step[0], &step[0] + step.get_size( ) );
-
-    const sherpa::Bounds<double> bounds(mylb, myub);
-    sherpa::Minim<Func, PyObject*, double> minim(callback_func, py_function );
-
     std::vector<double> vc(npar*(npar+1)/2);
+    const sherpa::Bounds<double> bounds(mylb, myub);
 
-    minim.minim( mypar, mystep, npar, fval, maxnfev, verbose, ftol, iquad,
-                 simp, vc, ierr, nfev, bounds);
+    sherpa::Minim<Func, PyObject*, double>* nm = NULL;
+    if (reflect)
+      nm = new sherpa::Minim<Func, PyObject*, double>( callback_func, py_function );
+    else
+      nm = new sherpa::MinimNoReflect<Func, PyObject*, double>( callback_func, py_function );
+
+#if (__cplusplus < 201103L)
+    std::auto_ptr< sherpa::Minim<Func, PyObject*, double> > minim(nm);
+#else
+    std::unique_ptr< sherpa::Minim<Func, PyObject*, double> > minim(nm);
+#endif
+
+    minim->minim( mypar, mystep, npar, fval, maxnfev, verbose, ftol, iquad,
+                  simp, vc, ierr, nfev, bounds);
     for ( int ii = 0; ii < npar; ++ii )
       par[ ii ] = mypar[ ii ];
 
