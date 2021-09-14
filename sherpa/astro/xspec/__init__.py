@@ -13008,6 +13008,11 @@ class XSkerrconv(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.14.0
+       The first two parameters have been renamed `Index1` and
+       `Index2` to match the XSPEC definition (they had been called
+       `Index` and `Index1`).
+
     .. versionadded:: 4.12.2
 
     Attributes
@@ -13050,11 +13055,9 @@ class XSkerrconv(XSConvolutionKernel):
     _calc = _xspec.C_spinconv
 
     def __init__(self, name='xskerrconv'):
-        # ARGH: they are labelled Index1/Index2 but I used Index/Index1 here
-        #
-        self.Index = XSParameter(name, 'Index', 3.0, min=-10.0, max=10.0,
-                                 hard_min=-10.0, hard_max=10.0, frozen=True)
         self.Index1 = XSParameter(name, 'Index1', 3.0, min=-10.0, max=10.0,
+                                 hard_min=-10.0, hard_max=10.0, frozen=True)
+        self.Index2 = XSParameter(name, 'Index2', 3.0, min=-10.0, max=10.0,
                                   hard_min=-10.0, hard_max=10.0, frozen=True)
         self.r_br_g = XSParameter(name, 'r_br_g', 6.0, min=1.0, max=400.0,
                                   hard_min=1.0, hard_max=400.0, frozen=True)
@@ -13067,8 +13070,8 @@ class XSkerrconv(XSConvolutionKernel):
                                   hard_min=1.0, hard_max=400.0, frozen=True)
         self.Rout_ms = XSParameter(name, 'Rout_ms', 400.0, min=1.0, max=400.0,
                                    hard_min=1.0, hard_max=400.0, frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.Index,
-                                                  self.Index1,
+        XSConvolutionKernel.__init__(self, name, (self.Index1,
+                                                  self.Index2,
                                                   self.r_br_g,
                                                   self.a,
                                                   self.Incl,
