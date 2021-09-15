@@ -13391,7 +13391,6 @@ class Session(sherpa.ui.utils.Session):
                                              numcores=numcores,
                                              samples=scales, clip=clip)
 
-    # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
                     numcores=None, bkg_id=None, Xrays=True, confidence=68):
@@ -13412,6 +13411,8 @@ class Session(sherpa.ui.utils.Session):
            soft limits, as this could cause an over-estimation of the
            flux when a parameter is only an upper limit. The statistic
            value is now returned for each row, even those that were
+           excluded from the flux calculation. The last-but-one column
+           of the returned `vals` array now records the rows that were
            excluded from the flux calculation.
 
         Parameters
@@ -13475,9 +13476,9 @@ class Session(sherpa.ui.utils.Session):
            free parameters and num is the `num` parameter. The rows of
            this array contain the flux value for the iteration (for
            the full source model), the parameter values, a flag
-           indicating whether any parameter in that row was clipped to
-           the hard-limits of the parameter, and the statistic value
-           for this set of parameters.
+           indicating whether any parameter in that row was clipped
+           (and so was excluded from the flux calculation), and the
+           statistic value for this set of parameters.
 
         See Also
         --------
@@ -13498,6 +13499,9 @@ class Session(sherpa.ui.utils.Session):
         Sherpa logging instance, and can be hidden by changing the
         logging to a level greater than "INFO" (e.g. with
         `sherpa.utils.logging.SherpaVerbosity`).
+
+        This routine can not be used if you have used set_full_model:
+        the calc_energy_flux routine should be used instead.
 
         Examples
         --------
@@ -13549,22 +13553,37 @@ class Session(sherpa.ui.utils.Session):
         if not Xrays:
             raise NotImplementedError("sample_flux(Xrays=False) is currently unsupported")
 
-        ids, fit = self._get_fit(id)
-        data = self.get_data(id)
-        src = None
+        _, fit = self._get_fit(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
-            src = self.get_bkg_source(id, bkg_id)
         else:
-            src = self.get_source(id)
+            data = self.get_data(id)
 
-        if modelcomponent is None:
-            modelcomponent = src
+        if (modelcomponent is not None) and \
+           not isinstance(modelcomponent, sherpa.models.model.Model):
+            raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
+
+        # We can not have a "full model" expression so error-out nicely here.
+        # Thanks to _get_fit we know we have a model so any error below can
+        # not be because no model is set but must be a "need full model"
+        # error. TODO: should we have a nicer way to determine this?
+        # Also note that it appears we have different ways the two code
+        # paths can error out
+        #
+        if bkg_id is not None:
+            try:
+                self.get_bkg_source(id, bkg_id)
+            except (IdentifierErr, ModelErr):
+                # At present ModelErr is thrown but keep in IdentifierErr
+                # just in case
+                raise IdentifierErr('Please use calc_energy_flux as set_bkg_full_model was used') from None
+        else:
+            try:
+                self.get_source(id)
+            except IdentifierErr:
+                raise IdentifierErr('Please use calc_energy_flux as set_full_model was used') from None
 
         correlated = sherpa.utils.bool_cast(correlated)
-
-        if not isinstance(modelcomponent, sherpa.models.model.Model):
-            raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
         # Why is this +1? The original comment was
         # "num+1 cause sample energy flux is under-reporting its result?"
@@ -13579,8 +13598,11 @@ class Session(sherpa.ui.utils.Session):
             samples = self.calc_energy_flux(lo=lo, hi=hi, id=id,
                                             bkg_id=bkg_id)
         else:
+            # NOTE: the samples are drawn from the full model expression
+            #       as this is how it was originally written
+            #
             samples = self.sample_energy_flux(lo=lo, hi=hi, id=id, num=niter,
-                                              scales=scales, clip='hard',
+                                              scales=scales, clip='soft',
                                               correlated=correlated,
                                               numcores=numcores,
                                               bkg_id=bkg_id)

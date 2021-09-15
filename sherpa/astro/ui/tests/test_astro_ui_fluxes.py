@@ -2026,16 +2026,34 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
     assert flsig > fluxes.min()
     assert fusig < fluxes.max()
 
-    # The clip values are not set (since these are set to the hard limits)
+    # The clip values are set.
     #
-    clips = vals[:, -2]
-    assert (clips == 0).all()
+    clipped = vals[:, -2] != 0
+    assert clipped.sum() == 20
 
     # All the statistic values should be set (> 0). This wasn't until #751
     # was addressed.
     #
     stats = vals[:, -1]
     assert (stats > 0).all()
+
+    # We assume that the stats for the clipped values are worse
+    # than for the unclipped values. Unfortunately they are not guaranteed
+    # to not overlap, so all we can do is ensure some simple checks,
+    # such as the minimum values are different.
+    #
+    assert stats[clipped].min() >= stats[~clipped].min()
+
+    # check that the calculated median is the same as the median
+    # we can calculate with the unclipped data. This is for flux1 not
+    # flux2 (although in this test they are the same).
+    #
+    fcalc = np.median(fluxes[~clipped])
+    assert fcalc == pytest.approx(fmed)
+
+    # regression test
+    assert stats[clipped][0] == pytest.approx(51.56646084)
+    assert stats[~clipped][-1] == pytest.approx(22.10377607)
 
 
 @requires_xspec
@@ -2090,17 +2108,12 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
     assert flux1.shape == (3, )
     assert vals.shape == (niter + 1, 6)
 
-    # How many clipped values are there?
+    # There are 17 "clipped" rows.
     #
-    clipped = vals[:, -2] == 1
-    nhs = vals[:, 1]
-    assert (nhs[~clipped] > 0).all()
-    assert (nhs[clipped] == 0).all()
+    clipped = vals[:, -2] != 0
     assert clipped.sum() == 17
 
-    # Although there are 17 clipped values, they all have a non-zero statistic
-    # as the values have been clipped to the soft limits. So in this case
-    # issue #751 isn't an issue.
+    # A check for issue #751.
     #
     stats = vals[:, -1]
     assert (stats > 0).sum() == (niter + 1)
@@ -2243,7 +2256,8 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
     # Ideally the best-fit location is the best fit!
     assert stats.min() >= stat0
 
-    # Check the clip column too
+    # Check the clip column too. This lists the soft-clipped rows,
+    # which for this case is ?
     #
     clips = res[2][:, 3]
     assert (clips == 0).all()
@@ -2477,3 +2491,88 @@ def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
     # fluxes.
     #
     assert (bvals[:, 1:] == vals[:, 1:]).all()
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, 2])
+def test_sample_flux_pha_full_model(idval, make_data_path, clean_astro_ui,
+                                    hide_logging, reset_seed, caplog):
+    """When using set_full_model we error out. Is it a nice error?"""
+
+    np.random.seed(9783)
+
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+
+    rsp = ui.get_response(idval)
+
+    ui.set_full_model(idval, rsp(ui.const1d.scal * ui.powlaw1d.p1))
+
+    p1 = ui.get_model_component('p1')
+    scal = ui.get_model_component('scal')
+    scal.c0 = 0.8
+    scal.integrate = False
+    scal.c0.frozen = True
+
+    ui.fit(idval)
+    ui.covar(idval)
+
+    scal = ui.get_covar_results().parmaxes
+
+    with pytest.raises(IdentifierErr) as ie:
+        ui.sample_flux(modelcomponent=p1,
+                       id=idval, lo=1, hi=5, num=niter,
+                       correlated=False, scales=scal)
+
+    assert str(ie.value) == 'Please use calc_energy_flux as set_full_model was used'
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [1, 2])
+def test_sample_flux_pha_bkg_full_model(idval, make_data_path, clean_astro_ui,
+                                        hide_logging, reset_seed, caplog):
+    """When using set_bkg_full_model we error out. Is it a nice error?"""
+
+    np.random.seed(9783)
+
+    niter = 100
+
+    ui.load_pha(idval, make_data_path('3c273.pi'))
+    ui.subtract(idval)
+    ui.ignore(None, 1)
+    ui.ignore(7, None)
+
+    # I don't think we can get covar for just the background data so we have
+    # had to fit the whole dataset.
+    #
+    brsp = ui.get_response(idval, bkg_id=1)
+    ui.set_bkg_full_model(idval, brsp(ui.powlaw1d.bpl))
+
+    bpl = ui.get_model_component('bpl')
+    bpl.gamma = 0.54
+    bpl.ampl = 6.4e-6
+
+    ui.fit_bkg(idval)
+
+    bscale = ui.get_bkg_scale(idval)
+
+    rsp = ui.get_response(idval)
+    ui.set_full_model(idval, rsp(ui.powlaw1d.pl) + bscale * rsp(bpl))
+
+    ui.fit(idval)
+    ui.covar(idval) # , bkg_id=1)
+
+    scal = ui.get_covar_results().parmaxes
+
+    with pytest.raises(IdentifierErr) as ie:
+        ui.sample_flux(modelcomponent=bpl, bkg_id=1,
+                       id=idval, lo=1, hi=5, num=niter,
+                       correlated=False, scales=scal)
+
+    assert str(ie.value) == 'Please use calc_energy_flux as set_bkg_full_model was used'
