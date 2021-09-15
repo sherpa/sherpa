@@ -31,7 +31,7 @@
 //
 // The comments on the solutions were taken from the site:
 //
-// http://www.uni-graz.at/imawww/kuntsevich/solvopt/results/moreset.html
+// https://web.archive.org/web/20060221201940/http://www.uni-graz.at/imawww/kuntsevich/solvopt/results/moreset.html
 //
 // Jan 2008 D. T. Nguyen
 //
