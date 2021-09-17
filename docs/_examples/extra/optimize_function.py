@@ -25,7 +25,7 @@ a = 2
 b = 10
 
 def rosenbrock(x, y):
-    return (a - x) * (a - x) + b * (y - x * x) * (y - x * x)
+    return (a - x)**2 + b * (y - x**2)**2
 
 
 y, x = np.mgrid[-2:5.1:0.1, -3:3.1:0.1]
@@ -54,19 +54,19 @@ savefig('rosenbrock-surface.png')
 
 # How do we optimize this function?
 #
-def to_optimize(args):
+def to_optimize1(args):
     x = args[0]
     y = args[1]
-    pa = (a - x) * (a - b)
-    pb = b * (y - x * x) * (y - x * x)
-    stat = pa * pa + pb * pb
+    pa = (a - x)**2
+    pb = b * (y - x**2)**2
+    stat = pa**2 + pb**2
     return stat, None
 
 
 start = [-1.2, 1]
 lo = [-100, -100]
 hi = [100, 100]
-res = optfcts.minim(to_optimize, start, lo, hi)
+res = optfcts.minim(to_optimize1, start, lo, hi)
 
 print(f"Success: {res[0]}")
 print(f"Message: {res[3]}")
@@ -80,7 +80,7 @@ tbl = Table(names=['method', 'stat0', 'x', 'y'],
             dtype=[str, float, float, float])
 
 for method in [optfcts.minim, optfcts.neldermead, optfcts.lmdif, optfcts.montecarlo]:
-    res = method(to_optimize, start, lo, hi)
+    res = method(to_optimize1, start, lo, hi)
     if res[0]:
         tbl.add_row([method.__name__, res[2], res[1][0], res[1][1]])
     else:
@@ -91,9 +91,9 @@ print(tbl)
 def to_optimize2(args):
     x = args[0]
     y = args[1]
-    pa = (a - x) * (a - b)
-    pb = b * (y - x * x) * (y - x * x)
-    stat = pa * pa + pb * pb
+    pa = (a - x)**2
+    pb = b * (y - x**2)**2
+    stat = pa**2 + pb**2
     return stat, [pa, pb]
 
 res2 = optfcts.lmdif(to_optimize2, start, lo, hi)
@@ -115,7 +115,7 @@ y = d[:, 1]
 
 def ngauss(x, ampl, pos, fwhm):
     term = 4 * np.log(2)
-    numerator = ampl * np.exp(-term * (x - pos) * (x - pos) / (fwhm * fwhm))
+    numerator = ampl * np.exp(-term * (x - pos)**2 / fwhm**2)
     denominator = np.sqrt(np.pi / term) * fwhm
     return numerator / denominator
 
@@ -156,7 +156,7 @@ vmin = store['stat'].min()
 vmax = store['stat'].max()
 norm = colors.LogNorm(vmin=vmin, vmax=vmax)
 
-ax.plot(store['ampl'], store['pos'], store['fwhm'], alpha=0.4)
+ax.plot(store['ampl'], store['pos'], store['fwhm'], c='k', alpha=0.4)
 scatter = ax.scatter(store['ampl'], store['pos'], store['fwhm'],
                      c=store['stat'], norm=norm)
 
