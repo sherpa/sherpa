@@ -27,9 +27,11 @@
 // "Algorithm 566: Fortran Subroutines for Testing Unconstrained
 // Optimization Software.", ACM TOMS, VOL. 7, PAGES 14-41 AND 136-140, 1981
 //
+// See also https://www.osti.gov/biblio/6650344
+//
 // The comments on the solutions were taken from the site:
 //
-// http://www.uni-graz.at/imawww/kuntsevich/solvopt/results/moreset.html
+// https://web.archive.org/web/20060221201940/http://www.uni-graz.at/imawww/kuntsevich/solvopt/results/moreset.html
 //
 // Jan 2008 D. T. Nguyen
 //
