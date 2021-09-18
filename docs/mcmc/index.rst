@@ -15,7 +15,7 @@ It was originally developed as the
 `Bayesian Low-Count X-ray Spectral (BLoCXS)
 <https://hea-www.harvard.edu/astrostat/pyblocxs/>`_
 package, but has since been incorporated into Sherpa.
-It is developed from the work presented in
+It is developed from the algorithm presented in
 `Analysis of Energy Spectra with Low Photon Counts
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
@@ -28,10 +28,10 @@ chains for a specific dataset, the selected sampler, the priors, and the specifi
 It returns an array of statistic values, an array of acceptance Booleans, 
 and an array of sampled parameter values (i.e. draws) from the posterior distribution.
 
-The multivariate t-distribution is the default sampling distribution in get_draws(). 
+The multivariate t-distribution is the default proposal distribution in get_draws(). 
 This distribution is defined by the multivariate normal (for the model parameter values and the covariance matrix), 
 and chi2 distribution for a given degrees of freedom. The algorithm provides a choice of MCMC samplers with different
-jumping rules for a selection of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
+jumping rules for acceptance of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
 
 Note that the multivariate normal distribution which requires the parameter values and 
 the corresponding covariance matrix. covar() should be run beforehand.
