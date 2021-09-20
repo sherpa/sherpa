@@ -97,6 +97,13 @@ The last version of Sherpa compatible with Python 2.7 was the
 
 .. toctree::
    :maxdepth: 2
+   :caption: Extra Functionality
+   :name: extra
+
+   extra/optimize_function
+
+.. toctree::
+   :maxdepth: 2
    :caption: Getting Help
    :name: help_docs
 
