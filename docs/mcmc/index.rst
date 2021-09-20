@@ -21,7 +21,23 @@ via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
 by van Dyk et al. (2001).
 
-Markov chain Monte Carlo (MCMC) selects random samples from the posterior probability 
+Markov Chain Monte Carlo (MCMC), as implemented in Sherpa explores parameter 
+space at a suspected minimum - i.e. after a standard Sherpa fit. It supports 
+a flexible definition of priors and allows for variations in the calibration information. 
+It can be used to compute posterior predictive p-values for the likelihood ratio test
+[2]_. It also allows for the incorporation of instrument calibration uncertainty [3]_.
+
+Markov Chain Monte Carlo (MCMC) is a complex computational technique that requires 
+some sophistication on the part of its users to ensure that it both converges and explores the
+posterior distribution properly. The pyBLoCXS code has been tested with a
+number of simple single-component spectral models. It should be used with
+great care in more complex settings. The code is based on the methods in
+[4]_ but employs a different MCMC sampler than is described in that article.
+A general description of the techniques employed along with their
+convergence diagnostics can be found in the Appendices of [4]_
+and in [5]_.
+
+MCMC in Sherpa selects random samples from the posterior probability 
 distribution of the model parameters starting from the best fit (maximum likelihood)
 given by the standard optimization methods in Sherpa (i.e. result of the fit()). get_draws() runs MCMC 
 chains for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
@@ -39,6 +55,59 @@ the corresponding covariance matrix. covar() should be run beforehand.
 Additional scale parameter allows to adjust the scale size of the multivariate normal
 in the definition of the t-distribution. This could improve the efficiency of the sampler and can be used to obtain
 the required acceptance rates.
+
+
+Jumping Rules
+-------------
+
+The jumping rule determines how each step in the MCMC is calculated. 
+The setting can be changed using ``set_sampler``. The ``sherpa.sim`` module provides 
+the following rules, which may be augmented by other modules:
+
+- ``MH`` uses a Metropolis-Hastings jumping rule that is a multivariate
+  t-distribution with user-specified degrees of freedom centered on the
+  best-fit parameters, and with multivariate scale determined by the
+  ``covar`` function applied at the best-fit location.
+
+- ``MetropolisMH`` mixes this Metropolis and Metropolis-Hastings jumping rule with a
+  Metropolis jumping rule centered at the current draw, in both cases
+  drawing from the same t-distribution as used with ``MH``. The
+  probability of using the best-fit location as the start of the jump
+  is given by the ``p_M`` parameter of the rule (use ``get_sampler`` or
+  ``get_sampler_opt`` to view and ``set_sampler_opt`` to set this value),
+  otherwise the jump is from the previous location in the chain.
+
+Options for the sampler are retrieved and set by ``get_sampler`` or
+``get_sampler_opt``, and ``set_sampler_opt`` respectively. The list of
+available samplers is given by ``list_samplers``.
+
+Choosing the parameter values
+-----------------------------
+
+By default, the prior on each parameter is taken to be flat, varying
+from the parameter minima to maxima values. This prior can be changed
+using the ``set_prior`` function, which can set the prior for a
+parameter to a function or Sherpa model. The list of currently set
+prior-parameter pairs is returned by the ``list_priors`` function, and the
+prior function associated with a particular Sherpa model parameter may be
+accessed with ``get_prior``.
+
+Running the chain
+-----------------
+
+The ``get_draws`` function runs a pyBLoCXS chain using fit information
+associated with the specified data set(s), and the currently set sampler and
+parameter priors, for a specified number of iterations. It returns an array of
+statistic values, an array of acceptance Booleans, and a 2-D array of
+associated parameter values.
+
+Analyzing the results
+---------------------
+
+The `sherpa.sim` module contains several routines to visualize the results of the chain,
+including ``plot_trace``, ``plot_cdf``, and ``plot_pdf``, along with
+``sherpa.utils.get_error_estimates`` for calculating the limits from a
+parameter chain.
 
 Example
 =======
