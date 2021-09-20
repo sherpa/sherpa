@@ -29,7 +29,7 @@ and return a tuple containing
 where ``status`` is a boolean indicating whether the optimisation
 succeeded or not, parameters is the list of parameter values at the
 best-fit location, the statistic value at this location, a string
-message - when ``status`` is ``False`` this will give information on the
+message - when ``status`` is `False` this will give information on the
 failure - and a dictionary which depends on the optimiser.
 
 The callback should return the current statistic value and an array
@@ -356,7 +356,7 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
        parameter.
     num : int
        The size of the grid for each parameter when `sequence` is
-       `None`, so `npar^num` fits will be evaluated, where `npar` is
+       `None`, so ``npar^num`` fits will be evaluated, where `npar` is
        the number of free parameters. The grid spacing is uniform.
     sequence : sequence of numbers or `None`
        The list through which to evaluate. Leave as `None` to use
@@ -540,11 +540,11 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     ftol : number
        The function tolerance to terminate the search for the minimum;
        the default is sqrt(DBL_EPSILON) ~ 1.19209289551e-07, where
-       DBL_EPSILON is the smallest number x such that `1.0 != 1.0 +
-       x`.
+       DBL_EPSILON is the smallest number x such that ``1.0 != 1.0 +
+       x``.
     maxfev : int or `None`
        The maximum number of function evaluations; the default value
-       of `None` means to use `8192 * n`, where `n` is the number of
+       of `None` means to use ``8192 * n``, where `n` is the number of
        free parameters.
     verbose: int
        The amount of information to print during the fit. The default
@@ -556,7 +556,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
        search for the minimum of the fit statistics. The trial
        solution is randomly chosen from a combination from the current
        population, and it is only accepted if it lowers the
-       statistics.  A value of `None` means to use a value `16 * n`,
+       statistics.  A value of `None` means to use a value ``16 * n``,
        where `n` is the number of free parameters.
     xprob : num
        The crossover probability should be within the range [0.5,1.0];
@@ -771,11 +771,11 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     ftol : number
        The function tolerance to terminate the search for the minimum;
        the default is sqrt(DBL_EPSILON) ~ 1.19209289551e-07, where
-       DBL_EPSILON is the smallest number x such that `1.0 != 1.0 +
-       x`.
+       DBL_EPSILON is the smallest number x such that ``1.0 != 1.0 +
+       x``.
     maxfev : int or `None`
        The maximum number of function evaluations; the default value
-       of `None` means to use `1024 * n`, where `n` is the number of
+       of `None` means to use ``1024 * n``, where `n` is the number of
        free parameters.
     initsimplex : int
        Dictates how the non-degenerate initial simplex is to be
@@ -802,9 +802,14 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
        R. W. M. Wedderburn, Rothamsted Experimental Station, and Alan
        Miller, CSIRO, Division of Mathematics & Statistics.  See also
        [1]_.
-    verbose: int
+    verbose : int
        The amount of information to print during the fit. The default
        is `0`, which means no output.
+    reflect : bool
+       When a parameter exceeds a limit should the parameter be
+       reflected, so moved back within bounds (`True`, the default) or
+       should the model evaluation return DBL_MAX, causing the current
+       set of parameters to be excluded from the simplex.
 
     Notes
     -----
@@ -873,44 +878,44 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     The `finalsimplex` value controls which of these criteria need to
     hold:
 
-    - if `finalsimplex=0` then convergence is assumed if case 1 is met.
+    - if ``finalsimplex=0`` then convergence is assumed if case 1 is met.
 
-    - if `finalsimplex=1` then convergence is assumed if case 2 is met.
+    - if ``finalsimplex=1`` then convergence is assumed if case 2 is met.
 
-    - if `finalsimplex=2` then convergence is assumed if case 0 is met
+    - if ``finalsimplex=2`` then convergence is assumed if case 0 is met
       at two consecutive iterations.
 
-    - if `finalsimplex=3` then convergence is assumed if case 0 then
+    - if ``finalsimplex=3`` then convergence is assumed if case 0 then
       case 1 are met on two consecutive iterations.
 
-    - if `finalsimplex=4` then convergence is assumed if case 0 then
+    - if ``finalsimplex=4`` then convergence is assumed if case 0 then
       case 1 then case 0 are met on three consecutive iterations.
 
-    - if `finalsimplex=5` then convergence is assumed if case 0 then
+    - if ``finalsimplex=5`` then convergence is assumed if case 0 then
       case 1 then case 0 are met on three consecutive iterations.
 
-    - if `finalsimplex=6` then convergence is assumed if case 1 then
+    - if ``finalsimplex=6`` then convergence is assumed if case 1 then
       case 1 then case 0 are met on three consecutive iterations.
 
-    - if `finalsimplex=7` then convergence is assumed if case 2 then
+    - if ``finalsimplex=7`` then convergence is assumed if case 2 then
       case 1 then case 0 are met on three consecutive iterations.
 
-    - if `finalsimplex=8` then convergence is assumed if case 0 then
+    - if ``finalsimplex=8`` then convergence is assumed if case 0 then
       case 2 then case 0 are met on three consecutive iterations.
 
-    - if `finalsimplex=9` then convergence is assumed if case 0 then
+    - if ``finalsimplex=9`` then convergence is assumed if case 0 then
       case 1 then case 1 are met on three consecutive iterations.
 
-    - if `finalsimplex=10` then convergence is assumed if case 0 then
+    - if ``finalsimplex=10`` then convergence is assumed if case 0 then
       case 2 then case 1 are met on three consecutive iterations.
 
-    - if `finalsimplex=11` then convergence is assumed if case 1 is
+    - if ``finalsimplex=11`` then convergence is assumed if case 1 is
       met on three consecutive iterations.
 
-    - if `finalsimplex=12` then convergence is assumed if case 1 then
+    - if ``finalsimplex=12`` then convergence is assumed if case 1 then
       case 2 then case 1 are met on three consecutive iterations.
 
-    - if `finalsimplex=13` then convergence is assumed if case 2 then
+    - if ``finalsimplex=13`` then convergence is assumed if case 2 then
       case 1 then case 1 are met on three consecutive iterations.
 
     - otherwise convergence is assumed if case 2 is met on three
@@ -1094,32 +1099,32 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     ftol : number
        The function tolerance to terminate the search for the minimum;
        the default is FLT_EPSILON ~ 1.19209289551e-07, where
-       FLT_EPSILON is the smallest number x such that `1.0 != 1.0 +
-       x`. The conditions are satisfied when both the actual and
+       FLT_EPSILON is the smallest number x such that ``1.0 != 1.0 +
+       x``. The conditions are satisfied when both the actual and
        predicted relative reductions in the sum of squares are, at
        most, ftol.
     xtol : number
        The relative error desired in the approximate solution; default
        is FLT_EPSILON ~ 1.19209289551e-07, where FLT_EPSILON
-       is the smallest number x such that `1.0 != 1.0 + x`. The
+       is the smallest number x such that ``1.0 != 1.0 + x``. The
        conditions are satisfied when the relative error between two
        consecutive iterates is, at most, `xtol`.
     gtol : number
        The orthogonality desired between the function vector and the
        columns of the jacobian; default is FLT_EPSILON ~
        1.19209289551e-07, where FLT_EPSILON is the smallest number x
-       such that `1.0 != 1.0 + x`. The conditions are satisfied when
+       such that ``1.0 != 1.0 + x``. The conditions are satisfied when
        the cosine of the angle between fvec and any column of the
        jacobian is, at most, `gtol` in absolute value.
     maxfev : int or `None`
        The maximum number of function evaluations; the default value
-       of `None` means to use `1024 * n`, where `n` is the number of
+       of `None` means to use ``1024 * n``, where `n` is the number of
        free parameters.
     epsfcn : number
        This is used in determining a suitable step length for the
        forward-difference approximation; default is FLT_EPSILON
        ~ 1.19209289551e-07, where FLT_EPSILON is the smallest number
-       x such that `1.0 != 1.0 + x`. This approximation assumes that
+       x such that ``1.0 != 1.0 + x``. This approximation assumes that
        the relative errors in the functions are of the order of
        `epsfcn`. If `epsfcn` is less than the machine precision, it is
        assumed that the relative errors in the functions are of the
