@@ -12,10 +12,9 @@ Sherpa provides a
 <https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo>`_
 method designed for Poisson-distributed data.
 It was originally developed as the
-`Bayesian Low-Count X-ray Spectral (BLoCXS)
+`Bayesian Low-Count X-ray Spectral (pyBLoCXS)
 <https://hea-www.harvard.edu/astrostat/pyblocxs/>`_
-package, but has since been incorporated into Sherpa.
-It is developed from the algorithm presented in
+package based on the algorithm presented in
 `Analysis of Energy Spectra with Low Photon Counts
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
@@ -29,7 +28,7 @@ It can be used to compute posterior predictive p-values for the likelihood ratio
 
 Markov Chain Monte Carlo (MCMC) is a complex computational technique that requires 
 some sophistication on the part of its users to ensure that it both converges and explores the
-posterior distribution properly. The pyBLoCXS code has been tested with a
+posterior distribution properly. The original pyBLoCXS code has been tested with a
 number of simple single-component spectral models. It should be used with
 great care in more complex settings. The code is based on the methods in
 [4]_ but employs a different MCMC sampler than is described in that article.
@@ -39,7 +38,7 @@ and in [5]_.
 
 MCMC in Sherpa selects random samples from the posterior probability 
 distribution of the model parameters starting from the best fit (maximum likelihood)
-given by the standard optimization methods in Sherpa (i.e. result of the fit()). get_draws() runs MCMC 
+given by the standard optimization methods in Sherpa (i.e. result of the `fit()`). `get_draws()` runs MCMC 
 chains for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
 It returns an array of statistic values, an array of acceptance Booleans, 
 and an array of sampled parameter values (i.e. draws) from the posterior distribution.
