@@ -18,23 +18,23 @@ It was originally developed as the
 `Analysis of Energy Spectra with Low Photon Counts
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
-by van Dyk et al. (2001) [4]_.
+by van Dyk et al. (2001) [2]_.
 
 
-Markov Chain Monte Carlo (MCMC) is a complex computational technique that requires 
-some sophistication on the part of its users to ensure that it both converges and explores the
-posterior distribution properly. The original pyBLoCXS code has been tested with a
+Markov Chain Monte Carlo (MCMC) is a complex computational technique and one
+needs to ensure that it both converges and explores the posterior distribution properly. 
+The original pyBLoCXS code has been tested with a
 number of simple single-component spectral models. It should be used with
 great care in more complex settings. The code is based on the methods in
-[4]_ but employs a different MCMC sampler than is described in that article.
+[2]_ but employs a different MCMC sampler than is described in that article.
 A general description of the techniques employed along with their
-convergence diagnostics can be found in the Appendices of [4]_
-and in [5]_.
+convergence diagnostics can be found in the Appendices of [2]_
+and in [3]_.
 
 MCMC as implemented in Sherpa explores parameter space at a suspected minimum - i.e. after a standard Sherpa fit. It supports 
 a flexible definition of priors and allows for variations in the calibration information. 
 It can be used to compute posterior predictive p-values for the likelihood ratio test
-[2]_. It also allows for the incorporation of instrument calibration uncertainty [3]_.
+[4]_. It can also accounts for instrument calibration uncertainty [5]_.
 
 MCMC in Sherpa selects random samples from the posterior probability 
 distribution of the model parameters starting from the best fit (maximum likelihood)
@@ -80,8 +80,8 @@ Options for the sampler are retrieved and set by ``get_sampler`` or
 ``get_sampler_opt``, and ``set_sampler_opt`` respectively. The list of
 available samplers is given by ``list_samplers``.
 
-Choosing the parameter values
------------------------------
+Choosing priors
+----------------
 
 By default, the prior on each parameter is taken to be flat, varying
 from the parameter minima to maxima values. This prior can be changed
@@ -111,18 +111,18 @@ parameter chain.
 References
 ----------
 .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
-.. [2] "Statistics, Handle with Care: Detecting Multiple Model Components
-       with the Likelihood Ratio Test", Protassov et al., 2002, ApJ, 571, 545
-       http://adsabs.harvard.edu/abs/2002ApJ...571..545P
-.. [3] "Accounting for Calibration Uncertainties in X-ray Analysis:
-       Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
-       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
-.. [4] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
+.. [2] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
        Posterior Simulation", van Dyk et al. 2001, ApJ, 548, 224
        http://adsabs.harvard.edu/abs/2001ApJ...548..224V
-.. [5] Chapter 11 of Gelman, Carlin, Stern, and Rubin
+.. [3] Chapter 11 of Gelman, Carlin, Stern, and Rubin
        (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).
-       
+.. [4] "Statistics, Handle with Care: Detecting Multiple Model Components
+       with the Likelihood Ratio Test", Protassov et al., 2002, ApJ, 571, 545
+       http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+.. [5] "Accounting for Calibration Uncertainties in X-ray Analysis:
+       Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
+       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+
        
 Example
 =======
