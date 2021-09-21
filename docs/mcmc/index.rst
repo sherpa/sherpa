@@ -14,17 +14,12 @@ method designed for Poisson-distributed data.
 It was originally developed as the
 `Bayesian Low-Count X-ray Spectral (pyBLoCXS)
 <https://hea-www.harvard.edu/astrostat/pyblocxs/>`_
-package based on the algorithm presented in
+[1]_ package based on the algorithm presented in
 `Analysis of Energy Spectra with Low Photon Counts
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
-by van Dyk et al. (2001).
+by van Dyk et al. (2001) [4]_.
 
-Markov Chain Monte Carlo (MCMC), as implemented in Sherpa explores parameter 
-space at a suspected minimum - i.e. after a standard Sherpa fit. It supports 
-a flexible definition of priors and allows for variations in the calibration information. 
-It can be used to compute posterior predictive p-values for the likelihood ratio test
-[2]_. It also allows for the incorporation of instrument calibration uncertainty [3]_.
 
 Markov Chain Monte Carlo (MCMC) is a complex computational technique that requires 
 some sophistication on the part of its users to ensure that it both converges and explores the
@@ -36,20 +31,25 @@ A general description of the techniques employed along with their
 convergence diagnostics can be found in the Appendices of [4]_
 and in [5]_.
 
+MCMC as implemented in Sherpa explores parameter space at a suspected minimum - i.e. after a standard Sherpa fit. It supports 
+a flexible definition of priors and allows for variations in the calibration information. 
+It can be used to compute posterior predictive p-values for the likelihood ratio test
+[2]_. It also allows for the incorporation of instrument calibration uncertainty [3]_.
+
 MCMC in Sherpa selects random samples from the posterior probability 
 distribution of the model parameters starting from the best fit (maximum likelihood)
-given by the standard optimization methods in Sherpa (i.e. result of the `fit()`). `get_draws()` runs MCMC 
+given by the standard optimization methods in Sherpa (i.e. result of the ``fit()``). ``get_draws()`` runs MCMC 
 chains for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
 It returns an array of statistic values, an array of acceptance Booleans, 
 and an array of sampled parameter values (i.e. draws) from the posterior distribution.
 
-The multivariate t-distribution is the default proposal distribution in get_draws(). 
+The multivariate t-distribution is the default proposal distribution in ``get_draws()``. 
 This distribution is defined by the multivariate normal (for the model parameter values and the covariance matrix), 
 and chi2 distribution for a given degrees of freedom. The algorithm provides a choice of MCMC samplers with different
 jumping rules for acceptance of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
 
 Note that the multivariate normal distribution which requires the parameter values and 
-the corresponding covariance matrix. covar() should be run beforehand.
+the corresponding covariance matrix. ``covar()`` should be run beforehand.
 
 Additional scale parameter allows to adjust the scale size of the multivariate normal
 in the definition of the t-distribution. This could improve the efficiency of the sampler and can be used to obtain
@@ -108,6 +108,22 @@ including ``plot_trace``, ``plot_cdf``, and ``plot_pdf``, along with
 ``sherpa.utils.get_error_estimates`` for calculating the limits from a
 parameter chain.
 
+References
+----------
+.. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
+.. [2] "Statistics, Handle with Care: Detecting Multiple Model Components
+       with the Likelihood Ratio Test", Protassov et al., 2002, ApJ, 571, 545
+       http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+.. [3] "Accounting for Calibration Uncertainties in X-ray Analysis:
+       Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
+       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+.. [4] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
+       Posterior Simulation", van Dyk et al. 2001, ApJ, 548, 224
+       http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+.. [5] Chapter 11 of Gelman, Carlin, Stern, and Rubin
+       (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).
+       
+       
 Example
 =======
 
