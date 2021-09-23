@@ -12,34 +12,108 @@ Sherpa provides a
 <https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo>`_
 method designed for Poisson-distributed data.
 It was originally developed as the
-`Bayesian Low-Count X-ray Spectral (BLoCXS)
+`Bayesian Low-Count X-ray Spectral (pyBLoCXS)
 <https://hea-www.harvard.edu/astrostat/pyblocxs/>`_
-package, but has since been incorporated into Sherpa.
-It is developed from the work presented in
+[1]_ package based on the algorithm presented in
 `Analysis of Energy Spectra with Low Photon Counts
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
-by van Dyk et al. (2001).
+by van Dyk et al. (2001) [2]_.
+A general description of the techniques employed along with their
+convergence diagnostics can be found in the Appendices of [2]_
+and in [3]_.
 
-Markov chain Monte Carlo (MCMC) selects random samples from the posterior probability 
-distribution of the model parameters starting from the best fit (maximum likelihood)
-given by the standard optimization methods in Sherpa (i.e. result of the fit()). get_draws() runs MCMC 
-chains for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
+Sherpa's implementation of MCMC is written specifically for the Bayesian analysis. It supports 
+a flexible definition of priors. 
+It can be used to compute posterior predictive p-values for the likelihood ratio test
+[4]_. It can also account for instrument calibration uncertainty [5]_.
+
+MCMC selects random samples from the posterior probability 
+distribution for the assumed model starting from the best fit (maximum likelihood) 
+given by the standard optimization methods in Sherpa (i.e. result of the `~sherpa.astro.ui.fit`). 
+The MCMC is run using `~sherpa.astro.ui.get_draws` for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
 It returns an array of statistic values, an array of acceptance Booleans, 
 and an array of sampled parameter values (i.e. draws) from the posterior distribution.
 
-The multivariate t-distribution is the default sampling distribution in get_draws(). 
+The multivariate t-distribution is the default proposal distribution in `~sherpa.astro.ui.get_draws`. 
 This distribution is defined by the multivariate normal (for the model parameter values and the covariance matrix), 
 and chi2 distribution for a given degrees of freedom. The algorithm provides a choice of MCMC samplers with different
-jumping rules for a selection of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
+jumping rules for acceptance of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
 
 Note that the multivariate normal distribution which requires the parameter values and 
-the corresponding covariance matrix. covar() should be run beforehand.
+the corresponding covariance matrix. `~sherpa.astro.ui.covar` should be run beforehand.
 
 Additional scale parameter allows to adjust the scale size of the multivariate normal
 in the definition of the t-distribution. This could improve the efficiency of the sampler and can be used to obtain
 the required acceptance rates.
 
+
+Jumping Rules
+-------------
+
+The jumping rule determines how each step in the MCMC is calculated [3]_. 
+The setting can be changed using `~sherpa.astro.ui.set_sampler`. The `sherpa.sim` module provides 
+the following rules, which may be augmented by other modules:
+
+- ``MH`` uses a Metropolis-Hastings jumping rule assuming a multivariate
+  t-distribution centered on the best-fit parameters.
+
+- ``MetropolisMH`` mixes the Metropolis-Hastings jumping rule with the
+  Metropolis jumping rule centered at the current set of parameters, in both cases
+  sampled from the same t-distribution as used with ``MH``. The
+  probability of using the best-fit location as the start of the jump
+  is given by the ``p_M`` parameter of the rule (use `~sherpa.astro.ui.get_sampler` or
+  `~sherpa.astro.ui.get_sampler_opt` to view and `~sherpa.astro.ui.set_sampler_opt` to set this value),
+  otherwise the jump is from the previous location in the chain.
+
+Options for the sampler are retrieved and set by `~sherpa.astro.ui.get_sampler` or
+`~sherpa.astro.ui.get_sampler_opt`, and `~sherpa.astro.ui.set_sampler_opt` respectively. The list of
+available samplers is given by `~sherpa.astro.ui.list_samplers`.
+
+Choosing priors
+----------------
+
+By default, the prior on each parameter is taken to be flat, varying
+from the parameter minima to maxima values. This prior can be changed
+using the `~sherpa.astro.ui.set_prior` function, which can set the prior for a
+parameter to a function or Sherpa model. The list of currently set
+prior-parameter pairs is returned by the `~sherpa.astro.ui.list_priors` function, and the
+prior function associated with a particular Sherpa model parameter may be
+accessed with `~sherpa.astro.ui.get_prior`.
+
+Running the chain
+-----------------
+
+The `~sherpa.astro.ui.get_draws` function runs a chain using fit information
+associated with the specified data set(s), and the currently set sampler and
+parameter priors, for a specified number of iterations. It returns an array of
+statistic values, an array of acceptance Booleans, and a 2-D array of
+associated parameter values.
+
+Analyzing the results
+---------------------
+
+The `sherpa.sim` module contains several routines to visualize the results of the chain,
+including `~sherpa.astro.ui.plot_trace`, `~sherpa.astro.ui.plot_cdf`, and `~sherpa.astro.ui.plot_pdf`, along with
+`~sherpa.utils.get_error_estimates` for calculating the limits from a
+parameter chain.
+
+References
+----------
+.. [1] https://hea-www.harvard.edu/AstroStat/pyBLoCXS/
+.. [2] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
+       Posterior Simulation", van Dyk et al. 2001, ApJ, 548, 224
+       http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+.. [3] Chapter 11 of Gelman, Carlin, Stern, and Rubin
+       (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).
+.. [4] "Statistics, Handle with Care: Detecting Multiple Model Components
+       with the Likelihood Ratio Test", Protassov et al., 2002, ApJ, 571, 545
+       http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+.. [5] "Accounting for Calibration Uncertainties in X-ray Analysis:
+       Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
+       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+
+       
 Example
 =======
 

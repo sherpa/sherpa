@@ -20,12 +20,8 @@
 
 """Monte-Carlo Markov Chain support for low-count data (Poisson statistics).
 
-The ``sherpa.sim`` module provides support for exploring the posterior
-probability density of parameters in a fit to low-count data, for
-which Poisson statistics hold, using a Bayesian algorithm and a
-Monte-Carlo Markov Chain (MCMC). It was originally known as the
-pyBLoCXS (python Bayesian Low-Count X-ray Spectral) package [1]_, but
-has since been incorporated into Sherpa.
+The ``sherpa.sim`` module provides a Bayesian algorithm with
+Monte-Carlo Markov Chain (MCMC) for Poisson data.
 
 The Sherpa UI modules - e.g. `sherpa.ui` and `sherpa.astro.ui` - provide
 many of the routines described below (e.g. ``list_samplers``).
