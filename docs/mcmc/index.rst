@@ -31,17 +31,17 @@ It can be used to compute posterior predictive p-values for the likelihood ratio
 MCMC selects random samples from the posterior probability 
 distribution for the assumed model starting from the best fit (maximum likelihood) 
 given by the standard optimization methods in Sherpa (i.e. result of the `~sherpa.astro.ui.fit`). 
-The MCMC is run using `~sherpa.sim.get_draws` for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
+The MCMC is run using `~sherpa.astro.ui.get_draws` for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
 It returns an array of statistic values, an array of acceptance Booleans, 
 and an array of sampled parameter values (i.e. draws) from the posterior distribution.
 
-The multivariate t-distribution is the default proposal distribution in `~sherpa.sim.get_draws`. 
+The multivariate t-distribution is the default proposal distribution in `~sherpa.astro.ui.get_draws`. 
 This distribution is defined by the multivariate normal (for the model parameter values and the covariance matrix), 
 and chi2 distribution for a given degrees of freedom. The algorithm provides a choice of MCMC samplers with different
 jumping rules for acceptance of the proposed parameters: Metropolis (symmetric) and Metropolis-Hastings (asymmetric).
 
 Note that the multivariate normal distribution which requires the parameter values and 
-the corresponding covariance matrix. `~sherpa.astropy.ui.covar` should be run beforehand.
+the corresponding covariance matrix. `~sherpa.astro.ui.covar` should be run beforehand.
 
 Additional scale parameter allows to adjust the scale size of the multivariate normal
 in the definition of the t-distribution. This could improve the efficiency of the sampler and can be used to obtain
@@ -52,7 +52,7 @@ Jumping Rules
 -------------
 
 The jumping rule determines how each step in the MCMC is calculated [3]_. 
-The setting can be changed using `~sherpa.sim.set_sampler`. The `sherpa.sim` module provides 
+The setting can be changed using `~sherpa.astro.ui.set_sampler`. The `sherpa.sim` module provides 
 the following rules, which may be augmented by other modules:
 
 - ``MH`` uses a Metropolis-Hastings jumping rule assuming a multivariate
@@ -62,29 +62,29 @@ the following rules, which may be augmented by other modules:
   Metropolis jumping rule centered at the current set of parameters, in both cases
   sampled from the same t-distribution as used with ``MH``. The
   probability of using the best-fit location as the start of the jump
-  is given by the ``p_M`` parameter of the rule (use ``get_sampler`` or
-  `~sherpa.sim.get_sampler_opt` to view and `~sherpa.sim.set_sampler_opt` to set this value),
+  is given by the ``p_M`` parameter of the rule (use `~sherpa.astro.ui.get_sampler` or
+  `~sherpa.astro.ui.get_sampler_opt` to view and `~sherpa.astro.ui.set_sampler_opt` to set this value),
   otherwise the jump is from the previous location in the chain.
 
-Options for the sampler are retrieved and set by `~sherpa.sim.get_sampler` or
-`~sherpa.sim.get_sampler_opt`, and `~sherpa.sim.set_sampler_opt` respectively. The list of
-available samplers is given by `~sherpa.sim.list_samplers`.
+Options for the sampler are retrieved and set by `~sherpa.astro.ui.get_sampler` or
+`~sherpa.astro.ui.get_sampler_opt`, and `~sherpa.astro.ui.set_sampler_opt` respectively. The list of
+available samplers is given by `~sherpa.astro.ui.list_samplers`.
 
 Choosing priors
 ----------------
 
 By default, the prior on each parameter is taken to be flat, varying
 from the parameter minima to maxima values. This prior can be changed
-using the `~sherpa.sim.set_prior` function, which can set the prior for a
+using the `~sherpa.astro.ui.set_prior` function, which can set the prior for a
 parameter to a function or Sherpa model. The list of currently set
-prior-parameter pairs is returned by the `~sherpa.sim.list_priors` function, and the
+prior-parameter pairs is returned by the `~sherpa.astro.ui.list_priors` function, and the
 prior function associated with a particular Sherpa model parameter may be
-accessed with `~sherpa.sim.get_prior`.
+accessed with `~sherpa.astro.ui.get_prior`.
 
 Running the chain
 -----------------
 
-The `~sherpa.sim.get_draws` function runs a chain using fit information
+The `~sherpa.astro.ui.get_draws` function runs a chain using fit information
 associated with the specified data set(s), and the currently set sampler and
 parameter priors, for a specified number of iterations. It returns an array of
 statistic values, an array of acceptance Booleans, and a 2-D array of
@@ -94,8 +94,8 @@ Analyzing the results
 ---------------------
 
 The `sherpa.sim` module contains several routines to visualize the results of the chain,
-including ``plot_trace``, ``plot_cdf``, and ``plot_pdf``, along with
-`sherpa.utils.get_error_estimates` for calculating the limits from a
+including `~sherpa.astro.ui.plot_trace`, `~sherpa.astro.ui.plot_cdf`, and `~sherpa.astro.ui.plot_pdf`, along with
+`~sherpa.utils.get_error_estimates` for calculating the limits from a
 parameter chain.
 
 References
