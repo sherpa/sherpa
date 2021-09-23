@@ -19,27 +19,19 @@ It was originally developed as the
 via Bayesian Posterior Simulation
 <https://ui.adsabs.harvard.edu/#abs/2001ApJ...548..224V>`_
 by van Dyk et al. (2001) [2]_.
-
-
-Markov Chain Monte Carlo (MCMC) is a complex computational technique and one
-needs to ensure that it both converges and explores the posterior distribution properly. 
-The original pyBLoCXS code has been tested with a
-number of simple single-component spectral models. It should be used with
-great care in more complex settings. The code is based on the methods in
-[2]_ but employs a different MCMC sampler than is described in that article.
 A general description of the techniques employed along with their
 convergence diagnostics can be found in the Appendices of [2]_
 and in [3]_.
 
-MCMC as implemented in Sherpa explores parameter space at a suspected minimum - i.e. after a standard Sherpa fit. It supports 
+Sherpa implementation of MCMC is written specifically for the Bayesian analysis. It supports 
 a flexible definition of priors and allows for variations in the calibration information. 
 It can be used to compute posterior predictive p-values for the likelihood ratio test
 [4]_. It can also accounts for instrument calibration uncertainty [5]_.
 
-MCMC in Sherpa selects random samples from the posterior probability 
-distribution of the model parameters starting from the best fit (maximum likelihood)
-given by the standard optimization methods in Sherpa (i.e. result of the ``fit()``). ``get_draws()`` runs MCMC 
-chains for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
+MCMC selects random samples from the posterior probability 
+distribution for assumed model starting from the best fit (maximum likelihood) 
+given by the standard optimization methods in Sherpa (i.e. result of the ``fit()``). 
+The MCMC is run using ``get_draws()`` for a specific dataset, the selected sampler, the priors, and the specified number of iterations. 
 It returns an array of statistic values, an array of acceptance Booleans, 
 and an array of sampled parameter values (i.e. draws) from the posterior distribution.
 
@@ -59,18 +51,16 @@ the required acceptance rates.
 Jumping Rules
 -------------
 
-The jumping rule determines how each step in the MCMC is calculated. 
+The jumping rule determines how each step in the MCMC is calculated [3]_. 
 The setting can be changed using ``set_sampler``. The ``sherpa.sim`` module provides 
 the following rules, which may be augmented by other modules:
 
-- ``MH`` uses a Metropolis-Hastings jumping rule that is a multivariate
-  t-distribution with user-specified degrees of freedom centered on the
-  best-fit parameters, and with multivariate scale determined by the
-  ``covar`` function applied at the best-fit location.
+- ``MH`` uses a Metropolis-Hastings jumping rule assuming a multivariate
+  t-distribution centered on the best-fit parameters.
 
-- ``MetropolisMH`` mixes this Metropolis and Metropolis-Hastings jumping rule with a
-  Metropolis jumping rule centered at the current draw, in both cases
-  drawing from the same t-distribution as used with ``MH``. The
+- ``MetropolisMH`` mixes the Metropolis-Hastings jumping rule with the
+  Metropolis jumping rule centered at the current set of parameters, in both cases
+  sampled from the same t-distribution as used with ``MH``. The
   probability of using the best-fit location as the start of the jump
   is given by the ``p_M`` parameter of the rule (use ``get_sampler`` or
   ``get_sampler_opt`` to view and ``set_sampler_opt`` to set this value),
@@ -94,7 +84,7 @@ accessed with ``get_prior``.
 Running the chain
 -----------------
 
-The ``get_draws`` function runs a pyBLoCXS chain using fit information
+The ``get_draws`` function runs a chain using fit information
 associated with the specified data set(s), and the currently set sampler and
 parameter priors, for a specified number of iterations. It returns an array of
 statistic values, an array of acceptance Booleans, and a 2-D array of
