@@ -26,7 +26,7 @@ and in [3]_.
 Sherpa's implementation of MCMC is written specifically for the Bayesian analysis. It supports 
 a flexible definition of priors. 
 It can be used to compute posterior predictive p-values for the likelihood ratio test
-[4]_. It can also accounts for instrument calibration uncertainty [5]_.
+[4]_. It can also account for instrument calibration uncertainty [5]_.
 
 MCMC selects random samples from the posterior probability 
 distribution for the assumed model starting from the best fit (maximum likelihood) 
@@ -100,7 +100,7 @@ parameter chain.
 
 References
 ----------
-.. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
+.. [1] https://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 .. [2] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
        Posterior Simulation", van Dyk et al. 2001, ApJ, 548, 224
        http://adsabs.harvard.edu/abs/2001ApJ...548..224V
