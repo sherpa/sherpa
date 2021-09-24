@@ -1359,6 +1359,8 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
+        lower / upper bound for channels, in keV. If an ARF and/or RMF
+        is loaded, the values in the ARF will be used instead.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -1972,7 +1974,6 @@ class DataPHA(Data1D):
             resp = instrument.Response1D(self)
 
         return resp
-
 
     def _get_ebins(self, response_id=None, group=True):
         """Return the low and high edges of the independent axis.
