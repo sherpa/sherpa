@@ -2224,7 +2224,7 @@ class DataPHA(Data1D):
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
-        val = numpy.asarray(val).astype(numpy.int_) - 1
+        val = numpy.asarray(val - self.channel[0]).astype(numpy.int_)
         try:
             return (elo[val] + ehi[val]) / 2.0
         except IndexError:

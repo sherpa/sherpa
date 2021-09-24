@@ -2622,3 +2622,20 @@ def test_pha_channel0_subtract():
         np.array([0, 1, 2, 0, 3, 1], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
     assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
+
+
+@pytest.mark.parametrize("channels", [[0, 1, 2, 3],
+                                      [1, 2, 3, 4],
+                                      [5, 6, 7, 8]])
+def test_pha_channel_noarfrmf(channels):
+    '''Check correct energies are returned for channels starting at 0 or 1.
+
+    Regression test for https://github.com/sherpa/sherpa/issues/1305
+    '''
+    bins = np.array([.2, .4, .6, .8, 1.])
+    testpha = DataPHA(name='testdata',
+                      channel=np.arange(4),
+                      counts=np.array([5, 6, 7, 8]),
+                      bin_lo=bins[:-1], bin_hi=bins[1:])
+    testpha.set_analysis('energy')
+    assert testpha.get_x() == pytest.approx([.3, .5, .7, .9])
