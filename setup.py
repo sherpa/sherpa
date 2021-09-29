@@ -23,9 +23,9 @@ import sys
 # python_requires will stop pip, but also let users who are using
 # 'python setup.py develop'.
 #
-if sys.version_info < (3, 5):
-    sys.stderr.write("Sherpa 4.12 (and later) requires Python 3.5 or later.\n\n")
-    sys.stderr.write("Please use Sherpa 4.11.1 if you need to use Python 2.7\n")
+if sys.version_info < (3, 7):
+    sys.stderr.write("Sherpa 4.14 (and later) requires Python 3.7 or later.\n\n")
+    sys.stderr.write("Please use Sherpa 4.13.1 if you need to use Python 3.6\n")
     sys.exit(1)
 
 try:
