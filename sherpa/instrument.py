@@ -78,7 +78,7 @@ class Kernel(NoNewAttributesAfterInit):
     "Base class for convolution kernels"
 
     def __init__(self, dshape, kshape, norm=False, frozen=True,
-                 center=None, args=[], kwargs={},
+                 center=None, args=None, kwargs={},
                  do_pad=False, pad_mask=None, origin=None):
 
         if origin is None:
@@ -248,7 +248,7 @@ class PSFKernel(Kernel):
 
     def __init__(self, dshape, kshape, is_model=False, norm=True, frozen=True,
                  center=None, size=None, lo=None, hi=None, width=None,
-                 args=[], kwargs={},
+                 args=None, kwargs={},
                  pad_mask=None, do_pad=False, origin=None):
 
         self.is_model = is_model
@@ -330,7 +330,7 @@ class RadialProfileKernel(PSFKernel):
     def __init__(self, dshape, kshape, is_model=False,
                  norm=True, frozen=True,
                  center=None, size=None, lo=None, hi=None, width=None,
-                 args=[], kwargs={},
+                 args=None, kwargs={},
                  pad_mask=None, do_pad=False, origin=None):
 
         self.radialsize = None

@@ -342,7 +342,7 @@ class MH(Sampler):
         return self.fcn(proposed_params)
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False):
+             priors=None, originalscale=True, scale=1, sigma_m=False):
 
         if self._sigma is None or self._mu is None:
             raise AttributeError('sigma or mu is None, initialization failed')
@@ -537,7 +537,7 @@ class MetropolisMH(MH):
         self.num_metropolis = 0
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5):
+             priors=None, originalscale=True, scale=1, sigma_m=False, p_M=.5):
 
         debug("Running Metropolis with Metropolis-Hastings")
 

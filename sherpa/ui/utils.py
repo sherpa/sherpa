@@ -10465,7 +10465,7 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.list_samplers()
 
     # DOC-TODO: add pointers on what to do with the return values
-    def get_draws(self, id=None, otherids=(), niter=1000, covar_matrix=None):
+    def get_draws(self, id=None, otherids=None, niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm

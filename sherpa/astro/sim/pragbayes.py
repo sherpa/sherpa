@@ -301,7 +301,7 @@ class PragBayes(MetropolisMH):
         self.simarf = None
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5,
+             priors=None, originalscale=True, scale=1, sigma_m=False, p_M=.5,
              simarf=None, nsubiters=10):
 
         # Note that nsubiters is used as a dummy parameter to indicate the

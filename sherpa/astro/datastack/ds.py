@@ -583,7 +583,7 @@ class DataStack():
         return dataid
 
     def _add_dataset(self, dataid):
-        dataset = dict(id=dataid, args=[], model_comps={},
+        dataset = dict(id=dataid, args=None, model_comps={},
                        data=ui.get_data(dataid))
         _all_dataset_ids[dataid] = dataset
         self.dataset_ids[dataid] = dataset

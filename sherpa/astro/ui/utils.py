@@ -10040,7 +10040,7 @@ class Session(sherpa.ui.utils.Session):
 
         return fit_to_ids, datasets, models
 
-    def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
+    def _get_bkg_fit(self, id, otherids=None, estmethod=None, numcores=1):
 
         fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
 
@@ -11245,7 +11245,7 @@ class Session(sherpa.ui.utils.Session):
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores, bkg_id,
-                                  scales=None, model=None, otherids=(),
+                                  scales=None, model=None, otherids=None,
                                   clip='hard'):
         """Run sample_energy_flux and convert to a plot.
         """
@@ -11271,7 +11271,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, otherids=(), recalc=True,
+                             scales=None, model=None, otherids=None, recalc=True,
                              clip='hard'):
         """Return the data displayed by plot_energy_flux.
 
@@ -11407,7 +11407,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, otherids=(), recalc=True,
+                             scales=None, model=None, otherids=None, recalc=True,
                              clip='hard'):
         """Return the data displayed by plot_photon_flux.
 
@@ -13613,7 +13613,7 @@ class Session(sherpa.ui.utils.Session):
                                                   confidence=confidence)
 
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None,
-                error=False, params=None, otherids=(), niter=1000,
+                error=False, params=None, otherids=None, niter=1000,
                 covar_matrix=None):
         """Calculate the equivalent width of an emission or absorption line.
 

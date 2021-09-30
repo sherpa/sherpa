@@ -157,7 +157,7 @@ class EstMethod(NoNewAttributesAfterInit):
                 parmins, parmaxes, parhardmins,
                 parhardmaxes, limit_parnums, freeze_par, thaw_par,
                 report_progress, get_par_name,
-                statargs=(), statkwargs={}):
+                statargs=None, statkwargs=None):
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -211,7 +211,7 @@ class Confidence(EstMethod):
                 parmins, parmaxes, parhardmins,
                 parhardmaxes, limit_parnums, freeze_par, thaw_par,
                 report_progress, get_par_name,
-                statargs=(), statkwargs={}):
+                statargs=None, statkwargs=None):
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -277,7 +277,7 @@ class Projection(EstMethod):
                 parmins, parmaxes, parhardmins,
                 parhardmaxes, limit_parnums, freeze_par, thaw_par,
                 report_progress, get_par_name,
-                statargs=(), statkwargs={}):
+                statargs=None, statkwargs=None):
 
         if fitfunc is None:
             raise TypeError("fitfunc should not be none")

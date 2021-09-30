@@ -36,7 +36,7 @@ class FullBayes(PragBayes):
                           for arf in self.arfs]
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5,
+             priors=None, originalscale=True, scale=1, sigma_m=False, p_M=.5,
              simarf=None, p_M_arf=.5, sigma_arf=0.1):
         # nsubiters is missing from init() to indicate that nubiters=1 for
         # full bayes

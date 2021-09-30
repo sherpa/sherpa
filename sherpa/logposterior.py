@@ -43,7 +43,7 @@ class Prior(Likelihood):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __init__(self, statfunc=None, hyperpars={}, pars={}, name='prior'):
+    def __init__(self, statfunc=None, hyperpars=None, pars=None, name='prior'):
 
         # Posterior hyper-parameters
         self.hyperpars = []

@@ -1260,9 +1260,9 @@ class XSTableModel(XSModel):
 
     """
 
-    def __init__(self, filename, name='xstbl', parnames=(),
-                 initvals=(), delta=(), mins=(), maxes=(), hardmins=(),
-                 hardmaxes=(), nint=0,
+    def __init__(self, filename, name='xstbl', parnames=None,
+                 initvals=None, delta=None, mins=None, maxes=None,
+                 hardmins=None, hardmaxes=None, nint=0,
                  addmodel=False, addredshift=False, etable=False):
 
         # make translation table to turn reserved characters into '_'

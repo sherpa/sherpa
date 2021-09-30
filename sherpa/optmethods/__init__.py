@@ -192,8 +192,8 @@ class OptMethod(NoNewAttributesAfterInit):
     default_config = property(_get_default_config,
                               doc='The default settings for the optimiser.')
 
-    def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
-            statkwargs={}):
+    def fit(self, statfunc, pars, parmins, parmaxes, statargs=None,
+            statkwargs=None):
         """Run the optimiser.
 
         Parameters

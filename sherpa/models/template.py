@@ -135,7 +135,7 @@ class Template(KNNInterpolator):
 
 class TemplateModel(ArithmeticModel):
 
-    def __init__(self, name='templatemodel', pars=(), parvals=None,
+    def __init__(self, name='templatemodel', pars=None, parvals=None,
                  templates=None):
         self.parvals = parvals if parvals is not None else []
         self.templates = templates if templates is not None else []
