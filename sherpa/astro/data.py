@@ -3774,9 +3774,7 @@ class DataPHA(Data1D):
     def get_filter(self, group=True, format='%.12f', delim=':'):
         """Return the data filter as a string.
 
-        For grouped data, or when the analysis setting is not
-        channel, filter values refer to the full range of each
-        channel or group.
+        The filter expression depends on the analysis setting.
 
         .. versionchanged:: 4.14.0
            Prior to 4.14.0 the filter used the mid-point of the bin,
@@ -3787,9 +3785,8 @@ class DataPHA(Data1D):
         group : bool, optional
             Should the filter reflect the grouped data?
         format : str, optional
-            The formatting of the numeric values (this is
-            ignored for channel units, as a format of "%i"
-            is used).
+            The formatting of the numeric values (this is ignored for
+            channel units, which uses ``format="%i"``).
         delim : str, optional
             The string used to mark the low-to-high range.
 
@@ -3799,22 +3796,41 @@ class DataPHA(Data1D):
 
         >>> pha.set_analysis('energy')
         >>> pha.notice(0.5, 7)
-        >>> pha.get_filter(format=%.4f')
-        ''0.5183:8.2198''
+        >>> pha.get_filter(format='%.4f')
+        '0.4672:9.8696'
         >>> pha.set_analysis('channel')
         >>> pha.get_filter()
-        '36:563'
+        '33:676'
 
-        The default is to show the data range for the grouped
-        dataset, which uses the center of each group. If
-        the grouping is turned off then the center of the
-        start and ending channel of each group is used
-        (and so show a larger data range):
+        The filter expression shows the first selected channel to the
+        last one, and so is independent of whether the data is grouped
+        or not:
 
-        >>> pha.get_filter(format=%.4f')
-        '0.5183:8.2198'
-        >>> pha.get_filter(group=False, format=%.4f')
-        '0.4745:9.8623'
+        >>> pha.set_analysis('energy')
+        >>> pha.get_filter(format='%.4f')
+        '0.4672:9.8696'
+        >>> pha.get_filter(group=False, format='%.4f')
+        '0.4672:9.8696'
+
+        Although the `group` argument does not change the output of
+        get_filter, the selected range does depend on whether the data
+        is grouped or not (unless the groups align with the filter
+        edges):
+
+        >>> d.ungroup()
+        >>> d.notice()
+        >>> d.notice(0.5, 7)
+        >>> d.get_filter(format='%.3f')
+        '0.496:7.008'
+        >>> d.group()
+        >>> d.get_filter(format='%.3f')
+        '0.467:9.870'
+
+        >>> d.notice()
+        >>> d.notice(0.5, 6)
+        >>> d.ignore(2.1, 2.2)
+        >>> d.get_filter(format='%.2f', delim='-')
+        '0.47-2.09,2.28-6.57'
 
         """
         if self.mask is False:
