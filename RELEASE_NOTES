@@ -4,34 +4,39 @@ Sherpa 4.14.0
 =============
 This release of Sherpa includes various documentation updates,  bug fixes, enhancements, and infrastructure changes.
 
+* enhancements:
+    * filtering and grouping area for binned (1D) spectral data has been improved 
+      with changes to the default behavior and many bug fixes resulting in changes 
+      to the statistics, degrees-of-freedom and energy flux in comparison to the 
+      previous version for the same data with the same filter.
+    * updates to allow users to change the hard limits of XSPEC model parameters
+    * the sample_flux routine now returns correct information for the clip column
 * documentation changes:
     * improved PHA simulation documentation 
     * improved Filtering and grouping of PHA data documentation
     * added sherpa.image module documentation
     * added section on running tests to developer docs
-
 * Infrastructure Changes:
-    * updates to support Apple ARM 
-    * Update fftw from version 3.3.8 to 3.3.9
+    * updates to support Apple ARM
+    * update to support Xspec version 12.12 
+    * update fftw from version 3.3.8 to 3.3.9
     * clean up of compiler and sphinx warnings
     * changes to support gcc 9.3.0 in conda defaults
-    * updates to support python 3.9 including readline 8.1 upgrade, numpy minimum 1.18 for python 3.7/8 and 1/19 for python 3.9)
+    * updates to support python 3.9 including readline 8.1 upgrade, numpy minimum 1.19 (numpy 1.18 minimum for python 3.7/8)
     * test infrastructure clean up and updates
 * bug fixes:
     * updates to fix several 'unable to parse region string: None' errors
     * fix issue where save_all() of a loaded image with no region filter would fail on reload
     * fixed issue with plot_model() being called before notice or ignore could lead to filters not getting applied
     * fix to error out instead of crash when grouping data using an unsupported method 
-* enhancements:
-    * Updates to allow users to change the hard limits of XSPEC model parameters
 
 Details
 -------
 
 #1031 - Update fwhm calculation
     Update the estimation of FWHM for 1D profiles, and hence the guess method for 
-    Gauss1D and related routines. The 2D models use the same routine, so see these 
-    changes, but they are known to require more work.
+    Gauss1D and related routines. The 2D models use the same routine so see these 
+    changes.
 
 #1073 - Allow fake_pha to be called with an identifier of None
     The fake_pha command now treats id=None as the default id. This addresses #1064.
@@ -65,7 +70,7 @@ Details
     and in that case one would co-add the arfs as well.
 
 #1135 - Added docstring and removed unused no-op class
-    Remove sherpa.astro.models.MultiResponseSumModel, which did nothing and seems 
+    Remove sherpa.astro.models.MultiResponseSumModel which did nothing and seems 
     to be unused (except in a test that explicitly skip this class).
 
 #1136 - Replace error message "too few columns" with a more generic word
@@ -73,7 +78,7 @@ Details
     for the wording of the error message in their code, but certainly more correct.
 
 #1137 - Correct docstring for fake_pha
-    The old docstring claims that the backgound is just scaled and not simulated, 
+    The old docstring claims that the background is just scaled and not simulated, 
     but there is definitely a call to poisson_noise for the background in the code.
 
 #1138 - Address NumPy 1.20 bool/int/float deprecation warnings
@@ -144,7 +149,7 @@ Details
     for the model- and parameter-related code.
 
 #1182 - Simulations with multiple responses
-    Enable simulations with multipe ARF/RMF present (e.g. LETG/HRC).
+    Enable simulations with multiple ARF/RMF present (e.g. LETG/HRC).
 
 #1183 - Check parameter link behavior
     Minor tweaks to the parameter tests.
@@ -352,7 +357,7 @@ Details
     Fix up some links in the RTD documentation for simulating PHA data.
 
 #1290 - Fix the string output of CDFPlot
-    Corrected the order of the points, x, and y values when dispaying a CDFPlot 
+    Corrected the order of the points, x, and y values when displaying a CDFPlot 
     object, improve support for a list argument, and made minor additions to the 
     documentation in the sherpa.plot module.
 
@@ -381,6 +386,9 @@ Details
 #1303 - Updated Introductory Section of the MCMC page
     Added additional details regarding sherpa's MCMC inplementation to the 
     documentation 
+
+#1308 - Docs: fix get_filter examples
+    Fix the examples in the get_filter documentation.
 
 #1310 -Update the python check for python setup.py installs to 3.7
     Updates the minimum supported version of python supported in setup.py to use 
