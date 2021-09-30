@@ -3235,7 +3235,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> set_filter([1, 1, 0, 1])
         >>> get_filter()
-        '10.0000,15.0000,25.0000'
+        '10.0000:15.0000,25.0000'
 
         For an integrated data set (Data1DInt and DataPHA with energy
         or wavelength units)
@@ -3264,7 +3264,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ignore(22, 23)
         >>> get_filter()
-        '15.0000:30.0000'
+        '15.0000:20.0000,25:000:30.0000'
 
         Return the filter for data set 3:
 
