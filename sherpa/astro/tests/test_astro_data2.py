@@ -31,7 +31,7 @@ from sherpa.astro.data import DataARF, DataIMG, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
 def test_can_not_group_ungrouped():
@@ -419,6 +419,7 @@ def test_288_b_energy():
     assert pha.mask == pytest.approx([True, False, True])
 
 
+@requires_group
 def test_grouping_non_numpy():
     """Historically the group* calls would fail oddly if y is not numpy
 
@@ -440,6 +441,7 @@ def test_grouping_non_numpy():
     assert pha.quality == pytest.approx(quality)
 
 
+@requires_group
 def test_416_a():
     """The first test case from issue #416
 
@@ -488,6 +490,7 @@ def test_416_a():
     assert dep == pytest.approx([3, 1])
 
 
+@requires_group
 def test_416_b(caplog):
     """The second test case from issue #416
 
@@ -540,6 +543,7 @@ def test_416_b(caplog):
         ]
 
 
+@requires_group
 def test_416_c():
     """The third test case from issue #416
 
