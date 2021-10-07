@@ -108,7 +108,11 @@ def test_export_method_basic():
 
     c = C()
 
-    # Basic usage
+    # Basic usage. The error message depends on
+    #  a) Python version
+    #  b) what method is being wrapped
+    # (before Python 3.10 it didn't).
+    #
     for meth in (c.m, c.margs, c.kwargs, c.bargs, c.cm, c.sm):
         m = utils.export_method(meth)
 
@@ -122,9 +126,19 @@ def test_export_method_basic():
         with pytest.raises(TypeError) as exc:
             m()
 
-        emsg = "{}() ".format(meth.__name__) + \
+        emsg = f"{meth.__name__}() " + \
             "missing 1 required positional argument: 'x'"
-        assert str(exc.value) == emsg
+
+        if meth.__name__ == 'sm':
+            # In Python 3.10 we see C.sm rather than sm
+            # so we search for both. We could be more explicit
+            # and check on the Python version (e.g. for >= 3.10)
+            # but it doesn't seem worth it. It's interesting it's
+            # only for the static method.
+            #
+            assert str(exc.value) in [emsg, 'C.' + emsg]
+        else:
+            assert str(exc.value) == emsg
 
 
 def test_export_method_args_call():
