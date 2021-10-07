@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2014, 2015, 2016, 2018, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_fits, requires_stk
+from sherpa.utils.testing import requires_fits, requires_group, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from sherpa.astro.datastack import DataStack
@@ -797,6 +797,7 @@ def test_operations_datastack_subtract(ds_setup, ds_datadir):
 
 @requires_fits
 @requires_stk
+@requires_group
 def test_operations_datastack_group(ds_setup, ds_datadir):
     '''We are testing one of several grouping schemes here.'''
     datadir = ds_datadir
