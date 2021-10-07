@@ -404,6 +404,7 @@ def test_bug38_filtering(make_data_path):
 
 @requires_fits
 @requires_data
+@requires_group
 def test_bug38_filtering_grouping(make_data_path):
     """Low-level tests related to bugs #38, #917: filter+group"""
 

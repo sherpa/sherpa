@@ -1067,6 +1067,7 @@ def test_get_filter_channel_ungrouped(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_get_filter_channel_grouped(make_data_path):
     """What does get_filter return for grouped channel data.
 
@@ -1097,6 +1098,7 @@ def test_get_filter_channel_grouped(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_get_filter_channel_grouped_prefiltered(make_data_path):
     """Add an energy filter before switching to channel space
 
@@ -1125,6 +1127,7 @@ def test_get_filter_channel_grouped_prefiltered(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_nofilter(analysis, make_data_path):
     """Can we change grouping (no filter).
@@ -1219,6 +1222,7 @@ def test_get_noticed_channels(analysis, make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_filter(analysis, make_data_path):
     """Can we change grouping with energy units.
@@ -1251,6 +1255,7 @@ def test_grouping_filter(analysis, make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_filtering_binning(analysis, make_data_path):
     """Low-level testing of test_grouping_filtering.

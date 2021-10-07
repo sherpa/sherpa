@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -54,7 +55,7 @@ from sherpa.models.basic import Const1D, StepHi1D
 from sherpa.stats import Chi2DataVar, CStat
 from sherpa.utils.err import ArgumentErr, DataErr
 
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 from sherpa.astro import ui
 
@@ -1373,6 +1374,7 @@ def test_get_staterror_file_errors_bg(filt, noticed, make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("filt", [False, True])
 @pytest.mark.parametrize("noticed", [False, True])
 def test_get_staterror_file_errors_bg_regrouped(filt, noticed, make_data_path):

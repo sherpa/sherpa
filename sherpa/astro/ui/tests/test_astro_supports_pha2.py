@@ -36,7 +36,7 @@ import pytest
 
 import numpy as np
 
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, requires_group
 from sherpa.utils.err import IdentifierErr
 
 from sherpa.astro import ui
@@ -191,6 +191,7 @@ def test_load_pha2(loader, id0, ids, make_data_path, caplog, clean_astro_ui):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_load_pha2_compare_meg_order1(make_data_path, clean_astro_ui):
     """Do we read in the MEG +/-1 orders?"""
 
@@ -389,6 +390,7 @@ def test_list_response_ids_pha1(make_data_path, clean_astro_ui):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_746(make_data_path, clean_astro_ui):
     """Test https://github.com/sherpa/sherpa/issues/746
 
