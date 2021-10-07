@@ -5,11 +5,15 @@ Sherpa 4.14.0
 This release of Sherpa includes various documentation updates,  bug fixes, enhancements, and infrastructure changes.
 
 * enhancements:
-    * filtering and grouping area for binned (1D) spectral data has been improved 
-      with changes to the default behavior and many bug fixes resulting in changes 
-      to the statistics, degrees-of-freedom and energy flux in comparison to the 
-      previous version for the same data with the same filter.
-    * updates to allow users to change the hard limits of XSPEC model parameters
+    * filtering and grouping  for binned (1D) spectral data have been improved 
+      with changes to the default behavior and many bug fixes resulting in 
+      differences to the statistics, degrees-of-freedom and energy flux in 
+      comparison to the previous version for the same data with the same filter.
+    * the output of get_filter() for 2D region filter expressions now correctly 
+      describe complicated shapes (e.g. when used with calc_data_sum2d)
+    * updates allowing to change the hard limits of XSPEC model parameters and 
+      also to use XSPEC models that use “out-of-bounds” values to switch certain 
+      behaviour such as for example the fpl parameter of the xsoptxagn model
     * the sample_flux routine now returns correct information for the clip column
 * documentation changes:
     * improved PHA simulation documentation 
