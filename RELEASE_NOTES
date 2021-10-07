@@ -1,5 +1,409 @@
 Release Notes
 
+Sherpa 4.14.0
+=============
+This release of Sherpa includes various documentation updates,  bug fixes, enhancements, and infrastructure changes.
+
+* enhancements:
+    * filtering and grouping area for binned (1D) spectral data has been improved 
+      with changes to the default behavior and many bug fixes resulting in changes 
+      to the statistics, degrees-of-freedom and energy flux in comparison to the 
+      previous version for the same data with the same filter.
+    * updates to allow users to change the hard limits of XSPEC model parameters
+    * the sample_flux routine now returns correct information for the clip column
+* documentation changes:
+    * improved PHA simulation documentation 
+    * improved Filtering and grouping of PHA data documentation
+    * added sherpa.image module documentation
+    * added section on running tests to developer docs
+* Infrastructure Changes:
+    * updates to support Apple ARM
+    * update to support Xspec version 12.12 
+    * update fftw from version 3.3.8 to 3.3.9
+    * clean up of compiler and sphinx warnings
+    * changes to support gcc 9.3.0 in conda defaults
+    * updates to support python 3.9 including readline 8.1 upgrade, numpy minimum 1.19 (numpy 1.18 minimum for python 3.7/8)
+    * test infrastructure clean up and updates
+* bug fixes:
+    * updates to fix several 'unable to parse region string: None' errors
+    * fix issue where save_all() of a loaded image with no region filter would fail on reload
+    * fixed issue with plot_model() being called before notice or ignore could lead to filters not getting applied
+    * fix to error out instead of crash when grouping data using an unsupported method 
+
+Details
+-------
+
+#1031 - Update fwhm calculation
+    Update the estimation of FWHM for 1D profiles, and hence the guess method for 
+    Gauss1D and related routines. The 2D models use the same routine so see these 
+    changes.
+
+#1073 - Allow fake_pha to be called with an identifier of None
+    The fake_pha command now treats id=None as the default id. This addresses #1064.
+
+#1106 - The sample_flux routine now returns the correct information for the clip column
+    The sample_flux routine now returns correct information for the clip column
+    (that is, it matches the clipping done by this routine). There may be changes to 
+    the reported error ranges because of this change.
+
+#1107 - Add some grating related keywords for _repr_html_ for ARF, RMF, PHA
+    Add keywords to the default output in the _repr_html_ for some X-ray classes.
+
+#1113 - XSPEC: support etable table models
+    Allow XSPEC ETABLE table model files to be read by load_xstable_model by 
+    setting the etable parameter.
+
+#1118 - Improve test cases for source plots with PHA data
+    Add additional test cases for source plots with PHA data to check out 
+    rarely-used combinations.
+
+#1127 - PHA filtering changes
+    Improve some corner cases for filtering PHA data, including fixing #921 (channel
+    bounds are integers, not half-integers).
+
+#1131 - Test: fix a test failure when XSPEC installed but no fits backend
+    Avoid running a test we know to fail for an uncommon combination of options.
+
+#1134 - This is a doc-string only update for load_multi_XXX
+    The previous example implied that a spectrum may contain both positive and 
+    negative orders in the same spectrum. That can happen only after coadding - 
+    and in that case one would co-add the arfs as well.
+
+#1135 - Added docstring and removed unused no-op class
+    Remove sherpa.astro.models.MultiResponseSumModel which did nothing and seems 
+    to be unused (except in a test that explicitly skip this class).
+
+#1136 - Replace error message "too few columns" with a more generic word
+    Change the wording of an error message. Potentially breaking if someone tests 
+    for the wording of the error message in their code, but certainly more correct.
+
+#1137 - Correct docstring for fake_pha
+    The old docstring claims that the background is just scaled and not simulated, 
+    but there is definitely a call to poisson_noise for the background in the code.
+
+#1138 - Address NumPy 1.20 bool/int/float deprecation warnings
+    NumPy 1.20 notes that numpy.bool, numpy.int, and numpy.float will be removed 
+    and users should just use bool, int, and float instead, so these symbols have 
+    been changed. This is a follow on to #1092
+
+#1140 - Fix some remaining master/main renames
+    clean up references to master with main
+
+#1143 - add basic test and documentation for Integrate1D
+    Add basic testing of the integrate1d model class and improve its documentation.
+
+#1144 - A minor cleanup of estmethods
+    A minor cleanup of the sherpa.estmethods code.
+
+#1147 - Tests: support use of data directory being local, not absolute
+    Allow a test to pass when given a relative path for the test data directory.
+
+#1154 - Update docs on RTD builds
+    Update docs on how the docs are build in CI
+
+#1155 - Remove Meta class for fits hdu headers
+    Remove Meta class for header information that is used only rudimentary and 
+    acts almost, but not quite, like a dict
+
+#1163 - XMM/RGS triggers a notice/ignore bug because channels are in reverse-energy order in RMF
+    Recent work on the ignore / notice logic in #1127 implicitly assumes that the 
+    energy grid in PHA/ARF/RMF files is in increasing order, which does not hold 
+    true for XMM/RGS data
+
+#1164 - Fix plots with wavelength general:visualization type:bug
+    For some data files, plots with a reversed grid (i.e. plots in wavelength) were 
+    drawn with disjoint lines since #906.
+
+#1165 - Add a section on running the tests to the developer docs
+    Add a section on running the tests to the developer docs
+
+#1168 - Logging tweaks
+    Include the sherpa.utils.logging module in the documentation and update a test 
+    to use the caplog feature of pytest (the code had been written to work with 
+    python 2.7 version of unittest).
+
+#1170 - Update Python and particularly number versions in documentation
+    Updates to doc pages that list dangerously old numpy versions
+
+#1171- Improve the grouping/filtering tests
+    Add a number of tests for corner cases of filtering and grouping of PHA data.
+
+#1172 - Improve data pha docs
+    Improve the documentation of the filtering and grouping of PHA data.
+
+#1173 - Improve DataPha documentation
+    Minor improvements to the documentation of the DataPHA class.
+
+#1175 - Store UI contour plots in a dictionary, not directly
+    Change the internal storage handling of contour objects
+
+#1177 - minor rework of image handling for ui layer
+    Change the internal storage handling of image objects and improved testing
+
+#1178 - Define physical constant hc in fewer places
+    hc (as in "Planck constant * speed of light") is a physical constant that does 
+    not depend on the DataPHA and thus it should not be defined as a class attribute.
+
+#1180 - Minor improvements to model/parameter documentation
+    Minor fixes and improvements to the documentation (both docstrings and RTD) 
+    for the model- and parameter-related code.
+
+#1182 - Simulations with multiple responses
+    Enable simulations with multiple ARF/RMF present (e.g. LETG/HRC).
+
+#1183 - Check parameter link behavior
+    Minor tweaks to the parameter tests.
+
+#1184 - Better pha model component plotting (fix #1020)
+    The use of plot_model_component and get_model_component will now automatically 
+    add the response for PHA data sets, if there is one. Model expressions which 
+    contain a response will not be changed. Fixes #1020.
+
+#1187 - Conda GCC 9.3.0 update issue
+    update to support environment changes due to conda defaults updates for 
+    gcc 9.3.0
+
+#1192 - Remove Python 3.6 and add Python 3.9
+    updates to switch python support to python 3.7-3.9
+
+#1194 - datastack: Improve show_stack and add _repr_html_ for stack
+    Improve datastack display (via show_stack and in the notebook) for datastacks.
+
+#1198 - XSPEC test cleanup
+    Very minor improvement to the XSPEC test suite.
+
+#1199 - Move the regrid code out into a separate method
+    Very minor code reorganization for the regrid code.
+
+#1203 - Update GitLab Conda recipe to numpy 1.19
+    updates gitlab conda recipe to python 1.19+ and adds run time pin
+
+#1204 - region lib updates for CIAO 4.14
+    updates to fold in changes to CIAO region lib for CIAO 4.14. Specifically, 
+    fixes for SM-89: bug in pie shape (extent/inside logic), SL-243: region - 
+    deprecate obsoleted Warning.
+
+#1205 - Remove the SherpaTestCase class
+    Remove the SherpaTestCase class from sherpa.utils.testing and switch the tests 
+    that used it to use pytest functionality where appropriate.
+
+#1208 - Fix get_xerr for Data1DInt when all data is filtered
+    The get_xerr method of Data1DInt would fail if all bins had been ignored and 
+    it now returns the empty list.
+
+#1215 - Restrict the values used in PHA notice/filter calls
+    Ensure that the low and high limits for notice and ignore calls for DataPHA 
+    objects are sensible (hi >= lo and that for energy or wavelength filters they 
+    are >= 0). When filtering DataPHA objects in channel units the lo and hi 
+    arguments must be integers otherwise an error is raised.
+
+#1216 - filter improvements for DataPHA and Data1DInt
+    Energy and wavelength filters (with notice and ignore) for PHA data are now 
+    treated as lo <= x < hi in all cases, and channel filters are lo <= x <= hi 
+    (where the channel values must be integers). For Data1DInt cases the notice 
+    and ignore filters are treated as lo <= x < hi. This changes address a number 
+    of corner cases.
+    This can result in slightly different fit results because the data used in the 
+    fit can be changed and hence changing the number of degrees of freedom (by one 
+    or two depending on whether the first and last bins have been removed).
+
+#1218 - Update fftw from version 3.3.8 to 3.3.9
+    This change updates the version of the fftw module in sherpa's external 
+    dependencies (extern) directory to utilize version 3.3.9 (www.fftw.org) instead 
+    of the previous version 3.3.8
+
+#1219 - Fix filter expressions
+    Filter expressions for Data1DInt and DataPHA cases now report the start and end 
+    value of each set of grouped data rather than use the end points. For PHA data 
+    sets users now see the same ranges displayed whether the data is grouped or not. 
+    The actual filter remains the same even if the filter expressions has changed 
+    slightly.
+
+#1223 - XSPEC 12.12.0 support
+    Support the new additive and multiplicative models in XSPEC 12.12.0 - XSgrbjet, 
+    XSwdem, XSvwdem, XSvvwdem are additive and XSzxipab is multiplicative - and 
+    note the additional abundance tables that are available when running with XSPEC 
+    12.12.0 (lpgp and lpgs).
+
+#1227 - Support AstroPy 4.3 for tests
+    The AstroPy FITS reader is less tolerant of invalid FITS files in AstroPy 4.3 
+    which trips one of our tests. The test has been updated with a FITS file that 
+    doesn't trigger the error case. There is no functional change in this commit.
+
+#1228 - Fix three parameter names for XSPEC models
+    Fix three XSPEC models which had some internal confusion over parameter names: 
+    XSzkerrbb should have uses fcol but had instead used hd, and XSzashift and 
+    XSzmshift used Redshift instead of Velocity. The old names have been kept as 
+    aliases.
+
+#1230 - Update submodule to pick up submodule README
+    Updates submodule to pick up the submodule README
+
+#1231 - Remove __init__.py from tests directory
+    Clean up of a test directory. There is no functional change in this commit.
+
+#1236 - Remove compiler warnings
+    Avoid compiler warnings from clang, fixing #1232 and several other warnings.
+
+#1241 - to get sherpa to run Apple M1 (arm)
+    Initial support of sherpa for ARM build 
+
+#1244 - Fix "unable to parse region string: None" errors (issue #1214)
+    In certain circumstances (such as plot_pvalue with an explicit 2D PSF 
+    convolution operator read from a file) the code would fail with the error 
+    unable to parse region string: None (issue #1214). This PR fixes this problem 
+    and several minor related issues.
+
+#1246 - Image region filters are now specified correctly (Fix #1245)
+    Update the image filter code so that the region description matches what the 
+    filter actually is: rather than use & to combine regions we now use | as it 
+    is a logical or rather than logical and. This is mainly going to affect users 
+    who: have used the output of get_filter() as input to calc_data_sum2d, have 
+    very-complex spatial filters, or are restoring Sherpa sessions created by save 
+    or save_all.
+
+#1247 - Allow save_all to work well with images with no filters (Fix #437)
+    Fix a problem with the output of the save_all command if an image had been 
+    loaded but no region filter applied (fix #437): the output file would contain 
+    a notice2d_id call with a filter of "" which would fail if you tried to load 
+    the file back in. It now no-longer creates this line.
+
+#1248 - Docs: note that set_stat can be sent a stats object
+    Update the documentation for set_stat to note you can send in a stats object
+
+#1250 - Stop odd interaction between plot_model and PHA filters (Fix #1024)
+    plot_model(), if done before calling notice or ignore, could lead to strange 
+    filters (e.g. filter not getting applied). This has been fixed. Fixes #1024
+
+#1253 - More numpy 1.20 warning fixes
+    Avoid warnings from NumPy 1.20 about using the deprecated np.int symbol.
+
+#1254 - FIX: #1235 change XSPEC chatter to 10 from 0
+    Change the default X-Spec chatter level from 0 to 10. This may result in screen 
+    output the first time an XSPEC model is evaluated (e.g. from a plot_model or 
+    fit call). There have been a number of cases where APEC models appeared to be 
+    creating no output because of missing data files (due to old ~/.xspec/Xspec.init 
+    settings) which would have been more obvious with this change. To get back to 
+    the previous behavior users can call set_xschatter(0).
+
+#1259 - XSPEC parameter changes - you can change the hard limits of most XSPEC parameters
+    XSPEC model parameters now use the same limits for soft and hard (the hard 
+    limit from the model.dat file). This is handled by the XSBaseParameter class 
+    which is used for XSPEC table models. The XSParameter class, which extends this 
+    and is used by most other parameters, allows the user to change the hard limits 
+    of the model. This follows XSPEC, and allows using some models which are 
+    documented as supporting a value outside the normal parameter range (normally 
+    by setting the value to a negative value). Note that this is potentially 
+    dangerous (it could crash the program) so should be used carefully. It is 
+    strongly suggested that any parameter set to a value outside of the original 
+    limits is also frozen.
+
+#1260 - Add a module to parse XSPEC model.dat and helper scripts #1260
+    Add support for parsing XSPEC model.dat files (useful for updating the XSPEC 
+    module or if you want to use XSPEC local models).
+
+#1261 - update to match recent XSPEC model.dat settings
+    Update the XSPEC models to match the latest model.dat file (from HEASOFT 6.29 / 
+    XSPEC 12.12.0). This primarily changes the hard limits of the models, but there 
+    are some changes to the default parameter values as well, as well as some unit 
+    changes, including adding and removing units.
+
+#1264 - Fix crash from grouping data using an unsupported method
+    It was possible to cause Sherpa to crash by passing an invalid function as the 
+    groupfunc argument to apply_filter and apply_group. The code now errors out 
+    instead. There are improvements to the documentation (docstring and RTD) for 
+    PHA filtering and grouping.
+
+#1268 - Doc: switch default sphinx role
+    Multiply the number of working references on readthedocs, while at the same 
+    time reduce verbosity in the docstrings.
+
+#1270 - Cleanup setup
+    Update the Python supported status in the package metadata (drop 3.5, add 3.8) 
+    and bump the minimum version to 3.6.
+
+#1273 - crates backend strip preceding/trailing whitespace when determining ascii file colnames (Fix #1262)
+    This change modifies the crates backend ascii file handling to resolve issue 
+    #1262 where a test added in PR #1253 causes the tests to fail. This change may 
+    potential result in behavior changes for crates use on ascii data files (see 
+    caveat section for details).
+
+#1276 - Fix Inconsistent behavior in save_arrays when optional parameter ascii = True/False (Fixes issue #1251)
+    Updates the data I/O so that write_arrays behaves consistently whether writing 
+    ascii or fits files via the pyfits backend.
+
+#1279 - rm the platform cause no longer need it
+    rm the platform module since it is not needed for ARM support
+
+#1281 - RTD: include parse_xspec_model_description
+    Fix a link on the Read The Docs pages from PR #1260
+
+#1282 - Add Zenodo details for 4.13.1
+    Include the Zenodo details for the 4.13.1 release into the hard-coded list of 
+    releases.
+
+#1285 - Added an option to reflect minim about the boundary
+    This PR adds the option on how the optimization minim will behave if the free 
+    parameter is beyond the limit. The default parameter reflect is True (will 
+    reflect by an equal amount about the limit). If reflect is set to False then 
+    model function will return DBL_MAX (~1e308) and therefore it will not be 
+    included in the simplex.
+
+#1287 - Remove C++ warning when compiling the pileup code
+    Use unique_ptr rather than auto_ptr in the pileup code to avoid C++ warnings. 
+    Fix #505
+
+#1288 - Improve the PHA simulation documentation
+    Fix up some links in the RTD documentation for simulating PHA data.
+
+#1290 - Fix the string output of CDFPlot
+    Corrected the order of the points, x, and y values when displaying a CDFPlot 
+    object, improve support for a list argument, and made minor additions to the 
+    documentation in the sherpa.plot module.
+
+#1291 - Comment: add link to the OSTI.GOV URL for the optimizing document
+    Add a reference to the OSTI.GOV technical report in the comments in the C++ 
+    code used for testing the optimization functions.
+
+#1292 - Update tests that were changed by #1246
+    Fix tests that started to fail once #1246 was merged.
+
+#1293 -RTD: add a "how to optimize a function" example
+    Add a section to the ReadTheDocs site explaining how to "optimize a function" 
+    as this is something we can do but only really with the low-level code.
+
+#1294 - RTD: Fix some sphinx warnings (sherpa.models.regrid)
+    Fix a minor warning when generating the Read The Docs pages.
+
+#1295 - Update XSkerrconv model for #1275
+    Rename the first two parameters of the XSPEC XSkerrconv convolution model from 
+    Index/Index1 to Index1/Index2. Fixes #1275
+
+#1296 - Document the neldermead reflect flag from #1285
+    Add documentation for the reflect keyword added in #1285 for the neldermead 
+    optimizer
+
+#1303 - Updated Introductory Section of the MCMC page
+    Added additional details regarding sherpa's MCMC inplementation to the 
+    documentation 
+
+#1308 - Docs: fix get_filter examples
+    Fix the examples in the get_filter documentation.
+
+#1310 -Update the python check for python setup.py installs to 3.7
+    Updates the minimum supported version of python supported in setup.py to use 
+    python 3.7
+
+Caveats
+-----------
+
+* Crates behavior change - PR #1273 fixes an issue with the crates backend where 
+    supplying a column filter "opt colnames=none" for an ascii file would utilize 
+    default column names 'col1..coln' instead of the column names specified in the 
+    file.  Code which relied on the old behavior may now produce an IO error such 
+    as "IOErr: Required column 'col1' not found in [ <list of valid column names>]"
+
+
 Sherpa 4.13.1
 =============
 This release of Sherpa includes various documentation updates,  bug fixes, and infrastructure changes. The default branch in github has been migrated from master to main.
