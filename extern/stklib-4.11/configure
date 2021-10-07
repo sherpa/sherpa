@@ -12106,7 +12106,7 @@ $am_python_setup_sysconfig
 if can_use_sysconfig:
     sitedir = sysconfig.get_path('purelib', vars={'base':'$am_py_prefix'})
 else:
-    from distutils import sysconfig
+    from setuptools._distutils import sysconfig
     sitedir = sysconfig.get_python_lib(0, 0, prefix='$am_py_prefix')
 sys.stdout.write(sitedir)"`
      case $am_cv_python_pythondir in
@@ -12150,7 +12150,7 @@ $am_python_setup_sysconfig
 if can_use_sysconfig:
     sitedir = sysconfig.get_path('platlib', vars={'platbase':'$am_py_prefix'})
 else:
-    from distutils import sysconfig
+    from setuptools._distutils import sysconfig
     sitedir = sysconfig.get_python_lib(1, 0, prefix='$am_py_prefix')
 sys.stdout.write(sitedir)"`
      case $am_cv_python_pyexecdir in
@@ -12291,18 +12291,18 @@ variable to configure. See \`\`configure --help'' for reference.
 	fi
 
 	#
-	# Check if you have distutils, else fail
+	# Check if you have setuptools._distutils, else fail
 	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the distutils Python package" >&5
-$as_echo_n "checking for the distutils Python package... " >&6; }
-	ac_distutils_result=`$PYTHON -c "import distutils" 2>&1`
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the setuptools._distutils Python package" >&5
+$as_echo_n "checking for the setuptools._distutils Python package... " >&6; }
+	ac_distutils_result=`$PYTHON -c "import setuptools._distutils" 2>&1`
 	if test -z "$ac_distutils_result"; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 	else
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-		as_fn_error $? "cannot import Python module \"distutils\".
+		as_fn_error $? "cannot import Python module \"setuptools._distutils\".
 Please check your Python installation. The error was:
 $ac_distutils_result" "$LINENO" 5
 		PYTHON_VERSION=""
@@ -12314,10 +12314,10 @@ $ac_distutils_result" "$LINENO" 5
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python include path" >&5
 $as_echo_n "checking for Python include path... " >&6; }
 	if test -z "$PYTHON_CPPFLAGS"; then
-		python_path=`$PYTHON -c "import distutils.sysconfig; \
-			print (distutils.sysconfig.get_python_inc ());"`
-		plat_python_path=`$PYTHON -c "import distutils.sysconfig; \
-			print (distutils.sysconfig.get_python_inc (plat_specific=1));"`
+		python_path=`$PYTHON -c "import setuptools._distutils.sysconfig; \
+			print (setuptools._distutils.sysconfig.get_python_inc ());"`
+		plat_python_path=`$PYTHON -c "import setuptools._distutils.sysconfig; \
+			print (setuptools._distutils.sysconfig.get_python_inc (plat_specific=1));"`
 		if test -n "${python_path}"; then
 			if test "${plat_python_path}" != "${python_path}"; then
 				python_path="-I$python_path -I$plat_python_path"
@@ -12343,7 +12343,7 @@ $as_echo_n "checking for Python library path... " >&6; }
 
 # join all versioning strings, on some systems
 # major/minor numbers could be in different list elements
-from distutils.sysconfig import *
+from setuptools._distutils.sysconfig import *
 e = get_config_var('VERSION')
 if e is not None:
 	print(e)
@@ -12369,8 +12369,8 @@ _ACEOF
 		ac_python_libdir=`cat<<EOD | $PYTHON -
 
 # There should be only one
-import distutils.sysconfig
-e = distutils.sysconfig.get_config_var('LIBDIR')
+import setuptools._distutils.sysconfig
+e = setuptools._distutils.sysconfig.get_config_var('LIBDIR')
 if e is not None:
 	print (e)
 EOD`
@@ -12378,8 +12378,8 @@ EOD`
 		# Now, for the library:
 		ac_python_library=`cat<<EOD | $PYTHON -
 
-import distutils.sysconfig
-c = distutils.sysconfig.get_config_vars()
+import setuptools._distutils.sysconfig
+c = setuptools._distutils.sysconfig.get_config_vars()
 if 'LDVERSION' in c:
 	print ('python'+c['LDVERSION'])
 else:
@@ -12398,7 +12398,7 @@ EOD`
 		else
 			# old way: use libpython from python_configdir
 			ac_python_libdir=`$PYTHON -c \
-			  "from distutils.sysconfig import get_python_lib as f; \
+			  "from setuptools._distutils.sysconfig import get_python_lib as f; \
 			  import os; \
 			  print (os.path.join(f(plat_specific=1, standard_lib=1), 'config'));"`
 			PYTHON_LDFLAGS="-L$ac_python_libdir -lpython$ac_python_version"
@@ -12421,8 +12421,8 @@ $as_echo "$PYTHON_LDFLAGS" >&6; }
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python site-packages path" >&5
 $as_echo_n "checking for Python site-packages path... " >&6; }
 	if test -z "$PYTHON_SITE_PKG"; then
-		PYTHON_SITE_PKG=`$PYTHON -c "import distutils.sysconfig; \
-			print (distutils.sysconfig.get_python_lib(0,0));"`
+		PYTHON_SITE_PKG=`$PYTHON -c "import setuptools._distutils.sysconfig; \
+			print (setuptools._distutils.sysconfig.get_python_lib(0,0));"`
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_SITE_PKG" >&5
 $as_echo "$PYTHON_SITE_PKG" >&6; }
@@ -12434,8 +12434,8 @@ $as_echo "$PYTHON_SITE_PKG" >&6; }
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking python extra libraries" >&5
 $as_echo_n "checking python extra libraries... " >&6; }
 	if test -z "$PYTHON_EXTRA_LIBS"; then
-	   PYTHON_EXTRA_LIBS=`$PYTHON -c "import distutils.sysconfig; \
-                conf = distutils.sysconfig.get_config_var; \
+	   PYTHON_EXTRA_LIBS=`$PYTHON -c "import setuptools._distutils.sysconfig; \
+                conf = setuptools._distutils.sysconfig.get_config_var; \
                 print (conf('LIBS') + ' ' + conf('SYSLIBS'))"`
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_EXTRA_LIBS" >&5
@@ -12448,8 +12448,8 @@ $as_echo "$PYTHON_EXTRA_LIBS" >&6; }
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking python extra linking flags" >&5
 $as_echo_n "checking python extra linking flags... " >&6; }
 	if test -z "$PYTHON_EXTRA_LDFLAGS"; then
-		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import distutils.sysconfig; \
-			conf = distutils.sysconfig.get_config_var; \
+		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import setuptools._distutils.sysconfig; \
+			conf = setuptools._distutils.sysconfig.get_config_var; \
 			print (conf('LINKFORSHARED'))"`
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_EXTRA_LDFLAGS" >&5
@@ -15423,5 +15423,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
-
