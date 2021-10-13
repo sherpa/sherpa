@@ -1,0 +1,2 @@
+fixes:
+  - "work/sherpa/sherpa/::"  # move path   e.g., "before/path" => "after/path"
