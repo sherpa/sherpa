@@ -21,37 +21,11 @@
 import os
 import sys
 
-# python_requires will stop pip, but also let users who are using
-# 'python setup.py develop'.
+# We need to import setuptools so that 'python setup.py develop' works,
+# but it isn't needed for 'pip install .'.
 #
-if sys.version_info < (3, 7):
-    sys.stderr.write("Sherpa 4.14 (and later) requires Python 3.7 or later.\n\n")
-    sys.stderr.write("Please use Sherpa 4.13.1 if you need to use Python 3.6\n")
-    sys.exit(1)
-
-try:
-    import setuptools
-except:
-    print((
-        "WARNING\n"
-        "Could not import setuptools.\n"
-        "This might lead to an incomplete installation\n"
-    ), file=sys.stderr)
-
-# The module used to try to find the numpy module and error out if
-# that could not be found, but it seems simpler to just error out
-# here.
-#
-try:
-    from numpy.distutils import core
-
-except ImportError:
-    print((
-        "You need to install NUMPY in order to build Sherpa\n"
-        "Other dependencies will be automatically installed\n"
-        "Please install NUMPY (e.g. pip install numpy) and try again."
-    ), file=sys.stderr)
-    sys.exit(2)
+import setuptools
+from numpy.distutils.core import setup
 
 # How do we use local modules like helpers? This is a hack based on
 # discussions around
@@ -71,4 +45,4 @@ meta = dict(version=versioneer.get_version(),
             cmdclass=commands
             )
 
-core.setup(**meta)
+setup(**meta)
