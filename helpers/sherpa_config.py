@@ -19,7 +19,7 @@
 #
 
 
-from distutils.cmd import Command
+from setuptools import Command
 import os
 import sys
 

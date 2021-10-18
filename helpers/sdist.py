@@ -19,7 +19,7 @@
 #
 
 
-from distutils.command.sdist import sdist as _sdist
+from numpy.distutils.command.sdist import sdist as _sdist
 from numpy.distutils.misc_util import get_data_files
 from .deps import clean_deps
 

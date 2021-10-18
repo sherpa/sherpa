@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +20,9 @@
 
 
 from distutils.command.clean import clean as _clean
+
 from .deps import clean_deps
+
 
 class clean(_clean):
     def run(self):

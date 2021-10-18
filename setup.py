@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022
+# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
 import sys
 
 # python_requires will stop pip, but also let users who are using
@@ -51,6 +52,12 @@ except ImportError:
         "Please install NUMPY (e.g. pip install numpy) and try again."
     ), file=sys.stderr)
     sys.exit(2)
+
+# How do we use local modules like helpers? This is a hack based on
+# discussions around
+# https://github.com/python-versioneer/python-versioneer/issues/193
+#
+sys.path.append(os.path.dirname(__file__))
 
 from helpers import commands as sherpa_commands
 from helpers.extensions import static_ext_modules
