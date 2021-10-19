@@ -548,6 +548,7 @@ def test_counts(run_thread, fix_xspec):
     assert tlocals['pflux1'] == approx(1.6178938637, 1e-2)
 
 
+@requires_data
 @requires_fits
 @requires_xspec
 def test_stats_all(run_thread, fix_xspec):
