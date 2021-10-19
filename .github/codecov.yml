@@ -1,2 +1,30 @@
+codecov:
+  require_ci_to_pass: yes
+  #this handles notifications for bots (slack, gitter, etc)
+  notify:    
+    after_n_builds: 8 #wait for 8 of the builds to finish and send their reports to send a notice, default is 2
+    wait_for_ci: yes
+  
+coverage:
+  precision: 2
+  round: down
+  range: "70...100" # aiming for 70 min coverage to be "good". default
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+# This handles the github comment on PRs
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: no
+  after_n_builds: 8 # wait for 8 builds to finish and send their reports to make a comment, default 2
+
+# Fix issue with 'work/sherpa/sherpa' being considered a seperate directory 
 fixes:
   - "work/sherpa/sherpa/::"  # move path   e.g., "before/path" => "after/path"
