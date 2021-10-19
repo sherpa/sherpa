@@ -133,7 +133,14 @@ variable ``ASCDS_LIB`` is set to the include directory, when the conda
 environment is activated. Thus, all that is needed is to disable the
 build of external dependencies and to set directories. The following
 lists the lines in ``setup.cfg`` that need to be modified (adjust
-xspec version as needed)::
+xspec version as needed). Note, however, that due to the way that the setup
+and install process works, environment variables need to be expanded by hand.
+So, if your ``ASCDS_LIB`` is set to, e.g.,
+``/data/user/conda/envs/sherpaciao/lib``,
+then you need to expand a line like
+``fftw-include_dirs=${ASCDS_LIB}/../include``
+to ``fftw-include_dirs=/data/user/conda/envs/sherpaciao/lib/../include``
+in the following list::
 
     # GROUP Python module
     disable-group=True
