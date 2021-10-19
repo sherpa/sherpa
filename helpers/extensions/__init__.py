@@ -100,16 +100,60 @@ def build_xspec_ext(library_dirs, include_dirs, libraries, define_macros=None):
                   define_macros=define_macros,
                   depends=(get_deps(['astro/xspec_extension'])))
 
-def build_ext(name, library_dirs, include_dirs, libraries, **kwargs):
-    func = globals().get('build_'+name+'_ext')
-    return func(library_dirs, include_dirs, libraries, **kwargs)
-
 
 def build_lib_arrays(command, libname):
     library_dirs = getattr(command, libname+'_lib_dirs').split(' ')
     include_dirs = getattr(command, libname+'_include_dirs').split(' ')
     libraries = getattr(command, libname+'_libraries').split(' ')
     return [library_dirs, include_dirs, libraries]
+
+
+def clean(xs):
+    "Remove all '' entries from xs, returning the new list."
+    return [x for x in xs if x != '']
+
+
+def build_ext(command, name, *args, **kwargs):
+    """Set up the requesites for building an extension.
+
+    Parameters
+    ----------
+    command
+        Normally going to be self
+    name
+        The name of the extension - there must be a matching
+        build_name_ext routine in this module.
+    *args
+        If there are no related libraries to build then these
+        are not set, otherwise the extra names should be given
+        here.
+    **kwargs
+        Passed to the build_name_ext routine. Presently used to
+        pass the define_macros argument.
+
+    """
+
+    if len(args) == 0:
+        options = [name]
+    else:
+        options = args
+
+    libdirs = []
+    incdirs = []
+    libs = []
+    for option in options:
+        args = build_lib_arrays(command, option)
+        libdirs.extend(args[0])
+        incdirs.extend(args[1])
+        libs.extend(args[2])
+
+    libdirs = clean(libdirs)
+    incdirs = clean(incdirs)
+    libs = clean(libs)
+
+    builder = globals().get(f'build_{name}_ext')
+    return builder(libdirs, incdirs, libs, **kwargs)
+
 
 ###
 # Static Extensions

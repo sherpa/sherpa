@@ -23,6 +23,7 @@ import os
 
 from numpy.distutils.command.develop import develop as _develop
 
+
 class develop(_develop):
 
     def run(self):
@@ -30,6 +31,8 @@ class develop(_develop):
         sherpa_config = self.get_finalized_command('sherpa_config', True)
         self.announce("install stk and group extensions locally")
         if not sherpa_config.disable_stk:
-            shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
+            shutil.copyfile(sherpa_config.stk_location,
+                            os.path.join(os.getcwd(), 'stk.so'))
         if not sherpa_config.disable_group:
-            shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
+            shutil.copyfile(sherpa_config.group_location,
+                            os.path.join(os.getcwd(), 'group.so'))

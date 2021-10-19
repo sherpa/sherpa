@@ -21,7 +21,7 @@
 from distutils.cmd import Command
 import re
 
-from .extensions import build_ext, build_lib_arrays
+from .extensions import build_ext
 
 # What versions of XSPEC do we support? I am not sure what the
 # naming of the XSPEC components are, but let's stick with
@@ -129,21 +129,15 @@ class xspec_config(Command):
 
             return
 
+        # It is not obvious why we do this since the distribution
+        # fields should be set up correctly. Is this needed or left
+        # over from some old piece of code?
+        #
         if package not in dist_packages:
             dist_packages.append(package)
 
         if package not in dist_data:
             dist_data[package] = ['tests/test_*.py']
-
-        ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
-        ld2, inc2, l2 = build_lib_arrays(self, 'cfitsio')
-        ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
-        ld4, inc4, l4 = build_lib_arrays(self, 'wcslib')
-        ld5, inc5, l5 = build_lib_arrays(self, 'gfortran')
-
-        ld = clean(ld1 + ld2 + ld3 + ld4 + ld5)
-        inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
-        l = clean(l1 + l2 + l3 + l4 + l5)
 
         macros = []
 
@@ -162,6 +156,7 @@ class xspec_config(Command):
             if xspec_version > MAX_VERSION:
                 self.warn(f"XSPEC Version is greater than {MAX_VERSION}, which is the latest supported version for Sherpa")
 
-        extension = build_ext('xspec', ld, inc, l, define_macros=macros)
+        extension = build_ext(self, 'xspec', 'xspec', 'cfitsio', 'ccfits',
+                              'wcslib', 'gfortran', define_macros=macros)
 
         self.distribution.ext_modules.append(extension)
