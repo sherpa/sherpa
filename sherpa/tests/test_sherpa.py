@@ -27,6 +27,17 @@ from sherpa import ui
 from sherpa.utils.testing import requires_data
 
 
+def test_has_version():
+    """Just check we have a version setting.
+
+    It's not obvious how we should check the version string - it
+    can be 0+untagged.blah or a.b.c+n.... so it doesn't seem
+    worth checking.
+    """
+    assert isinstance(sherpa.__version__, str)
+    assert sherpa.__version__ != ''
+
+
 def test_include_dir():
     incdir = os.path.join(sherpa.get_include(), 'sherpa')
     assert os.path.isdir(incdir)
