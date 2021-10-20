@@ -82,7 +82,7 @@ jobs:
       if: matrix.test-data == 'submodule'
       run: |
         pip install -r test_requirements.txt
-        
+        pip install pytest-cov 
         #download the codecov uploader.
         # curl -Os https://uploader.codecov.io/latest/linux/codecov
         # chmod +x codecov
