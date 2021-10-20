@@ -34,15 +34,8 @@ smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 if [ ${TEST} == submodule ]; then
     # pip install pytest-cov codecov;
     conda install -yq pytest-cov;
-        
-    if [ "$(uname -s)" == "Darwin" ] ; then
-        curl -Os https://uploader.codecov.io/latest/macos/codecov ;
-    elif [ "$(uname -s)" == "Linux" ] ; then
-        curl -Os https://uploader.codecov.io/latest/linux/codecov ;
-    fi
-    chmod +x codecov;
+
     python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
-    codecov;
 fi
 
 # Run smoke test
@@ -54,13 +47,7 @@ if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     cd $HOME;
     conda install -yq pytest-cov;
     
-    if [ "$(uname -s)" == "Darwin" ] ; then
-        curl -Os https://uploader.codecov.io/latest/macos/codecov ;
-    elif [ "$(uname -s)" == "Linux" ] ; then
-        curl -Os https://uploader.codecov.io/latest/linux/codecov ;
-    fi
-    chmod +x codecov;
-    # This automatically picks up the sherpatest modile when TEST==package
+    # This automatically picks up the sherpatest module when TEST==package
     sherpa_test --cov sherpa --cov-report term || exit 1;
-    codecov;
 fi
+

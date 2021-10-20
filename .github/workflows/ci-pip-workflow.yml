@@ -84,12 +84,23 @@ jobs:
         pip install -r test_requirements.txt
         
         #download the codecov uploader.
-        curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov
+        # curl -Os https://uploader.codecov.io/latest/linux/codecov
+        # chmod +x codecov
 
         # cd ${HOME}
-        pytest --cov=sherpa
-        codecov
+        pytest --cov=sherpa --cov-report=xml
+        # codecov
+
+    - name: upload coverage
+      uses: codecov/codecov-action@v2
+      with:
+        # directory:./coverage/reports/
+        # fail_ci_if_error: true
+        # files: ./coverage1.xml,./coverage2.xml
+        # flags: unittests
+        # name: codecov-umbrella
+        # path_to_write_report: ./coverage/codecov_report.txt
+        verbose: true
 
     - name: Smoke Test
       env: 

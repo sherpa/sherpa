@@ -125,3 +125,14 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
         source .github/scripts/test.sh
+
+    - name: upload coverage
+      uses: codecov/codecov-action@v2
+      with:
+        # directory: ./coverage/reports/
+        # fail_ci_if_error: true
+        # files: ./coverage1.xml,./coverage2.xml
+        # flags: unittests
+        # name: codecov-umbrella
+        # path_to_write_report: ./coverage/codecov_report.txt
+        verbose: true
