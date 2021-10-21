@@ -54,15 +54,12 @@ except ImportError:
     ), file=sys.stderr)
     sys.exit(2)
 
+from helpers import commands as sherpa_commands
 from helpers.extensions import static_ext_modules
 
 import versioneer
 
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'sherpa/_version.py'
-versioneer.versionfile_build = 'sherpa/_version.py'
-versioneer.tag_prefix = ''
-versioneer.parentdir_prefix = 'sherpa-'
+commands = versioneer.get_cmdclass(sherpa_commands)
 
 meta = dict(name='sherpa',
             version=versioneer.get_version(),
@@ -124,7 +121,7 @@ meta = dict(name='sherpa',
             data_files=[('sherpa',
                          ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
             ext_modules=static_ext_modules,
-            cmdclass=versioneer.get_cmdclass(),
+            cmdclass=commands,
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',

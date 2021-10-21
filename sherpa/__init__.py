@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -45,9 +45,8 @@ import sys
 
 __all__ = ('citation', 'get_config', 'get_include', 'smoke')
 
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+from . import _version
+__version__ = _version.get_versions()['version']
 
 
 class Formatter(logging.Formatter):

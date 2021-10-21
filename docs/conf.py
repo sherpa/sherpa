@@ -616,7 +616,7 @@ def setup(app):
     #
     # Guessing at rebuild and types arguments.
     #
-    githash = sherpa._version.get_versions()['full']
+    githash = sherpa._version.get_versions()['full-revisionid']
     if githash.endswith('.dirty'):
         githash = githash[:-6]
 
