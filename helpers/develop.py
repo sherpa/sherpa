@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,32 +21,15 @@
 import shutil
 import os
 
-try:
-    from numpy.distutils.command.develop import develop as _develop
+from numpy.distutils.command.develop import develop as _develop
 
-    class develop(_develop):
+class develop(_develop):
 
-        def run(self):
-            _develop.run(self)
-            sherpa_config = self.get_finalized_command('sherpa_config', True)
-            self.announce("install stk and group extensions locally")
-            if not sherpa_config.disable_stk:
-                shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
-            if not sherpa_config.disable_group:
-                shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
-
-except ImportError:
-    from distutils.cmd import Command
-
-    class develop(Command):
-
-        user_options = []
-
-        def run(self):
-            print("develop command is not available without setuptools")
-
-        def initialize_options(self):
-            pass
-
-        def finalize_options(self):
-            pass
+    def run(self):
+        _develop.run(self)
+        sherpa_config = self.get_finalized_command('sherpa_config', True)
+        self.announce("install stk and group extensions locally")
+        if not sherpa_config.disable_stk:
+            shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
+        if not sherpa_config.disable_group:
+            shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))

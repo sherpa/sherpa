@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +19,11 @@
 #
 
 
+from setuptools.command.test import test
+
+import sys
+
+
 def set_xspec_chatter():
     try:
         from sherpa.astro import xspec
@@ -26,45 +32,25 @@ def set_xspec_chatter():
         # Well, it looks like xspec is not available. Passing.
         pass
 
-try:
-    from setuptools.command.test import test
 
-    import sys
+class PyTest(test):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
+    def initialize_options(self):
+        test.initialize_options(self)
+        self.pytest_args = []
 
-    class PyTest(test):
-        user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+    def finalize_options(self):
+        test.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+        if not self.pytest_args:
+            self.pytest_args = 'sherpa'
+        self.pytest_args = self.pytest_args.split(' ')
 
-        def initialize_options(self):
-            test.initialize_options(self)
-            self.pytest_args = []
-
-        def finalize_options(self):
-            test.finalize_options(self)
-            self.test_args = []
-            self.test_suite = True
-            if not self.pytest_args:
-                self.pytest_args = 'sherpa'
-            self.pytest_args = self.pytest_args.split(' ')
-
-        def run_tests(self):
-            set_xspec_chatter()
-            # import here, cause outside the eggs aren't loaded
-            import pytest
-            errno = pytest.main(self.pytest_args)
-            sys.exit(errno)
-
-except ImportError:
-    from distutils.cmd import Command
-
-    class PyTest(Command):
-        user_options = []
-
-        def initialize_options(self):
-            pass
-
-        def finalize_options(self):
-            pass
-
-        def run(self):
-            print("test command is not available without setuptools")
+    def run_tests(self):
+        set_xspec_chatter()
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
