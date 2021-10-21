@@ -49,7 +49,7 @@ recursive-include docs *
 
 # Quick Start Tutorial
 include notebooks/nbmapping.dat
-include notebooks/SherpaQuickStart.ipynb
+include notebooks/*.ipynb
 
 include sherpa/_version.py
 
