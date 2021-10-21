@@ -67,6 +67,11 @@ jobs:
       run: |
         python setup.py ${{ matrix.install-type }}
 
+    - name: freeze
+      run: |
+        pip freeze
+        conda list
+
     - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       env:

@@ -116,6 +116,13 @@ jobs:
         conda activate build
         python setup.py ${{ matrix.install-type }}
 
+    - name: freeze
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        pip freeze
+        conda list
+
     - name: Tests
       env:
         TEST: ${{ matrix.test-data }}
