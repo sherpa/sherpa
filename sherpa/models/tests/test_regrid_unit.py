@@ -863,18 +863,6 @@ def test_regrid1d_works_with_convolution_style():
 
     imdl = smdl + cmdl
 
-    # Set up the convolution kernel
-    #
-    gsmooth = Gauss1D()
-    psf = PSFModel('psf', gsmooth)
-
-    smoothed = psf(imdl)
-
-    # This is the model that will be evaluated
-    #
-    regrid = ModelDomainRegridder1D()
-    smoothed_regrid = regrid.apply_to(smoothed)
-
     # Ignoring edge effects, the smoothed step function drops from
     # x=100 down to x~120 (it is not clear why it doesn't smooth
     # below x=100, but maybe I've set up the convolution wrong).
@@ -885,7 +873,10 @@ def test_regrid1d_works_with_convolution_style():
     xfull = np.arange(0, 200, 0.5)
     xout = np.arange(101, 180, 0.5)
 
-    regrid.grid = xfull
+    # Set up the convolution kernel
+    #
+    gsmooth = Gauss1D()
+    psf = PSFModel('psf', gsmooth)
 
     # fake up a data object for the fold method
     # TODO: it is not clear to me what grid should be used here;
@@ -894,17 +885,26 @@ def test_regrid1d_works_with_convolution_style():
     d = Data1D('fake', xfull, xfull * 0)
     psf.fold(d)
 
-    y_regrid = smoothed_regrid(xout)
-
     # calculate the expected values
+    smoothed = psf(imdl)
     y_full = smoothed(xfull)
 
     # since the grids have the same binning, it is a simple extraction
     idx0, = np.where(xfull == xout[0])
     idx1, = np.where(xfull == xout[-1])
-    y_expected = y_full[idx0[0]:idx1[0] + 1]
+    assert idx0[0] == 202
+    assert idx1[0] == 359
+    y_expected = y_full[202:360]
 
-    assert_allclose(y_regrid, y_expected, atol=1e-10, rtol=0)
+    # This is the model that will be evaluated
+    #
+    regrid = ModelDomainRegridder1D()
+    regrid.grid = xfull
+
+    smoothed_regrid = regrid.apply_to(smoothed)
+    y_regrid = smoothed_regrid(xout)
+
+    assert y_regrid == pytest.approx(y_expected, abs=1e-10)
 
     # check that this is all worth it; i.e. that without regrid
     # you just get the constant term. If this fails then it does not
@@ -914,9 +914,11 @@ def test_regrid1d_works_with_convolution_style():
     #
     d = Data1D('fake', xout, xout * 0)
     psf.fold(d)
+
     y_check = smoothed(xout)
     y_expected = np.zeros(xout.size) + cmdl.c0.val
-    assert_allclose(y_check, y_expected, rtol=0, atol=1e-7)
+
+    assert y_check == pytest.approx(y_expected, abs=1e-7)
 
 
 def test_regrid1d_int_flux():
