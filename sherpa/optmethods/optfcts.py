@@ -739,7 +739,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                initsimplex=0, finalsimplex=9, step=None, iquad=1,
                verbose=0, reflect=True):
-    """Nelder-Mead Simplex optimization method.
+    r"""Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
     R. Mead [1]_, is a direct search method of optimization for
