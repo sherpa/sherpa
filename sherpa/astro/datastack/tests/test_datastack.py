@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2014, 2015, 2016, 2018, 2019, 2020, 2021
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,9 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import os
-import tempfile
 import logging
+import os
+import sys
+import tempfile
 
 import numpy as np
 
@@ -29,7 +30,12 @@ import pytest
 from sherpa.utils.testing import requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
-from sherpa.astro.datastack import DataStack
+
+# We can't seem to use a relative import here so hack the
+# path to allow it to be loaded (needed to support
+# pytest 6.2-ish 'pytest --import-mode=importlib')
+#
+sys.path.append(os.path.dirname(__file__))
 from acis_bkg_model import acis_bkg_model
 
 logger = logging.getLogger('sherpa')
