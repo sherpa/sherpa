@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -113,7 +114,7 @@ def test_fake_pha_incompatible_rmf(id, clean_astro_ui):
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
 @pytest.mark.parametrize("has_bkg", [True, False])
-def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
+def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
     """No background.
 
     See also test_fake_pha_add_background
@@ -123,6 +124,8 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
     A background dataset can be added, but it should
     not be used in the simulation.
     """
+
+    np.random.seed(20347)
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -168,6 +171,7 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
 
     # check we've faked counts (the scaling is such that it is
     # very improbable that this condition will fail)
+    #
     assert (faked.counts > counts).all()
 
     # For reference the predicted source signal is
@@ -183,11 +187,13 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui):
     assert faked.counts[1] > faked.counts[0]
 
 
-def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui):
+def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
     """Similar to test_fake_pha_basic but instead of passing in
     the RMF, we set it before. The result should be the same, so we
     don't have ot go through all the parameterization of that test.
     """
+
+    np.random.seed(20348)
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -234,13 +240,15 @@ def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui):
 
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_add_background(id, clean_astro_ui):
+def test_fake_pha_add_background(id, clean_astro_ui, reset_seed):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
 
     For simplicity we use perfect responses.
     """
+
+    np.random.seed(20349)
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -289,9 +297,11 @@ def test_fake_pha_add_background(id, clean_astro_ui):
 
 
 @pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_no_data(id, clean_astro_ui):
+def test_fake_pha_no_data(id, clean_astro_ui, reset_seed):
     """What happens if there is no data loaded at the id?
     """
+
+    np.random.seed(21347)
 
     ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
     elo = ebins[:-1]
@@ -340,12 +350,15 @@ def test_fake_pha_no_data(id, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_fake_pha_file(make_data_path, clean_astro_ui):
+def test_fake_pha_file(make_data_path, clean_astro_ui, reset_seed):
     '''Test fake_pha using real input file.
 
     Note that HEG orders -1 and +1 should really be treated spearately,
     but for this test we just need two files to load.
     '''
+
+    np.random.seed(22347)
+
     ui.set_source("gauss1d.g1")
     g1 = ui.get_source()
     g1.pos = 3
@@ -367,17 +380,19 @@ def test_fake_pha_file(make_data_path, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
+def test_fake_pha_multi_file(make_data_path, clean_astro_ui, reset_seed):
     '''Test fake_pha using multiple real input files.
 
     Note that HEG orders -1 and +1 should really be treated spearately,
     but for this test we just need two files to load.
     '''
+
+    np.random.seed(22349)
+
     ui.set_source("gauss1d.g1")
     g1 = ui.get_source()
     g1.pos = 3
     g1.FWHM = .5
-
 
     ui.fake_pha(None,
                 [make_data_path('3c120_heg_-1.arf.gz'),
@@ -395,13 +410,16 @@ def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
     assert data.counts.sum() < 10000
 
 
-def test_fake_pha_background_model(clean_astro_ui):
+def test_fake_pha_background_model(clean_astro_ui, reset_seed):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
 
     For simplicity we use perfect responses.
     """
+
+    np.random.seed(27347)
+
     id = 'qwerty'
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
