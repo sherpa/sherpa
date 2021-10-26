@@ -131,10 +131,4 @@ jobs:
       with:
         # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
         files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
-        # directory: ./coverage/reports/
-        # fail_ci_if_error: true
-        # files: ./coverage1.xml,./coverage2.xml
-        # flags: unittests
-        # name: codecov-umbrella
-        # path_to_write_report: ./coverage/codecov_report.txt
         verbose: true
