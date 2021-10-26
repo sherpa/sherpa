@@ -116,13 +116,6 @@ jobs:
         conda activate build
         python setup.py ${{ matrix.install-type }}
 
-    - name: freeze
-      run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
-        conda activate build
-        pip freeze
-        conda list
-
     - name: Tests
       env:
         TEST: ${{ matrix.test-data }}
@@ -136,6 +129,8 @@ jobs:
     - name: upload coverage
       uses: codecov/codecov-action@v2
       with:
+        # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
+        files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
         # directory: ./coverage/reports/
         # fail_ci_if_error: true
         # files: ./coverage1.xml,./coverage2.xml

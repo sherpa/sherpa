@@ -33,7 +33,7 @@ smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 # Install coverage tooling and run tests using setuptools
 if [ ${TEST} == submodule ]; then
     # pip install pytest-cov codecov;
-    conda install -yq pytest-cov codecov; # adding codecov to see if removing it causes the test failure???
+    conda install -yq pytest-cov;
 
     python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
 fi
@@ -45,7 +45,7 @@ sherpa_smoke ${smokevars} || exit 1
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     cd $HOME;
-    conda install -yq pytest-cov codecov; # adding codecov to see if removing it causes the test failure???
+    conda install -yq pytest-cov;
     
     # This automatically picks up the sherpatest module when TEST==package
     sherpa_test --cov sherpa --cov-report term || exit 1;
