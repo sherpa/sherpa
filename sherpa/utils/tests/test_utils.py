@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -648,6 +649,9 @@ def test_create_expr_mask_size_error(mask):
                           (numpy.float32(3), "3.0")])
 def test_create_expr_singleton(val, expected):
     """Simple test of create_expr with no mask."""
+
+    # Work around #1334
+    str(numpy.float32(3))
 
     out = utils.create_expr(numpy.asarray([val]))
     assert out == expected

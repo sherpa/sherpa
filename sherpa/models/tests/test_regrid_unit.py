@@ -895,6 +895,9 @@ def test_regrid1d_works_with_convolution_style():
 
     y_regrid = smoothed_regrid(xout)
 
+    # work around #1334
+    y_regrid = smoothed_regrid(xout)
+
     # calculate the expected values
     y_full = smoothed(xfull)
 
