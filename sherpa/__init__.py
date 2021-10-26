@@ -35,6 +35,7 @@ the standard subpackages, use ``import sherpa.all`` or
 """
 
 import datetime
+import importlib
 import logging
 import os
 import os.path
@@ -856,14 +857,14 @@ def _install_test_deps():
 
     for dep in deps:
         try:
-            __import__(dep)
+            importlib.import_module(dep)
         except ImportError:
             install(dep)
 
     for plugin_name in pytest_plugins:
         module = plugin_name.replace("-", "_")
         try:
-            __import__(module)
+            importlib.import_module(module)
         except ImportError:
             install(plugin_name)
             installed_plugins.append(module)

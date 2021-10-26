@@ -21,6 +21,7 @@ import copyreg as copy_reg
 import pickle
 from configparser import ConfigParser
 import copy
+import importlib
 import logging
 import sys
 import os
@@ -101,7 +102,7 @@ def _is_subclass(t1, t2):
 def construct_ufunc(modname, funcname):
     module = sys.modules.get(modname)
     if module is None:
-        module = __import__(modname)
+        module = importlib.import_module(modname)
     return getattr(module, funcname)
 
 
