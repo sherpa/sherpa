@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -645,7 +646,8 @@ def test_create_expr_mask_size_error(mask):
 
 @pytest.mark.parametrize("val,expected",
                          [(numpy.int16(3), "3"),
-                          (numpy.float32(3), "3.0")])
+                          pytest.param(numpy.float32(3), "3.0", marks=pytest.mark.xfail)  # see #1334
+                          ])
 def test_create_expr_singleton(val, expected):
     """Simple test of create_expr with no mask."""
 

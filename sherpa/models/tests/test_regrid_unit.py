@@ -848,6 +848,7 @@ class ReNormalizerModel1DInt(CompositeModel, ArithmeticModel):
 
 # TODO: more tests when regridding the models
 
+@pytest.mark.xfail  # see #1334
 def test_regrid1d_works_with_convolution_style():
     """This doesn't really test more than the previous
     model-evaluation tests.
