@@ -86,7 +86,6 @@ jobs:
 
         pytest --cov=sherpa --cov-report=xml
 
-
     - name: upload coverage
       uses: codecov/codecov-action@v2
       with:
