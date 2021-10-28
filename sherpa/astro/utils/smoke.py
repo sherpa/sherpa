@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import importlib
 import logging
 import os
 import sys
@@ -70,7 +72,7 @@ def run(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
         @unittest.skipIf(not fits, reason="FITS dependency not requested")
         def test_fits_dependency(self):
             try:
-                __import__(fits, globals(), locals())
+                importlib.import_module(fits)
             except ImportError:
                 missing_requirements.append(_import_error(fits, "fits"))
                 raise
