@@ -19,7 +19,6 @@
 #
 
 
-from .clean import clean
 from .develop import develop
 from .sdist import sdist
 from .test import PyTest
@@ -30,7 +29,6 @@ from numpy.distutils.command.build_ext import build_ext
 
 commands = {
     'build_ext': build_ext,
-    'clean': clean,
     'sdist': sdist,
     'develop': develop,
     'test': PyTest,
