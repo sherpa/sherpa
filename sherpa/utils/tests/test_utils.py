@@ -76,38 +76,44 @@ def test_NoNewAttributesAfterInit():
         c.z = 5
 
 
-def test_export_method():
-    class C():
+class C():
 
-        def m(self, x, y=2):
-            'Instance method m()'
-            return x * y
+    def m(self, x, y=2):
+        'Instance method m()'
+        return x * y
 
-        def margs(self, x, y=2, *args):
-            'Instance method margs() with *args'
-            return x * y + len(args)
+    def margs(self, x, y=2, *args):
+        'Instance method margs() with *args'
+        return x * y + len(args)
 
-        def kwargs(self, x, y=2, **kwargs):
-            'Instance method kwargs() with **kwargs'
-            return x * y + 2 * len(kwargs)
+    def kwargs(self, x, y=2, **kwargs):
+        'Instance method kwargs() with **kwargs'
+        return x * y + 2 * len(kwargs)
 
-        def bargs(self, x, y=2, *args, **kwargs):
-            'Instance method bargs() with *args and **kwargs'
-            return x * y + len(args) + 2 * len(kwargs)
+    def bargs(self, x, y=2, *args, **kwargs):
+        'Instance method bargs() with *args and **kwargs'
+        return x * y + len(args) + 2 * len(kwargs)
 
-        @classmethod
-        def cm(klass, x, y=2):
-            'Class method cm()'
-            return x * y
+    @classmethod
+    def cm(klass, x, y=2):
+        'Class method cm()'
+        return x * y
 
-        @staticmethod
-        def sm(x, y=2):
-            'Static method sm()'
-            return x * y
+    @staticmethod
+    def sm(x, y=2):
+        'Static method sm()'
+        return x * y
+
+
+def test_export_method_basic():
 
     c = C()
 
-    # Basic usage
+    # Basic usage. The error message depends on
+    #  a) Python version
+    #  b) what method is being wrapped
+    # (before Python 3.10 it didn't).
+    #
     for meth in (c.m, c.margs, c.kwargs, c.bargs, c.cm, c.sm):
         m = utils.export_method(meth)
 
@@ -121,16 +127,39 @@ def test_export_method():
         with pytest.raises(TypeError) as exc:
             m()
 
-        emsg = "{}() ".format(meth.__name__) + \
+        emsg = f"{meth.__name__}() " + \
             "missing 1 required positional argument: 'x'"
-        assert str(exc.value) == emsg
+
+        if meth.__name__ == 'sm':
+            # In Python 3.10 we see C.sm rather than sm
+            # so we search for both. We could be more explicit
+            # and check on the Python version (e.g. for >= 3.10)
+            # but it doesn't seem worth it. It's interesting it's
+            # only for the static method.
+            #
+            assert str(exc.value) in [emsg, 'C.' + emsg]
+        else:
+            assert str(exc.value) == emsg
+
+
+def test_export_method_args_call():
 
     # Check that *args/**kwargs are handled correctly for methods;
     # should perhaps be included above to avoid repeated calls
     # to export_method?
     #
+    c = C()
     meth = utils.export_method(c.margs)
     assert meth(3, 7, "a", "b") == 23
+
+    meth = utils.export_method(c.bargs)
+    assert meth(3, 7, 14, 15, foo=None) == 25
+
+
+def test_export_method_args_errors():
+
+    c = C()
+    meth = utils.export_method(c.margs)
 
     with pytest.raises(TypeError) as exc:
         meth(12, dummy=None)
@@ -148,8 +177,8 @@ def test_export_method():
         "but 3 were given"
     assert str(exc.value) in emsg
 
-    meth = utils.export_method(c.bargs)
-    assert meth(3, 7, 14, 15, foo=None) == 25
+
+def test_export_method_non_method():
 
     # Non-method argument
     def f(x):
@@ -157,7 +186,11 @@ def test_export_method():
 
     assert utils.export_method(f) is f
 
+
+def test_export_method_names():
+
     # Name and module name
+    c = C()
     m = utils.export_method(c.m, 'foo', 'bar')
     assert m.__name__ == 'foo'
     assert m.__module__ == 'bar'
