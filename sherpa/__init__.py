@@ -745,30 +745,27 @@ def get_config():
 
     filename = "sherpa-standalone.rc"
 
-    home_dir = None
-    config = None
+    # The behavior depends on whether the NOSHERPARC
+    # environment variable is set.
+    #
+    if 'NOSHERPARC' not in os.environ:
 
-    # If NOSHERPARC is set, read in system config file
-    # ignore any user config file
-    if 'NOSHERPARC' in os.environ:
-        return os.path.join(os.path.dirname(__file__), filename)
+        # If SHERPARC is set, try that
+        #
+        if 'SHERPARC' in os.environ:
+            config = os.environ.get('SHERPARC')
+            if os.path.isfile(config):
+                return config
 
-    # If SHERPARC is set, read in config file from there,
-    # and ignore default location
-    if 'SHERPARC' in os.environ:
-        config = os.environ.get('SHERPARC')
-        if os.path.isfile(config):
-            return config
+        # Can we use the HOME directory?
+        #
+        home_dir = os.environ.get('HOME')
+        if home_dir is not None:
+            config = os.path.join(home_dir, f'.{filename}')
+            if os.path.isfile(config):
+                return config
 
-    # SHERPARC was not set, so look for .sherpa.rc in default
-    # location, which is user's home directory.
-    home_dir = os.environ.get('HOME')
-    config = os.path.join(home_dir, '.'+filename)
-
-    if os.path.isfile(config):
-        return config
-
-    # If no user config file is set, fall back to system config file
+    # Fall back to the system config file
     return os.path.join(os.path.dirname(__file__), filename)
 
 
