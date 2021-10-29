@@ -745,7 +745,7 @@ def get_config():
     filename = "sherpa-standalone.rc"
 
     # The behavior depends on whether the NOSHERPARC
-    # environment varibale is set.
+    # environment variable is set.
     #
     if 'NOSHERPARC' not in os.environ:
 
