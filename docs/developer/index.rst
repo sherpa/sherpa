@@ -166,6 +166,14 @@ xspec version as needed)::
     xspec_lib_dirs = ${ASCDS_LIB}
     xspec_include_dirs = ${ASCDS_LIB}/../include
 
+.. note::
+   Due to the way that the setup and install process works, environment
+   variables need to be expanded by hand. So, if your ``ASCDS_LIB`` is set to
+   ``/data/user/conda/envs/sherpaciao/lib`` then you need to expand a line like
+   ``fftw-include_dirs=${ASCDS_LIB}/../include``
+   to ``fftw-include_dirs=/data/user/conda/envs/sherpaciao/lib/../include``
+   in the list above.
+
 To avoid accidentially commiting the modified ``setup.cfg`` into git,
 the file can be marked as "assumed unchanged".
 
