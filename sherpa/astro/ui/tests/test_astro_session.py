@@ -28,7 +28,7 @@ from sherpa.data import Data1D
 from sherpa.models import Const1D
 from sherpa.ui.utils import Session
 from sherpa.utils.err import IdentifierErr
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
 # bug #303
@@ -52,6 +52,7 @@ def test_show_bkg_model_with_bkg(make_data_path):
 
 
 # Fix 476 - this should be in sherpa/ui/tests/test_session.py
+@requires_group
 def test_zero_division_calc_stat():
     ui = AstroSession()
     x = numpy.arange(100)

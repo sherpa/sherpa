@@ -28,7 +28,7 @@ from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.utils import parse_expr
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
 def _monotonic_warning(response_type, filename):
@@ -881,6 +881,7 @@ def test_rmf_get_x_unit():
 
 
 # https://github.com/sherpa/sherpa/pull/766
+@requires_group
 def test_ungroup():
     '''Make sure that ungrouped data can be ungrouped.
 
@@ -1066,6 +1067,7 @@ def test_get_filter_channel_ungrouped(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_get_filter_channel_grouped(make_data_path):
     """What does get_filter return for grouped channel data.
 
@@ -1096,6 +1098,7 @@ def test_get_filter_channel_grouped(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_get_filter_channel_grouped_prefiltered(make_data_path):
     """Add an energy filter before switching to channel space
 
@@ -1124,6 +1127,7 @@ def test_get_filter_channel_grouped_prefiltered(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_nofilter(analysis, make_data_path):
     """Can we change grouping (no filter).
@@ -1218,6 +1222,7 @@ def test_get_noticed_channels(analysis, make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_filter(analysis, make_data_path):
     """Can we change grouping with energy units.
@@ -1250,6 +1255,7 @@ def test_grouping_filter(analysis, make_data_path):
 
 @requires_data
 @requires_fits
+@requires_group
 @pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
 def test_grouping_filtering_binning(analysis, make_data_path):
     """Low-level testing of test_grouping_filtering.
@@ -2538,6 +2544,7 @@ def test_pha_channel0_filtering():
     assert p0.get_dep(filter=True) == pytest.approx(counts[2:7])
 
 
+@requires_group
 def test_pha_channel0_grouping():
     """If channel starts at 0 does grouping still work?"""
 
@@ -2584,6 +2591,7 @@ def test_pha_channel0_grouping():
     assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
 
 
+@requires_group
 def test_pha_channel0_subtract():
     """If channel starts at 0 can we subtract the background?"""
 

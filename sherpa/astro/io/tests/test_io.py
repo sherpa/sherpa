@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,7 +25,8 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
+    requires_xspec
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
 
@@ -83,6 +85,7 @@ def assert_staterr(use_errors):
 
 @requires_fits
 @requires_data
+@requires_group
 @pytest.mark.parametrize("use_errors", [True, False])
 def test_scaling_staterr(make_data_path, use_errors):
     '''Regression test for https://github.com/sherpa/sherpa/issues/800
@@ -107,6 +110,7 @@ def test_scaling_staterr(make_data_path, use_errors):
 
 @requires_fits
 @requires_data
+@requires_group
 @pytest.mark.parametrize("use_errors", [True, False])
 def test_scaling_staterr_pha2(make_data_path, use_errors):
     '''Regression test for https://github.com/sherpa/sherpa/issues/800
