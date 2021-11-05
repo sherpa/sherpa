@@ -30,12 +30,10 @@ if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
 if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
 smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 
-# Install coverage tooling and run tests using setuptools
 if [ ${TEST} == submodule ]; then
-    # pip install pytest-cov codecov;
-    conda install -yq pytest-cov codecov;
-    python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
-    codecov;
+    conda install -yq pytest-cov;
+
+    python setup.py -q test -a "--cov sherpa --cov-report xml" || exit 1;
 fi
 
 # Run smoke test
@@ -45,8 +43,9 @@ sherpa_smoke ${smokevars} || exit 1
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     cd $HOME;
-    conda install -yq pytest-cov codecov;
-    # This automatically picks up the sherpatest modile when TEST==package
-    sherpa_test --cov sherpa --cov-report term || exit 1;
-    codecov;
+    conda install -yq pytest-cov;
+    
+    # This automatically picks up the sherpatest module when TEST==package
+    sherpa_test --cov sherpa --cov-report xml || exit 1;
 fi
+

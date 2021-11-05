@@ -82,10 +82,16 @@ jobs:
       if: matrix.test-data == 'submodule'
       run: |
         pip install -r test_requirements.txt
-        pip install pytest-cov codecov
-        # cd ${HOME}
-        pytest --cov=sherpa
-        codecov
+        pip install pytest-cov 
+
+        pytest --cov=sherpa --cov-report=xml
+
+    - name: upload coverage
+      uses: codecov/codecov-action@v2
+      with:
+        # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
+        files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
+        verbose: true
 
     - name: Smoke Test
       env: 
