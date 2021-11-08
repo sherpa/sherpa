@@ -81,7 +81,14 @@ jobs:
         # Ensure we use an old-enough setuptools: see issue #1456
         pip install 'setuptools < 60'
 
-    - name: Build Sherpa
+    - name: Build Sherpa (install)
+      if: matrix.install-type == 'install'
+      shell: bash
+      run: |
+        python setup.py ${{ matrix.install-type }}
+
+    - name: Build Sherpa (develop)
+      if: matrix.install-type == 'develop'
       shell: bash
       run: |
         python setup.py ${{ matrix.install-type }}
