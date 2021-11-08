@@ -81,22 +81,28 @@ jobs:
         pip install 'setuptools < 60'
 
     - name: Build Sherpa
+      shell: bash
       run: |
         python setup.py ${{ matrix.install-type }}
 
+    - name: install pytest-xvfb
+      if: matrix.test-data == 'package'
+      shell: bash
+      run: |
+        pip install pytest-xvfb
+
     - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
+      shell: bash
       env:
         TEST: ${{ matrix.test-data }}
       run: |
         git submodule deinit -f .
-        if [ ${TEST} == package ] ; then
-            pip install pytest-xvfb
-        fi
         sherpa_test || exit 1
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
+      shell: bash
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov
@@ -111,6 +117,7 @@ jobs:
         verbose: true
 
     - name: Smoke Test
+      shell: bash
       env:
         FITS: ${{ matrix.fits-pkg }}
       run: |
