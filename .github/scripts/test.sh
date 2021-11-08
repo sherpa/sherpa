@@ -10,9 +10,6 @@ if [ "`uname -s`" == "Darwin" ] ; then
     fi
 fi
 
-# For now do not run tests with the documentation build
-if [ "${DOCS}" == true ]; then exit 0; fi
-
 # No test data, then remove submodule (git automatically clones recursively)
 if [ ${TEST} == none ];
  then git submodule deinit -f .;
@@ -49,3 +46,4 @@ if [ ${TEST} == package ] || [ ${TEST} == none ]; then
     sherpa_test --cov sherpa --cov-report xml || exit 1;
 fi
 
+# End

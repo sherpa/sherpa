@@ -1,6 +1,6 @@
 #!/usr/bin/env bash -e
 
-ds9_base_url=http://ds9.si.edu/download/
+ds9_base_url=https://ds9.si.edu/download/
 
 # variable $CONDA_PREFIX should be defined by conda by using conda activate (in setup_conda.sh)
 if [[ "x${CONDA_PREFIX}" == "x" ]];

@@ -42,14 +42,11 @@ if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
-if [ "${DOCS}" == true ];
- then export DOCSBUILD="sphinx sphinx_rtd_theme graphviz";
-fi
 
-echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
+echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
 
 # Create and activate conda build environment
-conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}
+conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
 
 conda activate build
 
