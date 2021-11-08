@@ -138,6 +138,21 @@ jobs:
         conda activate build
         python setup.py ${{ matrix.install-type }}
 
+    - name: Install the test data?
+      shell: bash
+      if: matrix.test-data == 'package'
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        pip install ./sherpa-test-data
+        pip install pytest-xvfb
+
+    - name: Remove submodule
+      shell: bash
+      if: matrix.test-data == 'none' || matrix.test-data == 'package'
+      run: |
+        git submodule deinit -f .
+
     - name: Tests
       shell: bash
       env:

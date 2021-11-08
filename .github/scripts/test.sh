@@ -10,18 +10,6 @@ if [ "`uname -s`" == "Darwin" ] ; then
     fi
 fi
 
-# No test data, then remove submodule (git automatically clones recursively)
-if [ ${TEST} == none ];
- then git submodule deinit -f .;
-fi
-
-# Install test data as a package, then remove the submodule
-if [ ${TEST} == package ];
- then pip install ./sherpa-test-data;
- pip install pytest-xvfb;
- git submodule deinit -f .;
-fi
-
 # Build smoke test switches, to ensure requested dependencies are reachable
 if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
 if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
