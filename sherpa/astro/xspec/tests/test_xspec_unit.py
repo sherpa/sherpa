@@ -32,7 +32,6 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 
 from sherpa.models.basic import Const1D
-from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
 
