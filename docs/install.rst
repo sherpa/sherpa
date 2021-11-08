@@ -435,6 +435,20 @@ functionality or fixing a bug (the ``[test]`` term just ensures that
 This will need to be re-run when any of the extension models - that is,
 the compiled code - is changed.
 
+Testing Sherpa (tox)
+^^^^^^^^^^^^^^^^^^^^
+
+The `tox <https://pypi.org/project/tox/>`_ tool can be used to test Sherpa::
+
+  pip install tox
+  tox -e test
+
+This re-builds Sherpa and tests the result in a separate virtual environment.
+At present there is no support for running the optional tests - that is,
+using the optional data files, running with the optional
+:term:`Astropy` and :term:`matplotlib` packages, or running the
+:term:`DS9` tests - using tox.
+
 Testing Sherpa
 ^^^^^^^^^^^^^^
 

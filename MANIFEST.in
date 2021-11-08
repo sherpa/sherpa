@@ -38,5 +38,6 @@ include sherpa/_version.py
 
 # Tests
 include pytest.ini
+include tox.ini
 include test_requirements.txt
 include .coveragerc

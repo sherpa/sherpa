@@ -58,7 +58,12 @@ import versioneer
 
 TEST_HELP = """
 Note: tests are no-longer run using 'python setup.py test'. Instead
-you will need to use pytest. For example:
+you will need to use tox:
+
+    pip install tox
+    tox -e test
+
+You can also run pytest directly:
 
     pip install -e .[test]
     pytest
