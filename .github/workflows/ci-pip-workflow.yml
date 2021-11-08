@@ -68,11 +68,12 @@ jobs:
 
     - name: Pip Testing Setup - Dependencies
       env:
-        NUMPYVER: ${{ matrix.numpy-pkg }}           #: Required: numpy OR '...'
-        FITSBUILD: ${{ matrix.fits-pkg }}                   #: Optional: '' OR '...'
-        MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }} #: Optional: '' OR '...'
+        NUMPYVER: ${{ matrix.numpy-pkg }}
+        FITSBUILD: ${{ matrix.fits-pkg }}
+        MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }}
       shell: bash
       run: |
+        # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
