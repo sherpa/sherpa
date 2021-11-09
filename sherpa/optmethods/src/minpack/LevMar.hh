@@ -7,7 +7,7 @@
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the
 // following conditions are met:
-//
+//o
 // 1. Redistributions of source code must retain the above
 // copyright notice, this list of conditions and the following
 // disclaimer.
@@ -80,17 +80,19 @@ namespace minpack {
 
 
   template <typename Func, typename Data, typename real >
-  class LevMar : public sherpa::Opt<Data, real> {
+  class LevMar {
 
   public:
-    LevMar( Func func, Data xdata ) : sherpa::Opt<Data, real>( xdata ),
-                               usr_func( func ) { }
+    LevMar( Func func, Data xdata ) : 
+      usr_func( func ), usr_data(xdata) { }
 
   protected:
 
     Func usr_func;
-    Func get_usr_func( ) { return usr_func; }
-
+    Data usr_data;
+    // Func get_usr_func( ) { return usr_func; }
+    // Data get_usr_data( ) { return usr_data; }
+    
     //
     // c     **********
     // c
@@ -1410,28 +1412,26 @@ namespace minpack {
       : LevMar<Func, Data, real>( func, xdata ), myfvec( mfct ) { }
 
     int operator( )( int n, real ftol, real xtol, real gtol, int maxfev,
-                     real epsfcn, real factor, int nprint, std::vector<real>& x,
+                     real epsfcn, real factor, int nprint, sherpa::Array1D<real>& x,
                      int& nfev, real& fmin, const sherpa::Bounds<real>& bounds,
-                     std::vector<real>& fjac ) {
+                     sherpa::Array1D<real>& fjac ) {
 
       int info = 0;
 
       try {
 
-        if ( sherpa::Opt<Data, real>::are_pars_outside_limits( n, x, bounds ) )
+        if ( bounds.are_pars_outside_limits( n, x ) )
 	  throw sherpa::OptErr( sherpa::OptErr::OutOfBound );
 
 	int m = static_cast<int>( myfvec.size( ) );
 
-	std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n ), wa4( m );
-	std::vector<int> ipvt( n );
+	sherpa::Array1D<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n ), wa4( m );
+	sherpa::Array1D<int> ipvt( n );
 
 	const int mode = 1;
 	const int ldfjac = m;
 
-        Func usr_func = LevMar<Func, Data, real>::get_usr_func( );
-        Data lm_usr_data = sherpa::Opt<Data, real>::get_usr_data();
-	info = lmdif( usr_func, lm_usr_data, m, n, &x[0], &myfvec[0], ftol,
+	info = lmdif( this->usr_func, this->usr_data, m, n, &x[0], &myfvec[0], ftol,
                       xtol, gtol, maxfev, epsfcn, &diag[0], mode, factor,
                       nprint, nfev, &fjac[0], ldfjac, &ipvt[0], &qtf[0],
                       &wa1[ 0 ], &wa2[0], &wa3[0], &wa4[0], bounds );
@@ -1465,11 +1465,11 @@ namespace minpack {
 
     }
 
-    virtual real eval_func( int maxnfev, const sherpa::Bounds<real>& limits,
-                            int npar, std::vector<real>& par, int& nfev ) {
-
-      if ( sherpa::Opt<Data, real>::are_pars_outside_limits( npar, par,
-                                                             limits ) ) {
+    // de
+    virtual real eval_func( int maxnfev, const sherpa::Bounds<real>& bounds,
+                            int npar, sherpa::Array1D<real>& par, int& nfev ) {
+      
+      if ( bounds.are_pars_outside_limits( npar, par ) ) {
         return std::numeric_limits< real >::max( );
       }
 
@@ -1478,8 +1478,7 @@ namespace minpack {
 
       int mymfct = static_cast<int>( myfvec.size( ) );
 
-      Data my_usr_data = sherpa::Opt<Data, real>::get_usr_data();
-      this->usr_func( mymfct, npar, &par[0], &myfvec[0], ierr, my_usr_data );
+      this->usr_func( mymfct, npar, &par[0], &myfvec[0], ierr, this->usr_data );
 
       real fval = pow( this->enorm( mymfct, &myfvec[0] ), 2.0 );
       if ( EXIT_SUCCESS != ierr )
@@ -1491,25 +1490,22 @@ namespace minpack {
 
     }
 
-
-    // de
-    int minimize( int maxnfev, const sherpa::Bounds<real>& limits, real tol,
-                  int npar, std::vector<real>& par, real& fmin, int& nfev ) {
+    int minimize( int maxnfev, real tol, const sherpa::Bounds<real>& bounds,
+                  int npar, sherpa::Array1D<real>& par, real& fmin, int& nfev ) {
       int nprint = 0;
       real epsfcn =
 	std::sqrt( std::numeric_limits< real >::epsilon( ) );
       real factor = 100.0;
-
-      std::vector<real> diag( npar );
-      std::vector<real> fjac( myfvec.size() * npar );
+      sherpa::Array1D<real> diag( npar );
+      sherpa::Array1D<real> fjac( myfvec.size() * npar );
       return this->operator( )( npar, tol, tol, tol, maxnfev, epsfcn, factor,
-				nprint, par, nfev, fmin, limits, fjac );
+				nprint, par, nfev, fmin, bounds, fjac );
     }
     // de
 
   protected:
 
-    std::vector< real > myfvec;
+    sherpa::Array1D< real > myfvec;
 
 
     //
@@ -1591,7 +1587,7 @@ namespace minpack {
     //
     virtual int fdjac2( Func fcn, int m, int n, real *x,  /* dtn const dtn */ real *fvec,
                         real *fjac, int ldfjac, real epsfcn, real *wa, Data xptr,
-                        const std::vector<real>& high ) {
+                        const sherpa::Array1D<real>& high ) {
 
       /* Local variables */
       real h;
@@ -1827,8 +1823,8 @@ namespace minpack {
 	       real *wa2, real *wa3, real *wa4,
                const sherpa::Bounds<real>& bounds ) {
 
-      const std::vector<real>& low = bounds.get_lb();
-      const std::vector<real>& high = bounds.get_ub();
+      const sherpa::Array1D<real>& low = bounds.get_lb();
+      const sherpa::Array1D<real>& high = bounds.get_ub();
 
       // Initialized data
 
@@ -2188,7 +2184,7 @@ namespace minpack {
 
     int fdjac2( Func fcn, int m, int n, real *x, real *fvec, real *fjac,
                 int ldfjac, real epsfcn, real *wa, Data xptr,
-                const std::vector<real>& high ) {
+                const sherpa::Array1D<real>& high ) {
       int iflag = 2;
       jacobian(m, n, x, fvec, fjac, iflag, xjacobian);
       return iflag;
@@ -2202,23 +2198,22 @@ namespace minpack {
   public:
 
     int operator( )( int n, real ftol, real xtol, real gtol, int maxfev,
-                     real factor, int nprint, std::vector<real>& x,
-                     int& nfev, int& njev, real& fmin, std::vector<real>& fjac,
+                     real factor, int nprint, sherpa::Array1D<real>& x,
+                     int& nfev, int& njev, real& fmin, sherpa::Array1D<real>& fjac,
                      const sherpa::Bounds<real>& bounds, int& rank ) {
 
       int m = static_cast<int>( myfvec.size( ) );
 
-      std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
-      std::vector<real> wa4( m );
-      std::vector<int> ipvt( n );
+      sherpa::Array1D<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
+      sherpa::Array1D<real> wa4( m );
+      sherpa::Array1D<int> ipvt( n );
 
       const int mode = 1;
       const int ldfjac = m;
 
-      Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
-      const std::vector<real>& low = bounds.get_lb();
-      const std::vector<real>& high = bounds.get_ub();
-      int info = lmder_2( usr_fcn, usrdata, m, n, &x[0],
+      const sherpa::Array1D<real>& low = bounds.get_lb();
+      const sherpa::Array1D<real>& high = bounds.get_ub();
+      int info = lmder_2( usr_fcn, this->usr_data, m, n, &x[0],
                           &myfvec[0], &fjac[0], ldfjac, ftol, xtol, gtol,
                           maxfev, &diag[0], mode, factor, nprint,
                           nfev, njev, &ipvt[0], &qtf[0], &wa1[0], &wa2[0],
@@ -2240,31 +2235,29 @@ namespace minpack {
 
     int fitme( int n, real ftol, real xtol,
                real gtol, int maxfev, real epsfcn,
-               real factor, int nprint, std::vector<real>& x,
-               int& nfev, int& njev, real& fmin, std::vector<real>& fjac,
+               real factor, int nprint, sherpa::Array1D<real>& x,
+               int& nfev, int& njev, real& fmin, sherpa::Array1D<real>& fjac,
                const sherpa::Bounds<real>& bounds, int& rank ) {
 
       int info = 0;
 
       try {
 
-        if ( sherpa::Opt<Data, real>::are_pars_outside_limits( n, x,
-                                                               bounds ) )
+        if ( this->usr_data.are_pars_outside_limits( n, x ) )
           throw sherpa::OptErr( sherpa::OptErr::OutOfBound );
 
 	int m = static_cast<int>( myfvec.size( ) );
 
-	std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
-	std::vector<real> wa4( m );
-	std::vector<int> ipvt( n );
+	sherpa::Array1D<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
+	sherpa::Array1D<real> wa4( m );
+	sherpa::Array1D<int> ipvt( n );
 
 	const int mode = 1;
 	const int ldfjac = m;
 
-        Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
-        const std::vector<real>& low = bounds.get_lb();
-        const std::vector<real>& high = bounds.get_ub();
-	info = lmder( usr_fcn, usrdata, m, n, &x[0], &myfvec[0], &fjac[0],
+        const sherpa::Array1D<real>& low = bounds.get_lb();
+        const sherpa::Array1D<real>& high = bounds.get_ub();
+	info = lmder( usr_fcn, this->usr_data, m, n, &x[0], &myfvec[0], &fjac[0],
                       ldfjac, ftol, xtol, gtol, maxfev, &diag[0], mode, factor,
                       nprint, nfev, njev, &ipvt[0], &qtf[0], &wa1[ 0 ],
                       &wa2[0], &wa3[0], &wa4[0], low, high);
@@ -2301,36 +2294,10 @@ namespace minpack {
 
     }
 
-    // real eval_func( int maxnfev, const sherpa::Bounds<real>& limits,
-    //                 int npar, std::vector<real>& par, int& nfev ) {
-
-    //   if ( sherpa::Opt<Data, real>::are_pars_outside_limits( npar, par,
-    //                                                          limits ) ) {
-    //     return std::numeric_limits< real >::max( );
-    //   }
-
-    //   ++nfev;
-    //   int ierr=EXIT_SUCCESS;
-
-    //   const int m = static_cast<int>( myfvec.size( ) );
-
-    //   Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
-    //   usr_func( m, npar, &par[0], &myfvec[0], &myfjac[0], m, ierr, usrdata );
-
-    //   real fval = pow( this->enorm( m, &myfvec[0] ), 2.0 );
-    //   if ( EXIT_SUCCESS != ierr )
-    //     throw sherpa::OptErr( sherpa::OptErr::UsrFunc );
-    //   if ( nfev >= maxnfev )
-    //     throw sherpa::OptErr( sherpa::OptErr::MaxFev );
-
-    //   return fval;
-
-    // }
-
   private:
 
     Func usr_fcn;
-    std::vector< real > myfvec;
+    sherpa::Array1D< real > myfvec;
 
     int covar1(int m, int n, real fsumsq, real *r, int ldr,
                const int *ipvt, real tol, real *wa) {
@@ -2606,8 +2573,8 @@ namespace minpack {
                int mode, real factor, int nprint,
                int& nfev, int& njev, int *ipvt, real *qtf,
                real *wa1, real *wa2, real *wa3, real *wa4,
-               const std::vector<real>& low,
-	       const std::vector<real>& high ) {
+               const sherpa::Array1D<real>& low,
+	       const sherpa::Array1D<real>& high ) {
 
       // Initialized data
 
@@ -2958,8 +2925,8 @@ namespace minpack {
                  int maxfev, real *diag, int mode, real factor, int nprint,
                  int& nfev, int& njev, int *ipvt, real *qtf,
                  real *wa1, real *wa2, real *wa3, real *wa4,
-                 const std::vector<real>& low,
-                 const std::vector<real>& high ) {
+                 const sherpa::Array1D<real>& low,
+                 const sherpa::Array1D<real>& high ) {
 
       // Initialized data
 

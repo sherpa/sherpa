@@ -1,7 +1,7 @@
 #ifdef testLevMar
 
 //
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,8 @@
 
 #include "tests/tstopt.hh"
 
-void tstlm( Init init, FctVec fct, int npar, std::vector<double>& par,
-	    std::vector<double>& lo, std::vector<double>& hi,
+void tstlm( Init init, FctVec fct, int npar, sherpa::Array1D<double>& par,
+	    sherpa::Array1D<double>& lo, sherpa::Array1D<double>& hi,
 	    double tol, const char* fct_name, int npop, int maxfev,
 	    double xprob, double sfactor ) {
 
@@ -44,11 +44,10 @@ void tstlm( Init init, FctVec fct, int npar, std::vector<double>& par,
     int nprint = 0;
     double epsfcn = std::sqrt( std::numeric_limits< double >::epsilon( ) );
     double factor=100.0;
-    std::vector<double> covarerr( 8 * npar );
-    std::vector<double> fjac( mfcts * npar );
+    sherpa::Array1D<double> covarerr( 8 * npar );
+    sherpa::Array1D<double> fjac( mfcts * npar );
 
-    lm( npar, tol, tol, tol, maxnfev, epsfcn, factor, nprint, par, nfev, fmin,
-        bounds, fjac );
+    lm( npar, tol, tol, tol, maxnfev, epsfcn, factor, nprint, par, nfev, fmin, bounds, fjac );
 
     for ( int ii = 0; ii < npar; ++ii )
       if ( fjac[ ii + mfcts * ii ] > 0.0 )
@@ -148,64 +147,64 @@ int fcn(int m, int n, const double *x, double *fvec, double *fjac,
 
 
 void tstlmder( ) {
-  const int m = 15;
-  const int n = 3;
+  // const int m = 15;
+  // const int n = 3;
 
-  double xx[n] = {1.0, 1.0, 1.0};
-  double y[m] = {1.4e-1, 1.8e-1, 2.2e-1, 2.5e-1, 2.9e-1, 3.2e-1, 3.5e-1,
-                  3.9e-1, 3.7e-1, 5.8e-1, 7.3e-1, 9.6e-1, 1.34, 2.1, 4.39};
+  // double xx[n] = {1.0, 1.0, 1.0};
+  // double y[m] = {1.4e-1, 1.8e-1, 2.2e-1, 2.5e-1, 2.9e-1, 3.2e-1, 3.5e-1,
+  //                 3.9e-1, 3.7e-1, 5.8e-1, 7.3e-1, 9.6e-1, 1.34, 2.1, 4.39};
 
-  double xmin[n] = {0., 0.1, 0.5};
-  double xmax[n] = {2., 1.5, 2.3};
-  std::vector<double> low(n);
-  std::vector<double> high(n);
-  std::vector<double> x(n);
-  std::vector<double> fjac(m*n);
-  for ( int ii = 0; ii < n; ++ii ) {
-    low[ii] = xmin[ii];
-    high[ii] = xmax[ii];
-    x[ii] = xx[ii];
-  }
+  // double xmin[n] = {0., 0.1, 0.5};
+  // double xmax[n] = {2., 1.5, 2.3};
+  // sherpa::Array1D<double> low(n);
+  // sherpa::Array1D<double> high(n);
+  // sherpa::Array1D<double> x(n);
+  // sherpa::Array1D<double> fjac(m*n);
+  // for ( int ii = 0; ii < n; ++ii ) {
+  //   low[ii] = xmin[ii];
+  //   high[ii] = xmax[ii];
+  //   x[ii] = xx[ii];
+  // }
 
-  fcndata_t data;
-  data.m = m;
-  data.y = y;
+  // fcndata_t data;
+  // data.m = m;
+  // data.y = y;
 
-  data.xmin = xmin;
-  data.xmax = xmax;
+  // data.xmin = xmin;
+  // data.xmax = xmax;
 
-  double ftol = std::sqrt( std::numeric_limits<double>::epsilon( ) );
-  double xtol = std::sqrt( std::numeric_limits<double>::epsilon( ) );
-  double epsfcn = ftol;
-  double factor = 100.0;
-  double gtol = 0.;
-  double fmin;
-  int nprint = 0;
-  int nfev=0, njev=0, maxfev=400, rank;
+  // double ftol = std::sqrt( std::numeric_limits<double>::epsilon( ) );
+  // double xtol = std::sqrt( std::numeric_limits<double>::epsilon( ) );
+  // double epsfcn = ftol;
+  // double factor = 100.0;
+  // double gtol = 0.;
+  // double fmin;
+  // int nprint = 0;
+  // int nfev=0, njev=0, maxfev=400, rank;
 
-  const sherpa::Bounds<double> bounds( low, high );
+  // const sherpa::Bounds<double> bounds( low, high );
 
-  minpack::LevMarDer< fcnLMDER, fcndata_t*, double > lm( fcn, &data, m );
-  lm.fitme( n, ftol, xtol, gtol, maxfev, epsfcn, factor, nprint, x, nfev, njev,
-            fmin, fjac, bounds, rank );
+  // minpack::LevMarDer< fcnLMDER, fcndata_t*, double > lm( fcn, &data, m );
+  // lm.fitme( n, ftol, xtol, gtol, maxfev, epsfcn, factor, nprint, x, nfev, njev,
+  //           fmin, fjac, bounds, rank );
 
-  double answer[n] = {0.0836609, 1.17808, 2.3 };
+  // double answer[n] = {0.0836609, 1.17808, 2.3 };
 
-  for ( int ii = 0; ii < n; ++ii )
-    if ( 0 != sao_fcmp( x[ii], answer[ii], 1.0e-5 ) )
-      std::cerr << "answer (" << answer[ii ] << ") != x (" << x[ii] << ")\n";
+  // for ( int ii = 0; ii < n; ++ii )
+  //   if ( 0 != sao_fcmp( x[ii], answer[ii], 1.0e-5 ) )
+  //     std::cerr << "answer (" << answer[ii ] << ") != x (" << x[ii] << ")\n";
 
-  double myfjac[n][n] =
-    {
-      { 0.000153669, 0.00299417, -0.00278012 },
-      { 0.00299417, 0.102588, -0.0986002 },
-      { -0.00278012, -0.0986002, 0.0952316 }
-    };
+  // double myfjac[n][n] =
+  //   {
+  //     { 0.000153669, 0.00299417, -0.00278012 },
+  //     { 0.00299417, 0.102588, -0.0986002 },
+  //     { -0.00278012, -0.0986002, 0.0952316 }
+  //   };
 
-  for (int i=0; i<n; ++i)
-    for (int j=0; j<n; ++j)
-      if ( 0 != sao_fcmp( fjac[ i  * m + j ], myfjac[i][j], 1.0e-5 ) )
-        std::cerr << "fjac " << fjac[ i  * m + j ] << " !=  myfjac " << myfjac[i][j] << '\n';
+  // for (int i=0; i<n; ++i)
+  //   for (int j=0; j<n; ++j)
+  //     if ( 0 != sao_fcmp( fjac[ i  * m + j ], myfjac[i][j], 1.0e-5 ) )
+  //       std::cerr << "fjac " << fjac[ i  * m + j ] << " !=  myfjac " << myfjac[i][j] << '\n';
 
 }
 
@@ -213,16 +212,16 @@ void tstlmder( ) {
 //   const int m = 15;
 //   const int n = 3;
 
-//   std::vector<double> fjac( m * n );
+//   sherpa::Array1D<double> fjac( m * n );
 //   double xx[n] = {1.0, 1.0, 1.0};
 //   double y[m] = {1.4e-1, 1.8e-1, 2.2e-1, 2.5e-1, 2.9e-1, 3.2e-1, 3.5e-1,
 //                   3.9e-1, 3.7e-1, 5.8e-1, 7.3e-1, 9.6e-1, 1.34, 2.1, 4.39};
 
 //   double xmin[n] = {0., 0.1, 0.5};
 //   double xmax[n] = {2., 1.5, 2.3};
-//   std::vector<double> low(n);
-//   std::vector<double> high(n);
-//   std::vector<double> x(n);
+//   sherpa::Array1D<double> low(n);
+//   sherpa::Array1D<double> high(n);
+//   sherpa::Array1D<double> x(n);
 //   for ( int ii = 0; ii < n; ++ii ) {
 //     low[ii] = xmin[ii];
 //     high[ii] = xmax[ii];
@@ -304,14 +303,13 @@ int main( int argc, char* argv[] ) {
 #endif
 
 /*
-g++ -ansi -pedantic -Wall -O3 -I. -I../../../include -I../.. -DtestLevMar -DNDEBUG LevMar.cc -o levmar
+g++ -ansi -pedantic -Wall -O3 -I. -I../../../include -I../.. -DNDEBUG -DtestLevMar LevMar.cc -o levmar
 
-(sherpa) [dtn@devel12 minpack]$ valgrind levmar
-==32580== Memcheck, a memory error detector
-==32580== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
-==32580== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
-==32580== Command: levmar
-==32580== 
+==11056== Memcheck, a memory error detector
+==11056== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==11056== Using Valgrind-3.14.0 and LibVEX; rerun with -h for copyright info
+==11056== Command: levmar
+==11056== 
 #
 #:npar = 16
 #:tol=1.49012e-08
@@ -339,7 +337,7 @@ lmdif_Osborne1	93	5.46489e-05	5.46489e-05	0.37541,1.93582,-1.46466,0.0128675,0.0
 lmdif_Biggs	7	0	0	1,10,1,5,4,3	0,204.524,64.0215,274.359,302.262,211.652
 lmdif_Osborne2	148	0.0401377	0.0401683	1.30997,0.431458,0.633631,0.599303,0.753912,0.905584,1.36503,4.8248,2.39882,4.56887,5.67537	0.675508,0.859748,0.481427,1.30486,1.88631,5.0202,6.71742,17.2964,1.14824,1.05994,0.599554
 lmdif_Watson	-36	0.00228767	0.00260576	1.88024e-22,1.01364,-0.244321,1.37383,-1.68571,1.09812	1,0.759043,5.37417,14.8652,16.8648,6.7074
-lmdif_PenaltyI	-126	9.37629e-06	2.24998e-05	0.250021,0.250012,0.249996,0.250002	273.871,273.843,273.868,273.864
+lmdif_PenaltyI	126	2.24997e-05	2.24998e-05	0.250021,0.250012,0.249996,0.250002	273.871,273.843,273.868,273.864
 lmdif_PenaltyII	514	9.37629e-06	9.37903e-06	0.199999,0.215019,0.467088,0.514755	1,1757.2,1771.19,2236.35
 lmdif_VariablyDimensioned	154	0	1.21393e-24	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1	0.999665,0.99866,0.996984,0.994633,0.991605,0.987892,0.983487,0.978381,0.972563,0.966018,0.958733,0.950688,0.941863,0.932236,0.921779,0.910462
 lmdif_Trigonometric	527	0	0	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0	1.00006,0.999085,0.998112,0.99714,0.99617,0.995201,0.994235,0.993271,0.992308,0.991348,0.990389,0.989432,0.988477,0.987523,0.986572,0.985622
@@ -352,13 +350,13 @@ lmdif_LinearFullRank	35	0	7.88861e-31	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 lmdif_LinearFullRank1	34	3.63636	3.63636	-176.185,-87.5926,-161.918,-43.2963,-320.277,-80.4592,210.955,-21.1481,-58.5169,-159.638,86.4791,-39.7296,125.641,105.978,52.753,-29.5472	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0016159
 lmdif_LinearFullRank0cols0rows	34	5.13793	5.13793	1,102.112,305.423,51.5561,-65.5527,153.211,-281.776,26.2781,110.795,-32.2763,-45.1477,77.1057,0.221514,-140.388,46.907,1	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.00209255,0
 lmdif_Chebyquad	84	0	3.50827e-25	0.0442053,0.199491,0.235619,0.416047,0.5,0.583953,0.764381,0.800509,0.955795	0.370106,2.06127,1.55376,2.76913,2.92582,2.76943,1.55377,2.06202,0.369586
-==32580== 
-==32580== HEAP SUMMARY:
-==32580==     in use at exit: 0 bytes in 0 blocks
-==32580==   total heap usage: 345 allocs, 345 frees, 115,024 bytes allocated
-==32580== 
-==32580== All heap blocks were freed -- no leaks are possible
-==32580== 
-==32580== For counts of detected and suppressed errors, rerun with: -v
-==32580== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==11056== 
+==11056== HEAP SUMMARY:
+==11056==     in use at exit: 0 bytes in 0 blocks
+==11056==   total heap usage: 333 allocs, 333 frees, 114,220 bytes allocated
+==11056== 
+==11056== All heap blocks were freed -- no leaks are possible
+==11056== 
+==11056== For counts of detected and suppressed errors, rerun with: -v
+==11056== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */

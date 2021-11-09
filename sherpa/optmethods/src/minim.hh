@@ -18,11 +18,10 @@ namespace sherpa {
 
     int operator( )( int iprint, int maxfev, real tol, int npar,
                      int initsimplex, const std::vector<int>& finalsimplex,
-                     const std::vector<real>& lb, const std::vector<real>& ub,
+                     const sherpa::Bounds<real>& bounds,
                      const std::vector<real>& step, std::vector<real>& x,
                      int& neval, real& func ){
       std::vector<real> vc(npar*(npar+1)/2, 0.0);
-      const sherpa::Bounds<real> bounds(lb, ub);
       int iquad=1, ifault=0;
       double simp=1.0e-8;
       MINIM(x, step, npar, func, maxfev, iprint, tol, iquad, simp, vc, ifault,
@@ -44,9 +43,10 @@ namespace sherpa {
     Func usr_func;
     Data usr_data;
 
-    virtual void check_limits( sherpa::Array2d<real>& G, int I, int IROW,
-                               const std::vector<real>& lb,
-                               const std::vector<real>& ub ) {
+    virtual void check_limits( sherpa::Array2D<sherpa::Array1D<real>, real>& G,
+                               int I, int IROW,
+                               const sherpa::Array1D<real>& lb,
+                               const sherpa::Array1D<real>& ub ) {
       return;
     }
 
@@ -59,8 +59,8 @@ namespace sherpa {
     void reflect_about_boundary( int npar, std::vector<real>& par,
                                  const sherpa::Bounds<real>& limits )
       const {
-      const std::vector<real> lb = limits.get_lb();
-      const std::vector<real> ub = limits.get_ub();
+      const sherpa::Array1D<real> lb = limits.get_lb();
+      const sherpa::Array1D<real> ub = limits.get_ub();
 
       for  ( int ii = 0; ii < npar; ++ii ) {
         if ( par[ ii ] < lb[ ii ] )
@@ -89,7 +89,7 @@ namespace sherpa {
                 int IQUAD, real SIMP, std::vector<real>& VC,
                 int& IFAULT, int& NEVAL, const sherpa::Bounds<real>& LIMITS ) {
 
-      sherpa::Array2d<real> G(NOP+1, NOP);
+      sherpa::Array2D<sherpa::Array1D<real>, real> G(NOP+1, NOP);
       std::vector<real> H(NOP+1), PBAR(NOP), PSTAR(NOP), PSTST(NOP), AVAL(NOP),
         BMAT(NOP*(NOP+1)/2), PMIN(NOP), TEMP(NOP), VAR(NOP);
 
@@ -182,8 +182,9 @@ namespace sherpa {
       int LOOP, NAP, NP1, NULLTY, IRANK;
       real FNP1, FNAP, HMAX, HMEAN, HMIN, HSTAR, HSTD, HSTST, SAVEMN=0, TEST;
       real A0, RMAX, YMIN;
-      const std::vector<real>& lb = LIMITS.get_lb();
-      const std::vector<real>& ub = LIMITS.get_ub();
+      const sherpa::Array1D<real> &lb = LIMITS.get_lb();
+      const sherpa::Array1D<real> &ub = LIMITS.get_ub();
+
 
       const int NLOOP = 1;
       const real ZERO = 0.;
@@ -826,7 +827,8 @@ namespace sherpa {
 
   protected:
 
-    virtual void check_limits( sherpa::Array2d<real>& G, int I, int IROW,
+    virtual void check_limits( sherpa::Array2D<sherpa::Array1D<real>, real>& G,
+                               int I, int IROW,
                                const std::vector<real>& lb,
                                const std::vector<real>& ub ) {
       G[IROW-1][I-1] = std::max(lb[I-1], std::min(G[IROW-1][I-1], ub[I-1]));

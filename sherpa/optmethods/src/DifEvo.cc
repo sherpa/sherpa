@@ -1,7 +1,7 @@
 #ifdef testDifEvo
 
 //
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,6 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-
 #include "DifEvo.hh"
 
 #include "minpack/LevMar.hh"
@@ -27,124 +26,112 @@
 
 #include "tests/tstopt.hh"
 
-void tstde( Init init, Fct fct, int npar, std::vector<double>& par,
-	    std::vector<double>& lo, std::vector<double>& hi,
-	    double tol, const char* fct_name, int npop, int maxfev,
-	    double xprob, double sfactor ) {
+void tstde(Init init, Fct fct, int npar, sherpa::Array1D<double> &par,
+           sherpa::Array1D<double> &lo, sherpa::Array1D<double> &hi, double tol,
+           const char *fct_name, int npop, int maxfev, double xprob,
+           double sfactor) {
 
-  int nfev, mfcts=0, seed=1357, verbose = 0, size = npop * npar,
-    maxnfev = maxfev * npar * size;
-  double fmin, answer=0.0;
-  //
-  // you may think you are clever by eliminating the following overhead
-  // and simply use the vector par, but believe me it is necessary to call
-  // with de_nm and de with mypar!
-  //
-  std::vector<double> mypar( npar, 0.0 );
-
-  init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
+  int nfev, mfcts = 0, seed = 1357, verbose = 0, size = npop * npar,
+            maxnfev = maxfev * npar * size;
+  double answer = 0.0;
+  init(npar, mfcts, answer, &par[0], &lo[0], &hi[0]);
   sherpa::Bounds<double> bounds(lo, hi);
-  sherpa::DifEvo< Fct, mybounds,
-    sherpa::NelderMead< Fct, mybounds, double >, double > de_nm( fct, bounds );
-  for ( int ii = 0; ii < npar; ++ii )
-    mypar[ ii ] = par[ ii ];
-  de_nm( verbose, maxnfev, tol, size, seed, xprob, sfactor, npar, lo, hi,
-	 mypar, nfev, fmin );
-  print_pars( "DifEvo_nm_", fct_name, nfev, fmin, answer, npar, mypar );
+  sherpa::DifEvo<Fct, mybounds, sherpa::NelderMead<Fct, mybounds, double>,
+                 double> de_nm(fct, bounds, npar);
+  {
+    sherpa::ParVal<double> mypar(npar + 1, npar, par);
+    de_nm(verbose, maxnfev, tol, size, seed, xprob, sfactor, bounds, npar, mypar,
+          nfev);
+    mypar.cp(npar, par);
+    double fmin = mypar[npar];
+    print_pars("DifEvo_nm_", fct_name, nfev, fmin, answer, npar, par);
+  }
 
-  init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
-  sherpa::DifEvo< Fct, mybounds,
-    sherpa::OptFunc< Fct, mybounds, double >, double > de( fct, bounds );
-  for ( int ii = 0; ii < npar; ++ii )
-    mypar[ ii ] = par[ ii ];
-  de( verbose, maxnfev, tol, size, seed, xprob, sfactor, npar, lo, hi,
-      mypar, nfev, fmin );
-  print_pars( "DifEvo_", fct_name, nfev, fmin, answer, npar, mypar );
-
+  init(npar, mfcts, answer, &par[0], &lo[0], &hi[0]);
+  {
+    sherpa::DifEvo<Fct, mybounds, sherpa::OptFunc<Fct, mybounds, double>, double>
+      de(fct, bounds);
+    sherpa::ParVal<double> mypar(npar + 1, npar, par);
+    de(verbose, maxnfev, tol, size, seed, xprob, sfactor, bounds, npar, mypar,
+       nfev);
+    mypar.cp(npar, par);
+    double fmin = mypar[npar];
+    print_pars("DifEvo_", fct_name, nfev, fmin, answer, npar, par);
+  }
 }
 
-void tstde_lm( Init init, FctVec fct, int npar, std::vector<double>& par,
-	       std::vector<double>& lo, std::vector<double>& hi,
-	       double tol, const char* fct_name, int npop, int maxfev,
-	       double xprob, double sfactor ) {
+void tstde_lm(Init init, FctVec fct, int npar, sherpa::Array1D<double> &par,
+              sherpa::Array1D<double> &lo, sherpa::Array1D<double> &hi,
+              double tol, const char *fct_name, int npop, int maxfev,
+              double xprob, double sfactor) {
 
-  int nfev, mfcts=0, seed=1357, verbose = 0, size = npop * npar,
-    maxnfev = maxfev * npar * size;
-  double fmin, answer=0.0;
-  //
-  // you may think you are clever by eliminating the following overhead
-  // and simply use the vector par, but believe me it is necessary to call
-  // with de_nm and de with mypar!
-  //
-  std::vector<double> mypar( npar, 0.0 );
-
-  init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
+  int nfev, mfcts = 0, seed = 1357, verbose = 0, size = npop * npar,
+            maxnfev = maxfev * npar * size;
+  double answer = 0.0;
+  init(npar, mfcts, answer, &par[0], &lo[0], &hi[0]);
   sherpa::Bounds<double> bounds(lo, hi);
-  sherpa::DifEvo< FctVec, mybounds,
-    minpack::LevMarDif< FctVec, mybounds, double >, double > de_lm( fct,
-                                                                    bounds,
-                                                                    mfcts );
-  for ( int ii = 0; ii < npar; ++ii )
-    mypar[ ii ] = par[ ii ];
-  de_lm( verbose, maxnfev, tol, size, seed, xprob, sfactor, npar, lo, hi,
-	 mypar, nfev, fmin );
-  print_pars( "DifEvo_lm_", fct_name, nfev, fmin, answer, npar, mypar );
+  sherpa::DifEvo<FctVec, mybounds, minpack::LevMarDif<FctVec, mybounds, double>,
+                 double> de_lm(fct, bounds, mfcts);
+  sherpa::ParVal<double> mypar(npar + 1, npar, par);
+  de_lm(verbose, maxnfev, tol, size, seed, xprob, sfactor, bounds, npar, mypar,
+        nfev);
+  mypar.cp(npar, par);
+  double fmin = mypar[npar];  
+  print_pars("DifEvo_lm_", fct_name, nfev, fmin, answer, npar, par);
 }
 
-int main( int argc, char* argv[] ) {
+int main(int argc, char *argv[]) {
 
   int c, uncopt = 1, globalopt = 1;
-  while ( --argc > 0 && (*++argv)[ 0 ] == '-' )
-    while ( (c = *++argv[ 0 ]) )
-      switch( c ) {
-	case 'u':
-	  uncopt = 0;
-	  break;
-	case 'g':
-	  globalopt = 0;
-	  break;
+  while (--argc > 0 && (*++argv)[0] == '-')
+    while ((c = *++argv[0]))
+      switch (c) {
+      case 'u':
+        uncopt = 0;
+        break;
+      case 'g':
+        globalopt = 0;
+        break;
       default:
-	fprintf( stderr, "%s: illegal option '%c'\n", argv[ 0 ], c );
-	fprintf( stderr, "Usage %s [ -g ] [ -u ] [ npar ]\n", argv[ 0 ] );
-	return EXIT_FAILURE;
+        fprintf(stderr, "%s: illegal option '%c'\n", argv[0], c);
+        fprintf(stderr, "Usage %s [ -g ] [ -u ] [ npar ]\n", argv[0]);
+        return EXIT_FAILURE;
       }
 
-  int npar=2;
-  if ( argc == 1 )
-    npar = atoi( *argv );
+  int npar = 2;
+  if (argc == 1)
+    npar = atoi(*argv);
 
-  double tol=1.0e-6;
+  double tol = 1.0e-6;
   std::cout << "#\n#:npar = " << npar << "\n";
   std::cout << "#:tol=" << tol << '\n';
   std::cout << "#\n# A negative value for the nfev signifies that the "
-    "optimization method did not converge\n#\n";
+               "optimization method did not converge\n#\n";
   std::cout << "name\tnfev\tanswer\tstat\tpar\nS\tN\tN\tN\tN\n";
 
+  int npop = 16, maxfev = 64;
+  double xprob = 0.9, sfactor = 1.0;
 
-  int npop=16, maxfev=64;
-  double xprob=0.9, sfactor=1.0;
-
-  if ( uncopt ) {
-    tst_unc_opt<tstFct, double>( npar, tol, tstde, npop, maxfev, xprob, sfactor );
-    tst_unc_opt<tstFctVec, double>( npar, tol, tstde_lm, npop, maxfev, xprob, sfactor );
+  if (uncopt) {
+    tst_unc_opt<tstFct, double>(npar, tol, tstde, npop, maxfev, xprob, sfactor);
+    tst_unc_opt<tstFctVec, double>(npar, tol, tstde_lm, npop, maxfev, xprob,
+                                   sfactor);
   }
-  if ( globalopt )
-    tst_global( npar, tol, tstde, npop, maxfev, xprob, sfactor );
-
+  if (globalopt)
+    tst_global<tstFct, double>(npar, tol, tstde, npop, maxfev, xprob, sfactor);
 
   return 0;
-
 }
 
 /*
+
 g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestDifEvo -DNDEBUG DifEvo.cc Simplex.cc -o difevo
 
-(sherpa) [dtn@devel12 src]$ valgrind difevo
-==31799== Memcheck, a memory error detector
-==31799== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
-==31799== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
-==31799== Command: difevo
-==31799== 
+==10135== Memcheck, a memory error detector
+==10135== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==10135== Using Valgrind-3.14.0 and LibVEX; rerun with -h for copyright info
+==10135== Command: difevo
+==10135== 
 #
 #:npar = 2
 #:tol=1e-06
@@ -173,7 +160,7 @@ DifEvo_nm_Gaussian	-748	1.12793e-08	2.31995e-08	0.398944,0.999662,5.61966e-05
 DifEvo_Gaussian	-1486	1.12793e-08	3.88811e-06	0.4,1,0
 DifEvo_nm_Meyer	237	87.9458	87.9459	0.00560995,6181.3,345.222
 DifEvo_Meyer	-437	87.9458	1.39812e+09	138.542,75704.7,16626.3
-DifEvo_nm_GulfResearchDevelopment	804	0	7.16939e-09	14.1092,31.4397,1.21371
+DifEvo_nm_GulfResearchDevelopment	5631	0	2.80721e-07	1.19976,45.2561,0.596979
 DifEvo_GulfResearchDevelopment	2562	0	0.0013055	522.104,-99.5005,1.6251
 DifEvo_nm_Box3d	758	0	1.42751e-08	1.00002,10.0026,1.00001
 DifEvo_Box3d	3141	0	3.97157e-12	98.2308,98.4796,1.02445e-06
@@ -193,8 +180,8 @@ DifEvo_nm_Osborne2	1769	0.0401377	0.0401787	1.3089,0.429306,0.632834,0.595968,0.
 DifEvo_Osborne2	-42394	0.0401377	0.382866	1.0763,968.461,0.4195,0.577258,0.281223,581.856,5.01397,7,-0.118868,4.5,5.5
 DifEvo_nm_Watson	431	0.00228767	0.00228769	-0.015653,1.01242,-0.233011,1.26064,-1.51402,0.993226
 DifEvo_Watson	-3617	0.00228767	30	0,0,0,0,0,0
-DifEvo_nm_PenaltyI	-508	9.37629e-06	2.24998e-05	0.249964,0.249672,0.250394,0.250001
-DifEvo_PenaltyI	-3794	9.37629e-06	885.063	1,2,3,4
+DifEvo_nm_PenaltyI	508	2.24997e-05	2.24998e-05	0.249964,0.249672,0.250394,0.250001
+DifEvo_PenaltyI	-3794	2.24997e-05	885.063	1,2,3,4
 DifEvo_nm_PenaltyII	790	9.37629e-06	9.38448e-06	0.200008,0.148759,0.50296,0.517361
 DifEvo_PenaltyII	-3609	9.37629e-06	2.34001	0.5,0.5,0.5,0.5
 DifEvo_nm_VariablyDimensioned	340	0	1.6999e-07	0.999875,1.00022
@@ -239,7 +226,7 @@ DifEvo_lm_Osborne1	93	5.46489e-05	5.46489e-05	0.37541,1.93582,-1.46466,0.0128675
 DifEvo_lm_Biggs	7	0	0	1,10,1,5,4,3
 DifEvo_lm_Osborne2	148	0.0401377	0.0401683	1.30997,0.431458,0.633631,0.599303,0.753912,0.905584,1.36503,4.8248,2.39882,4.56887,5.67537
 DifEvo_lm_Watson	-36	0.00228767	0.00260576	1.88024e-22,1.01364,-0.244321,1.37383,-1.68571,1.09812
-DifEvo_lm_PenaltyI	-118	9.37629e-06	2.24998e-05	0.249976,0.249907,0.249945,0.250203
+DifEvo_lm_PenaltyI	118	2.24997e-05	2.24998e-05	0.249976,0.249907,0.249945,0.250203
 DifEvo_lm_PenaltyII	585	9.37629e-06	9.37629e-06	0.199999,0.191382,0.480075,0.518822
 DifEvo_lm_VariablyDimensioned	19	0	0	1,1
 DifEvo_lm_Trigonometric	25	0	0	0,0
@@ -294,7 +281,7 @@ DifEvo_nm_Bohachevsky2	692	0	2.03681e-06	-7.80486e-05,-0.000275493
 DifEvo_Bohachevsky2	-1302	0	0.0159607	-0.00842493,-0.0242418
 DifEvo_nm_Bohachevsky3	1471	0	3.04e-08	-0.000120621,7.79945e-05
 DifEvo_Bohachevsky3	1327	0	0.00373264	0.00331815,-0.014323
-DifEvo_nm_Easom	1296	-1	-0.999999	3.14085,3.14218
+DifEvo_nm_Easom	1388	-1	-0.999998	3.14236,3.14085
 DifEvo_Easom	-758	-1	-2.52976e-09	6.86302,0.821265
 DifEvo_nm_Rastrigin	398	0	2.45568e-07	-1.45021e-05,-3.20543e-05
 DifEvo_Rastrigin	-373	0	0.73034	0.00521053,0.060817
@@ -306,15 +293,15 @@ DifEvo_nm_Michalewicz10	12511	-9.66015	-9.61838	2.20326,1.57071,1.28499,1.11359,
 DifEvo_Michalewicz10	52873	-9.66015	-9.55588	2.20803,1.57377,1.28519,1.92256,1.72089,1.57051,1.4554,1.75435,1.28298,1.21835
 DifEvo_nm_McKinnon	-628	-0.25	-2.376e+11	-100,-100
 DifEvo_McKinnon	-546	-0.25	-2.36123e+11	-99.9549,-99.518
-==31799== 
-==31799== HEAP SUMMARY:
-==31799==     in use at exit: 0 bytes in 0 blocks
-==31799==   total heap usage: 918,471 allocs, 918,471 frees, 156,994,792 bytes allocated
-==31799== 
-==31799== All heap blocks were freed -- no leaks are possible
-==31799== 
-==31799== For counts of detected and suppressed errors, rerun with: -v
-==31799== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==10135== 
+==10135== HEAP SUMMARY:
+==10135==     in use at exit: 0 bytes in 0 blocks
+==10135==   total heap usage: 971,140 allocs, 971,140 frees, 162,341,344 bytes allocated
+==10135== 
+==10135== All heap blocks were freed -- no leaks are possible
+==10135== 
+==10135== For counts of detected and suppressed errors, rerun with: -v
+==10135== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */
 
 #endif

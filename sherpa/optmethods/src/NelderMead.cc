@@ -1,7 +1,7 @@
 #ifdef testNelderMead
 
 //
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -19,98 +19,85 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-
 #include "NelderMead.hh"
 
 #include "tests/tstopt.hh"
 
-void tstnm( Init init, Fct fct, int npar, std::vector<double>& par,
-	    std::vector<double>& lo, std::vector<double>& hi,
-	    double tol, const char* fct_name, int npop, int maxfev,
-	    double c1, double c2 ) {
+void tstnm(Init init, Fct fct, int npar, sherpa::Array1D<double> &par,
+           sherpa::Array1D<double> &lo, sherpa::Array1D<double> &hi, double tol,
+           const char *fct_name, int npop, int maxfev, double c1, double c2) {
 
   try {
 
     char header[64];
-
-    //
-    // you may think you are clever by eliminating the following overhead
-    // and simply use the vector par, but believe me it this is necessary
-    //
-    std::vector<double> mypar( npar, 0.0 );
-
-    std::vector<double> step( npar * npar * 4 );
-    for ( int ii = 0; ii < npar; ++ii )
-      step[ ii ] = 1.2;
-
-    std::vector< int > finalsimplex;
-
-    for ( int ii = 0; ii < 3; ++ii ) {
-
-      finalsimplex.push_back( ii );
-
-      for ( int initsimplex = 0; initsimplex < 2; ++initsimplex ) {
-
-	int mfcts;
-	double answer;
-
-	init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
-	for ( int jj = 0; jj < npar; ++jj )
-	  mypar[ jj ] = par[ jj ];
+    sherpa::Array1D<double> step(npar * npar * 4, 1.2);
+    std::vector<int> finalsimplex;
+    for (int ii = 0; ii < 3; ++ii) {
+      finalsimplex.push_back(ii);
+      for (int initsimplex = 0; initsimplex < 2; ++initsimplex) {
+        int mfcts;
+        double answer;
+        init(npar, mfcts, answer, &par[0], &lo[0], &hi[0]);
         sherpa::Bounds<double> bounds(lo, hi);
-	sherpa::NelderMead< Fct, const sherpa::Bounds<double>&, double >
-          nm( fct, bounds );
-
-	int verbose=0, maxnfev=npar*npar*maxfev, nfev;
-	double fmin;
-	nm( verbose, maxnfev, tol, npar, initsimplex, finalsimplex, lo, hi,
-	    step, mypar, nfev, fmin );
-
-	sprintf( header, "NelderMead_%d_%d_", initsimplex, finalsimplex[ii] );
-	print_pars( header, fct_name, nfev, fmin, answer, npar, mypar );
-
+        int verbose = 0, maxnfev = npar * npar * maxfev, nfev;
+        {
+          sherpa::NelderMead<Fct, const sherpa::Bounds<double> &, double>
+            nm(fct, bounds, npar);
+          sherpa::ParVal<double> mypar(npar + 1, npar, par);
+          nm(verbose, maxnfev, tol, npar, initsimplex, finalsimplex, step, bounds,
+             mypar, nfev);
+          double fmin = mypar[npar];
+          sprintf(header, "NelderMead_%d_%d_", initsimplex, finalsimplex[ii]);
+          print_pars(header, fct_name, nfev, fmin, answer, npar, mypar);
+        }
+        // {
+        //   sherpa::NelderMeadReflect<Fct, const sherpa::Bounds<double> &, double>
+        //     nm(fct, bounds, npar);
+        //   sherpa::ParVal<double> mypar(npar + 1, npar, par);
+        //   nm(verbose, maxnfev, tol, npar, initsimplex, finalsimplex, step, bounds,
+        //      mypar, nfev);
+        //   double fmin = mypar[npar];
+        //   sprintf(header, "NelderMeadReflect_%d_%d_", initsimplex, finalsimplex[ii]);
+        //   print_pars(header, fct_name, nfev, fmin, answer, npar, mypar);
+        // }
       }
-
     }
 
-  } catch( const sherpa::OptErr& oe ) {
+  } catch (const sherpa::OptErr &oe) {
 
     std::cerr << oe << '\n';
-
   }
 
   return;
-
 }
 
-int main( int argc, char* argv[] ) {
+int main(int argc, char *argv[]) {
 
   try {
 
     int c, uncopt = 1, globalopt = 1;
-    while ( --argc > 0 && (*++argv)[ 0 ] == '-' )
-      while ( (c = *++argv[ 0 ]) )
-	switch( c ) {
-	case 'u':
-	  uncopt = 0;
-	  break;
-	case 'g':
-	  globalopt = 0;
-	  break;
-	default:
-	  fprintf( stderr, "%s: illegal option '%c'\n", argv[ 0 ], c );
-	  fprintf( stderr, "Usage %s [ -g ] [ -u ] [ npar ]\n", argv[ 0 ] );
-	  return EXIT_FAILURE;
-      }
+    while (--argc > 0 && (*++argv)[0] == '-')
+      while ((c = *++argv[0]))
+        switch (c) {
+        case 'u':
+          uncopt = 0;
+          break;
+        case 'g':
+          globalopt = 0;
+          break;
+        default:
+          fprintf(stderr, "%s: illegal option '%c'\n", argv[0], c);
+          fprintf(stderr, "Usage %s [ -g ] [ -u ] [ npar ]\n", argv[0]);
+          return EXIT_FAILURE;
+        }
 
+    int npar = 6;
+    if (argc == 1)
+      npar = atoi(*argv);
 
-    int npar=6;
-    if ( argc == 1 )
-      npar = atoi( *argv );
-
-    if ( npar % 2 || npar < 2 ) {
-      printf( "The minimum value for the free parameter must be an even "
-	      "and it is greater then 2\n" );
+    if (npar % 2 || npar < 2) {
+      printf("The minimum value for the free parameter must be an even "
+             "and it is greater then 2\n");
       return EXIT_FAILURE;
     }
 
@@ -118,37 +105,34 @@ int main( int argc, char* argv[] ) {
     std::cout << "#\n#:npar = " << npar << "\n";
     std::cout << "#:tol=" << tol << '\n';
     std::cout << "# A negative value for the nfev signifies that the "
-      "optimization method did not converge\n#\n";
+                 "optimization method did not converge\n#\n";
     std::cout << "name\tnfev\tanswer\tstat\tpar\nS\tN\tN\tN\tN\n";
 
-    int npop=0, maxfev=1024;
-    double c1=0.0, c2=0.0;
-    if ( uncopt )
-      tst_unc_opt<tstFct, double>( npar, tol, tstnm, npop, maxfev, c1, c2 );
+    int npop = 0, maxfev = 1024;
+    double c1 = 0.0, c2 = 0.0;
+    if (uncopt)
+      tst_unc_opt<tstFct, double>(npar, tol, tstnm, npop, maxfev, c1, c2);
 
-    if ( globalopt )
-      tst_global( npar, tol, tstnm, npop, maxfev, c1, c2 );
+    if (globalopt)
+      tst_global<tstFct, double>(npar, tol, tstnm, npop, maxfev, c1, c2);
 
     return EXIT_SUCCESS;
 
-  } catch( std::exception& e ) {
+  } catch (std::exception &e) {
 
-    std::cerr << e.what( ) << '\n';
+    std::cerr << e.what() << '\n';
     return EXIT_FAILURE;
-
   }
-
 }
 
 /*
-g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestNelderMead -DNDEBUG NelderMead.cc Simplex.cc -o neldermead
+g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DNDEBUG -DtestNelderMead NelderMead.cc Simplex.cc -o neldermead
 
-(sherpa) [dtn@devel12 src]$ valgrind neldermead 
-==31369== Memcheck, a memory error detector
-==31369== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
-==31369== Using Valgrind-3.12.0 and LibVEX; rerun with -h for copyright info
-==31369== Command: neldermead
-==31369== 
+==9490== Memcheck, a memory error detector
+==9490== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==9490== Using Valgrind-3.14.0 and LibVEX; rerun with -h for copyright info
+==9490== Command: neldermead
+==9490== 
 #
 #:npar = 6
 #:tol=1e-08
@@ -216,12 +200,12 @@ NelderMead_0_1_Meyer	-1624	87.9458	3092.66	0.00983416,5723.15,329.538
 NelderMead_1_1_Meyer	-270	87.9458	111643	0.101549,4002.82,263.992
 NelderMead_0_2_Meyer	2669	87.9458	87.9459	0.00560963,6181.35,345.224
 NelderMead_1_2_Meyer	-1938	87.9458	4354.13	0.0109285,5639.52,326.624
-NelderMead_0_0_GulfResearchDevelopment	488	0	6.03061e-11	58.0921,24.2541,1.53308
-NelderMead_1_0_GulfResearchDevelopment	83	0	8.9791e-05	5.52721,3.20528,0.76279
-NelderMead_0_1_GulfResearchDevelopment	1367	0	2.47267e-17	50.004,24.9996,1.50002
-NelderMead_1_1_GulfResearchDevelopment	539	0	3.96308e-10	74.6596,23.0122,1.58805
-NelderMead_0_2_GulfResearchDevelopment	2280	0	8.72687e-35	50,25,1.5
-NelderMead_1_2_GulfResearchDevelopment	2183	0	7.97527e-13	50.8178,24.9195,1.50359
+NelderMead_0_0_GulfResearchDevelopment	618	0	2.69637e-09	160.487,19.2773,1.75322
+NelderMead_1_0_GulfResearchDevelopment	488	0	4.56845e-12	52.0072,24.8042,1.5087
+NelderMead_0_1_GulfResearchDevelopment	2229	0	6.09191e-10	82.761,22.5039,1.61048
+NelderMead_1_1_GulfResearchDevelopment	563	0	4.56845e-12	52.0072,24.8042,1.5087
+NelderMead_0_2_GulfResearchDevelopment	3852	0	8.76969e-12	52.8519,24.7232,1.51225
+NelderMead_1_2_GulfResearchDevelopment	1591	0	2.52778e-34	50,25,1.5
 NelderMead_0_0_Box3d	226	0	1.64492e-10	1.00002,9.99958,0.999978
 NelderMead_1_0_Box3d	231	0	5.03599e-10	0.999952,10.0006,1.00004
 NelderMead_0_1_Box3d	320	0	1.64492e-10	1.00002,9.99958,0.999978
@@ -276,12 +260,12 @@ NelderMead_0_1_Watson	894	0.00228767	0.00228767	-0.0157231,1.01243,-0.232989,1.2
 NelderMead_1_1_Watson	795	0.00228767	0.00228767	-0.0157257,1.01244,-0.233019,1.2605,-1.51379,0.993011
 NelderMead_0_2_Watson	1178	0.00228767	0.00228767	-0.0157231,1.01243,-0.232996,1.26046,-1.51378,0.993023
 NelderMead_1_2_Watson	1069	0.00228767	0.00228767	-0.0157234,1.01244,-0.23302,1.26051,-1.51382,0.993032
-NelderMead_0_0_PenaltyI	-1150	9.37629e-06	2.24998e-05	0.250536,0.249133,0.249885,0.250474
-NelderMead_1_0_PenaltyI	-1397	9.37629e-06	2.24998e-05	0.249972,0.250038,0.250028,0.249992
-NelderMead_0_1_PenaltyI	-1364	9.37629e-06	2.24998e-05	0.250006,0.249975,0.249997,0.250053
-NelderMead_1_1_PenaltyI	-1549	9.37629e-06	2.24998e-05	0.249991,0.249985,0.250005,0.250048
-NelderMead_0_2_PenaltyI	-1515	9.37629e-06	2.24998e-05	0.249992,0.250021,0.250024,0.249994
-NelderMead_1_2_PenaltyI	-1703	9.37629e-06	2.24998e-05	0.249991,0.249985,0.250005,0.250048
+NelderMead_0_0_PenaltyI	1150	2.24997e-05	2.24998e-05	0.250536,0.249133,0.249885,0.250474
+NelderMead_1_0_PenaltyI	1397	2.24997e-05	2.24998e-05	0.249972,0.250038,0.250028,0.249992
+NelderMead_0_1_PenaltyI	1364	2.24997e-05	2.24998e-05	0.250006,0.249975,0.249997,0.250053
+NelderMead_1_1_PenaltyI	1549	2.24997e-05	2.24998e-05	0.249991,0.249985,0.250005,0.250048
+NelderMead_0_2_PenaltyI	1515	2.24997e-05	2.24998e-05	0.249992,0.250021,0.250024,0.249994
+NelderMead_1_2_PenaltyI	1703	2.24997e-05	2.24998e-05	0.249991,0.249985,0.250005,0.250048
 NelderMead_0_0_PenaltyII	1531	9.37629e-06	9.51886e-06	0.199972,0.235897,0.5592,0.218371
 NelderMead_1_0_PenaltyII	149	9.37629e-06	9.45514e-06	0.200003,0.272851,0.346956,0.613102
 NelderMead_0_1_PenaltyII	3185	9.37629e-06	9.37663e-06	0.199997,0.195042,0.484442,0.506477
@@ -340,8 +324,8 @@ NelderMead_0_0_LinearFullRank1	199	1.15385	1.15385	2.97371,2.20459,2.13584,0.159
 NelderMead_1_0_LinearFullRank1	213	1.15385	1.15385	2.15604,0.91343,1.2103,-0.975731,-0.292156,-0.336558
 NelderMead_0_1_LinearFullRank1	481	1.15385	1.15385	3.07835,2.28814,2.20579,0.177665,0.583544,-2.94494
 NelderMead_1_1_LinearFullRank1	522	1.15385	1.15385	2.24657,0.983871,1.26376,-0.970922,-0.313712,-0.387097
-NelderMead_0_2_LinearFullRank1	848	1.15385	1.15385	3.10982,2.31306,2.22672,0.18318,0.578494,-2.96842
-NelderMead_1_2_LinearFullRank1	915	1.15385	1.15385	2.26916,1.00145,1.2771,-0.969722,-0.319089,-0.399708
+NelderMead_0_2_LinearFullRank1	853	1.15385	1.15385	3.10982,2.31306,2.22672,0.18318,0.578494,-2.96842
+NelderMead_1_2_LinearFullRank1	910	1.15385	1.15385	2.26916,1.00145,1.2771,-0.969722,-0.319089,-0.399708
 NelderMead_0_0_LinearFullRank0cols0rows	189	2.66667	2.66667	2.14804,1.95635,0.261106,0.864515,-1.56416,1.92177
 NelderMead_1_0_LinearFullRank0cols0rows	196	2.66667	2.66667	1.56493,0.703205,0.818582,-0.603392,-0.223035,1.69523
 NelderMead_0_1_LinearFullRank0cols0rows	458	2.66667	2.66667	2.54626,1.95813,0.262525,0.864232,-1.56549,2.27683
@@ -516,15 +500,15 @@ NelderMead_0_1_McKinnon	-264	-0.25	-2.376e+11	-100,-100
 NelderMead_1_1_McKinnon	-443	-0.25	-2.376e+11	-100,-100
 NelderMead_0_2_McKinnon	-878	-0.25	-2.376e+11	-100,-100
 NelderMead_1_2_McKinnon	-1176	-0.25	-2.376e+11	-100,-100
-==31369== 
-==31369== HEAP SUMMARY:
-==31369==     in use at exit: 0 bytes in 0 blocks
-==31369==   total heap usage: 206,016 allocs, 206,016 frees, 27,406,656 bytes allocated
-==31369== 
-==31369== All heap blocks were freed -- no leaks are possible
-==31369== 
-==31369== For counts of detected and suppressed errors, rerun with: -v
-==31369== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==9490== 
+==9490== HEAP SUMMARY:
+==9490==     in use at exit: 0 bytes in 0 blocks
+==9490==   total heap usage: 373,212 allocs, 373,212 frees, 37,093,456 bytes allocated
+==9490== 
+==9490== All heap blocks were freed -- no leaks are possible
+==9490== 
+==9490== For counts of detected and suppressed errors, rerun with: -v
+==9490== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 */
 
 #endif

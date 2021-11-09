@@ -123,6 +123,16 @@ static void lmdif_callback_fdjac( int mfct, int npar, double* xpars,
 
 }
 
+static bool same_size( int size1, int size2, const char* format ) {
+
+  if ( size1 == size2 )
+    return true;
+
+  PyErr_Format( PyExc_ValueError, format, size1, size2 );
+  return false;
+
+}
+
 //*****************************************************************************
 //
 // py_cpp_lmdif:  Python wrapper function for C++ function lmdif
@@ -145,60 +155,45 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func, Jac fd
 			  &epsfcn, &factor, &verbose,
 			  CONVERTME(DoubleArray), &lb,
 			  CONVERTME(DoubleArray), &ub,
-			  CONVERTME(DoubleArray), &fjac
-                          ) ) {
+			  CONVERTME(DoubleArray), &fjac ) ) {
     return NULL;
   }
 
   const int npar = par.get_size( );
   const int mn = mfct * npar;
-  std::vector<double> covarerr( npar );
-  std::vector<double> jacobian( mn );
+  sherpa::Array1D<double> jacobian( mn );
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size(), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( mn != fjac.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(fjac)=%d != m * n =%d",
-		  static_cast<int>( ub.get_size( ) ), mn );
+  if ( !same_size( fjac.get_size( ), mn, "len(fjac)=%d != m * n =%d" ) )
     return NULL;
-  }
-
 
   try {
 
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
     sherpa::Bounds<double> bounds( mylb, myub );
-    std::vector<double> mypar( &par[0], &par[0] + npar );
+    sherpa::Array1D<double> mypar( &par[0], &par[0] + npar );
 
     if ( 1 == numcores ) {
-      minpack::LevMarDif< Func, PyObject*, double >
+      minpack::LevMarDif<Func, PyObject *, double>
         levmar( func, py_function, mfct );
-
       info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
                      mypar, nfev, fval, bounds, jacobian );
     } else {
-      
-       minpack::LevMarDifJac< Func, Jac, PyObject*, double >
-         levmar( func, py_function, mfct, fdjac, py_jacobian );      
-       info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
-                      mypar, nfev, fval, bounds, jacobian );
+      minpack::LevMarDifJac<Func, Jac, PyObject *, double>
+        levmar( func, py_function, mfct, fdjac, py_jacobian );
+      info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
+                     mypar, nfev, fval, bounds, jacobian );
     }
 
     // info > 0 means par needs to be updated
-    if ( info > 0 )
-      for ( int ii = 0; ii < npar; ++ii )
-        par[ ii ] = mypar[ ii ];
+    if (info > 0)
+      std::copy(&mypar[0], &mypar[0] + npar, &par[0]);
 
   } catch( sherpa::OptErr& oe ) {
     if ( NULL == PyErr_Occurred() )
@@ -314,39 +309,28 @@ static PyObject* py_cpp_lmder( PyObject* self, PyObject* args, Func func ) {
 
   const int npar = par.get_size( );
   const int mn = mfct * npar;
-  std::vector<double> jacobian( mn );
+  sherpa::Array1D<double> jacobian(mn);
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( mn != fjac.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(fjac)=%d != m * n =%d",
-		  static_cast<int>( ub.get_size( ) ), mn );
+  if ( !same_size( fjac.get_size( ), mn, "len(fjac)=%d != m * n =%d" ) )
     return NULL;
-  }
-
 
   try {
 
-    minpack::LevMarDer< Func, PyObject*, double > levmar( func, py_function,
-                                                          mfct );
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
+    minpack::LevMarDer<Func, PyObject*, double>
+      levmar( func, py_function, mfct );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
     sherpa::Bounds<double> bounds( mylb, myub );
-    std::vector<double> mypar( &par[0], &par[0] + npar );
-    info = levmar( npar, ftol, xtol, gtol, maxnfev, factor, verbose,
-		   mypar, nfev, njev, fval, jacobian, bounds, rank );
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+    sherpa::Array1D<double> mypar( &par[0], &par[0] + npar );
+    info = levmar( npar, ftol, xtol, gtol, maxnfev, factor, verbose, mypar, nfev,
+                   njev, fval, jacobian, bounds, rank );
+    std::copy( &mypar[0], &mypar[0] + npar, &par[0] );
 
   } catch( sherpa::OptErr& oe ) {
     if ( NULL == PyErr_Occurred() )
@@ -423,29 +407,23 @@ static PyObject* py_difevo_levmar( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
   try {
 
     sherpa::DifEvo< Func, PyObject*, minpack::LevMarDif< Func, PyObject*, double >, double >
       difevo( callback_func, py_function, mfcts );
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
-    std::vector<double> mypar( &par[0], &par[0] + npar );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
+    sherpa::Bounds<double> bounds( mylb, myub );
+    sherpa::ParVal<double> mypar( npar + 1, npar, &par[0] );
     ierr = difevo( verbose, maxnfev, tol, population_size, seed, xprob,
-		  weighting_factor, npar, mylb, myub, mypar, nfev, fval );
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+                   weighting_factor, bounds, npar, mypar, nfev );
+    mypar.get_results( &par[ 0 ], fval );
 
   } catch( sherpa::OptErr& oe ) {
 
@@ -555,28 +533,23 @@ static PyObject* py_difevo_neldermead( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
   try {
 
-    sherpa::DifEvo< Func, PyObject*, sherpa::NelderMead< Func, PyObject*, double >, double > difevo( func, py_function );
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
-    std::vector<double> mypar( &par[0], &par[0] + npar );
+    sherpa::DifEvo< Func, PyObject*, sherpa::NelderMead< Func, PyObject*, double >,
+                    double > difevo( func, py_function, npar );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
+    sherpa::Bounds<double> bounds( mylb, myub);
+    sherpa::ParVal<double> mypar( npar + 1, npar, &par[0] );
     ierr = difevo( verbose, maxnfev, tol, population_size, seed, xprob,
-		   weighting_factor, npar, mylb, myub, mypar, nfev, fval );
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+                   weighting_factor, bounds, npar, mypar, nfev );
+    mypar.get_results( &par[ 0 ], fval );
 
   } catch( sherpa::OptErr& oe ) {
     if ( NULL == PyErr_Occurred() )
@@ -650,29 +623,23 @@ static PyObject* py_difevo( PyObject* self, PyObject* args, Func func ) {
 
   const int npar = par.get_size( );
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*) "len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
   try {
 
-    sherpa::DifEvo< Func, PyObject*, sherpa::OptFunc< Func, PyObject*, double >,double >
+    sherpa::DifEvo< Func, PyObject*, sherpa::OptFunc< Func, PyObject*, double >, double >
       difevo( func, py_function );
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
-    std::vector<double> mypar( &par[0], &par[0] + npar );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
+    sherpa::Bounds<double> bounds( mylb, myub );
+    sherpa::ParVal<double> mypar( npar + 1, npar, &par[0] );
     ierr = difevo( verbose, maxnfev, tol, population_size, seed, xprob,
-		   weighting_factor, npar, mylb, myub, mypar, nfev, fval );
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+                   weighting_factor, bounds, npar, mypar, nfev );
+    mypar.get_results( &par[ 0 ], fval );
 
   } catch( sherpa::OptErr& oe ) {
     if ( NULL == PyErr_Occurred() )
@@ -747,38 +714,29 @@ static PyObject* py_neldermead( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( npar != step.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*)"len(step)=%d != len(par)=%d",
-		  static_cast<int>( step.get_size( ) ), npar );
+  if ( !same_size( step.get_size( ), npar, "len(step)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*)"len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*)"len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
   try {
 
-    sherpa::NelderMead< Func, PyObject*, double > nm( callback_func,
-                                                      py_function );
-    std::vector<int> myfinalsimplex( &finalsimplex[0], &finalsimplex[0] +
-				     finalsimplex.get_size( ) );
-    std::vector<double> mystep( &step[0], &step[0] + step.get_size( ) );
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
-    std::vector<double> mypar( &par[0], &par[0] + npar );
-    ierr = nm( verbose, maxnfev, tol, npar, initsimplex, myfinalsimplex, mylb,
-	       myub, mystep, mypar, nfev, fval );
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+    sherpa::NelderMead< Func, PyObject*, double >
+      nm( callback_func, py_function, npar );
+    std::vector<int> myfinalsimplex( &finalsimplex[0],
+                                     &finalsimplex[0] + finalsimplex.get_size( ) );
+    sherpa::Array1D<double> mystep( &step[0], &step[0] + step.get_size() );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
+    sherpa::Bounds<double> bounds( mylb, myub );
+    sherpa::ParVal<double> mypar( npar + 1, npar, &par[0] );
+    ierr = nm( verbose, maxnfev, tol, npar, initsimplex, myfinalsimplex, mystep,
+               bounds, mypar, nfev );
+    mypar.get_results( &par[ 0 ], fval );
 
   } catch( sherpa::OptErr& oe ) {
     if ( NULL == PyErr_Occurred() )
@@ -856,32 +814,23 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( npar != step.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*)"len(step)=%d != len(par)=%d",
-		  static_cast<int>( step.get_size( ) ), npar );
+  if ( !same_size( step.get_size( ), npar, "len(step)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != lb.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*)"len(lb)=%d != len(par)=%d",
-		  static_cast<int>( lb.get_size( ) ), npar);
+  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
-  if ( npar != ub.get_size( ) ) {
-    PyErr_Format( PyExc_ValueError, (char*)"len(ub)=%d != len(par)=%d",
-		  static_cast<int>( ub.get_size( ) ), npar );
+  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
     return NULL;
-  }
 
   try {
 
-    std::vector<double> mylb( &lb[0], &lb[0] + npar );
-    std::vector<double> myub( &ub[0], &ub[0] + npar );
+    sherpa::Array1D<double> mylb( &lb[0], &lb[0] + npar );
+    sherpa::Array1D<double> myub( &ub[0], &ub[0] + npar );
+    const sherpa::Bounds<double> bounds( mylb, myub );
     std::vector<double> mypar( &par[0], &par[0] + npar );
     std::vector<double> mystep( &step[0], &step[0] + step.get_size( ) );
-    std::vector<double> vc(npar*(npar+1)/2);
-    const sherpa::Bounds<double> bounds(mylb, myub);
+    std::vector<double> vc( npar * (npar + 1) / 2 );
 
     sherpa::Minim<Func, PyObject*, double>* nm = NULL;
     if (reflect)
@@ -897,8 +846,7 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
 
     minim->minim( mypar, mystep, npar, fval, maxnfev, verbose, ftol, iquad,
                   simp, vc, ierr, nfev, bounds);
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+    std::copy( &mypar[0], &mypar[0] + npar, &par[0] );
 
     // {
     //   int counter = 0;
