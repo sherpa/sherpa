@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021
+#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -64,10 +64,11 @@ from sherpa.utils.err import ParameterErr
 DEFAULT_ABUND = ['angr', 'aspl', 'feld', 'aneb', 'grsa', 'wilm', 'lodd']
 DEFAULT_XSECT = ['bcmc', 'obcm', 'vern']
 
-# XSPEC presmably has its own default for these, but Sherpa explicitly
-# sets values for these parameters.
+# XSPEC defaults - we now set the chatter to 10 and the cosmology is
+# fixed (although it may get set given some discussions DJB has had
+# with the XSPEC developers circa XSPEC 12.12.0).
 #
-DEFAULT_CHATTER = 0
+DEFAULT_CHATTER = 10
 DEFAULT_COSMO = (70.0, 0.0, 0.73)
 
 # The XSET names are (currently) not validated, so pick a name that
@@ -84,19 +85,12 @@ ELEMENT_NAMES = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
 NELEM = len(ELEMENT_NAMES)
 
 
-@pytest.mark.xfail
 @requires_xspec
 def test_chatter_default():
     """Check the expected default setting for chatter.
 
     Ideally this test would be run before any other
     tests of XSPEC are made (i.e. any XSPEC code is called).
-
-    For some reason the chatter setting appears to default to 50,
-    rather than 0. It is not at all clear why, so has been marked
-    as xfail. DJB now thinks that this is due to the Sherpa test
-    setup, which is designed to make the models be verbose in
-    case there's an error.
 
     """
 

@@ -54,6 +54,24 @@ from helpers.extensions import static_ext_modules
 
 import versioneer
 
+# First provide helpful messages if contributors try and run legacy commands.
+
+TEST_HELP = """
+Note: tests are no-longer run using 'python setup.py test'. Instead
+you will need to use pytest. For example:
+
+    pip install -e .[test]
+    pytest
+
+will ensure that pytest and pytest-xvfb are installed before running
+the tests.
+"""
+
+if 'test' in sys.argv:
+    print(TEST_HELP)
+    sys.exit(1)
+
+
 commands = versioneer.get_cmdclass(sherpa_commands)
 
 meta = dict(version=versioneer.get_version(),
