@@ -209,7 +209,7 @@ protected:
 ////////////////////////////////// Array2D //////////////////////////////////
 //
 // A simple 2d array class written for NelderMead/MultiDirSearch.
-// Note Array2d as written, using vector of vector, does not guaranteed
+// Note Array2D as written, using vector of vector, does not guaranteed
 // contiguous data. Check out one of the followings if contiguous
 // in memory is necessary:
 //
