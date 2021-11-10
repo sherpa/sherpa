@@ -21,7 +21,6 @@
 
 from .develop import develop
 from .sdist import sdist
-from .test import PyTest
 from .sherpa_config import sherpa_config
 from .xspec_config import xspec_config
 
@@ -34,7 +33,6 @@ commands = {
     'build_ext': build_ext,
     'sdist': sdist,
     'develop': develop,
-    'test': PyTest,
     'sherpa_config': sherpa_config,
     'xspec_config': xspec_config,
 }
