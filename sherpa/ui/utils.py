@@ -73,17 +73,6 @@ def _is_integer(val):
     return isinstance(val, (int, numpy.integer))
 
 
-def _fix_array(arg, argname, ndims=1):
-    try:
-        arg = numpy.asarray(arg, SherpaFloat)
-        if len(arg.shape) != ndims:
-            raise TypeError
-    except TypeError:
-        raise ArgumentTypeErr('badarg', argname, f'a {ndims}-D array') from None
-
-    return arg
-
-
 def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
@@ -5406,17 +5395,6 @@ class Session(NoNewAttributesAfterInit):
         if require and (cmpt is None):
             raise IdentifierErr('nomodelcmpt', name)
         return cmpt
-
-    def _get_user_stat(self, statname):
-        userstat = statname
-        if not isinstance(statname, sherpa.stats.Stat):
-            if type(statname) is not str:
-                raise ArgumentTypeErr('badarg', "stat name",
-                                      "an instance or a string")
-
-            userstat = self._get_model_component(statname, True)
-
-        return userstat
 
     # DOC-TODO: can send in a model variable, but this is just the
     # identity function, so not worth documenting
