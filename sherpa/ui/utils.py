@@ -63,14 +63,10 @@ _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 ###############################################################################
 
 
-def _argument_type_error(argname, argdesc):
-    raise ArgumentTypeErr('badarg', argname, argdesc)
-
-
 def _check_type(arg, argtype, argname, argdesc, nottype=None):
     if ((not isinstance(arg, argtype)) or
             ((nottype is not None) and isinstance(arg, nottype))):
-        _argument_type_error(argname, argdesc)
+        raise ArgumentTypeErr('badarg', argname, argdesc)
 
 
 def _is_integer(val):
@@ -83,7 +79,7 @@ def _fix_array(arg, argname, ndims=1):
         if len(arg.shape) != ndims:
             raise TypeError
     except TypeError:
-        _argument_type_error(argname, 'a %d-D array' % ndims)
+        raise ArgumentTypeErr('badarg', argname, f'a {ndims}-D array') from None
 
     return arg
 
@@ -1901,7 +1897,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if not isinstance(meth, string_types):
-            _argument_type_error(meth, 'a string')
+            raise ArgumentTypeErr('badarg', meth, 'a string')
 
         if meth in self._itermethods:
             self._current_itermethod = self._itermethods[meth]
@@ -4952,19 +4948,21 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if ids is None:
-            _argument_type_error('ids',
-                                 'an identifier or list of identifiers')
-        elif self._valid_id(ids):
+            raise ArgumentTypeErr('badarg', 'ids',
+                                  'an identifier or list of identifiers')
+
+        if self._valid_id(ids):
             ids = (ids,)
         else:
             try:
                 ids = tuple(ids)
             except TypeError:
-                _argument_type_error('ids',
-                                     'an identifier or list of identifiers')
+                raise ArgumentTypeErr('badarg', 'ids',
+                                      'an identifier or list of identifiers') from None
 
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr_id(ids, lo, **kwargs)
+
         for i in ids:
             self.get_data(i).notice(lo, hi, **kwargs)
 
@@ -5257,7 +5255,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if (func is not None) and (not callable(func)):
-            _argument_type_error('func', 'a function or other callable object')
+            raise ArgumentTypeErr('badarg', 'func',
+                                  'a function or other callable object')
+
         self._model_autoassign_func = func
 
     def list_models(self, show="all"):
@@ -5410,8 +5410,10 @@ class Session(NoNewAttributesAfterInit):
     def _get_user_stat(self, statname):
         userstat = statname
         if not isinstance(statname, sherpa.stats.Stat):
-            if (type(statname) is not str):
-                _argument_type_error("stat name", "an instance or a string")
+            if type(statname) is not str:
+                raise ArgumentTypeErr('badarg', "stat name",
+                                      "an instance or a string")
+
             userstat = self._get_model_component(statname, True)
 
         return userstat
@@ -6887,13 +6889,14 @@ class Session(NoNewAttributesAfterInit):
                 par.frozen = frozen.pop(0)
             pars.append(par)
 
-        if (type(modelname) is not str):
-            _argument_type_error("model name", "a string")
+        if type(modelname) is not str:
+            raise ArgumentTypeErr('badarg', "model name", "a string")
+
         usermodel = self._get_model_component(modelname)
         # If not a user model, exit
         if (usermodel is None or
                 type(usermodel) is not sherpa.models.UserModel):
-            _argument_type_error(modelname, "a user model")
+            raise ArgumentTypeErr('badarg', modelname, "a user model")
 
         # Create a new user model with the desired parameters,
         # and copy over calc, file and y from the old usermodel
