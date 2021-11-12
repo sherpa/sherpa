@@ -5860,15 +5860,9 @@ class Session(NoNewAttributesAfterInit):
         if not self._paramprompt:
             return
 
-        try:
-            get_user_input = raw_input
-        except NameError:
-            get_user_input = input
-
         for par in pars:
             while True:
-                inval = get_user_input("%s parameter value [%g] " %
-                                       (par.fullname, par.val))
+                inval = input(f"{par.fullname} parameter value [{par.val}] ")
                 if inval == "":
                     break
 
