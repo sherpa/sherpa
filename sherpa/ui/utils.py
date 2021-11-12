@@ -1900,13 +1900,13 @@ class Session(NoNewAttributesAfterInit):
         >>> set_iter_method('none')
 
         """
-        if isinstance(meth, string_types):
-            if meth in self._itermethods:
-                self._current_itermethod = self._itermethods[meth]
-            else:
-                raise TypeError(meth + ' is not an iterative fitting method')
-        else:
+        if not isinstance(meth, string_types):
             _argument_type_error(meth, 'a string')
+
+        if meth in self._itermethods:
+            self._current_itermethod = self._itermethods[meth]
+        else:
+            raise TypeError(f'{meth} is not an iterative fitting method')
 
     def set_iter_method_opt(self, optname, val):
         """Set an option for the iterative-fitting scheme.
@@ -5682,8 +5682,8 @@ class Session(NoNewAttributesAfterInit):
     def _eval_model_expression(self, expr, typestr='model'):
         try:
             return eval(expr, self._model_globals, self._model_components)
-        except:
-            raise ArgumentErr('badexpr', typestr, sys.exc_info()[1])
+        except Exception as exc:
+            raise ArgumentErr('badexpr', typestr, sys.exc_info()[1]) from exc
 
     def list_model_ids(self):
         """List of all the data sets with a source expression.
@@ -5881,21 +5881,21 @@ class Session(NoNewAttributesAfterInit):
                     try:
                         val = float(tokens[0])
                     except Exception as e:
-                        info("Please provide a float value; " + str(e))
+                        info(f"Please provide a float value; {e}")
                         continue
 
                 if ntokens > 1 and tokens[1] != '':
                     try:
                         minval = float(tokens[1])
                     except Exception as e:
-                        info("Please provide a float value; " + str(e))
+                        info(f"Please provide a float value; {e}")
                         continue
 
                 if ntokens > 2 and tokens[2] != '':
                     try:
                         maxval = float(tokens[2])
                     except Exception as e:
-                        info("Please provide a float value; " + str(e))
+                        info(f"Please provide a float value; {e}")
                         continue
 
                 try:
@@ -8187,7 +8187,7 @@ class Session(NoNewAttributesAfterInit):
 
                 model.guess(*self.get_data(id).to_guess(), **kwargs)
             except NotImplementedError:
-                info('WARNING: No guess found for %s' % model.name)
+                info(f'WARNING: No guess found for {model.name}')
             return
 
         ids, f = self._get_fit(self._fix_id(id))
@@ -12035,7 +12035,7 @@ class Session(NoNewAttributesAfterInit):
             try:
                 plotname = allowed_types[plottype]
             except KeyError:
-                raise ArgumentErr('badplottype', plottype)
+                raise ArgumentErr('badplottype', plottype) from None
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
