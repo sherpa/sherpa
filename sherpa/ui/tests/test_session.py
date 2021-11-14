@@ -824,3 +824,74 @@ def test_add_user_pars_modelname_not_a_model2():
         s.add_user_pars('foo', ['x'])
 
     assert str(exc.value) == "'foo' must be a user model"
+
+
+def test_paramprompt_multi_parameter(caplog):
+    """Check that paramprompt works with multiple parameters"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    cpt1 = s.create_model_component('const1d', 'bob')
+    cpt2 = s.create_model_component('gauss1d', 'fred')
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO("\n5,1,5\n\n-5, -5, 0")):
+            s.set_source(bob + fred)
+
+    assert len(caplog.records) == 0
+
+    assert cpt1.c0.val == pytest.approx(1)
+    assert cpt1.c0.min < -3e38
+    assert cpt1.c0.max > 3e38
+
+    assert cpt2.fwhm.val == pytest.approx(5)
+    assert cpt2.fwhm.min == pytest.approx(1)
+    assert cpt2.fwhm.max == pytest.approx(5)
+
+    assert cpt2.pos.val == pytest.approx(0)
+    assert cpt2.pos.min < -3e38
+    assert cpt2.pos.max > 3e38
+
+    assert cpt2.ampl.val == pytest.approx(-5)
+    assert cpt2.ampl.min == pytest.approx(-5)
+    assert cpt2.ampl.max == pytest.approx(0)
+
+
+def test_paramprompt_eof(caplog):
+    """What happens when we end early?"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    cpt1 = s.create_model_component('const1d', 'bob')
+    cpt2 = s.create_model_component('gauss1d', 'fred')
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with pytest.raises(EOFError):
+        with SherpaVerbosity('INFO'):
+            with patch("sys.stdin", StringIO("\n5,1,5\n2\n")):
+                s.set_source(bob + fred)
+
+    assert len(caplog.records) == 0
+
+    assert cpt1.c0.val == pytest.approx(1)
+    assert cpt1.c0.min < -3e38
+    assert cpt1.c0.max > 3e38
+
+    assert cpt2.fwhm.val == pytest.approx(5)
+    assert cpt2.fwhm.min == pytest.approx(1)
+    assert cpt2.fwhm.max == pytest.approx(5)
+
+    assert cpt2.pos.val == pytest.approx(2)
+    assert cpt2.pos.min < -3e38
+    assert cpt2.pos.max > 3e38
+
+    assert cpt2.ampl.val == pytest.approx(1)
+    assert cpt2.ampl.min < -3e38
+    assert cpt2.ampl.max > 3e38
