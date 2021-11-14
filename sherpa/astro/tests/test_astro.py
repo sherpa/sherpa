@@ -569,15 +569,15 @@ def test_stats_all(run_thread, fix_xspec):
 def test_lev3fft(run_thread, clean_astro_ui):
     tlocals = run_thread('lev3fft', scriptname='bar.py')
 
-    assert tlocals['src'].fwhm.val == approx(1.6304283807465337e-05)
-    assert tlocals['src'].xpos.val == approx(150.014516168296)
-    assert tlocals['src'].ypos.val == approx(2.6650092327584507)
-    assert tlocals['src'].ampl.val == approx(97.24051178672816)
-    assert tlocals['bkg'].c0.val == approx(0.02087374459610318)
+    assert tlocals['src'].fwhm.val == approx(1.48914, rel=1e-5)
+    assert tlocals['src'].xpos.val == approx(3142.84, rel=1e-5)
+    assert tlocals['src'].ypos.val == approx(4519.72, rel=1e-5)
+    assert tlocals['src'].ampl.val == approx(9.11268, rel=1e-5)
+    assert tlocals['bkg'].c0.val == approx(0.0118703, rel=1e-5)
 
     fres = ui.get_fit_results()
-    assert fres.istatval == approx(6456.0299149344855)
-    assert fres.statval == approx(612.1496898022738, rel=1e-4)
+    assert fres.istatval == approx(6483.84, rel=1e-5)
+    assert fres.statval == approx(558.987, rel=1e-4)
     assert fres.numpoints == 3307
     assert fres.dof == 3302
 
