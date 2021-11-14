@@ -5390,6 +5390,27 @@ class Session(NoNewAttributesAfterInit):
             self._model_autoassign_func(cmpt.name, cmpt)
 
     def _get_model_component(self, name, require=False):
+        """Access the model component by name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the model component.
+        require : bool, optional
+            If `True` then the name must exist.
+
+        Returns
+        -------
+        component : sherpa.models.model.Model instance or None
+            `None` is returned if the name does not exist
+            and the require argument is `False`.
+
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+            If the name does not exist and require is `True`.
+
+        """
         cmpt = self._model_components.get(name)
         require = sherpa.utils.bool_cast(require)
         if require and (cmpt is None):
@@ -6836,6 +6857,14 @@ class Session(NoNewAttributesAfterInit):
         ...               parmins=pmins, parfrozen=pfreeze)
 
         """
+
+        _check_type(modelname, string_types, 'model name', 'a string')
+
+        usermodel = self._get_model_component(modelname)
+        if (usermodel is None or
+                type(usermodel) is not sherpa.models.UserModel):
+            raise ArgumentTypeErr('badarg', modelname, "a user model")
+
         pars = []
         vals = None
         if parvals is not None:
@@ -6866,15 +6895,6 @@ class Session(NoNewAttributesAfterInit):
             if parfrozen is not None:
                 par.frozen = frozen.pop(0)
             pars.append(par)
-
-        if type(modelname) is not str:
-            raise ArgumentTypeErr('badarg', "model name", "a string")
-
-        usermodel = self._get_model_component(modelname)
-        # If not a user model, exit
-        if (usermodel is None or
-                type(usermodel) is not sherpa.models.UserModel):
-            raise ArgumentTypeErr('badarg', modelname, "a user model")
 
         # Create a new user model with the desired parameters,
         # and copy over calc, file and y from the old usermodel
@@ -8165,7 +8185,6 @@ class Session(NoNewAttributesAfterInit):
         if model is not None:
             model = self._check_model(model)
             try:
-
                 model.guess(*self.get_data(id).to_guess(), **kwargs)
             except NotImplementedError:
                 info(f'WARNING: No guess found for {model.name}')
@@ -8175,9 +8194,7 @@ class Session(NoNewAttributesAfterInit):
         try:
             f.guess(**kwargs)
         except NotImplementedError:
-            # raise NotImplementedError('No guess found for model %s' %
-            info('WARNING: No guess found for %s' %
-                 self.get_model(id).name)
+            info(f'WARNING: No guess found for {self.get_model(id).name}')
 
     def calc_stat(self, id=None, *otherids):
         """Calculate the fit statistic for a data set.
