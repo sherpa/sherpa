@@ -22,6 +22,10 @@ This backend implements only minimal functionality (some formatting of
 strings as HTML or LaTeX which are usually used as axis labels), but no real
 plotting capabilities. It is here to ensure that the `sherpa.plot` module can
 be imported, even if no plotting backend is installed.
+
+In this sense, this backend can be understood as the "base" for backeneds. 
+The string-formatting is implemented here so that other backends don't have to
+dublicate that; they can call the functions here.
 '''
 
 import logging
