@@ -12578,7 +12578,7 @@ class Session(sherpa.ui.utils.Session):
         self._jointplot.reset()
 
         try:
-            sherpa.plot.begin()
+            sherpa.plot.backend.begin()
             self._jointplot.plottop(plot1, overplot=overplot,
                                     clearwindow=clearwindow, **kwargs)
 
@@ -12596,10 +12596,10 @@ class Session(sherpa.ui.utils.Session):
 
             plot2.plot_prefs['xlog'] = oldval
         except:
-            sherpa.plot.exceptions()
+            sherpa.plot.backend.exceptions()
             raise
         else:
-            sherpa.plot.end()
+            sherpa.plot.backend.end()
 
     def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True, **kwargs):
