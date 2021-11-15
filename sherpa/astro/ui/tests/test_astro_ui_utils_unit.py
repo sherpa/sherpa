@@ -47,8 +47,7 @@ from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 def test_load_table_model_fails_with_dir(tmp_path):
     """Check that the function fails with invalid input: directory
 
-    The temporary directory is used for this (the test is skipped if
-    it does not exist).
+    The temporary directory is used for this.
     """
 
     tmpdir = tmp_path / 'load_table_model'
@@ -67,8 +66,7 @@ def test_load_table_model_fails_with_dir(tmp_path):
 def test_load_xstable_model_fails_with_dir(tmp_path):
     """Check that the function fails with invalid input: directory
 
-    The temporary directory is used for this (the test is skipped if
-    it does not exist).
+    The temporary directory is used for this.
     """
 
     tmpdir = tmp_path / 'load_xstable_model'
