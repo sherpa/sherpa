@@ -109,16 +109,9 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'Confidence1D', 'Confidence2D',
            'IntervalProjection', 'IntervalUncertainty',
            'RegionProjection', 'RegionUncertainty',
-           'begin', 'end', 'exceptions',
-           'backend')
-
+           )
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
-
-begin = backend.begin
-end = backend.end
-exceptions = backend.exceptions
-get_latex_for_string = backend.get_latex_for_string
 
 
 def _make_title(title, name=''):
@@ -2083,8 +2076,8 @@ class ChisqrPlot(ModelPlot):
         staterr = data.get_yerr(True, stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
-        self.ylabel = get_latex_for_string(r'\chi^2')
-        self.title = _make_title(get_latex_for_string(r'\chi^2'), data.name)
+        self.ylabel = backend.get_latex_for_string(r'\chi^2')
+        self.title = _make_title(backend.get_latex_for_string(r'\chi^2'), data.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, title=self.title,
