@@ -35,7 +35,7 @@ backends installed with Sherpa in the order listed in
 successfully is set as the active backend. The following command prints the
 name and the location on disk of that module::
 
-   >>> import sherpa import plot
+   >>> from sherpa import plot
    >>> print(plot.backend)
 
 Change the backend
