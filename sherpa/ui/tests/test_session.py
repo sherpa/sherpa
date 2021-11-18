@@ -939,6 +939,8 @@ def test_delete_model_component_warning(caplog):
     assert lvl == logging.WARNING
     assert msg == "the model component 'gauss1d.mdl2' is found in model 1 and cannot be deleted"
 
+    assert s.list_model_components() == ['mdl', 'mdl2']
+
 
 def test_issue_16():
     """Check one of the examples from #16"""
