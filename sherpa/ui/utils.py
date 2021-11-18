@@ -5659,19 +5659,30 @@ class Session(NoNewAttributesAfterInit):
         """
         _check_type(name, string_types, 'name', 'a string')
         mod = self._model_components.pop(name, None)
-        if mod is not None:
-            for key in self.list_model_ids():
-                if mod in self._models[key] or mod in self._sources[key]:
-                    warning("the model component '%s' is found in model %s" %
-                            (mod.name, str(key) + " and cannot be deleted"))
-                    # restore the model component in use and return
-                    self._model_components[name] = mod
-                    return
-
-            del sys.modules["__main__"].__dict__[name]
-            del BUILTINS.__dict__[name]
-        else:
+        if mod is None:
             raise IdentifierErr('nomodelcmpt', name)
+
+        # If the component is part of a model expression we
+        # warn the user but make no change.
+        #
+        for key in self.list_model_ids():
+
+            # We can not guarantee that key exists in both
+            # _models and _sources - in fact, it shouldn't,
+            # so we need to be a bit careful.
+            #
+            has_model = key in self._models and mod in self._models[key]
+            has_source = key in self._sources and mod in self._sources[key]
+
+            if has_model or has_source:
+                warning(f"the model component '{mod.name}' is found in model {key}" +
+                        " and cannot be deleted")
+                # restore the model component in use and return
+                self._model_components[name] = mod
+                return
+
+        del sys.modules["__main__"].__dict__[name]
+        del BUILTINS.__dict__[name]
 
     # Back-compatibility
     # create_model = create_model_component

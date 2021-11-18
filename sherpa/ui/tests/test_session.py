@@ -921,7 +921,6 @@ def test_delete_model_component_not_a_component():
     assert str(te.value) == "model component 'tst' does not exist"
 
 
-@pytest.mark.xfail
 def test_delete_model_component_warning(caplog):
     """Check we get a warning (which ends up being issue #16)"""
 
@@ -956,11 +955,8 @@ def test_issue_16():
     assert s.list_model_ids() == [1, 'tst']
     assert s.list_model_components() == ['pl1', 'pltst']
 
-    # This should not be throwing an error
     s.delete_model(id='tst')
-    with pytest.raises(KeyError):
-        s.delete_model_component("pltst")
-
+    s.delete_model_component("pltst")
     s.delete_data(id='tst')
 
     assert s.list_data_ids() == [1]
