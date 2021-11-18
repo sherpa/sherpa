@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2017, 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,23 +23,24 @@ There is a copy of this test in sherpa/ui/astro/tests/ that needs
 to be kept up to date.
 """
 
-from sherpa.utils.testing import requires_plotting, requires_xspec
-from sherpa.ui.utils import Session
+from io import StringIO
+import logging
+from unittest.mock import patch
+
 from numpy.testing import assert_array_equal
+
+import pytest
+
 from sherpa.models import parameter
 import sherpa.models.basic
 from sherpa import estmethods as est
 from sherpa import optmethods as opt
 from sherpa import stats
+from sherpa.ui.utils import Session
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, SessionErr
-
-import pytest
-
-from unittest.mock import patch
-
-from io import StringIO
-
+from sherpa.utils.logging import SherpaVerbosity
+from sherpa.utils.testing import requires_plotting, requires_xspec
 
 TEST = [1, 2, 3]
 TEST2 = [4, 5, 6]
@@ -579,3 +581,317 @@ def test_error_estimate_not_run(name):
         func()
 
     assert str(exc.value) == "data set bob has not been set"
+
+
+def test_set_source_invalid():
+
+    s = Session()
+    with pytest.raises(ArgumentErr) as ae:
+        s.set_source('2 * made_up.foo')
+
+    assert str(ae.value) == "invalid model expression: name 'made_up' is not defined"
+
+
+def test_paramprompt_default():
+    """The default setting is False."""
+
+    s = Session()
+    assert not s._paramprompt
+
+
+@pytest.mark.parametrize("flag", [True, "yes", "yeS", 1, "1", "on", "ON"])
+def test_paramprompt_set_true(flag):
+    """The default setting is False."""
+
+    s = Session()
+    s.paramprompt(flag)
+    assert s._paramprompt
+
+
+@pytest.mark.parametrize("flag", [False, "no", "No", 0, "0", "off", "OFF"])
+def test_paramprompt_set_false(flag):
+    """The default setting is False."""
+
+    s = Session()
+    s._paramprompt = True
+    s.paramprompt(flag)
+    assert not s._paramprompt
+
+
+def test_paramprompt_single_parameter_works(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO("223")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 0
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(223)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max > 3e38
+
+
+def test_paramprompt_single_parameter_min_works(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO(",-100")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 0
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(1)
+    assert mdl.c0.min == pytest.approx(-100)
+    assert mdl.c0.max > 3e38
+
+
+def test_paramprompt_single_parameter_max_works(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO(",,100")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 0
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(1)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max == pytest.approx(100)
+
+
+def test_paramprompt_single_parameter_combo_works(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO("-2,-10,10")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 0
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(-2)
+    assert mdl.c0.min == pytest.approx(-10)
+    assert mdl.c0.max == pytest.approx(10)
+
+
+def test_paramprompt_single_parameter_check_invalid(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO("typo\n-200")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "Please provide a float value; could not convert string to float: 'typo'"
+
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(-200)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max > 3e38
+
+
+def test_paramprompt_single_parameter_check_invalid_min(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO(",typo\n,-200")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "Please provide a float value; could not convert string to float: 'typo'"
+
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(1)
+    assert mdl.c0.min == pytest.approx(-200)
+    assert mdl.c0.max > 3e38
+
+
+def test_paramprompt_single_parameter_check_invalid_max(caplog):
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO("-2,,typo\n-200,,-2")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "Please provide a float value; could not convert string to float: 'typo'"
+
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(-200)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max == pytest.approx(-2)
+
+
+def test_paramprompt_single_parameter_check_invalid_max_out_of_bound(caplog):
+    """Note this creates two warnings"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO(",,typo\n,,-200")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 2
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "Please provide a float value; could not convert string to float: 'typo'"
+
+    lname, lvl, msg = caplog.record_tuples[1]
+    assert lname == "sherpa.models.parameter"
+    assert lvl == logging.WARN
+    assert msg == "parameter bob.c0 greater than new maximum; bob.c0 reset to -200"
+
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(-200)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max == pytest.approx(-200)
+
+
+def test_add_user_pars_modelname_not_a_string():
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.add_user_pars(23, ['x'])
+
+    assert str(exc.value) == "'model name' must be a string"
+
+
+def test_add_user_pars_modelname_not_a_model1():
+
+    s = Session()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.add_user_pars('not a model', ['x'])
+
+    assert str(exc.value) == "'not a model' must be a user model"
+
+
+def test_add_user_pars_modelname_not_a_model2():
+    """Use an actual model, but not a user model"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+    s.create_model_component('scale1d', 'foo')
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.add_user_pars('foo', ['x'])
+
+    assert str(exc.value) == "'foo' must be a user model"
+
+
+def test_paramprompt_multi_parameter(caplog):
+    """Check that paramprompt works with multiple parameters"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    cpt1 = s.create_model_component('const1d', 'bob')
+    cpt2 = s.create_model_component('gauss1d', 'fred')
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO("\n5,1,5\n\n-5, -5, 0")):
+            s.set_source(bob + fred)
+
+    assert len(caplog.records) == 0
+
+    assert cpt1.c0.val == pytest.approx(1)
+    assert cpt1.c0.min < -3e38
+    assert cpt1.c0.max > 3e38
+
+    assert cpt2.fwhm.val == pytest.approx(5)
+    assert cpt2.fwhm.min == pytest.approx(1)
+    assert cpt2.fwhm.max == pytest.approx(5)
+
+    assert cpt2.pos.val == pytest.approx(0)
+    assert cpt2.pos.min < -3e38
+    assert cpt2.pos.max > 3e38
+
+    assert cpt2.ampl.val == pytest.approx(-5)
+    assert cpt2.ampl.min == pytest.approx(-5)
+    assert cpt2.ampl.max == pytest.approx(0)
+
+
+def test_paramprompt_eof(caplog):
+    """What happens when we end early?"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    cpt1 = s.create_model_component('const1d', 'bob')
+    cpt2 = s.create_model_component('gauss1d', 'fred')
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with pytest.raises(EOFError):
+        with SherpaVerbosity('INFO'):
+            with patch("sys.stdin", StringIO("\n5,1,5\n2\n")):
+                s.set_source(bob + fred)
+
+    assert len(caplog.records) == 0
+
+    assert cpt1.c0.val == pytest.approx(1)
+    assert cpt1.c0.min < -3e38
+    assert cpt1.c0.max > 3e38
+
+    assert cpt2.fwhm.val == pytest.approx(5)
+    assert cpt2.fwhm.min == pytest.approx(1)
+    assert cpt2.fwhm.max == pytest.approx(5)
+
+    assert cpt2.pos.val == pytest.approx(2)
+    assert cpt2.pos.min < -3e38
+    assert cpt2.pos.max > 3e38
+
+    assert cpt2.ampl.val == pytest.approx(1)
+    assert cpt2.ampl.min < -3e38
+    assert cpt2.ampl.max > 3e38

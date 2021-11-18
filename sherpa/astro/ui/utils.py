@@ -28,7 +28,7 @@ import numpy
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _argument_type_error, _check_type
+from sherpa.ui.utils import _check_type
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
@@ -7046,8 +7046,8 @@ class Session(sherpa.ui.utils.Session):
             try:
                 ids = tuple(ids)
             except TypeError:
-                _argument_type_error('ids',
-                                     'an identifier or list of identifiers')
+                raise ArgumentTypeErr('badarg', 'ids',
+                                      'an identifier or list of identifiers') from None
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
@@ -7106,8 +7106,8 @@ class Session(sherpa.ui.utils.Session):
             try:
                 ids = tuple(ids)
             except TypeError:
-                _argument_type_error('ids',
-                                     'an identifier or list of identifiers')
+                raise ArgumentTypeErr('badarg', 'ids',
+                                      'an identifier or list of identifiers') from None
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
@@ -7164,8 +7164,8 @@ class Session(sherpa.ui.utils.Session):
             try:
                 ids = tuple(ids)
             except TypeError:
-                _argument_type_error('ids',
-                                     'an identifier or list of identifiers')
+                raise ArgumentTypeErr('badarg', 'ids',
+                                      'an identifier or list of identifiers') from None
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
@@ -7228,8 +7228,8 @@ class Session(sherpa.ui.utils.Session):
             try:
                 ids = tuple(ids)
             except TypeError:
-                _argument_type_error('ids',
-                                     'an identifier or list of identifiers')
+                raise ArgumentTypeErr('badarg', 'ids',
+                                      'an identifier or list of identifiers') from None
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,

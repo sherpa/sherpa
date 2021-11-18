@@ -63,29 +63,14 @@ _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 ###############################################################################
 
 
-def _argument_type_error(argname, argdesc):
-    raise ArgumentTypeErr('badarg', argname, argdesc)
-
-
 def _check_type(arg, argtype, argname, argdesc, nottype=None):
     if ((not isinstance(arg, argtype)) or
             ((nottype is not None) and isinstance(arg, nottype))):
-        _argument_type_error(argname, argdesc)
+        raise ArgumentTypeErr('badarg', argname, argdesc)
 
 
 def _is_integer(val):
     return isinstance(val, (int, numpy.integer))
-
-
-def _fix_array(arg, argname, ndims=1):
-    try:
-        arg = numpy.asarray(arg, SherpaFloat)
-        if len(arg.shape) != ndims:
-            raise TypeError
-    except TypeError:
-        _argument_type_error(argname, 'a %d-D array' % ndims)
-
-    return arg
 
 
 def _is_subclass(t1, t2):
@@ -1900,13 +1885,13 @@ class Session(NoNewAttributesAfterInit):
         >>> set_iter_method('none')
 
         """
-        if isinstance(meth, string_types):
-            if meth in self._itermethods:
-                self._current_itermethod = self._itermethods[meth]
-            else:
-                raise TypeError(meth + ' is not an iterative fitting method')
+        if not isinstance(meth, string_types):
+            raise ArgumentTypeErr('badarg', meth, 'a string')
+
+        if meth in self._itermethods:
+            self._current_itermethod = self._itermethods[meth]
         else:
-            _argument_type_error(meth, 'a string')
+            raise TypeError(f'{meth} is not an iterative fitting method')
 
     def set_iter_method_opt(self, optname, val):
         """Set an option for the iterative-fitting scheme.
@@ -4952,19 +4937,21 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if ids is None:
-            _argument_type_error('ids',
-                                 'an identifier or list of identifiers')
-        elif self._valid_id(ids):
+            raise ArgumentTypeErr('badarg', 'ids',
+                                  'an identifier or list of identifiers')
+
+        if self._valid_id(ids):
             ids = (ids,)
         else:
             try:
                 ids = tuple(ids)
             except TypeError:
-                _argument_type_error('ids',
-                                     'an identifier or list of identifiers')
+                raise ArgumentTypeErr('badarg', 'ids',
+                                      'an identifier or list of identifiers') from None
 
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr_id(ids, lo, **kwargs)
+
         for i in ids:
             self.get_data(i).notice(lo, hi, **kwargs)
 
@@ -5257,7 +5244,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if (func is not None) and (not callable(func)):
-            _argument_type_error('func', 'a function or other callable object')
+            raise ArgumentTypeErr('badarg', 'func',
+                                  'a function or other callable object')
+
         self._model_autoassign_func = func
 
     def list_models(self, show="all"):
@@ -5401,20 +5390,32 @@ class Session(NoNewAttributesAfterInit):
             self._model_autoassign_func(cmpt.name, cmpt)
 
     def _get_model_component(self, name, require=False):
+        """Access the model component by name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the model component.
+        require : bool, optional
+            If `True` then the name must exist.
+
+        Returns
+        -------
+        component : sherpa.models.model.Model instance or None
+            `None` is returned if the name does not exist
+            and the require argument is `False`.
+
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+            If the name does not exist and require is `True`.
+
+        """
         cmpt = self._model_components.get(name)
         require = sherpa.utils.bool_cast(require)
         if require and (cmpt is None):
             raise IdentifierErr('nomodelcmpt', name)
         return cmpt
-
-    def _get_user_stat(self, statname):
-        userstat = statname
-        if not isinstance(statname, sherpa.stats.Stat):
-            if (type(statname) is not str):
-                _argument_type_error("stat name", "an instance or a string")
-            userstat = self._get_model_component(statname, True)
-
-        return userstat
 
     # DOC-TODO: can send in a model variable, but this is just the
     # identity function, so not worth documenting
@@ -5682,8 +5683,8 @@ class Session(NoNewAttributesAfterInit):
     def _eval_model_expression(self, expr, typestr='model'):
         try:
             return eval(expr, self._model_globals, self._model_components)
-        except:
-            raise ArgumentErr('badexpr', typestr, sys.exc_info()[1])
+        except Exception as exc:
+            raise ArgumentErr('badexpr', typestr, sys.exc_info()[1]) from exc
 
     def list_model_ids(self):
         """List of all the data sets with a source expression.
@@ -5860,15 +5861,9 @@ class Session(NoNewAttributesAfterInit):
         if not self._paramprompt:
             return
 
-        try:
-            get_user_input = raw_input
-        except NameError:
-            get_user_input = input
-
         for par in pars:
             while True:
-                inval = get_user_input("%s parameter value [%g] " %
-                                       (par.fullname, par.val))
+                inval = input(f"{par.fullname} parameter value [{par.val}] ")
                 if inval == "":
                     break
 
@@ -5887,21 +5882,21 @@ class Session(NoNewAttributesAfterInit):
                     try:
                         val = float(tokens[0])
                     except Exception as e:
-                        info("Please provide a float value; " + str(e))
+                        info(f"Please provide a float value; {e}")
                         continue
 
                 if ntokens > 1 and tokens[1] != '':
                     try:
                         minval = float(tokens[1])
                     except Exception as e:
-                        info("Please provide a float value; " + str(e))
+                        info(f"Please provide a float value; {e}")
                         continue
 
                 if ntokens > 2 and tokens[2] != '':
                     try:
                         maxval = float(tokens[2])
                     except Exception as e:
-                        info("Please provide a float value; " + str(e))
+                        info(f"Please provide a float value; {e}")
                         continue
 
                 try:
@@ -6862,6 +6857,14 @@ class Session(NoNewAttributesAfterInit):
         ...               parmins=pmins, parfrozen=pfreeze)
 
         """
+
+        _check_type(modelname, string_types, 'model name', 'a string')
+
+        usermodel = self._get_model_component(modelname)
+        if (usermodel is None or
+                type(usermodel) is not sherpa.models.UserModel):
+            raise ArgumentTypeErr('badarg', modelname, "a user model")
+
         pars = []
         vals = None
         if parvals is not None:
@@ -6892,14 +6895,6 @@ class Session(NoNewAttributesAfterInit):
             if parfrozen is not None:
                 par.frozen = frozen.pop(0)
             pars.append(par)
-
-        if (type(modelname) is not str):
-            _argument_type_error("model name", "a string")
-        usermodel = self._get_model_component(modelname)
-        # If not a user model, exit
-        if (usermodel is None or
-                type(usermodel) is not sherpa.models.UserModel):
-            _argument_type_error(modelname, "a user model")
 
         # Create a new user model with the desired parameters,
         # and copy over calc, file and y from the old usermodel
@@ -8190,19 +8185,16 @@ class Session(NoNewAttributesAfterInit):
         if model is not None:
             model = self._check_model(model)
             try:
-
                 model.guess(*self.get_data(id).to_guess(), **kwargs)
             except NotImplementedError:
-                info('WARNING: No guess found for %s' % model.name)
+                info(f'WARNING: No guess found for {model.name}')
             return
 
         ids, f = self._get_fit(self._fix_id(id))
         try:
             f.guess(**kwargs)
         except NotImplementedError:
-            # raise NotImplementedError('No guess found for model %s' %
-            info('WARNING: No guess found for %s' %
-                 self.get_model(id).name)
+            info(f'WARNING: No guess found for {self.get_model(id).name}')
 
     def calc_stat(self, id=None, *otherids):
         """Calculate the fit statistic for a data set.
@@ -12041,7 +12033,7 @@ class Session(NoNewAttributesAfterInit):
             try:
                 plotname = allowed_types[plottype]
             except KeyError:
-                raise ArgumentErr('badplottype', plottype)
+                raise ArgumentErr('badplottype', plottype) from None
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported

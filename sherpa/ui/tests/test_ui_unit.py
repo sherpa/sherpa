@@ -25,11 +25,14 @@ Note that this test is almost duplicated in
 sherpa/astro/ui/tests/test_astro_ui_unit.py
 """
 
+import logging
+
 import numpy as np
 
 import pytest
 
 from sherpa import ui
+from sherpa.models.model import ArithmeticModel
 from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
 
 
@@ -122,3 +125,83 @@ def test_save_filter_data1d(tmp_path, clean_ui):
     assert d.y == pytest.approx(expected)
     assert d.staterror is None
     assert d.syserror is None
+
+
+def test_set_iter_method_type_not_string():
+    with pytest.raises(ArgumentTypeErr) as te:
+        ui.set_iter_method(23)
+
+    assert str(te.value) == "'23' must be a string"
+
+
+def test_set_iter_method_type_not_enumeration():
+    with pytest.raises(TypeError) as te:
+        ui.set_iter_method('a random string')
+
+    assert str(te.value) == "a random string is not an iterative fitting method"
+
+
+class NonIterableObject:
+    """Something that tuple(..) of will error out on"""
+
+    pass
+
+
+@pytest.mark.parametrize("func",
+                         [ui.notice_id, ui.ignore_id])
+def test_filter_errors_out_invalid_id(func):
+    """Just check we create the expected error message.
+
+    Somewhat contrived.
+    """
+
+    ids = NonIterableObject()
+    with pytest.raises(ArgumentTypeErr) as te:
+        func(ids)
+
+    assert str(te.value) == "'ids' must be an identifier or list of identifiers"
+
+
+def test_set_model_autoassign_func_type():
+
+    with pytest.raises(ArgumentTypeErr) as te:
+        ui.set_model_autoassign_func(23)
+
+    assert str(te.value) == "'func' must be a function or other callable object"
+
+
+class DummyModel(ArithmeticModel):
+    pass
+
+
+def test_guess_warns_no_guess_names_model(caplog, clean_ui):
+    """Do we warn when the named model has no guess"""
+
+    ui.load_arrays(1, [1, 2, 3], [-3, 4, 5])
+    cpt = DummyModel('dummy')
+
+    assert len(caplog.records) == 0
+    ui.guess(cpt)
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "WARNING: No guess found for dummy"
+
+
+def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
+    """Do we warn when the (implied) model has no guess"""
+
+    ui.load_arrays(1, [1, 2, 3], [-3, 4, 5])
+    cpt = DummyModel('dummy')
+    ui.set_source(cpt + cpt)
+
+    assert len(caplog.records) == 0
+    ui.guess()
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "WARNING: No guess found for (dummy + dummy)"

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2021  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,20 +20,16 @@
 # Basic tests of sherpa.astro.ui.utils routines.
 #
 # This supplements test_astro_ui_ui.py (in that tests are being moved
-# out of a single file) but uses pytest instead of unittest.
+# out of a single file)
 #
 
 import os
-import tempfile
 
 import pytest
 
-# from numpy.testing import assert_almost_equal
-
 from sherpa.astro import ui
+from sherpa.utils.err import ArgumentTypeErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
-
-tmpdir = tempfile.gettempdir()
 
 
 # Note that the logic in load_table_model is quite convoluted,
@@ -48,38 +44,38 @@ tmpdir = tempfile.gettempdir()
 #
 
 @requires_fits
-@pytest.mark.skipif(not(os.path.isdir(tmpdir)),
-                    reason='temp directory does not exist')
-def test_load_table_model_fails_with_dir():
+def test_load_table_model_fails_with_dir(tmp_path):
     """Check that the function fails with invalid input: directory
 
-    The temporary directory is used for this (the test is skipped if
-    it does not exist).
+    The temporary directory is used for this.
     """
+
+    tmpdir = tmp_path / 'load_table_model'
+    tmpdir.mkdir()
 
     ui.clean()
     assert ui.list_model_components() == []
     with pytest.raises(IOError):
-        ui.load_table_model('tmpdir', tmpdir)
+        ui.load_table_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
 
 
 @requires_fits
 @requires_xspec
-@pytest.mark.skipif(not(os.path.isdir(tmpdir)),
-                    reason='temp directory does not exist')
-def test_load_xstable_model_fails_with_dir():
+def test_load_xstable_model_fails_with_dir(tmp_path):
     """Check that the function fails with invalid input: directory
 
-    The temporary directory is used for this (the test is skipped if
-    it does not exist).
+    The temporary directory is used for this.
     """
+
+    tmpdir = tmp_path / 'load_xstable_model'
+    tmpdir.mkdir()
 
     ui.clean()
     assert ui.list_model_components() == []
     with pytest.raises(IOError):
-        ui.load_xstable_model('tmpdir', tmpdir)
+        ui.load_xstable_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
 
@@ -172,3 +168,25 @@ def test_load_xstable_model_fails_with_text_column(make_data_path):
         ui.load_xstable_model('stringcol', infile)
 
     assert ui.list_model_components() == []
+
+
+class NonIterableObject:
+    """Something that tuple(..) of will error out on"""
+
+    pass
+
+
+@pytest.mark.parametrize("func",
+                         [ui.notice2d_id, ui.ignore2d_id,
+                          ui.notice2d_image, ui.ignore2d_image])
+def test_spatial_filter_errors_out_invalid_id(func):
+    """Just check we create the expected error message.
+
+    Somewhat contrived.
+    """
+
+    ids = NonIterableObject()
+    with pytest.raises(ArgumentTypeErr) as te:
+        func(ids)
+
+    assert str(te.value) == "'ids' must be an identifier or list of identifiers"""
