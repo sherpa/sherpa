@@ -895,3 +895,82 @@ def test_paramprompt_eof(caplog):
     assert cpt2.ampl.val == pytest.approx(1)
     assert cpt2.ampl.min < -3e38
     assert cpt2.ampl.max > 3e38
+
+
+def test_delete_model_component_invalid_argument():
+    """We could allow the component to be deleted this way"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    tst = s.create_model_component('gauss1d', 'gmdl')
+
+    with pytest.raises(ArgumentTypeErr) as te:
+        s.delete_model_component(tst)
+
+    assert str(te.value) == "'name' must be a string"
+
+
+def test_delete_model_component_not_a_component():
+    """We could allow the component to be deleted this way"""
+
+    s = Session()
+    with pytest.raises(IdentifierErr) as te:
+        s.delete_model_component('tst')
+
+    assert str(te.value) == "model component 'tst' does not exist"
+
+
+@pytest.mark.xfail
+def test_delete_model_component_warning(caplog):
+    """Check we get a warning (which ends up being issue #16)"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_source('const1d.mdl + gauss1d.mdl2')
+    assert s.list_model_components() == ['mdl', 'mdl2']
+
+    assert len(caplog.records) == 0
+    s.delete_model_component('mdl2')
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.WARNING
+    assert msg == "the model component 'gauss1d.mdl2' is found in model 1 and cannot be deleted"
+
+
+def test_issue_16():
+    """Check one of the examples from #16"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.dataspace1d(0.01, 11, 0.01, id=1)
+    s.dataspace1d(2, 5, 0.1, id="tst")
+    s.set_source(1, 'powlaw1d.pl1')
+    s.set_source('tst', 'powlaw1d.pltst')
+
+    assert s.list_data_ids() == [1, 'tst']
+    assert s.list_model_ids() == [1, 'tst']
+    assert s.list_model_components() == ['pl1', 'pltst']
+
+    # This should not be throwing an error
+    s.delete_model(id='tst')
+    with pytest.raises(KeyError):
+        s.delete_model_component("pltst")
+
+    s.delete_data(id='tst')
+
+    assert s.list_data_ids() == [1]
+    assert s.list_model_ids() == [1]
+    assert s.list_model_components() == ['pl1']
+
+    s.delete_model(id=1)
+    s.delete_model_component("pl1")
+    s.delete_data(id=1)
+
+    assert s.list_data_ids() == []
+    assert s.list_model_ids() == []
+    assert s.list_model_components() == []
