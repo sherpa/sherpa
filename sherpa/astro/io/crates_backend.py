@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021
-#                Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -68,13 +68,6 @@ def open_crate(filename, crateType=pycrates.CrateDataset, mode='r'):
     return data
 
 
-def close_crate_dataset(dataset):
-
-    if (hasattr(dataset, "snip")):
-        dataset.snip()
-    # Else, it's a plain Crate that can just fall out of scope
-
-
 def get_filename_from_dmsyntax(filename, blockname=None):
 
     arg = str(filename)
@@ -90,23 +83,21 @@ def get_filename_from_dmsyntax(filename, blockname=None):
 
     if not is_binary_file(filename):
         isbinary = False
-        fd = open(filename, 'r')
-        try:
+        # TODO: set encoding='UTF-8' or maybe 'ascii'
+        with open(filename, mode='r') as fh:
             last = None
-            line = fd.readline().strip()
+            line = fh.readline().strip()
             while len(line) > 0 and line[0] in '#%':
                 last = line
-                line = fd.readline().strip()
+                line = fh.readline().strip()
             if (last is not None and
                     (len(last.strip('#').strip().split(' ')) != len(line.strip().split(' ')))):
                 colnames = False
-        finally:
-            fd.close()
 
     if blockname is not None:
-        arg += "[%s]" % str(blockname).upper()
+        arg += f"[{str(blockname).upper()}]"
 
-    if (not isbinary) and (not colnames) and ('cols' not in dmsyn):
+    if not isbinary and not colnames and 'cols' not in dmsyn:
         arg += "[opt colnames=none]"
 
     return arg
@@ -145,8 +136,8 @@ def _try_key(crate, name, dtype=str):
     #
     if dtype == str and isinstance(key, bytes):
         return dtype(key, "utf-8")
-    else:
-        return dtype(key)
+
+    return dtype(key)
 
 
 def _get_meta_data(crate):
@@ -164,6 +155,7 @@ def _get_meta_data(crate):
                 val = ''
 
             meta[name] = val
+
     return meta
 
 
@@ -197,7 +189,7 @@ def _set_pha_column(crate, col, name, val):
     if col.load(numpy.asarray(val), True) != pycrates.dmSUCCESS:
         raise IOErr('setcolfailed', col.name, col.get_status_message())
 
-    exec('crate.' + name + ' = col')
+    setattr(crate, name, col)
 
 
 def _require_key(crate, name, key, dtype=str):
@@ -405,7 +397,6 @@ def read_table_blocks(arg, make_copy=False):
 
     filename = ''
     dataset = None
-    close_dataset = False
     if isinstance(arg, pycrates.TABLECrate):
         filename = arg.get_filename()
         dataset = arg.get_dataset()
@@ -415,7 +406,6 @@ def read_table_blocks(arg, make_copy=False):
     elif isinstance(arg, string_types):
         filename = arg
         dataset = pycrates.CrateDataset(arg)
-        close_dataset = True
     else:
         raise IOErr('badfile', arg, "CrateDataset obj")
 
@@ -441,8 +431,6 @@ def read_table_blocks(arg, make_copy=False):
         for name in names:
             cols[ii][name] = crate.get_column(name).values
 
-    if close_dataset:
-        close_crate_dataset(dataset)
     return filename, cols, hdr
 
 
@@ -451,19 +439,11 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
     checked for new crates
     """
 
-    close_dataset = False
     if type(arg) == str:
 
         # arg = get_filename_from_dmsyntax(arg, blockname)
         arg = get_filename_from_dmsyntax(arg)
-
-        tbl = None
-        try:
-            tbl = open_crate(arg)
-        except Exception as e:
-            raise e
-
-        close_dataset = True
+        tbl = open_crate(arg)
 
         # Make a copy of the data, since we don't know that pycrates will
         # do something sensible wrt reference counting
@@ -489,8 +469,6 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
     for key in hdrkeys:
         hdr[key] = _require_hdr_key(tbl, key)
 
-    if close_dataset:
-        close_crate_dataset(tbl.get_dataset())
     return hdr
 
 
@@ -546,19 +524,14 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
                     fix_type=True [, blockname=None [, hdrkeys=None ] ]]]])
     """
     filename = ''
-    close_dataset = False
     if type(arg) == str:
 
         arg = get_filename_from_dmsyntax(arg)
         tbl = open_crate(arg)
         if not isinstance(tbl, pycrates.TABLECrate):
-            # ??????????????????????????????????######## dtn
-            close_crate_dataset(tbl.get_dataset())
-            # ??????????????????????????????????######## dtn
             raise IOErr('badfile', arg, 'TABLECrate obj')
 
         filename = tbl.get_filename()
-        close_dataset = True
 
         # Make a copy of the data, since we don't know that pycrates will
         # do something sensible wrt reference counting
@@ -607,8 +580,6 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
         for key in hdrkeys:
             hdr[key] = _require_hdr_key(tbl, key)
 
-    if close_dataset:
-        close_crate_dataset(tbl.get_dataset())
     return colkeys, cols, filename, hdr
 
 
@@ -619,18 +590,13 @@ def get_image_data(arg, make_copy=True, fix_type=True):
     get_image_data ( IMAGECrate [, make_copy=True, fix_type=True ])
     """
     filename = ''
-    close_dataset = False
     if type(arg) == str:
         img = open_crate(arg)
 
         if not isinstance(img, pycrates.IMAGECrate):
-            # ??????????????????????????????????######## dtn
-            close_crate_dataset(img.get_dataset())
-            # ??????????????????????????????????######## dtn
             raise IOErr('badfile', arg, "IMAGECrate obj")
 
         filename = arg
-        close_dataset = True
 
     elif isinstance(arg, pycrates.IMAGECrate):
         img = arg
@@ -687,8 +653,6 @@ def get_image_data(arg, make_copy=True, fix_type=True):
     for key in keys:
         data['header'].pop(key, None)
 
-    if close_dataset:
-        close_crate_dataset(img.get_dataset())
     return data, filename
 
 
@@ -699,16 +663,11 @@ def get_arf_data(arg, make_copy=True):
     get_arf_data( ARFCrate [, make_copy=True ])
     """
     filename = ''
-    close_dataset = False
     if type(arg) == str:
         arf = open_crate(arg)
         if not isinstance(arf, pycrates.TABLECrate):
-            # ??????????????????????????????????######## dtn
-            close_crate_dataset(arf.get_dataset())
-            # ??????????????????????????????????######## dtn
             raise IOErr('badfile', arg, "ARFCrate obj")
         filename = arg
-        close_dataset = True
     elif isinstance(arg, pycrates.TABLECrate):
         arf = arg
         filename = arg.get_filename()
@@ -738,8 +697,6 @@ def get_arf_data(arg, make_copy=True):
     data['header'] = _get_meta_data(arf)
     data['header'].pop('EXPOSURE', None)
 
-    if close_dataset:
-        close_crate_dataset(arf.get_dataset())
     return data, filename
 
 
@@ -750,7 +707,6 @@ def get_rmf_data(arg, make_copy=True):
     get_rmf_data( RMFCrate [, make_copy=True ])
     """
     filename = ''
-    close_dataset = False
     if type(arg) == str:
         rmfdataset = open_crate_dataset(
             arg, pycrates.rmfcratedataset.RMFCrateDataset)
@@ -763,7 +719,6 @@ def get_rmf_data(arg, make_copy=True):
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
         filename = arg
-        close_dataset = True
 
     elif pycrates.is_rmf(arg) == 1:
         rmfdataset = arg
@@ -856,7 +811,7 @@ def get_rmf_data(arg, make_copy=True):
 
     if offset < 0:
         error("Failed to locate TLMIN keyword for F_CHAN" +
-              " column in RMF file '%s'; " % filename +
+              f" column in RMF file '{filename}'; " +
               'Update the offset value in the RMF data set to' +
               ' appropriate TLMIN value prior to fitting')
 
@@ -864,10 +819,9 @@ def get_rmf_data(arg, make_copy=True):
         offset = channel.get_tlmin()
 
     # If response is non-OGIP, tlmin is -(max of type), so resort to default
-    if not (offset < 0):
+    if not offset < 0:
         data['offset'] = offset
 
-    #
     # FIXME:
     #
     # Currently, CRATES does something screwy:  If n_grp is zero in a bin,
@@ -893,8 +847,6 @@ def get_rmf_data(arg, make_copy=True):
      data['matrix']) = resp_init(data['n_grp'], fcbuf, ncbuf,
                                  chan_width, respbuf.ravel(), resp_width)
 
-    if close_dataset:
-        close_crate_dataset(rmfdataset)
     return data, filename
 
 
@@ -905,7 +857,6 @@ def get_pha_data(arg, make_copy=True, use_background=False):
     get_pha_data( PHACrate [, make_copy=True [, use_background=False]])
     """
     filename = ''
-    close_dataset = False
     if type(arg) == str:
         phadataset = open_crate_dataset(
             arg, pycrates.phacratedataset.PHACrateDataset)
@@ -914,7 +865,6 @@ def get_pha_data(arg, make_copy=True, use_background=False):
             raise IOErr('badfile', arg, "PHACrateDataset obj")
 
         filename = arg
-        close_dataset = True
 
     elif pycrates.is_pha(arg) == 1:
         phadataset = arg
@@ -946,7 +896,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
         # Chandra Level 3 PHA files
         for ii in range(phadataset.get_ncrates()):
             block = phadataset.get_crate(ii + 1)
-            if (_try_hdr_key(block, 'HDUCLAS2') == 'BKG'):
+            if _try_hdr_key(block, 'HDUCLAS2') == 'BKG':
                 pha = block
 
     if pha is None or pha.get_colnames() is None:
@@ -1140,8 +1090,6 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
             datasets.append(data)
 
-    if close_dataset:
-        close_crate_dataset(phadataset)
     return datasets, filename
 
 
@@ -1221,13 +1169,12 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 
     # pycrates.write_file(img, filename)
     img.write(filename, clobber=True)
-    close_crate_dataset(img.get_dataset())
 
 
 def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
                    ascii=False, clobber=False, packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
+    if not packup and not clobber and os.path.isfile(filename):
         raise IOErr("filefound", filename)
 
     tbl = pycrates.TABLECrate()
@@ -1249,7 +1196,6 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
 
         # pycrates.write_file(tbl, filename)
         tbl.write(filename, clobber=True)
-        close_crate_dataset(tbl.get_dataset())
 
 
 def set_pha_data(filename, data, col_names, header=None,
@@ -1290,7 +1236,6 @@ def set_pha_data(filename, data, col_names, header=None,
 
         # pycrates.write_pha(phadataset, filename)
         phadataset.write(filename, clobber=True)
-        close_crate_dataset(phadataset)
 
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
@@ -1308,7 +1253,8 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     for arg in args:
         if not numpy.iterable(arg):
             raise IOErr('noarrayswrite')
-        elif len(arg) != size:
+
+        if len(arg) != size:
             raise IOErr('arraysnoteq')
 
     if ascii and '[' not in filename and ']' not in filename:
@@ -1317,7 +1263,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     tbl = pycrates.TABLECrate()
 
     if fields is None:
-        fields = ['col%i' % (ii + 1) for ii in range(len(args))]
+        fields = [f'col{ii + 1}' for ii in range(len(args))]
 
     if len(args) != len(fields):
         raise IOErr('wrongnumcols', len(args), len(fields))
@@ -1326,4 +1272,3 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         _set_column(tbl, name, val)
 
     pycrates.write_file(tbl, filename, clobber=True)
-    close_crate_dataset(tbl.get_dataset())
