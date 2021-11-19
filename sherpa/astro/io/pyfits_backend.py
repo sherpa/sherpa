@@ -42,7 +42,6 @@ import os
 import warnings
 
 import numpy
-from numpy.compat import basestring
 
 from astropy.io import fits
 from astropy.io.fits.column import _VLF
@@ -77,22 +76,19 @@ def _has_hdu(hdulist, name):
     return True
 
 
-def _has_key(hdu, name):
-    return name in hdu.header
-
-
 def _try_key(hdu, name, fix_type=False, dtype=SherpaFloat):
-    if _has_key(hdu, name):
+
+    try:
         key = hdu.header[name]
+    except KeyError:
+        return None
 
-        if str(key).find('none') != -1:
-            return None
+    if str(key).find('none') != -1:
+        return None
 
-        if fix_type:
-            key = dtype(key)
-        return key
-
-    return None
+    if fix_type:
+        key = dtype(key)
+    return key
 
 
 def _require_key(hdu, name, fix_type=False, dtype=SherpaFloat):
@@ -121,10 +117,15 @@ def _get_wcs_key(hdu, key0, key1, fix_type=False, dtype=SherpaFloat):
     ().
     """
 
-    if _has_key(hdu, key0) and _has_key(hdu, key1):
-        return numpy.array([_try_key(hdu, key0, fix_type, dtype),
-                            _try_key(hdu, key1, fix_type, dtype)], dtype)
-    return ()
+    val1 = _try_key(hdu, key0, fix_type, dtype)
+    if val1 is None:
+        return ()
+
+    val2 = _try_key(hdu, key1, fix_type, dtype)
+    if val2 is None:
+        return ()
+
+    return numpy.array([val1, val2], dtype)
 
 
 def _add_keyword(hdrlist, name, val):
@@ -306,7 +307,7 @@ def read_table_blocks(arg, make_copy=False):
     if isinstance(arg, fits.HDUList):
         filename = arg[0]._file.name
         hdus = arg
-    elif isinstance(arg, basestring) and is_binary_file(arg):
+    elif isinstance(arg, str) and is_binary_file(arg):
         filename = arg
         hdus = open_fits(arg)
     else:
@@ -358,7 +359,7 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     file is a binary file (via the is_binary_file routine).
     """
 
-    if isinstance(arg, basestring) and (not nobinary or is_binary_file(arg)):
+    if isinstance(arg, str) and (not nobinary or is_binary_file(arg)):
         tbl = open_fits(arg)
         filename = arg
     elif isinstance(arg, fits.HDUList) and len(arg) > 0 and \
@@ -366,7 +367,7 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
         tbl = arg
         filename = tbl[0]._file.name
     else:
-        msg = "a binary FITS table or a {} list".format(exptype)
+        msg = f"a binary FITS table or a {exptype} list"
         raise IOErr('badfile', arg, msg)
 
     return (tbl, filename)
@@ -686,7 +687,7 @@ def get_rmf_data(arg, make_copy=False):
 
         # Beginning of non-Chandra RMF support
         fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
-        tlmin = _try_key(hdu, 'TLMIN' + str(fchan_col), True, SherpaUInt)
+        tlmin = _try_key(hdu, f"TLMIN{fchan_col}", True, SherpaUInt)
 
         if tlmin is not None:
             data['offset'] = tlmin
@@ -694,7 +695,7 @@ def get_rmf_data(arg, make_copy=False):
             # QUS: should this actually be an error, rather than just
             #      something that is logged to screen?
             error("Failed to locate TLMIN keyword for F_CHAN" +
-                  " column in RMF file '%s'; " % filename +
+                  f" column in RMF file '{filename}'; " +
                   'Update the offset value in the RMF data set to' +
                   ' appropriate TLMIN value prior to fitting')
 
@@ -705,7 +706,7 @@ def get_rmf_data(arg, make_copy=False):
 
             # Beginning of non-Chandra RMF support
             chan_col = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, 'TLMIN' + str(chan_col), True, SherpaUInt)
+            tlmin = _try_key(hdu, f"TLMIN{chan_col}", True, SherpaUInt)
             if tlmin is not None:
                 data['offset'] = tlmin
 
@@ -720,7 +721,7 @@ def get_rmf_data(arg, make_copy=False):
     # Note that crates uses the sherpa.astro.utils.resp_init routine,
     # but it's not clear why, so it is not used here for now.
     #
-    good = (data['n_grp'] > 0)
+    good = data['n_grp'] > 0
     data['matrix'] = data['matrix'][good]
 
     if isinstance(data['matrix'], _VLF):
@@ -790,7 +791,7 @@ def get_rmf_data(arg, make_copy=False):
     else:
         if len(data['n_grp']) == len(data['f_chan']):
             # filter out groups with zeroes.
-            good = (data['n_grp'] > 0)
+            good = data['n_grp'] > 0
             data['f_chan'] = data['f_chan'][good]
             data['n_chan'] = data['n_chan'][good]
 
@@ -842,7 +843,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
             # Make sure channel numbers not indices
             chan = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, 'TLMIN' + str(chan), True, SherpaUInt)
+            tlmin = _try_key(hdu, f"TLMIN{chan}", True, SherpaUInt)
             if int(data['channel'][0]) == 0 or tlmin == 0:
                 data['channel'] = data['channel'] + 1
 
@@ -897,7 +898,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
             # Make sure channel numbers not indices
             chan = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, 'TLMIN' + str(chan), True, SherpaUInt)
+            tlmin = _try_key(hdu, f"TLMIN{chan}", True, SherpaUInt)
 
             for ii in range(num):
                 if int(channel[ii][0]) == 0:
@@ -1006,7 +1007,7 @@ def _create_columns(col_names, data):
 def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
                    ascii=False, clobber=False, packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
+    if not packup and not clobber and os.path.isfile(filename):
         raise IOErr("filefound", filename)
 
     col_names = list(col_names)
@@ -1109,7 +1110,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         if data['eqpos'] is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
-            crpixw = ((crpixw - crvalp) / cdeltp + crpixp)
+            crpixw = (crpixw - crvalp) / cdeltp + crpixp
 
     if data['eqpos'] is not None:
         _add_keyword(hdrlist, 'MTYPE2', 'EQPOS   ')
@@ -1152,7 +1153,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
             raise IOErr('arraysnoteq')
 
     if not ascii and fields is None:
-        fields = ['col%i' % (ii + 1) for ii in range(len(args))]
+        fields = [f'col{ii + 1}' for ii in range(len(args))]
 
     if fields is not None and len(args) != len(fields):
         raise IOErr("wrongnumcols", len(args), len(fields))
