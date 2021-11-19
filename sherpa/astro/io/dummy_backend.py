@@ -33,7 +33,7 @@ __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
 lgr = logging.getLogger(__name__)
 
 warning = lgr.warning
-warning("""Cannot import usable FITS I/O backend.
+warning("""Cannot import usable I/O backend.
     If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.
     If you are using Standalone Sherpa, please install astropy.""")
 
