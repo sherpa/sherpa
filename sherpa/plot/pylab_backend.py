@@ -66,9 +66,6 @@ def exceptions():
     pass
 
 
-_errorbar_defaults = get_keyword_defaults(plt.errorbar)
-
-
 def clear_window():
     plt.clf()
 
@@ -208,9 +205,9 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           overplot=False, clearwindow=True,
           xerrorbars=False,
           yerrorbars=False,
-          ecolor=_errorbar_defaults['ecolor'],
-          capsize=_errorbar_defaults['capsize'],
-          barsabove=_errorbar_defaults['barsabove'],
+          ecolor=None,
+          capsize=None,
+          barsabove=False,
           xlog=False,
           ylog=False,
           linestyle='solid',
@@ -361,9 +358,9 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          overplot=False, clearwindow=True,
          xerrorbars=False,
          yerrorbars=False,
-         ecolor=_errorbar_defaults['ecolor'],
-         capsize=_errorbar_defaults['capsize'],
-         barsabove=_errorbar_defaults['barsabove'],
+         ecolor=None,
+         capsize=None,
+         barsabove=False,
          xlog=False,
          ylog=False,
          linestyle='solid',
