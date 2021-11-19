@@ -83,9 +83,9 @@ def _check(array):
 
     if hasattr(array, "shape"):
         if len(array.shape) != 1:
-            raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {}?)".format(array))
+            raise TypeError(f"Data arrays should be 1-dimensional. Did you call 'flatten()' on {array}?)")
     else:
-        warnings.warn("Converting array {} to numpy array.".format(array))
+        warnings.warn(f"Converting array {array} to numpy array.")
         array = numpy.asanyarray(array)
         return _check(array)
     return array
@@ -93,28 +93,28 @@ def _check(array):
 
 def _check_nomask(array):
     if hasattr(array, 'mask'):
-        warnings.warn('Input array {} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.'.format(array))
+        warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
     return array
 
 
 def _check_dep(array):
     if not hasattr(array, 'mask'):
         return _check(array), True
-    else:
-        # We know the mask convention is opposite to sherpa
-        if isinstance(array, numpy.ma.MaskedArray):
-            return _check(array), ~array.mask
-        # We don't know what the mask convention is
-        else:
-            warnings.warn('Format of mask for array {} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.'.format(array))
-            return _check(array), True
+
+    # We know the mask convention is opposite to sherpa
+    if isinstance(array, numpy.ma.MaskedArray):
+        return _check(array), ~array.mask
+
+    # We don't know what the mask convention is
+    warnings.warn(f'Format of mask for array {array} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.')
+    return _check(array), True
 
 
 def _check_err(array, masktemplate):
     '''Accept array without mask or with a mask that matches the template'''
     if hasattr(array, 'mask') and \
        (not hasattr(masktemplate, 'mask') or not numpy.all(array.mask == masktemplate.mask)):
-        warnings.warn('The mask of {} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.'.format(array))
+        warnings.warn(f'The mask of {array} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.')
     return array
 
 
@@ -1709,7 +1709,7 @@ def html_data1d(data):
     plotter = DataPlot()
     plotter.prepare(data)
 
-    summary = '{} Plot'.format(dtype)
+    summary = f'{dtype} Plot'
     try:
         out = backend.as_html_plot(plotter, summary)
     except AttributeError:
@@ -1730,9 +1730,11 @@ def html_data1d(data):
     #
     fexpr = data.get_filter_expr()
     nbins = data.get_dep(filter=True).size
-    meta.append(('Using', '{} with {} bins'.format(fexpr, nbins)))
+    meta.append(('Using', f'{fexpr} with {nbins} bins'))
 
-    # Rely on the _fields ordering, ending at staterror
+    # Rely on the _fields ordering, ending at staterror. This
+    # ignores _extra_fields.
+    #
     for f in data._fields[1:]:
         if f == 'staterror':
             break
@@ -1745,7 +1747,7 @@ def html_data1d(data):
     if data.syserror is not None:
         meta.append(('Systematic error', data.syserror))
 
-    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+    ls = [formatting.html_section(meta, summary=f'{dtype} Summary',
                                   open_block=True)]
     return formatting.html_from_sections(data, ls)
 
@@ -1763,7 +1765,7 @@ def html_data1dint(data):
     plotter = DataHistogramPlot()
     plotter.prepare(data)
 
-    summary = '{} Plot'.format(dtype)
+    summary = f'{dtype} Plot'
     try:
         out = backend.as_html_plot(plotter, summary)
     except AttributeError:
@@ -1784,7 +1786,7 @@ def html_data1dint(data):
     #
     fexpr = data.get_filter_expr()
     nbins = data.get_dep(filter=True).size
-    meta.append(('Using', '{} with {} bins'.format(fexpr, nbins)))
+    meta.append(('Using', f'{fexpr} with {nbins} bins'))
 
     # Rely on the _fields ordering, ending at staterror
     for f in data._fields[1:]:
@@ -1799,7 +1801,7 @@ def html_data1dint(data):
     if data.syserror is not None:
         meta.append(('Systematic error', data.syserror))
 
-    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+    ls = [formatting.html_section(meta, summary=f'{dtype} Summary',
                                   open_block=True)]
     return formatting.html_from_sections(data, ls)
 
@@ -1849,6 +1851,6 @@ def html_data2d(data):
     if data.syserror is not None:
         meta.append(('Systematic error', data.syserror))
 
-    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+    ls = [formatting.html_section(meta, summary=f'{dtype} Summary',
                                   open_block=True)]
     return formatting.html_from_sections(data, ls)
