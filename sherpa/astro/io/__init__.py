@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -54,11 +54,11 @@ References
 """
 
 from configparser import ConfigParser
+import importlib
 import logging
 import os
 import os.path
 import sys
-import importlib
 
 import numpy
 
@@ -86,8 +86,8 @@ else:
            "it must be None or a float > 0"
     try:
         ogip_emin = float(ogip_emin)
-    except ValueError:
-        raise ValueError(emsg)
+    except ValueError as ve:
+        raise ValueError(emsg) from ve
 
     if ogip_emin <= 0.0:
         raise ValueError(emsg)
@@ -111,10 +111,6 @@ __all__ = ('backend',
            'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
            'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
-
-
-def _is_subclass(t1, t2):
-    return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
 
 
 # Note: write_arrays is not included in __all__, so don't add to the
@@ -167,7 +163,7 @@ def read_arrays(*args):
         raise IOErr('noarrays')
 
     dstype = Data1D
-    if _is_subclass(args[-1], BaseData):
+    if sherpa.io._is_subclass(args[-1], BaseData):
         dstype = args.pop()
 
     args = backend.get_column_data(*args)
@@ -228,7 +224,9 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     >>> d = read_table('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    colnames, cols, name, hdr = backend.get_table_data(arg, ncols, colkeys)
+    args = backend.get_table_data(arg, ncols, colkeys)
+    cols = args[1]
+    name = args[2]
 
     # Determine max number of args for dataset constructor
     sherpa.io._check_args(len(cols), dstype)
@@ -286,9 +284,10 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    colnames, cols, name = backend.get_ascii_data(filename, ncols=ncols,
-                                                  colkeys=colkeys,
-                                                  dstype=dstype, **kwargs)
+    args = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
+                                  dstype=dstype, **kwargs)
+    cols = args[1]
+    name = args[2]
 
     # Determine max number of args for dataset constructor
     sherpa.io._check_args(len(cols), dstype)
@@ -465,9 +464,9 @@ def _read_ancillary(data, key, label, dname,
 
         out = read_func(data[key])
         if output_once:
-            info('read {} file {}'.format(label, data[key]))
+            info(f'read {label} file {data[key]}')
 
-    except:
+    except Exception:
         if output_once:
             warning(str(sys.exc_info()[1]))
 
@@ -509,13 +508,13 @@ def read_pha(arg, use_errors=False, use_background=False):
                     msg = 'statistical'
                     if output_once:
                         wmsg = "systematic errors were not found in " + \
-                               "file '{}'".format(filename)
+                               f"file '{filename}'"
                         warning(wmsg)
                 else:
                     msg = 'statistical and systematic'
                 if output_once:
                     imsg = msg + " errors were found in file " + \
-                           "'{}' \nbut not used; ".format(filename) + \
+                           f"'{filename}' \nbut not used; " + \
                            "to use them, re-read with use_errors=True"
                     info(imsg)
                 data['staterror'] = None
@@ -547,8 +546,7 @@ def read_pha(arg, use_errors=False, use_background=False):
                     bkg_datasets = read_pha(data['backfile'], use_errors, True)
 
                     if output_once:
-                        info('read background file {}'.format(
-                            data['backfile']))
+                        info(f"read background file {data['backfile']}")
 
                 if numpy.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
@@ -562,28 +560,27 @@ def read_pha(arg, use_errors=False, use_background=False):
                         bkg_datasets.set_response(arf, rmf)
                     backgrounds.append(bkg_datasets)
 
-            except:
+            except Exception:
                 if output_once:
                     warning(str(sys.exc_info()[1]))
 
         for bkg_type, bscal_type in zip(('background_up', 'background_down'),
                                         ('backscup', 'backscdn')):
             if data[bkg_type] is not None:
-                b = DataPHA(filename,
-                            channel=data['channel'],
-                            counts=data[bkg_type],
-                            bin_lo=data['bin_lo'],
-                            bin_hi=data['bin_hi'],
-                            grouping=data['grouping'],
-                            quality=data['quality'],
-                            exposure=data['exposure'],
-                            backscal=data[bscal_type],
-                            header=data['header'])
-                b.set_response(arf, rmf)
+                bkg = DataPHA(filename,
+                              channel=data['channel'],
+                              counts=data[bkg_type],
+                              bin_lo=data['bin_lo'],
+                              bin_hi=data['bin_hi'],
+                              grouping=data['grouping'],
+                              quality=data['quality'],
+                              exposure=data['exposure'],
+                              backscal=data[bscal_type],
+                              header=data['header'])
+                bkg.set_response(arf, rmf)
                 if output_once:
-                    info("read {} into a dataset from file {}".format(
-                        bkg_type, filename))
-                backgrounds.append(b)
+                    info(f"read {bkg_type} into a dataset from file {filename}")
+                backgrounds.append(bkg)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
                   'background_up', 'background_down']:
@@ -591,13 +588,13 @@ def read_pha(arg, use_errors=False, use_background=False):
 
         pha = DataPHA(filename, **data)
         pha.set_response(arf, rmf)
-        for id, b in enumerate(backgrounds):
-            if b.grouping is None:
-                b.grouping = pha.grouping
-                b.grouped = (b.grouping is not None)
-            if b.quality is None:
-                b.quality = pha.quality
-            pha.set_background(b, id + 1)
+        for i, bkg in enumerate(backgrounds):
+            if bkg.grouping is None:
+                bkg.grouping = pha.grouping
+                bkg.grouped = bkg.grouping is not None
+            if bkg.quality is None:
+                bkg.quality = pha.quality
+            pha.set_background(bkg, i + 1)
 
         # set units *after* bkgs have been set
         pha._set_initial_quantity()
@@ -611,20 +608,21 @@ def read_pha(arg, use_errors=False, use_background=False):
 
 
 def _pack_table(dataset):
+    """Identify the columns in the data.
+
+    """
     names = dataset._fields
-    cols = [(name, getattr(dataset, name)) for name in names]
-    data = dict(cols)
+    data = {name: getattr(dataset, name) for name in names}
     return data, names
 
 
 def _pack_image(dataset):
-    if not(isinstance(dataset, Data2D) or
-           isinstance(dataset, DataIMG)):
+    if not isinstance(dataset, (Data2D, DataIMG)):
         raise IOErr('notimage', dataset.name)
-    data = {}
 
+    data = {}
     header = {}
-    if hasattr(dataset, 'header') and type(dataset.header) is dict:
+    if hasattr(dataset, 'header') and isinstance(dataset.header, dict):
         header = dataset.header.copy()
 
     data['pixels'] = numpy.asarray(dataset.get_img())

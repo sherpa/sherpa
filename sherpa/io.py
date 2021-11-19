@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -36,21 +37,20 @@ def _is_subclass(t1, t2):
 
 def _check_args(size, dstype):
     # Find the number of required args minus self, filename
-    req_args = (get_num_args(dstype.__init__)[1] - 2)
+    req_args = get_num_args(dstype.__init__)[1] - 2
 
     if size < req_args:
         # raise IOErr('badargs', dstype.__name__, req_args)
-        raise TypeError("data set '%s' takes at least %s args" %
-                        (dstype.__name__, req_args))
+        raise TypeError(f"data set '{dstype.__name__}' takes at least {req_args} args")
 
 
 def read_file_data(filename, sep=' ', comment='#', require_floats=True):
     bad_chars = '\t\n\r,;: |'
-    fp = open(filename, 'r')
     raw_names = []
     rows = []
-    try:
-        for line in fp:
+
+    with open(filename, 'r') as fh:
+        for line in fh:
             for char in bad_chars:
                 if char in line:
                     # replace any bad chars in line with sep for tokenize
@@ -75,9 +75,6 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
                 # make list of row elements
                 rows.append(row)
 
-    finally:
-        fp.close()
-
     # rotate rows into list of columns
     cols = numpy.column_stack(rows)
 
@@ -88,7 +85,7 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
             args.append(col.astype(SherpaFloat))
         except ValueError:
             if require_floats:
-                raise ValueError("The file {} could not ".format(filename) +
+                raise ValueError(f"The file {filename} could not " +
                                  "be loaded, probably because it contained " +
                                  "spurious data and/or strings")
             args.append(col)
@@ -453,22 +450,20 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
             raise IOErr('arraysnoteq')
 
     args = numpy.column_stack(numpy.asarray(args))
-
-    f = open(filename, 'w')
-
-    if fields is not None:
-        f.write(comment + sep.join(fields) + linebreak)
-
     lines = []
     for arg in args:
         line = [format % elem for elem in arg]
         lines.append(sep.join(line))
 
-    f.write(linebreak.join(lines))
+    with open(filename, 'w') as fh:
 
-    # add a newline at end
-    f.write(linebreak)
-    f.close()
+        if fields is not None:
+            fh.write(comment + sep.join(fields) + linebreak)
+
+        fh.write(linebreak.join(lines))
+
+        # add a newline at end
+        fh.write(linebreak)
 
 
 def write_data(filename, dataset, fields=None, sep=' ', comment='#',
