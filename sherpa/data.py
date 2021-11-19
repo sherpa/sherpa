@@ -612,43 +612,60 @@ class BaseData(metaclass=ABCMeta):
 
 # DATA-NOTE: ND Data cannot be plotted
 class Data(NoNewAttributesAfterInit, BaseData):
+    """Generic, N-Dimensional data sets.
+
+    A data class is the collection of a data space and a number of
+    data arrays for the dependent variable and associated errors.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    indep: tuple of array_like
+        the tuple of independent arrays.
+    y : array_like
+        The values of the dependent observable. If this is a numpy
+        masked array, the mask will used to initialize a mask.
+    staterror : array_like
+        the statistical error associated with the data
+    syserror : array_like
+        the systematic error associated with the data
+
+    Notes
+    -----
+
+    This class can be extended by classes definining data sets of
+    specific dimensionality. Extending classes should override the
+    `_init_data_space` method.
+
+    This class provides most of the infrastructure for extending
+    classes for free.
+
+    Data classes contain a ``mask`` attribute, which can be used
+    ignore certain values in the array when fitting or plotting that
+    data. The convention in Sherpa is that ``True`` marks a values as
+    *valid* and ``False`` as *invalid* (note that this is opposite to
+    the numpy convention). When a `Data` instance is initialized with
+    a dependent array that has a ``mask`` attribute (e.g. numpy masked
+    array), it will attempt to convert that mask to the Sherpa
+    convention and raise a warning otherwise. In any case, the user
+    can set ``data.mask`` after initialization if that conversion does
+    not yield the expected result.
+
     """
-    Data class for generic, N-Dimensional data sets, where N depends on the number of independent axes passed during
-    initialization.
 
-    A data class is the collection of a data space and a number of data arrays for the dependent variable and
-    associated errors.
-
-    This class can be extended by classes definining data sets of specific dimensionality. Extending classes should
-    override the `_init_data_space` method.
-
-    This class provides most of the infrastructure for extending classes for free.
-
-    Data classes contain a ``mask`` attribute, which can be used ignore certain values in the array
-    when fitting or plotting that data. The convention in Sherpa is that ``True`` marks a values as
-    *valid* and ``False`` as *invalid* (note that this is opposite to the numpy convention). When a `Data`
-    instance is initialized with a dependent array that has a ``mask`` attribute (e.g. numpy masked array),
-    it will attempt to convert that mask to the Sherpa convention and raise a warning otherwise. In any case,
-    the user can set ``data.mask`` after initialization if that conversion does not yield the expected result.
-    """
     _fields = ("name", "indep", "dep", "staterror", "syserror")
+    """The main data values stored by the object (as a tuple).
+
+    This is used to identify the column data - that is values that
+    can be written out in tabular form - other than the "name"
+    field. Other fields are listed in _extra_fields.
+    """
+
+    _extra_fields = ()
+    """Any extra fields that should be displayed by str(object)."""
 
     def __init__(self, name, indep, y, staterror=None, syserror=None):
-        """
-        Parameters
-        ----------
-        name : basestring
-            name of this dataset
-        indep: tuple of array_like
-            the tuple of independent arrays.
-        y : array_like
-            The values of the dependent observable. If this is a numpy masked array,
-            the mask will used to initialize a mask.
-        staterror : array_like
-            the statistical error associated with the data
-        syserror : array_like
-            the systematic error associated with the data
-        """
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
@@ -984,10 +1001,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def __str__(self):
         """
         Return a listing of the attributes listed in self._fields and,
-        if present, self._extra_fields.
+        if set, self._extra_fields.
         """
 
-        fields = self._fields + getattr(self, '_extra_fields', ())
+        fields = self._fields + self._extra_fields
         fdict = dict(zip(fields, [getattr(self, f) for f in fields]))
         return print_fields(fields, fdict)
 
@@ -1672,7 +1689,8 @@ class Data2DInt(Data2D):
     """
     2-D integrated data set
     """
-    _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "shape", "staterror", "syserror")
+    _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "staterror", "syserror")
+    _extra_fields = ("shape", )
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None, staterror=None, syserror=None):
         self.shape = shape

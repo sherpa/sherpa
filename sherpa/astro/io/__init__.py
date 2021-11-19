@@ -610,10 +610,24 @@ def read_pha(arg, use_errors=False, use_background=False):
 def _pack_table(dataset):
     """Identify the columns in the data.
 
+    This relies on the _fields attribute containing the
+    data columns, and _extra_fields the extra information
+    (other than the name column).
+
     """
     names = dataset._fields
-    data = {name: getattr(dataset, name) for name in names}
-    return data, names
+    data = {}
+    for name in dataset._fields:
+        if name == 'name':
+            continue
+
+        val = getattr(dataset, name)
+        if val is  None:
+            continue
+
+        data[name] = val
+
+    return data, list(data.keys())
 
 
 def _pack_image(dataset):

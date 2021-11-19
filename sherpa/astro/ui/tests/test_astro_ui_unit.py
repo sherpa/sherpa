@@ -312,12 +312,11 @@ def test_save_table_data1d(ascii, reader, tmp_path, clean_astro_ui):
     assert d.syserror is None
 
 
-@pytest.mark.xfail  # see issue #47
 @requires_fits
 @pytest.mark.parametrize("ascii,reader",
                          [(True, ui.unpack_ascii), (False, ui.unpack_table)])
 def test_save_table_pha(ascii, reader, tmp_path, clean_astro_ui):
-    """Does save_table work? [PHA]"""
+    """Does save_table work? [PHA] See issue #47"""
 
     x = np.arange(1, 11, dtype=np.int16)
     ui.load_arrays(1, x, x, ui.DataPHA)
@@ -332,10 +331,13 @@ def test_save_table_pha(ascii, reader, tmp_path, clean_astro_ui):
     outfile = tmp_path / "table.dat"
     ui.save_table(str(outfile), ascii=ascii)
 
-    # How do we check the save_table output? At the moment the
-    # code is broken so it's not obvious what it's meant to
-    # be.
-    d = reader(str(outfile))
+    # The channel and counts arrays are written out. Things
+    # we check
+    #  - column names (CHANNEL and COUNTS)
+    #  - the data can be read back in
+    #  - we don't read in statistical errors
+    #
+    d = reader(str(outfile), colkeys=["CHANNEL", "COUNTS"])
     assert isinstance(d, ui.Data1D)
     assert d.x == pytest.approx(x)
     assert d.y == pytest.approx(x)

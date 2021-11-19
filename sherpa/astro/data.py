@@ -1005,7 +1005,8 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi", "exposure", "ethresh")
+    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi")
+    _extra_fields = ("exposure", "ethresh")
 
     def _get_specresp(self):
         return self._specresp
@@ -1131,8 +1132,9 @@ class DataRMF(DataOgipResponse):
 
     """
     _ui_name = "RMF"
-    _fields = ("name", "detchans", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "offset", "e_min",
-               "e_max", "ethresh")
+    _fields = ("name", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "e_min",
+               "e_max")
+    _extra_fields = ("detchans", "offset", "ethresh")
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
@@ -1434,9 +1436,9 @@ class DataPHA(Data1D):
     .. [3] Private communication with Keith Arnaud
 
     """
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
-               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
-               'background_ids')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
+    _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
+                     'plot_fac', 'response_ids', 'background_ids')
 
     def _get_grouped(self):
         return self._grouped
@@ -4202,7 +4204,8 @@ class DataPHA(Data1D):
 
 class DataIMG(Data2D):
     "Image data set, including functions for coordinate transformations"
-    _fields = Data2D._fields + ("sky", "eqpos", "coord", "header")
+    _fields = Data2D._fields
+    _extra_fields = ("sky", "eqpos", "coord", "header")
 
     def _get_coord(self):
         return self._coord
@@ -4634,7 +4637,8 @@ class DataIMG(Data2D):
 
 
 class DataIMGInt(DataIMG):
-    _fields = Data2DInt._fields + ("sky", "eqpos", "coord")
+    _fields = Data2DInt._fields
+    _extra_fields = ("sky", "eqpos", "coord")
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,

@@ -185,7 +185,7 @@ def test_rmf_real(make_data_path, override_plot_backend):
 
     r = d._repr_html_()
 
-    check(r, 'RMF', '9774.rmf', 'DETCHANS', nmeta=6)
+    check(r, 'RMF', '9774.rmf', 'N_GRP', nmeta=6)
 
     assert '<div class="dataname">Identifier</div><div class="dataval">9774.rmf</div>' in r
     assert '<div class="dataname">Number of channels</div><div class="dataval">1024</div>' in r

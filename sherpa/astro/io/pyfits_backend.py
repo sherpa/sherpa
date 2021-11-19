@@ -1011,7 +1011,6 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
         raise IOErr("filefound", filename)
 
     col_names = list(col_names)
-    col_names.remove("name")
 
     # The code used to create a header containing the
     # exposure, backscal, and areascal keywords, but this has
