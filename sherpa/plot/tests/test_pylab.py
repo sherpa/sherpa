@@ -32,21 +32,6 @@ from sherpa.plot import DataPlot, ModelHistogramPlot, \
 
 
 @requires_pylab
-def test_axes_default():
-    """Have we default values for all the axis settings?"""
-
-    from sherpa.plot.pylab_backend import _errorbar_defaults
-
-    # assert all needed defaults have been found, but do not
-    # check the actual values. Split into multiple lines so that
-    # if there's a failure we can see which is False.
-    #
-    fields = ('ecolor', 'capsize', 'barsabove')
-    defs = [e in _errorbar_defaults for e in fields]
-    assert all(defs)
-
-
-@requires_pylab
 @pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
 def test_ignore_ylog_prefs(plottype):
     """Do the "residual" style plots ignore the ylog preference setting?"""
