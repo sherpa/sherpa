@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2021
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -45,21 +46,21 @@ def check(r, summary, name, label, nmeta):
     assert r is not None
 
     if plot.backend.name == 'pylab':
-        assert '<summary>{} Plot</summary>'.format(summary) in r
+        assert f'<summary>{summary} Plot</summary>' in r
         assert '<svg ' in r
 
     else:
-        assert '<summary>{} Data ('.format(summary) in r
-        assert '<div class="dataname">{}</div>'.format(label) in r
+        assert f'<summary>{summary} Data (' in r
+        assert f'<div class="dataname">{label}</div>' in r
         assert '<svg ' not in r
 
     assert '<summary>Summary (' in r
     if nmeta == 0:
         assert '<summary>Metadata' not in r
     else:
-        assert '<summary>Metadata ({})'.format(nmeta) in r
+        assert f'<summary>Metadata ({nmeta})' in r
 
-    assert '<div class="dataval">{}</div>'.format(name) in r
+    assert f'<div class="dataval">{name}</div>' in r
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
