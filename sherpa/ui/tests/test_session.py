@@ -912,7 +912,7 @@ def test_delete_model_component_invalid_argument():
 
 
 def test_delete_model_component_not_a_component():
-    """We could allow the component to be deleted this way"""
+    """Check correct error message for non-exitant model"""
 
     s = Session()
     with pytest.raises(IdentifierErr) as te:
