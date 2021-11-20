@@ -34,6 +34,9 @@ from bokeh.plotting import figure, show
 from bokeh.models.scales import LinearScale, LogScale
 from bokeh.models.annotations import Span
 from bokeh.models import Whisker
+from bokeh.models import ColumnDataSource
+from bokeh.models.arrow_heads import TeeHead
+
 
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import ArgumentErr, NotImplementedErr
@@ -66,19 +69,110 @@ logger = logging.getLogger(__name__)
 current_fig = []
 
 
+# Translations from sherpa/matplotlib parameter values to
+# bokeh.
+# For now, I'm collecting here, but will package into better
+# form later and write as better spec.
+
+# This is not a 1:1. Matplotlib has marker with no equivalent in bokeh
+# (e.g. '_') and the other way around (e.g. 'triangle_pin').
+# So try to translate those that do match. Importantly, translate a minimum
+# set, defined to be:
+# "so.+"
+# Importantly: if not translated, just pass through, so that
+# users can set backend-dependent options
+_marker_map = {
+    '*': 'star',
+    'o': 'circle',
+    'D': 'diamond',
+    '.': 'dot',
+    'h': 'hex',
+    'v': 'inverted_triangle',
+    '+': 'plus',
+    's': 'square',
+    '^': 'triangle',
+    'x': 'x',
+    '1': 'y',
+    }
+
+# Note: In matplotlib, None means "default". In bokeh, default is done by not
+# passing in that specific keyword, so really, should just strip from
+# kwargs and not translante.
+
+def tr_marker(marker):
+    '''
+    This principle can be turned into a more general function that
+    also applies to _linestyle map etc.
+    And is actually applicable beyond bokeh.
+    '''
+    if marker in _marker_map:
+        return _marker_map[marker]
+    else:
+        # Could check here that marker in bokeh.core.enums.MarkerType
+        # but can also leave that validation to bokeh itself.
+        return marker
+
+def tr_markersize(size):
+    if size is None:
+        return 10
+    else:
+        return size
+
+
+def tr_capsize(size):
+    '''Defaults to no head'''
+    if size is None:
+        return 0
+    else:
+        return size
+    
+# pass though what's not in this list    
+_linestyle_map = {
+    'None': None,
+    'noline': None,
+    'solid': 'solid',
+    'dot': 'dotted',
+    'dash': 'dashed',
+    'dotdash': 'dotdash',
+}
+
+_drawstyle_map = {
+    'steps': 'before',
+    'steps-pre': 'before',
+    'steps-mid': 'center',
+    'steps-post': 'after'
+}
+
+def tr_alpha(alpha):
+    '''In matplotlib alpha=None means "default". 
+    That is almost always 1 and bokeh has no special value
+    for the default, so we set it to 1.
+    '''
+    if alpha is None:
+        return 1.
+    else:
+        return alpha
+
+def tr_color(color):
+    if color is None:
+        return '#1f77b4'
+    # translante for common matplotlib shotcuts rgbymck ?
+    return color
+
+
 def begin():
     pass
 
 
 def end():
-    show(current_fig)
+    if len(current_fig['all_axes']) == 1:
+        show(current_fig['all_axes'][0])
+    else:
+        raise NotImplementedError
 
 
 def exceptions():
     pass
-
-
-_errorbar_defaults = get_keyword_defaults(plt.errorbar)
 
 
 def clear_window():
@@ -136,14 +230,14 @@ def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
     if title:
         axes.title.text = title
     if xlabel:
-        axes.xaxis.label = xlabel
+        axes.xaxis.axis_label = xlabel
     if ylabel:
-        axes.yaxis.label = ylabel
+        axes.yaxis.axis_label = ylabel
 
 
 def point(x, y, overplot=True, clearwindow=False,
           symbol=None, alpha=None,
-          color=None):
+          color=None, **kwargs):
 
     # bokeh marker=None means "no marker", but in sherpa is means
     # "default maker"
@@ -151,16 +245,18 @@ def point(x, y, overplot=True, clearwindow=False,
         symbol = 'circle'
 
     axis = setup_axes(overplot, clearwindow)
-    axis.scatter(x, y, alpha=alpha, color=color, marker=symbol)
+    axis.scatter(x, y, alpha=tr_alpha(alpha), color=color,
+                 marker=tr_marker(symbol),
+                 **kwargs)
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           overplot=False, clearwindow=True,
           xerrorbars=False,
           yerrorbars=False,
-          ecolor=_errorbar_defaults['ecolor'],
-          capsize=_errorbar_defaults['capsize'],
-          barsabove=_errorbar_defaults['barsabove'],
+          ecolor=None,
+          capsize=None,
+          barsabove=False,
           xlog=False,
           ylog=False,
           linestyle='solid',
@@ -203,9 +299,9 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
                 xerrorbars=False, yerrorbars=False,
                 ecolor=ecolor, capsize=capsize, barsabove=barsabove,
                 xlog=xlog, ylog=ylog,
-                linestyle=linestyle,
-                drawstyle=drawstyle,
-                color=color, marker=None, alpha=alpha,
+                linestyle=_linestyle_map(linestyle),
+                drawstyle=_drawstyle_map(drawstyle),
+                color=tr_color(color), marker=tr_marker(None), alpha=tr_alpha(alpha),
                 xaxis=False, ratioline=False)
 
     # Draw points and error bars at the mid-point of the bins.
@@ -226,34 +322,19 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     #
     # Unlike plot, using errorbar for both cases.
     #
+    # TODO
 
     axes.errorbar(xmid, y, yerr, xerr,
-                  color=color,
-                  alpha=alpha,
+                  color=tr_color(color),
+                  alpha=tr_alpha(alpha),
                   linestyle='',
-                  marker=marker,
+                  marker=tr_marker(marker),
                   markersize=markersize,
                   markerfacecolor=markerfacecolor,
-                  ecolor=ecolor,
+                  ecolor=tr_color(color),
                   capsize=capsize,
                   barsabove=barsabove,
                   zorder=zorder)
-
-
-_linestyle_map = {
-    'noline': None,
-    'solid': 'solid',
-    'dot': 'dotted',
-    'dash': 'dashed',
-    'dotdash': 'dotdash',
-}
-
-_drawstyle_map = {
-    'steps': 'before',
-    'steps-pre': 'before',
-    'steps-mid': 'center',
-    'steps-post': 'after'
-}
 
 
 def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
@@ -295,7 +376,7 @@ def vline(x, ymin=0, ymax=1,
 
     line = Span(location=x, dimension='height',
                 line_width=linewidth,
-                line_color=linecolor,
+                line_color=tr_color(linecolor),
                 line_dash=_linestyle_map[linestyle])
     axes.add_layout(line)
 
@@ -310,7 +391,7 @@ def hline(y, xmin=0, xmax=1,
 
     line = Span(location=y, dimension='width',
                 line_width=linewidth,
-                line_color=linecolor,
+                line_color=tr_color(linecolor),
                 line_dash=_linestyle_map[linestyle])
     axes.add_layout(line)
 
@@ -319,9 +400,9 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          overplot=False, clearwindow=True,
          xerrorbars=False,
          yerrorbars=False,
-         ecolor=_errorbar_defaults['ecolor'],
-         capsize=_errorbar_defaults['capsize'],
-         barsabove=_errorbar_defaults['barsabove'],
+         ecolor=None,
+         capsize=None,
+         barsabove=False,
          xlog=False,
          ylog=False,
          linestyle='solid',
@@ -340,6 +421,15 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     to support old code that may have set this option.
     """
 
+    # If plotting backend where classes, which head to use could be a class
+    # attribute
+    arrowhead = TeeHead(size=tr_capsize(capsize),
+                        # Not doing linestyle here. Let's just draw those as lines.
+                        # But we could...
+                        line_color=tr_color(color),
+                        line_alpha=tr_alpha(alpha),
+                        )
+
     if linecolor is not None:
         logger.warning("The linecolor attribute, set to {}, is unused.".format(linecolor))
 
@@ -353,40 +443,61 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     # Rely on color-cycling to work for both the "no errorbar" and
     # "errorbar" case.
     # TODO: Check how color cycling in bokeh works
-    if linestyle != 'noline':
+    source = ColumnDataSource({'x': x, 'y': y})
+    
+    if linestyle not in ['None', 'noline']:
         if drawstyle == 'default':
+            # Or use scatter already here?
+            # TODO
             objs.append(axes.line(x, y,
                                   line_dash=_linestyle_map[linestyle],
-                                  line_color=color, alpha=alpha))
+                                  line_color=tr_color(color),
+                                  alpha=tr_alpha(alpha)))
         else:
             objs(axes.steps(x, y,
                             mode=_drawstyle_map[drawstyle],
                             line_dash=_linestyle_map[linestyle],
-                            line_color=color, alpha=alpha))
+                            line_color=tr_color(color), alpha=tr_alpha(alpha)))
     if marker != 'None':
-        objs.append(point(x, y, symbol=marker, alpha=alpha, color=color))
+        objs.append(point(x, y, symbol=tr_marker(marker),
+                          alpha=tr_alpha(alpha), color=tr_color(color),
+                          size=tr_markersize(markersize),
+                          fill_color=tr_color(markerfacecolor)
+        ))
 
-    if xerrorbars:
-        if xerr is not None:
-            xerr = xerr / 2.
-        xwhisker = Whisker(base=y, lower=x - xerr, upper=x + xerr,
+    if xerrorbars and xerr is not None:
+        source.data['lower_x'] = x - xerr / 2
+        source.data['upper_x'] = x + xerr / 2
+        xwhisker = Whisker(base='y', lower='lower_x', upper='upper_x',
+                           source=source,
                            dimension='width',
-                           alpha=alpha, line_color=ecolor)
+                           line_alpha=tr_alpha(alpha),
+                           line_color=tr_color(ecolor),
+                           lower_head=arrowhead,
+                           upper_head=arrowhead,
+        )
         axes.add_layout(xwhisker)
         objs.append(xwhisker)
 
-    if yerrorbars:
-        ywhisker = Whisker(base=x, lower=y - yerr, upper=y + yerr,
-                           dimension='width',
-                           alpha=alpha, line_color=ecolor)
-        axes.add_layout(ywhisker)
+    if yerrorbars and yerr is not None:
+        source.data['lower_y'] = y - yerr / 2
+        source.data['upper_y'] = y + yerr / 2
+        ywhisker = Whisker(base='x', lower='lower_y', upper='upper_y',
+                           source=source,
+                           dimension='height',
+                           line_alpha=tr_alpha(alpha),
+                           line_color=tr_color(ecolor),
+                           lower_head=arrowhead,
+                           upper_head=arrowhead,
+        )
+        axes.add_layout(ywhisker)        
         objs.append(ywhisker)
 
     if xaxis:
-        axes.axhline(y=0, xmin=0, xmax=1, color='k', linewidth=1)
+        axes.axhline(y=0, xmin=0, xmax=1, color='black', linewidth=1)
 
     if ratioline:
-        axes.axhline(y=1, xmin=0, xmax=1, color='k', linewidth=1)
+        axes.axhline(y=1, xmin=0, xmax=1, color='black', linewidth=1)
 
     return objs
 
