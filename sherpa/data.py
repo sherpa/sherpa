@@ -1005,13 +1005,13 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
 
         fields = self._fields + self._extra_fields
-        fdict = dict(zip(fields, [getattr(self, f) for f in fields]))
+        fdict = {f: getattr(self, f) for f in fields}
         return print_fields(fields, fdict)
 
     def __repr__(self):
-        r = '<%s data set instance' % type(self).__name__
+        r = f'<{type(self).__name__} data set instance'
         if hasattr(self, 'name'):
-            r += " '%s'" % self.name
+            r += f" '{self.name}'"
         r += '>'
         return r
 
