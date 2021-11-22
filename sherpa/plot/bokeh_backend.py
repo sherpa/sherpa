@@ -23,6 +23,9 @@ The sherpa plotting API is procedural and most of the commands act on the
 "current plot" or "current figure". This fits in very well with the matplotlib.pyplot model, but requires some extra work for object-oriented plotting packages.
 
 bokeh is such an object-oriented package, which, by itself, does not keep a plotting state. Usually, bokeh commands act on an axis object that is passed in as a parameter. Sherpa, on the other hand, does not keep track of those objects, it expects the plotting package to know what the "current" plot is. In this module, we solve this problem using a few module-level variables, which hold the "currently active plot".
+
+
+color-cycling
 '''
 
 import io
@@ -33,7 +36,7 @@ import numpy
 from bokeh.plotting import figure, show
 from bokeh.models.scales import LinearScale, LogScale
 from bokeh.models.annotations import Span
-from bokeh.models import Whisker
+from bokeh.models import Whisker, Line, Scatter
 from bokeh.models import ColumnDataSource
 from bokeh.models.arrow_heads import TeeHead
 
@@ -130,11 +133,22 @@ def tr_capsize(size):
 _linestyle_map = {
     'None': None,
     'noline': None,
-    'solid': 'solid',
+    'solid': 'solid',  # Sherpa name happens to match
     'dot': 'dotted',
     'dash': 'dashed',
-    'dotdash': 'dotdash',
+    'dotdash': 'dotdash',  # Sherpa name happens to match
+    # Simple matplotlib specifiers
+    '-': 'solid',
+    ':': 'dotted',
+    '--': 'dashed',
+    '-.': 'dotdash',
+    '': None,
 }
+
+def tr_linestyle(ls):
+    if ls in _linestyle_map:
+        return _linestyle_map[ls]
+    return ls
 
 _drawstyle_map = {
     'steps': 'before',
@@ -244,10 +258,18 @@ def point(x, y, overplot=True, clearwindow=False,
     if symbol is None:
         symbol = 'circle'
 
-    axis = setup_axes(overplot, clearwindow)
-    axis.scatter(x, y, alpha=tr_alpha(alpha), color=color,
-                 marker=tr_marker(symbol),
-                 **kwargs)
+    axes = setup_axes(overplot, clearwindow)
+    source = ColumnDataSource({'x': x, 'y': y})
+    for a, val in [('alpha', tr_alpha(alpha)),
+                    ('color', tr_color(color))]:
+        for b in ['fill', 'hatch', 'line']:
+            if b + '_' + a not in kwargs:
+                   kwargs[b + '_' + a] = val
+                
+    glyph = Scatter(marker=tr_marker(symbol),
+                    **kwargs)
+    axes.add_glyph(source, glyph)
+    return glyph
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
@@ -289,19 +311,22 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
 
     if linecolor is not None:
         logger.warning("The linecolor attribute ({}) is unused.".format(linecolor))
-
+    if linestyle is None:
+        linestyle = 'solid'
+        
     x, y2 = histogram_line(xlo, xhi, y)
     # Note: this handles clearing the plot if needed.
-    #
-    objs = plot(x, y2, yerr=None, xerr=None,
+    # Note: No translation needed here. That is done inside plot.
+    #import pbd
+    #pdb.set_trace()
+    obj1 = plot(x, y2, yerr=None, xerr=None,
                 title=title, xlabel=xlabel, ylabel=ylabel,
                 overplot=overplot, clearwindow=clearwindow,
                 xerrorbars=False, yerrorbars=False,
-                ecolor=ecolor, capsize=capsize, barsabove=barsabove,
                 xlog=xlog, ylog=ylog,
-                linestyle=_linestyle_map(linestyle),
-                drawstyle=_drawstyle_map(drawstyle),
-                color=tr_color(color), marker=tr_marker(None), alpha=tr_alpha(alpha),
+                linestyle=linestyle,
+                drawstyle=drawstyle,
+                color=color, marker='None', alpha=alpha,
                 xaxis=False, ratioline=False)
 
     # Draw points and error bars at the mid-point of the bins.
@@ -309,32 +334,19 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     # also be used for marker[face]color and ecolor?
     #
     xmid = 0.5 * (xlo + xhi)
-    xerr = (xhi - xlo) / 2 if xerrorbars else None
+    xerr = (xhi - xlo) if xerrorbars else None
     yerr = yerr if yerrorbars else None
 
-    try:
-        color = objs[0].get_color()
-    except AttributeError:
-        pass
-
-    axes = current_fig[-1]
-    # Do not draw a line connecting the points
-    #
-    # Unlike plot, using errorbar for both cases.
-    #
-    # TODO
-
-    axes.errorbar(xmid, y, yerr, xerr,
-                  color=tr_color(color),
-                  alpha=tr_alpha(alpha),
-                  linestyle='',
-                  marker=tr_marker(marker),
-                  markersize=markersize,
-                  markerfacecolor=markerfacecolor,
-                  ecolor=tr_color(color),
-                  capsize=capsize,
-                  barsabove=barsabove,
-                  zorder=zorder)
+    #if marker is None:
+    #    marker = 'o'
+    obj2 = plot(xmid, y, xerr=xerr, yerr=yerr,
+                overplot=True, clearwindow=False,
+                xerrorbars=xerrorbars, yerrorbars=yerrorbars,
+                linestyle='None',
+                #color=obj1[0].line_color,
+                marker=marker, alpha=tr_alpha(alpha),
+                ecolor=ecolor, capsize=capsize,
+                xaxis=False, ratioline=False)
 
 
 def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
@@ -357,7 +369,7 @@ def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
         line.glyph.line_color = linecolor
 
     if linestyle is not None:
-        line.glyph.line_dash = _linestyle_map[linestyle]
+        line.glyph.line_dash = tr_linestyle(linestyle)
 
     if linewidth is not None:
         line.glyph.line_width = linewidth
@@ -377,7 +389,8 @@ def vline(x, ymin=0, ymax=1,
     line = Span(location=x, dimension='height',
                 line_width=linewidth,
                 line_color=tr_color(linecolor),
-                line_dash=_linestyle_map[linestyle])
+                line_dash=tr_linestyle(linestyle),
+    )
     axes.add_layout(line)
 
 
@@ -392,7 +405,8 @@ def hline(y, xmin=0, xmax=1,
     line = Span(location=y, dimension='width',
                 line_width=linewidth,
                 line_color=tr_color(linecolor),
-                line_dash=_linestyle_map[linestyle])
+                line_dash=tr_linestyle(linestyle),
+                )
     axes.add_layout(line)
 
 
@@ -449,16 +463,21 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         if drawstyle == 'default':
             # Or use scatter already here?
             # TODO
-            objs.append(axes.line(x, y,
-                                  line_dash=_linestyle_map[linestyle],
-                                  line_color=tr_color(color),
-                                  alpha=tr_alpha(alpha)))
+            print('line')
+            line = Line(x='x', y='y',
+                        line_dash=tr_linestyle(linestyle),
+                        line_color=tr_color(color),
+                        line_alpha=tr_alpha(alpha))
+            axes.add_glyph(source, line)
+            objs.append(line)
         else:
+            print('steps')
             objs(axes.steps(x, y,
                             mode=_drawstyle_map[drawstyle],
-                            line_dash=_linestyle_map[linestyle],
+                            line_dash=tr_linestyle(linestyle),
                             line_color=tr_color(color), alpha=tr_alpha(alpha)))
-    if marker != 'None':
+    if marker not in ('None', None):
+        print('point')
         objs.append(point(x, y, symbol=tr_marker(marker),
                           alpha=tr_alpha(alpha), color=tr_color(color),
                           size=tr_markersize(markersize),
@@ -466,8 +485,8 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         ))
 
     if xerrorbars and xerr is not None:
-        source.data['lower_x'] = x - xerr / 2
-        source.data['upper_x'] = x + xerr / 2
+        source.data['lower_x'] = x - xerr
+        source.data['upper_x'] = x + xerr
         xwhisker = Whisker(base='y', lower='lower_x', upper='upper_x',
                            source=source,
                            dimension='width',
@@ -480,8 +499,8 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         objs.append(xwhisker)
 
     if yerrorbars and yerr is not None:
-        source.data['lower_y'] = y - yerr / 2
-        source.data['upper_y'] = y + yerr / 2
+        source.data['lower_y'] = y - yerr
+        source.data['upper_y'] = y + yerr
         ywhisker = Whisker(base='x', lower='lower_y', upper='upper_y',
                            source=source,
                            dimension='height',
@@ -540,18 +559,25 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
                 top=None,
                 wspace=0.3,
                 hspace=0.4):
+    # lefft right, ... seems to be matplotlib specific.
+    # Can we remove that from the function signature?
 
-
-
-    # historically there have been issues with numpy integers here
-    nrows = int(nrows)
-    ncols = int(ncols)
-    num = int(row) * ncols + int(col) + 1
-
-    plt.subplot(nrows, ncols, num)
-    if clearaxes:
-        plt.cla()
-
+    global current_fig
+    print(row, col, current_fig)
+    
+    if (nrows != current_fig['nrows']) or (ncols != current_fig['ncols']):
+        current_fig = {'nrows': nrows, 'ncols': ncols,
+                       'current_axis': None,
+                       # The following does not work, because it creates
+                       # multiple references to the same None
+                       #'all_axes': [None * ncols] * nrows
+                       'all_axes': [[None for i in range(ncols)] for j in range(nrows)]}
+    print(row, col, current_fig)
+    if clearaxes or current_fig['all_axes'][row][col] is None:
+        fig = figure()
+        current_fig['all_axes'][row][col] = fig
+    current_fig['current_axis'] = current_fig['all_axes'][row][col]
+    print(row, col, current_fig)
 
 def set_jointplot(row, col, nrows, ncols, create=True,
                   top=0, ratio=2):
@@ -646,7 +672,7 @@ def get_model_histo_defaults():
 def get_model_plot_defaults():
     d = get_plot_defaults()
 
-    d['linestyle'] = '-'
+    d['linestyle'] = 'solid'
     d['marker'] = 'None'
 
     return d
@@ -677,7 +703,7 @@ def get_ratio_plot_defaults():
 def get_confid_plot_defaults():
     d = get_plot_defaults()
 
-    d['linestyle'] = '-'
+    d['linestyle'] = 'solid'
     d['marker'] = 'None'
     return d
 
@@ -727,8 +753,12 @@ def get_latex_for_string(txt):
         attempt to protect any $ characters in txt.
 
     """
-
-    return "${}$".format(txt)
+    # As of bokeh 2.4 latex needs to be entire line
+    # not in the middle of the line.
+    # Not worth working around it on our side,
+    # because bokeh is already working on that and will likely be released
+    # before this sherpa code is used.
+    return "$${}$$".format(txt)
 
 
 # HTML representation as SVG plots
