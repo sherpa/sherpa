@@ -30,7 +30,7 @@ from sherpa.utils import formatting
 from sherpa.plot.utils import histogram_line
 
 
-__all__ = ('clear_window', 'point', 'plot', 'histo', 'contour', 'set_subplot',
+__all__ = ('clear_window', 'plot', 'histo', 'contour', 'set_subplot',
            'init', 'get_split_plot_defaults', 'get_plot_defaults', 'begin',
            'end', 'get_data_plot_defaults', 'get_model_plot_defaults',
            'exceptions', 'get_fit_plot_defaults', 'get_resid_plot_defaults',
@@ -191,20 +191,6 @@ def find_zorder(axes):
         return max(zs) + 0.1
 
     return None
-
-
-def point(x, y, overplot=True, clearwindow=False,
-          symbol=None, alpha=None,
-          color=None):
-
-    axes = setup_axes(overplot, clearwindow)
-
-    if color is None:
-        style = '{}'.format(symbol)
-    else:
-        style = '{}{}'.format(color, symbol)
-
-    axes.plot(numpy.array([x]), numpy.array([y]), style, alpha=alpha)
 
 
 def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
@@ -586,7 +572,7 @@ def get_plot_defaults():
 
 
 def get_point_defaults():
-    return get_keyword_defaults(point, 2)
+    return {'marker': None, 'alpha': None, 'color': None}
 
 
 def get_histo_defaults():
@@ -595,7 +581,7 @@ def get_histo_defaults():
 
 def get_confid_point_defaults():
     d = get_point_defaults()
-    d['symbol'] = '+'
+    d['marker'] = '+'
     return d
 
 

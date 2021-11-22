@@ -88,7 +88,7 @@ backend.init()
 
 plotter = backend
 
-__all__ = ('Plot', 'Contour', 'Point', 'Histogram',
+__all__ = ('Plot', 'Contour', 'Histogram',
            'HistogramPlot', 'DataHistogramPlot',
            'ModelHistogramPlot', 'SourceHistogramPlot',
            'PDFPlot', 'CDFPlot', 'LRHistogram',
@@ -2711,9 +2711,9 @@ class Confidence2D(DataContour, Point):
 
         # Note: the user arguments are not applied to the point
         #
-        point = Point()
-        point.point_prefs = self.point_prefs
-        point.point(self.parval0, self.parval1,
+        point = Plot()
+        point.plot_prefs = self.point_prefs
+        point.plot(self.parval0, self.parval1,
                     overplot=True, clearwindow=False)
 
         if self.log[0]:
