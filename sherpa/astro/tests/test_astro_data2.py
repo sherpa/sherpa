@@ -27,7 +27,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataARF, DataIMG, DataPHA
+from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.utils._region import Region
 from sherpa.utils.err import DataErr
@@ -1222,3 +1222,116 @@ def test_pickle_image_filter(ignore, region, expected, make_test_image):
     d2 = pickle.loads(pickle.dumps(d))
     assert isinstance(d2._region, Region)
     assert str(d2._region) == expected
+
+
+def test_arf_checks_energy_length():
+    """Just check we error out"""
+
+    elo = np.arange(1, 5)
+    ehi = np.arange(2, 9)
+    dummy = []
+
+    with pytest.raises(ValueError) as ve:
+        DataARF("dummy", elo, ehi, dummy)
+
+    assert str(ve.value) == "The energy arrays must have the same size, not 4 and 7"
+
+
+def test_rmf_checks_energy_length():
+    """Just check we error out"""
+
+    elo = np.arange(1, 5)
+    ehi = np.arange(2, 9)
+    dummy = []
+
+    with pytest.raises(ValueError) as ve:
+        DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy)
+
+    assert str(ve.value) == "The energy arrays must have the same size, not 4 and 7"
+
+
+def test_rmf_invalid_offset():
+    """Just check we error out"""
+
+    elo = np.arange(1, 5)
+    ehi = elo + 1
+    dummy = []
+
+    with pytest.raises(ValueError) as ve:
+        DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy, offset=-1)
+
+    assert str(ve.value) == "offset must be >=0, not -1"
+
+
+@pytest.mark.parametrize("subtract", [True, False])
+def test_pha_no_bkg(subtract):
+    """Just check we error out
+
+    Given the way the code works, it errors out both ways.
+    """
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    with pytest.raises(DataErr) as de:
+        pha.subtracted = subtract
+
+    assert str(de.value) == "data set 'dummy' does not have any associated backgrounds"
+
+
+@pytest.mark.parametrize("attr", ["response", "background"])
+def test_pha_xxx_ids_invalid_not_an_iterable(attr):
+    """Just check we error out"""
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    with pytest.raises(DataErr) as de:
+        setattr(pha, f"{attr}_ids", None)
+
+    assert str(de.value) == f"{attr} ids 'None' does not appear to be an array"
+
+
+@pytest.mark.parametrize("attr", ["response", "background"])
+def test_pha_xxx_ids_invalid_not_known(attr):
+    """Just check we error out"""
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    with pytest.raises(DataErr) as de:
+        setattr(pha, f"{attr}_ids", [3])
+
+    # The error message could be better (use list to remove the dict_keys)
+    # but it is not a high priority.
+    #
+    assert str(de.value) == f"3 is not a valid {attr} id in dict_keys([])"
+
+
+def test_pha_set_analysis_rate_invalid():
+    """Just check we error out"""
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    with pytest.raises(DataErr) as de:
+        pha.set_analysis("channel", type=None)
+
+    assert str(de.value) == "unknown plot type 'none', choose 'rate' or 'counts'"
+
+
+def test_pha_ignore_bad_no_quality():
+    """Just check we error out"""
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    with pytest.raises(DataErr) as de:
+        pha.ignore_bad()
+
+    assert str(de.value) == "data set 'dummy' does not specify quality flags"
