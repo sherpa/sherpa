@@ -30,6 +30,7 @@ import pytest
 from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.utils._region import Region
+from sherpa.plot import backend, dummy_backend
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
@@ -1335,3 +1336,45 @@ def test_pha_ignore_bad_no_quality():
         pha.ignore_bad()
 
     assert str(de.value) == "data set 'dummy' does not specify quality flags"
+
+
+def test_pha_get_ylabel_yfac0():
+    """This does not depend on the backend"""
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    assert pha.plot_fac == 0
+    assert pha.get_ylabel() == 'Counts/channel'
+
+
+@pytest.mark.parametrize("override_plot_backend", [dummy_backend])
+def test_pha_get_ylabel_yfac1(override_plot_backend):
+    """Basic check
+
+    The label depends on the backend, so we just want the dummy
+    backend used here. **UNFORTUNATELY** - either because the
+    override_plot_backend fixture is not well written, the current
+    approach to setting up the plot backend does not handle it being
+    swapped out (e.g. see #1191), or a combination of the two - the
+    test doesn't work well if there is a non-dummy backend loaded.
+
+    """
+
+    chans = np.arange(1, 4)
+    counts = np.ones_like(chans)
+    pha = DataPHA("dummy", chans, counts)
+
+    pha.plot_fac = 1
+
+    # This is ugly - hopefully #1191 will fix this
+    #
+    ylabel = pha.get_ylabel()
+    print(ylabel)
+    print(backend.__name__)
+    if backend.__name__.endswith('.dummy_backend'):
+        assert ylabel == 'Counts/channel X Channel^1'
+    else:
+        assert ylabel.startswith('Counts/channel X Channel')
+        assert "1" in ylabel
