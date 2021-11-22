@@ -1031,14 +1031,6 @@ class DataARF(DataOgipResponse):
         self.energ_hi = energ_hi
         Data1DInt.__init__(self, name, energ_lo, energ_hi, specresp)
 
-    def __str__(self):
-        # Print the metadata first
-        try:
-            ss = Data.__str__(self)
-        except:
-            ss = self._fields
-        return ss
-
     def _repr_html_(self):
         """Return a HTML (string) representation of the ARF
         """
@@ -1162,18 +1154,6 @@ class DataRMF(DataOgipResponse):
         self._lo = energ_lo
         self._hi = energ_hi
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
-
-    def __str__(self):
-        # Print the metadata first
-        old = self._fields
-        ss = old
-        try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = Data.__str__(self)
-        finally:
-            self._fields = old
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the RMF
@@ -1615,18 +1595,6 @@ class DataPHA(Data1D):
         self.units = 'channel'
         self.quality_filter = None
         Data1D.__init__(self, name, channel, counts, staterror, syserror)
-
-    def __str__(self):
-        # Print the metadata first
-        old = self._fields
-        ss = old
-        try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = Data.__str__(self)
-        finally:
-            self._fields = old
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -4246,18 +4214,6 @@ class DataIMG(Data2D):
         self.header = {} if header is None else header
         self._region = None
         Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
-
-    def __str__(self):
-        # Print the metadata first
-        old = self._fields
-        ss = old
-        try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = Data.__str__(self)
-        finally:
-            self._fields = old
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data
