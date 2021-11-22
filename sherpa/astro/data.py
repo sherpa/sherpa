@@ -247,31 +247,29 @@ def make_metadata(header, items):
     return meta
 
 
-def _extract_fields(obj, stop, summary, open_block=True):
-    """Extract the fields up until the stop field.
+def _extract_fields(obj, summary):
+    """Extract the "column" fields.
+
+    Write out the _fields values (that are not None) for the Data
+    object. The _extra_fields values are ignored, as thet are assumed
+    to be icluded in separate "metadata" section.
 
     Parameters
     ----------
     obj : Data instance
-        It has to have a _fields attribute
-    stop : str
-        The attribute at which to stop (and is not included).
     summary : str
         The label for the details tab.
-    open_block : bool, optional
-        Is the details tab open or closed?
 
     Returns
     -------
     html : str
         The HTML for this section.
+
     """
 
     meta = []
-    for f in obj._fields[1:]:
-        if f == stop:
-            break
-
+    fields = [f for f in obj._fields if f != 'name']
+    for f in fields:
         v = getattr(obj, f)
         if v is None:
             continue
@@ -279,7 +277,7 @@ def _extract_fields(obj, stop, summary, open_block=True):
         meta.append((f.upper(), v))
 
     return formatting.html_section(meta, summary=summary,
-                                   open_block=open_block)
+                                   open_block=True)
 
 
 def html_pha(pha):
@@ -298,7 +296,7 @@ def html_pha(pha):
         out = None
 
     if out is None:
-        out = _extract_fields(pha, 'grouped', 'PHA Data')
+        out = _extract_fields(pha, 'PHA Data')
 
     ls.append(out)
 
@@ -477,7 +475,7 @@ def html_arf(arf):
         out = None
 
     if out is None:
-        out = _extract_fields(arf, 'exposure', 'ARF Data')
+        out = _extract_fields(arf, 'ARF Data')
 
     ls.append(out)
 
@@ -539,7 +537,7 @@ def html_rmf(rmf):
     if svg is not None:
         out = formatting.html_svg(svg, 'RMF Plot')
     else:
-        out = _extract_fields(rmf, 'ethresh', 'RMF Data')
+        out = _extract_fields(rmf, 'RMF Data')
 
     ls.append(out)
 
