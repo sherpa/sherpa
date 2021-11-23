@@ -4170,8 +4170,8 @@ class DataPHA(Data1D):
 
 class DataIMG(Data2D):
     "Image data set, including functions for coordinate transformations"
-    _fields = Data2D._fields
-    _extra_fields = ("sky", "eqpos", "coord", "header")
+
+    _extra_fields = ("sky", "eqpos", "coord")
 
     def _get_coord(self):
         return self._coord
@@ -4591,8 +4591,6 @@ class DataIMG(Data2D):
 
 
 class DataIMGInt(DataIMG):
-    _fields = Data2DInt._fields
-    _extra_fields = ("sky", "eqpos", "coord")
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
