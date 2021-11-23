@@ -610,24 +610,32 @@ def read_pha(arg, use_errors=False, use_background=False):
 def _pack_table(dataset):
     """Identify the columns in the data.
 
-    This relies on the _fields attribute containing the
-    data columns, and _extra_fields the extra information
-    (other than the name column).
+    This relies on the _fields attribute containing the data columns,
+    and _extra_fields the extra information (other than the name
+    column). We only return values from _fields that contain data.
+
+    Parameters
+    ----------
+    dataset : sherpa.data.Data instance
+
+    Returns
+    -------
+    data : dict
+        The dictionary containing the columns to write out.
 
     """
-    names = dataset._fields
     data = {}
     for name in dataset._fields:
         if name == 'name':
             continue
 
         val = getattr(dataset, name)
-        if val is  None:
+        if val is None:
             continue
 
         data[name] = val
 
-    return data, list(data.keys())
+    return data
 
 
 def _pack_image(dataset):
@@ -760,7 +768,8 @@ def write_table(filename, dataset, ascii=True, clobber=False):
     read_table
 
     """
-    data, names = _pack_table(dataset)
+    data = _pack_table(dataset)
+    names = list(data.keys())
     backend.set_table_data(filename, data, names, ascii=ascii, clobber=clobber)
 
 
@@ -837,7 +846,8 @@ def pack_table(dataset):
     >>> tbl = pack_table(d)
 
     """
-    data, names = _pack_table(dataset)
+    data = _pack_table(dataset)
+    names = list(data.keys())
     return backend.set_table_data('', data, names, packup=True)
 
 
