@@ -237,12 +237,15 @@ def _try_vec_or_key(hdu, name, size, dtype=SherpaFloat, fix_type=False):
 # effort to emulate with the astropy backend.
 
 def _infer_and_check_filename(filename):
-    fname = filename  # keep filename unchanged
-    if not os.path.exists(fname):
-        fname += '.gz'  # try to find a gzipped version, following CXC/Crates conventions.
-        if not os.path.exists(fname):  # fail fast
-            raise IOErr('filenotfound', filename)  # error message reports the original filename requested
-    return fname
+    if os.path.exists(filename):
+        return filename
+
+    gzname = f"{filename}.gz"
+    if os.path.exists(gzname):
+        return gzname
+
+    # error message reports the original filename requested
+    raise IOErr('filenotfound', filename)
 
 
 def is_binary_file(filename):
