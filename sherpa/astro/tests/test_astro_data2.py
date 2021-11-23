@@ -908,7 +908,6 @@ def test_img_get_bounding_mask_filtered(make_test_image):
     d = make_test_image
     d.notice2d('ellipse(4260,3840,3,2,0)')
     ans = d.get_bounding_mask()
-    print(np.where(ans[0]))
 
     mask = np.zeros(5 * 7, dtype=bool)
     for i in [3,  8,  9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24,
@@ -1371,8 +1370,6 @@ def test_pha_get_ylabel_yfac1(override_plot_backend):
     # This is ugly - hopefully #1191 will fix this
     #
     ylabel = pha.get_ylabel()
-    print(ylabel)
-    print(backend.__name__)
     if backend.__name__.endswith('.dummy_backend'):
         assert ylabel == 'Counts/channel X Channel^1'
     else:

@@ -251,8 +251,8 @@ def _extract_fields(obj, summary):
     """Extract the "column" fields.
 
     Write out the _fields values (that are not None) for the Data
-    object. The _extra_fields values are ignored, as thet are assumed
-    to be icluded in separate "metadata" section.
+    object. The _extra_fields values are ignored, as they are assumed
+    to be included in separate "metadata" section.
 
     Parameters
     ----------
