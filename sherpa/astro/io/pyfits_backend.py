@@ -141,10 +141,10 @@ def _add_keyword(hdrlist, name, val):
 
 
 def _try_col(hdu, name, dtype=SherpaFloat, fix_type=False):
-    if name not in hdu.columns.names:
+    try:
+        col = hdu.data.field(name)
+    except KeyError:
         return None
-
-    col = hdu.data.field(name)
 
     if isinstance(col, _VLF):
         col = numpy.concatenate([numpy.asarray(row) for row in col])
@@ -158,10 +158,10 @@ def _try_col(hdu, name, dtype=SherpaFloat, fix_type=False):
 
 
 def _try_tbl_col(hdu, name, dtype=SherpaFloat, fix_type=False):
-    if name not in hdu.columns.names:
-        return (None,)
-
-    col = hdu.data.field(name)
+    try:
+        col = hdu.data.field(name)
+    except KeyError:
+        return (None, )
 
     if isinstance(col, _VLF):
         col = numpy.concatenate([numpy.asarray(row) for row in col])
@@ -175,10 +175,10 @@ def _try_tbl_col(hdu, name, dtype=SherpaFloat, fix_type=False):
 
 
 def _try_vec(hdu, name, size=2, dtype=SherpaFloat, fix_type=False):
-    if name not in hdu.columns.names:
+    try:
+        col = hdu.data.field(name)
+    except KeyError:
         return numpy.array([None] * size)
-
-    col = hdu.data.field(name)
 
     if isinstance(col, _VLF):
         col = numpy.concatenate([numpy.asarray(row) for row in col])

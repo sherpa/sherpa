@@ -319,7 +319,6 @@ def test_read_ideal_rmf():
     assert y == pytest.approx(expected, rel=2e-6)
 
 
-@pytest.mark.xfail  # see #143
 @requires_fits
 @requires_data
 def test_fits_file_lower_case(make_data_path):
