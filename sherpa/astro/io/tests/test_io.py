@@ -28,6 +28,7 @@ import pytest
 from sherpa.data import Data1D
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
+from sherpa.utils.err import IOErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
     requires_xspec
 
@@ -352,3 +353,33 @@ def test_fits_file_lower_case(make_data_path):
 
     assert tbl.x[0] == pytest.approx(278.3897960639)
     assert tbl.y[0] == pytest.approx(-10.5690222237)
+
+
+@requires_fits
+@requires_data
+def test_fits_file_missing_column(make_data_path):
+    """Follow on from #143
+
+    Ensure we try to access a missing column. This is low-level
+    (i.e. calls a sherpa.astro.io routine) so that we aren't bothered
+    with the cascading error fall through of the ui layer code.
+
+    """
+
+    from sherpa.astro import io
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+
+    with pytest.raises(IOErr) as err:
+        io.read_table(infile, colkeys=["ra", "Foo"])
+
+    # The error message depends on the backend
+    # - crates lists the available columns
+    # - pyfits lists the filename
+    # so just check the common part. Unfortunately the name of the
+    # column depends on the backend too; crates uses the user value
+    # whereas pyfits converts it to a capital. The test could have used
+    # "FOO" as the column name to ignore this but let's keep this.
+    #
+    assert str(err.value).startswith("Required column 'FOO' not found in ") or \
+        str(err.value).startswith("Required column 'Foo' not found in ")
