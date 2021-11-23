@@ -25,10 +25,11 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
-    requires_xspec
+from sherpa.data import Data1D
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
+from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
+    requires_xspec
 
 
 @requires_data
@@ -316,3 +317,39 @@ def test_read_ideal_rmf():
     expected = 100 * 0.01 * np.asarray([2, 3, 2.5, 2, 2])
     y = 100 * r.eval_model(mdl)
     assert y == pytest.approx(expected, rel=2e-6)
+
+
+@pytest.mark.xfail  # see #143
+@requires_fits
+@requires_data
+def test_fits_file_lower_case(make_data_path):
+    """Caused issue #143
+
+    The file contains
+
+        MTYPE1       = sky                  / DM Keyword: Descriptor name.
+        MFORM1       = X,Y                  / [pixel]
+        MTYPE2       = EQPOS                / DM Keyword: Descriptor name.
+        MFORM2       = RA,Dec               / [deg]
+
+    so it has - for the transformed case - a column name that
+    is not upper case.
+
+    """
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    tbl = ui.unpack_table(infile, colkeys=["RA", "Dec"])
+
+    assert isinstance(tbl, Data1D)
+    assert len(tbl.x) == len(tbl.y)
+    assert len(tbl.x) == 38
+    assert tbl.staterror is None
+    assert tbl.syserror is None
+
+    # Every point is the same, which makes it easy to check
+    #
+    assert (tbl.x == tbl.x[0]).all()
+    assert (tbl.y == tbl.y[0]).all()
+
+    assert tbl.x[0] == pytest.approx(278.3897960639)
+    assert tbl.y[0] == pytest.approx(-10.5690222237)
