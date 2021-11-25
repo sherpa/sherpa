@@ -308,7 +308,7 @@ class Plot(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        x, y
+        x, y : array-like (scalar, list, or array)
            The data values to plot. They should have the same length.
         yerr, xerr : optional
            The symmetric errors to apply to the y or x values, or `None`
