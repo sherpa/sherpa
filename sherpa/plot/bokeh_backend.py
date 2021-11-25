@@ -39,7 +39,11 @@ from bokeh.models.annotations import Span
 from bokeh.models import Whisker, Line, Scatter
 from bokeh.models import ColumnDataSource
 from bokeh.models.arrow_heads import TeeHead
-
+# the next 3 are needed to update and dispaly notebook plots
+# is output_notebook is set
+from bokeh.io.state import curstate
+from bokeh.layouts import gridplot
+from bokeh.io.notebook import push_notebook
 
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import ArgumentErr, NotImplementedErr
@@ -70,7 +74,9 @@ logger = logging.getLogger(__name__)
 # These will be used a global variables.
 # Yuck. 
 current_fig = []
-
+# Not really a way to pass them in, so make module-level variables
+width = 250
+height = 250
 
 # Translations from sherpa/matplotlib parameter values to
 # bokeh.
@@ -194,8 +200,8 @@ def clear_window():
     fig = figure()
     current_fig = {'nrows': 1, 'ncols': 1,
                    'current_axis': fig,
-                   'all_axes': [fig]}
-
+                   'all_axes': [[fig]],
+                   'handle': None}
 
 # Now, that the function is defined, we call it to make sure we have a window to start
 clear_window()
@@ -248,7 +254,18 @@ def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
     if ylabel:
         axes.yaxis.axis_label = ylabel
 
+def notebook():
+    if curstate().notebook:
+        handle = current_fig.get('handle', None)
+        if handle is None:
+            current_fig['handle'] = show(gridplot(current_fig['all_axes'],
+                                                  width=width, height=height),
+                                         notebook_handle=True)
+        else:
+            push_notebook()
 
+    
+        
 def point(x, y, overplot=True, clearwindow=False,
           symbol=None, alpha=None,
           color=None, **kwargs):
@@ -269,6 +286,7 @@ def point(x, y, overplot=True, clearwindow=False,
     glyph = Scatter(marker=tr_marker(symbol),
                     **kwargs)
     axes.add_glyph(source, glyph)
+    notebook()
     return glyph
 
 
@@ -347,6 +365,8 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
                 marker=marker, alpha=tr_alpha(alpha),
                 ecolor=ecolor, capsize=capsize,
                 xaxis=False, ratioline=False)
+    
+    notebook()
 
 
 def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
@@ -377,7 +397,6 @@ def _set_line(line, linecolor=None, linestyle=None, linewidth=None):
 
 # Could add support for alpha
 # xmin/xmax don't do anything. Do I need them for compatibility?
-#
 def vline(x, ymin=0, ymax=1,
           linecolor=None,
           linestyle=None,
@@ -392,6 +411,7 @@ def vline(x, ymin=0, ymax=1,
                 line_dash=tr_linestyle(linestyle),
     )
     axes.add_layout(line)
+    notebook()
 
 
 def hline(y, xmin=0, xmax=1,
@@ -408,6 +428,7 @@ def hline(y, xmin=0, xmax=1,
                 line_dash=tr_linestyle(linestyle),
                 )
     axes.add_layout(line)
+    notebook()
 
 
 def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
@@ -461,9 +482,6 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     
     if linestyle not in ['None', 'noline']:
         if drawstyle == 'default':
-            # Or use scatter already here?
-            # TODO
-            print('line')
             line = Line(x='x', y='y',
                         line_dash=tr_linestyle(linestyle),
                         line_color=tr_color(color),
@@ -471,14 +489,13 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
             axes.add_glyph(source, line)
             objs.append(line)
         else:
-            print('steps')
+            # steps does not return line, so following will fail
             objs(axes.steps(x, y,
                             mode=_drawstyle_map[drawstyle],
                             line_dash=tr_linestyle(linestyle),
                             line_color=tr_color(color), alpha=tr_alpha(alpha)))
     if marker not in ('None', None):
-        print('point')
-        objs.append(point(x, y, symbol=tr_marker(marker),
+         objs.append(point(x, y, symbol=tr_marker(marker),
                           alpha=tr_alpha(alpha), color=tr_color(color),
                           size=tr_markersize(markersize),
                           fill_color=tr_color(markerfacecolor)
@@ -518,6 +535,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
     if ratioline:
         axes.axhline(y=1, xmin=0, xmax=1, color='black', linewidth=1)
 
+    notebook()
     return objs
 
 
@@ -550,6 +568,7 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
     else:
         axes.contour(x0, x1, y, levels, alpha=alpha,
                      colors=colors, linewidths=linewidths)
+    notebook()
 
 
 def set_subplot(row, col, nrows, ncols, clearaxes=True,
@@ -563,21 +582,20 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
     # Can we remove that from the function signature?
 
     global current_fig
-    print(row, col, current_fig)
     
     if (nrows != current_fig['nrows']) or (ncols != current_fig['ncols']):
+        clear_window()
         current_fig = {'nrows': nrows, 'ncols': ncols,
                        'current_axis': None,
                        # The following does not work, because it creates
                        # multiple references to the same None
                        #'all_axes': [None * ncols] * nrows
                        'all_axes': [[None for i in range(ncols)] for j in range(nrows)]}
-    print(row, col, current_fig)
     if clearaxes or current_fig['all_axes'][row][col] is None:
         fig = figure()
         current_fig['all_axes'][row][col] = fig
     current_fig['current_axis'] = current_fig['all_axes'][row][col]
-    print(row, col, current_fig)
+
 
 def set_jointplot(row, col, nrows, ncols, create=True,
                   top=0, ratio=2):
