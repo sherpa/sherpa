@@ -63,7 +63,7 @@ import sys
 import numpy
 
 import sherpa.io
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA, DataRosatRMF
@@ -844,7 +844,54 @@ def _pack_pha(dataset):
         _set("TLMAX1", tlmax)
         _set("DETCHANS", tlmax - tlmin + 1)
 
-    data = {k: v for (k, v) in data.items() if v is not None}
+    data = {k.upper(): v for (k, v) in data.items() if v is not None}
+
+    # Enforce the column types:
+    #   CHANNEL:  Int2 or Int4
+    #   COUNTS:   Int2, Int4, or Real4
+    #   GROUPING: Int2
+    #   QUALITY:  Int2
+    #
+    # Rather than try to work out whether to use Int2 or Int4
+    # just use Int4.
+    #
+    def convert(column, dtype):
+        try:
+            vals = data[column]
+        except KeyError:
+            return
+
+        # assume vals is a numpy array
+        if vals.dtype == dtype:
+            return
+
+        # Do we warn if we are doing unit conversion? For now
+        # we don't.
+        #
+        data[column] = vals.astype(dtype)
+
+    convert("CHANNEL", numpy.int32)
+    convert("GROUPING", numpy.int16)
+    convert("QUALITY", numpy.int16)
+
+    # COUNTS has to deal with integer or floating-point.
+    #
+    try:
+        vals = data["COUNTS"]
+        if numpy.issubdtype(vals.dtype, numpy.integer):
+            vals = vals.astype(numpy.int32)
+        elif numpy.issubdtype(vals.dtype, numpy.floating):
+            vals = vals.astype(numpy.float32)
+        else:
+            raise DataErr("ogip-error", "PHA dataset",
+                          dataset.name,
+                          "contains an unsupported COUNTS column")
+
+        data["COUNTS"] = vals
+
+    except KeyError:
+        pass
+
     return data, list(data.keys()), header
 
 

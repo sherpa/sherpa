@@ -38,7 +38,7 @@ import pytest
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro import io
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -534,17 +534,23 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     assert cr.name == "SPECTRUM"
     assert cr.get_colnames() == ["CHANNEL", "COUNTS"]
 
+    # undortunately crates auto-converts int32 to int64
+    # (this is actually the underlying cxcdm module).
+    #
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
-    assert c0.values.dtype == np.int16
+    assert c0.values.dtype == np.int64
     assert c0.get_tlmin() == 1
     assert c0.get_tlmax() == 4
 
     c1 = cr.get_column(1)
     assert c1.name == "COUNTS"
-    assert c1.values.dtype == np.int16
-    assert c1.get_tlmin() == -32768
-    assert c1.get_tlmax() == 32767
+    assert c1.values.dtype == np.int64
+    # crates circa CIAO 4.14 doesn't return the correct values here;
+    # it's returning int32 values and has got the negative value
+    # wrong by 1
+    assert c1.get_tlmin() <= -2147483647
+    assert c1.get_tlmax() == 2147483647
 
     assert cr.get_key_value("HDUCLASS") == "OGIP"
     assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
@@ -586,9 +592,9 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert len(hdu.columns) == 2
 
         assert hdu.columns[0].name == "CHANNEL"
-        assert hdu.columns[0].format == "INT16"
+        assert hdu.columns[0].format == "INT32"
         assert hdu.columns[1].name == "COUNTS"
-        assert hdu.columns[1].format == "INT16"
+        assert hdu.columns[1].format == "INT32"
 
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
@@ -686,7 +692,7 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
 
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
-    assert c0.values.dtype == np.float64
+    assert c0.values.dtype == np.int64
     assert c0.get_tlmin() == 1
     assert c0.get_tlmax() == 10
 
@@ -698,15 +704,15 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
 
     c2 = cr.get_column(2)
     assert c2.name == "GROUPING"
-    assert c2.values.dtype == np.float32
-    assert c2.get_tlmin() == pytest.approx(-3.4028235e+38)
-    assert c2.get_tlmax() == pytest.approx(3.4028235e+38)
+    assert c2.values.dtype == np.int16
+    assert c2.get_tlmin() == -32768
+    assert c2.get_tlmax() == 32767
 
     c3 = cr.get_column(3)
     assert c3.name == "QUALITY"
-    assert c3.values.dtype == np.float64
-    assert c3.get_tlmin() < 1e308
-    assert c3.get_tlmax() > 1e308
+    assert c3.values.dtype == np.int16
+    assert c3.get_tlmin() == -32768
+    assert c3.get_tlmax() == 32767
 
     c4 = cr.get_column(4)
     assert c4.name == "AREASCAL"
@@ -762,13 +768,13 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert len(hdu.columns) == 5
 
         assert hdu.columns[0].name == "CHANNEL"
-        assert hdu.columns[0].format == "D"
+        assert hdu.columns[0].format == "INT32"
         assert hdu.columns[1].name == "COUNTS"
         assert hdu.columns[1].format == "D"
         assert hdu.columns[2].name == "GROUPING"
-        assert hdu.columns[2].format == "D"
+        assert hdu.columns[2].format == "INT16"
         assert hdu.columns[3].name == "QUALITY"
-        assert hdu.columns[3].format == "D"
+        assert hdu.columns[3].format == "INT16"
         assert hdu.columns[4].name == "AREASCAL"
         assert hdu.columns[4].format == "D"
 
@@ -1018,15 +1024,15 @@ def check_csc_pha_roundtrip_crates(path):
 
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
-    assert c0.values.dtype == np.float64
-    assert c0.get_tlmin() == 1.0
-    assert c0.get_tlmax() == 1024.0
+    assert c0.values.dtype == np.int64
+    assert c0.get_tlmin() == 1
+    assert c0.get_tlmax() == 1024
 
     c1 = cr.get_column(1)
     assert c1.name == "COUNTS"
-    assert c1.values.dtype == np.float64
-    assert c1.get_tlmin() < -1e308
-    assert c1.get_tlmax() > 1e308
+    assert c1.values.dtype == np.float32
+    assert c1.get_tlmin() == pytest.approx(-3.4028235e+38)
+    assert c1.get_tlmax() == pytest.approx(3.4028235e+38)
 
     assert cr.get_key_value("HDUCLASS") == "OGIP"
     assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
@@ -1072,7 +1078,7 @@ def check_csc_pha_roundtrip_pyfits(path):
         assert len(hdu.columns) == 2
 
         assert hdu.columns[0].name == "CHANNEL"
-        assert hdu.columns[0].format == "D"
+        assert hdu.columns[0].format == "INT32"
         assert hdu.columns[1].name == "COUNTS"
         assert hdu.columns[1].format == "D"
 
@@ -1339,3 +1345,19 @@ def test_write_pha_columnn_length_mismatch_fits(tmp_path):
     assert len(dat.y) == 5
     assert dat.x == pytest.approx([1, 2, 3, 0, 0])
     assert dat.y == pytest.approx([1, 2, 3, 4, 5])
+
+
+def test_pack_pha_invalid_counts():
+    """Use pack_pha rather than write_pha for a change
+
+    This should work even with the dummy backend.
+    """
+
+    pha = DataPHA("dummy",
+                  np.asarray([1, 2], dtype=np.int16),
+                  np.asarray([complex(1), complex(2)]))
+
+    with pytest.raises(DataErr) as err:
+        io.pack_pha(pha)
+
+    assert str(err.value) == "The PHA dataset 'dummy' contains an unsupported COUNTS column"
