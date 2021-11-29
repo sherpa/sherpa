@@ -460,28 +460,31 @@ def test_read_arrays_data1d_combined():
 
 @requires_fits
 @pytest.mark.parametrize("arg", [[], None, (None, None)])
-def test_write_arrays_no_data(arg):
+def test_write_arrays_no_data(arg, tmp_path):
 
+    tmpfile = tmp_path / 'test.dat'
     with pytest.raises(IOErr) as err:
-        io.write_arrays('/dev/null', arg, clobber=True)
+        io.write_arrays(str(tmpfile), arg, clobber=True)
 
     assert str(err.value) == "please supply array(s) to write to file"
 
 
 @requires_fits
-def test_write_arrays_wrong_lengths():
+def test_write_arrays_wrong_lengths(tmp_path):
 
+    tmpfile = tmp_path / 'test.dat'
     with pytest.raises(IOErr) as err:
-        io.write_arrays('/dev/null', ([1, 2], [1, 2, 3]), clobber=True)
+        io.write_arrays(str(tmpfile), ([1, 2], [1, 2, 3]), clobber=True)
 
     assert str(err.value) == "not all arrays are of equal length"
 
 
 @requires_fits
-def test_write_arrays_wrong_field_length():
+def test_write_arrays_wrong_field_length(tmp_path):
 
+    tmpfile = tmp_path / 'test.dat'
     with pytest.raises(IOErr) as err:
-        io.write_arrays('/dev/null', ([1, 2], [1, 2]), fields=['a', 'b', 'c'], clobber=True)
+        io.write_arrays(str(tmpfile), ([1, 2], [1, 2]), fields=['a', 'b', 'c'], clobber=True)
 
     assert str(err.value) == "Expected 2 columns but found 3"
 
