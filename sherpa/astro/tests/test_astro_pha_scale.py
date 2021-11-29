@@ -50,7 +50,8 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
-from sherpa.astro.instrument import ARFModelPHA, RMFModelPHA, RSPModelPHA
+from sherpa.astro.instrument import ARFModelPHA, RMFModelPHA, RSPModelPHA, \
+    create_arf, create_delta_rmf
 from sherpa.models.basic import Const1D, StepHi1D
 from sherpa.stats import Chi2DataVar, CStat
 from sherpa.utils.err import ArgumentErr, DataErr
@@ -447,105 +448,6 @@ def test_chisquare():
     assert_allclose(sval[0], expected)
 
 
-def make_arf(energ_lo, energ_hi, specresp=None, exposure=1.0,
-             name='arf'):
-    """A simple in-memory representation of an ARF.
-
-    Parameters
-    ----------
-    energ_lo, energ_hi : array
-        The energy grid over which the ARF is defined. The units are
-        keV and each bin has energ_hi > energ_lo. The arrays are
-        assumed to be ordered, but it is not clear yet whether they
-        have to be in ascending order.
-    specresp : array or None, optional
-        The spectral response (effective area) for each bin, in cm^2.
-        If not given then a value of 1.0 per bin is used.
-    exposure : number, optional
-        The exposure time, in seconds. It must be positive.
-    name : str, optional
-        The name to give to the ARF instance.
-
-    Returns
-    -------
-    arf : sherpa.astro.data.DataARF
-        The ARF.
-    """
-
-    elo = np.asarray(energ_lo)
-    ehi = np.asarray(energ_hi)
-    if elo.size != ehi.size:
-        raise DataErr('mismatch', 'energ_lo', 'energ_hi')
-
-    if specresp is None:
-        specresp = np.ones(elo.size, dtype=np.float32)
-    else:
-        specresp = np.asarray(specresp)
-        if specresp.size != elo.size:
-            raise DataErr('mismatch', 'energy grid', 'effarea')
-
-    if exposure <= 0.0:
-        raise ArgumentErr('bad', 'exposure', 'value must be positive')
-
-    return DataARF(name=name, energ_lo=elo, energ_hi=ehi,
-                   specresp=specresp, exposure=exposure)
-
-
-def make_ideal_rmf(e_min, e_max, offset=1, name='rmf'):
-    """A simple in-memory representation of an ideal RMF.
-
-    This RMF represents a 1-to-1 mapping from channel to energy
-    bin (i.e. there's no blurring or secondary channels).
-
-    Parameters
-    ----------
-    e_min, e_max : array
-        The energy ranges corresponding to the channels. The units are
-        in keV and each bin has energ_hi > energ_lo. The arrays are
-        assumed to be ordered, but it is not clear yet whether they
-        have to be in ascending order. The sizes must match each
-        other. This corresponds to the E_MIN and E_MAX columns of
-        the EBOUNDS extension of the RMF file format.
-    offset : int, optional
-        The value of the first channel (corresponding to the TLMIN
-        value of the F_CHAN column of the 'MATRIX' or 'SPECRESP
-        MATRIX' block. It is expected to be 0 or 1, but the only
-        restriction is that it is 0 or greater.
-    name : str, optional
-        The name to give to the RMF instance.
-
-    Returns
-    -------
-    rmf : sherpa.astro.data.DatAMRF
-        The RMF.
-
-    """
-
-    elo = np.asarray(e_min)
-    ehi = np.asarray(e_max)
-    if elo.size != ehi.size:
-        raise DataErr('mismatch', 'e_min', 'e_max')
-    detchans = elo.size
-
-    if offset < 0:
-        raise ArgumentErr('bad', 'offset', 'value can not be negative')
-
-    # The "ideal" matrix is the identity matrix, which, in compressed
-    # form, is an array of 1.0's (matrix) and an array of locations
-    # giving the column where the element is 1 (fchan). It appears
-    # that this uses 1 indexing.
-    #
-    dummy = np.ones(detchans, dtype=np.int16)
-    matrix = np.ones(detchans, dtype=np.float32)
-    fchan = np.arange(1, detchans + 1, dtype=np.int16)
-
-    return DataRMF(name=name, detchans=detchans,
-                   energ_lo=elo, energ_hi=ehi,
-                   n_grp=dummy, n_chan=dummy,
-                   f_chan=fchan, matrix=matrix,
-                   offset=offset)
-
-
 def setup_likelihood(scale=False):
     """Create data and models for likelihood-based tests.
 
@@ -659,8 +561,7 @@ def test_cstat_arfpha():
 
     # Use the channel grid as the "energy axis".
     #
-    arf = make_arf(energ_lo=dset.channel,
-                   energ_hi=dset.channel + 1)
+    arf = create_arf(dset.channel, dset.channel + 1)
     mdl_ascal = ARFModelPHA(arf, dset, mdl)
 
     stat = CStat()
@@ -687,7 +588,7 @@ def test_cstat_rmfpha():
     #
     egrid = 1.0 * np.concatenate((dset.channel,
                                   [dset.channel.max() + 1]))
-    rmf = make_ideal_rmf(egrid[:-1], egrid[1:])
+    rmf = create_delta_rmf(egrid[:-1], egrid[1:])
 
     mdl_ascal = RMFModelPHA(rmf, dset, mdl)
 
@@ -715,9 +616,8 @@ def test_cstat_rsppha():
     #
     egrid = 1.0 * np.concatenate((dset.channel,
                                   [dset.channel.max() + 1]))
-    arf = make_arf(energ_lo=egrid[:-1],
-                   energ_hi=egrid[1:])
-    rmf = make_ideal_rmf(e_min=egrid[:-1], e_max=egrid[1:])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    rmf = create_delta_rmf(egrid[:-1], egrid[1:])
 
     mdl_ascal = RSPModelPHA(arf, rmf, dset, mdl)
 
