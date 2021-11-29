@@ -330,6 +330,180 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
     assert outdata.get_background() is None
 
 
+@requires_fits
+@requires_data
+def test_pha_write_xmm_grating(make_data_path, tmp_path):
+    """Check we can handle an XMM grating.
+
+    This has an AREASCAL column and WCS attached to the CHANNEL
+    colun. We don't guarantee the WCS info will be retained or
+    propagated.
+
+    """
+
+    def check_header(obj):
+        # check header for a selected set of keywords
+        hdr = obj.header
+
+        # selected OGIP keywords
+        assert "HDUNAME" not in hdr
+
+        assert hdr["HDUCLASS"] == "OGIP"
+        assert hdr["HDUCLAS1"] == "SPECTRUM"
+        assert hdr["HDUCLAS2"] == "NET"
+        assert hdr["HDUCLAS3"] == "COUNT"
+        assert "HDUCLAS4" not in hdr
+        assert hdr["HDUVERS"] == "1.2.0"
+        assert "HDUVERS1" not in hdr
+
+        # a few header keywords to check they are handled,
+        # including data types (string, float, integer,
+        # logical).
+        #
+        assert hdr["OBJECT"] == "TW Hya"
+        assert hdr["TELESCOP"] == "XMM"
+        assert hdr["INSTRUME"] == "RGS1"
+        assert hdr["FILTER"] == "UNKNOWN"
+
+        assert not hdr["POISSERR"]
+        assert hdr["CHANTYPE"] == "PI"
+        assert hdr["DETCHANS"] == 3600
+
+        assert "EXPOSIRE" not in hdr
+
+        assert hdr["SYS_ERR"] == pytest.approx(0.0)
+        assert hdr["GROUPING"] == 0
+        assert "QUALITY" not in hdr
+        assert hdr["CORRSCAL"] == 1
+        assert "AREASCAL" not in hdr
+        assert "BACKSCAL" not in hdr
+
+        assert hdr["CORRFILE"] == "none"
+        for key in ["RESPFILE", "ANCRFILE", "BACKFILE"]:
+            assert key not in hdr
+
+        # WCS attached to the CHANNEL column
+        if backend_is("crates"):
+            assert "TCRYP1" not in hdr
+            assert "TCRVL1" not in hdr
+            assert "TLMIN1" not in hdr
+            assert "TLMAX1" not in hdr
+
+        elif backend_is("pyfits"):
+            assert hdr["TCTYP1"] == ""
+            assert hdr["TCUNI1"] == "Angstrom"
+            assert hdr["TCRPX1"] == 1
+            assert hdr["TCRVL1"] == pytest.approx(4.00500011)
+            assert hdr["TCDLT1"] == pytest.approx(0.01)
+
+            assert hdr["TLMIN1"] == 1
+            assert hdr["TLMAX1"] == 3600
+
+        else:
+            assert False  # programming error
+
+    def check_data(obj, roundtrip=False):
+        """Basic checks of the data"""
+
+        assert obj.staterror.min() == pytest.approx(1.0)
+        assert obj.staterror.sum() == pytest.approx(4496.9490242)
+        assert obj.staterror[1498] == pytest.approx(7.937253952)
+        assert np.argmax(obj.staterror) == 1498
+
+        assert obj.syserror is None
+        assert obj.bin_lo is None
+        assert obj.bin_hi is None
+
+        assert obj.exposure == pytest.approx(28965.6406250)
+        assert obj.backscal == pytest.approx(1.0)
+        assert len(obj.areascal) == 3600
+        assert obj.areascal.min() == pytest.approx(0.0)
+        assert obj.areascal.max() == pytest.approx(1.0)
+        assert obj.areascal.sum() == pytest.approx(2950.6953666)
+
+        for f in ["grouped", "subtracted", "rate"]:
+            assert isinstance(getattr(obj, f), bool)
+
+        assert not obj.grouped
+        assert not obj.subtracted
+        assert obj.rate
+
+        assert obj.plot_fac == 0
+
+        assert obj.channel.dtype == np.dtype("float64")
+        assert obj.counts.dtype == np.dtype("float64")
+
+        assert obj.channel == pytest.approx(np.arange(1, 3601))
+        assert len(obj.counts) == 3600
+
+        expected = [0, 0, -1, -3, 0, -1, -1, 0, -2, -1]
+        assert obj.counts[112:122] == pytest.approx(expected)
+
+        assert obj.grouping is None
+        assert len(obj.quality) == 3600
+        assert obj.quality.min() == 0
+        assert obj.quality.max() == 1
+        assert obj.quality.sum() == 741
+
+    infile = make_data_path("xmmrgs/P0112880201R1S004SRSPEC1003.FTZ")
+    indata = io.read_pha(infile, use_errors=True)
+    assert isinstance(indata, DataPHA)
+    assert indata.name.endswith("/P0112880201R1S004SRSPEC1003.FTZ")
+    check_header(indata)
+    check_data(indata)
+
+    assert indata.response_ids == []
+    assert indata.background_ids == []
+
+    assert indata.get_arf() is None
+    assert indata.get_rmf() is None
+    assert indata.get_background() is None
+
+    # check we can write it out - be explicit with all options
+    #
+    outfile = tmp_path / "test.pha"
+    outfile = str(outfile)  # our IO routines don't recognize paths
+
+    # This is a bit ugly as I want to capture/hide the Astro deprecation
+    # warning, but it's only valid when we are using AstroPy.
+    #
+    if backend_is("pyfits"):
+        from astropy.utils.exceptions import AstropyDeprecationWarning
+        with pytest.warns(AstropyDeprecationWarning) as ws:
+            io.write_pha(outfile, indata, ascii=False, clobber=False)
+
+        # Skip the known "deprecation" error, but flag up any other
+        # errors. This is probably excessive (e.g. the message may change
+        # textually) but for now see how this goes. I did not want to
+        # add this to the generic list of known warnings as I do not like
+        # making these affect all tests.
+        #
+        expected = "The following keywords are now recognized as special column-related attributes and should be set via the Column objects: TCDLTn, TCRPXn, TCRVLn, TCTYPn, TCUNIn. In future, these values will be dropped from manually specified headers automatically and replaced with values generated based on the Column objects."
+        if len(ws) > 0:
+            assert len(ws) == 1, len(ws)
+            assert str(ws[0].message) == expected
+
+    else:
+        io.write_pha(outfile, indata, ascii=False, clobber=False)
+
+    outdata = io.read_pha(outfile, use_errors=True)
+    assert isinstance(outdata, DataPHA)
+    assert outdata.name.endswith("/test.pha")
+    check_header(outdata)
+    check_data(outdata, roundtrip=True)
+
+    # The responses and background should NOT be read in
+    # (we are in a different directory to infile so we can't
+    # find these files).
+    #
+    assert outdata.response_ids == []
+    assert outdata.background_ids == []
+
+    assert outdata.get_arf() is None
+    assert outdata.get_rmf() is None
+    assert outdata.get_background() is None
+
+
 def check_write_pha_fits_basic_roundtrip_crates(path):
     import pycrates
     ds = pycrates.CrateDataset(str(path), mode="r")
