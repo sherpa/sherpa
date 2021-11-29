@@ -185,28 +185,62 @@ def begin():
 
 
 def end():
-    if len(current_fig['all_axes']) == 1:
-        show(current_fig['all_axes'][0])
-    else:
-        raise NotImplementedError
+    show(current_fig['all_axes'])
 
 
 def exceptions():
     pass
 
 
+def set_subplot(row, col, nrows, ncols, clearaxes=True,
+                left=None,
+                right=None,
+                bottom=None,
+                top=None,
+                wspace=0.3,
+                hspace=0.4):
+    # left right, ... seems to be matplotlib specific.
+    # Can we remove that from the function signature?
+
+    global current_fig
+    
+    if (nrows != current_fig['nrows']) or (ncols != current_fig['ncols']):
+        current_fig = {'nrows': nrows, 'ncols': ncols,
+                       # The following does not work, because it creates
+                       # multiple references to the same None
+                       #'all_axes': [None * ncols] * nrows
+                       'all_axes': [[None for i in range(ncols)] for j in range(nrows)]}
+
+    if clearaxes or current_fig['all_axes'][row][col] is None:
+        fig = figure(width=width, height=height)
+        current_fig['all_axes'][row][col] = fig
+        # Make layout as late as possible on first display (in the notebook
+        # function) but if it exisits already, update with new added plot.
+        # Directly replacing children is not the best way, but bokeh
+        # does not have a clean_figure() function and this seems to work
+        # for the limited layouts that sherpa uses (square grids).
+        
+        # Also, it would be more efficient to replace the exiting child in
+        # (row, col) instead of appending even if that (row, col) combination
+        # might exisit already,
+        # but this is a rare use case in sherpa and efficiency is not our
+        # main concern here.
+        if 'layout' in current_fig:
+            current_fig['layout'].children[1].children.append((fig, row, col))
+        
+    current_fig['current_axes'] = current_fig['all_axes'][row][col]
+
+
+
 def clear_window():
     global current_fig
-    fig = figure()
-    current_fig = {'nrows': 1, 'ncols': 1,
-                   'current_axis': fig,
-                   'all_axes': [[fig]],
-                   'handle': None}
+    current_fig = {'nrows': 0, 'ncols': 0}
+    set_subplot(0, 0, 1, 1)
 
 # Now, that the function is defined, we call it to make sure we have a window to start
 clear_window()
 
-
+    
 def set_window_redraw(redraw):
     pass
 
@@ -227,7 +261,7 @@ def setup_axes(overplot, clearwindow):
     if not overplot and clearwindow:
         clear_window()
 
-    return current_fig['current_axis']
+    return current_fig['current_axes']
 
 
 def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
@@ -255,14 +289,16 @@ def setup_plot(axes, title, xlabel, ylabel, xlog=False, ylog=False):
         axes.yaxis.axis_label = ylabel
 
 def notebook():
+    global current_fig
     if curstate().notebook:
+        if 'layout' not in current_fig:
+            current_fig['layout'] = gridplot(current_fig['all_axes'])
         handle = current_fig.get('handle', None)
         if handle is None:
-            current_fig['handle'] = show(gridplot(current_fig['all_axes'],
-                                                  width=width, height=height),
+            current_fig['handle'] = show(current_fig['layout'],
                                          notebook_handle=True)
         else:
-            push_notebook()
+            push_notebook(handle=handle)
 
     
         
@@ -489,7 +525,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
             axes.add_glyph(source, line)
             objs.append(line)
         else:
-            # steps does not return line, so following will fail
+            # steps does return None)
             objs(axes.steps(x, y,
                             mode=_drawstyle_map[drawstyle],
                             line_dash=tr_linestyle(linestyle),
@@ -530,12 +566,18 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         objs.append(ywhisker)
 
     if xaxis:
-        axes.axhline(y=0, xmin=0, xmax=1, color='black', linewidth=1)
+        objs.append(axes.axhline(y=0, xmin=0, xmax=1,
+                                 color='black', linewidth=1))
 
     if ratioline:
-        axes.axhline(y=1, xmin=0, xmax=1, color='black', linewidth=1)
-
-    notebook()
+        objs.append(axes.axhline(y=1, xmin=0, xmax=1,
+                                 color='black', linewidth=1))
+    # It is possible to go through this method without plotting anything.
+    # That happens when a histogram with "linestyle='None'" etc. and no
+    # errors is plotted. In that case, updating the notebook display
+    # may raise a warning, so don't do that.
+    if objs:
+        notebook()
     return objs
 
 
@@ -571,30 +613,6 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
     notebook()
 
 
-def set_subplot(row, col, nrows, ncols, clearaxes=True,
-                left=None,
-                right=None,
-                bottom=None,
-                top=None,
-                wspace=0.3,
-                hspace=0.4):
-    # lefft right, ... seems to be matplotlib specific.
-    # Can we remove that from the function signature?
-
-    global current_fig
-    
-    if (nrows != current_fig['nrows']) or (ncols != current_fig['ncols']):
-        clear_window()
-        current_fig = {'nrows': nrows, 'ncols': ncols,
-                       'current_axis': None,
-                       # The following does not work, because it creates
-                       # multiple references to the same None
-                       #'all_axes': [None * ncols] * nrows
-                       'all_axes': [[None for i in range(ncols)] for j in range(nrows)]}
-    if clearaxes or current_fig['all_axes'][row][col] is None:
-        fig = figure()
-        current_fig['all_axes'][row][col] = fig
-    current_fig['current_axis'] = current_fig['all_axes'][row][col]
 
 
 def set_jointplot(row, col, nrows, ncols, create=True,
