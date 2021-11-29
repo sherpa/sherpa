@@ -191,6 +191,145 @@ def test_pha_write_basic(make_data_path, tmp_path):
     assert outdata.get_background() is None
 
 
+@requires_fits
+@requires_data
+def test_pha_write_basic_errors(make_data_path, tmp_path):
+    """test_pha_write_basic but with use_errors=True.
+    """
+
+    def check_header(obj):
+        # check header for a selected set of keywords
+        hdr = obj.header
+
+        # selected OGIP keywords
+        check_hduname(hdr, "SPECTRUM")
+
+        assert hdr["HDUCLASS"] == "OGIP"
+        assert hdr["HDUCLAS1"] == "SPECTRUM"
+        assert hdr["HDUCLAS2"] == "TOTAL"
+        assert hdr["HDUCLAS3"] == "TYPE:I"
+        assert hdr["HDUCLAS4"] == "COUNT"
+        assert hdr["HDUVERS"] == "1.1.0"
+        assert hdr["HDUVERS1"] == "1.1.0"
+
+        # a few header keywords to check they are handled,
+        # including data types (string, float, integer,
+        # logical).
+        #
+        assert hdr["OBJECT"] == "3C 273"
+        assert hdr["INSTRUME"] == "ACIS"
+        assert hdr["GRATING"] == "HETG"
+        assert hdr["DETNAM"] == "ACIS-56789"
+        assert hdr["RA_NOM"] == pytest.approx(187.28186566)
+        assert hdr["DEC_NOM"] == pytest.approx(2.05610034)
+        assert hdr["SIM_X"] == pytest.approx(-0.68282252)
+        assert hdr["DATE-OBS"] == "2000-01-10T06:47:15"
+        assert isinstance(hdr["CLOCKAPP"], (bool, np.bool_))
+        assert hdr["CLOCKAPP"]
+        assert hdr["TIMEZERO"] == 0
+        assert hdr["DETCHANS"] == 1024
+
+    def check_data(obj):
+        """Basic checks of the data"""
+
+        assert (obj.staterror == 0).sum() == 714
+        assert obj.staterror.sum() == pytest.approx(449.71593831)
+        assert obj.staterror[0] == pytest.approx(0.0)
+        assert obj.staterror[13] == pytest.approx(1.73205081)
+        assert obj.staterror[51] == pytest.approx(3.1622776602)
+        assert obj.staterror[1023] == pytest.approx(2.82842712)
+        assert np.argmax(obj.staterror) == 51
+
+        assert obj.syserror is None
+        assert obj.bin_lo is None
+        assert obj.bin_hi is None
+
+        assert obj.exposure == pytest.approx(38564.608926889)
+        assert np.log10(obj.backscal) == pytest.approx(-5.597491618115439)
+        assert obj.areascal == pytest.approx(1.0)
+        for f in ["grouped", "subtracted", "rate"]:
+            assert isinstance(getattr(obj, f), bool)
+
+        assert obj.grouped
+        assert not obj.subtracted
+        assert obj.rate
+
+        assert obj.plot_fac == 0
+
+        assert obj.channel.dtype == np.dtype("float64")
+        assert obj.counts.dtype == np.dtype("float64")
+
+        assert obj.channel == pytest.approx(np.arange(1, 1025))
+        assert len(obj.counts) == 1024
+        assert obj.counts[0:11] == pytest.approx(np.zeros(11))
+        cvals = [1, 3, 2, 3, 7, 1, 6, 4, 4, 0]
+        assert obj.counts[12:22] == pytest.approx(cvals)
+
+        assert len(obj.grouping) == 1024
+        assert len(obj.quality) == 1024
+
+        if backend_is("crates"):
+            assert obj.grouping.dtype == np.dtype("int16")
+            assert obj.quality.dtype == np.dtype("int16")
+
+        elif backend_is("pyfits"):
+            assert obj.grouping.dtype == np.dtype(">i2")
+            assert obj.quality.dtype == np.dtype(">i2")
+
+        else:
+            pytest.fail("Unrecognized IO backend")
+
+        assert obj.quality == pytest.approx(np.zeros(1024))
+
+        one, = np.where(obj.grouping == 1)
+        expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,
+                    68,  71,  75,  78,  82,  88,  96, 101, 110, 116, 124, 130, 133,
+                    139, 143, 150, 156, 164, 177, 186, 196, 211, 232, 244, 260, 276,
+                    291, 323, 344, 368, 404, 450, 676]
+        assert one == pytest.approx(expected)
+        assert obj.grouping.sum() == -932
+        assert set(obj.grouping) == {-1, 1}
+
+    infile = make_data_path("3c273.pi")
+    indata = io.read_pha(infile, use_errors=True)
+    assert isinstance(indata, DataPHA)
+    assert indata.name.endswith("/3c273.pi")
+    check_header(indata)
+    check_data(indata)
+
+    # The responses and background should be read in
+    #
+    assert indata.response_ids == pytest.approx([1])
+    assert indata.background_ids == pytest.approx([1])
+
+    assert indata.get_arf().name.endswith("/3c273.arf")
+    assert indata.get_rmf().name.endswith("/3c273.rmf")
+    assert indata.get_background().name.endswith("/3c273_bg.pi")
+
+    # check we can write it out - be explicit with all options
+    #
+    outfile = tmp_path / "test.pha"
+    outfile = str(outfile)  # our IO routines don't recognize paths
+    io.write_pha(outfile, indata, ascii=False, clobber=False)
+
+    outdata = io.read_pha(outfile, use_errors=True)
+    assert isinstance(outdata, DataPHA)
+    assert outdata.name.endswith("/test.pha")
+    check_header(outdata)
+    check_data(outdata)
+
+    # The responses and background should NOT be read in
+    # (we are in a different directory to infile so we can't
+    # find these files).
+    #
+    assert outdata.response_ids == []
+    assert outdata.background_ids == []
+
+    assert outdata.get_arf() is None
+    assert outdata.get_rmf() is None
+    assert outdata.get_background() is None
+
+
 def check_write_pha_fits_basic_roundtrip_crates(path):
     import pycrates
     ds = pycrates.CrateDataset(str(path), mode="r")
