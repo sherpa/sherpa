@@ -160,11 +160,11 @@ if HAS_PYTEST:
         return requires_package(msg, *packages)(test_function)
 
     def requires_fits(test_function):
-        """Returns True if there is an importable backend for FITS I/O.
+        """Returns True if a working backend for FITS I/O is importable.
 
-        Used to skip tests requiring fits_io. As we now allow a dummy
-        backend to be loaded, even when we can import the underlying
-        I/O code, the meaning of this is now unclear.
+        Used to skip tests requiring fits_io. The dummy backend itself
+        is not a "working backend" in the sense that it cannot be used to
+        read or write files.
 
         """
         packages = ('astropy.io.fits',
