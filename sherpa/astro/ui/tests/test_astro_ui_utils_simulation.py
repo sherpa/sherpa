@@ -527,8 +527,8 @@ def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
 
     # check the header
     hdr = d3.header
-    assert hdr["TELESCOP"] == "none"
-    assert hdr["INSTRUME"] == "none"
+    assert hdr["TELESCOP"] == "CHANDRA"
+    assert hdr["INSTRUME"] == "ACIS"
     assert hdr["FILTER"] == "none"
 
     # check some other values related to #1209 and #488 (OGIP)

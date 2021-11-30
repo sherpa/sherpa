@@ -761,6 +761,10 @@ def _pack_pha(dataset):
     _set("HDUVERS", "1.2.1")
     _set("HDUDOC", "Arnaud et al. 1992a Legacy 2  p 65")
 
+    # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
+    # based on any associated background or response. If the user has
+    # changed them then so be it.
+    #
     _set("TELESCOP", "none")
     _set("INSTRUME", "none")
     _set("FILTER", "none")

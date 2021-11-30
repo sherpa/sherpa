@@ -1589,15 +1589,15 @@ must be an integer.""")
         self.backscal = backscal
         self.areascal = areascal
         if header is None:
-            self.header = {"HDUCLASS": "OGIP", "HDUCLAS1": "SPECTRUM",
-                           "HDUCLAS2": "TOTAL", "HDUCLAS3": "TYPE:I",
-                           "HDUCLAS4": "COUNT", "HDUVERS": "1.2.1",
-                           "TELESCOP": "none", "INSTRUME": "none",
-                           "FILTER": "none", "POISSERR": True}
+            header = {"HDUCLASS": "OGIP", "HDUCLAS1": "SPECTRUM",
+                      "HDUCLAS2": "TOTAL", "HDUCLAS3": "TYPE:I",
+                      "HDUCLAS4": "COUNT", "HDUVERS": "1.2.1",
+                      "TELESCOP": "none", "INSTRUME": "none",
+                      "FILTER": "none", "POISSERR": True}
 
-        else:
-            self.header = header
-        self._grouped = (grouping is not None)
+        self.header = header
+        self._grouped = grouping is not None
+
         # _original_groups is set False if the grouping is changed via
         # the _dynamic_groups method. This is currently only used by the
         # serialization code (sherpa.astro.ui.serialize) to determine
@@ -1771,6 +1771,14 @@ must be an integer.""")
         --------
         delete_response, get_response, set_arf, set_rmf
 
+        Notes
+        -----
+        If the PHA header does not have the TELESCOP, INSTRUME, or
+        FILTER header keywords set (or they are set to "none"), then
+        they are taken from the ARF or RMF, if they are not set to
+        "none". This is to allow simulated data sets to be used with
+        external programs, such as XSPEC.
+
         """
         if (arf is None) and (rmf is None):
             return
@@ -1781,6 +1789,37 @@ must be an integer.""")
         if id not in ids:
             ids.append(id)
         self.response_ids = ids
+
+        # To support simulated data (e.g. issue #1209) we over-write
+        # the header TELESCOP/INSTRUME/FILTER settings to match the
+        # response if they are at their "default" value (e.g. "none").
+        #
+        # TODO: should we warn if these values don't match (when not
+        # "none")?
+        #
+        def set_key(key):
+            val = self.header.get(key, "none")
+            if val != "none":
+                return
+
+            if arf is not None:
+                val = arf.header.get(key, "none")
+                if val != "none":
+                    self.header[key] = val
+                    return
+
+            if rmf is None:
+                return
+
+            val = rmf.header.get(key, "none")
+            if val == "none":
+                return
+
+            self.header[key] = val
+
+        set_key("TELESCOP")
+        set_key("INSTRUME")
+        set_key("FILTER")
 
     def delete_response(self, id=None):
         """Remove the response component.
@@ -2281,6 +2320,14 @@ must be an integer.""")
         --------
         delete_background, get_background
 
+        Notes
+        -----
+        If the PHA header does not have the TELESCOP, INSTRUME, or
+        FILTER header keywords set (or they are set to "none"), then
+        they are taken from the background, if they are not set to
+        "none". This is to allow simulated data sets to be used with
+        external programs, such as XSPEC.
+
         """
         id = self._fix_background_id(id)
         self._backgrounds[id] = bkg
@@ -2311,6 +2358,28 @@ must be an integer.""")
 
         bkg.rate = self.rate
         bkg.plot_fac = self.plot_fac
+
+        # To support simulated data (e.g. issue #1209) we over-write
+        # the header TELESCOP/INSTRUME/FILTER settings to match the
+        # background if they are at their "default" value (e.g. "none").
+        #
+        # TODO: should we warn if these values don't match (when not
+        # "none")?
+        #
+        def set_key(key):
+            val = self.header.get(key, "none")
+            if val != "none":
+                return
+
+            val = bkg.header.get(key, "none")
+            if val == "none":
+                return
+
+            self.header[key] = val
+
+        set_key("TELESCOP")
+        set_key("INSTRUME")
+        set_key("FILTER")
 
     def delete_background(self, id=None):
         """Remove the background component.
