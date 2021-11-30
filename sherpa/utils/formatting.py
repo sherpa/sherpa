@@ -258,7 +258,8 @@ def html_svg(svg, summary, open_block=True):
     Parameters
     ----------
     svg : str
-        The plot to display.
+        The plot to display (could be an SVG, thus the name, but could
+        also be some other HTML element, e.g. a DIV or SCRIPT tag).
     summary : str
         The the summary for the details block
     open_block : bool, optional

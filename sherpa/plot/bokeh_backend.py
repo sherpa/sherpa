@@ -27,7 +27,7 @@ bokeh is such an object-oriented package, which, by itself, does not keep a plot
 
 color-cycling
 '''
-
+from contextlib import contextmanager
 import io
 import logging
 
@@ -39,11 +39,12 @@ from bokeh.models.annotations import Span
 from bokeh.models import Whisker, Line, Scatter
 from bokeh.models import ColumnDataSource
 from bokeh.models.arrow_heads import TeeHead
-# the next 3 are needed to update and dispaly notebook plots
-# is output_notebook is set
+# the next 3 are needed to update and display notebook plots
+# if output_notebook is set
 from bokeh.io.state import curstate
 from bokeh.layouts import gridplot
 from bokeh.io.notebook import push_notebook
+from bokeh.embed import components
 
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import ArgumentErr, NotImplementedErr
@@ -647,26 +648,16 @@ def set_jointplot(row, col, nrows, ncols, create=True,
 
     plotnum = row * ncols + col
 
-    global current_fig
+    set_subplot(row, col, nrows, ncol, clearaxes=create)
     if create:
-
-        current_fig = {'nrows': nrows, 'ncols': ncols,
-                       'all_axes': [figure() for n in range(nrows * ncols)]
-                       }
-
-
-        # We only change the vertical spacing
-        ratios = [1] * nrows
-        ratios[top] = ratio
-        # TO-Do: implement ratios
+        for plot in current_fig['all_axes'][top]:
+            plot.height = height * ratio
 
         # Axis sharing
         for r in range(1, nrows):
             for c in range(ncols):
-                current_fig['all_axes'][r * ncols + c].x_range = \
-                    current_fig['all_axes'][c].x_range
-
-    current_fig['current_axis'] = current_fig['all_axes'][plotnum]
+                current_fig['all_axes'][r][c].x_range = \
+                    current_fig['all_axes'][0][c].x_range
 
 
 def get_split_plot_defaults():
@@ -797,55 +788,38 @@ def get_latex_for_string(txt):
     return "$${}$$".format(txt)
 
 
-# HTML representation as SVG plots
-#
 
-def as_svg(func):
-    """Create HTML representation of a plot
 
-    The output is a SVG representation of the data, as a HTML
-    svg element, or a single div pointing out that the
-    plot object has not been prepared,
+@contextmanager
+def supress_notebook_plotting():
+    '''Suppress notebook plotting independent of what the user requested
 
-    Parameters
-    ----------
-    func : function
-        The function, which takes no arguments, which will create the
-        plot. It creates and returns the Figure.
+    We do not know if the user set a notebook output. However, we do know
+    that in some situations we do not want an output in the notebook cell
+    or a saved plot to appear, for example when we render an object just
+    for the _repr_html_ display in the notebook.
 
-    Returns
-    -------
-    plot : str or None
-        The HTML, or None if there was an error (e.g. prepare not
-        called).
-
-    """
-
-    svg = io.StringIO()
+    This contex manager temporarily resets the notebook output to be 
+    silent.
+    '''
+    # Code to acquire resource, e.g.:
+    notebook_state = curstate().notebook
+    file_state = curstate().file
+    curstate()._notebook = False
+    curstate()._file = None
     try:
-        fig = func()
-        fig.savefig(svg, format='svg')
-        plt.close(fig)
-
-    except Exception as e:
-        logger.debug("Unable to create SVG plot: {}".format(e))
-        return None
-
-    # strip out the leading text so this can be used in-line
-    svg = svg.getvalue()
-    idx = svg.find('<svg ')
-    if idx == -1:
-        logger.debug("SVG output does not contain '<svg ': {}".format(svg))
-        return None
-
-    return svg[idx:]
+        yield None
+    finally:
+        # Code to release resource, e.g.:
+        curstate()._notebook = notebook_state
+        curstate()._file = file_state
 
 
 def as_html_plot(data, summary=None):
     """Create HTML representation of a plot
 
-    The output is a SVG representation of the data, as a HTML
-    svg element.
+    The output is a HTML representation of the data, as a HTML
+    using a <script> element that renders into a <div> element.
 
     Parameters
     ----------
@@ -863,28 +837,27 @@ def as_html_plot(data, summary=None):
         called).
 
     """
-
-    def plotfunc():
-        fig = plt.figure()
+    with supress_notebook_plotting():
         data.plot()
-        return fig
+    
+    if 'layout' not in current_fig:
+        current_fig['layout'] = gridplot(current_fig['all_axes'])
 
-    svg = as_svg(plotfunc)
-    if svg is None:
-        return None
+    script, div = components(current_fig['layout'])
 
     if summary is None:
         summary = type(data).__name__
 
-    ls = [formatting.html_svg(svg, summary)]
-    return formatting.html_from_sections(data, ls)
+    ls = [formatting.html_svg(div, summary)]
+    return formatting.html_from_sections(data, [script] + ls)
+
 
 
 def as_html_contour(data, summary=None):
     """Create HTML representation of a contour
 
-    The output is a SVG representation of the data, as a HTML
-    svg element.
+    The output is a HTML representation of the data, as a HTML
+    using a <script> element that renders into a <div> element.
 
     Parameters
     ----------
@@ -902,21 +875,20 @@ def as_html_contour(data, summary=None):
         called).
 
     """
-
-    def plotfunc():
-        fig = plt.figure()
+    with supress_notebook_plotting():
         data.contour()
-        return fig
+    
+    if 'layout' not in current_fig:
+        current_fig['layout'] = gridplot(current_fig['all_axes'])
 
-    svg = as_svg(plotfunc)
-    if svg is None:
-        return None
+    script, div = components(current_fig['layout'])
 
     if summary is None:
         summary = type(data).__name__
 
-    ls = [formatting.html_svg(svg, summary)]
-    return formatting.html_from_sections(data, ls)
+    ls = [formatting.html_svg(div, summary)]
+    return formatting.html_from_sections(data, [script] + ls)
+
 
 
 as_html_histogram = as_html_plot
