@@ -778,7 +778,10 @@ def _pack_pha(dataset):
     _set_keyword(header, "ANCRFILE", arf)
     _set_keyword(header, "BACKFILE", bkg)
 
-    # TODO: perhaps we shuold error out if channel or counts is not set?
+    # The channel ordering for the ouput file is determined by the
+    # order the keys are added to the data dict.
+    #
+    # TODO: perhaps we should error out if channel or counts is not set?
     #
     data = {}
     data["channel"] = getattr(dataset, "channel", None)
@@ -892,7 +895,7 @@ def _pack_pha(dataset):
     except KeyError:
         pass
 
-    return data, list(data.keys()), header
+    return data, header
 
 
 def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
@@ -990,7 +993,8 @@ def write_pha(filename, dataset, ascii=True, clobber=False):
     read_pha
 
     """
-    data, col_names, hdr = _pack_pha(dataset)
+    data, hdr = _pack_pha(dataset)
+    col_names = list(data.keys())
     backend.set_pha_data(filename, data, col_names, hdr, ascii=ascii,
                          clobber=clobber)
 
@@ -1073,7 +1077,8 @@ def pack_pha(dataset):
     pack_image, pack_table
 
     """
-    data, col_names, hdr = _pack_pha(dataset)
+    data, hdr = _pack_pha(dataset)
+    col_names = list(data.keys())
     return backend.set_pha_data('', data, col_names, hdr, packup=True)
 
 
