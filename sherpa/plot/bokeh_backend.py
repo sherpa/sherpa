@@ -31,7 +31,7 @@ from contextlib import contextmanager
 import io
 import logging
 
-import numpy
+import numpy as np
 
 from bokeh.plotting import figure, show
 from bokeh.models.scales import LinearScale, LogScale
@@ -124,7 +124,7 @@ def tr_marker(marker):
 
 def tr_markersize(size):
     if size is None:
-        return 10
+        return 20
     else:
         return size
 
@@ -150,6 +150,7 @@ _linestyle_map = {
     '--': 'dashed',
     '-.': 'dotdash',
     '': None,
+    None: 'solid',
 }
 
 def tr_linestyle(ls):
@@ -186,7 +187,10 @@ def begin():
 
 
 def end():
-    show(current_fig['all_axes'])
+    # If we are in an active notebook, then the plot is already
+    # displayed by the notebook specific function
+    if not curstate().notebook:
+        show(gridplot(current_fig['all_axes']))
 
 
 def exceptions():
@@ -313,7 +317,10 @@ def point(x, y, overplot=True, clearwindow=False,
         symbol = 'circle'
 
     axes = setup_axes(overplot, clearwindow)
-    source = ColumnDataSource({'x': x, 'y': y})
+    # 2D will fail later, but we need at least one 1D, since
+    # bokeh does not handle scalars here
+    source = ColumnDataSource({'x': np.atleast_1d(x),
+                               'y': np.atleast_1d(y)})
     for a, val in [('alpha', tr_alpha(alpha)),
                     ('color', tr_color(color))]:
         for b in ['fill', 'hatch', 'line']:
@@ -389,7 +396,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     # also be used for marker[face]color and ecolor?
     #
     xmid = 0.5 * (xlo + xhi)
-    xerr = (xhi - xlo) if xerrorbars else None
+    xerr = (xhi - xlo) / 2 if xerrorbars else None
     yerr = yerr if yerrorbars else None
 
     #if marker is None:
@@ -567,12 +574,12 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         objs.append(ywhisker)
 
     if xaxis:
-        objs.append(axes.axhline(y=0, xmin=0, xmax=1,
-                                 color='black', linewidth=1))
+        objs.append(hline(overplot=True, y=0, xmin=0, xmax=1,
+                          linecolor='black', linewidth=1))
 
     if ratioline:
-        objs.append(axes.axhline(y=1, xmin=0, xmax=1,
-                                 color='black', linewidth=1))
+        objs.append(hline(overplot=True, y=1, xmin=0, xmax=1,
+                          linecolor='black', linewidth=1))
     # It is possible to go through this method without plotting anything.
     # That happens when a histogram with "linestyle='None'" etc. and no
     # errors is plotted. In that case, updating the notebook display
@@ -590,14 +597,21 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
             linewidths=None,
             colors=None):
 
-    x0 = numpy.unique(x0)
-    x1 = numpy.unique(x1)
-    y = numpy.asarray(y)
+    '''Contour plots are not available natively in bokeh yet, see
+    https://discourse.bokeh.org/t/contouring-in-bokeh/8517
+
+    However, we can address many use cases by plotting an image instead.'''
+
+    if overcontour:
+        raise NotImplementedError('Bokeh does not support contours, so instead levels are displayed as images. Try plotting the images first and then overlay other plot elements on top of that.')
+    x0 = np.unique(x0)
+    x1 = np.unique(x1)
+    y = np.asarray(y)
 
     if x0.size * x1.size != y.size:
         raise NotImplementedErr('contourgrids')
 
-    y = y.reshape(x1.size, x0.size)
+    image = y.reshape(x1.size, x0.size)
 
     axes = setup_axes(overcontour, clearwindow)
 
@@ -605,12 +619,24 @@ def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
     if not overcontour:
         setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
-    if levels is None:
-        axes.contour(x0, x1, y, alpha=alpha,
-                     colors=colors, linewidths=linewidths)
+    p = current_fig['current_axes']
+    p.x_range.range_padding = p.y_range.range_padding = 0
+
+    # Need images on regular grid
+    dx0 = np.diff(x0)
+    dx1 = np.diff(x1)
+    if np.allclose(dx0, dx0[0]) and (np.allclose(dx1, dx1[0])):
+        x = x0[0]
+        y = x1[0]
+        dw = x0[-1] - x0[0]
+        dh = x1[-1] - x1[0]
     else:
-        axes.contour(x0, x1, y, levels, alpha=alpha,
-                     colors=colors, linewidths=linewidths)
+        raise NotImplementedError('Interpolation of non-regular grids is not implemented yet.')
+    
+    # must give a vector of image data for image parameter
+    p.image(image=[image], x=x, y=y, dw=dw, dh=dh,
+            palette="Spectral11", level="image", alpha=tr_alpha(alpha))
+
     notebook()
 
 
@@ -648,7 +674,7 @@ def set_jointplot(row, col, nrows, ncols, create=True,
 
     plotnum = row * ncols + col
 
-    set_subplot(row, col, nrows, ncol, clearaxes=create)
+    set_subplot(row, col, nrows, ncols, clearaxes=create)
     if create:
         for plot in current_fig['all_axes'][top]:
             plot.height = height * ratio
@@ -656,8 +682,10 @@ def set_jointplot(row, col, nrows, ncols, create=True,
         # Axis sharing
         for r in range(1, nrows):
             for c in range(ncols):
+                if current_fig['all_axes'][r][c] is None:
+                    current_fig['all_axes'][r][c] = figure(height=height, width=width)
                 current_fig['all_axes'][r][c].x_range = \
-                    current_fig['all_axes'][0][c].x_range
+                    current_fig['all_axes'][top][c].x_range
 
 
 def get_split_plot_defaults():
