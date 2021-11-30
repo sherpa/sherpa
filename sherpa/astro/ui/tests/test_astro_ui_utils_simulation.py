@@ -470,3 +470,79 @@ def test_fake_pha_background_model(clean_astro_ui, reset_seed):
     assert (faked.counts > predicted_by_source).all()
     assert (faked.counts > predicted_by_bkg).all()
     # This is more likely to fail by chance, but still very unlikely
+
+
+@requires_fits
+@requires_data
+def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
+    """Check issue #1209.
+
+    See also sherpa/astro/tests/test_fake_pha.py for
+
+        test_fake_pha_has_valid_ogip_keywords_all_fake
+        test_fake_pha_has_valid_ogip_keywords_from_real
+
+    The session fake_pha includes quite a lot of logic which
+    makes that the test case for #1209 should be done at this
+    level, to complement the tests mentioned above.
+
+    """
+
+    infile = make_data_path("acisf01575_001N001_r0085_pha3.fits.gz")
+    ui.load_pha(infile)
+    ui.set_source(ui.powlaw1d.pl)
+    pl.gamma = 1.8
+    pl.ampl = 1e-4
+
+    arf = ui.get_arf()
+    rmf = ui.get_rmf()
+
+    # check the TOTCTS setting in the input file
+    d1 = ui.get_data()
+    assert d1.header["TOTCTS"] == 855
+    assert d1.counts.sum() == 855
+
+    ui.set_source("newid", pl)
+    ui.fake_pha("newid",
+                exposure=ui.get_exposure(),
+                bkg=ui.get_bkg(),
+                rmf=rmf,
+                arf=arf,
+                backscal=ui.get_backscal())
+    stat = ui.calc_stat("newid")
+
+    outfile = tmp_path / "sim.pha"
+    ui.save_pha("newid", str(outfile))
+
+    ui.load_pha(3, str(outfile))
+    d3 = ui.get_data(3)
+    assert isinstance(d3, ui.DataPHA)
+
+    assert d3.exposure == pytest.approx(37664.157219191)
+    assert d3.areascal == pytest.approx(1.0)
+    assert d3.backscal == pytest.approx(2.2426552620567e-06)
+
+    assert d3.background_ids == []
+    assert d3.response_ids == []
+
+    # check the header
+    hdr = d3.header
+    assert hdr["TELESCOP"] == "none"
+    assert hdr["INSTRUME"] == "none"
+    assert hdr["FILTER"] == "none"
+
+    # check some other values related to #1209 and #488 (OGIP)
+    #
+    assert "TOTCTS" not in hdr
+    assert hdr["GROUPING"] == 0
+    assert hdr["QUALITY"] == 0
+    assert hdr["SYS_ERR"] == 0
+
+    # We should get the same value - the responses are not written
+    # to the temporary directory and so we need to load them
+    # directly.
+    #
+    ui.set_rmf(3, rmf)
+    ui.set_arf(3, arf)
+    ui.set_source(3, pl)
+    assert ui.calc_stat(3) == pytest.approx(stat)

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,7 +30,10 @@ import pytest
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro.data import DataPHA
 from sherpa.astro.fake import fake_pha
+from sherpa.astro import io
 from sherpa.models import Const1D
+from sherpa.utils.testing import requires_data, requires_fits
+
 
 channels = np.arange(1, 4, dtype=np.int16)
 counts = np.ones(3, dtype=np.int16)
@@ -55,17 +59,17 @@ def test_fake_pha_basic(has_bkg, is_source, reset_seed):
     not be used in the simulation with default settings
     """
     np.random.seed(4276)
-    data = DataPHA('any', channels, counts, exposure=1000.)
+    data = DataPHA("any", channels, counts, exposure=1000.)
 
     if has_bkg:
-        bkg = DataPHA('bkg', channels, bcounts,
+        bkg = DataPHA("bkg", channels, bcounts,
                       exposure=2000, backscal=0.4)
-        data.set_background(bkg, id='unused-bkg')
+        data.set_background(bkg, id="unused-bkg")
 
     data.set_arf(arf)
     data.set_rmf(rmf)
 
-    mdl = Const1D('mdl')
+    mdl = Const1D("mdl")
     mdl.c0 = 2
 
     fake_pha(data, mdl, is_source=is_source, add_bkgs=False)
@@ -73,14 +77,14 @@ def test_fake_pha_basic(has_bkg, is_source, reset_seed):
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
 
-    assert data.name == 'any'
-    assert data.get_arf().name == 'user-arf'
-    assert data.get_rmf().name == 'delta-rmf'
+    assert data.name == "any"
+    assert data.get_arf().name == "user-arf"
+    assert data.get_rmf().name == "delta-rmf"
 
     if has_bkg:
-        assert data.background_ids == ['unused-bkg']
-        bkg = data.get_background('unused-bkg')
-        assert bkg.name == 'bkg'
+        assert data.background_ids == ["unused-bkg"]
+        bkg = data.get_background("unused-bkg")
+        assert bkg.name == "bkg"
         assert bkg.counts == pytest.approx(bcounts)
         assert bkg.exposure == pytest.approx(2000)
 
@@ -124,17 +128,17 @@ def test_fake_pha_basic(has_bkg, is_source, reset_seed):
 
 
 def test_fake_pha_background_pha(reset_seed):
-    '''Sample from background pha'''
+    """Sample from background pha"""
     np.random.seed(1234)
 
-    data = DataPHA('any', channels, counts, exposure=1000.)
-    bkg = DataPHA('bkg', channels, bcounts, exposure=2000, backscal=2.5)
-    data.set_background(bkg, id='used-bkg')
+    data = DataPHA("any", channels, counts, exposure=1000.)
+    bkg = DataPHA("bkg", channels, bcounts, exposure=2000, backscal=2.5)
+    data.set_background(bkg, id="used-bkg")
 
     data.set_arf(arf)
     data.set_rmf(rmf)
 
-    mdl = Const1D('mdl')
+    mdl = Const1D("mdl")
     mdl.c0 = 0
     # Just make sure that the model does not contribute
     fake_pha(data, mdl, is_source=True, add_bkgs=False)
@@ -150,7 +154,7 @@ def test_fake_pha_background_pha(reset_seed):
     # and essentially 0 counts. So, we should find 1/11 of the counts
     # we found in the last run.
     for i in range(5):
-        bkg = DataPHA('bkg', channels, np.ones(3, dtype=np.int16),
+        bkg = DataPHA("bkg", channels, np.ones(3, dtype=np.int16),
                       exposure=1000, backscal=2.5)
         data.set_background(bkg, id=i)
 
@@ -163,11 +167,11 @@ def test_fake_pha_background_pha(reset_seed):
 def test_fake_pha_bkg_model():
     """Test background model
     """
-    data = DataPHA('any', channels, counts, exposure=1000.)
+    data = DataPHA("any", channels, counts, exposure=1000.)
 
-    bkg = DataPHA('bkg', channels, bcounts,
+    bkg = DataPHA("bkg", channels, bcounts,
                   exposure=2000, backscal=1.)
-    data.set_background(bkg, id='used-bkg')
+    data.set_background(bkg, id="used-bkg")
 
     data.set_arf(arf)
     data.set_rmf(rmf)
@@ -175,26 +179,26 @@ def test_fake_pha_bkg_model():
     bkg.set_arf(arf)
     bkg.set_rmf(rmf)
 
-    mdl = Const1D('mdl')
+    mdl = Const1D("mdl")
     mdl.c0 = 0
 
-    bmdl = Const1D('bmdl')
+    bmdl = Const1D("bmdl")
     bmdl.c0 = 2
 
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={'used-bkg': bmdl})
+             bkg_models={"used-bkg": bmdl})
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
 
-    assert data.name == 'any'
-    assert data.get_arf().name == 'user-arf'
-    assert data.get_rmf().name == 'delta-rmf'
+    assert data.name == "any"
+    assert data.get_arf().name == "user-arf"
+    assert data.get_rmf().name == "delta-rmf"
 
     # The background itself is unchanged
-    assert data.background_ids == ['used-bkg']
-    bkg = data.get_background('used-bkg')
-    assert bkg.name == 'bkg'
+    assert data.background_ids == ["used-bkg"]
+    bkg = data.get_background("used-bkg")
+    assert bkg.name == "bkg"
     assert bkg.counts == pytest.approx(bcounts)
     assert bkg.exposure == pytest.approx(2000)
 
@@ -223,7 +227,133 @@ def test_fake_pha_bkg_model():
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={'used-bkg': bmdl})
+             bkg_models={"used-bkg": bmdl})
     assert data.counts.sum() > 500
     assert data.counts.sum() < 1500
     assert data.counts[1] > 1.5 * data.counts[0]
+
+
+@requires_fits
+def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path, reset_seed):
+    """See #1209
+
+    When everything is faked, what happens?
+    """
+
+    np.random.seed(5)
+
+    data = DataPHA("any", channels, counts, exposure=1000.)
+
+    bkg = DataPHA("bkg", channels, bcounts,
+                  exposure=2000, backscal=1.)
+    data.set_background(bkg, id="used-bkg")
+
+    data.set_arf(arf)
+    data.set_rmf(rmf)
+
+    bkg.set_arf(arf)
+    bkg.set_rmf(rmf)
+
+    mdl = Const1D("mdl")
+    mdl.c0 = 0
+
+    bmdl = Const1D("bmdl")
+    bmdl.c0 = 2
+
+    fake_pha(data, mdl, is_source=True, add_bkgs=True,
+             bkg_models={"used-bkg": bmdl})
+
+    outfile = tmp_path / "sim.pha"
+    io.write_pha(str(outfile), data, ascii=False)
+
+    inpha = io.read_pha(str(outfile))
+    assert inpha.channel == pytest.approx(channels)
+
+    # it is not required that we check counts (that is, we can drop this
+    # if it turns out not to be repeatable across platforms), but for
+    # now keep the check.
+    #
+    assert inpha.counts == pytest.approx([188, 399, 416])
+
+    for field in ["staterror", "syserror", "bin_lo", "bin_hi",
+                  "grouping", "quality"]:
+        assert getattr(inpha, field) is None
+
+    assert inpha.exposure == pytest.approx(1000.0)
+    assert inpha.backscal == pytest.approx(1.0)
+    assert inpha.areascal == pytest.approx(1.0)
+    assert not inpha.grouped
+    assert not inpha.subtracted
+    assert inpha.response_ids == []
+    assert inpha.background_ids == []
+
+    hdr = inpha.header
+    assert hdr["TELESCOP"] == "none"
+    assert hdr["INSTRUME"] == "none"
+    assert hdr["FILTER"] == "none"
+
+    for key in ["EXPOSURE", "AREASCAL", "BACKSCAL",
+                "ANCRFILE", "BACKFILE", "RESPFILE"]:
+        assert key not in hdr
+
+
+@requires_fits
+@requires_data
+def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path, reset_seed):
+    """See #1209
+
+    In this version we use a "real" PHA file as the base.
+
+    See sherpa/astro/ui/tests/test_astro_ui_utils_simulation.py
+
+        test_fake_pha_issue_1209
+
+    which is closer to the reported case in #1209
+    """
+
+    np.random.seed(5)
+
+    infile = make_data_path("acisf01575_001N001_r0085_pha3.fits.gz")
+    data = io.read_pha(infile)
+
+    mdl = Const1D("mdl")
+    mdl.c0 = 0
+
+    bmdl = Const1D("bmdl")
+    bmdl.c0 = 2
+
+    fake_pha(data, mdl, is_source=True, add_bkgs=True,
+             bkg_models={"used-bkg": bmdl})
+
+    outfile = tmp_path / "sim.pha"
+    io.write_pha(str(outfile), data, ascii=False)
+
+    inpha = io.read_pha(str(outfile))
+    assert inpha.channel == pytest.approx(np.arange(1, 1025))
+
+    # it is not required that we check counts (that is, we can drop this
+    # if it turns out not to be repeatable across platforms), but for
+    # now keep the check.
+    #
+    assert inpha.counts.sum() == 19
+
+    for field in ["staterror", "syserror", "bin_lo", "bin_hi",
+                  "grouping", "quality"]:
+        assert getattr(inpha, field) is None
+
+    assert inpha.exposure == pytest.approx(37664.157219191)
+    assert inpha.backscal == pytest.approx(2.2426552620567e-06)
+    assert inpha.areascal == pytest.approx(1.0)
+    assert not inpha.grouped
+    assert not inpha.subtracted
+    assert inpha.response_ids == []
+    assert inpha.background_ids == []
+
+    hdr = inpha.header
+    assert hdr["TELESCOP"] == "CHANDRA"
+    assert hdr["INSTRUME"] == "ACIS"
+    assert hdr["FILTER"] == "none"
+
+    for key in ["EXPOSURE", "AREASCAL", "BACKSCAL",
+                "ANCRFILE", "BACKFILE", "RESPFILE"]:
+        assert key not in hdr
