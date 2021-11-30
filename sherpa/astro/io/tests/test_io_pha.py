@@ -570,13 +570,15 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     assert cr.get_key_value("QUALITY") == 0
     assert cr.get_key_value("GROUPING") == 0
 
+    assert cr.get_key_value("AREASCAL") == pytest.approx(1.0)
+    assert cr.get_key_value("BACKSCAL") == pytest.approx(1.0)
     assert cr.get_key_value("CORRSCAL") == 0
 
     for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
         assert cr.get_key_value(key) == "none"
 
     # keywords we should have but currently don't
-    for key in ["EXPOSURE", "BACKSCAL", "AREASCAL"]:
+    for key in ["EXPOSURE"]:
         assert cr.get_key_value(key) is None
 
 
@@ -615,7 +617,10 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert hdu.header['QUALITY'] == 0
         assert hdu.header['GROUPING'] == 0
 
+        assert hdu.header["AREASCAL"] == pytest.approx(1.0)
+        assert hdu.header["BACKSCAL"] == pytest.approx(1.0)
         assert hdu.header["CORRSCAL"] == 0
+
         for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
             assert hdu.header[key] == "none"
 
@@ -628,7 +633,7 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert "TLMAX2" not in hdu.header
 
         # keywords we should have but currently don't
-        for key in ["EXPOSURE", "BACKSCAL", "AREASCAL"]:
+        for key in ["EXPOSURE"]:
             assert key not in hdu.header
 
     finally:
@@ -655,9 +660,11 @@ def test_write_pha_fits_basic_roundtrip(tmp_path):
     assert inpha.channel == pytest.approx(chans)
     assert inpha.counts == pytest.approx(counts)
     for field in ["staterror", "syserror", "bin_lo", "bin_hi",
-                  "grouping", "quality", "exposure", "backscal",
-                  "areascal"]:
+                  "grouping", "quality", "exposure"]:
         assert getattr(inpha, field) is None
+
+    assert inpha.backscal == pytest.approx(1.0)
+    assert inpha.areascal == pytest.approx(1.0)
 
     assert not inpha.grouped
     assert not inpha.subtracted
@@ -723,8 +730,6 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
     assert cr.get_key_value("HDUCLASS") == "OGIP"
     assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
     assert cr.get_key_value("HDUCLAS2") == "TOTAL"
-    # assert cr.get_key_value("HDUCLAS3") == "TYPE:I"
-    # assert cr.get_key_value("HDUCLAS4") == "COUNT"
     assert cr.get_key_value("HDUCLAS3") == "COUNT"
     assert cr.get_key_value("HDUCLAS4") == "TYPE:I"
     assert cr.get_key_value("HDUVERS") == "1.2.1"
@@ -781,8 +786,6 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
         assert hdu.header["HDUCLAS2"] == "TOTAL"
-        # assert hdu.header["HDUCLAS3"] == "TYPE:I"
-        # assert hdu.header["HDUCLAS4"] == "COUNT"
         assert hdu.header["HDUCLAS3"] == "COUNT"  # WRONG I think
         assert hdu.header["HDUCLAS4"] == "TYPE:I"  # WRONG I think
         assert hdu.header["HDUVERS"] == "1.2.1"  # should this be 1.1.0?

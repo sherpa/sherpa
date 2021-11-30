@@ -768,6 +768,7 @@ def _pack_pha(dataset):
     _set("CORRSCAL", 0)
     _set("CHANTYPE", "PI")  # Assume a sensible default
 
+    # Over-write the header value (if set)
     header["EXPOSURE"] = getattr(dataset, "exposure", "none")
 
     _set("RESPFILE", "none")
@@ -793,12 +794,13 @@ def _pack_pha(dataset):
     data["grouping"] = getattr(dataset, "grouping", None)
     data["quality"] = getattr(dataset, "quality", None)
 
-    def convert_to_column(colname):
+    def convert_scale_value(colname):
         val = getattr(dataset, colname, None)
+        uname = colname.upper()
         if val is None:
+            header[uname] = 1.0
             return
 
-        uname = colname.upper()
         if numpy.isscalar(val):
             header[uname] = val
         else:
@@ -808,21 +810,22 @@ def _pack_pha(dataset):
             except KeyError:
                 pass
 
-    convert_to_column("backscal")
-    convert_to_column("areascal")
+    # This over-writes (or deletes) the header
+    convert_scale_value("backscal")
+    convert_scale_value("areascal")
 
     # Replace columns where appropriate.
     #
     if data["sys_err"] is None or (data["sys_err"] == 0).all():
-        _set("SYS_ERR", 0)
+        header["SYS_ERR"] = 0.0
         del data["sys_err"]
 
     if data["quality"] is None or (data["quality"] == 0).all():
-        _set("QUALITY", 0)
+        header["QUALITY"] = 0
         del data["quality"]
 
     if data["grouping"] is None or (data["grouping"] == 1).all():
-        _set("GROUPING", 0)
+        header["GROUPING"] = 0
         del data["grouping"]
 
     # Default to using the STAT_ERR column if set. This is only
