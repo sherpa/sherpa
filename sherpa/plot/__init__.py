@@ -25,30 +25,8 @@ plotting backend defined in the ``options.plot_pkg`` setting of the
 Sherpa configuration file. Note that the plot objects can be created,
 and used, even when there is no available plot backend, it is just
 that no graphical display will be created.
-
-Which backend is used?
-----------------------
-
-When this module is first imported, Sherpa tries to import the
-backends installed with Sherpa in the order listed in
-`sherpa.plot.try_backends`. The first module that imports
-successfully is set as the active backend. The following command prints the
-name and the location on disk of that module::
-
-   >>> from sherpa import plot
-   >>> print(plot.backend)
-
-Change the backend
-------------------
-
-After the initial import, the backend can be changed by loading one of
-the plotting backends shipped with sherpa (or any other module that
-provides the same interface):
-
-  >>> import sherpa.plot.pylab_backend
-  >>> plot.backend = sherpa.plot.pylab_backend
-
 """
+
 from configparser import ConfigParser
 import logging
 import importlib

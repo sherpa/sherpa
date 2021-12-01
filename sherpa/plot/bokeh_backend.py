@@ -17,15 +17,75 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-'''
+'''Interface between Sherpa plotting objects and :term:`bokeh`
 
-The sherpa plotting API is procedural and most of the commands act on the
-"current plot" or "current figure". This fits in very well with the matplotlib.pyplot model, but requires some extra work for object-oriented plotting packages.
+This module provides an interface between the Sherpa plot objects in
+`sherpa.plot` and the :term:`bokeh` plotting package. The bokeh plotting
+package formats data into fully interactive javascript, that can be displayed
+in a web-browser. All plots allow interactive panning, zooming, scrolling and
+the current state of thep lot can be exported to static file, e.g. a png.
+Other interactive tools might be available depending on the plot type.
 
-bokeh is such an object-oriented package, which, by itself, does not keep a plotting state. Usually, bokeh commands act on an axis object that is passed in as a parameter. Sherpa, on the other hand, does not keep track of those objects, it expects the plotting package to know what the "current" plot is. In this module, we solve this problem using a few module-level variables, which hold the "currently active plot".
+Currently active plot
+=====================
+
+The sherpa plotting API is procedural and most of the commands act on
+the "current plot" or "current figure". This fits in very well with
+the matplotlib.pyplot model, but requires some extra work for
+object-oriented plotting packages.
+
+:term:`bokeh` is such an object-oriented package, which, by itself,
+does not keep a plotting state. Usually, bokeh commands act on an axis
+object that is passed in as a parameter. Sherpa, on the other hand,
+does not keep track of those objects, it expects the plotting package
+to know what the "current" plot is. In this module, we solve this
+problem using a module-level variable
+`sherpa.plot.bokeh_backend.current_fig`, which holds the "currently
+active plot". As a user, you can access this variable to obtain the
+bokeh objects to futher modify its appearance or to output it in whole
+or in parts to a file. In this example, we first prepare a Shera data
+object and a Sherpa plot object (assuming that the bokeh backend is active)::
+
+    >>> import numpy as np
+    >>> from bokeh.plotting import show
+    >>> from sherpa.data import Data1DInt
+    >>> from sherpa.plot import DataPlot
+
+    >>> edges = np.asarray([-10, -5, 5, 12, 17, 20, 30, 56, 60])
+    >>> y = np.asarray([28, 62, 17, 4, 2, 4, 125, 55])
+    >>> d = Data1DInt('example histogram', edges[:-1], edges[1:], y)
+
+    >>> dplot = DataPlot()
+    >>> dplot.prepare(d)
+    >>> dplot.plot()
+
+    >>> from sherpa.plot import backend
+    >>> p = backend.current_fig['current_axes']
+    >>> p.title.text = 'Fruit sizes'
+    >>> p.title.text_font_size = "25px"
+    >>> show(p)
 
 
-color-cycling
+Color-cycling
+=============
+Unlike :term:`matplotlib`, :term:`bokeh` does not cycle colors automatically
+when new lines or symbols (collectively called "glyph" in bokeh) are added.
+This means that data and model appear in the same color by default, but it
+also makes distinguishing different models opr datasets hard, unless explicit
+colors are set:
+
+    >>> dplot.plot(color='red')
+
+Use in the notebook
+===================
+For use in the `Jupyter notebook <https://jupyter.org/>`_ the following
+command enables interactive output in every cell::
+
+    >>> from bokeh.io import output_notebook
+    >>> output_notebook()
+
+See the `bokeh documentation <https://docs.bokeh.org/en/latest/docs/first_steps/first_steps_7.html>`_ 
+for other output options.
 '''
 from contextlib import contextmanager
 import io

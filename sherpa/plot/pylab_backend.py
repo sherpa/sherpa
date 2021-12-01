@@ -17,6 +17,58 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+'''Interface between Sherpa plotting objects and :term:`matplotlib`
+
+This module provides an interface between the Sherpa plot objects in
+`sherpa.plot` and the :term:`matplotlib` plotting package. It makes
+use of procedural `matplotlib.pyplot` interface. This allows users to
+prepare a plot using a Sherpa plot object and then to retrieve the
+current figure or axes object using matplotlib commands, so that
+detailed formatting, which may not be offered by Sherpa's plotting
+objects, can be applied.
+
+Example
+=======
+
+In this example, we first prepare a Shera data object and a Sherpa plot
+object (assuming that the matplotlib backend is active)::
+
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> from sherpa.data import Data1DInt
+    >>> from sherpa.plot import DataPlot
+
+    >>> edges = np.asarray([-10, -5, 5, 12, 17, 20, 30, 56, 60])
+    >>> y = np.asarray([28, 62, 17, 4, 2, 4, 125, 55])
+    >>> d = Data1DInt('example histogram', edges[:-1], edges[1:], y)
+
+    >>> dplot = DataPlot()
+    >>> dplot.prepare(d)
+    >>> dplot.plot()
+
+This will now display a plot than we can retrieve and modify::
+
+    >>> fig = plt.gcf()
+    >>> ax = plt.gca()
+    >>> ax.set_xlim(0, None)
+    >>> ax.set_ylabel('Number of fruit per bin')
+    >>> ax.set_xlabel('size [cm]')
+    >>> fig.savefig('plot.png')
+
+Use in the notebook
+===================
+:term:`matplotlib` is fully integrated with `IPython <http://ipython.org/>`_
+and project `Jupyter <https://jupyter.org/>`_. 
+Automatic display of plots can be activated like this in recent versions::
+
+    >>> import matplotlib.pyplot as plt
+    >>> plt.ion()
+
+In older version, you might have to use the IPython magic functions, e.g.
+
+    >>> %matplotlib inline
+'''
+
 import io
 import logging
 

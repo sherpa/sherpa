@@ -11,15 +11,23 @@ Visualisation
 Overview
 ========
 
-Sherpa has support for different plot backends, although
-at present there is only one, which uses the
-:term:`matplotlib` package.
-Interactive visualizations of images is provided by
-:term:`DS9` - an Astronomical image viewer - if installed, whilst
-there is limited support for visualizing two-dimensional data sets
-with matplotlib. The classes described in this document do not
-need to be used, since the data can be plotted directly, but
-they do provide some conveniences.
+Sherpa has support for different plot backends.
+A "backend" here means a module that performs the acutal plotting process,
+such as the :term:`matplotlib` package; packages supported directly by Sherpa
+are `~sherpa.plot.dummy_backend`, `~sherpa.plot.pylab_backend`, and
+`~sherpa.plot.bokeh_backend`.
+       
+Interactive visualizations of images is provided by :term:`DS9` - an
+Astronomical image viewer - if installed, whilst there is limited
+support for visualizing two-dimensional data sets with the plotting
+backends. The classes described in this document provide some
+conveniences for plotting Sherpa data e.g. automatic axes labels.
+They also abstract away the details of the plotting process so that
+very similar plots can be made with different plotting backends
+without changes to the plotting code.  On the other hand, it is always
+possible to access the data in the Sherpa data objects and to call any
+plotting package directly, which gives a more detailed control over
+the exact look and layout of the plots.
 
 The basic approach to creating a visualization using these classes is:
 
@@ -262,6 +270,44 @@ line position (which corresponds to `mdl.pars[2]`):
 
 .. image:: ../_static/plots/intproj_histogram_pos.png
 
+
+Selecting and changing the plotting backend
+===========================================
+
+When the `sherpa.plot` module is first imported, Sherpa tries to
+import the backends installed with Sherpa in the order listed in the
+`sherpa.rc` files. The first module that imports successfully is set
+as the active backend. The following command prints the name and the
+location on disk of that module::
+
+   >>> from sherpa import plot
+   >>> print(plot.backend)
+
+Change the backend
+------------------
+
+After the initial import, the backend can be changed by loading one of
+the plotting backends shipped with sherpa (or any other module that
+provides the same interface):
+
+  >>> import sherpa.plot.bokeh_backend
+  >>> plot.backend = sherpa.plot.bokeh_backend
+
+Dependencies and the `dummy_backend` module
+-------------------------------------------
+
+The Sherpa plotting backends depend on a specific plitting module,
+e.g.  `sherpa.plot.pylab_backend` load the pylab interface from
+:term:`matplotlib`. If matplotlib is not installed, importing the
+`~sherpa.plot.pylab_backend` will fail. The dependencies for each
+backend are listed in the backend description. To ensure that the
+`sherpa.plot` module will always be importable, Sherpa includes a
+`sherpa.plot.dummy_backend` that has no dependencies outside of Sherpa
+itself. This backend will accept all plotting commands, and perform
+some limited actions (e.g. display some basic information in a
+notebook), but not produce any graphical plot.
+
+
 Reference/API
 =============
 
@@ -272,3 +318,6 @@ Reference/API
    astroplot
    image
    utils
+   dummy_backend
+   pylab_backend
+   bokeh_backend
