@@ -1092,7 +1092,7 @@ def test_img_get_filter_compare_filtering(make_test_image):
                           ("WAVE", "wavelength"), ("wavelength", "wavelength"),
                           ("Wavelengths", "wavelength"),
                           ("chan This Is Wrong", "channel"),  # should this be an error?
-                          ("WAVEY GRAVY", "wavelength")  # shouls this be an error?
+                          ("WAVEY GRAVY", "wavelength")  # should this be an error?
                           ])
 def test_pha_valid_units(requested, expected, make_test_pha):
     """Check we can set the units field of a PHA object"""
@@ -1109,6 +1109,60 @@ def test_pha_invalid_units(invalid, make_test_pha):
         pha.units = invalid
 
     assert str(de.value) == f"unknown quantity: '{invalid}'"
+
+
+# currently several variants are allowed, even if they don't work as
+# expected - e.g. type="rates" does not set the rate value to True.
+#
+@pytest.mark.parametrize("invalid", [pytest.param("RATE", marks=pytest.mark.xfail), pytest.param("COUNTS", marks=pytest.mark.xfail), pytest.param("rates", marks=pytest.mark.xfail), "count", "count-rate"])
+def test_pha_analysis_type_invalid(invalid, make_test_pha):
+    pha = make_test_pha
+    with pytest.raises(DataErr) as err:
+        pha.set_analysis("channel", type=invalid)
+
+    assert str(err.value) == f"unknown plot type '{invalid}', choose 'rate' or 'counts'"
+
+
+def test_pha_analysis_plot_fac_valid(make_test_pha):
+    """Historically we've allowed 2.0 as an argument, so check it still works"""
+    pha = make_test_pha
+    assert pha.plot_fac == 0
+    pha.plot_fac = 2.0
+    assert pha.plot_fac == 2
+
+
+@pytest.mark.xfail  # We either do not fail (all but complex) or dail with a TypeError, not DataErr
+@pytest.mark.parametrize("invalid", ["1", 2.01, 0.5, complex(1)])
+def test_pha_analysis_plot_fac_invalid(invalid, make_test_pha):
+    pha = make_test_pha
+    with pytest.raises(DataErr) as err:
+        pha.plot_fac = invalid
+
+    assert str(err.value) == f"unknown plot_fac setting: '{invalid}'"
+
+
+@pytest.mark.xfail  # We either do not fail (all but complex) or dail with a TypeError, not DataErr
+@pytest.mark.parametrize("invalid", ["1", 2.01, 0.5, complex(1)])
+def test_pha_analysis_factor_invalid(invalid, make_test_pha):
+    pha = make_test_pha
+    with pytest.raises(DataErr) as err:
+        pha.set_analysis("channel", factor=invalid)
+
+    assert str(err.value) == f"unknown plot_fac setting: '{invalid}'"
+
+
+def test_pha_get_spectresp_no_response(make_test_pha):
+    pha = make_test_pha
+    assert pha.get_specresp() is None
+
+
+def test_pha_ignore_bad_no_quality(make_test_pha):
+    pha = make_test_pha
+    assert pha.quality is None
+    with pytest.raises(DataErr) as err:
+        pha.ignore_bad()
+
+    assert str(err.value) == "data set 'p' does not specify quality flags"
 
 
 def test_pha_grouping_changed_no_filter_1160(make_test_pha):

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,11 +32,16 @@ import numpy as np
 import pytest
 
 from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro import io
 from sherpa.astro import ui
 from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, StatErr
 from sherpa.utils.testing import requires_data, requires_fits
+
+
+def backend_is(name):
+    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
 
 
 def check_table(hdu, colinfo):
@@ -76,7 +82,7 @@ def test_list_samplers_contents():
     # a slightly-different return list to the non-astro version.
     #
     samplers = ui.list_samplers()
-    for expected in ['mh', 'metropolismh', 'pragbayes', 'fullbayes']:
+    for expected in ["mh", "metropolismh", "pragbayes", "fullbayes"]:
         assert expected in samplers
 
 
@@ -105,7 +111,7 @@ def setup_data1d_fit():
 
     x = np.linspace(2300, 2400, 51)
 
-    cpt = ui.voigt1d('cpt')
+    cpt = ui.voigt1d("cpt")
     cpt.pos = 2345
     cpt.fwhm_g = 20
     cpt.fwhm_l = 15
@@ -115,9 +121,9 @@ def setup_data1d_fit():
     y = poisson_noise(cpt(x))
 
     ui.load_arrays(1, x, y, ui.Data1D)
-    ui.set_stat('leastsq')
-    ui.set_method('simplex')
-    ui.delete_model_component('cpt')
+    ui.set_stat("leastsq")
+    ui.set_method("simplex")
+    ui.delete_model_component("cpt")
 
 
 @pytest.mark.parametrize("model,stat,pars",
@@ -135,7 +141,7 @@ def test_fit_profile(model, stat, pars, reset_seed, clean_astro_ui):
     """Regression test simple 1D fits"""
 
     setup_data1d_fit()
-    ui.set_source(model('mdl'))
+    ui.set_source(model("mdl"))
     ui.guess()
     ui.fit()
 
@@ -160,12 +166,12 @@ def test_set_filter_mismatch(f, bid):
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
     with pytest.raises(DataErr) as exc:
         ui.set_filter(f, bkg_id=bid)
 
-    assert str(exc.value) == 'size mismatch between 3 and 2'
+    assert str(exc.value) == "size mismatch between 3 and 2"
 
 
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
@@ -178,7 +184,7 @@ def test_set_filter_mismatch_with_filter(f, bid):
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
     ui.ignore(3, None)  # set the .mask attribute to an array
@@ -186,7 +192,7 @@ def test_set_filter_mismatch_with_filter(f, bid):
     with pytest.raises(DataErr) as exc:
         ui.set_filter(f, bkg_id=bid)
 
-    assert str(exc.value) == 'size mismatch between 3 and 2'
+    assert str(exc.value) == "size mismatch between 3 and 2"
 
 
 @pytest.mark.parametrize("bid", [None, 1])
@@ -194,7 +200,7 @@ def test_get_syserror_missing(bid):
     """Does get_syserror error out?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
     with pytest.raises(DataErr) as exc:
         ui.get_syserror(bkg_id=bid)
@@ -216,7 +222,7 @@ def test_save_filter_pha(ascii, reader, bid, tmp_path, clean_astro_ui):
 
     x = np.arange(1, 11, dtype=np.int16)
     ui.load_arrays(1, x, x, ui.DataPHA)
-    bkg = ui.DataPHA('bkg', x, x)
+    bkg = ui.DataPHA("bkg", x, x)
     ui.set_bkg(bkg)
 
     ui.notice(2, 4)
@@ -227,7 +233,7 @@ def test_save_filter_pha(ascii, reader, bid, tmp_path, clean_astro_ui):
 
     expected = [0, 1, 1, 1, 0, 1, 1, 1, 0, 0]
 
-    d = reader(str(outfile), colkeys=['X', 'FILTER'])
+    d = reader(str(outfile), colkeys=["X", "FILTER"])
     assert isinstance(d, ui.Data1D)
     assert d.x == pytest.approx(x)
     assert d.y == pytest.approx(expected)
@@ -246,7 +252,7 @@ def test_save_grouping_pha(ascii, reader, bid, expected, tmp_path, clean_astro_u
 
     x = np.arange(1, 11, dtype=np.int16)
     ui.load_arrays(1, x, x, ui.DataPHA)
-    bkg = ui.DataPHA('bkg', x, x)
+    bkg = ui.DataPHA("bkg", x, x)
     ui.set_bkg(bkg)
 
     ui.set_grouping([1, -1, 1, 1, 1, -1, -1, 1, 1, -1])
@@ -255,7 +261,7 @@ def test_save_grouping_pha(ascii, reader, bid, expected, tmp_path, clean_astro_u
     outfile = tmp_path / "grouping.dat"
     ui.save_grouping(str(outfile), bkg_id=bid, ascii=ascii)
 
-    d = reader(str(outfile), colkeys=['CHANNEL', 'GROUPS'])
+    d = reader(str(outfile), colkeys=["CHANNEL", "GROUPS"])
     assert isinstance(d, ui.Data1D)
     assert d.x == pytest.approx(x)
     assert d.y == pytest.approx(expected)
@@ -274,7 +280,7 @@ def test_save_quality_pha(ascii, reader, bid, expected, tmp_path, clean_astro_ui
 
     x = np.arange(1, 11, dtype=np.int16)
     ui.load_arrays(1, x, x, ui.DataPHA)
-    bkg = ui.DataPHA('bkg', x, x)
+    bkg = ui.DataPHA("bkg", x, x)
     ui.set_bkg(bkg)
 
     ui.set_quality([0] * 10)
@@ -283,7 +289,7 @@ def test_save_quality_pha(ascii, reader, bid, expected, tmp_path, clean_astro_ui
     outfile = tmp_path / "quality.dat"
     ui.save_quality(str(outfile), bkg_id=bid, ascii=ascii)
 
-    d = reader(str(outfile), colkeys=['CHANNEL', 'QUALITY'])
+    d = reader(str(outfile), colkeys=["CHANNEL", "QUALITY"])
     assert isinstance(d, ui.Data1D)
     assert d.x == pytest.approx(x)
     assert d.y == pytest.approx(expected)
@@ -324,7 +330,7 @@ def test_save_table_pha(ascii, reader, tmp_path, clean_astro_ui):
 
     # Note that the background is ignored on output
     #
-    bkg = ui.DataPHA('bkg', x, x)
+    bkg = ui.DataPHA("bkg", x, x)
     ui.set_bkg(bkg)
     ui.set_quality(1, [5, 0, 0, 0, 0, 0, 0, 0, 0, 2], bkg_id=1)
 
@@ -354,7 +360,7 @@ def test_save_filter_ignored(bid, tmp_path):
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
     ui.ignore(None, None)
@@ -392,11 +398,11 @@ def test_save_xxx_nodata(func, etype, emsg, tmp_path):
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
     # Without this we can't check save_staterror or save_error
-    ui.set_stat('chi2')
+    ui.set_stat("chi2")
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(etype) as exc:
@@ -413,7 +419,7 @@ def test_save_image_nodata(tmp_path):
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
@@ -452,11 +458,11 @@ def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path):
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
     # Without this we can't check save_staterror or save_error
-    ui.set_stat('chi2')
+    ui.set_stat("chi2")
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
     with pytest.raises(etype) as exc:
@@ -548,11 +554,11 @@ def test_save_delchi_image_fails(tmp_path):
 
     ui.set_source(ui.const2d.cmdl)
 
-    out = tmp_path / 'does-not-exist'
+    out = tmp_path / "does-not-exist"
     with pytest.raises(AttributeError) as exc:
         ui.save_delchi(str(out))
 
-    assert str(exc.value) == 'save_delchi() does not apply for images'
+    assert str(exc.value) == "save_delchi() does not apply for images"
 
 
 def check_clobber(outpath, func):
@@ -589,7 +595,7 @@ def test_save_data_data1d_no_clobber(tmp_path):
     out = tmp_path / "data.dat"
     outfile = str(out)
 
-    out.write_text('some text')
+    out.write_text("some text")
     check_clobber(out, ui.save_data)
 
 
@@ -599,7 +605,7 @@ def test_save_data_datapha_no_clobber(tmp_path):
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
     out = tmp_path / "data.dat"
-    out.write_text('some text')
+    out.write_text("some text")
     check_clobber(out, ui.save_data)
 
 
@@ -610,7 +616,7 @@ def test_save_pha_no_clobber(tmp_path):
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
     out = tmp_path / "data.dat"
 
-    out.write_text('some text')
+    out.write_text("some text")
     check_clobber(out, ui.save_data)
 
 
@@ -627,7 +633,7 @@ def test_save_image_no_clobber(writer, tmp_path):
 
     out = tmp_path / "data.dat"
 
-    out.write_text('some text')
+    out.write_text("some text")
     check_clobber(out, writer)
 
 
@@ -652,17 +658,15 @@ def check_output(out, colnames, rows):
 
     """
 
-    from sherpa.astro import io
-
-    lines = out.split('\n')
+    lines = out.split("\n")
     assert len(lines) > 2
 
-    cols = ' '.join(colnames)
-    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
+    cols = " ".join(colnames)
+    if backend_is("crates"):
         assert lines[0] == "#TEXT/SIMPLE"
         assert lines[1] == f"# {cols}"
         lines = lines[2:]
-    elif io.backend.__name__ == 'sherpa.astro.io.pyfits_backend':
+    elif backend_is("pyfits"):
         assert lines[0] == f"#{cols}"
         lines = lines[1:]
     else:
@@ -686,11 +690,11 @@ def test_save_data_data1d_clobber(tmp_path):
     out = tmp_path / "data.dat"
     outfile = str(out)
 
-    out.write_text('some text')
+    out.write_text("some text")
 
     ui.save_data(outfile, clobber=True)
     cts = out.read_text()
-    check_output(cts, ['X', 'Y'], [[1, 5]])
+    check_output(cts, ["X", "Y"], [[1, 5]])
 
 
 @requires_fits
@@ -704,7 +708,7 @@ def test_save_data_data1d(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    check_output(cts, ['X', 'Y'], [[1, 5], [2, 4], [3, 3]])
+    check_output(cts, ["X", "Y"], [[1, 5], [2, 4], [3, 3]])
 
 
 @requires_fits
@@ -723,8 +727,8 @@ def test_save_data_data1d_fits(tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'X': [1, 2, 3],
-                 'Y': [5, 4, 3]})
+                {"X": [1, 2, 3],
+                 "Y": [5, 4, 3]})
 
 
 @requires_fits
@@ -738,7 +742,7 @@ def test_save_data_data1dint(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    check_output(cts, ['XLO', 'XHI', 'Y'],
+    check_output(cts, ["XLO", "XHI", "Y"],
                  [[1, 2, 5], [2, 3, 4], [4, 5, 3]])
 
 
@@ -758,16 +762,14 @@ def test_save_data_data1dint_fits(tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'XLO': [1, 2, 4],
-                 'XHI': [2, 3, 5],
-                 'Y': [5, 4, 3]})
+                {"XLO": [1, 2, 4],
+                 "XHI": [2, 3, 5],
+                 "Y": [5, 4, 3]})
 
 
 @requires_fits
 def test_save_data_data2d(tmp_path):
     """Does save_data work for Data2D?"""
-
-    from sherpa.astro import io
 
     y, x = np.mgrid[20:22, 10:13]
     x = x.flatten()
@@ -783,7 +785,7 @@ def test_save_data_data2d(tmp_path):
 
     # the output depends on the backend, and neither seems ideal
     #
-    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
+    if backend_is("crates"):
         expected = ["#TEXT/SIMPLE", "# X0 X1 Y SHAPE"]
         s = [2, 3, 0, 0, 0, 0]
         for xi, yi, zi, si in zip(x, y, z, s):
@@ -791,7 +793,7 @@ def test_save_data_data2d(tmp_path):
 
         expected = "\n".join(expected) + "\n"
 
-    elif io.backend.__name__ == 'sherpa.astro.io.pyfits_backend':
+    elif backend_is("pyfits"):
         expected = "\n".join([str(zz) for zz in z]) + "\n"
     else:
         raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
@@ -831,9 +833,8 @@ def test_save_data_dataimg(tmp_path):
     """Does save_data work for DataIMG? ASCII"""
 
     # Can not write out an ASCII image with crates
-    from sherpa.astro import io
-    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
-        pytest.skip('ASCII not supported for images with pycrates')
+    if backend_is("crates"):
+        pytest.skip("ASCII not supported for images with pycrates")
 
     y, x = np.mgrid[0:2, 0:3]
     x = x.flatten()
@@ -919,20 +920,20 @@ def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
         hdr = d.header
         assert isinstance(hdr, dict)
         if header:
-            assert hdr['OBJECT'] == 'CSC'
-            assert hdr['ONTIME'] == pytest.approx(18220.799932122)
-            assert hdr['TSTOP'] == pytest.approx(280770182.77747)
+            assert hdr["OBJECT"] == "CSC"
+            assert hdr["ONTIME"] == pytest.approx(18220.799932122)
+            assert hdr["TSTOP"] == pytest.approx(280770182.77747)
 
         assert isinstance(d.sky, WCS)
-        assert d.sky.name == 'physical'
-        assert d.sky.type == 'LINEAR'
+        assert d.sky.name == "physical"
+        assert d.sky.type == "LINEAR"
         assert d.sky.crval == pytest.approx([2986.84008789, 4362.66015625])
         assert d.sky.crpix == pytest.approx([0.5, 0.5])
         assert d.sky.cdelt == pytest.approx([1, 1])
 
         assert isinstance(d.eqpos, WCS)
-        assert d.eqpos.name == 'world'
-        assert d.eqpos.type == 'WCS'
+        assert d.eqpos.name == "world"
+        assert d.eqpos.type == "WCS"
         assert d.eqpos.epoch == pytest.approx(2000)
         assert d.eqpos.equinox == pytest.approx(2000)
         assert d.eqpos.crval == pytest.approx([149.88533198,   2.60794887])
@@ -940,7 +941,7 @@ def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
         assert d.eqpos.cdelt * 3600 == pytest.approx([-0.492, 0.492])
 
 
-    infile = make_data_path('acisf08478_000N001_r0043_regevt3_srcimg.fits')
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
     ui.load_data(2, infile)
 
     dorig = ui.get_data(2)
@@ -964,7 +965,7 @@ def test_save_data_datapha(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    check_output(cts, ['CHANNEL', 'COUNTS'],
+    check_output(cts, ["CHANNEL", "COUNTS"],
                  [[1, 5], [2, 4], [3, 3]])
 
 
@@ -979,14 +980,14 @@ def test_save_pha(tmp_path):
 
     # just check the first line; the output may depend on the FITS backend
     cts = out.read_text()[:80].split()
-    assert cts[0] == 'SIMPLE'
-    assert cts[1] == '='
-    assert cts[2] == 'T'
+    assert cts[0] == "SIMPLE"
+    assert cts[1] == "="
+    assert cts[2] == "T"
 
 
 @requires_fits
-@pytest.mark.parametrize("savefunc,mtype", [(ui.save_source, 'SOURCE'),
-                                            (ui.save_model, 'MODEL')])
+@pytest.mark.parametrize("savefunc,mtype", [(ui.save_source, "SOURCE"),
+                                            (ui.save_model, "MODEL")])
 def test_save_model_ascii(savefunc, mtype, clean_astro_ui, tmp_path):
     """Can we write out data for save_source/model? Data1D and ASCII
 
@@ -999,11 +1000,11 @@ def test_save_model_ascii(savefunc, mtype, clean_astro_ui, tmp_path):
     cmdl.c0 = -5
     cmdl.c1 = 10
 
-    out = tmp_path / 'model.dat'
+    out = tmp_path / "model.dat"
     savefunc(str(out), ascii=True)
 
     cts = out.read_text()
-    check_output(cts, ['X', mtype], [[1, 5], [2, 15]])
+    check_output(cts, ["X", mtype], [[1, 5], [2, 15]])
 
 
 @requires_fits
@@ -1026,11 +1027,11 @@ def test_save_source_pha_ascii(clean_astro_ui, tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 2
 
-    out = tmp_path / 'model.dat'
+    out = tmp_path / "model.dat"
     ui.save_source(str(out), ascii=True)
 
     cts = out.read_text()
-    check_output(cts, ['XLO', 'XHI', 'SOURCE'],
+    check_output(cts, ["XLO", "XHI", "SOURCE"],
                  [[0.1, 0.2, 2], [0.2, 0.4, 2]])
 
 
@@ -1054,17 +1055,17 @@ def test_save_model_pha_ascii(clean_astro_ui, tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 2
 
-    out = tmp_path / 'model.dat'
+    out = tmp_path / "model.dat"
     ui.save_model(str(out), ascii=True)
 
     cts = out.read_text()
-    check_output(cts, ['XLO', 'XHI', 'MODEL'],
+    check_output(cts, ["XLO", "XHI", "MODEL"],
                  [[0.1, 0.2, 20], [0.2, 0.4, 40]])
 
 
 @requires_fits
-@pytest.mark.parametrize("savefunc,mtype", [(ui.save_source, 'SOURCE'),
-                                            (ui.save_model, 'MODEL')])
+@pytest.mark.parametrize("savefunc,mtype", [(ui.save_source, "SOURCE"),
+                                            (ui.save_model, "MODEL")])
 def test_save_model_fits(savefunc, mtype, clean_astro_ui, tmp_path):
     """Can we write out data for save_source/model? Data1D and FITS
 
@@ -1079,7 +1080,7 @@ def test_save_model_fits(savefunc, mtype, clean_astro_ui, tmp_path):
     cmdl.c0 = -5
     cmdl.c1 = 10
 
-    out = tmp_path / 'model.dat'
+    out = tmp_path / "model.dat"
     outfile = str(out)
     savefunc(outfile)
 
@@ -1087,7 +1088,7 @@ def test_save_model_fits(savefunc, mtype, clean_astro_ui, tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'X': [1, 2],
+                {"X": [1, 2],
                  mtype: [5, 15]})
 
 
@@ -1114,7 +1115,7 @@ def test_save_source_pha_fits(clean_astro_ui, tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 2
 
-    out = tmp_path / 'model.dat'
+    out = tmp_path / "model.dat"
     outfile = str(out)
     ui.save_source(outfile)
 
@@ -1122,9 +1123,9 @@ def test_save_source_pha_fits(clean_astro_ui, tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'XLO': [0.1, 0.2],
-                 'XHI': [0.2, 0.4],
-                 'SOURCE': [2, 2]})
+                {"XLO": [0.1, 0.2],
+                 "XHI": [0.2, 0.4],
+                 "SOURCE": [2, 2]})
 
 
 @requires_fits
@@ -1150,7 +1151,7 @@ def test_save_model_pha_fits(clean_astro_ui, tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 2
 
-    out = tmp_path / 'model.dat'
+    out = tmp_path / "model.dat"
     outfile = str(out)
     ui.save_model(outfile)
 
@@ -1158,9 +1159,9 @@ def test_save_model_pha_fits(clean_astro_ui, tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'XLO': [0.1, 0.2],
-                 'XHI': [0.2, 0.4],
-                 'MODEL': [20, 40]})
+                {"XLO": [0.1, 0.2],
+                 "XHI": [0.2, 0.4],
+                 "MODEL": [20, 40]})
 
 
 @requires_fits
@@ -1171,12 +1172,12 @@ def test_save_resid_data1d(tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 220
 
-    out = tmp_path / 'resid.out'
+    out = tmp_path / "resid.out"
     outfile = str(out)
     ui.save_resid(outfile, ascii=True)
 
     cts = out.read_text()
-    check_output(cts, ['X', 'RESID'], [[100, -200], [200, 10]])
+    check_output(cts, ["X", "RESID"], [[100, -200], [200, 10]])
 
 
 @requires_fits
@@ -1189,7 +1190,7 @@ def test_save_resid_data1d_fits(tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 220
 
-    out = tmp_path / 'resid.out'
+    out = tmp_path / "resid.out"
     outfile = str(out)
     ui.save_resid(outfile)
 
@@ -1197,8 +1198,8 @@ def test_save_resid_data1d_fits(tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'X': [100, 200],
-                 'RESID': [-200, 10]})
+                {"X": [100, 200],
+                 "RESID": [-200, 10]})
 
 
 @requires_fits
@@ -1221,12 +1222,12 @@ def test_save_resid_datapha(tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 2
 
-    out = tmp_path / 'resid.out'
+    out = tmp_path / "resid.out"
     outfile = str(out)
     ui.save_resid(outfile, ascii=True)
 
     cts = out.read_text()
-    check_output(cts, ['X', 'RESID'], [[0.15, 30], [0.3, 10]])
+    check_output(cts, ["X", "RESID"], [[0.15, 30], [0.3, 10]])
 
 
 @requires_fits
@@ -1251,7 +1252,7 @@ def test_save_resid_datapha_fits(tmp_path):
     ui.set_source(ui.const1d.cmdl)
     cmdl.c0 = 2
 
-    out = tmp_path / 'resid.out'
+    out = tmp_path / "resid.out"
     outfile = str(out)
     ui.save_resid(outfile)
 
@@ -1259,8 +1260,8 @@ def test_save_resid_datapha_fits(tmp_path):
     blocks = ans[1]
     assert len(blocks) == 2
     check_table(blocks[2],
-                {'X': [0.15, 0.3],
-                 'RESID': [30, 10]})
+                {"X": [0.15, 0.3],
+                 "RESID": [30, 10]})
 
 
 @requires_fits
@@ -1268,9 +1269,8 @@ def test_save_resid_dataimg(tmp_path):
     """Residual, DataIMG, ASCII"""
 
     # Can not write out an ASCII image with crates
-    from sherpa.astro import io
-    if io.backend.__name__ == 'sherpa.astro.io.crates_backend':
-        pytest.skip('ASCII not supported for images with pycrates')
+    if backend_is("crates"):
+        pytest.skip("ASCII not supported for images with pycrates")
 
     y, x = np.mgrid[10:12, 20:23]
     x = x.flatten()
@@ -1325,8 +1325,8 @@ def test_delete_bkg_model(clean_astro_ui):
 
     channels = np.arange(1, 5)
     counts = np.zeros(channels.size)
-    d = ui.DataPHA('src', channels, counts)
-    b = ui.DataPHA('bkg', channels, counts)
+    d = ui.DataPHA("src", channels, counts)
+    b = ui.DataPHA("bkg", channels, counts)
     d.set_background(b, id=2)
     ui.set_data(d)
 
@@ -1340,23 +1340,23 @@ def test_delete_bkg_model(clean_astro_ui):
     with pytest.raises(ModelErr) as exc:
         ui.get_bkg_source(bkg_id=2)
 
-    assert str(exc.value) == 'background model 2 for data set 1 has not been set'
+    assert str(exc.value) == "background model 2 for data set 1 has not been set"
 
     # components still exist
     mdls = ui.list_model_components()
-    assert set(mdls) == set(['bmdl', 'gmdl'])
+    assert set(mdls) == set(["bmdl", "gmdl"])
 
 
 def test_default_background_issue(clean_astro_ui):
     """Test issue #943"""
 
-    ui.set_default_id('x')
+    ui.set_default_id("x")
 
     # use least-square as we don't really care about the fit
-    ui.set_stat('leastsq')
+    ui.set_stat("leastsq")
 
-    ui.load_arrays('x', [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.load_arrays("x", [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     arf = ui.create_arf(np.asarray([0.1, 0.2, 0.3]), np.asarray([0.2, 0.3, 0.4]))
     bkg.set_arf(arf)
     ui.set_bkg(bkg)
@@ -1379,10 +1379,10 @@ def test_show_bkg_model_issue943(clean_astro_ui):
     See https://github.com/sherpa/sherpa/issues/943#issuecomment-696119982
     """
 
-    ui.set_default_id('x')
+    ui.set_default_id("x")
 
-    ui.load_arrays('x', [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.load_arrays("x", [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     arf = ui.create_arf(np.asarray([0.1, 0.2, 0.3]), np.asarray([0.2, 0.3, 0.4]))
     bkg.set_arf(arf)
     ui.set_bkg(bkg)
@@ -1397,13 +1397,13 @@ def test_default_background_issue_fit(clean_astro_ui):
     See https://github.com/sherpa/sherpa/issues/943#issuecomment-696119982
     """
 
-    ui.set_default_id('x')
+    ui.set_default_id("x")
 
     # use least-square as we don't really care about the fit
-    ui.set_stat('leastsq')
+    ui.set_stat("leastsq")
 
-    ui.load_arrays('x', [1, 2, 3, 4], [5, 4, 3, 4], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3, 4]), [1, 1, 0, 1])
+    ui.load_arrays("x", [1, 2, 3, 4], [5, 4, 3, 4], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3, 4]), [1, 1, 0, 1])
     arf = ui.create_arf(np.asarray([0.1, 0.2, 0.3, 0.4]),
                         np.asarray([0.2, 0.3, 0.4, 0.5]))
     ui.set_arf(arf)
@@ -1429,63 +1429,63 @@ def test_default_background_issue_fit(clean_astro_ui):
 def test_bkg_id_get_bkg_source(clean_astro_ui):
     """Check the error message when the background model has not been set (issue #943)"""
 
-    ui.set_default_id('x')
+    ui.set_default_id("x")
 
-    ui.load_arrays('x', [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    ui.load_arrays("x", [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
     with pytest.raises(ModelErr) as exc:
         ui.get_bkg_source()
 
-    assert str(exc.value) == 'background model 1 for data set x has not been set'
+    assert str(exc.value) == "background model 1 for data set x has not been set"
 
 
 def test_fix_background_id_error_checks1():
     """Check error handling of background id"""
 
     ui.load_arrays(2, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(2, bkg)
 
     with pytest.raises(ArgumentTypeErr) as exc:
         ui.get_bkg_source(id=2, bkg_id=bkg)
 
-    assert str(exc.value) == 'identifiers must be integers or strings'
+    assert str(exc.value) == "identifiers must be integers or strings"
 
 
 def test_fix_background_id_error_checks2():
     """Check error handling of background id"""
 
     ui.load_arrays(2, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(2, bkg)
 
     with pytest.raises(IdentifierErr) as exc:
-        ui.get_bkg_source(id=2, bkg_id='bkg')
+        ui.get_bkg_source(id=2, bkg_id="bkg")
 
     assert str(exc.value) == "identifier 'bkg' is a reserved word"
 
 
-@pytest.mark.parametrize("id", [1, 'x'])
+@pytest.mark.parametrize("id", [1, "x"])
 def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
     """Check we call delete_bkg_model with non-default bkg_id"""
 
     ui.load_arrays(id, [1, 2, 3], [5, 4, 3], ui.DataPHA)
-    bkg = ui.DataPHA('bkg', np.asarray([1, 2, 3]), [1, 1, 0])
+    bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(id, bkg, bkg_id=2)
 
     ui.set_bkg_source(id, ui.const1d.bmdl, bkg_id=2)
-    assert ui.list_model_components() == ['bmdl']
-    assert ui.get_bkg_source(id, 2).name == 'const1d.bmdl'
+    assert ui.list_model_components() == ["bmdl"]
+    assert ui.get_bkg_source(id, 2).name == "const1d.bmdl"
 
     ui.delete_bkg_model(id, bkg_id=2)
-    assert ui.list_model_components() == ['bmdl']
+    assert ui.list_model_components() == ["bmdl"]
 
     with pytest.raises(ModelErr) as exc:
         ui.get_bkg_source(id, 2)
 
-    emsg = 'background model 2 for data set {} has not been set'.format(id)
+    emsg = f"background model 2 for data set {id} has not been set"
     assert str(exc.value) == emsg
 
 
@@ -1494,13 +1494,13 @@ def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
 def test_load_xxx_no_data(loadfunc, clean_astro_ui, tmp_path):
     """What happens when there's no data??"""
 
-    path = tmp_path / 'data'
-    path.write_text('1\n0\n0\n')
+    path = tmp_path / "data"
+    path.write_text("1\n0\n0\n")
 
     with pytest.raises(IdentifierErr) as exc:
         loadfunc(2, str(path))
 
-    assert str(exc.value) == 'data set 2 has not been set'
+    assert str(exc.value) == "data set 2 has not been set"
 
 
 @requires_fits
@@ -1510,17 +1510,17 @@ def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
 
     ui.load_arrays(2, [1, 2, 3], [2, 4, 9])
 
-    path = tmp_path / 'data'
-    path.write_text('1\n0\n0\n')
+    path = tmp_path / "data"
+    path.write_text("1\n0\n0\n")
 
     with pytest.raises(ArgumentErr) as exc:
         loadfunc(2, str(path))
 
-    assert str(exc.value) == 'data set 2 does not contain PHA data'
+    assert str(exc.value) == "data set 2 does not contain PHA data"
 
 
 @requires_fits
-@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+@pytest.mark.parametrize("idval", [None, 1, "xx"])
 def test_load_grouping(idval, clean_astro_ui, tmp_path):
     """Simple grouping check"""
 
@@ -1531,8 +1531,8 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path):
     else:
         ui.load_arrays(idval, x, y, ui.DataPHA)
 
-    path = tmp_path / 'group.dat'
-    path.write_text('1\n-1\n1')
+    path = tmp_path / "group.dat"
+    path.write_text("1\n-1\n1")
 
     data = ui.get_data(idval)
     assert data.grouping is None
@@ -1568,7 +1568,7 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path):
     assert y == pytest.approx([2, 3])
 
 
-@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+@pytest.mark.parametrize("idval", [None, 1, "xx"])
 def test_group_already_grouped(idval):
     """Does group still work if the data is already grouped?"""
 
@@ -1593,14 +1593,14 @@ def test_group_already_grouped(idval):
     assert data.grouped
 
 
-@pytest.mark.parametrize("idval", [None, 1, 'xx'])
+@pytest.mark.parametrize("idval", [None, 1, "xx"])
 def test_subtract_already_subtracted(idval):
     """Does subtract still work if the data is already subtracted?"""
 
     x = [1, 2, 3]
     y = [0, 4, 3]
-    ui.load_arrays('bgnd', x, y, ui.DataPHA)
-    bkg = ui.get_data('bgnd')
+    ui.load_arrays("bgnd", x, y, ui.DataPHA)
+    bkg = ui.get_data("bgnd")
 
     if idval is None:
         ui.load_arrays(1, x, y, ui.DataPHA)
@@ -1628,7 +1628,7 @@ def test_xxx_not_pha(callfunc):
     with pytest.raises(ArgumentErr) as exc:
         callfunc()
 
-    assert str(exc.value) == 'data set 1 does not contain PHA data'
+    assert str(exc.value) == "data set 1 does not contain PHA data"
 
 
 def test_get_axes_data1d():
@@ -1741,7 +1741,7 @@ def test_wstat_errors_data1d(clean_astro_ui, make_data_path):
     test.
     """
 
-    infile = make_data_path('3c273.pi')
+    infile = make_data_path("3c273.pi")
     ui.load_pha(infile)
 
     x = np.asarray([1, 2, 3])
@@ -1751,9 +1751,9 @@ def test_wstat_errors_data1d(clean_astro_ui, make_data_path):
     ui.set_source(ui.powlaw1d.m1)
     ui.set_source(2, ui.polynom1d.m2)
 
-    ui.set_stat('wstat')
+    ui.set_stat("wstat")
 
     with pytest.raises(StatErr) as exc:
         ui.get_stat_info()
 
-    assert str(exc.value) == 'No background data has been supplied. Use cstat'
+    assert str(exc.value) == "No background data has been supplied. Use cstat"
