@@ -1663,10 +1663,10 @@ class DataPHA(Data1D):
 
         if (rmf is None and arf is None) and \
            (self.bin_lo is None and self.bin_hi is None) and \
-           quantity != 'channel':
-            raise DataErr('norsp', self.name)
+           quantity != "channel":
+            raise DataErr("norsp", self.name)
 
-        if rmf is None and arf is not None and quantity != 'channel' and \
+        if rmf is None and arf is not None and quantity != "channel" and \
            len(arf.energ_lo) != len(self.channel):
             raise DataErr("incompleteresp", self.name)
 
@@ -2478,10 +2478,10 @@ class DataPHA(Data1D):
         7.8504301607718007e-06
 
         """
-        backscal = self.backscal
-        if backscal is not None:
-            backscal = self._check_scale(backscal, group, filter)
-        return backscal
+        if self.backscal is None:
+            return None
+
+        return self._check_scale(self.backscal, group, filter)
 
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
@@ -2522,10 +2522,10 @@ class DataPHA(Data1D):
         1.0
 
         """
-        areascal = self.areascal
-        if areascal is not None:
-            areascal = self._check_scale(areascal, group, filter)
-        return areascal
+        if self.areascal is None:
+            return None
+
+        return self._check_scale(self.areascal, group, filter)
 
     def apply_filter(self, data, groupfunc=numpy.sum):
         """Group and filter the supplied data to match the data set.
