@@ -1503,7 +1503,7 @@ class DataPHA(Data1D):
             self.get_background(id).rate = val
 
     rate = property(_get_rate, _set_rate,
-                    doc="""Plotting: is the Y axis displayed as a rate?
+                    doc="""Is the Y axis displayed as a rate when plotting data?
 
 When True the y axis is normalised by the exposure time to display
 a rate.""")
@@ -1532,7 +1532,7 @@ a rate.""")
             self.get_background(id).plot_fac = val
 
     plot_fac = property(_get_plot_fac, _set_plot_fac,
-                        doc="""Plotting: how the X axis is used to create the Y axis.
+                        doc="""How the X axis is used to create the Y axis when plotting data.
 
 The Y axis values are multiplied by X^plot_fac. The default
 value of 0 means the X axis is not used in plots. The value
