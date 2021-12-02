@@ -1111,10 +1111,7 @@ def test_pha_invalid_units(invalid, make_test_pha):
     assert str(de.value) == f"unknown quantity: '{invalid}'"
 
 
-# currently several variants are allowed, even if they don't work as
-# expected - e.g. type="rates" does not set the rate value to True.
-#
-@pytest.mark.parametrize("invalid", [pytest.param("RATE", marks=pytest.mark.xfail), pytest.param("COUNTS", marks=pytest.mark.xfail), pytest.param("rates", marks=pytest.mark.xfail), "count", "count-rate"])
+@pytest.mark.parametrize("invalid", ["RATE", "COUNTS", "rates", "count", "count-rate"])
 def test_pha_analysis_type_invalid(invalid, make_test_pha):
     pha = make_test_pha
     with pytest.raises(DataErr) as err:
@@ -1131,7 +1128,6 @@ def test_pha_analysis_plot_fac_valid(make_test_pha):
     assert pha.plot_fac == 2
 
 
-@pytest.mark.xfail  # We either do not fail (all but complex) or dail with a TypeError, not DataErr
 @pytest.mark.parametrize("invalid", ["1", 2.01, 0.5, complex(1)])
 def test_pha_analysis_plot_fac_invalid(invalid, make_test_pha):
     pha = make_test_pha
@@ -1141,14 +1137,13 @@ def test_pha_analysis_plot_fac_invalid(invalid, make_test_pha):
     assert str(err.value) == f"unknown plot_fac setting: '{invalid}'"
 
 
-@pytest.mark.xfail  # We either do not fail (all but complex) or dail with a TypeError, not DataErr
 @pytest.mark.parametrize("invalid", ["1", 2.01, 0.5, complex(1)])
 def test_pha_analysis_factor_invalid(invalid, make_test_pha):
     pha = make_test_pha
     with pytest.raises(DataErr) as err:
         pha.set_analysis("channel", factor=invalid)
 
-    assert str(err.value) == f"unknown plot_fac setting: '{invalid}'"
+    assert str(err.value) == f"unknown factor setting: '{invalid}'"
 
 
 def test_pha_get_spectresp_no_response(make_test_pha):
@@ -1375,7 +1370,7 @@ def test_pha_set_analysis_rate_invalid():
     with pytest.raises(DataErr) as de:
         pha.set_analysis("channel", type=None)
 
-    assert str(de.value) == "unknown plot type 'none', choose 'rate' or 'counts'"
+    assert str(de.value) == "unknown plot type 'None', choose 'rate' or 'counts'"
 
 
 def test_pha_ignore_bad_no_quality():
