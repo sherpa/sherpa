@@ -1879,7 +1879,7 @@ def test_fit_single(stat, usestat, usesys, finalstat):
     assert fit.method.name == 'levmar'
     fr = fit.fit()
     assert fr.succeeded
-    assert fr.statval == pytest.approx(finalstat)
+    assert fr.statval == pytest.approx(finalstat, rel=7e-5)
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,finalstat", [
