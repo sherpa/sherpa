@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2021
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,16 +35,20 @@ from sherpa.models.basic import Const1D, Gauss2D, Polynom1D
 from sherpa.stats import Chi2
 
 
+def plot_backend_is(name):
+    """Check we have the specified plot backend"""
+    return plot.backend.name == name
+
+
 def check_empty(r, summary, nsummary=0):
     """Is this an 'empty' response?"""
 
-    if plot.backend.name == 'pylab':
+    if plot_backend_is("pylab"):
         assert r is None
         return
 
     assert r is not None
-
-    assert '<summary>{} ({})</summary>'.format(summary, nsummary) in r
+    assert f"<summary>{summary} ({nsummary})</summary>" in r
 
 
 def check_full(r, summary, label, title, nsummary=0):
@@ -51,14 +56,14 @@ def check_full(r, summary, label, title, nsummary=0):
 
     assert r is not None
 
-    if plot.backend.name == 'pylab':
-        assert '<summary>{}</summary>'.format(summary) in r
-        assert '<svg ' in r
+    if plot_backend_is("pylab"):
+        assert f"<summary>{summary}</summary>" in r
+        assert "<svg " in r
         return
 
-    assert '<summary>{} ({})</summary>'.format(summary, nsummary) in r
-    assert '<div class="dataval">{}</div>'.format(label) in r
-    assert '<div class="dataval">{}</div>'.format(title) in r
+    assert f"<summary>{summary} ({nsummary})</summary>" in r
+    assert f'<div class="dataval">{label}</div>' in r
+    assert f'<div class="dataval">{title}</div>' in r
 
 
 def test_histogram(override_plot_backend):
@@ -205,13 +210,13 @@ def test_fit(override_plot_backend):
     # different to previous checks
     assert r is not None
 
-    if plot.backend.name == 'pylab':
-        assert '<summary>FitPlot</summary>' in r
-        assert '<svg ' in r
+    if plot_backend_is("pylab"):
+        assert "<summary>FitPlot</summary>" in r
+        assert "<svg " in r
         return
 
-    assert '<summary>DataPlot (' in r
-    assert '<summary>ModelPlot (' in r
+    assert "<summary>DataPlot (" in r
+    assert "<summary>ModelPlot (" in r
     assert '<div class="dataval">n n</div>' in r
     assert '<div class="dataval">Model</div>' in r
 
@@ -244,13 +249,13 @@ def test_fitcontour(override_plot_backend):
     # different to previous checks
     assert r is not None
 
-    if plot.backend.name == 'pylab':
-        assert '<summary>FitContour</summary>' in r
-        assert '<svg ' in r
+    if plot_backend_is("pylab"):
+        assert "<summary>FitContour</summary>" in r
+        assert "<svg " in r
         return
 
-    assert '<summary>DataContour (' in r
-    assert '<summary>ModelContour (' in r
+    assert "<summary>DataContour (" in r
+    assert "<summary>ModelContour (" in r
     assert '<div class="dataval">n n</div>' in r
     assert '<div class="dataval">Model</div>' in r
 
@@ -278,12 +283,12 @@ def test_intproj(old_numpy_printing, override_plot_backend):
     r = p._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
-        assert '<summary>IntervalProjection</summary>' in r
-        assert '<svg ' in r
+    if plot_backend_is("pylab"):
+        assert "<summary>IntervalProjection</summary>" in r
+        assert "<svg " in r
         return
 
-    assert '<summary>IntervalProjection (8)</summary>' in r
+    assert "<summary>IntervalProjection (8)</summary>" in r
 
     assert '<div class="dataname">x</div><div class="dataval">[ 1.        1.555556  2.111111  2.666667  3.222222  3.777778  4.333333  4.888889\n  5.444444  6.      ]</div>' in r
     assert '<div class="dataname">nloop</div><div class="dataval">10</div>' in r
@@ -313,13 +318,12 @@ def test_regproj(old_numpy_printing, override_plot_backend):
     r = p._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
-        assert '<summary>RegionProjection</summary>' in r
-        assert '<svg ' in r
+    if plot_backend_is("pylab"):
+        assert "<summary>RegionProjection</summary>" in r
+        assert "<svg " in r
         return
 
-    print(r)
-    assert '<summary>RegionProjection (13)</summary>' in r
+    assert "<summary>RegionProjection (13)</summary>" in r
 
     assert '<div class="dataname">parval0</div><div class="dataval">-0.5315772076542427</div>' in r
     assert '<div class="dataname">parval1</div><div class="dataval">0.5854611101216837</div>' in r
