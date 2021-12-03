@@ -455,8 +455,8 @@ def test_fit_raises_error_on_bgsubtraction(stat):
     with pytest.raises(FitErr) as excinfo:
         fit.fit()
 
-    emsg = '{} statistics cannot be used with '.format(statobj.name) + \
-           'background subtracted data'
+    emsg = f"{statobj.name} statistics cannot be used with " + \
+           "background subtracted data"
     assert str(excinfo.value) == emsg
 
 
@@ -653,10 +653,10 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
     # differences in precision/formatting can make this annoying.
     #
     def tostr_short(k, v):
-        return "{:9s} = {}".format(k, v)
+        return f"{k:9s} = {v}"
 
     def tostr_long(k, v):
-        return "{:21s} = {}".format(k, v)
+        return f"{k:21s} = {v}"
 
     # The __str__ and format methods use different formats when
     # displaying the numeric values. Unfortunately the format
@@ -676,7 +676,7 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
 
         assert s.startswith(tostr_long(k, ''))
         sval = s.split(' = ')[1]
-        assert sval == "%g" % (v, )
+        assert sval == f"{v:g}"
 
     # Validate __str__
     #
@@ -1702,7 +1702,7 @@ def test_fit_str_single(stat):
                 ("stat", stat.__name__),
                 ("method", "LevMar"),
                 ("estmethod", "Covariance")]
-    expected = "\n".join(["{:9s} = {}".format(*e) for e in expected])
+    expected = "\n".join([f"{k:9s} = {v}" for (k,v) in expected])
 
     assert out == expected
 
@@ -1730,7 +1730,7 @@ def test_fit_str_multiple(stat):
                 ("stat", stat.__name__),
                 ("method", "LevMar"),
                 ("estmethod", "Covariance")]
-    expected = "\n".join(["{:9s} = {}".format(*e) for e in expected])
+    expected = "\n".join([f"{k:9s} = {v}" for (k,v) in expected])
 
     assert out == expected
 
