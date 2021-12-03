@@ -1512,12 +1512,14 @@ a rate.""")
         return self._plot_fac
 
     def _set_plot_fac(self, val):
-        # I'd prefer to check whether val is an integer, but there
-        # may be users who have set the value to 2.0 and it doesn't
-        # seem worth breaking that code.
+        # I'd prefer to check whether val is an integer, but there may
+        # be users who have set the value to 2.0 and it doesn't seem
+        # worth breaking that code. We do however want to error out if
+        # val=0.5 (say), hence this slightly-contrived check.
         #
         try:
-            okay = val == int(val)
+            ival = int(val)
+            okay = val == ival
         except (ValueError, TypeError):
             # For when int() can't convert val, which can raise
             # different errors.
@@ -1526,10 +1528,9 @@ a rate.""")
         if not okay:
             raise DataErr("bad", "plot_fac setting", val)
 
-        val = int(val)
-        self._plot_fac = val
+        self._plot_fac = ival
         for id in self.background_ids:
-            self.get_background(id).plot_fac = val
+            self.get_background(id).plot_fac = ival
 
     plot_fac = property(_get_plot_fac, _set_plot_fac,
                         doc="""How the X axis is used to create the Y axis when plotting data.
