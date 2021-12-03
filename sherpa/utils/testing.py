@@ -159,6 +159,16 @@ if HAS_PYTEST:
         msg = "matplotlib backend required"
         return requires_package(msg, *packages)(test_function)
 
+    def requires_bokeh(test_function):
+        """
+        Returns True if the pylab module is available (pylab).
+        Used to skip tests requiring matplotlib
+        """
+        packages = ('bokeh',
+                    )
+        msg = "bokeh backend required"
+        return requires_package(msg, *packages)(test_function)
+
     def requires_fits(test_function):
         """
         Returns True if there is an importable backend for FITS I/O.
