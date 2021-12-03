@@ -325,13 +325,22 @@ def test_regproj(old_numpy_printing, override_plot_backend):
 
     assert "<summary>RegionProjection (13)</summary>" in r
 
-    assert '<div class="dataname">parval0</div><div class="dataval">-0.5315772076542427</div>' in r
-    assert '<div class="dataname">parval1</div><div class="dataval">0.5854611101216837</div>' in r
+    # Issue #1372 shows that the numbers here can depend on the platform; as
+    # this test is not about whether the fit converged to the same solution
+    # the tests are very basic. An alternative would be to just place
+    # the values from the fit object into the strings, but then there is
+    # the problem that this test currently requires old_numpy_printing,
+    # so the results would not necessarily match.
+    #
+    assert '<div class="dataname">parval0</div><div class="dataval">-0.5' in r
+    assert '<div class="dataname">parval1</div><div class="dataval">0.5' in r
     assert '<div class="dataname">sigma</div><div class="dataval">(1, 2, 3)</div>' in r
 
-    assert '<div class="dataname">y</div><div class="dataval">[ 306.854444  282.795953  259.744431  237.699877  216.662291  196.631674\n' in r
+    # These values may depend on the platform so only very-limited check.
+    #
+    assert '<div class="dataname">y</div><div class="dataval">[ 30' in r
+    assert '<div class="dataname">levels</div><div class="dataval">[  3.6' in r
 
-    assert '<div class="dataname">levels</div><div class="dataval">[  3.606863   7.491188  13.140272]</div>' in r
     assert '<div class="dataname">min</div><div class="dataval">[-2, -1]</div>' in r
     assert '<div class="dataname">max</div><div class="dataval">[2, 2]</div>' in r
 
