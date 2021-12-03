@@ -91,7 +91,6 @@
 #
 
 import numpy as np
-from numpy.testing import assert_almost_equal
 
 import pytest
 
@@ -662,8 +661,8 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
     # The __str__ and format methods use different formats when
     # displaying the numeric values. Unfortunately the format
     # method uses %g which - for the numbers here - can be less
-    # than 7 decimal places, so assert_almost_equal is not
-    # usable.
+    # than 7 decimal places, and initial testing with assert_almost_equal
+    # did not work so we used this approach instead.
     #
     def checkval_short(s, k, v):
         """Check that s == 'k = <v>'"""
@@ -2107,15 +2106,12 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     assert fr.parnames[-1] == fr2.parnames[-1]
 
     if isinstance(statobj, Likelihood):
-        ndp = 0
+        ndp = 1
     else:
         ndp = 7
 
-    # pytest.approx does not have an equivalent of decimal;
-    # we could change this to an absolute tolerance
-    #
-    assert_almost_equal(fr2.parvals[-1], fr.parvals[-1],
-                        decimal=ndp)
+    rel = 10**(-ndp)
+    assert fr2.parvals[-1] == pytest.approx(fr.parvals[-1], rel=rel)
 
 
 @pytest.mark.parametrize("method,estmethod,usestat,usesys", [
