@@ -30,7 +30,8 @@ from sherpa.models import basic
 from sherpa import plot as sherpaplot
 from sherpa.data import Data1D, Data1DInt
 from sherpa.utils.err import ConfidenceErr
-from sherpa.utils.testing import requires_data, requires_plotting
+from sherpa.utils.testing import (requires_data, requires_plotting,
+                                  allplotbackends)
 
 
 _datax = numpy.array(
@@ -115,37 +116,37 @@ def setup_confidence():
 # These tests don't need a backend as there is no "plot" call,
 # and so do not need a @requires_plotting decorator.
 #
-def test_dataplot(setup_plot):
+def test_dataplot(setup_plot, allplotbackends):
     dp = sherpa.DataPlot()
     dp.prepare(setup_plot.data, setup_plot.f.stat)
     # dp.plot()
 
 
-def test_modelplot(setup_plot):
+def test_modelplot(setup_plot, allplotbackends):
     mp = sherpa.ModelPlot()
     mp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
     # mp.plot()
 
 
-def test_residplot(setup_plot):
+def test_residplot(setup_plot, allplotbackends):
     rp = sherpa.ResidPlot()
     rp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
     # rp.plot()
 
 
-def test_delchiplot(setup_plot):
+def test_delchiplot(setup_plot, allplotbackends):
     dp = sherpa.DelchiPlot()
     dp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
     # dp.plot()
 
 
-def test_chisqrplot(setup_plot):
+def test_chisqrplot(setup_plot, allplotbackends):
     cs = sherpa.ChisqrPlot()
     cs.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
     # cs.plot()
 
 
-def test_ratioplot(setup_plot):
+def test_ratioplot(setup_plot, allplotbackends):
     tp = sherpa.RatioPlot()
     tp.prepare(setup_plot.data, setup_plot.g1, setup_plot.f.stat)
     # tp.plot()
@@ -155,7 +156,7 @@ def test_ratioplot(setup_plot):
 @pytest.mark.parametrize("plottype", [sherpa.DelchiPlot,
                                       sherpa.RatioPlot,
                                       sherpa.ResidPlot])
-def test_ignore_ylog_prefs(setup_plot, plottype):
+def test_ignore_ylog_prefs(setup_plot, plottype, allplotbackends):
     """Do we ignore the ylog preference setting?"""
     tp = plottype()
     tp.plot_prefs['ylog'] = True
@@ -164,7 +165,7 @@ def test_ignore_ylog_prefs(setup_plot, plottype):
     assert not tp.plot_prefs['ylog']
 
 
-def test_fitplot(setup_plot):
+def test_fitplot(setup_plot, allplotbackends):
     dp = sherpa.DataPlot()
     dp.prepare(setup_plot.data, setup_plot.f.stat)
 
@@ -176,7 +177,7 @@ def test_fitplot(setup_plot):
     # fp.plot()
 
 
-def test_splitplot(setup_plot):
+def test_splitplot(setup_plot, allplotbackends):
     dp = sherpa.DataPlot()
     dp.prepare(setup_plot.data, setup_plot.f.stat)
 
@@ -198,7 +199,7 @@ def test_splitplot(setup_plot):
 
 
 @requires_data
-def test_datacontour(setup_contour):
+def test_datacontour(setup_contour, allplotbackends):
     dc = sherpa.DataContour()
     dc.prepare(setup_contour.data)
     dc.levels = setup_contour.levels
@@ -206,7 +207,7 @@ def test_datacontour(setup_contour):
 
 
 @requires_data
-def test_modelcontour(setup_contour):
+def test_modelcontour(setup_contour, allplotbackends):
     mc = sherpa.ModelContour()
     mc.prepare(setup_contour.data, setup_contour.g1, setup_contour.f.stat)
     mc.levels = setup_contour.levels
@@ -214,7 +215,7 @@ def test_modelcontour(setup_contour):
 
 
 @requires_data
-def test_residcontour(setup_contour):
+def test_residcontour(setup_contour, allplotbackends):
     rc = sherpa.ResidContour()
     rc.prepare(setup_contour.data, setup_contour.g1, setup_contour.f.stat)
     rc.levels = setup_contour.levels
@@ -222,7 +223,7 @@ def test_residcontour(setup_contour):
 
 
 @requires_data
-def test_ratiocontour(setup_contour):
+def test_ratiocontour(setup_contour, allplotbackends):
     tc = sherpa.RatioContour()
     tc.prepare(setup_contour.data, setup_contour.g1, setup_contour.f.stat)
     tc.levels = setup_contour.levels
@@ -230,7 +231,7 @@ def test_ratiocontour(setup_contour):
 
 
 @requires_data
-def test_fitcontour(setup_contour):
+def test_fitcontour(setup_contour, allplotbackends):
     dc = sherpa.DataContour()
     dc.prepare(setup_contour.data)
 
@@ -243,7 +244,7 @@ def test_fitcontour(setup_contour):
 
 
 @requires_data
-def test_splitcontour(setup_contour):
+def test_splitcontour(setup_contour, allplotbackends):
     dc = sherpa.DataContour()
     dc.levels = setup_contour.levels
     dc.prepare(setup_contour.data)
@@ -267,7 +268,7 @@ def test_splitcontour(setup_contour):
     # sp.addcontour(rc)
 
 
-def test_interval_projection(setup_confidence):
+def test_interval_projection(setup_confidence, allplotbackends):
     _ipx = numpy.array(
         [15.60720526,  15.92784424,  16.24848322,  16.56912221,
          16.88976119,  17.21040017,  17.53103916,  17.85167814,
@@ -290,7 +291,7 @@ def test_interval_projection(setup_confidence):
     # setup_confidence.ip.plot()
 
 
-def test_interval_uncertainty(setup_confidence):
+def test_interval_uncertainty(setup_confidence, allplotbackends):
     _iux = numpy.array(
         [15.60720526,  15.92784424,  16.24848322,  16.56912221,
          16.88976119,  17.21040017,  17.53103916,  17.85167814,
@@ -312,7 +313,7 @@ def test_interval_uncertainty(setup_confidence):
     # setup_confidence.iu.plot()
 
 
-def test_region_projection(setup_confidence):
+def test_region_projection(setup_confidence, allplotbackends):
     _rpx0 = numpy.array(
         [11.03809974,  12.73036104,  14.42262235,  16.11488365, 17.80714495,
          19.49940625,  21.19166755,  22.88392885,  24.57619016, 26.26845146,
@@ -394,7 +395,7 @@ def test_region_projection(setup_confidence):
     # setup_confidence.rp.contour()
 
 
-def test_region_uncertainty(setup_confidence):
+def test_region_uncertainty(setup_confidence, allplotbackends):
     _rux0 = numpy.array(
         [12.56113491,  13.91494395,  15.268753,  16.62256204, 17.97637108,
          19.33018012,  20.68398916,  22.0377982,  23.39160724, 24.74541629,
@@ -478,7 +479,7 @@ def test_region_uncertainty(setup_confidence):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_source_component_arbitrary_grid(session):
+def test_source_component_arbitrary_grid(session, allplotbackends):
     ui = session()
 
     # depending on how the test is used we need to have
@@ -519,7 +520,7 @@ def test_source_component_arbitrary_grid(session):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_model_arbitrary_grid_integrated(session):
+def test_plot_model_arbitrary_grid_integrated(session, allplotbackends):
     ui = session()
     model = basic.Const1D('c')
     model.c0 = 10
@@ -561,7 +562,7 @@ def test_plot_model_arbitrary_grid_integrated(session):
 
 @requires_plotting
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_source_component_arbitrary_grid_int(session):
+def test_source_component_arbitrary_grid_int(session, allplotbackends):
     ui = session()
 
     x = numpy.array([1, 2, 3]), numpy.array([2, 3, 4])
@@ -581,7 +582,7 @@ def test_source_component_arbitrary_grid_int(session):
     assert ui._compsrchistplot.y == pytest.approx([0.0, 0.0, 0.0])
 
 
-def test_numpy_histogram_density_vs_normed(clean_astro_ui):
+def test_numpy_histogram_density_vs_normed(clean_astro_ui, allplotbackends):
     from sherpa.astro import ui
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
@@ -599,7 +600,7 @@ def test_numpy_histogram_density_vs_normed(clean_astro_ui):
     assert plot.xhi == pytest.approx(expected_xhi)
 
 
-def test_errors_with_no_stat():
+def test_errors_with_no_stat(allplotbackends):
     """Check we get no errors when stat is None"""
 
     d = Data1D('x', numpy.asarray([2, 4, 10]), numpy.asarray([2, 4, 0]))
@@ -714,7 +715,8 @@ def test_region_xxx_validates_invalid_input(ptype, kwargs, setup_confidence):
 @pytest.mark.parametrize("kwargs",
                          [{'min': [0, 0]}, {'max': [120, 1e-3]},
                           {'min': (0, 0)}, {'max': (120, 1e-3)}])
-def test_region_xxx_issue_1093(ptype, kwargs, setup_confidence):
+def test_region_xxx_issue_1093(ptype, kwargs, setup_confidence,
+                               allplotbackends):
     """Using min=(0,20) fails when the min value is < param min (or > param max)
 
     We do not do a lot of testing of the result, we are just primarily
@@ -742,7 +744,8 @@ def test_region_xxx_issue_1093(ptype, kwargs, setup_confidence):
                            'nloop': (2, 2), 'sigma': (1, 1.6)},
                           {'min': [18, 16], 'max': [19, 17],
                            'nloop': [2, 2], 'sigma': [1, 1.6]}])
-def test_region_xxx_set_vars(ptype, kwargs, setup_confidence):
+def test_region_xxx_set_vars(ptype, kwargs, setup_confidence,
+                             allplotbackends):
     """Are different sequence types handled okay?
 
     The idea is to check that using a tuple or a list returns

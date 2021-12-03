@@ -24,6 +24,7 @@ import unittest
 import numpy
 
 from sherpa.utils._utils import sao_fcmp
+from sherpa import plot
 
 try:
     import pytest
@@ -116,6 +117,19 @@ if HAS_PYTEST:
     #  Pytest cannot be assumed to be installed by the regular user, unlike unittest, which is part of Python's
     #  standard library. The decorator will be defined if pytest is missing, but if the tests are run they throw
     #  and exception prompting users to install pytest, in those cases where pytest is not installed automatically.
+    @pytest.fixture(params=[("sherpa", "sherpa.plot.dummy_backend"), 
+                            ("matplotlib", "sherpa.plot.pylab_backend"),
+                            ("bokeh", "sherpa.plot.bokeh_backend")])
+    def allplotbackends(request):
+        pytest.importorskip(request.param[0])
+        test_backend = importlib.import_module(request.param[1])
+        oldbackend = plot.backend
+        plot.backend = test_backend
+        try:
+            yield
+        finally:
+            plot.backend = oldbackend
+
 
     def requires_data(test_function):
         """

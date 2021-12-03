@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 from contextlib import contextmanager
+import importlib
 import json
 
 import numpy as np
@@ -28,20 +29,9 @@ from sherpa import plot
 from sherpa.utils.testing import requires_bokeh
 
 
-
-# This might go into general utils, but for now, I'm developing it here
-@contextmanager
-def plottingbackend(backend):
-    oldbackend = plot.backend
-    plot.backend = backend
-    try:
-        yield
-    finally:
-        plot.backend = backend
-
-        
-@pytest.fixture
+@pytest.fixture(scope="module")
 def use_bokeh():
+    pytest.importorskip("bokeh")
     from sherpa.plot import bokeh_backend
     oldbackend = plot.backend
     plot.backend = bokeh_backend
@@ -49,12 +39,8 @@ def use_bokeh():
         yield
     finally:
         plot.backend = oldbackend
-
         
-# short explanation why those are separate fixtures.
-# or make them one?
-@requires_bokeh
-# Need decorator or with statement to set plotting backend here
+
 def test_basic_bokeh_plot(use_bokeh):
     '''At this point, this test is just a template on how to write tests
     for bokeh output'''
