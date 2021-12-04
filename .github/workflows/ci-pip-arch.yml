@@ -4,12 +4,15 @@ on:
   schedule:
     # when is a good time?
     - cron: '0 23 * * SUN'
+  pull_request:
+    # We also want this workflow triggered if the 'CI arch' label is added
+    # or present when PR is updated
+    types: [synchronize, labeled]
 
 jobs:
   tests:
-    name: ${{ matrix.arch }}
     runs-on: ubuntu-18.04
-    if: (github.repository == 'sherpa/sherpa' && github.event_name == 'schedule')
+    if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI arch')))
 
     strategy:
       fail-fast: false
