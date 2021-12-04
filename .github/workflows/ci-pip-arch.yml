@@ -1,21 +1,27 @@
-name: Pip CI (arch)
+name: Weekly cron (arch)
 
-# AstroPy does this weekly; for now I need to get this working first
-#
-on: [push, pull_request]
+on:
+  schedule:
+    # when is a good time?
+    - cron: '0 23 * * SUN'
 
 jobs:
   tests:
     name: ${{ matrix.arch }}
     runs-on: ubuntu-18.04
+    if: (github.repository == 'sherpa/sherpa' && github.event_name == 'schedule')
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: aarch64
 
           # The tests on ppc64le fail rather spectacularly,
-          # and it's not obvious why, so skip for now.
+          # and it's not obvious why, so skip for now. AstroPy also
+          # see some interesting errors so maybe there are problems
+          # with the emulation or NumPy or ...
+          # https://github.com/astropy/astropy/pull/11697
           #
           # - arch: ppc64le
 
@@ -65,6 +71,9 @@ jobs:
           source tests/bin/activate
 
           # without this we get configure errors when building fftw and I don't know why
+          # (this adds the --disable-dependency-tracking option). A google suggests it
+          # could be a make vs gmake issue but we can't easily change this (and it may
+          # not be the actual problem).
           #
           sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
 
