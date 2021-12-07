@@ -31,7 +31,7 @@ Acknowledgements
 
 The original version of the code was developed by the CHASC
 Astro-Statistics collaboration, and was called pyBLoCXS [1]_. It has
-since been developed by the Chandra X-ray Center and weas added to
+since been developed by the Chandra X-ray Center and was added to
 Sherpa in version 4.5.1.
 
 Overview
