@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,7 +30,7 @@ import pytest
 
 from sherpa.data import Data1D, Data2D
 from sherpa.instrument import PSFModel
-from sherpa.models.basic import Box1D, Box2D
+from sherpa.models.basic import Box1D, Box2D, Const1D, Gauss1D, StepLo1D
 from sherpa.utils.err import PSFErr
 
 
@@ -159,6 +160,21 @@ def test_psf1d_fold_no_kernel():
     assert "model 'bob' does not have an associated PSF function" == str(exc.value)
 
 
+def test_psf1d_no_fold():
+    """Error out if there's no kernel"""
+
+    box = Box1D()
+    psf = PSFModel('bob', box)
+
+    cpt = Gauss1D()
+    sm = psf(cpt)
+
+    with pytest.raises(PSFErr) as exc:
+        sm([1, 2, 3, 4, 5])
+
+    assert "PSF model has not been folded" == str(exc.value)
+
+
 def test_psf1d_kernel_data(caplog):
     """Access the kernel data: subkernel=True"""
 
@@ -201,16 +217,11 @@ def test_psf1d_kernel_model(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ans = m.get_kernel(dfold)
 
-    print(ans)
-
     assert len(caplog.records) == 1
     r = caplog.record_tuples[0]
     assert r[0] == 'sherpa.instrument'
     assert r[1] == logging.INFO
     assert r[2] == "PSF frac: 1.0"
-
-    print(ans.x)
-    print(ans.y)
 
     assert isinstance(ans, Data1D)
     assert ans.name == 'kernel'
@@ -311,3 +322,146 @@ def test_psf2d_kernel_model(caplog):
 
     assert ans.staterror is None
     assert ans.syserror is None
+
+
+def test_psf1d_flat():
+    """This is based on
+    sherpa.models.tests.test_regrid_unit.test_regrid1_works_with_convolution_style
+    but I wanted to make sure we have an explicit check of the underlying
+    code.
+    """
+
+    cmdl = Const1D()
+    cmdl.c0 = -500
+
+    gsmooth = Gauss1D()
+    gsmooth.fwhm = 3
+    psf = PSFModel('psf', gsmooth)
+
+    x = np.arange(5, 23, 3)
+    d = Data1D('fake', x, x * 0)
+    psf.fold(d)
+
+    smoothed = psf(cmdl)
+    y = smoothed(x)
+
+    assert y == pytest.approx([-500] * 6)
+
+
+def test_psf1d_step():
+    """This is based on
+    sherpa.models.tests.test_regrid_unit.test_regrid1_works_with_convolution_style
+    but I wanted to make sure we have an explicit check of the underlying
+    code.
+    """
+
+    smdl = StepLo1D()
+    smdl.xcut = 12.5
+    smdl.ampl = 10
+
+    gsmooth = Gauss1D()
+    gsmooth.fwhm = 3
+    psf = PSFModel('psf', gsmooth)
+
+    x = np.arange(5, 23, 3)
+    d = Data1D('fake', x, x * 0)
+    psf.fold(d)
+
+    smoothed = psf(smdl)
+    y = smoothed(x)
+
+    assert y == pytest.approx([10.0, 10.0, 10.0, 0, 0, 0], abs=1e-4)
+
+
+@pytest.mark.xfail  # see #1334
+def test_psf1d_step_v2():
+    """Trying to track down why we have seen different behavior in
+    test_regrid_unit.py.
+    """
+
+    smdl = StepLo1D()
+    smdl.xcut = 100
+    smdl.ampl = 10
+
+    gsmooth = Gauss1D()
+    psf = PSFModel('psf', gsmooth)
+
+    x = np.arange(0, 200, 0.5)
+    d = Data1D('fake', x, x * 0)
+    psf.fold(d)
+
+    smoothed = psf(smdl)
+    y = smoothed(x)
+
+    # So the output is not easy to describe analytically, hence
+    # we just check parts of it.
+    #
+    assert y[(x >= 19.5) & (x <= 100)] == pytest.approx([10] * 162, abs=1e-4)
+    assert y[x >= 119] == pytest.approx([0] * 162, abs=1e-4)
+
+    # check that the x <= 19 values are in ascending order
+    y1 = y[x <= 19]
+    assert (y1[1:] > y1[:-1]).all()
+
+
+def test_psf1d_combined():
+    """This is based on
+    sherpa.models.tests.test_regrid_unit.test_regrid1_works_with_convolution_style
+    but I wanted to make sure we have an explicit check of the underlying
+    code.
+    """
+
+    smdl = StepLo1D()
+    smdl.xcut = 12.5
+    smdl.ampl = 10
+
+    cmdl = Const1D()
+    cmdl.c0 = -500
+
+    imdl = smdl + cmdl
+
+    gsmooth = Gauss1D()
+    gsmooth.fwhm = 3
+    psf = PSFModel('psf', gsmooth)
+
+    x = np.arange(5, 23, 3)
+    d = Data1D('fake', x, x * 0)
+    psf.fold(d)
+
+    smoothed = psf(imdl)
+    y = smoothed(x)
+
+    assert y == pytest.approx([-490, -490, -490, -500, -500, -500], rel=7e-3)
+
+
+def test_psf1d_combined_v2():
+    """See test_psf1d_step_v2"""
+
+    smdl = StepLo1D()
+    smdl.xcut = 100
+    smdl.ampl = 10
+
+    cmdl = Const1D()
+    cmdl.c0 = -500
+
+    imdl = smdl + cmdl
+
+    gsmooth = Gauss1D()
+    psf = PSFModel('psf', gsmooth)
+
+    x = np.arange(0, 200, 0.5)
+    d = Data1D('fake', x, x * 0)
+    psf.fold(d)
+
+    smoothed = psf(imdl)
+    y = smoothed(x)
+
+    # So the output is not easy to describe analytically, hence
+    # we just check parts of it.
+    #
+    assert y[(x >= 19.5) & (x <= 100)] == pytest.approx([-490] * 162, abs=1e-4)
+    assert y[x >= 119] == pytest.approx([-500] * 162, abs=1e-4)
+
+    # check that the x <= 19 values are in ascending order
+    y1 = y[x <= 19]
+    assert (y1[1:] > y1[:-1]).all()
