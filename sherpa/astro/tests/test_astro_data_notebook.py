@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2021
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,6 +21,8 @@
 """Very-basic tests of the HTML representation of objects.
 
 """
+
+import warnings
 
 import numpy as np
 
@@ -45,21 +48,21 @@ def check(r, summary, name, label, nmeta):
     assert r is not None
 
     if plot.backend.name == 'pylab':
-        assert '<summary>{} Plot</summary>'.format(summary) in r
+        assert f'<summary>{summary} Plot</summary>' in r
         assert '<svg ' in r
 
     else:
-        assert '<summary>{} Data ('.format(summary) in r
-        assert '<div class="dataname">{}</div>'.format(label) in r
+        assert f'<summary>{summary} Data (' in r
+        assert f'<div class="dataname">{label}</div>' in r
         assert '<svg ' not in r
 
     assert '<summary>Summary (' in r
     if nmeta == 0:
         assert '<summary>Metadata' not in r
     else:
-        assert '<summary>Metadata ({})'.format(nmeta) in r
+        assert f'<summary>Metadata ({nmeta})' in r
 
-    assert '<div class="dataval">{}</div>'.format(name) in r
+    assert f'<div class="dataval">{name}</div>' in r
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
@@ -182,7 +185,7 @@ def test_rmf_real(make_data_path, override_plot_backend):
 
     r = d._repr_html_()
 
-    check(r, 'RMF', '9774.rmf', 'DETCHANS', nmeta=6)
+    check(r, 'RMF', '9774.rmf', 'N_GRP', nmeta=6)
 
     assert '<div class="dataname">Identifier</div><div class="dataval">9774.rmf</div>' in r
     assert '<div class="dataname">Number of channels</div><div class="dataval">1024</div>' in r
@@ -192,6 +195,42 @@ def test_rmf_real(make_data_path, override_plot_backend):
 
     assert '<div class="dataname">The channel type</div><div class="dataval">PI</div>' in r
     assert '<div class="dataname">Matrix contents</div><div class="dataval">REDIST</div>' in r
+
+
+@requires_data
+@requires_fits
+def test_rmf_real_bad_energy(make_data_path, override_plot_backend):
+    """Read in a RMF that triggers the energy_thresh change"""
+    from sherpa.astro.io import read_rmf
+
+    infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_spec.rmf")
+    with warnings.catch_warnings(record=True) as ws:
+        d = read_rmf(infile)
+
+    expected = f"The minimum ENERG_LO in the RMF '{infile}' was 0 and has been replaced by 1e-10"
+    assert len(ws) == 1
+    assert ws[0].category == UserWarning
+    assert str(ws[0].message) == expected
+
+    d.name = 'test.rmf'
+
+    r = d._repr_html_()
+
+    check(r, 'RMF', 'test.rmf', 'N_GRP', nmeta=6)
+
+    assert '<div class="dataname">Identifier</div><div class="dataval">test.rmf</div>' in r
+    assert '<div class="dataname">Number of channels</div><div class="dataval">800</div>' in r
+    assert '<div class="dataname">Number of energies</div><div class="dataval">2400</div>' in r
+    assert '<div class="dataname">Energy range</div><div class="dataval">1e-10 - 12 keV, bin size 0.00500011 keV (minimum threshold of 1e-10 was used)</div>' in r
+    assert '<div class="dataname">Channel range</div><div class="dataval">0 - 799</div>' in r
+
+    assert '<div class="dataname">Mission or Satellite</div><div class="dataval">XMM</div>' in r
+    assert '<div class="dataname">Instrument or Detector</div><div class="dataval">EMOS1</div>' in r
+    assert '<div class="dataname">Instrument filter</div><div class="dataval">Medium</div>' in r
+    assert '<div class="dataname">The channel type</div><div class="dataval">PI</div>' in r
+    assert '<div class="dataname">The minimum probability threshold</div><div class="dataval">1e-06</div>' in r
+    assert '<div class="dataname">Matrix contents</div><div class="dataval">REDIST</div>' in r
+
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
@@ -282,3 +321,48 @@ def test_img_real_filtered(coord, make_data_path,
     assert '<div class="dataval">[ 4096.5  4096.5]</div>' in r
     assert '<div class="dataval">[-0.000137  0.000137]</div>' in r
     assert '<div class="dataval">destreak - CAT3.0.2</div>' in r
+
+
+def test_low_level_calc_erange_constant():
+    """Easiest just to call this directly rather than fake up data"""
+
+    de = 0.2
+    elo = 0.1 + de * np.arange(1, 5)
+    ehi = elo + de
+
+    expected = "0.3 - 1.1 keV, bin size 0.2 keV"
+    assert data._calc_erange(elo, ehi) == expected
+
+
+def test_low_level_calc_wrange_constant():
+    """Easiest just to call this directly rather than fake up data"""
+
+    # Should we invert the arguments?
+    dw = 0.2
+    wlo = 0.1 + dw * np.arange(1, 5)
+    whi = wlo + dw
+
+    expected = "0.3 - 1.1 &#8491;, bin size 0.2 &#8491;"
+    assert data._calc_wrange(wlo, whi) == expected
+
+
+def test_low_level_calc_erange_variable():
+    """Easiest just to call this directly rather than fake up data"""
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.55, 0.7, 0.8, 0.85])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+
+    expected = "0.1 - 0.85 keV, bin size 0.05 - 0.2 keV"
+    assert data._calc_erange(elo, ehi) == expected
+
+
+def test_low_level_calc_wrange_variable():
+    """Easiest just to call this directly rather than fake up data"""
+
+    wbins = np.asarray([0.1, 0.2, 0.4, 0.55, 0.7, 0.8, 0.85])
+    wlo = wbins[:-1]
+    whi = wbins[1:]
+
+    expected = "0.1 - 0.85 &#8491;, bin size 0.05 - 0.2 &#8491;"
+    assert data._calc_wrange(wlo, whi) == expected

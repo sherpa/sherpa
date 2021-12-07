@@ -83,9 +83,9 @@ def _check(array):
 
     if hasattr(array, "shape"):
         if len(array.shape) != 1:
-            raise TypeError("Data arrays should be 1-dimensional. Did you call 'flatten()' on {}?)".format(array))
+            raise TypeError(f"Data arrays should be 1-dimensional. Did you call 'flatten()' on {array}?)")
     else:
-        warnings.warn("Converting array {} to numpy array.".format(array))
+        warnings.warn(f"Converting array {array} to numpy array.")
         array = numpy.asanyarray(array)
         return _check(array)
     return array
@@ -93,28 +93,28 @@ def _check(array):
 
 def _check_nomask(array):
     if hasattr(array, 'mask'):
-        warnings.warn('Input array {} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.'.format(array))
+        warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
     return array
 
 
 def _check_dep(array):
     if not hasattr(array, 'mask'):
         return _check(array), True
-    else:
-        # We know the mask convention is opposite to sherpa
-        if isinstance(array, numpy.ma.MaskedArray):
-            return _check(array), ~array.mask
-        # We don't know what the mask convention is
-        else:
-            warnings.warn('Format of mask for array {} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.'.format(array))
-            return _check(array), True
+
+    # We know the mask convention is opposite to sherpa
+    if isinstance(array, numpy.ma.MaskedArray):
+        return _check(array), ~array.mask
+
+    # We don't know what the mask convention is
+    warnings.warn(f'Format of mask for array {array} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.')
+    return _check(array), True
 
 
 def _check_err(array, masktemplate):
     '''Accept array without mask or with a mask that matches the template'''
     if hasattr(array, 'mask') and \
        (not hasattr(masktemplate, 'mask') or not numpy.all(array.mask == masktemplate.mask)):
-        warnings.warn('The mask of {} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.'.format(array))
+        warnings.warn(f'The mask of {array} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.')
     return array
 
 
@@ -612,43 +612,60 @@ class BaseData(metaclass=ABCMeta):
 
 # DATA-NOTE: ND Data cannot be plotted
 class Data(NoNewAttributesAfterInit, BaseData):
+    """Generic, N-Dimensional data sets.
+
+    A data class is the collection of a data space and a number of
+    data arrays for the dependent variable and associated errors.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    indep: tuple of array_like
+        the tuple of independent arrays.
+    y : array_like
+        The values of the dependent observable. If this is a numpy
+        masked array, the mask will used to initialize a mask.
+    staterror : array_like
+        the statistical error associated with the data
+    syserror : array_like
+        the systematic error associated with the data
+
+    Notes
+    -----
+
+    This class can be extended by classes definining data sets of
+    specific dimensionality. Extending classes should override the
+    `_init_data_space` method.
+
+    This class provides most of the infrastructure for extending
+    classes for free.
+
+    Data classes contain a ``mask`` attribute, which can be used
+    ignore certain values in the array when fitting or plotting that
+    data. The convention in Sherpa is that ``True`` marks a values as
+    *valid* and ``False`` as *invalid* (note that this is opposite to
+    the numpy convention). When a `Data` instance is initialized with
+    a dependent array that has a ``mask`` attribute (e.g. numpy masked
+    array), it will attempt to convert that mask to the Sherpa
+    convention and raise a warning otherwise. In any case, the user
+    can set ``data.mask`` after initialization if that conversion does
+    not yield the expected result.
+
     """
-    Data class for generic, N-Dimensional data sets, where N depends on the number of independent axes passed during
-    initialization.
 
-    A data class is the collection of a data space and a number of data arrays for the dependent variable and
-    associated errors.
-
-    This class can be extended by classes definining data sets of specific dimensionality. Extending classes should
-    override the `_init_data_space` method.
-
-    This class provides most of the infrastructure for extending classes for free.
-
-    Data classes contain a ``mask`` attribute, which can be used ignore certain values in the array
-    when fitting or plotting that data. The convention in Sherpa is that ``True`` marks a values as
-    *valid* and ``False`` as *invalid* (note that this is opposite to the numpy convention). When a `Data`
-    instance is initialized with a dependent array that has a ``mask`` attribute (e.g. numpy masked array),
-    it will attempt to convert that mask to the Sherpa convention and raise a warning otherwise. In any case,
-    the user can set ``data.mask`` after initialization if that conversion does not yield the expected result.
-    """
     _fields = ("name", "indep", "dep", "staterror", "syserror")
+    """The main data values stored by the object (as a tuple).
+
+    This is used to identify the column data - that is values that
+    can be written out in tabular form - other than the "name"
+    field. Other fields are listed in _extra_fields.
+    """
+
+    _extra_fields = ()
+    """Any extra fields that should be displayed by str(object)."""
 
     def __init__(self, name, indep, y, staterror=None, syserror=None):
-        """
-        Parameters
-        ----------
-        name : basestring
-            name of this dataset
-        indep: tuple of array_like
-            the tuple of independent arrays.
-        y : array_like
-            The values of the dependent observable. If this is a numpy masked array,
-            the mask will used to initialize a mask.
-        staterror : array_like
-            the statistical error associated with the data
-        syserror : array_like
-            the systematic error associated with the data
-        """
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
@@ -984,17 +1001,17 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def __str__(self):
         """
         Return a listing of the attributes listed in self._fields and,
-        if present, self._extra_fields.
+        if set, self._extra_fields.
         """
 
-        fields = self._fields + getattr(self, '_extra_fields', ())
-        fdict = dict(zip(fields, [getattr(self, f) for f in fields]))
+        fields = self._fields + self._extra_fields
+        fdict = {f: getattr(self, f) for f in fields}
         return print_fields(fields, fdict)
 
     def __repr__(self):
-        r = '<%s data set instance' % type(self).__name__
+        r = f'<{type(self).__name__} data set instance'
         if hasattr(self, 'name'):
-            r += " '%s'" % self.name
+            r += f" '{self.name}'"
         r += '>'
         return r
 
@@ -1672,7 +1689,8 @@ class Data2DInt(Data2D):
     """
     2-D integrated data set
     """
-    _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "shape", "staterror", "syserror")
+    _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "staterror", "syserror")
+    _extra_fields = ("shape", )
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None, staterror=None, syserror=None):
         self.shape = shape
@@ -1709,7 +1727,7 @@ def html_data1d(data):
     plotter = DataPlot()
     plotter.prepare(data)
 
-    summary = '{} Plot'.format(dtype)
+    summary = f'{dtype} Plot'
     try:
         out = backend.as_html_plot(plotter, summary)
     except AttributeError:
@@ -1730,9 +1748,11 @@ def html_data1d(data):
     #
     fexpr = data.get_filter_expr()
     nbins = data.get_dep(filter=True).size
-    meta.append(('Using', '{} with {} bins'.format(fexpr, nbins)))
+    meta.append(('Using', f'{fexpr} with {nbins} bins'))
 
-    # Rely on the _fields ordering, ending at staterror
+    # Rely on the _fields ordering, ending at staterror. This
+    # ignores _extra_fields.
+    #
     for f in data._fields[1:]:
         if f == 'staterror':
             break
@@ -1745,7 +1765,7 @@ def html_data1d(data):
     if data.syserror is not None:
         meta.append(('Systematic error', data.syserror))
 
-    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+    ls = [formatting.html_section(meta, summary=f'{dtype} Summary',
                                   open_block=True)]
     return formatting.html_from_sections(data, ls)
 
@@ -1763,7 +1783,7 @@ def html_data1dint(data):
     plotter = DataHistogramPlot()
     plotter.prepare(data)
 
-    summary = '{} Plot'.format(dtype)
+    summary = f'{dtype} Plot'
     try:
         out = backend.as_html_plot(plotter, summary)
     except AttributeError:
@@ -1784,7 +1804,7 @@ def html_data1dint(data):
     #
     fexpr = data.get_filter_expr()
     nbins = data.get_dep(filter=True).size
-    meta.append(('Using', '{} with {} bins'.format(fexpr, nbins)))
+    meta.append(('Using', f'{fexpr} with {nbins} bins'))
 
     # Rely on the _fields ordering, ending at staterror
     for f in data._fields[1:]:
@@ -1799,7 +1819,7 @@ def html_data1dint(data):
     if data.syserror is not None:
         meta.append(('Systematic error', data.syserror))
 
-    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+    ls = [formatting.html_section(meta, summary=f'{dtype} Summary',
                                   open_block=True)]
     return formatting.html_from_sections(data, ls)
 
@@ -1849,6 +1869,6 @@ def html_data2d(data):
     if data.syserror is not None:
         meta.append(('Systematic error', data.syserror))
 
-    ls = [formatting.html_section(meta, summary=dtype + ' Summary',
+    ls = [formatting.html_section(meta, summary=f'{dtype} Summary',
                                   open_block=True)]
     return formatting.html_from_sections(data, ls)

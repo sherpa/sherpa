@@ -247,31 +247,29 @@ def make_metadata(header, items):
     return meta
 
 
-def _extract_fields(obj, stop, summary, open_block=True):
-    """Extract the fields up until the stop field.
+def _extract_fields(obj, summary):
+    """Extract the "column" fields.
+
+    Write out the _fields values (that are not None) for the Data
+    object. The _extra_fields values are ignored, as they are assumed
+    to be included in separate "metadata" section.
 
     Parameters
     ----------
     obj : Data instance
-        It has to have a _fields attribute
-    stop : str
-        The attribute at which to stop (and is not included).
     summary : str
         The label for the details tab.
-    open_block : bool, optional
-        Is the details tab open or closed?
 
     Returns
     -------
     html : str
         The HTML for this section.
+
     """
 
     meta = []
-    for f in obj._fields[1:]:
-        if f == stop:
-            break
-
+    fields = [f for f in obj._fields if f != 'name']
+    for f in fields:
         v = getattr(obj, f)
         if v is None:
             continue
@@ -279,7 +277,7 @@ def _extract_fields(obj, stop, summary, open_block=True):
         meta.append((f.upper(), v))
 
     return formatting.html_section(meta, summary=summary,
-                                   open_block=open_block)
+                                   open_block=True)
 
 
 def html_pha(pha):
@@ -298,7 +296,7 @@ def html_pha(pha):
         out = None
 
     if out is None:
-        out = _extract_fields(pha, 'grouped', 'PHA Data')
+        out = _extract_fields(pha, 'PHA Data')
 
     ls.append(out)
 
@@ -308,17 +306,15 @@ def html_pha(pha):
         meta.append(('Identifier', pha.name))
 
     if pha.exposure is not None:
-        meta.append(('Exposure', '{:g} s'.format(pha.exposure)))
+        meta.append(('Exposure', f'{pha.exposure:g} s'))
 
     meta.append(('Number of bins', len(pha.channel)))
-
-    meta.append(('Channel range', '{} - {}'.format(int(pha.channel[0]),
-                                                   int(pha.channel[-1]))))
+    meta.append(('Channel range', f'{int(pha.channel[0])} - {int(pha.channel[-1])}'))
 
     # Although assume the counts are integers, do not force this
     cmin = pha.counts.min()
     cmax = pha.counts.max()
-    meta.append(('Count range', '{} - {}'.format(cmin, cmax)))
+    meta.append(('Count range', f'{cmin} - {cmax}'))
 
     if pha.background_ids != []:
         if pha.subtracted:
@@ -334,7 +330,7 @@ def html_pha(pha):
     if pha.grouping is not None:
         if pha.grouped:
             ngrp = pha.apply_grouping(pha.counts).size
-            msg = 'Applied ({} groups)'.format(ngrp)
+            msg = f'Applied ({ngrp} groups)'
         else:
             msg = 'Not applied'
 
@@ -345,7 +341,7 @@ def html_pha(pha):
     fexpr = pha.get_filter_expr()
     bintype = 'groups' if pha.grouped else 'channels'
     nbins = pha.get_dep(filter=True).size
-    meta.append(('Using', '{} with {} {}'.format(fexpr, nbins, bintype)))
+    meta.append(('Using', f'{fexpr} with {nbins} {bintype}'))
 
     ls.append(formatting.html_section(meta, summary='Summary',
                                       open_block=True))
@@ -370,7 +366,7 @@ def html_pha(pha):
                           ('HDUCLAS2', 'Data stored'),
                           ('HDUCLAS3', 'Data format'),
                           ('HDUCLAS4', 'PHA format'),
-                          ('XFLT0001', 'XEPC filter 0001')])
+                          ('XFLT0001', 'XSPEC filter 0001')])
 
     if meta is not None:
         ls.append(formatting.html_section(meta, summary='Metadata'))
@@ -398,7 +394,7 @@ def _calc_erange(elo, ehi):
     e1 = elo[0]
     e2 = ehi[-1]
     emin, emax = (e1, e2) if e1 <= e2 else (e2, e1)
-    erange = '{:g} - {:g} keV'.format(emin, emax)
+    erange = f'{emin:g} - {emax:g} keV'
 
     # Randomly pick 1% as the cut-off for a constant bin width
     #
@@ -411,9 +407,9 @@ def _calc_erange(elo, ehi):
         dedelta = 1
 
     if dedelta <= 0.01:
-        erange += ', bin size {:g} keV'.format(demax)
+        erange += f', bin size {demax:g} keV'
     else:
-        erange += ', bin size {:g} - {:g} keV'.format(demin, demax)
+        erange += f', bin size {demin:g} - {demax:g} keV'
 
     return erange
 
@@ -436,7 +432,7 @@ def _calc_wrange(wlo, whi):
     w1 = wlo[0]
     w2 = whi[-1]
     wmin, wmax = (w1, w2) if w1 <= w2 else (w2, w1)
-    wrange = '{:g} - {:g} &#8491;'.format(wmin, wmax)
+    wrange = f'{wmin:g} - {wmax:g} &#8491;'
 
     # Randomly pick 1% as the cut-off for a constant bin width
     #
@@ -449,9 +445,9 @@ def _calc_wrange(wlo, whi):
         dwdelta = 1
 
     if dwdelta <= 0.01:
-        wrange += ', bin size {:g} &#8491;'.format(dwmax)
+        wrange += f', bin size {dwmax:g} &#8491;'
     else:
-        wrange += ', bin size {:g} - {:g} &#8491;'.format(dwmin, dwmax)
+        wrange += f', bin size {dwmin:g} - {dwmax:g} &#8491;'
 
     return wrange
 
@@ -479,7 +475,7 @@ def html_arf(arf):
         out = None
 
     if out is None:
-        out = _extract_fields(arf, 'exposure', 'ARF Data')
+        out = _extract_fields(arf, 'ARF Data')
 
     ls.append(out)
 
@@ -489,7 +485,7 @@ def html_arf(arf):
         meta.append(('Identifier', arf.name))
 
     if arf.exposure is not None:
-        meta.append(('Exposure', '{:g} s'.format(arf.exposure)))
+        meta.append(('Exposure', f'{arf.exposure:g} s'))
 
     meta.append(('Number of bins', len(arf.specresp)))
 
@@ -504,7 +500,7 @@ def html_arf(arf):
 
     a1 = numpy.min(arf.specresp)
     a2 = numpy.max(arf.specresp)
-    meta.append(('Area range', '{:g} - {:g} cm<sup>2</sup>'.format(a1, a2)))
+    meta.append(('Area range', f'{a1:g} - {a2:g} cm<sup>2</sup>'))
 
     ls.append(formatting.html_section(meta, summary='Summary',
                                       open_block=True))
@@ -541,7 +537,7 @@ def html_rmf(rmf):
     if svg is not None:
         out = formatting.html_svg(svg, 'RMF Plot')
     else:
-        out = _extract_fields(rmf, 'ethresh', 'RMF Data')
+        out = _extract_fields(rmf, 'RMF Data')
 
     ls.append(out)
 
@@ -556,12 +552,11 @@ def html_rmf(rmf):
     erange = _calc_erange(rmf.energ_lo, rmf.energ_hi)
     if rmf.ethresh is not None and rmf.energ_lo[0] <= rmf.ethresh:
         # Not entirely happy with the wording of this
-        erange += ' (minimum threshold of {} was used)'.format(rmf.ethresh)
+        erange += f' (minimum threshold of {rmf.ethresh} was used)'
 
     meta.append(('Energy range', erange))
 
-    meta.append(('Channel range', '{} - {}'.format(int(rmf.offset),
-                                                   int(rmf.offset + rmf.detchans - 1))))
+    meta.append(('Channel range', f'{int(rmf.offset)} - {int(rmf.offset + rmf.detchans - 1)}'))
 
     # Could show the energy range as given by e_min/e_max but
     # is this useful?
@@ -603,11 +598,11 @@ def html_img(img):
 
     svg = img_plot(img)
     if svg is not None:
-        out = formatting.html_svg(svg, '{} Plot'.format(dtype))
+        out = formatting.html_svg(svg, f'{dtype} Plot')
         summary = ''
     else:
         # Only add prefix to summary if there's no plot
-        summary = '{} '.format(dtype)
+        summary = f'{dtype} '
 
         # Summary properties
         #
@@ -649,7 +644,7 @@ def html_img(img):
         meta.append(('Pixel size', img.sky.cdelt))
 
         ls.append(formatting.html_section(meta,
-                                          summary='Coordinates: {}'.format(img.sky.name)))
+                                          summary=f'Coordinates: {img.sky.name}'))
 
     if img.eqpos is not None:
         meta = []
@@ -663,7 +658,7 @@ def html_img(img):
         meta.append(('Equinox', img.eqpos.equinox))
 
         ls.append(formatting.html_section(meta,
-                                          summary='Coordinates: {}'.format(img.eqpos.name)))
+                                          summary=f'Coordinates: {img.eqpos.name}'))
 
     meta = make_metadata(img.header,
                          [('TELESCOP', 'Mission or Satellite'),
@@ -732,7 +727,7 @@ def simulate_rmf_plot(rmf):
         for energy in energies:
             mdl.pos = energy
             y = rmf.apply_rmf(mdl(elo, ehi))
-            ax.plot(x, y, label='{:.2g} keV'.format(energy))
+            ax.plot(x, y, label=f'{energy:.2g} keV')
 
         # Try to get the legend centered nicely below the plot
         fig.legend(loc='center', ncol=nlines, bbox_to_anchor=(0.0, 0, 1, 0.1))
@@ -815,8 +810,8 @@ def img_plot(img):
             ax.set_xlim(filtered[0], filtered[2])
             ax.set_ylim(filtered[1], filtered[3])
 
-        ax.set_xlabel('X ({})'.format(lbl))
-        ax.set_ylabel('Y ({})'.format(lbl))
+        ax.set_xlabel(f'X ({lbl})')
+        ax.set_ylabel(f'Y ({lbl})')
         if img.name is not None and img.name != '':
             ax.set_title(img.name)
 
@@ -899,7 +894,7 @@ class DataOgipResponse(Data1DInt):
         rtype = self._ui_name
 
         if elo.size != ehi.size:
-            raise ValueError("The energy arrays must have the same size, not {} and {}" .format(elo.size, ehi.size))
+            raise ValueError(f"The energy arrays must have the same size, not {elo.size} and {ehi.size}")
 
         if ethresh is not None and ethresh <= 0.0:
             raise ValueError("ethresh is None or > 0")
@@ -907,7 +902,7 @@ class DataOgipResponse(Data1DInt):
         if (elo >= ehi).any():
             # raise DataErr('ogip-error', rtype, label,
             #               'has at least one bin with ENERG_HI < ENERG_LO')
-            wmsg = "The {} '{}' ".format(rtype, label) + \
+            wmsg = f"The {rtype} '{label}' " + \
                    'has at least one bin with ENERG_HI < ENERG_LO'
             warnings.warn(wmsg)
 
@@ -921,7 +916,7 @@ class DataOgipResponse(Data1DInt):
         if nincreasing > 0 and nincreasing != len(increasing):
             # raise DataErr('ogip-error', rtype, label,
             #               'has a non-monotonic ENERG_LO array')
-            wmsg = "The {} '{}' ".format(rtype, label) + \
+            wmsg = f"The {rtype} '{label}' " + \
                    'has a non-monotonic ENERG_LO array'
             warnings.warn(wmsg)
 
@@ -942,19 +937,19 @@ class DataOgipResponse(Data1DInt):
                 if ehi[startidx] <= ethresh:
                     raise DataErr('ogip-error', rtype, label,
                                   'has an ENERG_HI value <= the replacement ' +
-                                  'value of {}'.format(ethresh))
+                                  f'value of {ethresh}')
 
                 elo = elo.copy()
                 elo[startidx] = ethresh
                 wmsg = "The minimum ENERG_LO in the " + \
-                       "{} '{}' was 0 and has been ".format(rtype, label) + \
-                       "replaced by {}".format(ethresh)
+                       f"{rtype} '{label}' was 0 and has been " + \
+                       f"replaced by {ethresh}"
                 warnings.warn(wmsg)
 
             elif e0 < 0.0:
                 # raise DataErr('ogip-error', rtype, label,
                 #               'has an ENERG_LO value < 0')
-                wmsg = "The {} '{}' ".format(rtype, label) + \
+                wmsg = f"The {rtype} '{label}' " + \
                        'has an ENERG_LO value < 0'
                 warnings.warn(wmsg)
 
@@ -1008,7 +1003,8 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi", "exposure", "ethresh")
+    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi")
+    _extra_fields = ("exposure", "ethresh")
 
     def _get_specresp(self):
         return self._specresp
@@ -1032,14 +1028,6 @@ class DataARF(DataOgipResponse):
         self.energ_lo = energ_lo
         self.energ_hi = energ_hi
         Data1DInt.__init__(self, name, energ_lo, energ_hi, specresp)
-
-    def __str__(self):
-        # Print the metadata first
-        try:
-            ss = Data.__str__(self)
-        except:
-            ss = self._fields
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the ARF
@@ -1134,8 +1122,9 @@ class DataRMF(DataOgipResponse):
 
     """
     _ui_name = "RMF"
-    _fields = ("name", "detchans", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "offset", "e_min",
-               "e_max", "ethresh")
+    _fields = ("name", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "e_min",
+               "e_max")
+    _extra_fields = ("detchans", "offset", "ethresh")
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
@@ -1143,7 +1132,7 @@ class DataRMF(DataOgipResponse):
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         if offset < 0:
-            raise ValueError("offset must be >=0, not {}".format(offset))
+            raise ValueError(f"offset must be >=0, not {offset}")
         self.energ_lo = energ_lo
         self.energ_hi = energ_hi
         self.offset = offset
@@ -1163,18 +1152,6 @@ class DataRMF(DataOgipResponse):
         self._lo = energ_lo
         self._hi = energ_hi
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
-
-    def __str__(self):
-        # Print the metadata first
-        old = self._fields
-        ss = old
-        try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = Data.__str__(self)
-        finally:
-            self._fields = old
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the RMF
@@ -1437,9 +1414,9 @@ class DataPHA(Data1D):
     .. [3] Private communication with Keith Arnaud
 
     """
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality',
-               'exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate', 'plot_fac', 'response_ids',
-               'background_ids')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
+    _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
+                     'plot_fac', 'response_ids', 'background_ids')
 
     def _get_grouped(self):
         return self._grouped
@@ -1616,18 +1593,6 @@ class DataPHA(Data1D):
         self.units = 'channel'
         self.quality_filter = None
         Data1D.__init__(self, name, channel, counts, staterror, syserror)
-
-    def __str__(self):
-        # Print the metadata first
-        old = self._fields
-        ss = old
-        try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = Data.__str__(self)
-        finally:
-            self._fields = old
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -2219,7 +2184,7 @@ class DataPHA(Data1D):
         try:
             return mid[val]
         except IndexError:
-            raise DataErr('invalid group number: {}'.format(val))
+            raise DataErr(f'invalid group number: {val}')
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
@@ -2406,7 +2371,7 @@ class DataPHA(Data1D):
         """
 
         if units not in ['counts', 'rate']:
-            raise ValueError("Invalid units argument: {}".format(units))
+            raise ValueError(f"Invalid units argument: {units}")
 
         if bkg_id not in self.background_ids:
             return None
@@ -3682,9 +3647,8 @@ class DataPHA(Data1D):
 
         if self.plot_fac:
             from sherpa.plot import backend
-            latex = backend.get_latex_for_string(
-                '^{}'.format(self.plot_fac))
-            ylabel += ' X {}{}'.format(self.units.capitalize(), latex)
+            latex = backend.get_latex_for_string(f'^{self.plot_fac}')
+            ylabel += f' X {self.units.capitalize()}{latex}'
 
         return ylabel
 
@@ -4206,7 +4170,8 @@ class DataPHA(Data1D):
 
 class DataIMG(Data2D):
     "Image data set, including functions for coordinate transformations"
-    _fields = Data2D._fields + ("sky", "eqpos", "coord", "header")
+
+    _extra_fields = ("sky", "eqpos", "coord")
 
     def _get_coord(self):
         return self._coord
@@ -4247,18 +4212,6 @@ class DataIMG(Data2D):
         self.header = {} if header is None else header
         self._region = None
         Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
-
-    def __str__(self):
-        # Print the metadata first
-        old = self._fields
-        ss = old
-        try:
-            self._fields = tuple(filter((lambda x: x != 'header'),
-                                        self._fields))
-            ss = Data.__str__(self)
-        finally:
-            self._fields = old
-        return ss
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data
@@ -4638,7 +4591,6 @@ class DataIMG(Data2D):
 
 
 class DataIMGInt(DataIMG):
-    _fields = Data2DInt._fields + ("sky", "eqpos", "coord")
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
