@@ -30,9 +30,9 @@ Acknowledgements
 ----------------
 
 The original version of the code was developed by the CHASC
-Astro-Statistics collaboration http://hea-www.harvard.edu/AstroStat/,
-and was called pyBLoCXS. It has since been developed by the
-Chandra X-ray Center and weas added to Sherpa in version 4.5.1.
+Astro-Statistics collaboration, and was called pyBLoCXS [1]_. It has
+since been developed by the Chandra X-ray Center and weas added to
+Sherpa in version 4.5.1.
 
 Overview
 --------
