@@ -25,10 +25,13 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
-    requires_xspec
+from sherpa.data import Data1D, Data2DInt
+from sherpa.astro import io
 from sherpa.astro import ui
 from sherpa.models.basic import Box1D, Const1D
+from sherpa.utils.err import IOErr
+from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
+    requires_xspec
 
 
 @requires_data
@@ -274,15 +277,13 @@ def test_read_ideal_rmf():
     and let's do EBOUNDS then MATRIX blocks.
     """
 
-    from sherpa.astro.io import read_rmf
-
     ebins = np.arange(0.15, 0.2, 0.01)
     elo = ebins[:-1]
     ehi = ebins[1:]
 
     with NamedTemporaryFile() as f:
         fake_rmf(f.name)
-        r = read_rmf(f.name)
+        r = io.read_rmf(f.name)
 
     # Can we read in the data
     #
@@ -316,3 +317,220 @@ def test_read_ideal_rmf():
     expected = 100 * 0.01 * np.asarray([2, 3, 2.5, 2, 2])
     y = 100 * r.eval_model(mdl)
     assert y == pytest.approx(expected, rel=2e-6)
+
+
+@requires_fits
+@requires_data
+def test_fits_file_lower_case(make_data_path):
+    """Caused issue #143
+
+    The file contains
+
+        MTYPE1       = sky                  / DM Keyword: Descriptor name.
+        MFORM1       = X,Y                  / [pixel]
+        MTYPE2       = EQPOS                / DM Keyword: Descriptor name.
+        MFORM2       = RA,Dec               / [deg]
+
+    so it has - for the transformed case - a column name that
+    is not upper case.
+
+    """
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    tbl = ui.unpack_table(infile, colkeys=["RA", "Dec"])
+
+    assert isinstance(tbl, Data1D)
+    assert len(tbl.x) == len(tbl.y)
+    assert len(tbl.x) == 38
+    assert tbl.staterror is None
+    assert tbl.syserror is None
+
+    # Every point is the same, which makes it easy to check
+    #
+    assert (tbl.x == tbl.x[0]).all()
+    assert (tbl.y == tbl.y[0]).all()
+
+    assert tbl.x[0] == pytest.approx(278.3897960639)
+    assert tbl.y[0] == pytest.approx(-10.5690222237)
+
+
+@requires_fits
+@requires_data
+def test_fits_file_missing_column(make_data_path):
+    """Follow on from #143
+
+    Ensure we try to access a missing column. This is low-level
+    (i.e. calls a sherpa.astro.io routine) so that we aren't bothered
+    with the cascading error fall through of the ui layer code.
+
+    """
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+
+    with pytest.raises(IOErr) as err:
+        io.read_table(infile, colkeys=["ra", "Foo"])
+
+    # The error message depends on the backend
+    # - crates lists the available columns
+    # - pyfits lists the filename
+    # so just check the common part. Unfortunately the name of the
+    # column depends on the backend too; crates uses the user value
+    # whereas pyfits converts it to a capital. The test could have used
+    # "FOO" as the column name to ignore this but let's keep this.
+    #
+    assert str(err.value).startswith("Required column 'FOO' not found in ") or \
+        str(err.value).startswith("Required column 'Foo' not found in ")
+
+
+def test_read_arrays_no_data():
+    """This can run even with the dummy backend"""
+    with pytest.raises(IOErr) as err:
+        io.read_arrays()
+
+    assert str(err.value) == "no arrays found to be loaded"
+
+
+@requires_fits
+def test_read_arrays_no_data_but_dstype():
+    """This is a slightly-different error path than read_arrays()"""
+
+    with pytest.raises(IOErr) as err:
+        io.read_arrays(Data2DInt)
+
+    assert str(err.value) == "no arrays found to be loaded"
+
+
+@requires_fits
+@pytest.mark.parametrize("dstype,dname,nargs",
+                         [(Data1D, 'Data1D', 2),
+                          (Data2DInt, 'Data2DInt', 5)])
+def test_read_arrays_not_enough_data(dstype, dname, nargs):
+
+    with pytest.raises(TypeError) as err:
+        io.read_arrays([1, 2, 3], dstype)
+
+    assert str(err.value) == f"data set '{dname}' takes at least {nargs} args"
+
+
+@requires_fits
+def test_read_arrays_not_an_array_type():
+
+    with pytest.raises(IOErr) as err:
+        io.read_arrays("foo")
+
+    assert str(err.value) == "'foo' must be a Numpy array, list, or tuple"
+
+
+@requires_fits
+def test_read_arrays_data1d():
+
+    dset = io.read_arrays([1, 2, 3], (4, 5, 6), np.asarray([0.1, 0.2, 0.1]))
+    assert isinstance(dset, Data1D)
+    assert dset.name == ''
+    assert dset.x == pytest.approx(np.asarray([1, 2, 3]))
+    assert dset.y == pytest.approx(np.asarray([4, 5, 6]))
+    assert dset.staterror == pytest.approx(np.asarray([0.1, 0.2, 0.1]))
+    assert dset.syserror is None
+
+    # Check it creates NumPy arrays
+    assert isinstance(dset.x, np.ndarray)
+    assert isinstance(dset.y, np.ndarray)
+    assert isinstance(dset.staterror, np.ndarray)
+
+
+@requires_fits
+def test_read_arrays_data1d_combined():
+
+    arg = np.asarray([[1, 4, 0.2, 0.1],
+                      [2, 5, 0.3, 0.05]])
+    dset = io.read_arrays(arg)
+    assert isinstance(dset, Data1D)
+    assert dset.name == ''
+    assert dset.x == pytest.approx(np.asarray([1, 2]))
+    assert dset.y == pytest.approx(np.asarray([4, 5]))
+    assert dset.staterror == pytest.approx(np.asarray([0.2, 0.3]))
+    assert dset.syserror == pytest.approx(np.asarray([0.1, 0.05]))
+
+    # Check it creates NumPy arrays
+    assert isinstance(dset.x, np.ndarray)
+    assert isinstance(dset.y, np.ndarray)
+    assert isinstance(dset.staterror, np.ndarray)
+    assert isinstance(dset.syserror, np.ndarray)
+
+
+@requires_fits
+@pytest.mark.parametrize("arg", [[], None, (None, None)])
+def test_write_arrays_no_data(arg, tmp_path):
+
+    tmpfile = tmp_path / 'test.dat'
+    with pytest.raises(IOErr) as err:
+        io.write_arrays(str(tmpfile), arg, clobber=True)
+
+    assert str(err.value) == "please supply array(s) to write to file"
+
+
+@requires_fits
+def test_write_arrays_wrong_lengths(tmp_path):
+
+    tmpfile = tmp_path / 'test.dat'
+    with pytest.raises(IOErr) as err:
+        io.write_arrays(str(tmpfile), ([1, 2], [1, 2, 3]), clobber=True)
+
+    assert str(err.value) == "not all arrays are of equal length"
+
+
+@requires_fits
+def test_write_arrays_wrong_field_length(tmp_path):
+
+    tmpfile = tmp_path / 'test.dat'
+    with pytest.raises(IOErr) as err:
+        io.write_arrays(str(tmpfile), ([1, 2], [1, 2]), fields=['a', 'b', 'c'], clobber=True)
+
+    assert str(err.value) == "Expected 2 columns but found 3"
+
+
+@requires_fits
+def test_write_arrays_clobber(tmp_path):
+
+    outfile = tmp_path / 'test.dat'
+    outfile.write_text('x')
+
+    with pytest.raises(IOErr) as err:
+        io.write_arrays(str(outfile), None, clobber=False)
+
+    emsg = str(err.value)
+    assert emsg.startswith("file '")
+    assert emsg.endswith("test.dat' exists and clobber is not set")
+
+
+@requires_data
+@requires_fits
+def test_read_table_pha(make_data_path):
+    """Do we pick up CHANNEL and COUNTS by default?"""
+
+    # This file has columns:
+    #   CHANNEL
+    #   PI
+    #   COUNTS
+    #   STAT_ERR
+    #   COUNT_RATE
+    # Check we pick up CHANNEL and COUNTS
+    #
+    infile = make_data_path('source.pi')
+    tbl = io.read_table(infile)
+    assert isinstance(tbl, Data1D)
+    assert len(tbl.x) == 1024
+    assert len(tbl.y) == 1024
+    assert tbl.staterror is None
+    assert tbl.syserror is None
+
+    # These are meant to be integer values so we can test
+    # for equality. Except that it depends on the backend:
+    # pyfits returns Int32 whereas crates returns Float64.
+    #
+    assert tbl.x == pytest.approx(np.arange(1, 1025))
+    assert tbl.y.min() == pytest.approx(0)
+    assert tbl.y[0] == pytest.approx(0)
+    assert tbl.y[-1] == pytest.approx(128)
+    assert tbl.y[:-1].max() == pytest.approx(78)
+    assert np.argmax(tbl.y[:-1]) == 74

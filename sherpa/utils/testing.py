@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,17 +20,14 @@
 
 import importlib
 import os
-import unittest
-
-import numpy
-
-from sherpa.utils._utils import sao_fcmp
 
 try:
     import pytest
     HAS_PYTEST = True
 except ImportError:
     HAS_PYTEST = False
+
+from sherpa.utils.err import RuntimeErr
 
 
 def _get_datadir():
@@ -79,7 +77,7 @@ def set_datadir(datadir):
 
     if not os.path.exists(datadir) or not os.path.isdir(datadir) \
        or not os.listdir(datadir):
-        raise OSError("datadir={} is empty or not a directory".format(datadir))
+        raise OSError(f"datadir={datadir} is empty or not a directory")
 
     global DATADIR
     DATADIR = datadir
@@ -106,8 +104,10 @@ def has_package_from_list(*packages):
         try:
             importlib.import_module(package)
             return True
-        except:
-            # We can have ImportError but also RuntimeErr
+        except (ImportError, RuntimeErr):
+            # Apparently we need to also catch RuntimeErr (the Sherpa
+            # version) as sherpa.image.DS9 can raise it (e.g. when
+            # DS9 is not installed).
             pass
     return False
 
@@ -160,9 +160,12 @@ if HAS_PYTEST:
         return requires_package(msg, *packages)(test_function)
 
     def requires_fits(test_function):
-        """
-        Returns True if there is an importable backend for FITS I/O.
-        Used to skip tests requiring fits_io
+        """Returns True if a working backend for FITS I/O is importable.
+
+        Used to skip tests requiring fits_io. The dummy backend itself
+        is not a "working backend" in the sense that it cannot be used to
+        read or write files.
+
         """
         packages = ('astropy.io.fits',
                     'pycrates',
