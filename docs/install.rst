@@ -391,7 +391,7 @@ C++ compilers to use if not found by ``setup.py``.
    declaration. If so, pre-pending the following to your pip install
    or python setup.py install line should resolve the build issues::
 
-     CFLAGS='-Wno-implicit-function-declaration'
+     CFLAGS='-Wno-implicit-function-declaration' pip install .
 
    (Note that on MacOS, "gcc" is usually just an alias to Clang. Unless
    you specifically install a gcc from a different source, you are
