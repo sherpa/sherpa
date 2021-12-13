@@ -177,8 +177,7 @@ class ModelPHAHistogram(shplot.HistogramPlot):
     are used to create the bins for the model.
     """
 
-    histo_prefs = shplot.backend.get_model_histo_defaults()
-    "The preferences for the plot."
+    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
 
     def __init__(self):
         super().__init__()
@@ -277,8 +276,7 @@ class SourcePlot(shplot.HistogramPlot):
 
     """
 
-    histo_prefs = shplot.backend.get_model_histo_defaults()
-    "The preferences for the plot."
+    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
 
     def __init__(self):
         self.units = None
@@ -390,8 +388,7 @@ class SourcePlot(shplot.HistogramPlot):
 
 class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 
-    histo_prefs = shplot.backend.get_component_histo_defaults()
-    "The preferences for the plot."
+    histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
     def __init__(self):
         ModelHistogram.__init__(self)
@@ -413,8 +410,7 @@ class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 
 class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
 
-    histo_prefs = shplot.backend.get_component_histo_defaults()
-    "The preferences for the plot."
+    histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
     def __init__(self):
         SourcePlot.__init__(self)
@@ -448,8 +444,7 @@ class ARFPlot(shplot.HistogramPlot):
 
     """
 
-    histo_prefs = shplot.backend.get_model_histo_defaults()
-    "The preferences for the plot."
+    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
 
     def prepare(self, arf, data=None):
         """Fill the fields given the ARF.
@@ -580,14 +575,7 @@ class OrderPlot(ModelHistogram):
             else:
                 self.colors = [colors]
         else:
-            self.colors = []
-            top_color = '0xffffff'
-            bot_color = '0x0000bf'
-            num = len(self.orders)
-            jump = (int(top_color, 16) - int(bot_color, 16)) // (num + 1)
-            for order in self.orders:
-                self.colors.append(top_color)
-                top_color = hex(int(top_color, 16) - jump)
+            self.colors = shplot.backend.colorlist(len(self.orders))
 
         if not self.use_default_colors and len(self.colors) != len(self.orders):
             raise PlotErr('ordercolors', len(self.orders), len(self.colors))
@@ -644,13 +632,13 @@ class OrderPlot(ModelHistogram):
             raise PlotErr("orderarrfail")
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
-        default_color = self.histo_prefs['linecolor']
+        default_color = self.histo_prefs['color']
         count = 0
         for xlo, xhi, y, color in \
                 zip(self.xlo, self.xhi, self.y, self.colors):
             if count != 0:
                 overplot = True
-                self.histo_prefs['linecolor'] = color
+                self.histo_prefs['color'] = color
 
             # Note: the user settings are sent to each plot
             shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
@@ -659,7 +647,7 @@ class OrderPlot(ModelHistogram):
                                   **kwargs)
             count += 1
 
-        self.histo_prefs['linecolor'] = default_color
+        self.histo_prefs['color'] = default_color
 
 
 # TODO: we should probably derive from a histogram plot that

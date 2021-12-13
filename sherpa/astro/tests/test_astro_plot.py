@@ -1103,7 +1103,7 @@ def test_1779_grouped_fit(subset, factor):
     validate_1779_grouped(pha, mplot, subset, factor)
 
 
-def test_data_model_plot_with_backend(override_plot_backend):
+def test_data_model_plot_with_backend(all_plot_backends):
     """Check an actual plot of a histogram.
 
     The idea is to check we can handle the different backends with a

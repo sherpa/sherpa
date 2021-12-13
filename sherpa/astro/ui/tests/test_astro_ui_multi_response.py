@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2022
+#  Copyright (C) 2019, 2020, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,12 +33,13 @@ import numpy as np
 
 import pytest
 
+from sherpa.utils.testing import requires_data, requires_fits
+
 from sherpa.astro import ui
 from sherpa.astro.instrument import create_arf
 from sherpa.astro.data import DataRMF
 from sherpa.utils.err import PlotErr
-from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_plotting
+from sherpa.utils.testing import requires_data, requires_fits
 
 
 def get_egrid():
@@ -480,6 +481,7 @@ def setup_order_plot(make_data_path):
     ui.notice(0.5, 7)
     ui.ignore(3, 4)
 
+
 @requires_data
 @requires_fits
 def test_get_order_plot_multi(make_data_path, clean_astro_ui):
@@ -550,7 +552,6 @@ def test_get_order_plot_multi(make_data_path, clean_astro_ui):
 
 @requires_data
 @requires_fits
-@requires_plotting
 def test_plot_order_multi(make_data_path, clean_astro_ui):
     """Rather than fake data, use a known dataset.
 

@@ -16,7 +16,6 @@ The sherpa.utils.testing module
       requires_fits
       requires_group
       requires_package
-      requires_plotting
       requires_pylab
       requires_stk
       requires_xspec

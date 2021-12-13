@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +28,7 @@ from sherpa import data
 from sherpa import plot
 
 
-def test_data1d(old_numpy_printing, override_plot_backend):
+def test_data1d(old_numpy_printing, all_plot_backends):
     d = data.Data1D("x x",
                     np.asarray([1, 3, 6]),
                     np.asarray([3, 4, 7]))
@@ -53,7 +54,7 @@ def test_data1d(old_numpy_printing, override_plot_backend):
     assert '<svg ' not in r
 
 
-def test_data1d_errs(old_numpy_printing, override_plot_backend):
+def test_data1d_errs(old_numpy_printing, all_plot_backends):
     d = data.Data1D("x x",
                     np.asarray([1, 3, 6]),
                     np.asarray([3, 4, 7]),
@@ -84,7 +85,7 @@ def test_data1d_errs(old_numpy_printing, override_plot_backend):
     assert '<svg ' not in r
 
 
-def test_data1dint(old_numpy_printing, override_plot_backend):
+def test_data1dint(old_numpy_printing, all_plot_backends):
     d = data.Data1DInt("x x",
                        np.asarray([1, 3, 6]),
                        np.asarray([2, 6, 7]),
@@ -117,7 +118,7 @@ def test_data1dint(old_numpy_printing, override_plot_backend):
 # We still test with both backends to note if we ever do add
 # pyplot support.
 #
-def test_data2d(old_numpy_printing, override_plot_backend):
+def test_data2d(old_numpy_printing, all_plot_backends):
     d = data.Data2D("x x",
                     np.asarray([1, 3, 1, 2, 3]),
                     np.asarray([2, 2, 4, 4, 4]),

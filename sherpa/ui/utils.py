@@ -11662,13 +11662,6 @@ class Session(NoNewAttributesAfterInit):
         ``markersize``
            What size is the symbol drawn. The default is ``None``.
 
-        ``ratioline``
-           Should a horizontal line be drawn at y=1?  The default is
-           ``False``.
-
-        ``xaxis``
-           The default is ``False``
-
         ``xerrorbars``
            Should error bars be drawn for the X axis. The default is
            ``False``.

@@ -49,7 +49,7 @@ import sherpa.plot
 
 from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ModelErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_plotting, requires_pylab, requires_xspec
+    requires_xspec, requires_pylab
 
 import sherpa.ui.utils
 import sherpa.astro.ui.utils
@@ -1022,7 +1022,7 @@ def check_bkg_source(plotfunc, idval, isfit=True):
     assert np.all(plot.y >= 0)
 
 
-@requires_plotting
+@requires_pylab
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 @pytest.mark.parametrize("plotfunc,checkfuncs",
                          [(ui.plot_bkg_delchi, [check_bkg_resid]),
@@ -1035,7 +1035,8 @@ def check_bkg_source(plotfunc, idval, isfit=True):
                           (ui.plot_bkg_fit_delchi, [check_bkg_fit, check_bkg_resid]),
                           (ui.plot_bkg_fit_ratio, [check_bkg_fit, check_bkg_resid]),
                           (ui.plot_bkg_fit_resid, [check_bkg_fit, check_bkg_resid])])
-def test_bkg_plot_xxx(idval, plotfunc, checkfuncs, clean_astro_ui):
+def test_bkg_plot_xxx(idval, plotfunc, checkfuncs,
+                      clean_astro_ui):
     """Test background plotting - channel space"""
 
     setup_example_bkg_model(idval)
@@ -1113,7 +1114,6 @@ _basic_plotfuncs = [ui.plot_data,
                     ui.plot_chisqr]
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 def test_pha1_plot_function(clean_astro_ui, basic_pha1):
@@ -1121,15 +1121,14 @@ def test_pha1_plot_function(clean_astro_ui, basic_pha1):
     ui.plot("data", "bkg", "fit", "arf")
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
-def test_pha1_plot(clean_astro_ui, basic_pha1, plotfunc):
+def test_pha1_plot(plotfunc, clean_astro_ui, basic_pha1):
     plotfunc()
 
 
-@requires_plotting
+@requires_pylab
 @pytest.mark.parametrize("plotfunc",
                          [ui.plot_data,
                           ui.plot_model,
@@ -1167,11 +1166,12 @@ def test_xxx_plot_clearwindow(hide_logging, clean_astro_ui, plotfunc):
     assert nlines1 == [2 * n for n in nlines0]
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
-def test_pha1_plot_clearwindow(hide_logging, clean_astro_ui, basic_pha1, plotfunc):
+def test_pha1_plot_clearwindow(hide_logging, clean_astro_ui, basic_pha1,
+                               plotfunc):
     """If set clearwindow=False does it run sensibly for PHA data?
 
     This does not have a great check for what "sensibly" means.
@@ -1193,7 +1193,6 @@ def test_pha1_plot_clearwindow(hide_logging, clean_astro_ui, basic_pha1, plotfun
     assert nlines1 == [2 * n for n in nlines0]
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.plot_bkg_model,
@@ -1202,7 +1201,8 @@ def test_pha1_plot_clearwindow(hide_logging, clean_astro_ui, basic_pha1, plotfun
                                       ui.plot_bkg_fit_resid,
                                       ui.plot_bkg_fit_ratio,
                                       ui.plot_bkg_fit_delchi])
-def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1, hide_logging):
+def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1,
+                       hide_logging):
     """Test issue #943 and general check of plot_bkg_xxx"""
 
     ui.unsubtract()
@@ -1210,7 +1210,6 @@ def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1, hide_logging):
     plotfunc()
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.plot_model_component,
@@ -1296,9 +1295,6 @@ def check_pha1_model_component_plot(mplot, mdl):
 @requires_data
 def test_pha1_get_model_component_plot_add_response(clean_astro_ui, basic_pha1):
     """Do we automatically add in the response? See issue #1020
-
-    Note that this test does not need requires_plotting since
-    we don't use anything that requires the plot backend.
     """
 
     # It's important to also test the "specify a string not
@@ -1316,9 +1312,6 @@ def test_pha1_get_model_component_plot_add_response(clean_astro_ui, basic_pha1):
 @requires_data
 def test_pha1_get_model_component_plot_with_response(clean_astro_ui, basic_pha1):
     """What happens if we explicitly include the response?
-
-    Note that this test does not need requires_plotting since
-    we don't use anything that requires the plot backend.
     """
 
     rsp = ui.get_response()
@@ -1373,7 +1366,7 @@ def check_pha1_plot_model_component_plot():
     variants, as all we do is check the y axis range makes sense
     (as it wouldn't have with #1020 unfixed).
 
-    Any test calling this requires @requires_plotting
+    Any test calling this requires @requires_pylab
     """
     from matplotlib import pyplot as plt
 
@@ -1387,7 +1380,7 @@ def check_pha1_plot_model_component_plot():
     assert ylim[1] < 2e-2
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
 def test_pha1_plot_model_component_add_response(clean_astro_ui, basic_pha1):
@@ -1397,17 +1390,18 @@ def test_pha1_plot_model_component_add_response(clean_astro_ui, basic_pha1):
     check_pha1_plot_model_component_plot()
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_with_model_component_add_response(clean_astro_ui, basic_pha1):
+def test_pha1_plot_with_model_component_add_response(clean_astro_ui,
+                                                     basic_pha1):
     """Do we automatically add in the response? See issue #1020.
     """
     ui.plot('model_component', 'pl', ylog=True)
     check_pha1_plot_model_component_plot()
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
 def test_pha1_plot_model_component_with_response(clean_astro_ui, basic_pha1):
@@ -1418,10 +1412,11 @@ def test_pha1_plot_model_component_with_response(clean_astro_ui, basic_pha1):
     check_pha1_plot_model_component_plot()
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_with_model_component_with_response(clean_astro_ui, basic_pha1):
+def test_pha1_plot_with_model_component_with_response(clean_astro_ui,
+                                                      basic_pha1):
     """Plot is okay if we include the response
     """
     rsp = ui.get_response()
@@ -1429,7 +1424,7 @@ def test_pha1_plot_with_model_component_with_response(clean_astro_ui, basic_pha1
     check_pha1_plot_model_component_plot()
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
 def test_pha1_plot_model_component_no_response(clean_astro_ui, basic_pha1_bg):
@@ -1445,10 +1440,11 @@ def test_pha1_plot_model_component_no_response(clean_astro_ui, basic_pha1_bg):
     assert ylim[1] < 1e-11
 
 
-@requires_plotting
+@requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_with_model_component_no_response(clean_astro_ui, basic_pha1_bg):
+def test_pha1_plot_with_model_component_no_response(clean_astro_ui,
+                                                    basic_pha1_bg):
     """PHA file but no response
     """
     from matplotlib import pyplot as plt
@@ -1461,26 +1457,24 @@ def test_pha1_plot_with_model_component_no_response(clean_astro_ui, basic_pha1_b
     assert ylim[1] < 1e-11
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 def test_pha1_plot_order(clean_astro_ui, basic_pha1):
     ui.plot_order()
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.int_unc, ui.int_proj])
-def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc):
+def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc, all_plot_backends):
     plotfunc('pl.gamma')
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.reg_unc, ui.reg_proj])
-def test_pha1_reg_plot(clean_astro_ui, basic_pha1, plotfunc):
+def test_pha1_reg_plot(clean_astro_ui, basic_pha1, plotfunc,
+                       all_plot_backends):
     plotfunc('pl.gamma', 'pl.ampl')
 
 
@@ -1493,10 +1487,9 @@ _img_plotfuncs = [ui.contour_data,
                   ui.contour_source]
 
 
-@requires_plotting
 @requires_fits
 @requires_data
-def test_img_contour_function(clean_astro_ui, basic_img):
+def test_img_contour_function(clean_astro_ui, basic_img, all_plot_backends):
     # can we call contour; do not try to be exhaustive
     ui.contour("data", "model", "source", "fit")
 
@@ -1532,17 +1525,15 @@ def test_img_contour_function_kwarg(clean_astro_ui, basic_img):
     plt.close()
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", _img_plotfuncs)
-def test_img_contour(clean_astro_ui, basic_img, plotfunc):
+def test_img_contour(clean_astro_ui, basic_img, plotfunc, all_plot_backends):
     plotfunc()
 
 
 # Add in some pylab-specific tests to change default values
 #
-
 @requires_pylab
 @requires_fits
 @requires_data
@@ -1668,11 +1659,14 @@ def test_pha1_plot_model_options(caplog, clean_astro_ui, basic_pha1):
     In matplotlib 3.1 the plot_model call causes a MatplotlibDeprecationWarning
     to be created:
 
-    Passing the drawstyle with the linestyle as a single string is deprecated since Matplotlib 3.1 and support will be removed in 3.3; please pass the drawstyle separately using the drawstyle keyword argument to Line2D or set_drawstyle() method (or ds/set_ds()).
+    Passing the drawstyle with the linestyle as a single string is deprecated
+    since Matplotlib 3.1 and support will be removed in 3.3; please pass the
+    drawstyle separately using the drawstyle keyword argument to Line2D or
+    set_drawstyle() method (or ds/set_ds()).
 
-    This warning is hidden by the test suite (sherpa/conftest.py) so that
-    it doesn't cause the tests to fail. Note that a number of other tests
-    in this module also cause this warning to be displayed.
+    This warning is hidden by the test suite (sherpa/conftest.py) so that it
+    doesn't cause the tests to fail. Note that a number of other tests in this
+    module also cause this warning to be displayed.
 
     """
 
@@ -1924,52 +1918,50 @@ def test_pha1_reg_proj(clean_astro_ui, basic_pha1):
 
 
 DATA_PREFS = {'alpha': None,
-              'barsabove': False,
               'capsize': None,
               'color': None,
-              'drawstyle': 'default',
               'ecolor': None,
-              'linecolor': None,
               'linestyle': 'None',
               'linewidth': None,
               'marker': '.',
               'markerfacecolor': None,
               'markersize': None,
-              'ratioline': False,
-              'xaxis': False,
               'xerrorbars': False,
               'xlog': False,
               'yerrorbars': True,
-              'ylog': False}
+              'ylog': False,
+              'label': None,
+              'linewidth': None,
+              }
 
 MODEL_PREFS = {'alpha': None,
-               'barsabove': False,
                'capsize': None,
                'color': None,
-               'drawstyle': 'default',
                'ecolor': None,
-               'linecolor': None,
                'linestyle': '-',
                'linewidth': None,
                'marker': 'None',
                'markerfacecolor': None,
                'markersize': None,
-               'ratioline': False,
-               'xaxis': False,
                'xerrorbars': False,
                'xlog': False,
                'yerrorbars': False,
-               'ylog': False}
+               'ylog': False,
+               'label': None,
+               'linewidth': None,}
 
 
 CONTOUR_PREFS = {'alpha': None,
                  'colors': None,
                  'linewidths': None,
                  'xlog': False,
-                 'ylog': False}
+                 'ylog': False,
+                 'levels': None,
+                 'label': None,
+                 'linestyles': 'solid',
+                 }
 
 
-@requires_pylab
 @pytest.mark.parametrize("funcname,expected",
                          [("get_data_plot_prefs", DATA_PREFS),
                           ("get_model_plot_prefs", MODEL_PREFS),
@@ -2020,7 +2012,7 @@ def test_get_plot_prefs_allows_bkg_id(ptype, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1):
+def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1, all_plot_backends):
     """Does get_model_plot register filters correctly?
 
     If there is an ignored range within a model, is it ignored?
@@ -2107,6 +2099,16 @@ def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     assert mplot3.y == pytest.approx(mplot1.y)
 
 
+def test_plot_model_all_backends(clean_astro_ui, all_plot_backends):
+    """Just check we can call plot_model.
+
+    This is to check an issue found during development of #1382
+    """
+
+    setup_example(1)
+    ui.plot_model()
+
+
 def validate_flux_histogram(fhist, energy):
     """Limited checks for test_pha1_plot_foo_flux/test_pha1_get_foo_flux_hist
 
@@ -2149,7 +2151,6 @@ def validate_flux_histogram(fhist, energy):
         assert fhist.title == 'Photon flux distribution'
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2157,7 +2158,8 @@ def validate_flux_histogram(fhist, energy):
                          [(True, ui.plot_energy_flux, ui.get_energy_flux_hist),
                           (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_pha1_plot_foo_flux(energy, plotfunc, getfunc, correlated, clean_astro_ui, basic_pha1):
+def test_pha1_plot_foo_flux(energy, plotfunc, getfunc, correlated,
+                            clean_astro_ui, basic_pha1, all_plot_backends):
     """Can we call plot_energy/photon_flux and then the get_ func (recalc=False)
 
     We extend the basic_pha1 test by including an XSPEC
@@ -2192,14 +2194,14 @@ def test_pha1_plot_foo_flux(energy, plotfunc, getfunc, correlated, clean_astro_u
     validate_flux_histogram(res, energy)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
 @pytest.mark.parametrize("energy,plotfunc,getfunc",
                          [(True, ui.plot_energy_flux, ui.get_energy_flux_hist),
                           (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
-def test_pha1_plot_foo_flux_recalc(energy, plotfunc, getfunc, clean_astro_ui, basic_pha1):
+def test_pha1_plot_foo_flux_recalc(energy, plotfunc, getfunc, clean_astro_ui,
+                                   basic_pha1):
     """Just check we can call recalc on the routine
 
     """
@@ -2226,14 +2228,14 @@ def test_pha1_plot_foo_flux_recalc(energy, plotfunc, getfunc, clean_astro_ui, ba
     validate_flux_histogram(res, energy)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
 @pytest.mark.parametrize("energy,getfunc", [(True, ui.get_energy_flux_hist),
                                             (False, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
-def test_pha1_get_foo_flux_hist(energy, getfunc, correlated, clean_astro_ui, basic_pha1):
+def test_pha1_get_foo_flux_hist(energy, getfunc, correlated, clean_astro_ui,
+                                basic_pha1, all_plot_backends):
     """Can we call get_energy/photon_flux_hist?
 
     See test_pha1_plot_foo_flux.
@@ -2255,7 +2257,6 @@ def test_pha1_get_foo_flux_hist(energy, getfunc, correlated, clean_astro_ui, bas
     validate_flux_histogram(res, energy)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2276,7 +2277,6 @@ def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
         assert getattr(empty, field) is None
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2339,7 +2339,6 @@ def test_pha1_get_foo_flux_hist_scales(getfunc, scale,
     assert std2 == pytest.approx(-4.520334184088533, rel=1e-3)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2388,7 +2387,6 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
     assert std1 == pytest.approx(-4.951357667423949)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2481,7 +2479,6 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     assert got == pytest.approx(ratio, rel=1e-3)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2522,7 +2519,6 @@ def test_pha1_plot_foo_flux_soft(energy, plotfunc, getfunc, clean_astro_ui, basi
     assert c1.any()
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2564,7 +2560,6 @@ def test_pha1_plot_foo_flux_none(energy, plotfunc, getfunc, clean_astro_ui, basi
     assert not(c1.any())
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2596,7 +2591,6 @@ def test_pha1_get_foo_flux_soft(energy, getfunc, clean_astro_ui, basic_pha1):
     assert c1.any()
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2629,7 +2623,6 @@ def test_pha1_get_foo_flux_none(energy, getfunc, clean_astro_ui, basic_pha1):
     assert not(c1.any())
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2703,7 +2696,6 @@ def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
     assert s3 == pytest.approx(0.22703663059917598)
 
 
-@requires_plotting
 @requires_fits
 @requires_data
 @requires_xspec
@@ -2905,7 +2897,8 @@ def test_data1d_get_model_plot_template(cls, plottype, extraargs, title, plotcls
 
 @requires_pylab
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [sherpa.ui.utils.Session,
+                          sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title",
                          [("model", [], "Model"),
                           ("model_component", ['mdl'],
@@ -3295,10 +3288,9 @@ def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
     assert p.modelplot.title == 'Background Model Contribution'
 
 
-@requires_pylab
 @requires_fits
 @requires_data
-def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1):
+def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1, all_plot_backends):
     """Check plot('bkg', 1, 1, 'bkg', 1, 2)
 
     The dataid is actually 'tst', and the way we check
@@ -3368,11 +3360,8 @@ def test_datapha_plot_after_clean():
     # have a plot backend or not.
     #
     prefs = s.get_data_plot_prefs()
-    have_backend = sherpa.plot.backend.name != 'dummy'
-    if have_backend:
-        assert prefs['yerrorbars']
-    else:
-        assert 'yerrorbars' not in prefs
+
+    assert prefs['yerrorbars']
 
     prefs['yerrorbars'] = False
 
@@ -3389,11 +3378,8 @@ def test_datapha_plot_after_clean():
 
     prefs = s.get_data_plot_prefs()
 
-    if have_backend:
-        assert prefs['yerrorbars']
-        assert d2.histo_prefs['yerrorbars']
-    else:
-        assert 'yerrorbars' not in prefs
+    assert prefs['yerrorbars']
+    assert d2.histo_prefs['yerrorbars']
 
 
 @pytest.mark.parametrize("cls",
@@ -3613,8 +3599,7 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
         # Ideally this would match the dataplot setting but it isn't
         # actually required for the plot to work.
         #
-        if sherpa.plot.backend.name != 'dummy':
-            assert not p1.modelplot.histo_prefs['xlog']
+        assert not p1.modelplot.histo_prefs['xlog']
     elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
         assert p1.plot_prefs['xlog']
     else:
@@ -3627,8 +3612,7 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     p2 = pdata()
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['xlog']
-        if sherpa.plot.backend.name != 'dummy':
-            assert not p2.modelplot.histo_prefs['xlog']
+        assert not p2.modelplot.histo_prefs['xlog']
     elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
         assert not p2.plot_prefs['xlog']
     else:
@@ -3682,8 +3666,7 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     if plotfunc in ['fit', 'bkg_fit']:
         assert p1.dataplot.histo_prefs['ylog'] == answer
         # Check the current behavior of the model plot in case it changes
-        if sherpa.plot.backend.name != 'dummy':
-            assert not p1.modelplot.histo_prefs['xlog']
+        assert not p1.modelplot.histo_prefs['xlog']
     elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
         assert p1.plot_prefs['ylog'] == answer
     else:
@@ -3696,8 +3679,7 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     p2 = pdata()
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['ylog']
-        if sherpa.plot.backend.name != 'dummy':
-            assert not p2.modelplot.histo_prefs['xlog']
+        assert not p2.modelplot.histo_prefs['xlog']
     elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
         assert not p2.plot_prefs['ylog']
     else:
@@ -3928,7 +3910,6 @@ def test_set_plot_opt_explicit(cls):
         assert ax.get_yscale() == 'linear', idx
 
 
-@requires_plotting
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name,extraargs",
@@ -4068,11 +4049,21 @@ def test_set_plot_opt_alias(cls, caplog):
 
     assert len(caplog.record_tuples) == 0
     s.plot("compmodel", "m1", "compsource", 2, "m1")
-    assert len(caplog.record_tuples) == 2
 
-    for loc, lvl, _ in caplog.record_tuples:
-        assert loc == "sherpa.ui.utils"
-        assert lvl == logging.WARNING
+    # We only care that we have the deprecated messages.  There may be
+    # other warnings (e.g. that the BasicBackend does not implement
+    # plotting) that we want to skip.
+    #
+    assert len(caplog.record_tuples) >= 2
+
+    # The assumption is that the first two messages are the ones we
+    # are interested in.
+    #
+    assert caplog.record_tuples[0][0] == "sherpa.ui.utils"
+    assert caplog.record_tuples[1][0] == "sherpa.ui.utils"
+
+    assert caplog.record_tuples[0][1] == logging.WARNING
+    assert caplog.record_tuples[1][1] == logging.WARNING
 
     assert caplog.record_tuples[0][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
     assert caplog.record_tuples[1][2] == "The argument 'compsource' is deprecated and 'source_component' should be used instead"
@@ -4081,8 +4072,12 @@ def test_set_plot_opt_alias(cls, caplog):
     # a deprecation warning which is only shown once.
     #
     s.plot("compmodel", "m1")
-    assert len(caplog.record_tuples) == 3
-    assert caplog.record_tuples[2][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
+    assert len(caplog.record_tuples) >= 3
+    nfound = 0
+    for idx in range(2, len(caplog.record_tuples)):
+        nfound += caplog.record_tuples[idx][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
+
+    assert nfound == 1
 
 
 def check_plot2_xscale(xscale):
@@ -4111,7 +4106,8 @@ def check_plot2_xscale(xscale):
                                              ('resid', 'log'),
                                              ('bkg', 'linear'),
                                              ('bkg_resid', 'linear')])
-def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
+def test_plot_fit_resid_set_xlog(idval, plottype, xscale,
+                                 clean_astro_ui):
     """Check that set_xlog handling for plot_fit_resid.
 
     What is the X-axis scaling when you call set_xlog(plottype)?
@@ -4131,7 +4127,8 @@ def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
                                              ('resid', 'linear'),
                                              ('bkg', 'log'),
                                              ('bkg_resid', 'log')])
-def test_plot_bkg_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
+def test_plot_bkg_fit_resid_set_xlog(idval, plottype, xscale,
+                                     clean_astro_ui):
     """Check that set_xlog handling for plot_bkg_fit_resid.
 
     This logic could be added to test_plot_fit_resid_set_xlog but it
@@ -4182,7 +4179,6 @@ SET_CPT_ARGS = [("compsource", ui.get_source_component_plot),
                 ("model_component", ui.get_model_component_plot)
                 ]
 
-@requires_plotting
 @pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
 def test_set_ylog_foo_component_data1d(plot, get, clean_astro_ui):
     """Check y axis after_ylog('<component type>'), Data1D data.
@@ -4207,7 +4203,6 @@ def test_set_ylog_foo_component_data1d(plot, get, clean_astro_ui):
     assert plotobj.plot_prefs["ylog"]
 
 
-@requires_plotting
 @pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
 def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
     """Check y axis after_ylog('<component type>'), Data1DInt data.
@@ -4232,7 +4227,6 @@ def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
     assert plotobj.histo_prefs["ylog"]
 
 
-@requires_plotting
 @pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
 def test_set_ylog_foo_component_datapha(plot, get, clean_astro_ui):
     """Check y axis after_ylog('<component type>'), DataPHA data.
@@ -4257,7 +4251,6 @@ def test_set_ylog_foo_component_datapha(plot, get, clean_astro_ui):
     assert plotobj.histo_prefs["ylog"]
 
 
-@requires_plotting
 def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
     """Check if issue #1024 is fixed.
 
@@ -4280,8 +4273,8 @@ def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
 
 @requires_fits
 @requires_data
-@requires_plotting
-def test_pha_model_plot_filter_range_1024(make_data_path, clean_astro_ui):
+def test_pha_model_plot_filter_range_1024(make_data_path,
+                                          clean_astro_ui):
     """Check if issue #1024 is fixed.
 
     Unlike test_pha_model_plot_filter_range_manual_1024
@@ -4300,9 +4293,9 @@ def test_pha_model_plot_filter_range_1024(make_data_path, clean_astro_ui):
 
 @requires_fits
 @requires_data
-@requires_plotting
 @pytest.mark.parametrize("mask", [True, np.ones(46, dtype=bool)])
-def test_pha_model_plot_filter_range_1024_true(mask, make_data_path, clean_astro_ui):
+def test_pha_model_plot_filter_range_1024_true(mask, make_data_path,
+                                               clean_astro_ui):
     """Special-case handling of mask: all selected.
     """
 
@@ -4318,12 +4311,16 @@ def test_pha_model_plot_filter_range_1024_true(mask, make_data_path, clean_astro
 
 @requires_fits
 @requires_data
-@requires_plotting
 @pytest.mark.parametrize("mask,expected",
                          [(False, 'No noticed bins'),
                           (np.zeros(46, dtype=bool), '')])
-def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path, clean_astro_ui):
+def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
+                                                clean_astro_ui, plot_backends):
     """Special-case handling of mask: all masked out.
+
+    Since this test checks for an exception that is only triggered in the
+    plotting process itself, it only makes sense for functional plotting
+    backends, not for dummies that skip the plotting process.
     """
 
     ui.load_pha(make_data_path('3c273.pi'))
