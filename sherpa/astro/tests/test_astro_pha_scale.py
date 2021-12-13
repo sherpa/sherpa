@@ -45,13 +45,13 @@ where the exposure time or background scaling may not be unity.
 """
 
 import numpy as np
-from numpy.testing import assert_allclose
 
 import pytest
 
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import ARFModelPHA, RMFModelPHA, RSPModelPHA, \
     create_arf, create_delta_rmf
+from sherpa.astro import io
 from sherpa.models.basic import Const1D, StepHi1D
 from sherpa.stats import Chi2DataVar, CStat
 from sherpa.utils.err import ArgumentErr, DataErr
@@ -291,7 +291,7 @@ def setup_basic_dataset():
 
     areascal = expected_basic_areascal()
 
-    return DataPHA('test', channel=channels, counts=counts,
+    return DataPHA("test", channel=channels, counts=counts,
                    quality=quality, areascal=areascal)
 
 
@@ -316,7 +316,7 @@ def setup_basic_dataset_bgnd():
 
     areascal = expected_basic_areascal_bgnd()
 
-    bset = DataPHA('testbg', channel=channels, counts=counts,
+    bset = DataPHA("testbg", channel=channels, counts=counts,
                    quality=quality, areascal=areascal)
 
     dset.set_background(bset)
@@ -331,7 +331,7 @@ def test_analysis_is_channel():
     """There's no response, so we have to be using channels."""
 
     dset = setup_basic_dataset()
-    assert dset.get_analysis() == 'channel'
+    assert dset.get_analysis() == "channel"
 
 
 def test_counts_is_set():
@@ -339,7 +339,7 @@ def test_counts_is_set():
 
     dset = setup_basic_dataset()
     expected = expected_basic_counts(scale=False)
-    assert_allclose(dset.counts, expected)
+    assert dset.counts == pytest.approx(expected)
 
 
 def test_areascal_is_set():
@@ -347,7 +347,7 @@ def test_areascal_is_set():
 
     dset = setup_basic_dataset()
     expected = expected_basic_areascal()
-    assert_allclose(dset.areascal, expected)
+    assert dset.areascal == pytest.approx(expected)
 
 
 def test_staterror_is_not_set():
@@ -364,7 +364,7 @@ def test_get_dep():
     expected = expected_basic_counts(scale=False)
     expected = expected.astype(np.float64)
 
-    assert_allclose(dset.get_dep(), expected)
+    assert dset.get_dep() == pytest.approx(expected)
 
 
 def test_get_y():
@@ -374,7 +374,7 @@ def test_get_y():
     expected = expected_basic_counts(scale=True)
     expected = expected.astype(np.float64)
 
-    assert_allclose(dset.get_y(), expected)
+    assert dset.get_y() == pytest.approx(expected)
 
 
 def test_get_staterror():
@@ -391,7 +391,7 @@ def test_get_staterror():
                                 staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors(scale=False)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def test_get_yerr():
@@ -408,7 +408,7 @@ def test_get_yerr():
                            staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors(scale=True)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 # Ensure that the interfaces used by the statistic object
@@ -445,7 +445,7 @@ def test_chisquare():
     stat = Chi2DataVar()
     sval = stat.calc_stat(dset, mdl)
 
-    assert_allclose(sval[0], expected)
+    assert sval[0] == pytest.approx(expected)
 
 
 def setup_likelihood(scale=False):
@@ -542,7 +542,7 @@ def test_cstat_nophamodel():
     stat = CStat()
     sval_noascal = stat.calc_stat(dset, mdl)
 
-    assert_allclose(sval_noascal[0], expected)
+    assert sval_noascal[0] == pytest.approx(expected)
 
 
 def test_cstat_arfpha():
@@ -567,7 +567,7 @@ def test_cstat_arfpha():
     stat = CStat()
     sval_ascal = stat.calc_stat(dset, mdl_ascal)
 
-    assert_allclose(sval_ascal[0], expected)
+    assert sval_ascal[0] == pytest.approx(expected)
 
 
 def test_cstat_rmfpha():
@@ -595,7 +595,7 @@ def test_cstat_rmfpha():
     stat = CStat()
     sval_ascal = stat.calc_stat(dset, mdl_ascal)
 
-    assert_allclose(sval_ascal[0], expected)
+    assert sval_ascal[0] == pytest.approx(expected)
 
 
 def test_cstat_rsppha():
@@ -624,7 +624,7 @@ def test_cstat_rsppha():
     stat = CStat()
     sval_ascal = stat.calc_stat(dset, mdl_ascal)
 
-    assert_allclose(sval_ascal[0], expected)
+    assert sval_ascal[0] == pytest.approx(expected)
 
 
 def test_get_dep_no_bgnd():
@@ -639,7 +639,7 @@ def test_get_dep_no_bgnd():
     expected = expected_basic_counts(scale=False)
     expected = expected.astype(np.float64)
 
-    assert_allclose(dset.get_dep(), expected)
+    assert dset.get_dep() == pytest.approx(expected)
 
 
 def test_get_y_no_bgnd():
@@ -654,7 +654,7 @@ def test_get_y_no_bgnd():
     expected = expected_basic_counts(scale=True)
     expected = expected.astype(np.float64)
 
-    assert_allclose(dset.get_y(), expected)
+    assert dset.get_y() == pytest.approx(expected)
 
 
 def test_get_dep_bgnd():
@@ -667,7 +667,7 @@ def test_get_dep_bgnd():
     bg = expected_basic_counts_bgnd(scale=True)
     expected = src - bg
 
-    assert_allclose(dset.get_dep(), expected)
+    assert dset.get_dep() == pytest.approx(expected)
 
 
 def test_get_y_bgnd():
@@ -684,7 +684,7 @@ def test_get_y_bgnd():
     ascal[ascal <= 0] = 1.0
     expected /= ascal
 
-    assert_allclose(dset.get_y(), expected)
+    assert dset.get_y() == pytest.approx(expected)
 
 
 def test_get_staterror_no_bgnd():
@@ -702,7 +702,7 @@ def test_get_staterror_no_bgnd():
                                 staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors(scale=False)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def test_get_yerr_no_bgnd():
@@ -720,7 +720,7 @@ def test_get_yerr_no_bgnd():
                            staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors(scale=True)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def test_get_staterror_bgnd():
@@ -738,7 +738,7 @@ def test_get_staterror_bgnd():
                                 staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors_bgnd(scale=False)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def test_get_yerr_bgnd():
@@ -756,7 +756,7 @@ def test_get_yerr_bgnd():
                            staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors_bgnd(scale=True)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def test_get_staterror_scaling_bgnd():
@@ -782,7 +782,7 @@ def test_get_staterror_scaling_bgnd():
                                 staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors_scaling_bgnd(scale=False)
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def test_get_yerr_scaling_bgnd():
@@ -809,7 +809,7 @@ def test_get_yerr_scaling_bgnd():
 
     expected = expected_basic_chisquare_errors_scaling_bgnd(scale=True)
     expected = expected / dset.exposure
-    assert_allclose(errors, expected)
+    assert errors == pytest.approx(expected)
 
 
 def create_xspec_comparison_dataset(make_data_path,
@@ -820,7 +820,7 @@ def create_xspec_comparison_dataset(make_data_path,
     repository.
     """
 
-    infile = make_data_path('3c273.pi')
+    infile = make_data_path("3c273.pi")
     dset = ui.unpack_pha(infile)
 
     # Remove background (if asked), ignore grouping, add bad channels and
@@ -879,7 +879,7 @@ def validate_xspec_result(l, h, npts, ndof, statval):
     # is quite forgiving here. Or I could use pyxspec to
     # calculate and display this.
     #
-    assert_allclose(sinfo.statval, statval, rtol=0, atol=0.005)
+    assert sinfo.statval == pytest.approx(statval, rel=0, abs=0.005)
 
 
 # Test three ranges. These cover
@@ -923,10 +923,10 @@ def test_cstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
     ui.set_data(dset)
     # use powlaw1d rather than xspowerlaw so do not need XSPEC
     ui.set_source(ui.powlaw1d.pl)
-    ui.set_par('pl.ampl', 1e-4)
+    ui.set_par("pl.ampl", 1e-4)
 
-    ui.set_stat('cstat')
-    ui.set_analysis('channel')
+    ui.set_stat("cstat")
+    ui.set_analysis("channel")
 
     validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
@@ -952,10 +952,10 @@ def test_wstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
     ui.clean()
     ui.set_data(dset)
     ui.set_source(ui.powlaw1d.pl)
-    ui.set_par('pl.ampl', 1e-4)
+    ui.set_par("pl.ampl", 1e-4)
 
-    ui.set_stat('wstat')
-    ui.set_analysis('channel')
+    ui.set_stat("wstat")
+    ui.set_analysis("channel")
 
     validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
@@ -1000,10 +1000,10 @@ def test_xspecvar_no_grouping_no_bg_comparison_xspec(make_data_path,
     ui.set_data(dset)
 
     ui.set_source(ui.powlaw1d.pl)
-    ui.set_par('pl.ampl', 5e-4)
+    ui.set_par("pl.ampl", 5e-4)
 
-    ui.set_stat('chi2xspecvar')
-    ui.set_analysis('energy')
+    ui.set_stat("chi2xspecvar")
+    ui.set_analysis("energy")
 
     validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
@@ -1037,10 +1037,10 @@ def test_xspecvar_no_grouping_comparison_xspec(make_data_path,
     ui.subtract()
 
     ui.set_source(ui.powlaw1d.pl)
-    ui.set_par('pl.ampl', 5e-4)
+    ui.set_par("pl.ampl", 5e-4)
 
-    ui.set_stat('chi2xspecvar')
-    ui.set_analysis('energy')
+    ui.set_stat("chi2xspecvar")
+    ui.set_analysis("energy")
 
     validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
@@ -1159,10 +1159,8 @@ def loadup_3c273(use_errors, subt, noticed, make_data_path):
     # We could create a PHA object but it's easiest to use
     # an on-disk version to setup everything.
     #
-    import sherpa.astro.io
-
-    path = make_data_path('3c273.pi')
-    pha = sherpa.astro.io.read_pha(path, use_errors=use_errors)
+    path = make_data_path("3c273.pi")
+    pha = io.read_pha(path, use_errors=use_errors)
 
     if subt:
         pha.subtract()
@@ -1171,13 +1169,13 @@ def loadup_3c273(use_errors, subt, noticed, make_data_path):
 
     if noticed:
         # After this, we have both
-        #   pha.get_filter(format='%.3f')
-        #   pha.get_background().get_filter(format='%.3f')
+        #   pha.get_filter(format="%.3f")
+        #   pha.get_background().get_filter(format="%.3f")
         # returning
-        #   '0.518:1.986,4.869:8.220'
+        #   "0.518:1.986,4.869:8.220"
         #
         # In channels this is
-        #   '36:136,334:563'
+        #   "36:136,334:563"
         #
         pha.notice(0.5, 2)
         pha.notice(5, 7)
@@ -1297,13 +1295,13 @@ def test_get_staterror_file_errors_bg_regrouped(filt, noticed, make_data_path):
     bpha.group_width(40, tabStops=tabStops)
 
     # After this, we have
-    #  pha.get_filter(format='%.3f')
-    #    '0.518:1.986,4.869:8.220'
+    #  pha.get_filter(format="%.3f")
+    #    "0.518:1.986,4.869:8.220"
     # and
-    #  bpha.get_filter(format='%.3f')
-    #    '0.584:1.752,4.672:9.928'
+    #  bpha.get_filter(format="%.3f")
+    #    "0.584:1.752,4.672:9.928"
     #  which in channels os
-    #    '40:120,320:680'
+    #    "40:120,320:680"
     #
     ans = pha.get_background().get_staterror(filter=filt)
     expected = STATERROR_3C273_BKG_REGROUP
@@ -1311,3 +1309,8 @@ def test_get_staterror_file_errors_bg_regrouped(filt, noticed, make_data_path):
         expected = expected[STATERROR_3C273_MASK_REGROUP]
 
     assert ans == pytest.approx(expected)
+
+
+def test_pha_get_backscal_unset():
+    pha = DataPHA("dummy", None, None)
+    assert pha.get_backscal() is None

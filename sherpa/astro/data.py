@@ -1500,23 +1500,44 @@ class DataPHA(Data1D):
     def _set_rate(self, val):
         self._rate = bool_cast(val)
         for id in self.background_ids:
-            # TODO: shouldn't this store bool_cast(val) instead?
             self.get_background(id).rate = val
 
     rate = property(_get_rate, _set_rate,
-                    doc='Quantity of y-axis: counts or counts/sec')
+                    doc="""Is the Y axis displayed as a rate when plotting data?
+
+When True the y axis is normalised by the exposure time to display
+a rate.""")
 
     def _get_plot_fac(self):
         return self._plot_fac
 
     def _set_plot_fac(self, val):
-        self._plot_fac = int(val)
+        # I'd prefer to check whether val is an integer, but there may
+        # be users who have set the value to 2.0 and it doesn't seem
+        # worth breaking that code. We do however want to error out if
+        # val=0.5 (say), hence this slightly-contrived check.
+        #
+        try:
+            ival = int(val)
+            okay = val == ival
+        except (ValueError, TypeError):
+            # For when int() can't convert val, which can raise
+            # different errors.
+            okay = False
+
+        if not okay:
+            raise DataErr("bad", "plot_fac setting", val)
+
+        self._plot_fac = ival
         for id in self.background_ids:
-            self.get_background(id).plot_fac = val
+            self.get_background(id).plot_fac = ival
 
     plot_fac = property(_get_plot_fac, _set_plot_fac,
-                        doc='Number of times to multiply the y-axis ' +
-                        'quantity by x-axis bin size')
+                        doc="""How the X axis is used to create the Y axis when plotting data.
+
+The Y axis values are multiplied by X^plot_fac. The default
+value of 0 means the X axis is not used in plots. The value
+must be an integer.""")
 
     def _get_response_ids(self):
         return self._response_ids
@@ -1649,13 +1670,16 @@ class DataPHA(Data1D):
         'wavelength'
 
         """
-        self.plot_fac = factor
-
-        type = str(type).strip().lower()
-        if not (type.startswith('counts') or type.startswith('rate')):
+        if type not in ["counts", "rate"]:
             raise DataErr("plottype", type, "'rate' or 'counts'")
 
-        self.rate = (type == 'rate')
+        try:
+            self.plot_fac = factor
+        except DataErr:
+            # Create a slightly-different error message
+            raise DataErr("bad", "factor setting", factor) from None
+
+        self.rate = type == "rate"
 
         arf, rmf = self.get_response()
         if rmf is not None and rmf.detchans != len(self.channel):
@@ -1663,10 +1687,10 @@ class DataPHA(Data1D):
 
         if (rmf is None and arf is None) and \
            (self.bin_lo is None and self.bin_hi is None) and \
-           quantity != 'channel':
-            raise DataErr('norsp', self.name)
+           quantity != "channel":
+            raise DataErr("norsp", self.name)
 
-        if rmf is None and arf is not None and quantity != 'channel' and \
+        if rmf is None and arf is not None and quantity != "channel" and \
            len(arf.energ_lo) != len(self.channel):
             raise DataErr("incompleteresp", self.name)
 
@@ -2478,10 +2502,10 @@ class DataPHA(Data1D):
         7.8504301607718007e-06
 
         """
-        backscal = self.backscal
-        if backscal is not None:
-            backscal = self._check_scale(backscal, group, filter)
-        return backscal
+        if self.backscal is None:
+            return None
+
+        return self._check_scale(self.backscal, group, filter)
 
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
@@ -2522,10 +2546,10 @@ class DataPHA(Data1D):
         1.0
 
         """
-        areascal = self.areascal
-        if areascal is not None:
-            areascal = self._check_scale(areascal, group, filter)
-        return areascal
+        if self.areascal is None:
+            return None
+
+        return self._check_scale(self.areascal, group, filter)
 
     def apply_filter(self, data, groupfunc=numpy.sum):
         """Group and filter the supplied data to match the data set.
