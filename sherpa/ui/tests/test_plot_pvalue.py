@@ -343,7 +343,9 @@ def check_imgdata_convolved():
 
 @requires_fits
 @requires_data
-def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging, setup_imgdata_model, caplog):
+def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging,
+                                              setup_imgdata_model, caplog,
+                                              plot_backends):
     """Test of issue #1214 but with no explicit convolution
 
     This is an extra check added while working on 1214:
@@ -352,6 +354,10 @@ def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging, setu
     I've taken the liberty to add an explicit check of
     the screen output with this routine which we don't
     do in the convolved case.
+    
+    Since this test checks for a warning that is only triggered in the
+    plotting process itself, it only makes sense for functional plotting
+    backends, not for dummies that skip the plotting process.
     """
 
     check_imgdata_unconvolved(caplog)
@@ -372,11 +378,17 @@ def test_plot_pvalue_imgpsf_model_convolved(clean_astro_ui, hide_logging, setup_
 
 @requires_fits
 @requires_data
-def test_plot_pvalue_imgpsf_file_unconvolved(clean_astro_ui, hide_logging, setup_imgdata_file, caplog):
+def test_plot_pvalue_imgpsf_file_unconvolved(clean_astro_ui, hide_logging,
+                                             setup_imgdata_file, caplog,
+                                             plot_backends):
     """Added as part of #1214 but just to exercise the system.
 
     As with the imgpsf_model version we check the screen
     output, which should be the same.
+    
+    Since this test checks for an exception that is only triggered in the
+    plotting process itself, it only makes sense for functional plotting
+    backends, not for dummies that skip the plotting process.
     """
 
     check_imgdata_unconvolved(caplog)

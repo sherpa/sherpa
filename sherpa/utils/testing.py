@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020, 2021
+#  Copyright (C) 2017, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,6 +20,8 @@
 
 import importlib
 import os
+
+from sherpa.plot import TemporaryPlottingBackend
 
 try:
     import pytest
@@ -141,23 +143,15 @@ if HAS_PYTEST:
 
         return decorator
 
-    def requires_plotting(test_function):
-        """
-        Decorator for test functions requiring a plotting library.
-        """
-        packages = ('pylab', )
-        msg = "plotting backend required"
-        return requires_package(msg, *packages)(test_function)
 
     def requires_pylab(test_function):
+        """Runs the test with the PylabBackend plotting backend if available,
+        otherwise skips the test.
         """
-        Returns True if the pylab module is available (pylab).
-        Used to skip tests requiring matplotlib
-        """
-        packages = ('pylab',
-                    )
-        msg = "matplotlib backend required"
-        return requires_package(msg, *packages)(test_function)
+        pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
+
+        with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
+            yield
 
     def requires_fits(test_function):
         """Returns True if a working backend for FITS I/O is importable.
@@ -199,8 +193,6 @@ else:
         return wrapper
 
     requires_data = make_fake()
-
-    requires_plotting = make_fake()
 
     requires_pylab = make_fake()
 

@@ -783,7 +783,7 @@ def test_check_hist_bins():
         assert np.all(out1[1:] == out2[:-1])
 
 
-def test_data_model_plot_with_backend(override_plot_backend):
+def test_data_model_plot_with_backend(all_plot_backends):
     """Check an actual plot of a histogram.
 
     The idea is to check we can handle the different backends with a

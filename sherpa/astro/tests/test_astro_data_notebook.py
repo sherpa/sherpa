@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020, 2021, 2022
+# Copyright (C) 2020, 2021, 2022, 2023
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -66,7 +66,7 @@ def check(r, summary, name, label, nmeta):
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
-def test_arf(header, override_plot_backend):
+def test_arf(header, all_plot_backends):
     ebins = np.arange(0.1, 1, 0.1)
 
     # fake wavelength conversion
@@ -88,7 +88,7 @@ def test_arf(header, override_plot_backend):
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
-def test_rmf(header, override_plot_backend):
+def test_rmf(header, all_plot_backends):
     ebins = np.arange(0.1, 1, 0.1)
     elo, ehi = ebins[:-1], ebins[1:]
     d = create_delta_rmf(elo, ehi, header=header)
@@ -98,9 +98,8 @@ def test_rmf(header, override_plot_backend):
     check(r, 'RMF', 'delta-rmf', 'MATRIX', nmeta=nmeta)
 
 
-
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
-def test_pha(header, override_plot_backend):
+def test_pha(header, all_plot_backends):
     d = data.DataPHA('x x',
                      np.arange(1, 5, dtype=np.int16),
                      np.arange(1, 5, dtype=np.int16),
@@ -119,7 +118,7 @@ def test_pha(header, override_plot_backend):
 @requires_fits
 @pytest.mark.parametrize("subtract", [False, True])
 @pytest.mark.parametrize("group", [False, True])
-def test_pha_real(subtract, group, make_data_path, override_plot_backend):
+def test_pha_real(subtract, group, make_data_path, all_plot_backends):
     """This is grouped and has a background"""
     from sherpa.astro.io import read_pha
     d = read_pha(make_data_path('3c273.pi'))
@@ -155,7 +154,7 @@ def test_pha_real(subtract, group, make_data_path, override_plot_backend):
 
 @requires_data
 @requires_fits
-def test_arf_real(make_data_path, override_plot_backend):
+def test_arf_real(make_data_path, all_plot_backends):
     """Read in an ARF"""
     from sherpa.astro.io import read_arf
     d = read_arf(make_data_path('9774.arf'))
@@ -177,7 +176,7 @@ def test_arf_real(make_data_path, override_plot_backend):
 
 @requires_data
 @requires_fits
-def test_rmf_real(make_data_path, override_plot_backend):
+def test_rmf_real(make_data_path, all_plot_backends):
     """Read in a RMF"""
     from sherpa.astro.io import read_rmf
     d = read_rmf(make_data_path('9774.rmf'))
@@ -199,7 +198,7 @@ def test_rmf_real(make_data_path, override_plot_backend):
 
 @requires_data
 @requires_fits
-def test_rmf_real_bad_energy(make_data_path, override_plot_backend):
+def test_rmf_real_bad_energy(make_data_path, all_plot_backends):
     """Read in a RMF that triggers the energy_thresh change"""
     from sherpa.astro.io import read_rmf
 
@@ -234,8 +233,7 @@ def test_rmf_real_bad_energy(make_data_path, override_plot_backend):
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
-def test_img(header,
-             override_plot_backend, old_numpy_printing):
+def test_img(header, old_numpy_printing, all_plot_backends):
     y, x = np.mgrid[1:4, 2:4]
     z = np.arange(x.size)
     d = data.DataIMG('x x', x.flatten(), y.flatten(), z,
@@ -263,8 +261,7 @@ def test_img(header,
 @requires_data
 @requires_fits
 @pytest.mark.parametrize('coord', ['logical', 'physical'])
-def test_img_real(coord, make_data_path,
-                  override_plot_backend, old_numpy_printing):
+def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
     """Use an image from a file (easy to set up)"""
     from sherpa.astro.io import read_image
     d = read_image(make_data_path('acisf07999_000N001_r0035_regevt3_srcimg.fits'))
@@ -296,7 +293,7 @@ def test_img_real(coord, make_data_path,
                           ("physical", "circle(3151.3 , 4524.1, 20 )")
                           ])
 def test_img_real_filtered(coord, region, make_data_path,
-                           override_plot_backend, old_numpy_printing):
+                           all_plot_backends, old_numpy_printing):
     """Filter the image.
 
     There is no significant check that the filtering has worked

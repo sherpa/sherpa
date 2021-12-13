@@ -31,7 +31,7 @@ import pytest
 from sherpa.astro import ui
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_group, requires_plotting, requires_xspec
+    requires_group, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, \
     IdentifierErr, IOErr, ModelErr
 import sherpa.astro.utils
@@ -2156,7 +2156,6 @@ def test_get_xxx_flux_hist_unabsorbed(getfunc, medflux, make_data_path, clean_as
     assert np.median(flux.flux) == pytest.approx(medflux)
 
 
-@requires_plotting
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("plotfunc",

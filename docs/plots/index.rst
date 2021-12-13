@@ -195,7 +195,7 @@ the plot object, for the DataPlot it is
 :py:attr:`~sherpa.plot.DataPlot.plot_prefs`:
 
     >>> print(dplot.plot_prefs)
-    {'xerrorbars': False, 'yerrorbars': True, 'ecolor': None, 'capsize': None, 'barsabove': False, 'xlog': False, 'ylog': False, 'linestyle': 'None', 'linecolor': None, 'color': None, 'marker': '.', 'markerfacecolor': None, 'markersize': None, 'xaxis': False, 'ratioline': False}
+    {'xerrorbars': False, 'yerrorbars': True, 'ecolor': None, 'capsize': None, 'barsabove': False, 'xlog': False, 'ylog': False, 'linestyle': 'None', 'linecolor': None, 'color': None, 'marker': '.', 'markerfacecolor': None, 'markersize': None}
 
 Here we set the y scale of the data plot to be drawn with a log
 scale - by changing the preference setting - and then override
@@ -262,6 +262,15 @@ line position (which corresponds to `mdl.pars[2]`):
 
 .. image:: ../_static/plots/intproj_histogram_pos.png
 
+
+Customizing plotting further
+============================
+
+.. toctree::
+   :maxdepth: 2
+
+   backends
+
 Reference/API
 =============
 
@@ -272,3 +281,7 @@ Reference/API
    astroplot
    image
    utils
+   basebackends
+   backend_utils
+   pylab_backend
+   pylab_backend_area
