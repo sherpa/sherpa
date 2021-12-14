@@ -800,7 +800,7 @@ def test_orderplot_check_title():
     pha = example_pha_data()
     model = PowLaw1D('example-pl')
 
-    assert oplot.title is 'Model'
+    assert oplot.title == 'Model'
     oplot.prepare(pha, model)
     assert oplot.title == 'Model Orders [1]'
 

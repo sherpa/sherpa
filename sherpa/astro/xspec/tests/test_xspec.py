@@ -19,7 +19,7 @@
 #
 
 import numpy
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose
 
 import pytest
 
