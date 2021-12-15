@@ -1,5 +1,6 @@
 // 
-//  Copyright (C) 2007, 2016, 2018, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2018, 2020, 2021
+//       Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -20,6 +21,7 @@
 #include <sherpa/extension.hh>
 #include <cmath>
 #include <cfloat>
+#include <numeric>
 #include <vector>
 #include <sstream>
 #include <iostream>
@@ -105,7 +107,8 @@ static int _pad(const long length, long& factor)
   //
   // Fixed 31 Jan 2002 (some factors were missing. -pef
 
-  long padding[238] =
+  const long num = 238;
+  long padding[num] =
       {   2,   3,   4,   5,   6,   8,   9,  10,  12,  15,  16,  18,  20,
          24,  25,  27,  30,  32,  36,  40,  45,  48,  50,  54,  60,  64,
          72,  75,  80,  81,  90,  96, 100, 108, 120, 125, 128, 135, 144, 
@@ -127,13 +130,20 @@ static int _pad(const long length, long& factor)
        25920,26244,27000,27648,28125,28800,29160,30000,30375,30720,31104,
        31250,32000,32400};
 
-  for ( int i = 0; i < 238 ; i++ ) {
-    if ( padding[i] >= length ) {
-      factor = padding[i];
-      return EXIT_SUCCESS;
-    }
-  }
-  
+  if ( length >= padding[0] && length <= padding[num-1] ) {
+    long* ptr = padding;
+    factor = *std::lower_bound( ptr, ptr + num, length );
+    return EXIT_SUCCESS;
+  } else if ( length < padding[0] ) {
+    factor = padding[0];
+    return EXIT_SUCCESS;
+  } else
+    factor = 0;
+
+  std::ostringstream err;
+  err << "Padding dimension length " << length << " not supported";
+  PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+
   return EXIT_FAILURE;
 }
 
@@ -148,9 +158,7 @@ static int _pad_data(const int dim, double* res, double* src,
   //
 
   if ( dim == 1 ) {
-    for ( int i = 0 ; i < lAxes[0] ; i++ )
-        res[i] = src[i];
-    
+    std::copy( src, src + lAxes[0], res );
     return EXIT_SUCCESS;
   }
 
@@ -168,6 +176,10 @@ static int _pad_data(const int dim, double* res, double* src,
     return EXIT_SUCCESS;
   }
 
+  std::ostringstream err;
+  err << "Padding dimension not supported";
+  PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+
   return EXIT_FAILURE;
 }
 
@@ -180,10 +192,7 @@ static int _unpad_data(const int dim, double* res, double* output,
   // Unpack the convolved model from the output array.
   //
   if ( dim == 1 ) {
-    for ( int i = 0 ; i < lAxes[0] ; i++ ) {
-      res[i] = output[i];
-    }
-
+    std::copy( output, output + lAxes[0], res );
     return EXIT_SUCCESS;
   }
 
@@ -250,6 +259,20 @@ static int _convolve( tcdPyData* self, double* source, double* kernel,
   return EXIT_SUCCESS;
 }
 
+static bool same_size_arrays( npy_intp size1, npy_intp size2,
+                              const char *name1, const char *name2,
+                              const char* suffix = NULL ) {
+  if ( size1 != size2 ) {
+    std::ostringstream err;
+    err << "input array sizes do not match";
+    if ( suffix )
+      err << " " << suffix;
+    err << ", " << name1 << ": " << size1 << " vs " << name2 << ": " << size2;
+    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    return false;
+  } else
+    return true;
+}
 
 static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 {
@@ -273,48 +296,30 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 			  &center) )
     return NULL;
   
-  if( dims_src.get_size() != dims_kern.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_src: " << dims_src.get_size()
-	<< " vs dims_kern: " << dims_kern.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( dims_src.get_size(), dims_kern.get_size(),
+                         "dims_src", "dims_kern" ) )
     return NULL;
-  }
 
-  if( dims_kern.get_size() != center.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_kern: " << dims_kern.get_size()
-	<< " vs center: " << center.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( dims_kern.get_size(), center.get_size(),
+                         "dims_kern", "center" ) )
     return NULL;
-  } 
   
-  long kern_size = 1, src_size = 1;
   // src and kernel dims should be equal length
-  for( npy_intp ii = 0; ii < dims_kern.get_size(); ii++ ) {
-    kern_size *= dims_kern[ii];
-    src_size *= dims_src[ii];
-  }
+  long num = dims_kern.get_size();
+  long kern_size = std::accumulate( &dims_kern[0],
+                                    &dims_kern[0] + num,
+                                    1, std::multiplies<long>() );
+  long src_size =  std::accumulate( &dims_src[0],
+                                    &dims_src[0] + num,
+                                    1, std::multiplies<long>() );
   
-  if( source.get_size() != src_size ) {
-    std::ostringstream err;
-    err << "input array size do not match dimensions, "
-	<< "source size: " << source.get_size()
-	<< " vs source dim: " << src_size;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( source.get_size(), src_size,
+                         "source size", "source dim", "dimensions" ) )
     return NULL;
-  }
   
-  if( kernel.get_size() != kern_size ) {
-    std::ostringstream err;
-    err << "input array size do not match dimensions, "
-	<< "kernel size: " << kernel.get_size()
-	<< " vs kernel dim: " << kern_size;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( kernel.get_size(), kern_size,
+                         "kernel size", "kernel dim",  "dimensions" ) )
     return NULL;
-  }
   
   const long nAxes = (long) dims_kern.get_size();
   double* output = NULL;
@@ -329,14 +334,10 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
     for(int ii = 0; ii < nAxes; ii++) {
       long padfactor;
 
-      long padSize = (dims_src[ii] > dims_kern[ii]) ? dims_src[ii] : dims_kern[ii];
+      long padSize = std::max(dims_src[ii], dims_kern[ii]);
 
-      if ( EXIT_SUCCESS != _pad(padSize, padfactor ) ) {
-	std::ostringstream err;
-	err << "Padding dimension length " << padSize << " not supported";
-	PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      if ( EXIT_SUCCESS != _pad(padSize, padfactor ) )
 	return NULL;
-      }
       
       if (padfactor != dims_pad[ii]) need_to_pad = true;
       dims_pad[ii] = padfactor;
@@ -344,11 +345,8 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
     }
   }
 
-  double *data = NULL;
-  long *dims = NULL;
-
-  data = (double*) &source[0];
-  dims = (long*) &dims_src[0];
+  double *data = (double*) &source[0];
+  long *dims = (long*) &dims_src[0];
 
   if (need_to_pad) {
     // pad data
@@ -357,12 +355,8 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
     dims = (long*) &dims_pad[0];
 
     if( EXIT_SUCCESS != _pad_data(nAxes, data, &source[0],
-				  dims, &dims_src[0]) ) {
-      std::ostringstream err;
-      err << "Padding dimension not supported";
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+				  dims, &dims_src[0]) )
       return NULL;
-    }
 
   }
 
@@ -406,9 +400,8 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
       if(output) free(output);
       return NULL;
     }
-    
-    for( npy_intp ii = 0; ii < cdims[0]; ii++ )
-      result[ ii ] = output[ ii ];
+
+    std::copy( output, output + cdims[0], &result[0] );
   }
   
   if(output) free(output);  
@@ -520,11 +513,10 @@ static PyTypeObject tcdPyData_Type = {
 static void _normalize_kernel( double* res, long len ) {
 
   long ii;
+  // double res_sum = std::accumulate( res, res+len, 0.0 );
   double res_sum = 0.0;
-
   for( ii = 0; ii < len; ii++ )
     res_sum += res[ii];
-
 
   if ((res_sum != 0.0) && ( std::fabs(res_sum - 1) > DBL_EPSILON ))
     for( ii = 0; ii < len; ii++ )
@@ -647,6 +639,7 @@ static int _extract_kernel( const double* psf, const long* dims,
     
   } // end switch
 
+  // psffrac = std::accumulate( &res[0], &res[size], 0.0 );
   psffrac = 0.0;
   for(long ii = 0; ii < size; ii++ )
     psffrac += res[ii];
@@ -731,50 +724,25 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
   const long nAxes = (long) dims_kern.get_size();
 
   
-  if( dims_new.get_size() != nAxes ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_new: " << dims_new.get_size()
-	<< " vs dims_kern: " << nAxes;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  if( !same_size_arrays( dims_new.get_size(), nAxes,
+                         "dims_new", "dims_kern" ) )
+     return NULL;
 
-  if( nAxes != center.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_kern: " << nAxes
-	<< " vs center: " << center.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( nAxes, center.get_size(),
+                         "dims_kern", "center" ) )
     return NULL;
-  } 
 
-  if( nAxes != xlo.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_kern: " << nAxes
-	<< " vs xlo: " << xlo.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( nAxes, xlo.get_size(),
+                         "dims_kern", "xlo" ) )
     return NULL;
-  }
 
-  if( nAxes != xhi.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_kern: " << nAxes
-	<< " vs xhi: " << xhi.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( nAxes, xhi.get_size(),
+                         "dims_kern", "xhi" ) )
     return NULL;
-  }
 
-  if( nAxes != widths.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dims_kern: " << nAxes
-	<< " vs widths: " << widths.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( nAxes, widths.get_size(),
+                         "dims_kern", "widths" ) )
     return NULL;
-  }
 
   if( EXIT_SUCCESS != lo.zeros( 1, dims_kern.get_dims() ) )
     return NULL;
@@ -841,16 +809,26 @@ static PyObject* get_padsize( PyObject* self, PyObject* args )
   if ( !PyArg_ParseTuple( args, (char*)"l", &size) )
     return NULL;
 
-  if( EXIT_SUCCESS != _pad( size, factor  ) ) {
-    std::ostringstream err;
-    err << "Padding dimension length " << size << " not supported";
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( EXIT_SUCCESS != _pad( size, factor  ) )
     return NULL;
-  }
   
   return Py_BuildValue( (char*)"l", factor );
 }
 
+static bool padshape_smaller_then_shape( npy_intp ii, long padshape,
+                                         long shape ) {
+
+  if ( padshape < shape ) {
+      std::ostringstream err;
+      err << "pad size is smaller than data shape, "
+	  << "padshape[" << ii << "]: " << padshape
+	  << " < shape[" << ii << "]: " << shape;
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return true;
+  } else
+    return false;
+
+}
 
 static PyObject* pad_data( PyObject* self, PyObject* args )
 {
@@ -866,39 +844,23 @@ static PyObject* pad_data( PyObject* self, PyObject* args )
 			  CONVERTME(LongArray), &padshape) )
     return NULL;
 
-  if ( shape.get_size() != padshape.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "shape: " << shape.get_size()
-	<< " vs padshape: " << padshape.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( shape.get_size(), padshape.get_size(),
+                         "shape", "padshape" ) )
     return NULL;
-  }
   
   long size=1, padsize=1;
   for( npy_intp ii = 0; ii < shape.get_size(); ii++ ) {
     size *= shape[ii];
 
-    if( padshape[ii] < shape[ii] ) {
-      std::ostringstream err;
-      err << "pad size is smaller than data shape, "
-	  << "padshape[" << ii << "]: " << padshape[ii]
-	  << " < shape[" << ii << "]: " << shape[ii];
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    if( padshape_smaller_then_shape( ii, padshape[ii], shape[ii] ) )
       return NULL;
-    }
     
     padsize *= padshape[ii];
   }
 
-  if ( kernel.get_size() != size ) {
-    std::ostringstream err;
-    err << "input array size do not match dimensions, "
-	<< "kernel size: " << kernel.get_size()
-	<< " vs kernel dim: " << size;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if ( !same_size_arrays( kernel.get_size(), size,
+                          "kernel size", "kernel dim", "dimensions" ) )
     return NULL;
-  } 
   
   npy_intp dims[1];
   dims[0] = padsize;
@@ -908,11 +870,8 @@ static PyObject* pad_data( PyObject* self, PyObject* args )
     return NULL;
 
   if( EXIT_SUCCESS != _pad_data( (int)shape.get_size(), &res[0], &kernel[0],
-				 &padshape[0], &shape[0] ) ) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"padding kernel failed - dimension unsupported" );
+				 &padshape[0], &shape[0] ) )
     return NULL;
-  } 
   
   return res.return_new_ref();
 }
@@ -930,39 +889,23 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
 			  CONVERTME(LongArray), &shape) )
     return NULL;
 
-  if ( shape.get_size() != padshape.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "shape: " << shape.get_size()
-	<< " vs padshape: " << padshape.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if( !same_size_arrays( shape.get_size(), padshape.get_size(),
+                        "shape", "padshape" ) )
     return NULL;
-  }
   
   long size=1, padsize=1;
   for( npy_intp ii = 0; ii < shape.get_size(); ii++ ) {
     size *= shape[ii];
 
-    if( padshape[ii] < shape[ii] ) {
-      std::ostringstream err;
-      err << "pad size is smaller than data shape, "
-	  << "padshape[" << ii << "]: " << padshape[ii]
-	  << " < shape[" << ii << "]: " << shape[ii];
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+    if( padshape_smaller_then_shape( ii, padshape[ii], shape[ii] ) )
       return NULL;
-    }
     
     padsize *= padshape[ii];
   }
 
-  if ( kernel.get_size() != padsize ) {
-    std::ostringstream err;
-    err << "input array size do not match dimensions, "
-	<< "kernel size: " << kernel.get_size()
-	<< " vs kernel dim: " << padsize;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+  if ( !same_size_arrays( kernel.get_size(), padsize,
+                          "kernel size",  "kernel dim",  "dimensions" ) )
     return NULL;
-  } 
   
   npy_intp dims[1];
   dims[0] = size;
