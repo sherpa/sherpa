@@ -1,0 +1,86 @@
+name: Weekly cron (arch)
+
+on:
+  schedule:
+    # when is a good time?
+    - cron: '0 23 * * SUN'
+  pull_request:
+    # We also want this workflow triggered if the 'CI arch' label is added
+    # or present when PR is updated
+    types: [synchronize, labeled]
+
+jobs:
+  tests:
+    runs-on: ubuntu-18.04
+    if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI arch')))
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+
+          # The tests on ppc64le fail rather spectacularly,
+          # and it's not obvious why, so skip for now. AstroPy also
+          # see some interesting errors so maybe there are problems
+          # with the emulation or NumPy or ...
+          # https://github.com/astropy/astropy/pull/11697
+          #
+          # - arch: ppc64le
+
+          # We currently do not have any user requests for this
+          # architecture.
+          #
+          # - arch: s390x
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      # As we do not include an I/O backend it is not worth checking out the data submodule.
+      #
+      # with:
+      #   submodules: 'True'
+
+    - name: Build and test
+      uses: uraimo/run-on-arch-action@v2.1.1
+      with:
+        arch: ${{ matrix.arch }}
+        distro: bullseye
+
+        shell: /bin/bash
+
+        # Based on AstroPy
+        install: |
+          echo "deb http://deb.debian.org/debian bullseye-backports main" >> /etc/apt/sources.list
+          apt-get update -q -y
+          apt-get install -q -y git \
+                                g++ \
+                                gfortran \
+                                flex \
+                                bison \
+                                make \
+                                pkg-config \
+                                python3 \
+                                python3-dev \
+                                python3-configobj \
+                                python3-numpy \
+                                python3-venv
+
+        # Follow AstroPy for now and do not install any external packages
+        # (I/O, plotting, or DS9).
+        #
+        run: |
+          python3 -m venv --system-site-packages tests
+          source tests/bin/activate
+
+          # without this we get configure errors when building fftw and I don't know why
+          # (this adds the --disable-dependency-tracking option). A google suggests it
+          # could be a make vs gmake issue but we can't easily change this (and it may
+          # not be the actual problem).
+          #
+          sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
+
+          pip3 install -e .
+          pip3 install pytest
+          pip3 install pytest-xdist  # not really needed here
+          python3 -m pytest

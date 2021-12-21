@@ -35,7 +35,8 @@
 # parameter values should also be adjusted to provide a better test of
 # the "q value" calculated for chi-square like statistics (at present
 # the value is often << 1e-7, which is the limit for
-# assert_almost_equal).
+# assert_almost_equal, although the tests are now being moved to
+# pytest.assert, which has similar behavior).
 #
 # Some of these tests may be superfluous (e.g. testing both the single
 # and multiple dataset handling for calc_chisqr with wstat), but given
@@ -90,7 +91,6 @@
 #
 
 import numpy as np
-from numpy.testing import assert_almost_equal
 
 import pytest
 
@@ -455,8 +455,8 @@ def test_fit_raises_error_on_bgsubtraction(stat):
     with pytest.raises(FitErr) as excinfo:
         fit.fit()
 
-    emsg = '{} statistics cannot be used with '.format(statobj.name) + \
-           'background subtracted data'
+    emsg = f"{statobj.name} statistics cannot be used with " + \
+           "background subtracted data"
     assert str(excinfo.value) == emsg
 
 
@@ -547,7 +547,7 @@ def test_fit_calc_stat_single(stat, usestat, usesys, expected):
     # For now restrict the tests to using the default statistic values
     #
     fit = setup_stat_single(stat(), usestat, usesys)
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
 
 
 # Unfortunately the parameter choces mean that the qval values,
@@ -630,7 +630,7 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
     assert ans.bkg_ids is None
     assert ans.numpoints == 5
     assert ans.dof == 1
-    assert_almost_equal(ans.statval, expected)
+    assert ans.statval == pytest.approx(expected)
 
     # The logic for the statistical name is a bit complicated.
     statname = statobj.name
@@ -645,38 +645,38 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
         assert ans.rstat is None
 
     else:
-        assert_almost_equal(ans.qval, qval)
+        assert ans.qval == pytest.approx(qval)
         # as there's only 1 dof, statval == rstat
-        assert_almost_equal(ans.rstat, ans.statval)
+        assert ans.rstat == pytest.approx(ans.statval)
 
     # It is easiest just to do a direct string comparison, but
     # differences in precision/formatting can make this annoying.
     #
     def tostr_short(k, v):
-        return "{:9s} = {}".format(k, v)
+        return f"{k:9s} = {v}"
 
     def tostr_long(k, v):
-        return "{:21s} = {}".format(k, v)
+        return f"{k:21s} = {v}"
 
     # The __str__ and format methods use different formats when
     # displaying the numeric values. Unfortunately the format
     # method uses %g which - for the numbers here - can be less
-    # than 7 decimal places, so assert_almost_equal is not
-    # usable.
+    # than 7 decimal places, and initial testing with assert_almost_equal
+    # did not work so we used this approach instead.
     #
     def checkval_short(s, k, v):
         """Check that s == 'k = <v>'"""
 
         assert s.startswith(tostr_short(k, ''))
         sval = s.split(' = ')[1]
-        assert_almost_equal(float(sval), v)
+        assert float(sval) == pytest.approx(v)
 
     def checkval_long(s, k, v):
         """Check that s == 'k = <v>'"""
 
         assert s.startswith(tostr_long(k, ''))
         sval = s.split(' = ')[1]
-        assert sval == "%g" % (v, )
+        assert sval == f"{v:g}"
 
     # Validate __str__
     #
@@ -808,7 +808,7 @@ def test_fit_calc_chisqr_single(stat, usestat, usesys, expected):
     if expected is None:
         assert ans is None
     else:
-        assert_almost_equal(ans, expected)
+        assert ans == pytest.approx(expected)
 
 
 expected_multi_leastsq = 13837.0
@@ -895,12 +895,12 @@ def test_fit_calc_stat_multiple(stat, usestat, usesys, expected):
     statobj = stat()
     fit, fits = setup_stat_multiple(statobj, usestat, usesys, 1)
 
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
 
     # Test that the sum of the individual cases matches the expected
     # value.
     stats = [f.calc_stat() for f in fits]
-    assert_almost_equal(sum(stats), expected)
+    assert sum(stats) == pytest.approx(expected)
 
 
 # The choice of model parameter values does not create "good" fits,
@@ -1000,7 +1000,7 @@ def test_fit_calc_stat_info_multiple(stat, usestat, usesys, expected, qval):
     assert ans.bkg_ids is None
     assert ans.numpoints == nchannels
     assert ans.dof == ndof
-    assert_almost_equal(ans.statval, expected)
+    assert ans.statval == pytest.approx(expected)
 
     # The choice of ans.statname is interesting for chi-squared
     # cases, since it depends on whether usestat is True.
@@ -1015,8 +1015,8 @@ def test_fit_calc_stat_info_multiple(stat, usestat, usesys, expected, qval):
         assert ans.rstat is None
 
     else:
-        assert_almost_equal(ans.qval, qval)
-        assert_almost_equal(ans.rstat, ans.statval / ndof)
+        assert ans.qval == pytest.approx(qval, rel=1e-5)
+        assert ans.rstat == pytest.approx(ans.statval / ndof)
 
 
 chisqr_multi_leastsq = [4.0, 1.0, 9.0, 2500.0, 4900.0, 6400.0,
@@ -1147,9 +1147,9 @@ def test_fit_calc_chisqr_multiple(stat, usestat, usesys, expected):
         assert ans is None
         assert all([a is None for a in allans])
     else:
-        assert_almost_equal(ans, expected)
+        assert ans == pytest.approx(expected, rel=1e-5)
         combined = np.concatenate(allans)
-        assert_almost_equal(combined, expected)
+        assert combined == pytest.approx(expected, rel=1e-5)
 
 
 wstat_single_scalar_stat = 18.907726418126835
@@ -1224,7 +1224,7 @@ def test_fit_calc_stat_wstat_single(scalar, usestat, usesys,
     """
 
     fit = setup_pha_single(scalar, usestat, usesys, flo, fhi)
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
 
 
 # The qval values were calculated using changeset
@@ -1307,7 +1307,7 @@ def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
     # mdl.c0 is the only thawed parameter
     dof = nbin - 1
 
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
     assert isinstance(ans, StatInfoResults)
     assert ans.name == ""
     assert ans.statname == "wstat"
@@ -1315,10 +1315,10 @@ def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
     assert ans.bkg_ids is None
     assert ans.numpoints == nbin
     assert ans.dof == dof
-    assert_almost_equal(ans.statval, expected)
+    assert ans.statval == pytest.approx(expected)
 
-    assert_almost_equal(ans.qval, qval)
-    assert_almost_equal(ans.rstat, expected / dof)
+    assert ans.qval == pytest.approx(qval)
+    assert ans.rstat == pytest.approx(expected / dof)
 
 
 # Do not really need to go through all these options, but it's easy
@@ -1434,7 +1434,7 @@ def test_fit_calc_stat_wstat_grouped_single(flo, fhi, expected):
 
     # For now restrict to the default statistic values
     fit = Fit(src, mdl, stat=WStat())
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
 
 
 wstat_multi_all = 28.114709948
@@ -1471,12 +1471,12 @@ def test_fit_calc_stat_wstat_multiple(flo, fhi, expected):
     """
 
     fit, fits = setup_pha_multiple(flo, fhi)
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
 
     # Test that the sum of the individual cases matches the expected
     # value.
     stats = [f.calc_stat() for f in fits]
-    assert_almost_equal(sum(stats), expected)
+    assert sum(stats) == pytest.approx(expected)
 
 
 # Remember, the filter is only applied to the background for the third
@@ -1522,7 +1522,7 @@ def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected, qval):
 
     dof = nbin - 5
 
-    assert_almost_equal(fit.calc_stat(), expected)
+    assert fit.calc_stat() == pytest.approx(expected)
     assert isinstance(ans, StatInfoResults)
     assert ans.name == ""
     assert ans.statname == "wstat"
@@ -1530,10 +1530,10 @@ def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected, qval):
     assert ans.bkg_ids is None
     assert ans.numpoints == nbin
     assert ans.dof == dof
-    assert_almost_equal(ans.statval, expected)
+    assert ans.statval == pytest.approx(expected)
 
-    assert_almost_equal(ans.qval, qval)
-    assert_almost_equal(ans.rstat, expected / dof)
+    assert ans.qval == pytest.approx(qval)
+    assert ans.rstat == pytest.approx(expected / dof)
 
 
 @pytest.mark.parametrize("flo,fhi,expected", [
@@ -1670,13 +1670,13 @@ def test_fit_calc_stat_error_no_cache():
     def ans(delta, dy):
         return (delta / dy) ** 2
 
-    assert_almost_equal(f.calc_stat(), ans(1.0, 1.3))
+    assert f.calc_stat() == pytest.approx(ans(1.0, 1.3))
 
     d.y = np.asarray([3.1, 4.1])
     d.staterror = np.asarray([1.1, 1.5])
     m.c0 = 4.1
 
-    assert_almost_equal(f.calc_stat(), ans(1.0, 1.1))
+    assert f.calc_stat() == pytest.approx(ans(1.0, 1.1))
 
 
 @pytest.mark.parametrize("stat", [
@@ -1702,7 +1702,7 @@ def test_fit_str_single(stat):
                 ("stat", stat.__name__),
                 ("method", "LevMar"),
                 ("estmethod", "Covariance")]
-    expected = "\n".join(["{:9s} = {}".format(*e) for e in expected])
+    expected = "\n".join([f"{k:9s} = {v}" for (k,v) in expected])
 
     assert out == expected
 
@@ -1730,7 +1730,7 @@ def test_fit_str_multiple(stat):
                 ("stat", stat.__name__),
                 ("method", "LevMar"),
                 ("estmethod", "Covariance")]
-    expected = "\n".join(["{:9s} = {}".format(*e) for e in expected])
+    expected = "\n".join([f"{k:9s} = {v}" for (k,v) in expected])
 
     assert out == expected
 
@@ -1879,7 +1879,7 @@ def test_fit_single(stat, usestat, usesys, finalstat):
     assert fit.method.name == 'levmar'
     fr = fit.fit()
     assert fr.succeeded
-    assert_almost_equal(fr.statval, finalstat)
+    assert fr.statval == pytest.approx(finalstat, rel=7e-5)
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,finalstat", [
@@ -1909,7 +1909,7 @@ def test_fit_single_nm(stat, usestat, usesys, finalstat):
     fit.method = NelderMead()
     fr = fit.fit()
     assert fr.succeeded
-    assert_almost_equal(fr.statval, finalstat)
+    assert fr.statval == pytest.approx(finalstat)
 
 
 # Since the background is being ignored in this fit (except for
@@ -1999,7 +1999,7 @@ def test_fit_single_pha(stat, scalar, usestat, usesys, filtflag, finalstat):
     assert fr.succeeded
     assert fr.numpoints == numpoints
     assert fr.dof == (numpoints - 1)
-    assert_almost_equal(fr.statval, finalstat)
+    assert fr.statval == pytest.approx(finalstat)
 
 
 # Calculated using LevMar
@@ -2081,12 +2081,12 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     fit, _ = setup_stat_multiple(statobj, usestat, usesys, 1)
     fr = fit.fit()
     assert fr.succeeded
-    assert_almost_equal(fr.statval, finalstat)
+    assert fr.statval == pytest.approx(finalstat)
 
     fit, _ = setup_stat_multiple(statobj, usestat, usesys, 3)
     fr = fit.fit()
     assert fr.succeeded
-    assert_almost_equal(fr.statval, finalstat)
+    assert fr.statval == pytest.approx(finalstat)
 
     # As the datasets and models are independent, the fit
     # to just the third dataset should return the same parameter
@@ -2106,12 +2106,12 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     assert fr.parnames[-1] == fr2.parnames[-1]
 
     if isinstance(statobj, Likelihood):
-        ndp = 0
+        ndp = 1
     else:
         ndp = 7
 
-    assert_almost_equal(fr2.parvals[-1], fr.parvals[-1],
-                        decimal=ndp)
+    rel = 10**(-ndp)
+    assert fr2.parvals[-1] == pytest.approx(fr.parvals[-1], rel=rel)
 
 
 @pytest.mark.parametrize("method,estmethod,usestat,usesys", [
@@ -2452,11 +2452,11 @@ def test_fit_iterfit_single_sigmarej_chi2(stat):
     expected_mask = [True, True, False, False, False, False, False]
     assert np.all(fit.data.mask == expected_mask)
 
-    assert_almost_equal(fr.statval, 0.0)
+    assert fr.statval == pytest.approx(0.0)
 
     mdl = fit.model
-    assert_almost_equal(mdl.c0.val, 8.722)
-    assert_almost_equal(mdl.c1.val, 2.458)
+    assert mdl.c0.val == pytest.approx(8.722)
+    assert mdl.c1.val == pytest.approx(2.458)
 
     assert fr.numpoints == 2
     assert fr.dof == 0
@@ -2483,11 +2483,11 @@ def test_fit_iterfit_single_sigmarej_chi2gehrels():
     expected_mask = [True, True, True, True, False, True, True]
     assert np.all(fit.data.mask == expected_mask)
 
-    assert_almost_equal(fr.statval, 0.1914790757)
+    assert fr.statval == pytest.approx(0.1914790757)
 
     mdl = fit.model
-    assert_almost_equal(mdl.c0.val, 9.69168196604)
-    assert_almost_equal(mdl.c1.val, 2.00600360315)
+    assert mdl.c0.val == pytest.approx(9.69168196604)
+    assert mdl.c1.val == pytest.approx(2.00600360315)
 
     assert fr.numpoints == 6
     assert fr.dof == 4
@@ -2517,11 +2517,11 @@ def test_fit_iterfit_single_sigmarej_ignore_chi2gehrels():
     expected_mask = [True, False, True, True, False, True, True]
     assert np.all(fit.data.mask == expected_mask)
 
-    assert_almost_equal(fr.statval, 0.1245627587)
+    assert fr.statval == pytest.approx(0.1245627587)
 
     mdl = fit.model
-    assert_almost_equal(mdl.c0.val, 9.25537857670)
-    assert_almost_equal(mdl.c1.val, 2.01845980545)
+    assert mdl.c0.val == pytest.approx(9.25537857670)
+    assert mdl.c1.val == pytest.approx(2.01845980545)
 
     assert fr.numpoints == 5
     assert fr.dof == 3
