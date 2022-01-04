@@ -34,6 +34,35 @@
 
 #include "sherpa/fcmp.hh"
 
+// We should be able to just include funcType.h but our XSPEC conda
+// builds, at least for testing/12.11.1, do not include this file,
+// so we just include what we need.
+//
+// #ifdef XSPEC_12_12_0
+// #include "XSFunctions/Utilities/funcType.h"
+// #else
+// #include "funcType.h"
+// #endif
+
+#include "xsTypes.h"   // get Real typedef
+
+extern "C" {
+
+        typedef void (xsf77Call) (const float* energyArray,
+                                  const int& Nenergy,
+                                  const float* parameterValues,
+                                  const int& spectrumNumber,
+                                  float* flux,
+                                  float* fluxError);
+        typedef void (xsccCall)   (const Real* energyArray,
+                                   int Nenergy,
+                                   const Real* parameterValues,
+                                   int spectrumNumber,
+                                   Real* flux,
+                                   Real* fluxError,
+                                   const char* initString);
+}
+
 // Prior to XSPEC 12.10.1, the table models were split into different
 // functions. These functions are defined in _xspec.cc.
 //
@@ -64,7 +93,8 @@ namespace sherpa { namespace astro { namespace xspec {
 
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
-typedef void (*XSpecFuncRef)( float* ear, int* ne, float* param, int* ifl, float* photar, float* photer );
+
+typedef void (*XSpecFuncRef)( const float* ear, const int& ne, const float* param, const int& ifl, float* photar, float* photer );
 typedef void (*XSpecFuncVal)( float* ear, int ne, float* param, const char* filenm, int ifl, float* photar, float* photer );
 typedef void (*XSpecFuncDouble)( const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr );
 
@@ -583,7 +613,7 @@ static bool create_output(int nbins, T &a, T &b) {
       protected:
 
         PyObject* args;
-        int ifl, ngrid, npts;;
+        int ifl, ngrid, npts;
         std::vector<SherpaFloat> ear;
         RealArray pars, error;
 
@@ -621,7 +651,7 @@ static bool create_output(int nbins, T &a, T &b) {
           // convert to 32-byte float
           std::vector<float> fear(this->ngrid);
           CONVERTARRAY(this->ear, fear, this->ngrid);
-          XSpecFunc( &fear[0], &this->npts, &this->pars[0], &this->ifl,
+          XSpecFunc( &fear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
           return;
         }
@@ -724,7 +754,7 @@ static bool create_output(int nbins, T &a, T &b) {
           // convert to 32-byte float
           std::vector<float> fear(this->ngrid);
           CONVERTARRAY(this->ear, fear, this->ngrid);
-          XSpecFunc( &fear[0], &this->npts, &this->pars[0], &this->ifl,
+          XSpecFunc( &fear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
           return;
         }
