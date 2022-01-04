@@ -94,11 +94,6 @@ namespace sherpa { namespace astro { namespace xspec {
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
 
-typedef void (*XSpecFuncRef)( const float* ear, const int& ne, const float* param, const int& ifl, float* photar, float* photer );
-typedef void (*XSpecFuncVal)( float* ear, int ne, float* param, const char* filenm, int ifl, float* photar, float* photer );
-typedef void (*XSpecFuncDouble)( const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr );
-
-
 // Try and support the use of std::transform while still building
 // against C++-98 compilers.
 //
@@ -625,7 +620,7 @@ static bool create_output(int nbins, T &a, T &b) {
 
       }; // class xspecModelFctBase
 
-      template<typename Real, typename RealArray, XSpecFuncDouble XSpecFunc>
+      template<typename Real, typename RealArray, xsccCall XSpecFunc>
       class xspecModelFctC : public xspecModelFctBase<Real, RealArray>  {
       public:
 
@@ -640,7 +635,7 @@ static bool create_output(int nbins, T &a, T &b) {
 
       }; // class xspecModelFctC
 
-      template<typename Real, typename RealArray, XSpecFuncRef XSpecFunc>
+      template<typename Real, typename RealArray, xsf77Call XSpecFunc>
       class xspecModelFctF : public xspecModelFctBase<Real, RealArray>  {
       public:
 
@@ -728,7 +723,7 @@ static bool create_output(int nbins, T &a, T &b) {
 
       }; // class xspecModelFctConBase
 
-      template<typename Real, typename RealArray, XSpecFuncDouble XSpecFunc>
+      template<typename Real, typename RealArray, xsccCall XSpecFunc>
       class xspecModelFctConC : public xspecModelFctConBase<Real, RealArray>  {
       public:
 
@@ -743,7 +738,7 @@ static bool create_output(int nbins, T &a, T &b) {
 
       }; // class xspecModelFctConC
 
-      template<typename Real, typename RealArray, XSpecFuncRef XSpecFunc>
+      template<typename Real, typename RealArray, xsf77Call XSpecFunc>
       class xspecModelFctConF : public xspecModelFctConBase<Real, RealArray>  {
       public:
 
@@ -856,7 +851,7 @@ static bool create_output(int nbins, T &a, T &b) {
       // }; // class xspecTableModel
 
 
-template <npy_intp NumPars, bool HasNorm, XSpecFuncRef XSpecFunc>
+template <npy_intp NumPars, bool HasNorm, xsf77Call XSpecFunc>
 PyObject* xspecmodelfct( PyObject* self, PyObject* args ) {
 
   xspecModelFctF<float, FloatArray, XSpecFunc> xspec_model =
@@ -876,7 +871,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args ) {
 
 }
 
-template <npy_intp NumPars, bool HasNorm, XSpecFuncDouble XSpecFunc>
+template <npy_intp NumPars, bool HasNorm, xsccCall XSpecFunc>
 PyObject* xspecmodelfct_C( PyObject* self, PyObject* args ) {
 
   xspecModelFctC<double, DoubleArray, XSpecFunc> xspec_model =
@@ -899,7 +894,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args ) {
 // linkage.
 //
 // This template does not support non-contiguous grids.
-template <npy_intp NumPars, XSpecFuncDouble XSpecFunc>
+template <npy_intp NumPars, xsccCall XSpecFunc>
 PyObject* xspecmodelfct_con( PyObject* self, PyObject* args ) {
 
   xspecModelFctConC<double, DoubleArray, XSpecFunc> xspec_model =
@@ -921,7 +916,7 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args ) {
 // F77 in the name (rather than have the FORTRAN interface be "default"
 // version as it for the additive and multiplicative models).
 //
-template <npy_intp NumPars, XSpecFuncRef XSpecFunc>
+template <npy_intp NumPars, xsf77Call XSpecFunc>
 PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args ) {
 
   xspecModelFctConF<float, FloatArray, XSpecFunc> xspec_model =
@@ -1015,6 +1010,8 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 }
 
 #else
+
+typedef void (*XSpecFuncVal)( float* ear, int ne, float* param, const char* filenm, int ifl, float* photar, float* photer );
 
 template <bool HasNorm, XSpecFuncVal XSpecFunc>
 PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds ) {
