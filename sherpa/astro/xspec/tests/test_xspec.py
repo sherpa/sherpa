@@ -302,10 +302,16 @@ def test_evaluate_model():
     assert (out > 0).all()
 
 
+# Select a few models which are likely to cover
+# additive/multiplicative and language (e.g. FORTRAN vs C/C++).
+#
+BASIC_MODELS = ['powerlaw', 'gaussian',
+                'vapec',  # pick this as scientifically "useful"
+                'constant', 'wabs']
+
+
 @requires_xspec
-@pytest.mark.parametrize('model', ['powerlaw', 'gaussian',
-                                   'vapec',  # pick this as scientifically "useful"
-                                   'constant', 'wabs'])
+@pytest.mark.parametrize('model', BASIC_MODELS)
 def test_lowlevel(model):
     """The XSPEC class interface requires lo,hi but the low-level allows just x
 
@@ -334,6 +340,26 @@ def test_lowlevel(model):
     assert y1[:-1] == pytest.approx(y2)
     assert y1[-1] == 0.0
     assert (y2 > 0).all()
+
+
+@requires_xspec
+@pytest.mark.parametrize('model', BASIC_MODELS)
+def test_lowlevel_checks_too_many_arguments(model):
+    """Check we get a sensible error when called with no arguments.
+
+    Note that this tests the interface to the actual XSPEC model
+    not the Python class.
+    """
+
+    import sherpa.astro.xspec as xs
+
+    cls = getattr(xs, 'XS{}'.format(model))
+    mdl = cls()
+
+    with pytest.raises(TypeError) as exc:
+        mdl._calc()
+
+    assert str(exc.value) == "function takes at least 2 arguments (0 given)"
 
 
 @requires_xspec
