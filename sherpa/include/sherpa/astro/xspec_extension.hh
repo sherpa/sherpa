@@ -90,6 +90,25 @@ extern "C" {
 
 namespace sherpa { namespace astro { namespace xspec {
 
+      // Track the type of Python error we want to throw:
+      //  - NoError when the python error is already set
+      //  - TypeError when a python TypeError is to be raised
+      //  - ValueError when a python ValueError is to be raised
+      //
+      struct NoError : std::runtime_error
+      {
+	using std::runtime_error::runtime_error;
+      };
+
+      struct ValueError : std::runtime_error
+      {
+	using std::runtime_error::runtime_error;
+      };
+
+      struct TypeError : std::runtime_error
+      {
+	using std::runtime_error::runtime_error;
+      };
 
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
@@ -175,7 +194,7 @@ typedef float FloatArrayType;
 // left as a template for now.
 //
 template <typename CType, int ArrayType>
-static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
+static void create_grid(const sherpa::Array<CType, ArrayType> &xlo,
 			const sherpa::Array<CType, ArrayType> &xhi,
 			std::vector<CType> &ear,
 			std::vector<int> &gaps_index ) {
@@ -185,16 +204,14 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
   if ( nelem < 2 ) {
     std::ostringstream err;
     err << "input array must have at least 2 elements, found " << nelem;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return false;
+    throw TypeError(err.str());
   }
 
   if( xhi && (nelem != int(xhi.get_size())) ) {
     std::ostringstream err;
     err << "input arrays are not the same size: " << nelem
         << " and " << int( xhi.get_size() );
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return false;
+    throw TypeError(err.str());
   }
 
   bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
@@ -276,8 +293,7 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
       if (ear[i] <= 0.0) {
         std::ostringstream err;
         err << "Wavelength must be > 0, sent " << ear[i];
-        PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-        return false;
+	throw ValueError(err.str());
       }
       ear[i] = hc / ear[i];
     }
@@ -305,8 +321,6 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
   }
   ***/
 
-  return true;
-
 } /* create_grid */
 
 
@@ -314,7 +328,7 @@ static bool create_grid(const sherpa::Array<CType, ArrayType> &xlo,
 // not contiguous (an error is raised).
 //
 template <typename CType, int ArrayType>
-static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
+static void create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
 				   const sherpa::Array<CType, ArrayType> &xhi,
 				   std::vector<CType> &ear) {
 
@@ -322,16 +336,14 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
   if ( nelem < 2 ) {
     std::ostringstream err;
     err << "input array must have at least 2 elements, found " << nelem;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return false;
+    throw TypeError(err.str());
   }
 
   if( xhi && (nelem != int(xhi.get_size())) ) {
     std::ostringstream err;
     err << "input arrays are not the same size: " << nelem
         << " and " << int( xhi.get_size() );
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return false;
+    throw TypeError(err.str());
   }
 
   bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
@@ -353,9 +365,7 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
 	     << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
 	     PyErr_SetString( PyExc_ValueError, err.str().c_str() );
 	***/
-	PyErr_SetString( PyExc_ValueError,
-			 (char*)"XSPEC convolution model requires a contiguous grid" );
-	return false;
+	throw ValueError("XSPEC convolution model requires a contiguous grid");
       }
     }
   }
@@ -394,8 +404,7 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
       if (ear[i] <= 0.0) {
         std::ostringstream err;
         err << "Wavelength must be > 0, sent " << ear[i];
-        PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-        return false;
+	throw ValueError(err.str());
       }
       ear[i] = hc / ear[i];
     }
@@ -422,8 +431,6 @@ static bool create_contiguous_grid(const sherpa::Array<CType, ArrayType> &xlo,
     }
   }
   ***/
-
-  return true;
 
 } /* create_contiguous_grid */
 
@@ -463,17 +470,18 @@ static void finalize_grid(int nelem,
 
 
 template <typename T>
-static bool create_output(int nbins, T &a, T &b) {
+static void create_output(int nbins, T &a, T &b) {
 
   npy_intp dims[1] = { nbins };
 
-  if ( EXIT_SUCCESS != a.zeros( 1, dims ) )
-    return false;
-
-  if ( EXIT_SUCCESS != b.zeros( 1, dims ) )
-    return false;
-
-  return true;
+  // It's never clear from the Python documentation whether we should throw
+  // some form of memory-allocation error here, but let's throw a ValueError
+  // (if it fails then we are likely in serious trouble anyway so it's not
+  // worth worrying about the details).
+  //
+  if ( (EXIT_SUCCESS != a.zeros( 1, dims )) ||
+       (EXIT_SUCCESS != b.zeros( 1, dims )) )
+    throw ValueError("Unable to create output");
 
 } /* create_output */
 
@@ -511,13 +519,13 @@ static bool create_output(int nbins, T &a, T &b) {
                                   &xlo,
                                   (converter)convert_to_contig_array< DoubleArray >,
                                   &xhi ) )
-            throw std::runtime_error("Error Parsing args");
+            throw NoError("Error Parsing args");
+
           npy_intp npars = pars.get_size();
           if ( NumPars != npars ) {
             std::ostringstream err;
             err << "expected " << NumPars << " parameters, got " << npars;
-            PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-            throw std::runtime_error(err.str());
+            throw TypeError(err.str());
           }
           return;
         };
@@ -545,13 +553,13 @@ static bool create_output(int nbins, T &a, T &b) {
                                   &xlo,
                                   (converter)convert_to_contig_array< DoubleArray >,
                                   &xhi ) )
-            throw std::runtime_error("Error Parsing args");
+            throw NoError("Error Parsing args");
+
           npy_intp npars = pars.get_size();
           if ( NumPars != npars ) {
             std::ostringstream err;
             err << "expected " << NumPars << " parameters, got " << npars;
-            PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-            throw std::runtime_error(err.str());
+            throw TypeError(err.str());
           }
           return;
         };
@@ -575,8 +583,7 @@ static bool create_output(int nbins, T &a, T &b) {
           //
           // The grid to send to XSPEC (double precision).
           //
-          if (!create_grid(xlo, xhi, ear, gaps_index))
-            throw std::runtime_error("Unable to create grid");
+          create_grid(xlo, xhi, ear, gaps_index);
 
           nelem = int( xlo.get_size() );
           ngrid = ear.size();
@@ -586,8 +593,7 @@ static bool create_output(int nbins, T &a, T &b) {
           int nout = ngrid;
           if (xhi) nout--;
 
-          if (!create_output(nout, result, error))
-            throw std::runtime_error("Unable to create output");
+          create_output(nout, result, error);
 
           call_xspec( result );
 
@@ -671,8 +677,7 @@ static bool create_output(int nbins, T &a, T &b) {
 
           // XSpec traditionally refers to the input energy grid as ear.
           // std::vector<SherpaFloat> ear;
-          if (!create_contiguous_grid(xlo, xhi, ear))
-            throw std::runtime_error("Unable to create contiguous grid");
+          create_contiguous_grid(xlo, xhi, ear);
 
           nelem = xlo.get_size();
           ngrid = ear.size();
@@ -687,16 +692,14 @@ static bool create_output(int nbins, T &a, T &b) {
             std::ostringstream err;
             err << "flux array does not match the input grid: " << nelem
                 << " and " << fluxes.get_size();
-            PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-            throw std::runtime_error(err.str());
+            throw ValueError(err.str());
           }
 
           // Number of bins to send to XSPEC
           int nout = ngrid;
           if (xhi) nout--;
 
-          if (!create_output(nout, result, error))
-            throw std::runtime_error("Unable to create output");
+          create_output(nout, result, error);
 
           // Copy over the flux array
           std::copy(&fluxes[0], &fluxes[nout], &result[0]);
@@ -775,8 +778,7 @@ static bool create_output(int nbins, T &a, T &b) {
           //
           // The grid to send to XSPEC (double precision).
           //
-          if (!create_grid(xlo, xhi, ear, gaps_index))
-            throw std::runtime_error("Unable to create grid");
+          create_grid(xlo, xhi, ear, gaps_index);
 
           nelem = xlo.get_size();
           ngrid = ear.size();
@@ -791,8 +793,7 @@ static bool create_output(int nbins, T &a, T &b) {
           nout = ngrid;
           if (xhi) nout--;
 
-          if (!create_output(nout, result, error))
-            throw std::runtime_error("Unable to create output");
+          create_output(nout, result, error);
 
           // Swallow exceptions here
 
@@ -860,7 +861,13 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args ) {
     FloatArray result;
     xspec_model.eval( result );
     return result.return_new_ref();
-  } catch(std::runtime_error& re) {
+  } catch(NoError& re) {
+    return NULL;
+  } catch(ValueError& re) {
+    PyErr_SetString( PyExc_ValueError, re.what() );
+    return NULL;
+  } catch(TypeError& re) {
+    PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
     // Even though the XSPEC model function is Fortran, it could call
@@ -880,7 +887,13 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args ) {
     DoubleArray result;
     xspec_model.eval( result );
     return result.return_new_ref();
-  } catch(std::runtime_error& re) {
+  } catch(NoError& re) {
+    return NULL;
+  } catch(ValueError& re) {
+    PyErr_SetString( PyExc_ValueError, re.what() );
+    return NULL;
+  } catch(TypeError& re) {
+    PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
     PyErr_SetString( PyExc_ValueError, xspec_model.get_err_msg() );
@@ -903,7 +916,13 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args ) {
     DoubleArray result;
     xspec_model.eval(result);
     return result.return_new_ref();
-  } catch(std::runtime_error& re) {
+  } catch(NoError& re) {
+    return NULL;
+  } catch(ValueError& re) {
+    PyErr_SetString( PyExc_ValueError, re.what() );
+    return NULL;
+  } catch(TypeError& re) {
+    PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
     PyErr_SetString( PyExc_ValueError, xspec_model.get_err_msg() );
@@ -925,7 +944,13 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args ) {
     FloatArray result;
     xspec_model.eval( result );
     return result.return_new_ref();
-  } catch(std::runtime_error& re) {
+  } catch(NoError& re) {
+    return NULL;
+  } catch(ValueError& re) {
+    PyErr_SetString( PyExc_ValueError, re.what() );
+    return NULL;
+  } catch(TypeError& re) {
+    PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
     // Even though the XSPEC model function is Fortran, it could call
@@ -998,8 +1023,14 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
             for (int i = 0; i < xlo.get_size(); i++)
               result[i] *= pars[npars];
           return result.return_new_ref();
-        } catch(std::runtime_error& re) {
-          return NULL;
+	} catch(NoError& re) {
+	  return NULL;
+	} catch(ValueError& re) {
+	  PyErr_SetString( PyExc_ValueError, re.what() );
+	  return NULL;
+	} catch(TypeError& re) {
+	  PyErr_SetString( PyExc_TypeError, re.what() );
+	  return NULL;
         } catch(...) {
           // Even though the XSPEC model function is Fortran, it could call
           // C++ functions, so swallow exceptions here
@@ -1069,9 +1100,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds ) {
 	//
 	std::vector<SherpaFloat> ear;
         std::vector<int> gaps_index;
-	if (!create_grid(xlo, xhi, ear, gaps_index)) {
-	  return NULL;
-	}
+	create_grid(xlo, xhi, ear, gaps_index);
 
 	int nelem = int( xlo.get_size() );
 	int ngrid = ear.size();
@@ -1086,9 +1115,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds ) {
 	if (xhi) nout--;
 
 	FloatArray result, error;
-	if (!create_output(nout, result, error)) {
-	  return NULL;
-	}
+	create_output(nout, result, error);
 
 	// Swallow exceptions here
 
