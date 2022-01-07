@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -342,15 +342,21 @@ def test_checks_input_length():
     mdl = xs.XSpowerlaw()
 
     # Check when input array is too small (< 2 elements)
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as exc1:
         mdl([0.1], [0.2])
 
+    assert str(exc1.value) == "input array must have at least 2 elements, found 1"
+
     # Check when input arrays are not the same size.
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as exc2:
         mdl([0.1, 0.2, 0.3], [0.2, 0.3])
 
-    with pytest.raises(TypeError):
+    assert str(exc2.value) == "input arrays are not the same size: 3 and 2"
+
+    with pytest.raises(TypeError) as exc3:
         mdl([0.1, 0.2], [0.2, 0.3, 0.4])
+
+    assert str(exc3.value) == "input arrays are not the same size: 2 and 3"
 
 
 @requires_xspec
@@ -363,16 +369,25 @@ def test_xstablemodel_checks_input_length(loadfunc, clean_astro_ui, make_data_pa
     mdl = ui.get_model_component('mdl')
 
     # Check when input array is too small (< 2 elements)
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as exc1:
         mdl([0.1], [0.2])
+
+    emsg = "input array must have at least 2 elements, found 1"
+    assert str(exc1.value) == emsg
 
     # Check when input arrays are not the same size (when the
     # low and high bin edges are given)
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as exc2:
         mdl([0.1, 0.2, 0.3], [0.2, 0.3])
 
-    with pytest.raises(TypeError):
+    emsg = "input arrays are not the same size: 3 and 2"
+    assert str(exc2.value) == emsg
+
+    with pytest.raises(TypeError) as exc3:
         mdl([0.1, 0.2], [0.2, 0.3, 0.4])
+
+    emsg = "input arrays are not the same size: 2 and 3"
+    assert str(exc3.value) == emsg
 
 
 @requires_xspec
@@ -533,11 +548,17 @@ def test_convolution_model_cpflux_noncontiguous():
     pars = [0.2, 0.8, lflux]
     y1 = numpy.zeros(elo.size)
 
-    with pytest.raises(ValueError):
+    emsg = "XSPEC convolution model requires a contiguous grid"
+
+    with pytest.raises(ValueError) as exc1:
         xs._xspec.C_cpflux(pars, y1, elo, ehi)
 
-    with pytest.raises(ValueError):
+    assert str(exc1.value) == emsg
+
+    with pytest.raises(ValueError) as exc2:
         xs._xspec.C_cpflux(pars, y1, wlo, whi)
+
+    assert str(exc2.value) == emsg
 
 
 @requires_xspec
