@@ -20,8 +20,8 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.12.1, 12.12.0, 12.11.1, 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
-of XSPEC [1]_, and can be built against the model library or the full
+Sherpa supports versions 12.12.1, 12.12.0, 12.11.1, 12.11.0, and 12.10.1 of
+XSPEC [1]_, and can be built against the model library or the full
 application.  There is no guarantee of support for older or newer
 versions of XSPEC.
 
@@ -31,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.11.1'
+   '12.12.1'
 
 Initializing XSPEC
 ------------------
@@ -41,14 +41,12 @@ are set to H_0=70, q_0=0.0, and lambda_0=0.73 (they can be changed with
 `set_xscosmo`).
 
 The other settings - for example for the abundance and cross-section
-tables - follow the standard rules for XSPEC. For XSPEC versions prior
-to 12.10.1, this means that the abundance table uses the 'angr'
-setting and the cross sections the 'bcmc' setting (see `set_xsabund`
-and `set_xsxsect` for full details). As of XSPEC 12.10.1, the values
-are now taken from the user's XSPEC configuration file - either
-``~/.xspec/Xspec.init`` or ``$HEADAS/../spectral/manager/Xspec.init`` -
-for these settings. The default value for the photo-ionization table
-in this case is now 'vern' rather than 'bcmc'.
+tables - follow the standard rules for XSPEC. This means that the
+values are taken from the user's XSPEC configuration file - either
+``~/.xspec/Xspec.init`` or ``$HEADAS/../spectral/manager/Xspec.init``
+- for these settings (in particular note that the default value for
+the photo-ionization table is 'vern' rather than 'bcmc' which used to
+be the case in XSPEC 12.10.0 and earlier).
 
 The default chatter setting - used by models to inform users of
 issues - was set to 0 (which hid the messages) until Sherpa 4.14.0,
@@ -858,12 +856,6 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
            'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
            'get_xsstate')
-
-
-def _f77_or_c_12100(name):
-    """Models which changed from Fortran to C linkage in 12.10.0"""
-
-    return "C_" + name if equal_or_greater_than("12.10.0") else name
 
 
 class XSBaseParameter(Parameter):
@@ -1684,7 +1676,6 @@ class XSagauss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.norm))
 
 
-@version_at_least("12.10.1")
 class XSagnsed(XSAdditiveModel):
     """The XSPEC agnsed model: AGN SED model
 
@@ -1743,10 +1734,6 @@ class XSagnsed(XSAdditiveModel):
     See Also
     --------
     XSagnslim, XSqsosed
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -2003,7 +1990,6 @@ class XSbapec(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.Redshift, self.Velocity, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSbtapec(XSAdditiveModel):
     """The XSPEC btapec model: velocity broadened APEC emission spectrum with separate continuum and line temperatures.
 
@@ -2034,10 +2020,6 @@ class XSbtapec(XSAdditiveModel):
     See Also
     --------
     XSbapec, XSbvtapec, XSbvvtapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -2444,7 +2426,6 @@ class XSbremss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSbrnei(XSAdditiveModel):
     """The XSPEC brnei model: velocity-broadened non-equilibrium recombining collisional plasma.
 
@@ -2474,10 +2455,6 @@ class XSbrnei(XSAdditiveModel):
     See Also
     --------
     XSbvrnei, XSbvvrnei, XSnei, XSgnei, XSrnei, XSvrnei, XSvvrnei
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -2554,7 +2531,6 @@ class XSbvapec(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift, self.Velocity, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSbvrnei(XSAdditiveModel):
     """The XSPEC bvrnei model: velocity-broadened non-equilibrium recombining collisional plasma.
 
@@ -2583,10 +2559,6 @@ class XSbvrnei(XSAdditiveModel):
     See Also
     --------
     XSbrnei, XSbvvrnei, XSnei, XSgnei, XSrnei, XSvrnei, XSvvrnei
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -2620,7 +2592,6 @@ class XSbvrnei(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSbvtapec(XSAdditiveModel):
     """The XSPEC bvtapec model: velocity broadened APEC emission spectrum with separate continuum and line temperatures.
 
@@ -2649,10 +2620,6 @@ class XSbvtapec(XSAdditiveModel):
     See Also
     --------
     XSbapec, XSbtapec, XSbvvtapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -2760,7 +2727,6 @@ class XSbvvapec(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.Velocity, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSbvvrnei(XSAdditiveModel):
     """The XSPEC bvvrnei model: velocity-broadened non-equilibrium recombining collisional plasma.
 
@@ -2790,10 +2756,6 @@ class XSbvvrnei(XSAdditiveModel):
     See Also
     --------
     XSbrnei, XSbvrnei, XSnei, XSgnei, XSrnei, XSvrnei, XSvvrnei
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -2846,7 +2808,6 @@ class XSbvvrnei(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift, self.Velocity, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSbvvtapec(XSAdditiveModel):
     """The XSPEC bvvtapec model: velocity broadened APEC emission spectrum with separate continuum and line temperatures.
 
@@ -2874,10 +2835,6 @@ class XSbvvtapec(XSAdditiveModel):
     See Also
     --------
     XSbapec, XSbtapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -2962,7 +2919,7 @@ class XSc6mekl(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("c6mekl")
+    __function__ = "C_c6mekl"
 
     def __init__(self, name='c6mekl'):
         self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, -1, 1, -1, 1)
@@ -3017,7 +2974,7 @@ class XSc6pmekl(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("c6pmekl")
+    __function__ = "C_c6pmekl"
 
     def __init__(self, name='c6pmekl'):
         self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, -1, 1, -1, 1)
@@ -3072,7 +3029,7 @@ class XSc6pvmkl(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("c6pvmkl")
+    __function__ = "C_c6pvmkl"
 
     def __init__(self, name='c6pvmkl'):
         self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, -1, 1, -1, 1)
@@ -3140,7 +3097,7 @@ class XSc6vmekl(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("c6vmekl")
+    __function__ = "C_c6vmekl"
 
     def __init__(self, name='c6vmekl'):
         self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, -1, 1, -1, 1)
@@ -3174,7 +3131,6 @@ class XSc6vmekl(XSAdditiveModel):
                                               self.redshift, self.switch, self.norm))
 
 
-@version_at_least("12.9.1")
 class XScarbatm(XSAdditiveModel):
     """The XSPEC carbatm model: Nonmagnetic carbon atmosphere of a neutron star.
 
@@ -3197,10 +3153,6 @@ class XScarbatm(XSAdditiveModel):
     See Also
     --------
     XShatm
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -3836,7 +3788,6 @@ class XScompTT(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.redshift, self.T0, self.kT, self.taup, self.approx, self.norm))
 
 
-@version_at_least("12.10.1")
 class XScph(XSAdditiveModel):
     """The XSPEC cph model: Cooling + heating model for cool core clusters
 
@@ -3862,10 +3813,6 @@ class XScph(XSAdditiveModel):
     See Also
     --------
     XSmkcflow, XSvcph
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -4905,7 +4852,6 @@ class XSgrad(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.D, self.i, self.Mass, self.Mdot, self.TclovTef, self.refflag, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSgrbcomp(XSAdditiveModel):
     """The XSPEC grbcomp model: Comptonization for GRB prompt emission.
 
@@ -4943,10 +4889,6 @@ class XSgrbcomp(XSAdditiveModel):
     See Also
     --------
     XSgrbjet, XSgrbm
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -5095,7 +5037,6 @@ class XSgrbm(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self.tem, self.norm))
 
 
-@version_at_least("12.9.1")
 class XShatm(XSAdditiveModel):
     """The XSPEC hatm model: Nonmagnetic hydrogen atmosphere of a neutron star.
 
@@ -5119,10 +5060,6 @@ class XShatm(XSAdditiveModel):
     --------
     XScarbatm
 
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
-
     References
     ----------
 
@@ -5142,7 +5079,6 @@ class XShatm(XSAdditiveModel):
                                  (self.T, self.NSmass, self.NSrad, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSjet(XSAdditiveModel):
     """The XSPEC jet model: Leptonic relativistic jet model.
 
@@ -5191,10 +5127,6 @@ class XSjet(XSAdditiveModel):
     See Also
     --------
     XSoptxagnf
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -5438,7 +5370,6 @@ class XSkerrdisk(XSAdditiveModel):
         param_apply_limits(pos, self.lineE, **kwargs)
 
 
-@version_at_least("12.10.1")
 class XSkyconv(XSConvolutionKernel):
     """The XSPEC kyconv convolution model: convolution using a relativistic line from axisymmetric accretion disk
 
@@ -5483,8 +5414,6 @@ class XSkyconv(XSConvolutionKernel):
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather than using the multiplication symbol.
-
-    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -5532,7 +5461,6 @@ class XSkyconv(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, pars)
 
 
-@version_at_least("12.10.1")
 class XSkyrline(XSAdditiveModel):
     """The XSPEC kyrline model: relativistic line from axisymmetric accretion disk
 
@@ -5572,8 +5500,6 @@ class XSkyrline(XSAdditiveModel):
 
     Notes
     -----
-    This model is only available when used with XSPEC 12.10.1 or later.
-
     Early releases of XSPEC 12.10.1 refer to the first parameter as
     a/M. As this is not a valid Python name, the parameter has been
     renamed "a" to better match other XSPEC models (after consultation
@@ -6239,7 +6165,7 @@ class XSnsmax(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("nsmax")
+    __function__ = "C_nsmax"
 
     def __init__(self, name='nsmax'):
         self.logTeff = XSParameter(name, 'logTeff', 6.0, 5.5, 6.8, 5.5, 6.8, units='K')
@@ -6281,7 +6207,7 @@ class XSnsmaxg(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("nsmaxg")
+    __function__ = "C_nsmaxg"
 
     def __init__(self, name='nsmaxg'):
         self.logTeff = XSParameter(name, 'logTeff', 6.0, 5.5, 6.9, 5.5, 6.9, units='K')
@@ -6325,7 +6251,7 @@ class XSnsx(XSAdditiveModel):
 
     """
 
-    __function__ = _f77_or_c_12100("nsx")
+    __function__ = "C_nsx"
 
     def __init__(self, name='nsx'):
         self.logTeff = XSParameter(name, 'logTeff', 6.0, 5.5, 6.7, 5.5, 6.7, units='K')
@@ -7014,7 +6940,6 @@ class XSpshock(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.Tau_l, self.Tau_u, self.redshift, self.norm))
 
 
-@version_at_least("12.10.1")
 class XSqsosed(XSAdditiveModel):
     """The XSPEC qsosed model: AGN SED model
 
@@ -7042,10 +6967,6 @@ class XSqsosed(XSAdditiveModel):
     See Also
     --------
     XSagnsed
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -7376,7 +7297,6 @@ class XSsirf(XSAdditiveModel):
                                               self.irrad, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSslimbh(XSAdditiveModel):
     """The XSPEC slimbh model: Stationary slim accretion disk.
 
@@ -7412,10 +7332,6 @@ class XSslimbh(XSAdditiveModel):
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -7453,7 +7369,6 @@ class XSslimbh(XSAdditiveModel):
 # NOTE: we do not support the smaug model yet
 
 
-@version_at_least("12.9.1")
 class XSsnapec(XSAdditiveModel):
     """The XSPEC snapec model: galaxy cluster spectrum using SN yields.
 
@@ -7482,10 +7397,6 @@ class XSsnapec(XSAdditiveModel):
     See Also
     --------
     XSapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -7592,7 +7503,6 @@ class XSsresc(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.alpha, self.rolloff, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSssa(XSAdditiveModel):
     """The XSPEC ssa model: Strangeon star atmosphere.
 
@@ -7608,10 +7518,6 @@ class XSssa(XSAdditiveModel):
     norm
         This represents (R/d)^2, where d is the distance to the star in
         units of 10 kpc.
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -7668,7 +7574,6 @@ class XSstep(XSAdditiveModel):
         param_apply_limits(pos, self.Energy, **kwargs)
 
 
-@version_at_least("12.9.1")
 class XStapec(XSAdditiveModel):
     """The XSPEC tapec model: APEC emission spectrum with separate continuum and line temperatures.
 
@@ -7698,10 +7603,6 @@ class XStapec(XSAdditiveModel):
     See Also
     --------
     XSbtapec, XSvtapec, XSvvtapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -7815,7 +7716,6 @@ class XSvbremss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.HeovrH, self.norm))
 
 
-@version_at_least("12.10.1")
 class XSvcph(XSAdditiveModel):
     """The XSPEC vcph model: Cooling + heating model for cool core clusters
 
@@ -7841,10 +7741,6 @@ class XSvcph(XSAdditiveModel):
     See Also
     --------
     XSmkcflow, XScph
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -8396,7 +8292,6 @@ class XSvnpshock(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau_l, self.Tau_u, self.redshift, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSvoigt(XSAdditiveModel):
     """The XSPEC voigt model: Voigt line profile.
 
@@ -8416,10 +8311,6 @@ class XSvoigt(XSAdditiveModel):
     See Also
     --------
     XSgauss, XSlorentz
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -8674,7 +8565,6 @@ class XSvsedov(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.redshift, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSvtapec(XSAdditiveModel):
     """The XSPEC vtapec model: APEC emission spectrum with separate continuum and line temperatures.
 
@@ -8702,10 +8592,6 @@ class XSvtapec(XSAdditiveModel):
     See Also
     --------
     XSbvtapec, XStapec, XSvvtapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -9294,7 +9180,6 @@ class XSvvsedov(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT_a, self.kT_b, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.redshift, self.norm))
 
 
-@version_at_least("12.9.1")
 class XSvvtapec(XSAdditiveModel):
     """The XSPEC vvtapec model: APEC emission spectrum with separate continuum and line temperatures.
 
@@ -9321,10 +9206,6 @@ class XSvvtapec(XSAdditiveModel):
     See Also
     --------
     XSbvvtapec, XStapec, XSvtapec
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -9673,7 +9554,6 @@ class XSzbbody(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.redshift, self.norm))
 
 
-@version_at_least("12.10.1")
 class XSzbknpower(XSAdditiveModel):
     """The XSPEC zbknpower model: broken power law.
 
@@ -9761,7 +9641,6 @@ class XSzbremss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.redshift, self.norm))
 
 
-@version_at_least("12.10.0")
 class XSzcutoffpl(XSAdditiveModel):
     """The XSPEC zcutoffpl model: power law, high energy exponential cutoff.
 
@@ -9783,10 +9662,6 @@ class XSzcutoffpl(XSAdditiveModel):
     See Also
     --------
     XSbknpower, XSbkn2pow, XSzcutoffpl, XSpowerlaw, XSzpowerlw
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.0 or later.
 
     References
     ----------
@@ -9929,7 +9804,6 @@ class XSzkerrbb(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.eta, self.a, self.i, self.Mbh, self.Mdd, self.z, self.fcol, self.rflag, self.lflag, self.norm))
 
 
-@version_at_least("12.10.1")
 class XSzlogpar(XSAdditiveModel):
     """The XSPEC zlogpar model: log-parabolic blazar model.
 
@@ -9951,10 +9825,6 @@ class XSzlogpar(XSAdditiveModel):
     See Also
     --------
     XSlogpar
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.10.1 or later.
 
     References
     ----------
@@ -10085,7 +9955,7 @@ class XSacisabs(XSMultiplicativeModel):
 
     """
 
-    __function__ = _f77_or_c_12100("acisabs")
+    __function__ = "C_acisabs"
 
     def __init__(self, name='acisabs'):
         self.Tdays = XSParameter(name, 'Tdays', 850., 0., 10000., 0.0, 10000, units='days', frozen=True)
@@ -10467,7 +10337,6 @@ class XShrefl(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.thetamin, self.thetamax, self.thetaobs, self.Feabun, self.FeKedge, self.Escfrac, self.covfac, self.redshift))
 
 
-@version_at_least("12.9.1")
 class XSismabs(XSMultiplicativeModel):
     """The XSPEC ismabs model: A high resolution ISM absorption model with variable columns for individual ions.
 
@@ -10490,8 +10359,6 @@ class XSismabs(XSMultiplicativeModel):
     for Silicon and Sulfur include an underscore character after the
     element name to avoid conflict: that is Si_I and S_I refer to
     the XSPEC SiI and SI parameters respectively.
-
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11142,7 +11009,7 @@ class XSswind1(XSMultiplicativeModel):
 
     """
 
-    __function__ = _f77_or_c_12100("swind1")
+    __function__ = "C_swind1"
 
     def __init__(self, name='swind1'):
         self.column = XSParameter(name, 'column', 6., 3., 50., 3.0, 50)
@@ -11186,7 +11053,6 @@ class XSTBabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nH,))
 
 
-@version_at_least("12.9.1")
 class XSTBfeo(XSMultiplicativeModel):
     """The XSPEC TBfeo model: ISM grain absorption.
 
@@ -11212,8 +11078,6 @@ class XSTBfeo(XSMultiplicativeModel):
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
 
-    This model is only available when used with XSPEC 12.9.1 or later.
-
     References
     ----------
 
@@ -11234,7 +11098,6 @@ class XSTBfeo(XSMultiplicativeModel):
                                         self.redshift))
 
 
-@version_at_least("12.9.1")
 class XSTBgas(XSMultiplicativeModel):
     """The XSPEC TBgas model: ISM grain absorption.
 
@@ -11255,8 +11118,6 @@ class XSTBgas(XSMultiplicativeModel):
     -----
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
-
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11416,7 +11277,6 @@ class XSTBvarabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.H2, self.rho, self.amin, self.amax, self.PL, self.H_dep, self.He_dep, self.C_dep, self.N_dep, self.O_dep, self.Ne_dep, self.Na_dep, self.Mg_dep, self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep, self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep, self.Co_dep, self.Ni_dep, self.redshift))
 
 
-@version_at_least("12.9.1")
 class XSTBpcf(XSMultiplicativeModel):
     """The XSPEC TBpcf model: ISM grain absorption.
 
@@ -11440,8 +11300,6 @@ class XSTBpcf(XSMultiplicativeModel):
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
 
-    This model is only available when used with XSPEC 12.9.1 or later.
-
     References
     ----------
 
@@ -11460,7 +11318,6 @@ class XSTBpcf(XSMultiplicativeModel):
                                        (self.nH, self.pcf, self.redshift))
 
 
-@version_at_least("12.9.1")
 class XSTBrel(XSMultiplicativeModel):
     """The XSPEC TBrel model: ISM grain absorption.
 
@@ -11501,8 +11358,6 @@ class XSTBrel(XSMultiplicativeModel):
     -----
     The `set_xsabund` function changes the relative abundances of
     the elements, in particular the "wilm" setting.
-
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -11850,7 +11705,6 @@ class XSxion(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.height, self.lxovrld, self.rate, self.cosAng, self.inner, self.outer, self.index, self.redshift, self.Feabun, self.E_cut, self.Ref_type, self.Rel_smear, self.Geometry))
 
 
-@version_at_least("12.9.1")
 class XSxscat(XSMultiplicativeModel):
     """The XSPEC xscat model: dust scattering.
 
@@ -11868,10 +11722,6 @@ class XSxscat(XSMultiplicativeModel):
         The radius of the circular extraction region, in arcsec.
     DustModel
         The dust model used: see [1]_ for more information.
-
-    Notes
-    -----
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -12225,7 +12075,7 @@ class XSzxipcf(XSMultiplicativeModel):
 
     """
 
-    __function__ = _f77_or_c_12100("zxipcf")
+    __function__ = "C_zxipcf"
 
     def __init__(self, name='zxipcf'):
         self.Nh = XSParameter(name, 'Nh', 10, 0.05, 500, 0.05, 500, units='10^22 atoms / cm^2')
@@ -12632,7 +12482,6 @@ class XScflux(XSConvolutionKernel):
                                                   ))
 
 
-@version_at_least("12.9.1")
 class XSclumin(XSConvolutionKernel):
     """The XSPEC clumin convolution model: calculate luminosity
 
@@ -12667,8 +12516,6 @@ class XSclumin(XSConvolutionKernel):
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
     emission component (or components) at 1.
-
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -13278,7 +13125,6 @@ class XSreflect(XSConvolutionKernel):
                                                   ))
 
 
-@version_at_least("12.9.1")
 class XSrfxconv(XSConvolutionKernel):
     """The XSPEC rfxconv convolution model: angle-dependent reflection from an ionized disk
 
@@ -13315,8 +13161,6 @@ class XSrfxconv(XSConvolutionKernel):
     the ``set_xsxset`` function to set the value of the RFXCONV_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
-
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------
@@ -13497,7 +13341,6 @@ class XSthcomp(XSConvolutionKernel):
                                                   ))
 
 
-@version_at_least("12.9.1")
 class XSvashift(XSConvolutionKernel):
     """The XSPEC vashift convolution model: velocity shift an additive model.
 
@@ -13523,8 +13366,6 @@ class XSvashift(XSConvolutionKernel):
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather than using the multiplication symbol.
 
-    This model is only available when used with XSPEC 12.9.1 or later.
-
     References
     ----------
 
@@ -13544,7 +13385,6 @@ class XSvashift(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, (self.Velocity,))
 
 
-@version_at_least("12.9.1")
 class XSvmshift(XSConvolutionKernel):
     """The XSPEC vmshift convolution model: velocity shift a multiplicative model.
 
@@ -13570,8 +13410,6 @@ class XSvmshift(XSConvolutionKernel):
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather than using the multiplication symbol.
 
-    This model is only available when used with XSPEC 12.9.1 or later.
-
     References
     ----------
 
@@ -13591,7 +13429,6 @@ class XSvmshift(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, (self.Velocity,))
 
 
-@version_at_least("12.9.1")
 class XSxilconv(XSConvolutionKernel):
     """The XSPEC xilconv convolution model: angle-dependent reflection from an ionized disk
 
@@ -13630,8 +13467,6 @@ class XSxilconv(XSConvolutionKernel):
     the ``set_xsxset`` function to set the value of the XILCONV_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
-
-    This model is only available when used with XSPEC 12.9.1 or later.
 
     References
     ----------

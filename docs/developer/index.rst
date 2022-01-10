@@ -296,7 +296,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.12.1 down to 12.9.0. It may build against
+:term:`XSPEC` versions 12.12.1 down to 12.10.1. It may build against
 newer versions, but if it does it will not provide access to any new
 models in the release. The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
@@ -415,13 +415,13 @@ available.
 
    Current version: `helpers/xspec_config.py <https://github.com/sherpa/sherpa/blob/master/helpers/xspec_config.py>`_.
 
-   When adding support for XSPEC 12.11.1, the top-level
+   When adding support for XSPEC 12.12.1, the top-level
    ``SUPPORTED_VERSIONS`` list was changed to include the triple
-   ``(12, 11, 1)``::
+   ``(12, 12, 1)``::
 
-     SUPPORTED_VERSIONS = [(12, 9, 0), (12, 9, 1),
-                           (12, 10, 0), (12, 10, 1),
-                           (12, 11, 0), (12, 11, 1)]
+     SUPPORTED_VERSIONS = [(12, 10, 1),
+                           (12, 11, 0), (12, 11, 1),
+                           (12, 12, 0), (12, 12, 1)]
 
    This list is used to select which functions to include when
    compiling the C++ interface code. For reference, the defines are
@@ -436,7 +436,7 @@ available.
 
 #. Attempt to build the XSPEC interface with::
 
-     pip install -e .
+     pip install -e . --verbose
 
    This requires that the ``xspec_config`` section of the ``setup.cfg``
    file has been set up correctly for the new XSPEC release. The exact
@@ -531,27 +531,31 @@ available.
 
       Current version: `sherpa/astro/xspec/src/_xspec.cc <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/src/_xspec.cc>`_.
 
-      New functions are added to the ``XspecMethods`` array,
-      using macros defined in ``sherpa/include/sherpa/astro/xspec_extension.hh``,
-      and should be surrounded by a pre-processor check for the
-      version symbol added to ``helpers/xspec_config.py``.
+      New functions are added to the ``XspecMethods`` array, using
+      macros defined in
+      ``sherpa/include/sherpa/astro/xspec_extension.hh``, and should
+      be surrounded by a pre-processor check for the version symbol
+      added to ``helpers/xspec_config.py``.
 
       As an example::
 
-        #ifdef XSPEC_12_10_1
-          XSPECMODELFCT_NORM( agnsed, 16 ),
+        #ifdef XSPEC_12_12_0
+	  XSPECMODELFCT_C_NORM( C_wDem, 8 )
         #endif
 
-      adds support for the ``agnsed`` function, but only for XSPEC
-      12.10.1 and later. Note that the symbol name used here is
+      adds support for the ``C_wDem`` function, but only for XSPEC
+      12.12.0 and later. Note that the symbol name used here is
       **not** the XSPEC model name (the first argument of the model
       definition from ``model.dat``), but the function name (the fifth
-      argument of the model definition (although for the ``agnsed``
-      example they are the same).
+      argument of the model definition)::
 
-      Some models have changed the name of the function over time,
-      so the pre-processor directive may need to be more complex, such
-      as::
+        % grep C_wDem $HEADAS/../spectral/manager/model.dat
+        wdem          7  0.         1.e20           C_wDem   add  0
+
+      Some models have changed the name of the function over time, so
+      the pre-processor directive may need to be more complex, such as
+      the following (although now we no-longer support XSPEC 12.10.0
+      this particular example has been removed from the code)::
 
         #ifdef XSPEC_12_10_0
           XSPECMODELFCT_C_NORM( C_nsmaxg, 6 ),
@@ -596,12 +600,12 @@ available.
       declaration should look like (replacing ``func`` with the
       function name, and note the trailing underscore)::
 
-        void func_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+        xsf77Call func_;
 
       and for model functions called ``c_func``, the prefixless
       version should be declared as::
 
-        void func(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+        xsccCall func;
 
       If you are unsure, do not add a declaration and then try to
       build Sherpa: the compiler should fail with an indication of

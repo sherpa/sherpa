@@ -82,7 +82,6 @@ extern "C" {
 // was moved into C scope. In XSPEC 12.12.1 the signature was changed
 // to mark more arguments as const.
 //
-#ifdef XSPEC_12_10_1
 #ifdef XSPEC_12_11_0
 extern "C" {
 #endif
@@ -99,8 +98,6 @@ extern "C" {
 
 #ifdef XSPEC_12_11_0
 }
-#endif
-
 #endif
 
 
@@ -1025,8 +1022,6 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args ) {
 // for now have a run-time check rather than multiple versions
 // of this routine.
 //
-#ifdef XSPEC_12_10_1
-
 PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 {
 
@@ -1097,114 +1092,6 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 }
 
-#else
-
-typedef void (*XSpecFuncVal)( float* ear, int ne, float* param, const char* filenm, int ifl, float* photar, float* photer );
-
-template <bool HasNorm, XSpecFuncVal XSpecFunc>
-PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds ) {
-
-        PyArgTupleBase();
-
-	FloatArray pars;
-	DoubleArray xlo;
-	DoubleArray xhi;
-	char *filename;
-	static char *kwlist[] = {(char*)"pars", (char*)"xlo", (char*)"xhi",
-			(char*)"filename", NULL};
-
-        // The grid arrays could be cast to FloatArray here, saving
-        // conversion later on in this routine. However, that can then
-        // lead to differences in the identification of non-contiguous
-        // bins, or whether a grid is monotonic and non-overlapping [*]
-        // (e.g. if a source expression contains both a FORTRAN
-        // and C style model), so stick to this approach for now.
-        //
-        // [*] although these checks are currently commented out
-        //
-	if ( !PyArg_ParseTupleAndKeywords( args, kwds, (char*)"O&O&|O&s", kwlist,
-			(converter)convert_to_contig_array< FloatArray >,
-			&pars,
-			(converter)convert_to_contig_array< DoubleArray >,
-			&xlo,
-			(converter)convert_to_contig_array< DoubleArray >,
-			&xhi,
-			&filename) )
-          return NULL;
-
-	npy_intp npars = pars.get_size();
-
-        // xspecTableModel<XSpecFunc> xspec_model = xspecTableModel<XSpecFunc>( );
-        // try {
-        //   FloatArray result;
-        //   xspec_model.eval(HasNorm, xlo, xhi, npars, pars, filename, NULL, result);
-        //   // Apply normalization if required
-        //   if ( HasNorm )
-        //     for (int i = 0; i < xlo.get_size(); i++)
-        //       result[i] *= pars[npars - 1];   // NOTE: NumPars not sent to template
-        //   return result.return_new_ref();
-        // } catch(std::runtime_error& re) {
-        //   return NULL;
-        // } catch(...) {
-        //   // Even though the XSPEC model function is Fortran, it could call
-        //   // C++ functions, so swallow exceptions here
-        //   PyErr_SetString( PyExc_ValueError, xspec_model.get_err_msg() );
-        //   return NULL;
-        // }
-
-        //
-	// The grid to send to XSPEC (double precision).
-	//
-	std::vector<SherpaFloat> ear;
-        std::vector<int> gaps_index;
-	create_grid(xlo, xhi, ear, gaps_index);
-
-	int nelem = int( xlo.get_size() );
-	int ngrid = ear.size();
-	int ifl = 1;
-
-        // convert to 32-byte float
-        std::vector<FloatArrayType> fear(ngrid);
-	CONVERTARRAY(ear, fear, ngrid);
-
-	// Number of bins to send to XSPEC
-	int nout = ngrid;
-	if (xhi) nout--;
-
-	FloatArray result, error;
-	create_output(nout, result, error);
-
-	// Swallow exceptions here
-
-        try {
-
-          int npts = ngrid - 1;
-          XSpecFunc( &fear[0], npts, &pars[0], filename, ifl,
-                     &result[0], &error[0] );
-
-	} catch(...) {
-
-          PyErr_SetString( PyExc_ValueError,
-                           (char*)"XSPEC model evaluation failed" );
-          return NULL;
-
-	}
-
-	int ngaps = (int) gaps_index.size();
-	if (ngaps > 0) {
-	  finalize_grid(nelem, result, gaps_index);
-	}
-
-	// Apply normalization if required
-	if ( HasNorm )
-          for (int i = 0; i < nelem; i++)
-            result[i] *= pars[npars - 1];  // NOTE: NumPars not sent to template
-
-	return result.return_new_ref();
-
-}
-
-#endif
 
 } } } /* namespace xspec, namespace astro, namespace sherpa */
 
@@ -1233,28 +1120,10 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds ) {
 #define XSPECMODELFCT_CON_F77(name, npars) \
 		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
 
-
-#ifdef XSPEC_12_10_1
 #define XSPECTABLEMODEL        \
 		{ (char*)"tabint", \
 	(PyCFunction)((PyCFunctionWithKeywords)sherpa::astro::xspec::xspectablemodel), \
 	METH_VARARGS|METH_KEYWORDS, \
 	NULL }
-
-#else
-
-#define _XSPECTABLEMODELSPEC(name, has_norm) \
-		{ (char*)#name, \
-	(PyCFunction)((PyCFunctionWithKeywords)sherpa::astro::xspec::xspectablemodel< has_norm, name >), \
-	METH_VARARGS|METH_KEYWORDS, \
-	NULL }
-
-#define XSPECTABLEMODEL(name) \
-		_XSPECTABLEMODELSPEC(name, false)
-
-#define XSPECTABLEMODEL_NORM(name) \
-		_XSPECTABLEMODELSPEC(name, true)
-
-#endif
 
 #endif /* __sherpa_astro_xspec_extension_hh__ */
