@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021
+#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,6 @@ from tempfile import NamedTemporaryFile, gettempdir
 import pytest
 
 import numpy as np
-from numpy.testing import assert_almost_equal
 
 from sherpa.models.basic import Const1D
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
@@ -707,21 +706,15 @@ def test_read_xstable_model(make_data_path):
     assert tbl.pars[2].name == 't'
     assert tbl.pars[3].name == 'norm'
 
-    assert_almost_equal(tbl.tau.val, 1)
-    assert_almost_equal(tbl.tau.min, 1)
-    assert_almost_equal(tbl.tau.max, 10)
+    def check(par, val, minval, maxval):
+        assert par.val == pytest.approx(val)
+        assert par.min == pytest.approx(minval)
+        assert par.max == pytest.approx(maxval)
 
-    assert_almost_equal(tbl.beta.val, 0.1)
-    assert_almost_equal(tbl.beta.min, 0.1)
-    assert_almost_equal(tbl.beta.max, 0.5)
-
-    assert_almost_equal(tbl.t.val, 0.1)
-    assert_almost_equal(tbl.t.min, 0.1)
-    assert_almost_equal(tbl.t.max, 1.3)
-
-    assert_almost_equal(tbl.norm.val, 1)
-    assert_almost_equal(tbl.norm.min, 0)
-    assert_almost_equal(tbl.norm.max, 1e24)
+    check(tbl.tau, 1, 1, 10)
+    check(tbl.beta, 0.1, 0.1, 0.5)
+    check(tbl.t, 0.1, 0.1, 1.3)
+    check(tbl.norm, 1, 0, 1e24)
 
     for p in tbl.pars:
         assert not(p.frozen)
@@ -874,17 +867,9 @@ def test_xspec_convolutionmodel_requires_bin_edges_low_level():
 @requires_fits
 @requires_xspec
 def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
-    """Can we extend an additive table model beyond its grid?
-
-    XSPEC 12.10.0 (if not manually patched) will crash if an
-    XSPEC table model is evaluated beyond its grid (this is only
-    an issue for programs like Sherpa that use XSPEC as a "library").
-    """
+    """Can we extend an additive table model beyond its grid?"""
 
     from sherpa.astro import xspec
-
-    if xspec.get_xsversion().startswith('12.10.0'):
-        pytest.skip('Test known to crash XSPEC 12.10.0')
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -953,13 +938,10 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
     This is a limited test - in that it does not attempt to
     test the full set of grid inputs that we do with additive
     table models (and other XSPEC models) - as it is assumed that
-    this logic hsa been tested.
+    this logic has been tested.
     """
 
     from sherpa.astro import xspec
-
-    if xspec.get_xsversion().startswith('12.10.0'):
-        pytest.skip('Test known to crash XSPEC 12.10.0')
 
     path = make_data_path('testpcfabs.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -971,8 +953,6 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
 
     # The expected values, evaluated with XSPEC 12.10.1b using
     # C++ code (i.e. not the Sherpa interface).
-    #
-    # It appears that the -1 is 1 in earlier versions.
     #
     yexp = np.asarray([0.511674,
                        0.730111,
@@ -991,15 +971,8 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
                        0.998454,
                        -1])
 
-    # Note, xspec 12.10.0 should not be seen here as explicitly
-    # excluded above.
-    xver = xspec.get_xsversion()
-    if xver.startswith('12.9.'):
-        yexp[-1] = 1.0
-
     y = tbl(elo, ehi)
-
-    assert_almost_equal(y, yexp, decimal=6)
+    assert y == pytest.approx(yexp)
 
 
 @requires_xspec
@@ -1013,9 +986,6 @@ def test_ismabs_parameter_name_clashes():
     scheme to address this is updated (it is technically not needed, but is
     left in as a check that any future auto-generated XSPEC model
     handles these parameter names).
-
-    Since this test does not evaluate the model, it should run with XSPEC
-    12.9.0.
     """
 
     from sherpa.astro import xspec

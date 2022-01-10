@@ -218,31 +218,24 @@ options changed to match the location of the local installation.
 XSPEC
 ^^^^^
 
-.. note::
-
-   The version number of XSPEC **must** be specified using the
-   ``xspec_version`` configuration option, as described below. This is
-   a change from previous releases of Sherpa, but is required in order
-   to support changes made in XSPEC 12.10.0.
-
 Sherpa can be built to use the Astronomy models provided by
 :term:`XSPEC`. To enable XSPEC support, several changes must be
 made to the ``xspec_config`` section of the ``setup.cfg`` file. The
 available options (with default values) are::
 
     with-xspec = False
-    xspec_version = 12.9.0
+    xspec_version = 12.10.1
     xspec_lib_dirs = None
     xspec_include_dirs = None
-    xspec_libraries = XSFunctions XSModel XSUtil XS
+    xspec_libraries = XSFunctions XSUtil XS
     cfitsio_lib_dirs = None
-    cfitsio_libraries = cfitsio
+    cfitsio_libraries =
     ccfits_lib_dirs = None
-    ccfits_libraries = CCfits
+    ccfits_libraries =
     wcslib_lib_dirs = None
-    wcslib_libraries = wcs
+    wcslib_libraries =
     gfortran_lib_dirs = None
-    gfortran_libraries = gfortran
+    gfortran_libraries =
 
 To build the :py:mod:`sherpa.astro.xspec` module, the
 ``with-xspec`` option must be set to ``True`` **and** the
@@ -318,36 +311,11 @@ match the contents of the XSPEC installation.
 
    where the version numbers were taken from version 6.26.1 of HEASOFT.
 
-6. If the full XSPEC 12.10.0 system has been built then use::
-
-       with-xspec = True
-       xspec_version = 12.10.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_3.0
-       ccfits_libraries = CCfits_2.5
-       wcslib_libraries = wcs-5.16
-
-7. If the full XSPEC 12.9.x system has been built then use::
-
-       with-xspec = True
-       xspec_version = 12.9.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSModel XSUtil XS
-       ccfits_libraries = CCfits_2.5
-       wcslib_libraries = wcs-5.16
-
-   changing ``12.9.1`` to ``12.9.0`` as appropriate.
-
-8. If the model-only build of XSPEC has been installed, then
-   the configuration is similar, but the library names may
-   not need version numbers and locations, depending on how the
+6. If the model-only build of XSPEC - created with the
+   ``--enable-xs-models-only`` flag when building HEASOFT - has been
+   installed, then the configuration is similar, but the library names
+   may not need version numbers and locations, depending on how the
    ``cfitsio``, ``CCfits``, and ``wcs`` libraries were installed.
-
-   Note that XSPEC 12.10.0 introduces a new ``--enable-xs-models-only``
-   flag when building HEASOFT which simplifies the installation of
-   these extra libraries, but can cause problems for the Sherpa build.
 
 A common problem is to set one or both of the ``xspec_lib_dirs``
 and ``xspec_lib_include`` options to the value of ``$HEADAS`` instead of

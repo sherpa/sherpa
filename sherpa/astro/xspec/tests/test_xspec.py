@@ -99,13 +99,6 @@ def get_xspec_models():
               'XSBaseParameter', 'XSParameter']:
         remove_item(model_names, n)
 
-    # The sirf model - in 12.8.2 and up to 12.9.0d at least - includes
-    # a read outside of an array. This has been seen to cause occasional
-    # errors in the Sherpa test case, so it is removed from the test
-    # for now. This problem has been reported to the XSPEC developers,
-    # so it will hopefully be fixed in one of ther 12.9.0 patches.
-    remove_item(model_names, 'XSsirf')
-
     # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
     # occasionally evaluate to all 0's. This has been reported, but for now
     # skip this model.
@@ -191,13 +184,6 @@ def assert_is_finite(vals, modelcls, label):
     emsg = "model {} is finite [{}]".format(modelcls, label)
     assert numpy.isfinite(vals).all(), emsg
 
-    # XSPEC 12.10.0 defaults to ATOMDB version 3.0.7 but
-    # provides files for 3.0.9 (this is okay for the application
-    # as it is automatically over-written by the XSPEC init file,
-    # but not for the models-only build we use). With this
-    # mis-match, APEC-style models return all 0 values, so check
-    # for this.
-    #
     # Some models seem to return 0's, so skip them for now:
     # these models have a default redshift parameter of 0 but
     # the code complains if z <= 0 and returns 0's.
