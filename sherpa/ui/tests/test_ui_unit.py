@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,8 +32,10 @@ import numpy as np
 import pytest
 
 from sherpa import ui
+from sherpa.models.parameter import Parameter
 from sherpa.models.model import ArithmeticModel
 from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
+from sherpa.utils.logging import SherpaVerbosity
 
 
 # This is part of #397
@@ -205,3 +207,81 @@ def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
     assert lname == "sherpa.ui.utils"
     assert lvl == logging.INFO
     assert msg == "WARNING: No guess found for (dummy + dummy)"
+
+
+class Parameter2(Parameter):
+    """All we want is a sub-class of Parameter."""
+
+    # What version of Python allows us to drop the pass statement?
+    pass
+
+
+class Const(ArithmeticModel):
+    """A constant model"""
+
+    def calc(self, pars, *args, **kwargs):
+        return pars[0] * np.ones_like(args[0])
+
+
+class Const1(Const):
+    """A constant model using Parameter
+
+    sherpa.models.basic.Const1D could have been used but here we can
+    see that Const1/Const2 are the same, apart from the parameter
+    class.
+
+    """
+
+    def __init__(self, name='const1'):
+        self.con = Parameter(name, 'con', 1)
+        Const.__init__(self, name, (self.con, ))
+
+
+class Const2(Const):
+    """A constant model using Parameter2"""
+
+    def __init__(self, name='const2'):
+        self.con = Parameter2(name, 'con', 1)
+        Const.__init__(self, name, (self.con, ))
+
+
+@pytest.mark.parametrize("mdlcls", [Const1, pytest.param(Const2, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("method,getter",
+                         [(ui.covar, ui.get_covar_results),
+                          (ui.conf, ui.get_conf_results),
+                          (ui.proj,ui.get_proj_results)])
+def test_est_errors_works_single_parameter(mdlcls, method, getter, clean_ui):
+    """This is issue #1397.
+
+    Rather than require XSPEC, we create a subclass of the Parameter
+    class to check it works. We are not too concerned with the actual
+    results hence the relatively low tolerance on the numeric checks.
+
+    """
+
+    mdl = mdlcls()
+
+    ui.load_arrays(1, [1, 2, 3, 4], [4, 2, 1, 3.5])
+    ui.set_source(mdl)
+    with SherpaVerbosity("ERROR"):
+        ui.fit()
+
+        # this is where #1397 fails with Const2
+        method(mdl.con)
+
+    atol = 1e-4
+    assert ui.calc_stat() == pytest.approx(0.7651548418626658, abs=atol)
+
+    results = getter()
+    assert results.parnames == (f"{mdl.name}.con", )
+    assert results.sigma == pytest.approx(1.0)
+
+    assert results.parvals == pytest.approx((2.324060647544594, ), abs=atol)
+
+    # The covar errors are -/+ 1.3704388763054511
+    #     conf             -1.3704388763054511 / +1.3704388763054514
+    #     proj             -1.3704388762971822 / +1.3704388763135826
+    #
+    err = 1.3704388763054511
+    assert results.parmins == pytest.approx((-err, ), abs=atol)
+    assert results.parmaxes == pytest.approx((err, ), abs=atol)
