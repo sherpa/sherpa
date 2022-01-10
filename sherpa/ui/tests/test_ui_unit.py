@@ -245,7 +245,7 @@ class Const2(Const):
         Const.__init__(self, name, (self.con, ))
 
 
-@pytest.mark.parametrize("mdlcls", [Const1, pytest.param(Const2, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("mdlcls", [Const1, Const2])
 @pytest.mark.parametrize("method,getter",
                          [(ui.covar, ui.get_covar_results),
                           (ui.conf, ui.get_conf_results),

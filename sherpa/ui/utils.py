@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -9671,7 +9671,7 @@ class Session(NoNewAttributesAfterInit):
         parlist = []
         otherids = ()
         for arg in args:
-            if type(arg) is sherpa.models.Parameter:
+            if isinstance(arg, sherpa.models.Parameter):
                 if arg.frozen is False:
                     parlist.append(arg)
                 else:
