@@ -9674,9 +9674,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        args : sequence of sherpa.models.Parameter, int, or str
-            The dataset (when an niteger or str) to evaluate or the
-            model parameter to apply the error estimate on.
+        args : sequence of sherpa.models.Parameter, sherpa.models.Model, int, or str
+            The dataset (when an integer or str) to evaluate, the
+            model parameter to apply the error estimate on (must be
+            thawed), or a model frmo which all the thawed parameters
+            are used.
         methodname : str
             One of the valid error estimates (sub-classes of
             sherpa.estmethods.EstMethod).
@@ -9696,6 +9698,13 @@ class Session(NoNewAttributesAfterInit):
                     raise sherpa.utils.err.ParameterErr('frozen', arg.fullname)
 
                 parlist.append(arg)
+                continue
+
+            if isinstance(arg, sherpa.models.Model):
+                for par in arg.pars:
+                    if not par.frozen:
+                        parlist.append(par)
+
                 continue
 
             if id is None:
@@ -9731,13 +9740,15 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, that provides the data. If not given
            then all data sets with an associated model are used
            simultaneously.
-        parameters : sherpa.models.parameter.Parameter, optional
+        parameter : sherpa.models.parameter.Parameter, optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the data
            sets. The evaluation can be restricted by listing the
            parameters to use. Note that each parameter should be given
            as a separate argument, rather than as a list.  For example
            ``covar(g1.ampl, g1.sigma)``.
+        model : sherpa.models.model.Model, optional
+           Select all the thawed parameters in the model.
 
         See Also
         --------
@@ -9832,6 +9843,12 @@ class Session(NoNewAttributesAfterInit):
 
         >>> covar("obs1", "obs5", "obs6", clus.kt)
 
+        Estimate the errors for all the thawed parameters from the
+        ``line`` model and the ``clus.kt`` parameter for datasets 1,
+        3, and 4:
+
+        >>> covar(1, 3, 4, line, clus.kt)
+
         """
         self._covariance_results = self._est_errors(args, 'covariance')
 
@@ -9856,13 +9873,15 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, that provides the data. If not given
            then all data sets with an associated model are used
            simultaneously.
-        parameters : sherpa.models.parameter.Parameter, optional
+        parameter : sherpa.models.parameter.Parameter, optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the data
            sets. The evaluation can be restricted by listing the
            parameters to use. Note that each parameter should be given
            as a separate argument, rather than as a list.  For example
            ``conf(g1.ampl, g1.sigma)``.
+        model : sherpa.models.model.Model, optional
+           Select all the thawed parameters in the model.
 
         See Also
         --------
@@ -10032,6 +10051,12 @@ class Session(NoNewAttributesAfterInit):
         >>> set_conf_opt('numcores', 2)
         >>> conf(3)
 
+        Estimate the errors for all the thawed parameters from the
+        ``line`` model and the ``clus.kt`` parameter for datasets 1,
+        3, and 4:
+
+        >>> conf(1, 3, 4, line, clus.kt)
+
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 
@@ -10058,13 +10083,15 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, that provides the data. If not given
            then all data sets with an associated model are used
            simultaneously.
-        parameters : sherpa.models.parameter.Parameter, optional
+        parameter : sherpa.models.parameter.Parameter, optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the data
            sets. The evaluation can be restricted by listing the
            parameters to use. Note that each parameter should be given
            as a separate argument, rather than as a list.  For example
            ``proj(g1.ampl, g1.sigma)``.
+        model : sherpa.models.model.Model, optional
+           Select all the thawed parameters in the model.
 
         See Also
         --------

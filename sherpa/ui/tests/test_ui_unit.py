@@ -428,7 +428,6 @@ def test_err_estimate_multi_ids(strings, idval, otherids, clean_ui):
     assert res.parmaxes == pytest.approx([ERR_EST_C0_MAX, ERR_EST_C1_MAX])
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("strings", [False, True])
 @pytest.mark.parametrize("idval,otherids",
                          [(1, (2, 3)),
