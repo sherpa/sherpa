@@ -607,35 +607,39 @@ class Session(NoNewAttributesAfterInit):
                  self._current_stat.__str__()))
 
     def _get_show_fit(self):
-        fit_str = ''
-        if self._fit_results is not None:
-            fit_str += self._get_show_method()
-            fit_str += '\n'
-            fit_str += self._get_show_stat()
-            fit_str += '\n'
-            fit_str += 'Fit:'
-            fit_str += self.get_fit_results().format() + '\n\n'
+        if self._fit_results is None:
+            return ''
+
+        fit_str = self._get_show_method()
+        fit_str += '\n'
+        fit_str += self._get_show_stat()
+        fit_str += '\n'
+        fit_str += 'Fit:'
+        fit_str += self.get_fit_results().format() + '\n\n'
         return fit_str
 
     def _get_show_conf(self):
-        conf_str = ''
-        if self._confidence_results is not None:
-            conf_str += 'Confidence:'
-            conf_str += self.get_conf_results().format() + '\n\n'
+        if self._confidence_results is None:
+            return ''
+
+        conf_str = 'Confidence:'
+        conf_str += self.get_conf_results().format() + '\n\n'
         return conf_str
 
     def _get_show_proj(self):
-        proj_str = ''
-        if self._projection_results is not None:
-            proj_str += 'Projection:'
-            proj_str += self.get_proj_results().format() + '\n\n'
+        if self._projection_results is None:
+            return ''
+
+        proj_str = 'Projection:'
+        proj_str += self.get_proj_results().format() + '\n\n'
         return proj_str
 
     def _get_show_covar(self):
-        covar_str = ''
-        if self._covariance_results is not None:
-            covar_str += 'Covariance:'
-            covar_str += self.get_covar_results().format() + '\n\n'
+        if self._covariance_results is None:
+            return ''
+
+        covar_str = 'Covariance:'
+        covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
     def show_stat(self, outfile=None, clobber=False):
@@ -8102,8 +8106,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._fit_results is None:
             raise SessionErr('nofit', 'fit')
-        else:
-            return self._fit_results
+
+        return self._fit_results
 
     def guess(self, id=None, model=None, limits=True, values=True):
         """Estimate the parameter values and ranges given the loaded data.
@@ -9471,8 +9475,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._covariance_results is None:
             raise SessionErr('noaction', "covariance")
-        else:
-            return self._covariance_results
+
+        return self._covariance_results
 
     def get_conf_results(self):
         """Return the results of the last `conf` run.
@@ -9568,8 +9572,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._confidence_results is None:
             raise SessionErr('noaction', "confidence")
-        else:
-            return self._confidence_results
+
+        return self._confidence_results
 
     def get_proj_results(self):
         """Return the results of the last `proj` run.
@@ -9659,30 +9663,49 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._projection_results is None:
             raise SessionErr('noaction', "projection")
-        else:
-            return self._projection_results
+
+        return self._projection_results
 
     def _est_errors(self, args, methodname):
-        # Any argument that is a model parameter should be detected
-        # and added to the list of parameters for which we want limits.
-        # Else, the argument is an integer or string denoting a
-        # data set ID.
+        """Evaluate the errors for the given arguments.
+
+        The formatted output of the estimation is logged at the
+        info level.
+
+        Parameters
+        ----------
+        args : sequence of sherpa.models.Parameter, int, or str
+            The dataset (when an niteger or str) to evaluate or the
+            model parameter to apply the error estimate on.
+        methodname : str
+            One of the valid error estimates (sub-classes of
+            sherpa.estmethods.EstMethod).
+
+        Returns
+        -------
+        result : sherpa.fit.ErrorEstResults instance
+
+        """
+
         id = None
         parlist = []
-        otherids = ()
+        otherids = []
         for arg in args:
             if isinstance(arg, sherpa.models.Parameter):
-                if arg.frozen is False:
-                    parlist.append(arg)
-                else:
+                if arg.frozen:
                     raise sherpa.utils.err.ParameterErr('frozen', arg.fullname)
+
+                parlist.append(arg)
+                continue
+
+            if id is None:
+                id = arg
             else:
-                if id is None:
-                    id = arg
-                else:
-                    otherids = otherids + (arg,)
-        if (len(parlist) == 0):
+                otherids.append(arg)
+
+        if len(parlist) == 0:
             parlist = None
+
         ids, f = self._get_fit(id, otherids, self._estmethods[methodname])
         res = f.est_errors(self._methods, parlist)
         res.datasets = ids
