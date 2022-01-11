@@ -1,7 +1,7 @@
 
 %{
 /*                                                                
-**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007,2022  Smithsonian Astrophysical Observatory 
 */                                                                
 
 /*                                                                          */
@@ -28,6 +28,7 @@
 extern char     *regParseStr;
 extern char     *regParseStrEnd;
 extern regRegion *my_Gregion;
+extern void      regYYrestart(FILE*);
 static int world_coord;
 static int world_size;
 int test_link_jcm( void );
