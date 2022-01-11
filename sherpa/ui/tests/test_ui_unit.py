@@ -25,6 +25,7 @@ Note that this test is almost duplicated in
 sherpa/astro/ui/tests/test_astro_ui_unit.py
 """
 
+from io import StringIO
 import logging
 
 import numpy as np
@@ -532,3 +533,69 @@ def test_err_estimate_single_parameter(strings, idval, otherids, clean_ui):
 
     assert res.parmins == pytest.approx([ERR_EST_C1_MIN])
     assert res.parmaxes == pytest.approx([ERR_EST_C1_MAX])
+
+
+def test_show_all_empty(clean_ui):
+    """Checks several routines at once!"""
+
+    out = StringIO()
+    ui.show_all(outfile=out)
+    assert out.getvalue() == "\n"
+
+
+def test_show_all_basic(clean_ui):
+    """Set up a very basic data/model/fit"""
+
+    ui.load_arrays(1, [1, 2, 4], [3, 5, 5])
+    ui.set_source(ui.scale1d.mdl)
+    ui.fit()
+    ui.conf()
+    ui.proj()
+    ui.covar()
+
+    def get(value):
+        out = StringIO()
+        getattr(ui, f"show_{value}")(outfile=out)
+        ans = out.getvalue()
+        assert len(ans) > 1
+
+        # trim the trailing "\n"
+        return ans[:-1]
+
+    # All we are really checking is that the show_all output is the
+    # comppsite of the following. We are not checking that the
+    # actual output makes sense for any command.
+    #
+    expected = get("data") + get("model") + get("fit") + get("conf") + \
+        get("proj") + get("covar")
+
+    got = get("all")
+
+    assert expected == got
+
+
+def test_show_conf_basic(clean_ui):
+    """Set up a very basic data/model/fit"""
+
+    ui.load_arrays(1, [1, 2, 4], [3, 5, 5])
+    ui.set_source(ui.scale1d.mdl)
+    ui.fit()
+    ui.conf()
+
+    out = StringIO()
+    ui.show_conf(outfile=out)
+    got = out.getvalue().split('\n')
+
+    assert len(got) == 12
+    assert got[0] == "Confidence:Dataset               = 1"
+    assert got[1] == "Confidence Method     = confidence"
+    assert got[2] == "Iterative Fit Method  = None"
+    assert got[3] == "Fitting Method        = levmar"
+    assert got[4] == "Statistic             = chi2gehrels"
+    assert got[5] == "confidence 1-sigma (68.2689%) bounds:"
+    assert got[6] == "   Param            Best-Fit  Lower Bound  Upper Bound"
+    assert got[7] == "   -----            --------  -----------  -----------"
+    assert got[8] == "   mdl.c0            4.19798     -1.85955      1.85955"
+    assert got[9] == ""
+    assert got[10] == ""
+    assert got[11] == ""
