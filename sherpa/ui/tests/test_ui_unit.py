@@ -34,7 +34,7 @@ import pytest
 from sherpa import ui
 from sherpa.models.parameter import Parameter
 from sherpa.models.model import ArithmeticModel
-from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
+from sherpa.utils.err import ArgumentTypeErr, IdentifierErr, ParameterErr
 from sherpa.utils.logging import SherpaVerbosity
 
 
@@ -285,3 +285,185 @@ def test_est_errors_works_single_parameter(mdlcls, method, getter, clean_ui):
     err = 1.3704388763054511
     assert results.parmins == pytest.approx((-err, ), abs=atol)
     assert results.parmaxes == pytest.approx((err, ), abs=atol)
+
+
+@pytest.mark.parametrize("method", [ui.conf, ui.covar, ui.proj])
+def test_err_estimate_errors_on_frozen(method, clean_ui):
+    """Check we error out with frozen par with conf/proj/covar.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    ui.set_source(ui.polynom1d.mdl)
+    with pytest.raises(ParameterErr) as exc:
+        method(mdl.c0, mdl.c1)
+
+    assert str(exc.value) == "parameter 'mdl.c1' is frozen"
+
+
+@pytest.mark.parametrize("method", [ui.conf, ui.covar, ui.proj])
+@pytest.mark.parametrize("id", [1, "xx"])
+@pytest.mark.parametrize("otherids", [[2, 3], ["foo", "bar"]])
+def test_err_estimate_errors_on_list_argument(method, id, otherids, clean_ui):
+    """Check we error out with a list argument with conf/proj/covar.
+
+    We had documented that you could say conf(1, [2, 3]) but this
+    is not true, so check it does error out. Fortunately we can
+    do this without setting up any dataset or model.
+
+    """
+
+    with pytest.raises(ArgumentTypeErr) as exc:
+        method(id, otherids)
+
+    assert str(exc.value) == "identifiers must be integers or strings"
+
+
+def setup_err_estimate_multi_ids(strings=False):
+    """Create the environment used in test_err_estimate_xxx tests.
+
+    The model being fit is polynom1d with c0=50 c1=-2
+    and was evaluated and passed through sherpa.utils.poisson_noise
+    to create the datasets.
+
+    Since we can have strnig or integer ids we allow either,
+    but do not try to mix them.
+
+    """
+
+    if strings:
+        id1 = "1"
+        id2 = "2"
+        id3 = "3"
+    else:
+        id1 = 1
+        id2 = 2
+        id3 = 3
+
+    ui.load_arrays(id1, [1, 3, 7, 12], [50, 40,27, 20])
+    ui.load_arrays(id2, [-3, 4, 5], [55, 34, 37])
+    ui.load_arrays(id3, [10, 12, 20], [24, 26, 7])
+
+    # NOTE: dataset "not-used" is not used in the fit and is not
+    # drawn from the distributino used to create the other datasets.
+    #
+    ui.load_arrays("not-used", [2000, 2010, 2020], [10, 12, 14])
+
+    mdl = ui.create_model_component("polynom1d", "mdl")
+    mdl.c1.thaw()
+    ui.set_source(id1, mdl)
+    ui.set_source(id2, mdl)
+    ui.set_source(id3, mdl)
+
+    # apply the model to dataset not-used just so we can check we
+    # don't end up using it
+    mdl_not_used = ui.create_model_component("scale1d", "mdl_not_used")
+    ui.set_source("not-used", mdl + mdl_not_used)
+
+    # use cstat so we have an approximate goodness-of-fit just to
+    # check we are getting sensible results.
+    #
+    ui.set_stat("cstat")
+    ui.set_method("simplex")
+
+
+# This is a regression test, there's no "correct" value to test against.
+#
+ERR_EST_C0_MIN = -2.8006781174692676
+ERR_EST_C0_MAX = 2.9038373212762494
+ERR_EST_C1_MIN = -0.19798615552319254
+ERR_EST_C1_MAX = 0.21022843992924245
+
+
+@pytest.mark.parametrize("strings", [False, True])
+@pytest.mark.parametrize("idval,otherids",
+                         [(1, (2, 3)),
+                          (2, [3, 1]),
+                          (3, [2, 1])])
+def test_err_estimate_multi_ids(strings, idval, otherids, clean_ui):
+    """Ensure we can use multiple ids with conf/proj/covar.
+
+    Since this uses the same logic we only test the conf routine;
+    ideally we'd use all but that's harder to test.
+
+    The fit and error analysis should be the same however the ordering
+    is done.
+    """
+
+    # This is a bit ugly
+    if strings:
+        idval = str(idval)
+        if type(otherids) == tuple:
+            otherids = (str(otherids[0]), str(otherids[1]))
+        else:
+            otherids = [str(otherids[0]), str(otherids[1])]
+
+    datasets = tuple([idval] + list(otherids))
+
+    setup_err_estimate_multi_ids(strings=strings)
+    ui.fit(idval, *otherids)
+
+    # The "reduced statistic" is ~0.42 for the fit.
+    #
+    res = ui.get_fit_results()
+    assert res.datasets == datasets
+    assert res.numpoints == 10  # sum of datasets 1, 2, 3
+    assert res.statval == 3.379367979541458
+
+    # since there's a model assigned to dataset not-used the
+    # overall statistic is not the same as res.statval.
+    #
+    assert ui.calc_stat() == pytest.approx(4255.615602052843)
+
+    assert mdl.c0.val == pytest.approx(46.046607302070015)
+    assert mdl.c1.val == pytest.approx(-1.9783953989993386)
+
+    ui.conf(*datasets)
+    res = ui.get_conf_results()
+
+    assert res.datasets == datasets
+    assert res.parnames == ("mdl.c0", "mdl.c1")
+
+    assert res.parmins == pytest.approx([ERR_EST_C0_MIN, ERR_EST_C1_MIN])
+    assert res.parmaxes == pytest.approx([ERR_EST_C0_MAX, ERR_EST_C1_MAX])
+
+
+@pytest.mark.parametrize("strings", [False, True])
+@pytest.mark.parametrize("idval,otherids",
+                         [(1, (2, 3)),
+                          (2, [3, 1]),
+                          (3, [2, 1])])
+def test_err_estimate_single_parameter(strings, idval, otherids, clean_ui):
+    """Ensure we can fti a single parameter with conf/proj/covar.
+
+    Since this uses the same logic we only test the conf routine;
+    ideally we'd use all but that's harder to test.
+
+    We use the same model as test_err_estimate_multi_ids but
+    here we only want to evaluate the error for the mdl.c1 component.
+
+    The fit and error analysis should be the same however the ordering
+    is done.
+    """
+
+    # This is a bit ugly
+    if strings:
+        idval = str(idval)
+        if type(otherids) == tuple:
+            otherids = (str(otherids[0]), str(otherids[1]))
+        else:
+            otherids = [str(otherids[0]), str(otherids[1])]
+
+    datasets = tuple([idval] + list(otherids))
+    setup_err_estimate_multi_ids(strings=strings)
+    ui.fit(idval, *otherids)
+
+    # pick an odd ordering just to check we pick it up
+    ui.conf(datasets[0], mdl.c1, datasets[1], datasets[2])
+    res = ui.get_conf_results()
+
+    assert res.datasets == datasets
+    assert res.parnames == ("mdl.c1", )
+
+    assert res.parmins == pytest.approx([ERR_EST_C1_MIN])
+    assert res.parmaxes == pytest.approx([ERR_EST_C1_MAX])
