@@ -428,6 +428,72 @@ def test_err_estimate_multi_ids(strings, idval, otherids, clean_ui):
     assert res.parmaxes == pytest.approx([ERR_EST_C0_MAX, ERR_EST_C1_MAX])
 
 
+@pytest.mark.xfail
+@pytest.mark.parametrize("strings", [False, True])
+@pytest.mark.parametrize("idval,otherids",
+                         [(1, (2, 3)),
+                          (2, [3, 1]),
+                          (3, [2, 1])])
+def test_err_estimate_model(strings, idval, otherids, clean_ui):
+    """Ensure we can use model with conf/proj/covar.
+
+    This is test_err_estimate_multi_ids but
+
+      - added an extra model to each source (that evaluates to 0)
+      - we include the model expression in the call.
+
+    The fit and error analysis should be the same however the ordering
+    is done.
+    """
+
+    # This is a bit ugly
+    if strings:
+        idval = str(idval)
+        if type(otherids) == tuple:
+            otherids = (str(otherids[0]), str(otherids[1]))
+        else:
+            otherids = [str(otherids[0]), str(otherids[1])]
+
+    datasets = tuple([idval] + list(otherids))
+
+    setup_err_estimate_multi_ids(strings=strings)
+
+    zero = ui.create_model_component("scale1d", "zero")
+    zero.c0 = 0
+    zero.c0.freeze()
+
+    for id in datasets:
+        # In this case we have
+        #   orig == mdl
+        # but let's be explicit in case the code changes
+        #
+        orig = ui.get_source(id)
+        ui.set_source(id, orig + zero)
+
+    ui.fit(idval, *otherids)
+
+    res = ui.get_fit_results()
+    assert res.datasets == datasets
+    assert res.numpoints == 10
+    assert res.statval == 3.379367979541458
+    assert ui.calc_stat() == pytest.approx(4255.615602052843)
+    assert mdl.c0.val == pytest.approx(46.046607302070015)
+    assert mdl.c1.val == pytest.approx(-1.9783953989993386)
+
+    # I wanted to have zero.co thawed at this stage, but then we can not
+    # use the ERR_EST_C0/1_xxx values as the fit has changed (and mdl.c0
+    # anbd zero.c0 are degenerate to boot).
+    #
+    ui.conf(*datasets, mdl)
+    res = ui.get_conf_results()
+
+    assert res.datasets == datasets
+    assert res.parnames == ("mdl.c0", "mdl.c1")
+
+    assert res.parmins == pytest.approx([ERR_EST_C0_MIN, ERR_EST_C1_MIN])
+    assert res.parmaxes == pytest.approx([ERR_EST_C0_MAX, ERR_EST_C1_MAX])
+
+
 @pytest.mark.parametrize("strings", [False, True])
 @pytest.mark.parametrize("idval,otherids",
                          [(1, (2, 3)),
