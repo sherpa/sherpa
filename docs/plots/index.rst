@@ -99,7 +99,7 @@ display directly:
 :py:class:`~sherpa.plot.Point`,
 and
 :py:class:`~sherpa.plot.Contour`. Here we use the Histogram
-class directly to diplay the data directly, on top of the
+class directly to display the data directly, on top of the
 existing plot:
 
     >>> from sherpa.plot import Histogram
@@ -172,7 +172,7 @@ The above plot is very similar to that created by the
 
 The major difference is that here the data is drawn first, and then
 the model - unlike the previous example - so the colors used for the
-line and points has swapped. The plot title is also different.
+line and points have swapped. The plot title is also different.
 
 Changing the plot appearance
 ----------------------------
@@ -183,7 +183,7 @@ and this can be done either by
   - changing the preference settings of the plot object
     (which will change any plot created by the object)
 
-  - over-riding the setting when plotting the data (this
+  - overriding the setting when plotting the data (this
     capability is new to Sherpa 4.12.0).
 
 There are several settings which are provided for all backends,
@@ -246,7 +246,7 @@ The variation in best-fit statistic to a parameter can be
 investigated with the :py:class:`~sherpa.plot.IntervalProjection`
 class (there is also a :py:class:`~sherpa.plot.IntervalUncertainty`
 but it is not as robust). Here we use the default options for
-determing the parameter range over which to vary the gaussian
+determining the parameter range over which to vary the gaussian
 line position (which corresponds to `mdl.pars[2]`):
 
     >>> from sherpa.plot import IntervalProjection
