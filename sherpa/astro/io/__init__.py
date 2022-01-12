@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -671,7 +671,7 @@ def _set_keyword(header, label, value):
 
 
 def _pack_pha(dataset):
-    """Extract FITS  column and header information.
+    """Extract FITS column and header information.
 
     Notes
     -----
@@ -692,7 +692,7 @@ def _pack_pha(dataset):
         HDUCLAS1 - should contain the string "SPECTRUM" to indicate this is a spectrum.
         HDUVERS - the version number of the format (this document describes version 1.2.1)
         POISSERR - whether Poissonian errors are appropriate to the data (see below).
-        CHANTYPE - whether the channels used in the file have been corrected in anyway (see below).
+        CHANTYPE - whether the channels used in the file have been corrected in any way (see below).
         DETCHANS - the total number of detector channels available.
 
     We also add in the following, defaulting to the first value - we
@@ -783,7 +783,7 @@ def _pack_pha(dataset):
     _set_keyword(header, "ANCRFILE", arf)
     _set_keyword(header, "BACKFILE", bkg)
 
-    # The channel ordering for the ouput file is determined by the
+    # The column ordering for the ouput file is determined by the
     # order the keys are added to the data dict.
     #
     # TODO: perhaps we should error out if channel or counts is not set?

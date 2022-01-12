@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021
+#  Copyright (C) 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -353,7 +353,7 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
     """Check we can handle an XMM grating.
 
     This has an AREASCAL column and WCS attached to the CHANNEL
-    colun. We don't guarantee the WCS info will be retained or
+    column. We don't guarantee the WCS info will be retained or
     propagated.
 
     """
