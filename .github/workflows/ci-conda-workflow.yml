@@ -1,6 +1,12 @@
 name: Conda CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
 
 env:
   sherpa_channel: sherpa
@@ -24,11 +30,11 @@ jobs:
             matplotlib-version: 3
             xspec-version: 12.10.1s
 
-          - name: Linux Minimum Setup 
+          - name: Linux Minimum Setup
             os: ubuntu-latest
             python-version: 3.8
             numpy-version: 1.18
-            install-type: develop 
+            install-type: develop
             test-data: none
 
           - name: Linux Full Build (Python 3.9)
@@ -41,7 +47,7 @@ jobs:
             xspec-version: 12.11.1
 
           - name: Linux Full Build (Python 3.8)
-            os: ubuntu-latest 
+            os: ubuntu-latest
             python-version: 3.8
             install-type: develop
             fits: astropy
@@ -55,13 +61,13 @@ jobs:
             numpy-version: 1.19
             install-type: install
             fits: astropy
-            test-data: submodule 
+            test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.10.1s
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: 3.9 
+            python-version: 3.9
             install-type: install
             test-data: package
             matplotlib-version: 3
@@ -70,7 +76,7 @@ jobs:
             os: ubuntu-latest
             python-version: 3.7
             numpy-version: 1.18
-            install-type: develop 
+            install-type: develop
             fits: astropy
             test-data: none
 
