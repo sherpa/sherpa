@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021
+#  Copyright (C) 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,14 +20,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
 import random
+
+import numpy
 
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.opt import Opt, SimplexRandom
 # from ncoresnm import ncoresNelderMead
 # from opt import Opt, SimplexRandom
 from sherpa.utils import parallel_map, _ncpus
+
+__all__ = ("ncoresDifEvo", )
 
 
 class Key2:

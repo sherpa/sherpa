@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,13 +22,14 @@
 
 # import autograd.numpy as np
 import numpy as np
+
 from sherpa.utils import _ncpus
 from sherpa.optmethods import _saoopt
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
 # from opt import MyNcores, Opt, SimplexNoStep, SimplexStep, SimplexRandom
 
-__all__ = ('ncoresNelderMead')
+__all__ = ("ncoresNelderMead", )
 
 EPSILON = np.float_(np.finfo(np.float32).eps)
 
