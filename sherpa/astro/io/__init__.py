@@ -740,44 +740,45 @@ def _pack_pha(dataset):
     arf, rmf = dataset.get_response()
     bkg = dataset.get_background()
 
+    # The default keywords; these wil be over-ridden by
+    # anything set by the input.
+    #
+    default_header = {
+        "HDUCLASS": "OGIP",
+        "HDUCLAS1": "SPECTRUM",
+        "HDUCLAS2": "TOTAL",
+        "HDUCLAS3": "COUNT",
+        "HDUCLAS4": "TYPE:I",
+        "HDUVERS": "1.2.1",
+        "HDUDOC": "Arnaud et al. 1992a Legacy 2  p 65",
+
+        # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
+        # based on any associated background or response. If the user has
+        # changed them then so be it.
+        #
+        "TELESCOP": "none",
+        "INSTRUME": "none",
+        "FILTER": "none",
+        "CORRFILE": "none",
+        "CORRSCAL": 0,
+        "CHANTYPE": "PI",
+        "RESPFILE": "none",
+        "ANCRFILE": "none",
+        "BACKFILE": "none"
+
+    }
+
     # Header Keys
     header = {}
     if hasattr(dataset, "header"):
         header = dataset.header.copy()
 
-    def _set(key, defval):
-        if key in header:
-            return
-        header[key] = defval
-
-    # We do not validate these values if set by the user, but perhaps we should
-    # over-ride them.
+    # Merge the keywords
     #
-    _set("HDUCLASS", "OGIP")
-    _set("HDUCLAS1", "SPECTRUM")
-    _set("HDUCLAS2", "TOTAL")
-    _set("HDUCLAS3", "COUNT")
-    _set("HDUCLAS4", "TYPE:I")
-    _set("HDUVERS", "1.2.1")
-    _set("HDUDOC", "Arnaud et al. 1992a Legacy 2  p 65")
-
-    # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
-    # based on any associated background or response. If the user has
-    # changed them then so be it.
-    #
-    _set("TELESCOP", "none")
-    _set("INSTRUME", "none")
-    _set("FILTER", "none")
-    _set("CORRFILE", "none")
-    _set("CORRSCAL", 0)
-    _set("CHANTYPE", "PI")  # Assume a sensible default
+    header = {**default_header, **header}
 
     # Over-write the header value (if set)
     header["EXPOSURE"] = getattr(dataset, "exposure", "none")
-
-    _set("RESPFILE", "none")
-    _set("ANCRFILE", "none")
-    _set("BACKFILE", "none")
 
     _set_keyword(header, "RESPFILE", rmf)
     _set_keyword(header, "ANCRFILE", arf)
@@ -837,22 +838,32 @@ def _pack_pha(dataset):
     # keyword is likely to be set for data that has been read in from
     # a file.
     #
-    _set("POISSERR", data["stat_err"] is None)
+    if "POISSERR" not in header:
+        header["POISSERR"] = data["stat_err"] is None
 
     # We are not going to match OGIP standard if there's no data...
     #
     # It's also not clear how to handle the case when the channel
     # range is larger than the channel column. At present we rely in
-    # the header being set, which is not ideal.
+    # the header being set, which is not ideal. There is also the
+    # question of whether we should change all header values if
+    # any are missing, or do it on a keyword-by-keyword basis.
+    #
+    # The assumption here is that "channel" is the first keyword
+    # added to the data dictionary.
     #
     if data["channel"] is not None:
         tlmin = data["channel"][0]
         tlmax = data["channel"][-1]
 
-        # This requires that channel is the first column
-        _set("TLMIN1", tlmin)
-        _set("TLMAX1", tlmax)
-        _set("DETCHANS", tlmax - tlmin + 1)
+        if "TLMIN1" not in header:
+            header["TLMIN1"] = tlmin
+
+        if "TLMAX1" not in header:
+            header["TLMAX1"] = tlmax
+
+        if "DETCHANS" not in header:
+            header["DETCHANS"] = tlmax - tlmin + 1
 
     data = {k.upper(): v for (k, v) in data.items() if v is not None}
 
