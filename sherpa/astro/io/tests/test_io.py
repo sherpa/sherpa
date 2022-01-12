@@ -25,9 +25,9 @@ import numpy as np
 
 import pytest
 
-from sherpa.data import Data1D, Data2DInt
 from sherpa.astro import io
 from sherpa.astro import ui
+from sherpa.data import Data1D, Data2DInt
 from sherpa.models.basic import Box1D, Const1D
 from sherpa.utils.err import IOErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group, \

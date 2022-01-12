@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -40,27 +41,13 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import IOErr
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
-
-# Should each test import io instead of this? Also, do we have a
-# better way of determining what the backend is?
-#
-try:
-    from sherpa.astro import io
-    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        backend = "pyfits"
-    elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        backend = "crates"
-    else:
-        # Should not happen, but do not want to error out here.
-        # Leave io as whatever was loaded, which will likely cause
-        # the tests to fail.
-        backend = None
-
-except ImportError:
-    io = None
-    backend = None
-
+from sherpa.astro import io
 from sherpa.astro import ui
+
+
+def backend_is(name):
+    """Are we using the specified backend?"""
+    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
 
 
 # PHA and ARF are stored uncompressed while RMF is gzip-compressed.
@@ -135,14 +122,14 @@ def test_read_pha(make_data_path):
 def test_read_pha_fails_arf(make_data_path):
     """Just check in we can't read in an ARF as a PHA file."""
 
-    if backend == 'pyfits':
+    if backend_is("pyfits"):
         emsg = " does not appear to be a PHA spectrum"
         etype = IOErr
-    elif backend == 'crates':
-        emsg = 'File must be a PHA file.'
+    elif backend_is("crates"):
+        emsg = "File must be a PHA file."
         etype = TypeError
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(ARFFILE)
     with pytest.raises(etype) as excinfo:
@@ -156,14 +143,14 @@ def test_read_pha_fails_arf(make_data_path):
 def test_read_pha_fails_rmf(make_data_path):
     """Just check in we can't read in a RMF as a PHA file."""
 
-    if backend == 'pyfits':
+    if backend_is("pyfits"):
         emsg = " does not appear to be a PHA spectrum"
         etype = IOErr
-    elif backend == 'crates':
-        emsg = 'File must be a PHA file.'
+    elif backend_is("crates"):
+        emsg = "File must be a PHA file."
         etype = TypeError
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(RMFFILE)
     with pytest.raises(etype) as excinfo:
@@ -179,8 +166,8 @@ def validate_replacement_warning(ws, rtype, label):
     w = ws[0]
     assert w.category == UserWarning
 
-    emsg = "The minimum ENERG_LO in the {} '{}' ".format(rtype, label) + \
-           "was 0 and has been replaced by {}".format(EMIN)
+    emsg = f"The minimum ENERG_LO in the {rtype} '{label}' " + \
+           f"was 0 and has been replaced by {EMIN}"
     assert str(w.message) == emsg
 
 
@@ -228,12 +215,12 @@ def test_read_arf(make_data_path):
 def test_read_arf_fails_pha(make_data_path):
     """Just check in we can't read in a PHA file as an ARF."""
 
-    if backend == 'pyfits':
-        emsg = ' does not appear to be an ARF'
-    elif backend == 'crates':
+    if backend_is("pyfits"):
+        emsg = " does not appear to be an ARF"
+    elif backend_is("crates"):
         emsg = "Required column 'ENERG_LO' not found in "
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(PHAFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -247,12 +234,12 @@ def test_read_arf_fails_pha(make_data_path):
 def test_read_arf_fails_rmf(make_data_path):
     """Just check in we can't read in a RNF as an ARF."""
 
-    if backend == 'pyfits':
-        emsg = ' does not appear to be an ARF'
-    elif backend == 'crates':
+    if backend_is("pyfits"):
+        emsg = " does not appear to be an ARF"
+    elif backend_is("crates"):
         emsg = "Required column 'SPECRESP' not found in "
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(RMFFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -324,14 +311,14 @@ def test_read_rmf(make_data_path):
 def test_read_rmf_fails_pha(make_data_path):
     """Just check in we can't read in a PHA file as a RMF."""
 
-    if backend == 'pyfits':
-        emsg = ' does not appear to be an RMF'
+    if backend_is("pyfits"):
+        emsg = " does not appear to be an RMF"
         etype = IOErr
-    elif backend == 'crates':
-        emsg = ' does not contain a Response Matrix.'
+    elif backend_is("crates"):
+        emsg = " does not contain a Response Matrix."
         etype = TypeError
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(PHAFILE)
     with pytest.raises(etype) as excinfo:
@@ -345,14 +332,14 @@ def test_read_rmf_fails_pha(make_data_path):
 def test_read_rmf_fails_arf(make_data_path):
     """Just check in we can't read in a ARF as a RMF."""
 
-    if backend == 'pyfits':
+    if backend_is("pyfits"):
         emsg = " does not have a 'DETCHANS' keyword"
         etype = IOErr
-    elif backend == 'crates':
-        emsg = ' does not contain a Response Matrix.'
+    elif backend_is("crates"):
+        emsg = " does not contain a Response Matrix."
         etype = TypeError
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(ARFFILE)
     with pytest.raises(etype) as excinfo:
@@ -492,3 +479,71 @@ def test_can_use_swift_data(make_data_path, clean_astro_ui):
     assert stat_cstat.dof == 769
     assert_allclose(stat_cstat.statval, 568.52,
                     rtol=0, atol=0.005)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("mode", [["arf"], ["rmf"], ["arf", "rmf"]])
+def test_1209_response(mode, make_data_path):
+    """Do we pick up the header keywords from the response?
+
+    This is related to issue #1209
+    """
+
+    # We could set up channels and counts, but let's not.
+    #
+    d = DataPHA("dummy", None, None)
+    assert d.header["TELESCOP"] == "none"
+    assert d.header["INSTRUME"] == "none"
+    assert d.header["FILTER"] == "none"
+
+    # We do not care about the warning messages here from
+    # ENERG_LO replacement.
+    #
+    if "arf" in mode:
+        infile = make_data_path(ARFFILE)
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("ignore")
+            arf = io.read_arf(infile)
+
+        d.set_arf(arf)
+
+    if "rmf" in mode:
+        infile = make_data_path(RMFFILE)
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("ignore")
+            rmf = io.read_rmf(infile)
+
+        d.set_rmf(rmf)
+
+    # The PHA file contains a FILTER keyword but the responses do not.
+    #
+    assert d.header["TELESCOP"] == "SWIFT"
+    assert d.header["INSTRUME"] == "XRT"
+    assert d.header["FILTER"] == "none"
+
+
+@requires_fits
+@requires_data
+def test_1209_background(make_data_path):
+    """Do we pick up the header keywords from the background?
+
+    This is related to issue #1209
+    """
+
+    # We could set up channels and counts, but let's not.
+    #
+    d = DataPHA("dummy", None, None)
+    assert d.header["TELESCOP"] == "none"
+    assert d.header["INSTRUME"] == "none"
+    assert d.header["FILTER"] == "none"
+
+    infile = make_data_path(PHAFILE)
+    bkg = io.read_pha(infile)
+    d.set_background(bkg)
+
+    # The PHA file contains a FILTER keyword but the responses do not.
+    #
+    assert d.header["TELESCOP"] == "SWIFT"
+    assert d.header["INSTRUME"] == "XRT"
+    assert d.header["FILTER"] == "NONE"

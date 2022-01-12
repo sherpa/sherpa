@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -63,7 +63,7 @@ import sys
 import numpy
 
 import sherpa.io
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA, DataRosatRMF
@@ -671,55 +671,249 @@ def _set_keyword(header, label, value):
 
 
 def _pack_pha(dataset):
-    if not isinstance(dataset, DataPHA):
-        raise IOErr('notpha', dataset.name)
+    """Extract FITS column and header information.
 
-    data = {}
+    Notes
+    -----
+    The PHA Data Extension header page [1]_ lists the following
+    keywords as either required or we-really-want-them:
+
+        EXTNAME (= SPECTRUM) - the name (i.e. type) of the extension
+        TELESCOP - the "telescope" (i.e. mission/satellite name).
+        INSTRUME - the instrument/detector.
+        FILTER - the instrument filter in use (if any)
+        EXPOSURE - the integration time (in seconds) for the PHA data (assumed to be corrected for deadtime, data drop-outs etc. )
+        BACKFILE - the name of the corresponding background file (if any)
+        CORRFILE - the name of the corresponding correction file (if any)
+        CORRSCAL - the correction scaling factor.
+        RESPFILE - the name of the corresponding (default) redistribution matrix file (RMF; see George et al. 1992a).
+        ANCRFILE - the name of the corresponding (default) ancillary response file (ARF; see George et al. 1992a).
+        HDUCLASS - should contain the string "OGIP" to indicate that this is an OGIP style file.
+        HDUCLAS1 - should contain the string "SPECTRUM" to indicate this is a spectrum.
+        HDUVERS - the version number of the format (this document describes version 1.2.1)
+        POISSERR - whether Poissonian errors are appropriate to the data (see below).
+        CHANTYPE - whether the channels used in the file have been corrected in any way (see below).
+        DETCHANS - the total number of detector channels available.
+
+    We also add in the following, defaulting to the first value - we
+    should do better to support HDUCLAS3=RATE data!
+
+        HDUCLAS2 - indicating the type of data stored.
+          Allowed values are:
+            'TOTAL' for a gross PHA Spectrum (source + bkgd)
+            'NET' for a bkgd-subtracted PHA Spectrum
+            'BKG' for a bkgd PHA Spectrum
+        HDUCLAS3 - indicating further details of the type of data stored.
+          Allowed values are:
+            'COUNT' for PHA data stored as counts (rather than count/s)
+            'RATE' for PHA data stored in count/s
+        HDUCLAS4 - indicating whether this is a type I or II extension.
+          Allowed values are:
+            'TYPE:I' for type I (single spectrum) data
+            'TYPE:II' for type II (multiple spectra) data
+
+    The POISSERR keyword is not required if a STAT_ERR column is
+    present however it is recommended in this case for clarity. If
+    STAT_ERR is to be used for the errors then POISSERR is set to
+    false.
+
+    If the CHANNEL array doesn't start at 1 then TLMIN1 and TLMAX1 are
+    required (here we assume the CHANNEL column is first) and they are
+    strongly recommended otherwise.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node6.html
+
+    """
+
+    # The logic here repeats some of the checks that probably should
+    # be done by the DataPHA class itself. However, it is likely
+    # that we don't want to make the DataPHA class always reject
+    # inconsistent state, as this could preclude certain workflows,
+    # so we need some validation here.
+    #
+    if not isinstance(dataset, DataPHA):
+        raise IOErr("notpha", dataset.name)
 
     arf, rmf = dataset.get_response()
     bkg = dataset.get_background()
 
+    # The default keywords; these wil be over-ridden by
+    # anything set by the input.
+    #
+    default_header = {
+        "HDUCLASS": "OGIP",
+        "HDUCLAS1": "SPECTRUM",
+        "HDUCLAS2": "TOTAL",
+        "HDUCLAS3": "COUNT",
+        "HDUCLAS4": "TYPE:I",
+        "HDUVERS": "1.2.1",
+        "HDUDOC": "Arnaud et al. 1992a Legacy 2  p 65",
+
+        # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
+        # based on any associated background or response. If the user has
+        # changed them then so be it.
+        #
+        "TELESCOP": "none",
+        "INSTRUME": "none",
+        "FILTER": "none",
+        "CORRFILE": "none",
+        "CORRSCAL": 0,
+        "CHANTYPE": "PI",
+        "RESPFILE": "none",
+        "ANCRFILE": "none",
+        "BACKFILE": "none"
+
+    }
+
     # Header Keys
     header = {}
-    if hasattr(dataset, 'header'):  # and type(dataset.header) is dict:
+    if hasattr(dataset, "header"):
         header = dataset.header.copy()
 
-    header['EXPOSURE'] = getattr(dataset, 'exposure', 'none')
+    # Merge the keywords
+    #
+    header = {**default_header, **header}
 
-    _set_keyword(header, 'RESPFILE', rmf)
-    _set_keyword(header, 'ANCRFILE', arf)
-    _set_keyword(header, 'BACKFILE', bkg)
+    # Over-write the header value (if set)
+    header["EXPOSURE"] = getattr(dataset, "exposure", "none")
 
-    # Columns
-    col_names = ['channel', 'counts', 'stat_err', 'sys_err',
-                 'bin_lo', 'bin_hi', 'grouping', 'quality']
+    _set_keyword(header, "RESPFILE", rmf)
+    _set_keyword(header, "ANCRFILE", arf)
+    _set_keyword(header, "BACKFILE", bkg)
 
-    data['channel'] = getattr(dataset, 'channel', None)
-    data['counts'] = getattr(dataset, 'counts', None)
-    data['stat_err'] = getattr(dataset, 'staterror', None)
-    data['sys_err'] = getattr(dataset, 'syserror', None)
-    data['bin_lo'] = getattr(dataset, 'bin_lo', None)
-    data['bin_hi'] = getattr(dataset, 'bin_hi', None)
-    data['grouping'] = getattr(dataset, 'grouping', None)
-    data['quality'] = getattr(dataset, 'quality', None)
+    # The column ordering for the ouput file is determined by the
+    # order the keys are added to the data dict.
+    #
+    # TODO: perhaps we should error out if channel or counts is not set?
+    #
+    data = {}
+    data["channel"] = getattr(dataset, "channel", None)
+    data["counts"] = getattr(dataset, "counts", None)
+    data["stat_err"] = getattr(dataset, "staterror", None)
+    data["sys_err"] = getattr(dataset, "syserror", None)
+    data["bin_lo"] = getattr(dataset, "bin_lo", None)
+    data["bin_hi"] = getattr(dataset, "bin_hi", None)
+    data["grouping"] = getattr(dataset, "grouping", None)
+    data["quality"] = getattr(dataset, "quality", None)
 
-    backscal = getattr(dataset, 'backscal', None)
-    if backscal is not None:
-        if numpy.isscalar(backscal):
-            header['BACKSCAL'] = backscal
+    def convert_scale_value(colname):
+        val = getattr(dataset, colname, None)
+        uname = colname.upper()
+        if val is None:
+            header[uname] = 1.0
+            return
+
+        if numpy.isscalar(val):
+            header[uname] = val
         else:
-            data['backscal'] = backscal
-            col_names.append('backscal')
+            data[colname] = val
+            try:
+                del header[uname]
+            except KeyError:
+                pass
 
-    areascal = getattr(dataset, 'areascal', None)
-    if areascal is not None:
-        if numpy.isscalar(areascal):
-            header['AREASCAL'] = areascal
+    # This over-writes (or deletes) the header
+    convert_scale_value("backscal")
+    convert_scale_value("areascal")
+
+    # Replace columns where appropriate.
+    #
+    if data["sys_err"] is None or (data["sys_err"] == 0).all():
+        header["SYS_ERR"] = 0.0
+        del data["sys_err"]
+
+    if data["quality"] is None or (data["quality"] == 0).all():
+        header["QUALITY"] = 0
+        del data["quality"]
+
+    if data["grouping"] is None or (data["grouping"] == 1).all():
+        header["GROUPING"] = 0
+        del data["grouping"]
+
+    # Default to using the STAT_ERR column if set. This is only
+    # changed if the user has not set the POISSERR keyword: this
+    # keyword is likely to be set for data that has been read in from
+    # a file.
+    #
+    if "POISSERR" not in header:
+        header["POISSERR"] = data["stat_err"] is None
+
+    # We are not going to match OGIP standard if there's no data...
+    #
+    # It's also not clear how to handle the case when the channel
+    # range is larger than the channel column. At present we rely in
+    # the header being set, which is not ideal. There is also the
+    # question of whether we should change all header values if
+    # any are missing, or do it on a keyword-by-keyword basis.
+    #
+    # The assumption here is that "channel" is the first keyword
+    # added to the data dictionary.
+    #
+    if data["channel"] is not None:
+        tlmin = data["channel"][0]
+        tlmax = data["channel"][-1]
+
+        if "TLMIN1" not in header:
+            header["TLMIN1"] = tlmin
+
+        if "TLMAX1" not in header:
+            header["TLMAX1"] = tlmax
+
+        if "DETCHANS" not in header:
+            header["DETCHANS"] = tlmax - tlmin + 1
+
+    data = {k.upper(): v for (k, v) in data.items() if v is not None}
+
+    # Enforce the column types:
+    #   CHANNEL:  Int2 or Int4
+    #   COUNTS:   Int2, Int4, or Real4
+    #   GROUPING: Int2
+    #   QUALITY:  Int2
+    #
+    # Rather than try to work out whether to use Int2 or Int4
+    # just use Int4.
+    #
+    def convert(column, dtype):
+        try:
+            vals = data[column]
+        except KeyError:
+            return
+
+        # assume vals is a numpy array
+        if vals.dtype == dtype:
+            return
+
+        # Do we warn if we are doing unit conversion? For now
+        # we don't.
+        #
+        data[column] = vals.astype(dtype)
+
+    convert("CHANNEL", numpy.int32)
+    convert("GROUPING", numpy.int16)
+    convert("QUALITY", numpy.int16)
+
+    # COUNTS has to deal with integer or floating-point.
+    #
+    try:
+        vals = data["COUNTS"]
+        if numpy.issubdtype(vals.dtype, numpy.integer):
+            vals = vals.astype(numpy.int32)
+        elif numpy.issubdtype(vals.dtype, numpy.floating):
+            vals = vals.astype(numpy.float32)
         else:
-            data['areascal'] = areascal
-            col_names.append('areascal')
+            raise DataErr("ogip-error", "PHA dataset",
+                          dataset.name,
+                          "contains an unsupported COUNTS column")
 
-    return data, col_names, header
+        data["COUNTS"] = vals
+
+    except KeyError:
+        pass
+
+    return data, header
 
 
 def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
@@ -817,7 +1011,8 @@ def write_pha(filename, dataset, ascii=True, clobber=False):
     read_pha
 
     """
-    data, col_names, hdr = _pack_pha(dataset)
+    data, hdr = _pack_pha(dataset)
+    col_names = list(data.keys())
     backend.set_pha_data(filename, data, col_names, hdr, ascii=ascii,
                          clobber=clobber)
 
@@ -900,7 +1095,8 @@ def pack_pha(dataset):
     pack_image, pack_table
 
     """
-    data, col_names, hdr = _pack_pha(dataset)
+    data, hdr = _pack_pha(dataset)
+    col_names = list(data.keys())
     return backend.set_pha_data('', data, col_names, hdr, packup=True)
 
 
