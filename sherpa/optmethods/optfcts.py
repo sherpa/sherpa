@@ -208,26 +208,6 @@ def _outside_limits(x, xmin, xmax):
     return (numpy.any(x < xmin) or numpy.any(x > xmax))
 
 
-def _same_par(a, b):
-    b = numpy.array(b, numpy.float_)
-    same = numpy.flatnonzero(a < b)
-    if same.size == 0:
-        return 1
-    return 0
-
-
-def _set_limits(x, xmin, xmax):
-    below = numpy.nonzero(x < xmin)
-    if below.size > 0:
-        return 1
-
-    above = numpy.nonzero(x > xmax)
-    if above.size > 0:
-        return 1
-
-    return 0
-
-
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
            seed=2005815, population_size=None, xprob=0.9,
            weighting_factor=0.8):
@@ -1191,9 +1171,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     if maxfev is None:
         maxfev = 256 * len(x)
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
-
     def stat_cb1(pars):
         return fcn(pars)[1]
 
@@ -1207,8 +1184,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
-
-    error = []
 
     n = len(x)
     fjac = numpy.empty((m*n,))
@@ -1233,9 +1208,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             nfev += nm_result[4]['nfev']
             x = nm_result[1]
             fval = nm_result[2]
-
-    if error:
-        raise error.pop()
 
     if 0 == info:
         info = 1
