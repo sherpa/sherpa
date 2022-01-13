@@ -22,6 +22,7 @@
 
 import logging
 import pickle
+import warnings
 
 import numpy as np
 
@@ -29,6 +30,7 @@ import pytest
 
 from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
+from sherpa.astro import io
 from sherpa.astro.utils._region import Region
 from sherpa.plot import backend, dummy_backend
 from sherpa.utils.err import DataErr
@@ -220,8 +222,8 @@ def test_error_on_invalid_channel_grouped2(chan):
         pha._from_channel(chan)
 
     # The error message is wrong
-    # assert str(exc.value) == 'invalid group number: {}'.format(chan)
-    assert str(exc.value) == 'invalid group number: {}'.format(chan - 1)
+    # assert str(exc.value) == f"invalid group number: {chan}"
+    assert str(exc.value) == f"invalid group number: {chan - 1}"
 
 
 def test_pha_get_xerr_all_bad_channel_no_group():
@@ -662,7 +664,7 @@ def test_img_set_coord_notset(coord, expected, make_test_image):
     with pytest.raises(DataErr) as exc:
         d.set_coord(coord)
 
-    emsg = "data set 'd' does not contain a {} coordinate system".format(expected)
+    emsg = f"data set 'd' does not contain a {expected} coordinate system"
     assert str(exc.value) == emsg
 
     assert d.coord == 'logical'
@@ -676,11 +678,11 @@ def test_img_get_coord_notset(coord, expected, make_test_image):
     """Check get_physical/world fail when there's no WCS"""
     d = make_test_image
 
-    meth = getattr(d, 'get_{}'.format(coord))
+    meth = getattr(d, f"get_{coord}")
     with pytest.raises(DataErr) as exc:
         meth()
 
-    emsg = "data set 'd' does not contain a {} coordinate system".format(expected)
+    emsg = f"data set 'd' does not contain a {expected} coordinate system"
     assert str(exc.value) == emsg
 
 
@@ -1072,7 +1074,7 @@ def test_img_get_filter_compare_filtering(make_test_image):
     assert d._region is None
     assert d.mask is True
 
-    exc = "field()-{}-{}".format(shape1, shape2)
+    exc = f"field()-{shape1}-{shape2}"
     d.notice2d(exc)
 
     maskb = d.mask.copy()
@@ -1216,8 +1218,8 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
 @requires_fits
 @requires_data
 def test_xmmrgs_notice(make_data_path):
-    '''Test that notice and ignore works on XMMRGS dataset, which is
-    ordered in increasing wavelength, not energy'''
+    """Test that notice and ignore works on XMMRGS dataset, which is
+    ordered in increasing wavelength, not energy"""
     from sherpa.astro.io import read_pha, read_rmf
     dat = read_pha(make_data_path('xmmrgs/P0112880201R1S004SRSPEC1003.FTZ'))
     rmf = read_rmf(make_data_path('xmmrgs/P0112880201R1S004RSPMAT1003.FTZ'))
@@ -1424,3 +1426,107 @@ def test_pha_get_ylabel_yfac1(override_plot_backend):
     else:
         assert ylabel.startswith('Counts/channel X Channel')
         assert "1" in ylabel
+
+
+@requires_fits
+@requires_data
+def test_1209_rsp(make_data_path):
+    """Do we pick up the header keywords from a RSP matrix.
+
+    This is related to issue #1209
+    """
+
+    # We could set up channels and counts, but let's not.
+    #
+    d = DataPHA("dummy", None, None)
+    assert d.header["TELESCOP"] == "none"
+    assert d.header["INSTRUME"] == "none"
+    assert d.header["FILTER"] == "none"
+
+    infile = make_data_path("xmmrgs/P0112880201R1S004RSPMAT1003.FTZ")
+    rsp = io.read_rmf(infile)
+    d.set_rmf(rsp)
+
+    assert d.header["TELESCOP"] == "XMM"
+    assert d.header["INSTRUME"] == "RGS1"
+    assert d.header["FILTER"] == "NONE"
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("mode,fexpr",
+                         [(["arf", "rmf"], ""),
+                          (["arf"], ""),
+                          (["rmf"], "Medium")])
+def test_1209_response(mode, fexpr, make_data_path):
+    """Do we pick up the header keywords from ARF and/or RMF
+
+    This is related to issue #1209
+
+    We use a non-Chandra dataset for the responses just to
+    ensure we understand other missions. Note that SWIFT and ROSAT
+    are tested in test_astro_data_xxx_unit.py so we want something
+    other than those two.
+    """
+
+    # We could set up channels and counts, but let's not.
+    #
+    d = DataPHA("dummy", None, None)
+    assert d.header["TELESCOP"] == "none"
+    assert d.header["INSTRUME"] == "none"
+    assert d.header["FILTER"] == "none"
+
+    # We hide the warnings about ENERG_LO being 0 in the input files
+    # as we are not testing this here.
+    #
+    with warnings.catch_warnings(record=True):
+
+        if "arf" in mode:
+            infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_spec.arf")
+            arf = io.read_arf(infile)
+            d.set_arf(arf)
+
+        if "rmf" in mode:
+            infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_spec.rmf")
+            rmf = io.read_rmf(infile)
+            d.set_rmf(rmf)
+
+    assert d.header["TELESCOP"] == "XMM"
+    assert d.header["INSTRUME"] == "EMOS1"
+
+    # The FILTER setting:
+    #   is ""       in the ARF
+    #      "Medium" in the RMF
+    # so the output depends on the selected response.
+    #
+    # We could work it out, but specify it as an input to the test.
+    # It turns out to be a good test that we see different behavior
+    # depending on the loaded data!
+    #
+    assert d.header["FILTER"] == fexpr
+
+
+@requires_fits
+@requires_data
+def test_1209_background(make_data_path):
+    """Do we pick up the header keywords from the backkground?
+
+    This is related to issue #1209
+
+    We use a non-Chandra dataset.
+    """
+
+    # We could set up channels and counts, but let's not.
+    #
+    d = DataPHA("dummy", None, None)
+    assert d.header["TELESCOP"] == "none"
+    assert d.header["INSTRUME"] == "none"
+    assert d.header["FILTER"] == "none"
+
+    infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_specbg.fits")
+    bkg = io.read_pha(infile)
+    d.set_background(bkg)
+
+    assert d.header["TELESCOP"] == "XMM"
+    assert d.header["INSTRUME"] == "EMOS1"
+    assert d.header["FILTER"] == "Medium"

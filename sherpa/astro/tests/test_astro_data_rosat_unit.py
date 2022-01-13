@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2019, 2021
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,45 +32,19 @@ References
 """
 
 import numpy as np
-from numpy.testing import assert_allclose
 
 import pytest
 
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import IOErr
 from sherpa.astro.data import DataPHA, DataRosatRMF
-
-# Should each test import io instead of this? Also, do we have a
-# better way of determining what the backend is?
-#
-try:
-    from sherpa.astro import io
-    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        backend = "pyfits"
-    elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        backend = "crates"
-    else:
-        # Should not happen, but do not want to error out here.
-        # Leave io as whatever was loaded, which will likely cause
-        # the tests to fail.
-        backend = None
-
-except ImportError:
-    io = None
-    backend = None
-
+from sherpa.astro import io
 from sherpa.astro import ui
 
 
-@pytest.fixture(autouse=True)
-def cleanup_astro_session(request):
-    """Ensure sherpa.astro.ui is cleaned before and after the test."""
-    ui.clean()
-
-    def fin():
-        ui.clean()
-
-    request.addfinalizer(fin)
+def backend_is(name):
+    """Are we using the specified backend?"""
+    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
 
 
 # The RMF includes the ARF (so is a "RSP" file).
@@ -133,16 +108,15 @@ def validate_pha(pha, errors=False):
 
     assert isinstance(pha, DataPHA)
 
-    # assert_allclose defaults to a relative tolerance of 1e-7.
-    assert_allclose(pha.exposure, 1.0)
-    assert_allclose(pha.backscal, 1.0)
-    assert_allclose(pha.areascal, 1.0)
+    assert pha.exposure == pytest.approx(1.0)
+    assert pha.backscal == pytest.approx(1.0)
+    assert pha.areascal == pytest.approx(1.0)
 
     # Although channel is an integer, it's treated as a
     # float.
     #
     nchan = 256
-    assert_allclose(pha.channel, np.arange(1, nchan + 1))
+    assert pha.channel == pytest.approx(np.arange(1, nchan + 1))
 
     # The file has a RATE rather than COUNTS column; this gets
     # converted into a counts value, and the rate flag is set.
@@ -150,9 +124,9 @@ def validate_pha(pha, errors=False):
     # same (rate and counts) even if the (implied) units are not.
     #
     assert len(pha.counts) == nchan
-    assert_allclose(pha.counts.min(), 0.0)
-    assert_allclose(pha.counts.max(), 4.4750780216e-4)
-    assert_allclose(pha.counts.sum(), 1.0899898225e-3)
+    assert pha.counts.min() == pytest.approx(0.0)
+    assert pha.counts.max() == pytest.approx(4.4750780216e-4)
+    assert pha.counts.sum() == pytest.approx(1.0899898225e-3)
     assert np.argmax(pha.counts) == 29
 
     idx = np.where(pha.counts > 0)[0]
@@ -160,28 +134,28 @@ def validate_pha(pha, errors=False):
     nonzerobins = [13, 29, 44, 59, 79, 110, 154]
     assert np.all(idx == nonzerobins)
 
-    assert_allclose(pha.counts[nonzerobins],
-                    [2.80112115e-4,
-                     4.47507802e-4,
-                     4.62442949e-5,
-                     7.15584611e-5,
-                     8.68857605e-5,
-                     1.03978207e-4,
-                     5.3703181e-5])
+    expected = [2.80112115e-4,
+                4.47507802e-4,
+                4.62442949e-5,
+                7.15584611e-5,
+                8.68857605e-5,
+                1.03978207e-4,
+                5.3703181e-5]
+    assert pha.counts[nonzerobins] == pytest.approx(expected)
 
     # Simple statistics on the GROUPING and QUALITY channels
     #
     assert len(pha.quality) == nchan
-    assert_allclose(pha.quality.min(), 0)
-    assert_allclose(pha.quality.max(), 2)
-    assert_allclose(pha.quality.sum(), 124)
+    assert pha.quality.min() == 0
+    assert pha.quality.max() == 2
+    assert pha.quality.sum() == 124
     assert np.argmin(pha.quality) == 7
     assert np.argmax(pha.quality) == 0
 
     assert len(pha.grouping) == nchan
-    assert_allclose(pha.grouping.min(), -1)
-    assert_allclose(pha.grouping.max(), 1)
-    assert_allclose(pha.grouping.sum(), -185)
+    assert pha.grouping.min() == -1
+    assert pha.grouping.max() == 1
+    assert pha.grouping.sum() == -185
     assert np.argmin(pha.grouping) == 1
     assert np.argmax(pha.grouping) == 0
 
@@ -190,23 +164,23 @@ def validate_pha(pha, errors=False):
     emptyfields = ['syserror', 'bin_lo', 'bin_hi']
     if errors:
         assert len(pha.staterror) == nchan
-        assert_allclose(pha.staterror.min(), 0.0)
-        assert_allclose(pha.staterror.max(), 5.8168443502e-06)
-        assert_allclose(pha.staterror.sum(), 2.2803289085e-05)
+        assert pha.staterror.min() == pytest.approx(0.0)
+        assert pha.staterror.max() == pytest.approx(5.8168443502e-06)
+        assert pha.staterror.sum() == pytest.approx(2.2803289085e-05)
         assert np.argmin(pha.staterror) == 0
         assert np.argmax(pha.staterror) == 29
 
         idx = np.where(pha.counts > 0)[0]
         assert np.all(idx == nonzerobins)
 
-        assert_allclose(pha.staterror[idx],
-                        [4.72556394E-6,
-                         5.81684435E-6,
-                         2.01607168E-6,
-                         2.57730176E-6,
-                         2.57510169E-6,
-                         2.74851345E-6,
-                         2.34389222E-6])
+        expected = [4.72556394E-6,
+                    5.81684435E-6,
+                    2.01607168E-6,
+                    2.57730176E-6,
+                    2.57510169E-6,
+                    2.74851345E-6,
+                    2.34389222E-6]
+        assert pha.staterror[idx] == pytest.approx(expected)
 
     else:
         emptyfields.insert(0, 'staterror')
@@ -283,27 +257,27 @@ def validate_rmf(rmf):
 
     # Rather than check each element, use some simple summary
     # statistics.
-    assert_allclose(rmf.matrix.min(), 1.0e-5)
-    assert_allclose(rmf.matrix.max(), 11.146280288696289)
-    assert_allclose(rmf.matrix.sum(), 42994.357679666558)
+    assert rmf.matrix.min() == pytest.approx(1e-5)
+    assert rmf.matrix.max() == pytest.approx(11.146280288696289)
+    assert rmf.matrix.sum() == pytest.approx(42994.357679666558)
     assert np.argmin(rmf.matrix) == 0
     assert np.argmax(rmf.matrix) == 7561
 
     # Expect the upper edge of bin j to equal the lower
     # edge of bin j + 1.
     #
-    assert_allclose(rmf.energ_lo[1:], rmf.energ_hi[:-1])
-    assert_allclose(rmf.e_min[1:], rmf.e_max[:-1])
+    assert rmf.energ_lo[1:] == pytest.approx(rmf.energ_hi[:-1])
+    assert rmf.e_min[1:] == pytest.approx(rmf.e_max[:-1])
 
-    assert_allclose(rmf.energ_lo[0], 0.054607998579740524)
-    assert_allclose(rmf.energ_hi[0], 0.071539998054504395)
-    assert_allclose(rmf.energ_lo[-1], 3.0)
-    assert_allclose(rmf.energ_hi[-1], 3.0099999904632568)
+    assert rmf.energ_lo[0] == pytest.approx(0.054607998579740524)
+    assert rmf.energ_hi[0] == pytest.approx(0.071539998054504395)
+    assert rmf.energ_lo[-1] == pytest.approx(3.0)
+    assert rmf.energ_hi[-1] == pytest.approx(3.0099999904632568)
 
-    assert_allclose(rmf.e_min[0], 0.014956000261008739)
-    assert_allclose(rmf.e_max[0], 0.024869000539183617)
-    assert_allclose(rmf.e_min[-1], 2.5427200794219971)
-    assert_allclose(rmf.e_max[-1], 2.5526330471038818)
+    assert rmf.e_min[0] == pytest.approx(0.014956000261008739)
+    assert rmf.e_max[0] == pytest.approx(0.024869000539183617)
+    assert rmf.e_min[-1] == pytest.approx(2.5427200794219971)
+    assert rmf.e_max[-1] == pytest.approx(2.5526330471038818)
 
 
 @requires_data
@@ -338,14 +312,14 @@ def test_read_pha_errors(make_data_path):
 def test_read_pha_fails_rmf(make_data_path):
     """Just check in we can't read in a RMF as a PHA file."""
 
-    if backend == 'pyfits':
+    if backend_is("pyfits"):
         emsg = " does not appear to be a PHA spectrum"
         etype = IOErr
-    elif backend == 'crates':
+    elif backend_is("crates"):
         emsg = "dmKeyRead() could not find key. 'HDUCLAS1'"
         etype = ValueError
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(RMFFILE)
     with pytest.raises(etype) as excinfo:
@@ -359,12 +333,12 @@ def test_read_pha_fails_rmf(make_data_path):
 def test_read_arf_fails_pha(make_data_path):
     """Just check in we can't read in a PHA file as an ARF."""
 
-    if backend == 'pyfits':
-        emsg = ' does not appear to be an ARF'
-    elif backend == 'crates':
+    if backend_is("pyfits"):
+        emsg = " does not appear to be an ARF"
+    elif backend_is("crates"):
         emsg = " is not a filename or ARFCrate obj"
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(PHAFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -378,12 +352,12 @@ def test_read_arf_fails_pha(make_data_path):
 def test_read_arf_fails_rmf(make_data_path):
     """Just check in we can't read in a RNF as an ARF."""
 
-    if backend == 'pyfits':
-        emsg = ' does not appear to be an ARF'
-    elif backend == 'crates':
+    if backend_is("pyfits"):
+        emsg = " does not appear to be an ARF"
+    elif backend_is("crates"):
         emsg = "Required column 'SPECRESP' not found in "
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(RMFFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -405,12 +379,12 @@ def test_read_rmf(make_data_path):
 def test_read_rmf_fails_pha(make_data_path):
     """Just check in we can't read in a PHA file as a RMF."""
 
-    if backend == 'pyfits':
-        emsg = ' does not appear to be an RMF'
-    elif backend == 'crates':
+    if backend_is("pyfits"):
+        emsg = " does not appear to be an RMF"
+    elif backend_is("crates"):
         emsg = "Required column 'ENERG_LO' not found in "
     else:
-        assert False, "Internal error: unknown backend {}".format(backend)
+        assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(PHAFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -421,7 +395,7 @@ def test_read_rmf_fails_pha(make_data_path):
 
 @requires_data
 @requires_fits
-def test_can_use_pspc_data(make_data_path):
+def test_can_use_pspc_data(make_data_path, clean_astro_ui):
     """A basic check that we can read in and use the ROSAT PSPC data.
 
     Unlike the previous tests, that directly access the io module,
@@ -448,7 +422,7 @@ def test_can_use_pspc_data(make_data_path):
     # Value obtained from XSPEC 12.9.1p; Sherpa returns
     # sexpected = 973.2270845920297
     sexpected = 973.23
-    assert_allclose(s.statval, sexpected, rtol=0, atol=0.005)
+    assert s.statval == pytest.approx(sexpected, rel=0, abs=0.005)
 
     # apply an energy filter to remove the "bogus" points
     ui.ignore(None, 0.05)
@@ -456,7 +430,7 @@ def test_can_use_pspc_data(make_data_path):
     s = ui.get_stat_info()[0]
     assert s.numpoints == 62
     assert s.dof == 60
-    assert_allclose(s.statval, sexpected, rtol=0, atol=0.005)
+    assert s.statval == pytest.approx(sexpected, rel=0, abs=0.005)
 
     ui.ignore(2.01, None)
 
@@ -464,4 +438,28 @@ def test_can_use_pspc_data(make_data_path):
     assert s.numpoints == 7
     assert s.dof == 5
 
-    assert_allclose(s.statval, sexpected, rtol=0, atol=0.005)
+    assert s.statval == pytest.approx(sexpected, rel=0, abs=0.005)
+
+
+@requires_fits
+@requires_data
+def test_1209_response(make_data_path):
+    """Do we pick up the header keywords from the response?
+
+    This is related to issue #1209
+    """
+
+    # We could set up channels and counts, but let's not.
+    #
+    d = DataPHA("dummy", None, None)
+    assert d.header["TELESCOP"] == "none"
+    assert d.header["INSTRUME"] == "none"
+    assert d.header["FILTER"] == "none"
+
+    infile = make_data_path(RMFFILE)
+    rmf = io.read_rmf(infile)
+    d.set_rmf(rmf)
+
+    assert d.header["TELESCOP"] == "ROSAT"
+    assert d.header["INSTRUME"] == "PSPCC"
+    assert d.header["FILTER"] == "NONE"

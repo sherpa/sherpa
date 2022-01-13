@@ -1,6 +1,12 @@
 name: Pip CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
 
 jobs:
   tests:
@@ -9,11 +15,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Linux Minimum Setup 
+          - name: Linux Minimum Setup
             os: ubuntu-latest
             python-version: 3.8
             numpy-pkg: 'numpy>=1.18,<1.19'
-            install-type: develop 
+            install-type: develop
             test-data: none
 
           - name: Linux Build (w/o Astropy or Xspec)
@@ -28,7 +34,7 @@ jobs:
             os: ubuntu-latest
             python-version: 3.7
             numpy-pkg: 'numpy'
-            install-type: develop 
+            install-type: develop
             fits-pkg: 'astropy'
             test-data: none
 
@@ -36,7 +42,7 @@ jobs:
             os: ubuntu-latest
             python-version: 3.7
             numpy-pkg: 'numpy'
-            install-type: develop 
+            install-type: develop
             fits-pkg: 'astropy'
             test-data: submodule
 
@@ -44,7 +50,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v2
       with:
-        submodules: 'True'      
+        submodules: 'True'
 
     - name: Pip Testing Setup - Python
       uses: actions/setup-python@v2
@@ -61,8 +67,8 @@ jobs:
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
-        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} 
-        
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER}
+
     - name: Build Sherpa
       run: |
         python setup.py ${{ matrix.install-type }}
@@ -94,7 +100,7 @@ jobs:
         verbose: true
 
     - name: Smoke Test
-      env: 
+      env:
         FITS: ${{ matrix.fits-pkg }}
       run: |
         smokevars="-v 3"

@@ -1,6 +1,6 @@
 %{
 /*                                                                
-**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007,2022  Smithsonian Astrophysical Observatory 
 */                                                                
 
 /*                                                                          */
@@ -32,7 +32,7 @@
 char     *regParseStr;
 char     *regParseStrEnd;
 regRegion *my_Gregion;
-
+void     regYYrestart(FILE*);
 
   #ifdef FLEX_SCANNER
   #define YY_INPUT(b,r,ms)      (r = reg_flex_input(b,ms))

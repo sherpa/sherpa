@@ -107,7 +107,7 @@ def test_pha(header, override_plot_backend):
                      header=header)
     r = d._repr_html_()
     if header is None:
-        nmeta = 5
+        nmeta = 6
     elif header == {}:
         nmeta = 0
     else:
