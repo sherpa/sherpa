@@ -36,7 +36,6 @@ class Key2:
     def __init__(self, n=12):
         self.nbit = n
         self.max_arg2 = 2**n - 1
-        return
 
     def calc(self, arg1, arg2):
         if arg2 > self.max_arg2:
@@ -64,7 +63,6 @@ class Strategy:
         self.npop = npop
         self.sfactor = sfactor
         self.xprob = xprob
-        return
 
     def calc(self, arg, pop):
         arg[-1] = self.func(arg[:-1])
@@ -82,10 +80,6 @@ class Strategy:
 
 class Strategy0(Strategy):
 
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
-
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
         trial = numpy.array(pop[icurrent][:])
@@ -99,10 +93,6 @@ class Strategy0(Strategy):
 
 
 class Strategy1(Strategy):
-
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
 
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
@@ -118,10 +108,6 @@ class Strategy1(Strategy):
 
 class Strategy2(Strategy):
 
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
-
     def __call__(self, pop, icurrent):
         r1, r2 = self.init(2)
         trial = numpy.array(pop[icurrent][:])
@@ -136,10 +122,6 @@ class Strategy2(Strategy):
 
 
 class Strategy3(Strategy):
-
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
 
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4 = self.init(4)
@@ -157,10 +139,6 @@ class Strategy3(Strategy):
 
 class Strategy4(Strategy):
 
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
-
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4, r5 = self.init(5)
         trial = numpy.array(pop[icurrent][:])
@@ -177,10 +155,6 @@ class Strategy4(Strategy):
 
 class Strategy5(Strategy):
 
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
-
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
         trial = numpy.array(pop[icurrent][:])
@@ -195,10 +169,6 @@ class Strategy5(Strategy):
 
 
 class Strategy6(Strategy):
-
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
 
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
@@ -215,10 +185,6 @@ class Strategy6(Strategy):
 
 class Strategy7(Strategy):
 
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
-
     def __call__(self, pop, icurrent):
         r1, r2 = self.init(2)
         trial = numpy.array(pop[icurrent][:])
@@ -234,10 +200,6 @@ class Strategy7(Strategy):
 
 class Strategy8(Strategy):
 
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
-
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4 = self.init(4)
         trial = numpy.array(pop[icurrent][:])
@@ -252,10 +214,6 @@ class Strategy8(Strategy):
 
 
 class Strategy9(Strategy):
-
-    def __init__(self, func, npar, npop, sfactor, xprob):
-        Strategy.__init__(self, func, npar, npop, sfactor, xprob)
-        return
 
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4, r5 = self.init(5)
@@ -359,12 +317,6 @@ class MyDifEvo(Opt):
 
 class ncoresMyDifEvo(MyDifEvo):
 
-    def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
-                 seed):
-        MyDifEvo.__init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob,
-                          step, seed)
-        return
-
     def __call__(self, tol, maxnfev, numcores=_ncpus):
         nfev = 0
         random.seed(self.seed)
@@ -452,7 +404,6 @@ class ncoresDifEvoNelderMead:
 
     def __init__(self):
         self.ncores_nm = ncoresNelderMead()
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
                  numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
@@ -467,8 +418,11 @@ class ncoresDifEvoNelderMead:
         npop = max(npop, npar * 32)
         if maxnfev is None:
             maxnfev = 8192 * npar
+
+        # The following cde does not send in the seed
         mydifevo = \
             ncoresMyDifEvo(fcn, nm_par, xmin, xmax, npop, sfactor, xprob, step)
+
         de_nfev, de_fmin, de_par = \
             mydifevo(tol, maxnfev - nfev, step, seed, numcores)
         nfev += de_nfev

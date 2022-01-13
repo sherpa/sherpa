@@ -68,9 +68,9 @@ class MyNelderMead(Opt):
                     print('\taccept outside contraction point')
                     # and terminate the iteration
                 return False
-            else:
-                # otherwise, go to step 5 (perform a shrink).
-                return True
+
+            # otherwise, go to step 5 (perform a shrink).
+            return True
 
         elif reflection_pt[-1] >= simplex[badindex, -1]:
 
@@ -82,9 +82,9 @@ class MyNelderMead(Opt):
                 if verbose > 2:
                     print('\taccept inside contraction point')
                 return False
-            else:
-                # otherwise, go to step 5 (perform a shrink).
-                return True
+
+            # otherwise, go to step 5 (perform a shrink).
+            return True
 
         else:
             print('something is wrong with contract_in_out')
@@ -148,7 +148,6 @@ class NelderMeadBase:
         self.par = np.nan
         np.seterr(over='ignore', divide='ignore', under='ignore',
                   invalid='ignore')
-        return
 
     def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -158,15 +157,14 @@ class NelderMeadBase:
     def get_maxnfev(self, maxnfev, npar):
         if maxnfev is None:
             return 512 * npar
-        else:
-            return maxnfev
+
+        return maxnfev
 
 
 class NelderMead0(NelderMeadBase):
 
     def __init__(self):
         NelderMeadBase.__init__(self)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None, step=None,
                  finalsimplex=1, verbose=0):
@@ -196,7 +194,6 @@ class NelderMead1(NelderMead0):
 
     def __init__(self):
         NelderMead0.__init__(self)
-        return
 
     def calc_step(self, x):
         return x + 1.2
@@ -206,7 +203,6 @@ class NelderMead2(NelderMead0):
 
     def __init__(self):
         NelderMead0.__init__(self)
-        return
 
     def calc_step(self, x):
         return abs(x)
@@ -216,7 +212,6 @@ class NelderMead3(NelderMead0):
 
     def __init__(self):
         NelderMead0.__init__(self)
-        return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
                  step=None, finalsimplex=[0, 1, 1], verbose=0):
@@ -236,7 +231,6 @@ class NelderMead4(NelderMead0):
 
     def __init__(self):
         NelderMead0.__init__(self)
-        return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
                  step=None, finalsimplex=[0, 1, 1], verbose=0, reflect=True):
@@ -263,7 +257,6 @@ class NelderMead5(NelderMead0):
 
     def __init__(self):
         NelderMead0.__init__(self)
-        return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0, reflect=True):
@@ -287,7 +280,6 @@ class NelderMead6(NelderMeadBase):
 
         def __init__(self, fcn, xmin, xmax):
             MyNelderMead.__init__(self, fcn, xmin, xmax)
-            return
 
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
@@ -300,7 +292,6 @@ class NelderMead6(NelderMeadBase):
 
     def __init__(self):
         NelderMeadBase.__init__(self)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -317,7 +308,6 @@ class NelderMead7(NelderMeadBase):
 
         def __init__(self, fcn, xmin, xmax):
             MyNelderMead.__init__(self, fcn, xmin, xmax)
-            return
 
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
@@ -331,7 +321,6 @@ class NelderMead7(NelderMeadBase):
 
     def __init__(self):
         NelderMeadBase.__init__(self)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -346,7 +335,6 @@ class nmNcores(MyNcores):
 
     def __init__self(self):
         MyNcores.__init__(self)
-        return
 
     def my_worker(self, opt, id, out_q, err_q, lock,
                   fcn, x, xmin, xmax, tol, maxnfev):
@@ -365,7 +353,6 @@ class ncoresNelderMead:
                              NelderMead3(), NelderMead4(), NelderMead5()]):
         # NelderMead6(), NelderMead7()]):
         self.algo = algo
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=_ncpus):
@@ -410,7 +397,6 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
                              NelderMead3(), NelderMead4(), NelderMead5()]):
         ncoresNelderMead.__init__(self, algo)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=_ncpus):

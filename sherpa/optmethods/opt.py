@@ -93,7 +93,6 @@ class Opt:
             self.func_counter_bounds_wrappers(func, self.npar, xmin, xmax)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
-        return
 
     def _outside_limits(self, x, xmin, xmax):
         return (np.any(x < xmin) or np.any(x > xmax))
@@ -145,7 +144,6 @@ class SimplexBase:
         self.xmax = xmax
         self.npar = len(xpar)
         self.simplex = self.init(npop, xpar, step, seed, factor)
-        return
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -258,10 +256,6 @@ class SimplexBase:
 
 class SimplexNoStep(SimplexBase):
 
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                             factor)
-
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -280,10 +274,6 @@ class SimplexNoStep(SimplexBase):
 
 class SimplexStep(SimplexBase):
 
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                             factor)
-
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -297,10 +287,6 @@ class SimplexStep(SimplexBase):
 
 
 class SimplexRandom(SimplexBase):
-
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                             factor)
 
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
