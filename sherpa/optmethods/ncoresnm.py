@@ -163,9 +163,6 @@ class NelderMeadBase:
 
 class NelderMead0(NelderMeadBase):
 
-    def __init__(self):
-        NelderMeadBase.__init__(self)
-
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None, step=None,
                  finalsimplex=1, verbose=0):
         nfev, fmin, par = \
@@ -192,26 +189,17 @@ class NelderMead0(NelderMeadBase):
 
 class NelderMead1(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-
     def calc_step(self, x):
         return x + 1.2
 
 
 class NelderMead2(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-
     def calc_step(self, x):
         return abs(x)
 
 
 class NelderMead3(NelderMead0):
-
-    def __init__(self):
-        NelderMead0.__init__(self)
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
                  step=None, finalsimplex=[0, 1, 1], verbose=0):
@@ -228,9 +216,6 @@ class NelderMead3(NelderMead0):
 
 
 class NelderMead4(NelderMead0):
-
-    def __init__(self):
-        NelderMead0.__init__(self)
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
                  step=None, finalsimplex=[0, 1, 1], verbose=0, reflect=True):
@@ -255,9 +240,6 @@ class NelderMead4(NelderMead0):
 
 class NelderMead5(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-
     def __call__(self, fcn, x0, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0, reflect=True):
         init = 0
@@ -278,9 +260,6 @@ class NelderMead6(NelderMeadBase):
 
     class MyNelderMead6(MyNelderMead):
 
-        def __init__(self, fcn, xmin, xmax):
-            MyNelderMead.__init__(self, fcn, xmin, xmax)
-
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
             simplex = SimplexNoStep(self.func, npar + 1, x, self.xmin,
@@ -289,9 +268,6 @@ class NelderMead6(NelderMeadBase):
                 self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
             # print('MyNelderMead6::__call__ result =', result)
             return result
-
-    def __init__(self):
-        NelderMeadBase.__init__(self)
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -306,9 +282,6 @@ class NelderMead7(NelderMeadBase):
 
     class MyNelderMead7(MyNelderMead):
 
-        def __init__(self, fcn, xmin, xmax):
-            MyNelderMead.__init__(self, fcn, xmin, xmax)
-
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
             factor = 2
@@ -318,9 +291,6 @@ class NelderMead7(NelderMeadBase):
                 self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
             # print('MyNelderMead7::__call__ result =', result)
             return result
-
-    def __init__(self):
-        NelderMeadBase.__init__(self)
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -424,8 +394,6 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
 
 # from iminuit import minimize, Minuit
 # class Midnight:
-#     def __init__(self):
-#         pass
 #     def __call__(self, func, x0, xmin, xmax):
 #         m = minimize(func, x0)
 #         return  m.nfev, m.fun, m.x

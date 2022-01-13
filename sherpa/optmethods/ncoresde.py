@@ -361,9 +361,6 @@ class ncoresMyDifEvo(MyDifEvo):
 
 class DifEvo:
 
-    def __init__(self):
-        pass
-
     def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
                  npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
 
@@ -380,9 +377,6 @@ class DifEvo:
 
 
 class ncoresDifEvo:
-
-    def __init__(self):
-        pass
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
                  numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
