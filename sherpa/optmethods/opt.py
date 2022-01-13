@@ -203,6 +203,7 @@ class SimplexBase:
             return stddev or fctval
         return False
 
+        # NOTE: this code is never used
         num = 2.0 * abs(self.simplex[0, -1] - self.simplex[-1, -1])
         denom = abs(self.simplex[0, -1]) + abs(self.simplex[-1, -1]) + 1.0
         if (num / denom > ftol):
