@@ -325,7 +325,7 @@ class MyDifEvo(Opt):
 
     def all_strategies(self, key):
         rand, index = self.key2.parse(key)
-        random.seed(rand)
+        random.seed(int(rand))
         mypop = self.polytope
         best_trial = self.strategies[0](mypop, index)
         for ii in range(1, len(self.strategies)):
