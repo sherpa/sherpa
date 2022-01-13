@@ -217,7 +217,7 @@ class SimplexBase:
             simplex[ii][-1] = self.func(simplex[ii][:-1])
         return self.sort_me(simplex)
 
-    def init(self, npop, xpar, step, seed):
+    def init(self, npop, xpar, step, seed, factor):
         raise NotImplementedError("init has not been implemented")
 
     def init_random_simplex(self, xpar, simplex, start, npop, seed, factor):
