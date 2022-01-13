@@ -51,7 +51,7 @@ class MyNcores:
 
         for func in funcs:
             if not callable(func):
-                raise TypeError("input func '%s' is not callable" % repr(func))
+                raise TypeError(f"input func '{repr(func)}' is not callable")
 
         if numcores is None:
             numcores = _ncpus
@@ -74,11 +74,9 @@ class MyNcores:
 
         for id, func in enumerate(funcs):
             myargs = (func, id, out_q, err_q, lock) + args
-            try:
-                procs.append(multiprocessing.Process(target=self.my_worker,
-                                                     args=myargs))
-            except NotImplementedError as nie:
-                raise nie
+            procs.append(multiprocessing.Process(target=self.my_worker,
+                                                 args=myargs))
+
         return run_tasks(procs, err_q, out_q, num_funcs)
 
     def my_worker(self, *args):

@@ -303,9 +303,6 @@ class NelderMead7(NelderMeadBase):
 
 class nmNcores(MyNcores):
 
-    def __init__self(self):
-        MyNcores.__init__(self)
-
     def my_worker(self, opt, id, out_q, err_q, lock,
                   fcn, x, xmin, xmax, tol, maxnfev):
         try:
@@ -385,8 +382,8 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
             # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
             if fmin < fval:
                 return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
-            else:
-                return nfev, fval, par
+
+            return nfev, fval, par
         except NotImplementedError as nie:
             print(nie)
             raise nie
