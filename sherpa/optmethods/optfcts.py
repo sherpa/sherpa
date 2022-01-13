@@ -113,10 +113,9 @@ def _get_saofit_msg(maxfev, ierr):
         1: (False, 'improper input parameters'),
         2: (False, 'initial parameter value is out of bounds'),
         3: (False,
-            ('number of function evaluations has exceeded maxfev=%d' %
-             maxfev))
+            f"number of function evaluations has exceeded maxfev={maxfev}")
         }
-    return key.get(ierr, (False, 'unknown status flag (%d)' % ierr))
+    return key.get(ierr, (False, f"unknown status flag ({ierr})"))
 
 
 def _move_within_limits(x, xmin, xmax):
@@ -238,10 +237,7 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         print('difevo: f%s=%e in %d nfev' % (x, fval, nfev))
 
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
-
-    return rv
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -272,10 +268,7 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     ierr = de[3]
 
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
-
-    return rv
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
@@ -311,10 +304,7 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
         print('difevo_nm: f%s=%e in %d nfev' % (x, fval, nfev))
 
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
-
-    return rv
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
@@ -404,11 +394,11 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     else:
         if not numpy.iterable(sequence):
             raise TypeError("sequence option must be iterable")
-        else:
-            for seq in sequence:
-                if npar != len(seq):
-                    msg = "%s must be of length %d" % (seq, npar)
-                    raise TypeError(msg)
+
+        for seq in sequence:
+            if npar != len(seq):
+                msg = f"{seq} must be of length {npar}"
+                raise TypeError(msg)
 
     answer = eval_stat_func(x)
     sequence_results = list(parallel_map(eval_stat_func, sequence, numcores))
@@ -416,34 +406,30 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         if xresult[0] < answer[0]:
             answer = xresult
 
-    fval = answer[0]
     x = answer[1:]
     nfev = len(sequence_results) + 1
-    ierr = 0
-    status, msg = _get_saofit_msg(ierr, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
 
-    # TODO: should we just use case-insensitive comparison?
-    if method in ['NelderMead', 'neldermead', 'Neldermead', 'nelderMead']:
-        # re.search( '^[Nn]elder[Mm]ead', method ):
+    method = "" if method is None else method
+    if method.casefold() == "neldermead":
         nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
                                verbose=verbose)
         tmp_nm_result = list(nm_result)
         tmp_nm_result_4 = tmp_nm_result[4]
         tmp_nm_result_4['nfev'] += nfev
-        rv = tuple(tmp_nm_result)
+        return tuple(tmp_nm_result)
 
-    if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
-        # re.search( '^[Ll]ev[Mm]ar', method ):
+    if method.casefold() == "levmar":
         levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
                               gtol=ftol, maxfev=maxfev, verbose=verbose)
         tmp_levmar_result = list(levmar_result)
         tmp_levmar_result_4 = tmp_levmar_result[4]
         tmp_levmar_result_4['nfev'] += nfev
-        rv = tuple(tmp_levmar_result)
+        return tuple(tmp_levmar_result)
 
-    return rv
+    fval = answer[0]
+    ierr = 0
+    status, msg = _get_saofit_msg(ierr, ierr)
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 #
@@ -480,10 +466,9 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         3: (False, 'number of parameters is less than 1'),
         4: (False, 'nloop=%d is less than 1' % nloop)
         }
-    status, msg = key.get(ifault, (False, 'unknown status flag (%d)' % ifault))
+    status, msg = key.get(ifault, (False, f"unknown status flag ({ifault})"))
 
-    rv = (status, x, fval, msg, {'info': ifault, 'nfev': neval})
-    return rv
+    return (status, x, fval, msg, {'info': ifault, 'nfev': neval})
 
 
 #
@@ -697,13 +682,13 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             if tmp_fmin < fval:
                 fval = tmp_fmin
                 x = tmp_par
+
     ierr = 0
     if nfev >= maxfev:
         ierr = 3
     status, msg = _get_saofit_msg(maxfev, ierr)
 
-    rv = (status, x, fval, msg, {'info': status, 'nfev': nfev})
-    return rv
+    return (status, x, fval, msg, {'info': status, 'nfev': nfev})
 
 
 #
@@ -1027,23 +1012,24 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     if nfev >= maxfev:
         ier = 3
+
     key = {
         0: (True, 'Optimization terminated successfully'),
         1: (False, 'improper input parameters'),
         2: (False, 'improper values for x, xmin or xmax'),
         3: (False,
-            'number of function evaluations has exceeded %d' % maxfev)
+            f"number of function evaluations has exceeded {maxfev}")
         }
     status, msg = key.get(ier,
-                          (False, 'unknown status flag (%d)' % ier))
+                          (False, f"unknown status flag ({ier})"))
 
-    rv = (status, x, fval)
+    imap = {"info": status, "nfev": nfev}
+
     print_covar_err = False
     if print_covar_err and covarerr is not None:
-        rv += (msg, {'covarerr': covarerr, 'info': status, 'nfev': nfev})
-    else:
-        rv += (msg, {'info': status, 'nfev': nfev})
-    return rv
+        imap["covarerr"] = covarerr
+
+    return (status, x, fval, msg, imap)
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
@@ -1204,11 +1190,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         info = 3
     status, msg = _get_saofit_msg(maxfev, info)
 
+    imap = {"info": info, "nfev": nfev,
+            "num_parallel_map": num_parallel_map[0]}
+
     if info == 0:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar,
-                                     'num_parallel_map': num_parallel_map[0]})
-    else:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'num_parallel_map': num_parallel_map[0]})
-    return rv
+        imap["covar"] = covar
+
+    return (status, x, fval, msg, imap)
