@@ -1,0 +1,4 @@
+
+The sherpa.optmethods.ncoresde/nm modules used to be able to be
+run directly, which is useful during development. The code has
+been moved out to these scripts instead.

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #
 #  Copyright (C) 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
@@ -490,46 +488,3 @@ class ncoresDifEvoNelderMead:
             my_par = nm_par
 
         return nfev, my_fmin, my_par
-
-
-if '__main__' == __name__:
-
-    # from sherpa.optmethods.opt import tst_opt, tst_unc_opt
-    from opt import tst_opt, tst_unc_opt
-
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--difevo', action="store_true",
-                        default=False, help='run simple difevo', dest="difevo")
-    parser.add_argument('-c', '--combine', action="store_true",
-                        default=False, help='run nm & difevo', dest="combine")
-    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True,
-                        action="store_false", help="do not run tst_unc_opt")
-    parser.add_argument("-o", "--opt", dest="global_func", default=True,
-                        action="store_false", help="do not run tst_opt")
-    parser.add_argument('-N', action="store", dest="num", default=4, type=int)
-
-    options = parser.parse_args()
-    # print('options =', options)
-    npar = options.num
-    if npar % 2 != 0:
-        raise ValueError("-N option must be an even number")
-
-    if options.difevo:
-        algo = [DifEvo()]
-        if options.unc_opt:
-            tst_unc_opt(algo, npar)
-        if options.global_func:
-            tst_opt(algo, npar)
-    elif options.combine:
-        algo = [ncoresDifEvoNelderMead()]
-        if options.unc_opt:
-            tst_unc_opt(algo, npar)
-        if options.global_func:
-            tst_opt(algo, npar)
-    else:
-        algo = [ncoresDifEvo()]
-        if options.unc_opt:
-            tst_unc_opt(algo, npar)
-        if options.global_func:
-            tst_opt(algo, npar)

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #
 #  Copyright (C) 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
@@ -445,41 +443,3 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
 #     def __call__(self, func, x0, xmin, xmax):
 #         m = minimize(func, x0)
 #         return  m.nfev, m.fun, m.x
-
-
-if '__main__' == __name__:
-
-    from opt import tst_opt, tst_unc_opt
-
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option("-N", "--num", dest="num", default=10,
-                      type=int, help="set num")
-    parser.add_option("-s", "--single", dest="single", default=True,
-                      action="store_false", help="run test using 1 core")
-    parser.add_option("-u", "--unc_opt", dest="unc_opt", default=True,
-                      action="store_false", help="do not run tst_unc_opt")
-    parser.add_option("-o", "--opt", dest="global_func", default=True,
-                      action="store_false", help="do not run tst_opt")
-    (options, args) = parser.parse_args()
-    npar = options.num
-
-    if npar % 2 != 0:
-        raise ValueError("-N option must be an even number")
-
-    if options.single:
-        nmcores = ncoresNelderMead()
-        # midnight = Midnight()
-        algorithms = [nmcores]
-        if options.unc_opt:
-            tst_unc_opt(algorithms, npar)
-        if options.global_func:
-            tst_opt(algorithms, npar)
-    else:
-        algorithms = [NelderMead0(), NelderMead1(), NelderMead2(),
-                      NelderMead3(), NelderMead4(), NelderMead5(),
-                      NelderMead6(), NelderMead7()]
-        if options.unc_opt:
-            tst_unc_opt(algorithms, npar)
-        if options.global_func:
-            tst_opt(algorithms, npar)
