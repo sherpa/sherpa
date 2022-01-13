@@ -27,8 +27,9 @@ This used to be in sherpa.optmethods.ncoresde
 
 import argparse
 
-from sherpa.optmethods.opt import tst_opt, tst_unc_opt
 from sherpa.optmethods import ncoresde
+
+from testing import tst_opt, tst_unc_opt
 
 
 parser = argparse.ArgumentParser()

@@ -28,7 +28,8 @@ This used to be in sherpa.optmethods.ncoresnm
 from optparse import OptionParser
 
 from sherpa.optmethods import ncoresnm
-from sherpa.optmethods.opt import tst_opt, tst_unc_opt
+
+from testing import tst_opt, tst_unc_opt
 
 
 parser = OptionParser()
