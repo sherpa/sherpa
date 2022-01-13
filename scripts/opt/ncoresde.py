@@ -35,8 +35,6 @@ from testing import tst_opt, tst_unc_opt
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--difevo', action="store_true",
                     default=False, help='run simple difevo', dest="difevo")
-parser.add_argument('-c', '--combine', action="store_true",
-                    default=False, help='run nm & difevo', dest="combine")
 parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True,
                     action="store_false", help="do not run tst_unc_opt")
 parser.add_argument("-o", "--opt", dest="global_func", default=True,
@@ -51,8 +49,6 @@ if npar % 2 != 0:
 
 if options.difevo:
     algo = [ncoresde.DifEvo()]
-elif options.combine:
-    algo = [ncoresde.ncoresDifEvoNelderMead()]
 else:
     algo = [ncoresde.ncoresDifEvo()]
 
