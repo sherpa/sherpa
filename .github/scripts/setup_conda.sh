@@ -49,6 +49,6 @@ fi
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
 
 # Create and activate conda build environment
-conda create --yes -n build python=${PYTHONVER}  readline=8.1.0 pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}
+conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}
 
 conda activate build
