@@ -23,9 +23,9 @@ strings as HTML or LaTeX which are usually used as axis labels), but no real
 plotting capabilities. It is here to ensure that the `sherpa.plot` module can
 be imported, even if no plotting backend is installed.
 
-In this sense, this backend can be understood as the "base" for backeneds. 
+In this sense, this backend can be understood as the "base" for backends. 
 The string-formatting is implemented here so that other backends don't have to
-dublicate that; they can call the functions here.
+duplicate that; they can call the functions here.
 '''
 
 import logging
@@ -56,8 +56,7 @@ lgr = logging.getLogger(__name__)
 # Identify the backend
 name = 'dummy'
 
-warning = lgr.warning
-warning('Failed to import usable sherpa.plotting backends.' +
+lgr.warning('Failed to import usable sherpa.plotting backends.' +
         ' Plotting routines will not be available')
 
 
