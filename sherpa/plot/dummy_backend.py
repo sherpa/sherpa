@@ -56,8 +56,8 @@ lgr = logging.getLogger(__name__)
 # Identify the backend
 name = 'dummy'
 
-lgr.warning('Failed to import usable sherpa.plotting backends.' +
-        ' Plotting routines will not be available')
+lgr.warning('Failed to import any usable sherpa.plotting backend.' +
+        ' Plotting routines will not be available.')
 
 
 def point(*args, **kwargs):

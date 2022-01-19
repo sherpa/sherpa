@@ -22,8 +22,8 @@
 
 Classes provide access to common plotting tasks, which is done by the
 plotting backend defined in the ``options.plot_pkg`` setting of the
-Sherpa configuration file. Note that the plot objects can be created,
-and used, even when there is no available plot backend, it is just
+Sherpa configuration file. Note that plot objects can be created
+and used even when there is no available plot backend. It is just
 that no graphical display will be created.
 
 Which backend is used?
@@ -31,7 +31,7 @@ Which backend is used?
 
 When this module is first imported, Sherpa tries to import the
 backends installed with Sherpa in the order listed in
-`sherpa.plot.try_backends`. The first module that imports
+the ``sherpa.rc`` startup file. The first module that imports
 successfully is set as the active backend. The following command prints the
 name and the location on disk of that module::
 
@@ -80,11 +80,14 @@ backend = None
 for plottry in plot_opt:
     try:
         backend = importlib.import_module('.' + plottry,
-                                              package='sherpa.plot')
+                                          package='sherpa.plot')
         break
     except ImportError:
         pass
-
+else:
+    # None of the options in the rc file work, e.g. because it's an old file
+    # that does not have dummy listed
+    import sherpa.plot.dummy_backend as backend
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'HistogramPlot', 'DataHistogramPlot',
