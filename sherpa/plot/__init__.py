@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -7,7 +7,7 @@
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
-#
+
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -30,10 +30,11 @@ Which backend is used?
 ----------------------
 
 When this module is first imported, Sherpa tries to import the
-backends installed with Sherpa in the order listed in
-the ``sherpa.rc`` startup file. The first module that imports
-successfully is set as the active backend. The following command prints the
-name and the location on disk of that module::
+backends installed with Sherpa in the order listed in the
+``options.plot_pkg`` setting from the ``sherpa.rc`` startup file.
+The first module that imports successfully is set as the active 
+backend. The following command prints the name and the location
+on disk of that module::
 
    >>> from sherpa import plot
    >>> print(plot.backend)
@@ -222,41 +223,6 @@ def calculate_errors(data, stat, yerrorbars=True):
         return None
 
 
-def merge_settings(prefs, user):
-    """Merge preference and user settings.
-
-    Parameters
-    ----------
-    prefs : dict
-        The plot preferences.
-    user : dict
-        The user settings.
-
-    Returns
-    -------
-    settings : dict
-        The merged settings, where the user settings override the
-        preferences. The input arguments are not changed.
-
-    Notes
-    -----
-    This does not restrict the user settings to the preferences,
-    but it could - either by dropping unknown user keywords or
-    reporting an error.
-
-    """
-
-    # be explicit here
-    opts = {}
-    for k, v in prefs.items():
-        opts[k] = v
-
-    for k, v in user.items():
-        opts[k] = v
-
-    return opts
-
-
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
     plot_prefs = backend.get_plot_defaults()
@@ -294,7 +260,7 @@ class Plot(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return merge_settings(self.plot_prefs, kwargs)
+        return {**self.plot_prefs, **kwargs}
 
     def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True,
@@ -369,7 +335,7 @@ class Contour(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return merge_settings(self.contour_prefs, kwargs)
+        return {**self.contour_prefs, **kwargs}
 
     def contour(self, x0, x1, y, levels=None, title=None, xlabel=None,
                 ylabel=None, overcontour=False, clearwindow=True,
@@ -402,7 +368,7 @@ class Point(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return merge_settings(self.point_prefs, kwargs)
+        return {**self.point_prefs, **kwargs}
 
     def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
         """Draw a point at the given location.
@@ -448,7 +414,7 @@ class Histogram(NoNewAttributesAfterInit):
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
-        return merge_settings(self.histo_prefs, kwargs)
+        return {**self.histo_prefs, **kwargs}
 
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
              ylabel=None, overplot=False, clearwindow=True, **kwargs):

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -369,7 +369,7 @@ class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
         self.title = 'Model component: %s' % model.name
 
     def _merge_settings(self, kwargs):
-        return shplot.merge_settings(self.histo_prefs, kwargs)
+        return {**self.histo_prefs, **kwargs}
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         ModelHistogram.plot(self, overplot=overplot,
@@ -391,7 +391,7 @@ class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
         self.title = 'Source model component: %s' % model.name
 
     def _merge_settings(self, kwargs):
-        return shplot.merge_settings(self.histo_prefs, kwargs)
+        return {**self.histo_prefs, **kwargs}
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         SourcePlot.plot(self, overplot=overplot,
