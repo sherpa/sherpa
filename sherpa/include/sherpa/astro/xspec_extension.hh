@@ -861,12 +861,12 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args ) {
     FloatArray result;
     xspec_model.eval( result );
     return result.return_new_ref();
-  } catch(NoError& re) {
+  } catch(const NoError& re) {
     return NULL;
-  } catch(ValueError& re) {
+  } catch(const ValueError& re) {
     PyErr_SetString( PyExc_ValueError, re.what() );
     return NULL;
-  } catch(TypeError& re) {
+  } catch(const TypeError& re) {
     PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
@@ -887,12 +887,12 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args ) {
     DoubleArray result;
     xspec_model.eval( result );
     return result.return_new_ref();
-  } catch(NoError& re) {
+  } catch(const NoError& re) {
     return NULL;
-  } catch(ValueError& re) {
+  } catch(const ValueError& re) {
     PyErr_SetString( PyExc_ValueError, re.what() );
     return NULL;
-  } catch(TypeError& re) {
+  } catch(const TypeError& re) {
     PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
@@ -916,12 +916,12 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args ) {
     DoubleArray result;
     xspec_model.eval(result);
     return result.return_new_ref();
-  } catch(NoError& re) {
+  } catch(const NoError& re) {
     return NULL;
-  } catch(ValueError& re) {
+  } catch(const ValueError& re) {
     PyErr_SetString( PyExc_ValueError, re.what() );
     return NULL;
-  } catch(TypeError& re) {
+  } catch(const TypeError& re) {
     PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
@@ -944,12 +944,12 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args ) {
     FloatArray result;
     xspec_model.eval( result );
     return result.return_new_ref();
-  } catch(NoError& re) {
+  } catch(const NoError& re) {
     return NULL;
-  } catch(ValueError& re) {
+  } catch(const ValueError& re) {
     PyErr_SetString( PyExc_ValueError, re.what() );
     return NULL;
-  } catch(TypeError& re) {
+  } catch(const TypeError& re) {
     PyErr_SetString( PyExc_TypeError, re.what() );
     return NULL;
   } catch(...) {
@@ -1023,12 +1023,12 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
             for (int i = 0; i < xlo.get_size(); i++)
               result[i] *= pars[npars];
           return result.return_new_ref();
-	} catch(NoError& re) {
+	} catch(const NoError& re) {
 	  return NULL;
-	} catch(ValueError& re) {
+	} catch(const ValueError& re) {
 	  PyErr_SetString( PyExc_ValueError, re.what() );
 	  return NULL;
-	} catch(TypeError& re) {
+	} catch(const TypeError& re) {
 	  PyErr_SetString( PyExc_TypeError, re.what() );
 	  return NULL;
         } catch(...) {
