@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+#
+#  Copyright (C) 2022
+#  MIT
+#
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+'''Git pre-commit hook to update the copyright year in Sherpa code files
+'''
+from __future__ import print_function
+import datetime
+import fileinput
+import re
+import subprocess
+import sys
+
+year = str(datetime.datetime.now().year)
+copyr = re.compile(r"(?P<comment>(#|//))\s*Copyright \(C\) (?P<years>[0-9,\s]+)(?P<institution>[\w\s]*)")
+changed = 0
+
+if __name__ == '__main__':
+
+    proc = subprocess.Popen("git diff --name-only --staged",
+                             shell=True, stdout=subprocess.PIPE)
+    filenames = proc.stdout.read().decode().split()
+
+    for line in fileinput.input(files=filenames, inplace=True):
+        m = copyr.match(line)
+        if m and year not in m.group('years'):
+            changed = 1
+            print(m.group('comment') +
+                  '  Copyright (C) ' + m.group('years').strip() +
+                  ', ' + year)
+            # sometimes instition will be empty, because it's not on
+            # this line but on the next. If not, move it to the next.
+            if m.group('institution'):
+                print(m.group('comment') +
+                      '  ' + m.group('institution'), end='')
+        else:
+            print(line, end='')
+
+    for f in filenames:
+        subprocess.Popen("git add " + f, shell=True)
+    if changed:
+        print("""Message from your pre-commit hook script: 
+I updated copyright statements in one or more files for you. 
+After doing that, I aborted the commit, so you can check yourself that 
+it's alright before you commit again. 
+Commit with ' --no-verify' option to skip this check.""", file=sys.stderr)
+        sys.exit(changed)
