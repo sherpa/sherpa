@@ -16,6 +16,17 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+'''A dummy backend for plotting.
+
+This backend implements only minimal functionality (some formatting of
+strings as HTML or LaTeX which are usually used as axis labels), but no real
+plotting capabilities. It is here to ensure that the `sherpa.plot` module can
+be imported, even if no plotting backend is installed.
+
+In this sense, this backend can be understood as the "base" for backends. 
+The string-formatting is implemented here so that other backends don't have to
+duplicate that; they can call the functions here.
+'''
 
 import logging
 
@@ -25,7 +36,7 @@ from sherpa.utils import formatting
 
 __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
            'get_split_plot_defaults', 'get_confid_point_defaults',
-           'get_plot_defaults', 'get_point_defaults', 'begin', 'end', 'init',
+           'get_plot_defaults', 'get_point_defaults', 'begin', 'end',
            'get_data_plot_defaults', 'get_model_plot_defaults',
            'get_fit_plot_defaults', 'get_resid_plot_defaults',
            'get_ratio_plot_defaults', 'get_contour_defaults',
@@ -36,13 +47,17 @@ __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
            'get_histo_defaults', 'get_model_histo_defaults',
            'get_component_plot_defaults', 'get_component_histo_defaults',
            'vline', 'hline', 'get_scatter_plot_defaults',
-           'get_cdf_plot_defaults', 'get_latex_for_string', 'name')
+           'get_cdf_plot_defaults', 'get_latex_for_string', 'name',
+           'initialize_plot', 'select_plot')
 
 
 lgr = logging.getLogger(__name__)
 
 # Identify the backend
 name = 'dummy'
+
+lgr.warning('Failed to import any usable sherpa.plotting backend.' +
+        ' Plotting routines will not be available.')
 
 
 def point(*args, **kwargs):
@@ -54,7 +69,6 @@ clear_window = point
 set_window_redraw = point
 end = point
 begin = point
-init = point
 exceptions = point
 
 plot = point
@@ -65,6 +79,8 @@ set_jointplot = point
 
 vline = point
 hline = point
+initialize_plot = point
+select_plot = point
 
 
 def get_split_plot_defaults():
