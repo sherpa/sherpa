@@ -123,6 +123,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
+    'matplotlib.sphinxext.plot_directive',
     # Use napoleon over numpydoc for now since it stops a large number
     # of warning messages (about missing links) that I don't have time
     # to investigate.
