@@ -17,11 +17,6 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-// INIT_XSPEC is used by xspecmodelfct() in xspec_extension.hh, so it needs to
-// be defined before that file is included
-int _sherpa_init_xspec_library();
-#define INIT_XSPEC _sherpa_init_xspec_library
-
 // Have sherpa include first so that Python.h is first, to avoid warning
 // messages about redefining _XOPEN_SOURCE
 #include "sherpa/astro/xspec_extension.hh"
@@ -375,25 +370,23 @@ void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 
 }
 
-// This routine could be called when the module is being initialized,
-// but this would cause XSPEC module initialization even if XSPEC
-// functionality is not used. So each function/model has to ensure
-// that they call _sherpa_init_xspec_library before calling any
-// XSPEC routine.
+// The XSPEC initialization used to be done lazily - that is, only
+// when the first routine from XSPEC was about to be called - but
+// the module is now set up so that we need to know the version
+// of XSPEC being used when the sherpa.astro.xspec module is
+// being created. As the version requires a run-time check (that
+// is, the get_version call is made) then we know that we need to
+// initalize the XSPEC code when the Python module is installed.
+// So we no-longer need to support the lazy loading.
 //
-// Sun's C++ compiler complains if this is declared static.
-//
-// TODO: should we expose this so that anyone who wants to use a user-model
-//       can access it?
-//
-int _sherpa_init_xspec_library()
+
+static int _sherpa_init_xspec_library()
 {
 
+  // This routine is only meant to be called once
   static bool init = false;
-
   if ( init )
     return EXIT_SUCCESS;
-
 
   if ( !getenv("HEADAS") ) {
     PyErr_SetString( PyExc_ImportError,
@@ -495,16 +488,12 @@ int _sherpa_init_xspec_library()
   }
 
   init = true;
-
   return EXIT_SUCCESS;
 
 }
 
 static PyObject* get_version( PyObject *self )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   char version[256];
   int retval;
@@ -534,9 +523,6 @@ static PyObject* get_version( PyObject *self )
 static PyObject* get_chatter( PyObject *self )
 {
 
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
   int chatter = 0;
 
   try {
@@ -558,9 +544,6 @@ static PyObject* get_chatter( PyObject *self )
 
 static PyObject* get_abund( PyObject *self, PyObject *args )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   char* abund = NULL;
   char* element = NULL;
@@ -634,9 +617,6 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 static PyObject* get_cosmo( PyObject *self )
 {
 
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
   float h0;
   float l0;
   float q0;
@@ -663,9 +643,6 @@ static PyObject* get_cosmo( PyObject *self )
 static PyObject* get_cross( PyObject *self )
 {
 
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
   char* cross = NULL;
 
   try {
@@ -687,9 +664,6 @@ static PyObject* get_cross( PyObject *self )
 
 static PyObject* set_chatter( PyObject *self, PyObject *args )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   int chatter = 0;
 
@@ -716,9 +690,6 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
 static PyObject* set_abund( PyObject *self, PyObject *args )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   char* table = NULL;
   int status = 0;
@@ -794,9 +765,6 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
 static PyObject* set_cosmo( PyObject *self, PyObject *args )
 {
 
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
   float h0;
   float l0;
   float q0;
@@ -827,9 +795,6 @@ static PyObject* set_cosmo( PyObject *self, PyObject *args )
 
 static PyObject* set_cross( PyObject *self, PyObject *args )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   char* csection = NULL;
   int status = 0;
@@ -863,9 +828,6 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 static PyObject* set_xset( PyObject *self, PyObject *args )
 {
 
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
   char* str_name = NULL;
   char* str_value = NULL;
   int status = 0;
@@ -897,9 +859,6 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
 static PyObject* get_xset( PyObject *self, PyObject *args  )
 {
 
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
   char* str_name = NULL;
   char* str_value = NULL;
 
@@ -928,9 +887,6 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 //
 static PyObject* get_xspec_path( const char *label, char *getfunc() )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   char* str_value = NULL;
   try {
@@ -961,9 +917,6 @@ static PyObject* get_model_data_path( PyObject *self )
 
 static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
 {
-
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
 
   char* path = NULL;
 
@@ -1463,6 +1416,10 @@ static struct PyModuleDef xspec_module = {
 };
 
 PyMODINIT_FUNC PyInit__xspec(void) {
+  // Ensure the XSPEC library is initialized.
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
   import_array();
   return PyModule_Create(&xspec_module);
 }
