@@ -154,7 +154,8 @@ extensions = [
     'sphinx_astropy.ext.intersphinx_toggle',
     'sphinx_astropy.ext.edit_on_github',
     # notebooks
-    'nbsphinx'
+    'nbsphinx',
+    'sphinx_rtd_theme',
 ]
 # Imported from sphinx_astropy so we don't have to maintain the list
 # of servers
