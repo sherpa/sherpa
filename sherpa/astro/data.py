@@ -4541,6 +4541,19 @@ this value.
     get_wcs = get_world
 
     def set_coord(self, coord):
+        """Change the coordinate setting.
+
+        This routine should be used rather than explicitly
+        setting the `coord` attribute of the object.
+
+        Parameters
+        ----------
+        coord : {'logical', 'image', 'physical', 'world', 'wcs'}
+            The coordinate system to use. Note that "image" is a
+            synomym for "logical" and "wcs" is a synomyn for "world".
+
+        """
+
         coord = str(coord).strip().lower()
         # Destroys original data to conserve memory for big imgs
         good = ('logical', 'image', 'physical', 'world', 'wcs')
