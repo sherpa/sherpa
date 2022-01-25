@@ -4318,9 +4318,8 @@ class DataIMG(Data2D):
         if coord in ('logical', 'image'):
             coord = 'logical'
 
-        elif coord in ('physical',):
+        elif coord == 'physical':
             self._check_physical_transform()
-            coord = 'physical'
 
         elif coord in ('world', 'wcs'):
             self._check_world_transform()
@@ -4331,13 +4330,19 @@ class DataIMG(Data2D):
 
         self._coord = coord
 
-    # You should use set_coord rather than changing coord directly,
-    # otherwise constraints set in set_coord are not run. This is
-    # probably an error in set_coord (i.e. this logic should be
-    # moved into _set_coord).
+    # Ideally we'd move the logic from set_coord into _set_coord,
+    # except that this does not work when calling __init__.
+    # The set_coord command is for use after the object has been
+    # created, but we still need to be able to set the field
+    # when creating the object, which leads to this. We could
+    # just make this a getter and not both a setter and getter!
     #
     coord = property(_get_coord, _set_coord,
-                     doc='Coordinate system of independent axes')
+                     doc="""Coordinate system of independent axes.
+
+To change the setting use the set_coord method rather than change
+this value.
+""")
 
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
@@ -4384,6 +4389,7 @@ class DataIMG(Data2D):
         self.__dict__.update(state)
 
         # _set_coord will correctly define the _get_* WCS function pointers.
+        # TODO: is this statement still true?
         self._set_coord(state['_coord'])
 
         # This used to always use the _region setting to create a
@@ -4497,28 +4503,34 @@ class DataIMG(Data2D):
     def get_logical(self):
         coord = self.coord
         x0, x1 = self.get_indep()
-        if coord != 'logical':
-            x0 = x0.copy()
-            x1 = x1.copy()
-            x0, x1 = getattr(self, '_' + coord + '_to_logical')(x0, x1)
+        if coord == 'logical':
+            return (x0, x1)
+
+        x0 = x0.copy()
+        x1 = x1.copy()
+        x0, x1 = getattr(self, f'_{coord}_to_logical')(x0, x1)
         return (x0, x1)
 
     def get_physical(self):
         coord = self.coord
         x0, x1 = self.get_indep()
-        if coord != 'physical':
-            x0 = x0.copy()
-            x1 = x1.copy()
-            x0, x1 = getattr(self, '_' + coord + '_to_physical')(x0, x1)
+        if coord == 'physical':
+            return (x0, x1)
+
+        x0 = x0.copy()
+        x1 = x1.copy()
+        x0, x1 = getattr(self, f'_{coord}_to_physical')(x0, x1)
         return (x0, x1)
 
     def get_world(self):
         coord = self.coord
         x0, x1 = self.get_indep()
-        if coord != 'world':
-            x0 = x0.copy()
-            x1 = x1.copy()
-            x0, x1 = getattr(self, '_' + coord + '_to_world')(x0, x1)
+        if coord == 'world':
+            return (x0, x1)
+
+        x0 = x0.copy()
+        x1 = x1.copy()
+        x0, x1 = getattr(self, f'_{coord}_to_world')(x0, x1)
         return (x0, x1)
 
     # For compatibility with old Sherpa keywords
@@ -4532,12 +4544,14 @@ class DataIMG(Data2D):
         if coord not in good:
             raise DataErr('badchoices', 'coordinates', coord, ", ".join(good))
 
-        if coord.startswith('wcs'):
+        if coord == 'wcs':
             coord = 'world'
-        elif coord.startswith('image'):
+        elif coord == 'image':
             coord = 'logical'
 
-        func = getattr(self, 'get_' + coord)
+        # TODO: we could do nothing if coord == self.coord
+
+        func = getattr(self, f'get_{coord}')
         self.indep = func()
         self._set_coord(coord)
 
@@ -4661,6 +4675,9 @@ class DataIMG(Data2D):
         # dummy placeholders needed b/c img shape may not be square!
         axis0 = numpy.arange(self.shape[1], dtype=float) + 1.
         axis1 = numpy.arange(self.shape[0], dtype=float) + 1.
+        if self.coord == 'logical':
+            return (axis0, axis1)
+
         dummy0 = numpy.ones(axis0.size, dtype=float)
         dummy1 = numpy.ones(axis1.size, dtype=float)
 
@@ -4668,7 +4685,7 @@ class DataIMG(Data2D):
             axis0, dummy = self._logical_to_physical(axis0, dummy0)
             dummy, axis1 = self._logical_to_physical(dummy1, axis1)
 
-        elif self.coord == 'world':
+        else:
             axis0, dummy = self._logical_to_world(axis0, dummy0)
             dummy, axis1 = self._logical_to_world(dummy1, axis1)
 
@@ -4676,27 +4693,23 @@ class DataIMG(Data2D):
 
     def get_x0label(self):
         "Return label for first dimension in 2-D view of independent axis/axes"
-        if self.coord in ('logical', 'image'):
-            return 'x0'
-        elif self.coord in ('physical',):
+        if self.coord == 'physical':
             return 'x0 (pixels)'
-        elif self.coord in ('world', 'wcs'):
+        elif self.coord == 'world':
             return 'RA (deg)'
-        else:
-            return 'x0'
+
+        return 'x0'
 
     def get_x1label(self):
         """
         Return label for second dimension in 2-D view of independent axis/axes
         """
-        if self.coord in ('logical', 'image'):
-            return 'x1'
-        elif self.coord in ('physical',):
+        if self.coord == 'physical':
             return 'x1 (pixels)'
-        elif self.coord in ('world', 'wcs'):
+        elif self.coord == 'world':
             return 'DEC (deg)'
-        else:
-            return 'x1'
+
+        return 'x1'
 
     def to_contour(self, yfunc=None):
         y = self.filter_region(self.get_dep(False))
@@ -4715,11 +4728,16 @@ class DataIMG(Data2D):
                 self.get_x1label())
 
     def filter_region(self, data):
-        if data is not None and numpy.iterable(self.mask):
-            filter = numpy.ones(len(self.mask), dtype=SherpaFloat)
-            filter[~self.mask] = numpy.nan
-            return data * filter
-        return data
+        if data is None or not numpy.iterable(self.mask):
+            return data
+
+        # We do not want to change the data array hence the
+        # explicit copy: this is done via astype to ensure
+        # we convert to a type that can accept NaN values.
+        #
+        out = data.astype(dtype=SherpaFloat, casting="safe", copy=True)
+        out[~self.mask] = numpy.nan
+        return out
 
 
 class DataIMGInt(DataIMG):
@@ -4777,45 +4795,51 @@ class DataIMGInt(DataIMG):
     def get_logical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord != 'logical':
-            x0lo = x0lo.copy()
-            x1lo = x1lo.copy()
-            convert = getattr(self, '_' + coord + '_to_logical')
-            x0lo, x1lo = convert(x0lo, x1lo)
+        if coord == 'logical':
+            return (x0lo, x1lo, x0hi, x1hi)
 
-            x0hi = x0hi.copy()
-            x1hi = x1hi.copy()
-            x0hi, x1hi = convert(x0hi, x1hi)
+        x0lo = x0lo.copy()
+        x1lo = x1lo.copy()
+        convert = getattr(self, f'_{coord}_to_logical')
+        x0lo, x1lo = convert(x0lo, x1lo)
+
+        x0hi = x0hi.copy()
+        x1hi = x1hi.copy()
+        x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
 
     def get_physical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord != 'physical':
-            x0lo = x0lo.copy()
-            x1lo = x1lo.copy()
-            convert = getattr(self, '_' + coord + '_to_physical')
-            x0lo, x1lo = convert(x0lo, x1lo)
+        if coord == 'physical':
+            return (x0lo, x1lo, x0hi, x1hi)
 
-            x0hi = x0hi.copy()
-            x1hi = x1hi.copy()
-            x0hi, x1hi = convert(x0hi, x1hi)
+        x0lo = x0lo.copy()
+        x1lo = x1lo.copy()
+        convert = getattr(self, f'_{coord}_to_physical')
+        x0lo, x1lo = convert(x0lo, x1lo)
+
+        x0hi = x0hi.copy()
+        x1hi = x1hi.copy()
+        x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
 
     def get_world(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord != 'world':
-            x0lo = x0lo.copy()
-            x1lo = x1lo.copy()
-            convert = getattr(self, '_' + coord + '_to_world')
-            x0lo, x1lo = convert(x0lo, x1lo)
+        if coord == 'world':
+            return (x0lo, x1lo, x0hi, x1hi)
 
-            x0hi = x0hi.copy()
-            x1hi = x1hi.copy()
-            x0hi, x1hi = convert(x0hi, x1hi)
+        x0lo = x0lo.copy()
+        x1lo = x1lo.copy()
+        convert = getattr(self, f'_{coord}_to_world')
+        x0lo, x1lo = convert(x0lo, x1lo)
+
+        x0hi = x0hi.copy()
+        x1hi = x1hi.copy()
+        x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
 
@@ -4830,6 +4854,9 @@ class DataIMGInt(DataIMG):
         axis0hi = numpy.arange(self.shape[1], dtype=float) + 0.5
         axis1hi = numpy.arange(self.shape[0], dtype=float) + 0.5
 
+        if self.coord == 'logical':
+            return (axis0lo, axis1lo, axis0hi, axis1hi)
+
         dummy0 = numpy.ones(axis0lo.size, dtype=float)
         dummy1 = numpy.ones(axis1lo.size, dtype=float)
 
@@ -4840,7 +4867,7 @@ class DataIMGInt(DataIMG):
             dummy, axis1lo = self._logical_to_physical(dummy1, axis1lo)
             dummy, axis1hi = self._logical_to_physical(dummy1, axis1hi)
 
-        elif self.coord == 'world':
+        else:
             axis0lo, dummy = self._logical_to_world(axis0lo, dummy0)
             axis0hi, dummy = self._logical_to_world(axis0hi, dummy0)
 
