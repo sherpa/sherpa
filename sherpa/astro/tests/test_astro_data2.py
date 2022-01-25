@@ -2773,3 +2773,41 @@ def test_1379_evaluation_model_not_integrated(dclass):
     out = data.eval_model(mdl)
     assert len(out) == len(y)
     assert set(out) == {0.0}
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("coord", ["logical", "image", "physical", pytest.param("world", marks=pytest.mark.xfail), pytest.param("wcs", marks=pytest.mark.xfail)])
+def test_1380_data(coord, make_data_path):
+    """The contour data should ideally remain the same.
+
+    See also sherpa/astro/ui/tests/test_astro_ui_plot.py::test_1380_plot
+
+    This is the origin of the problem.
+    """
+
+    infile = make_data_path("image2.fits")
+    img = io.read_image(infile)
+
+    assert isinstance(img, DataIMG)
+    assert img.coord == "logical"
+
+    (x0_1, x1_1, y_1, xl_1, yl_1) = img.to_contour()
+
+    # We do not check the output of this call. It is important
+    # to call set_coord rather than change the coord attribute.
+    #
+    img.set_coord(coord)
+    img.to_contour()
+
+    # We do check that we get back the same data as we
+    # originally did.
+    #
+    img.set_coord("logical")
+    (x0_3, x1_3, y_3, xl_3, yl_3) = img.to_contour()
+
+    assert xl_3 == xl_1
+    assert yl_3 == yl_1
+    assert (y_3 == y_1).all()
+    assert (x0_3 == x0_1).all()
+    assert (x1_3 == x1_1).all()
