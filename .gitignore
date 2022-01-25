@@ -122,6 +122,10 @@ docs/ExamplePlots.ipynb
 
 # IDE config
 .vscode
+*.code-workspace
+
+# MacOS previews
+.DS_Store
 
 # emacs related files
 flycheck*py
