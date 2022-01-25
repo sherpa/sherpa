@@ -4351,6 +4351,15 @@ class DataIMG(Data2D):
         self._set_coord(coord)
         self.header = {} if header is None else header
         self._region = None
+
+        # Store the original axes so we can always recreate the other
+        # systems without having to worry about numerical differences
+        # from switching between systems. This is an explicit decision
+        # to go for repeatable behavior at the expense of using more
+        # memory. See #1380 for more information.
+        #
+        self._orig_indep_axis = (self.coord, x0, x1)
+
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
     def _repr_html_(self):
@@ -4382,13 +4391,28 @@ class DataIMG(Data2D):
         # self.__dict__['_get_physical']=(lambda : None)
         # self.__dict__['_get_world']=(lambda : None)
 
-        if 'header' not in state:
-            self.header = {}
+        # Unfortunately we can't re-create the original data used to
+        # create the object, but we can fake it using the last-selected
+        # coordinate system (which could lead to some issues for the
+        # world sytem - see #1390 - but there's little we can do here).
+        # The two-step process is to get around the behavior of the
+        # NoNewAttributesAfterInit parent class.
+        #
+        if "_orig_indep_axis" not in state:
+            state["_orig_indep_axis"] = None
 
         self.__dict__.update(state)
 
-        # _set_coord will correctly define the _get_* WCS function pointers.
-        # TODO: is this statement still true?
+        if 'header' not in state:
+            self.header = {}
+
+        if self._orig_indep_axis is None:
+            self._orig_indep_axis = (self.coord, self.x0, self.x1)
+
+        # This may check the data is correct, based on the coord setting,
+        # but is it worth it? It may catch a case when data is loaded into
+        # a system without WCS support.
+        #
         self._set_coord(state['_coord'])
 
         # This used to always use the _region setting to create a
@@ -4499,38 +4523,30 @@ class DataIMG(Data2D):
 
         return (x0, x1)
 
-    def get_logical(self):
-        coord = self.coord
-        x0, x1 = self.get_indep()
-        if coord == 'logical':
-            return (x0, x1)
+    # Convert from the _orig_indep_axis tuple (coord, x0, x1) to the
+    # required data system (if it isn't already set).
+    #
+    def _get_coordsys(self, coord):
+        if self.coord == coord:
+            return self.get_indep()
 
+        (base, x0, x1) = self._orig_indep_axis
         x0 = x0.copy()
         x1 = x1.copy()
-        x0, x1 = getattr(self, f'_{coord}_to_logical')(x0, x1)
-        return (x0, x1)
+        if base == coord:
+            return (x0, x1)
+
+        conv = getattr(self, f'_{base}_to_{coord}')
+        return conv(x0, x1)
+
+    def get_logical(self):
+        return self._get_coordsys("logical")
 
     def get_physical(self):
-        coord = self.coord
-        x0, x1 = self.get_indep()
-        if coord == 'physical':
-            return (x0, x1)
-
-        x0 = x0.copy()
-        x1 = x1.copy()
-        x0, x1 = getattr(self, f'_{coord}_to_physical')(x0, x1)
-        return (x0, x1)
+        return self._get_coordsys("physical")
 
     def get_world(self):
-        coord = self.coord
-        x0, x1 = self.get_indep()
-        if coord == 'world':
-            return (x0, x1)
-
-        x0 = x0.copy()
-        x1 = x1.copy()
-        x0, x1 = getattr(self, f'_{coord}_to_world')(x0, x1)
-        return (x0, x1)
+        return self._get_coordsys("world")
 
     # For compatibility with old Sherpa keywords
     get_image = get_logical
@@ -4548,7 +4564,6 @@ class DataIMG(Data2D):
         """
 
         coord = str(coord).strip().lower()
-        # Destroys original data to conserve memory for big imgs
         good = ('logical', 'image', 'physical', 'world', 'wcs')
         if coord not in good:
             raise DataErr('badchoices', 'coordinates', coord, ", ".join(good))

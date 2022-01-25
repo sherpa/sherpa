@@ -4046,7 +4046,7 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path, 
 
 @requires_fits
 @requires_data
-@pytest.mark.parametrize("coord", ["logical", "image", "physical", pytest.param("world", marks=pytest.mark.xfail), pytest.param("wcs", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
 def test_1380_plot(coord, make_data_path, clean_astro_ui):
     """The contour data should ideally remain the same.
 

@@ -2115,7 +2115,7 @@ def test_img_sky_logical(path, make_test_image_sky):
 
 @pytest.mark.parametrize("path", [[],
                                   ["logical"],
-                                  pytest.param(["world", "logical", "world", "logical", "world", "logical"], marks=pytest.mark.xfail)])
+                                  ["world", "logical", "world", "logical", "world", "logical"]])
 def test_img_world_logical(path, make_test_image_world):
     """The logical axes are as expected. Inspired by issue 1380."""
     d = make_test_image_world
@@ -2193,8 +2193,8 @@ def test_img_sky_get_logical(path, make_test_image_sky):
 
 
 @pytest.mark.parametrize("path", [[],
-                                  pytest.param(["world"], marks=pytest.mark.xfail),
-                                  pytest.param(["logical", "world", "logical", "world"], marks=pytest.mark.xfail)])
+                                  ["world"],
+                                  ["logical", "world", "logical", "world"]])
 def test_img_world_get_logical(path, make_test_image_world):
     """Check get_logical works"""
     d = make_test_image_world
@@ -3096,7 +3096,7 @@ def test_1379_evaluation_model_not_integrated(dclass):
 
 @requires_fits
 @requires_data
-@pytest.mark.parametrize("coord", ["logical", "image", "physical", pytest.param("world", marks=pytest.mark.xfail), pytest.param("wcs", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
 def test_1380_data(coord, make_data_path):
     """The contour data should ideally remain the same.
 
@@ -3130,3 +3130,56 @@ def test_1380_data(coord, make_data_path):
     assert (y_3 == y_1).all()
     assert (x0_3 == x0_1).all()
     assert (x1_3 == x1_1).all()
+
+
+@requires_fits
+@requires_data
+def test_1380_pickle(make_data_path):
+    """Can we pickle and restore an image?
+
+    The fix for 1380 added new data that is pickled, so just
+    check it works. Technically this should work but the
+    state handling has had to be tweaked to allow old state
+    files to be read in, so this just checks that new data
+    is not affected by this. We don't have any "old" state
+    files lying around that we can use here.
+
+    There are a number of existing image pickle tests but
+    they don't check the coordinate settings used here.
+    """
+
+    infile = make_data_path("image2.fits")
+    img = io.read_image(infile)
+    img.set_coord("physical")
+
+    x0_1, x1_1 = img.indep
+
+    img2 = pickle.loads(pickle.dumps(img))
+
+    assert img2.coord == "physical"
+
+    x0_2, x1_2 = img2.indep
+
+    # this test should not need pytest.approx
+    assert (x0_2 == x0_1).all()
+    assert (x1_2 == x1_1).all()
+
+    img2.set_coord("logical")
+    assert img.coord == "physical"
+    assert img2.coord == "logical"
+
+    img.set_coord("logical")
+
+    x0_3, x1_3 = img.indep
+    x0_4, x1_4 = img2.indep
+
+    assert (x0_4 == x0_3).all()
+    assert (x1_4 == x1_3).all()
+
+    assert (x0_3 != x0_1).all()
+
+    # This is an internal check and may get changed if the
+    # implementation changes.
+    #
+    assert img._orig_indep_axis[0] == "logical"
+    assert img2._orig_indep_axis[0] == "logical"
