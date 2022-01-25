@@ -57,15 +57,6 @@ The sherpa.plot module
       RegionProjection
       RegionUncertainty
 
-   .. rubric:: Functions
-
-   .. autosummary::
-      :toctree: api
-
-      begin
-      end
-      exceptions
-
 Class Inheritance Diagram
 =========================
 
