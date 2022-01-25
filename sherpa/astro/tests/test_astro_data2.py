@@ -889,6 +889,23 @@ def test_img_get_img_model_filter_some2(make_test_image):
     assert mval[good] == pytest.approx(expected2[good])
 
 
+def test_img_can_not_set_coord(make_test_image):
+    """The coord attribute is not writeable.
+
+    It used to be, but now we require the user to change
+    it with the set_coord method.
+    """
+    d = make_test_image
+
+    # This dataset does not have a physical system, but we
+    # do not get a DataErr but an AttributeError.
+    #
+    with pytest.raises(AttributeError) as ae:
+        d.coord = "physical"
+
+    assert str(ae.value) == "can't set attribute"
+
+
 def test_img_set_coord_invalid(make_test_image):
     """An invalid coord setting"""
     d = make_test_image

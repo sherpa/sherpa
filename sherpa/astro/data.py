@@ -4312,9 +4312,19 @@ class DataIMG(Data2D):
 
     _extra_fields = ("sky", "eqpos", "coord")
 
-    def _get_coord(self):
+    @property
+    def coord(self):
+        """Return the coordinate setting.
+
+        The attribute is one of 'logical', 'physical', or
+        'world'. Use `set_coord` to change the setting.
+
+        """
         return self._coord
 
+    # We do not set this to @coord.setter as the attribute should be
+    # changed with set_coord when outside the methods of this class.
+    #
     def _set_coord(self, val):
         coord = str(val).strip().lower()
 
@@ -4333,26 +4343,12 @@ class DataIMG(Data2D):
 
         self._coord = coord
 
-    # Ideally we'd move the logic from set_coord into _set_coord,
-    # except that this does not work when calling __init__.
-    # The set_coord command is for use after the object has been
-    # created, but we still need to be able to set the field
-    # when creating the object, which leads to this. We could
-    # just make this a getter and not both a setter and getter!
-    #
-    coord = property(_get_coord, _set_coord,
-                     doc="""Coordinate system of independent axes.
-
-To change the setting use the set_coord method rather than change
-this value.
-""")
-
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
                  header=None):
         self.sky = sky
         self.eqpos = eqpos
-        self.coord = coord
+        self._set_coord(coord)
         self.header = {} if header is None else header
         self._region = None
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
@@ -4541,10 +4537,7 @@ this value.
     get_wcs = get_world
 
     def set_coord(self, coord):
-        """Change the coordinate setting.
-
-        This routine should be used rather than explicitly
-        setting the `coord` attribute of the object.
+        """Change the `coord` attribute.
 
         Parameters
         ----------
@@ -4765,7 +4758,7 @@ class DataIMGInt(DataIMG):
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
-        self.coord = coord
+        self._set_coord(coord)
         self.header = {} if header is None else header
         self.shape = shape
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
