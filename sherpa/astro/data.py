@@ -4565,7 +4565,8 @@ this value.
         elif coord == 'image':
             coord = 'logical'
 
-        # TODO: we could do nothing if coord == self.coord
+        if coord == self.coord:
+            return
 
         func = getattr(self, f'get_{coord}')
         self.indep = func()
