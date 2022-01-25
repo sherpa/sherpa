@@ -95,7 +95,7 @@ import warnings
 
 import numpy
 
-from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
+from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
@@ -625,7 +625,7 @@ def html_img(img):
 
         # shape is better defined for DataIMG than Data2D
         meta.append(('Shape',
-                     ('{1} by {0} pixels'.format(*img.shape))))
+                     (f'{img.shape[1]} by {img.shape[0]} pixels')))
 
         meta.append(('Number of bins', len(img.y)))
 
@@ -969,6 +969,8 @@ class DataOgipResponse(Data1DInt):
         return elo, ehi
 
     def _get_data_space(self, filter=False):
+        # TODO: the class has no _lo/_hi attributes so what is this
+        #       meant to do?
         return EvaluationSpace1D(self._lo, self._hi)
 
 
@@ -1065,7 +1067,7 @@ class DataARF(DataOgipResponse):
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
-        if args != ():
+        if args:
             (arf, rmf) = args
             if rmf != () and len(arf[0]) > len(rmf[0]):
                 model = rebin(model, arf[0], arf[1], rmf[0], rmf[1])
@@ -1203,7 +1205,7 @@ class DataRMF(DataOgipResponse):
 
         # Rebin the high-res source model from the PHA down to the size
         # the RMF expects.
-        if args != ():
+        if args:
             (rmf, pha) = args
             if pha != () and len(pha[0]) > len(rmf[0]):
                 src = rebin(src, pha[0], pha[1], rmf[0], rmf[1])
@@ -1315,7 +1317,8 @@ def validate_wavelength_limits(wlo, whi, emax):
         if lo < 0 and hi < 0:
             # Both limits were 0 so we can do nothing
             return None
-        elif hi < 0:
+
+        if hi < 0:
             # The original query was 0 to x which maps to hc/x to None
             # but we need to know if hc/x is > emax or not
             if lo < emax:
@@ -2260,7 +2263,7 @@ must be an integer.""")
         try:
             return mid[val]
         except IndexError:
-            raise DataErr(f'invalid group number: {val}')
+            raise DataErr(f'invalid group number: {val}') from None
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
@@ -2268,7 +2271,7 @@ must be an integer.""")
         try:
             return (elo[val] + ehi[val]) / 2.0
         except IndexError:
-            raise DataErr('invalidchannel', val)
+            raise DataErr('invalidchannel', val) from None
 
     def _channel_to_wavelength(self, val, group=True, response_id=None):
         tiny = numpy.finfo(numpy.float32).tiny
@@ -2890,9 +2893,9 @@ must be an integer.""")
             if self.mask is not True:
                 self.mask = self.mask & qual_flags
                 return
-            else:
-                self.mask = qual_flags
-                return
+
+            self.mask = qual_flags
+            return
 
         # self.quality_filter used for pre-grouping filter
         self.quality_filter = qual_flags
@@ -3539,7 +3542,7 @@ must be an integer.""")
                 bkg_staterr_list.append(berr)
 
             nbkg = len(bkg_staterr_list)
-            assert (nbkg > 0)
+            assert nbkg > 0  # TODO: should we remove this assert?
             if nbkg == 1:
                 bkgsum = bkg_staterr_list[0]
             else:
@@ -3753,8 +3756,8 @@ must be an integer.""")
         if self.plot_fac:
             from sherpa.plot import backend
             latex = backend.get_latex_for_string(
-                '^{}'.format(self.plot_fac))
-            ylabel += ' X {}{}'.format(self.units.capitalize(), latex)
+                f'^{self.plot_fac}')
+            ylabel += f' X {self.units.capitalize()}{latex}'
         return ylabel
 
     @staticmethod
@@ -3826,7 +3829,7 @@ must be an integer.""")
         if self.mask is True or not self.grouped:
             if self.quality_filter is not None:
                 return self.quality_filter
-            elif numpy.iterable(self.mask):
+            if numpy.iterable(self.mask):
                 return self.mask
             return None
 
@@ -4695,7 +4698,7 @@ this value.
         "Return label for first dimension in 2-D view of independent axis/axes"
         if self.coord == 'physical':
             return 'x0 (pixels)'
-        elif self.coord == 'world':
+        if self.coord == 'world':
             return 'RA (deg)'
 
         return 'x0'
@@ -4706,7 +4709,7 @@ this value.
         """
         if self.coord == 'physical':
             return 'x1 (pixels)'
-        elif self.coord == 'world':
+        if self.coord == 'world':
             return 'DEC (deg)'
 
         return 'x1'
