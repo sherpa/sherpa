@@ -8,12 +8,6 @@ The sherpa.astro.io module
 
    .. rubric:: Attributes
 
-   .. autosummary::
-      :toctree: api
-
-      backend
-
-
    .. rubric:: Functions
 
    .. autosummary::
