@@ -1011,7 +1011,9 @@ def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
     from sherpa.models import Gauss2D
 
     x0, x1, dx, y = array_sizes_fixture
-    data2 = Data2DInt('name', x0.flatten(), x0.flatten() + dx, x1.flatten(), x1.flatten() + dx, y.flatten(),
+    data2 = Data2DInt('name', x0.flatten(), x1.flatten(),
+                      x0.flatten() + dx, x1.flatten() + dx,
+                      y.flatten(),
                       staterror=numpy.sqrt(y).flatten())
 
     model2 = Gauss2D()
