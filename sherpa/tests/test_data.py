@@ -1425,3 +1425,278 @@ def test_data1dint_check_limit(ignore, lo, hi, evals):
     c1, c2, c3 = evals
     expected = [vout] * c1 + [vin] * c2 + [vout] * c3
     assert d.mask == pytest.approx(expected)
+
+
+@pytest.fixture
+def make_data2dint():
+    """Create a simple 2D Int data set."""
+
+    # A 1 by 2 grid, which we make sure does not start at 1,1 to check
+    # that this is handled correctly.
+    #
+    x1, x0 = numpy.mgrid[10:12, -5:-4]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = numpy.asarray([10, 5])
+
+    return Data2DInt("ival", x0, x1, x0 + 1, x1 + 1,
+                     y, shape=shape)
+
+
+def test_data2dint_create(make_data2dint):
+    """Check we can create a basic integrated 2D data set.
+
+    See issue #1379
+    """
+
+    x0 = numpy.asarray([-5, -5])
+    x1 = numpy.asarray([10, 11])
+
+    img = make_data2dint
+
+    assert (img.dep == [10, 5]).all()
+
+    assert len(img.indep) == 4
+    assert (img.indep[0] == x0).all()
+    assert (img.indep[1] == x1).all()
+    assert (img.indep[2] == (x0 + 1)).all()
+    assert (img.indep[3] == (x1 + 1)).all()
+
+    # I was initially surprised there was no header, so just make sure
+    # we check for it not being here.
+    #
+    assert not(hasattr(img, "header"))
+
+
+@pytest.mark.xfail
+def test_data2dint_show(make_data2dint):
+    """Check we can show a basic integrated 2D data set.
+
+    See issue #1379
+    """
+
+    img = make_data2dint
+
+    # This fails because there's problems getting x0 and x0lo
+    # attributes.
+    #
+    out = str(img).split("\n")
+
+    assert out[0] == "name      = ival"
+    assert out[1] == "x0lo      = Int64[2]"
+    assert out[2] == "x1lo      = Int64[2]"
+    assert out[3] == "x0hi      = Int64[2]"
+    assert out[4] == "x1hi      = Int64[2]"
+    assert out[5] == "y         = Int64[2]"
+    assert out[6] == "staterror = None"
+    assert out[7] == "syserror  = None"
+    assert out[8] == "shape     = (2, 1)"
+    assert len(out) == 9
+
+
+def test_data2dint_get_x0(make_data2dint):
+    x0 = numpy.asarray([-5, -5])
+    x = (x0 + x0 + 1) / 2
+
+    assert (make_data2dint.get_x0() == x).all()
+
+
+def test_data2dint_x0(make_data2dint):
+    x0 = numpy.asarray([-5, -5])
+    x = (x0 + x0 + 1) / 2
+
+    assert (make_data2dint.x0 == x).all()
+
+
+def test_data2dint_get_x1(make_data2dint):
+    x1 = numpy.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+
+    assert (make_data2dint.get_x1() == x).all()
+
+
+def test_data2dint_x1(make_data2dint):
+    x1 = numpy.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+
+    assert (make_data2dint.x1 == x).all()
+
+
+def test_data2dint_get_y(make_data2dint):
+    assert (make_data2dint.get_y() == [10, 5]).all()
+
+
+def test_data2dint_y(make_data2dint):
+    assert (make_data2dint.y == [10, 5]).all()
+
+
+def test_data2dint_get_dep(make_data2dint):
+    assert (make_data2dint.get_dep() == [10, 5]).all()
+
+
+def test_data2dint_get_x0label(make_data2dint):
+    assert make_data2dint.get_x0label() == "x0"
+
+
+def test_data2dint_get_x1label(make_data2dint):
+    assert make_data2dint.get_x1label() == "x1"
+
+
+def test_data2dint_get_ylabel(make_data2dint):
+    assert make_data2dint.get_ylabel() == "y"
+
+
+def test_data2dint_get_axes(make_data2dint):
+    axes = make_data2dint.get_axes()
+    assert len(axes) == 2
+    assert (axes[0] == [1]).all()
+    assert (axes[1] == [1, 2]).all()
+
+
+def test_data2dint_notice(make_data2dint):
+    """basic notice call"""
+    img = make_data2dint
+
+    # The mask attribute can be True, False, or a ndarray. Fortunately
+    # using an ndarray as a truthy value throws a ValueError.
+    #
+    assert img.mask
+
+    # Data is defined on x0=-5, x1=10,11
+    # so this excludes the second point.
+    #
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.mask == numpy.asarray([True, False])).all()
+
+
+def test_data2dint_ignore(make_data2dint):
+    """basic ignore call"""
+    img = make_data2dint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert (img.mask == numpy.asarray([False, True])).all()
+
+
+def test_data2dint_ignore_get_filter(make_data2dint):
+    """What exactly does get_filter return here?
+
+    The current behavior does not look sensible.
+    """
+    img = make_data2dint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert img.get_filter() == ''
+
+
+def test_data2dint_ignore_get_filter_expr(make_data2dint):
+    """What exactly does get_filter_expr return here?
+
+    The current behavior does not look sensible.
+    """
+    img = make_data2dint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert img.get_filter_expr() == ''
+
+
+def test_data2dint_notice_get_x0(make_data2dint):
+    """basic notice call + get_x0"""
+    img = make_data2dint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_x0() == numpy.asarray([-4.5, -4.5])).all()
+    assert (img.get_x0(True) == numpy.asarray([-4.5])).all()
+
+
+def test_data2dint_notice_get_x1(make_data2dint):
+    """basic notice call + get_x1"""
+    img = make_data2dint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_x1() == numpy.asarray([10.5, 11.5])).all()
+    assert (img.get_x1(True) == numpy.asarray([10.5])).all()
+
+
+def test_data2dint_notice_get_y(make_data2dint):
+    """basic notice call + get_y"""
+    img = make_data2dint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_y() == numpy.asarray([10, 5])).all()
+    assert (img.get_y(True) == numpy.asarray([10])).all()
+
+
+def test_data2dint_get_dims(make_data2dint):
+    assert make_data2dint.get_dims() == (1, 2)
+
+
+def test_data2dint_get_img(make_data2dint):
+    ival = make_data2dint.get_img()
+    assert ival.shape == (2, 1)
+    assert (ival == numpy.asarray([[10], [5]])).all()
+
+
+def test_data2dint_get_img_model(make_data2dint):
+    """Check we can evaluate a model AND we ignore a filter"""
+    img = make_data2dint
+
+    # This model evaluates
+    #   mdl.c + mdl.cx1 * x0 + mdl.cy1 * x1
+    #
+    # which becomes, because we use the middle of the bin
+    #
+    #   10 + 1 * (-4.5) + 10 * (10.5, 11.5)
+    #   = (110.5, 120.5)
+    #
+    mdl = Polynom2D()
+    mdl.c = 10
+    mdl.cy1 = 10
+    mdl.cx1 = 1
+
+    # This selects only one point.
+    #
+    img.notice(x1lo=10, x1hi=11)
+
+    # This should ignore the filter.
+    #
+    ivals = img.get_img(mdl)
+    assert len(ivals) == 2
+    assert ivals[0].shape == (2, 1)
+    assert ivals[1].shape == (2, 1)
+    assert (ivals[0] == numpy.asarray([[10], [5]])).all()
+    assert (ivals[1] == numpy.asarray([[110.5], [120.5]])).all()
+
+
+def test_data2dint_get_max_pos(make_data2dint):
+    assert make_data2dint.get_max_pos() == (-4.5, 10.5)
+
+
+def test_data2dint_get_bounding_mask(make_data2dint):
+    """Data2D/Data2DInt do not have get_bounding_mask"""
+    assert not hasattr(make_data2dint, "get_bounding_mask")
+
+
+@pytest.mark.parametrize("method",
+                         ["get_error",
+                          "get_imgerr",
+                          "get_staterror",
+                          "get_syserror",
+                          "get_yerr"
+                         ])
+def test_data2dint_method_is_none(method, make_data2dint):
+    """Check those methods that return None"""
+    img = make_data2dint
+    func = getattr(img, method)
+    assert func() is None
+
+
+@pytest.mark.parametrize("attribute",
+                         ["staterror",
+                          "syserror"
+                         ])
+def test_data2dint_attribute_is_none(attribute, make_data2dint):
+    """Check those attributes that return None"""
+    img = make_data2dint
+    attr = getattr(img, attribute)
+    assert attr is None

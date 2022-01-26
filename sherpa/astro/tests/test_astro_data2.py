@@ -28,11 +28,14 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
+from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
 from sherpa.astro.utils._region import Region
+from sherpa.data import Data2D, Data2DInt
+from sherpa.models import Delta2D, Polynom2D
 from sherpa.plot import backend, dummy_backend
+from sherpa.utils import dataspace2d
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
@@ -1942,3 +1945,458 @@ def test_1209_background(make_data_path):
     assert d.header["TELESCOP"] == "XMM"
     assert d.header["INSTRUME"] == "EMOS1"
     assert d.header["FILTER"] == "Medium"
+
+
+@pytest.fixture
+def make_dataimgint():
+    """Create a simple IMG Int data set."""
+
+    # a 1 by 2 grid.
+    #
+    x1, x0 = np.mgrid[10:12, -5:-4]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.asarray([10, 5])
+
+    return DataIMGInt("ival", x0, x1, x0 + 1, x1 + 1,
+                      y, shape=shape)
+
+
+def test_dataimgint_create(make_dataimgint):
+    """Check we can create a basic integrated image data set.
+
+    See issue #1379
+    """
+
+    x0 = np.asarray([-5, -5])
+    x1 = np.asarray([10, 11])
+
+    img = make_dataimgint
+
+    assert (img.dep == [10, 5]).all()
+
+    assert len(img.indep) == 4
+    assert (img.indep[0] == x0).all()
+    assert (img.indep[1] == x1).all()
+    assert (img.indep[2] == (x0 + 1)).all()
+    assert (img.indep[3] == (x1 + 1)).all()
+
+    assert img.header == {}
+
+
+@pytest.mark.xfail
+def test_dataimgint_show(make_dataimgint):
+    """Check we can show a basic integrated image data set.
+
+    See issue #1379
+    """
+
+    img = make_dataimgint
+
+    # This fails because there's problems getting x0 and x0lo
+    # attributes.
+    #
+    out = str(img).split("\n")
+
+    # I don't know what the correct output should be, so the
+    # x0/x0lo order could be wrong.
+    #
+    assert out[0] == "name      = ival"
+    assert out[1] == "x0lo      = Int64[2]"
+    assert out[2] == "x1lo      = Int64[2]"
+    assert out[3] == "x0hi      = Int64[2]"
+    assert out[4] == "x1hi      = Int64[2]"
+    assert out[5] == "y         = Int64[2]"
+    assert out[6] == "shape     = (2, 1)"
+    assert out[7] == "staterror = None"
+    assert out[8] == "syserror  = None"
+    assert out[9] == "sky       = None"
+    assert out[10] == "eqpos     = None"
+    assert out[11] == "coord     = logical"
+    assert len(out) == 12
+
+
+@pytest.mark.xfail
+def test_dataimgint_get_x0(make_dataimgint):
+    """This copies the Data2DInt case but fails"""
+    x0 = np.asarray([-5, -5])
+    x = (x0 + x0 + 1) / 2
+
+    assert (make_dataimgint.get_x0() == x).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_x0(make_dataimgint):
+    """This copies the Data2DInt case but fails"""
+    x0 = np.asarray([-5, -5])
+    x = (x0 + x0 + 1) / 2
+
+    assert (make_dataimgint.x0 == x).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_get_x1(make_dataimgint):
+    """This copies the Data2DInt case but fails"""
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+
+    assert (make_dataimgint.get_x1() == x).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_x1(make_dataimgint):
+    """This copies the Data2DInt case but fails"""
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+
+    assert (make_dataimgint.x1 == x).all()
+
+
+def test_dataimgint_get_y(make_dataimgint):
+    assert (make_dataimgint.get_y() == [10, 5]).all()
+
+
+def test_dataimgint_y(make_dataimgint):
+    assert (make_dataimgint.y == [10, 5]).all()
+
+
+def test_dataimgint_get_dep(make_dataimgint):
+    assert (make_dataimgint.get_dep() == [10, 5]).all()
+
+
+def test_dataimgint_get_x0label(make_dataimgint):
+    assert make_dataimgint.get_x0label() == "x0"
+
+
+def test_dataimgint_get_x1label(make_dataimgint):
+    assert make_dataimgint.get_x1label() == "x1"
+
+
+def test_dataimgint_get_ylabel(make_dataimgint):
+    assert make_dataimgint.get_ylabel() == "y"
+
+
+def test_dataimgint_get_axes(make_dataimgint):
+    """This copies the Data2DInt case but is different"""
+    axes = make_dataimgint.get_axes()
+    assert len(axes) == 4
+
+    # What are these values? They are not the input values
+    # to DataIMGInt.
+    #
+    assert (axes[0] == [-0.5]).all()
+    assert (axes[1] == [-0.5, 0.5]).all()
+    assert (axes[2] == [0.5]).all()
+    assert (axes[3] == [0.5, 1.5]).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice(make_dataimgint):
+    """basic notice call
+
+    It is not entirely clear whether we expect the
+    notice call to work here when notice2d is present.
+    """
+    img = make_dataimgint
+
+    # The mask attribute can be True, False, or a ndarray. Fortunately
+    # using an ndarray as a truthy value throws a ValueError.
+    #
+    assert img.mask
+
+    # Data is defined on x0=-5, x1=10,11
+    # so this excludes the second point.
+    #
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.mask == np.asarray([True, False])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_ignore(make_dataimgint):
+    """basic ignore call"""
+    img = make_dataimgint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert (img.mask == np.asarray([False, True])).all()
+
+
+def test_dataimgint_ignore_get_filter(make_dataimgint):
+    """What exactly does get_filter return here?
+
+    The current behavior does not look sensible.
+    """
+    img = make_dataimgint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert img.get_filter() == ''
+
+
+def test_dataimgint_ignore_get_filter_expr(make_dataimgint):
+    """What exactly does get_filter_expr return here?
+
+    The current behavior does not look sensible.
+    """
+    img = make_dataimgint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert img.get_filter_expr() == ''
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice_get_x0(make_dataimgint):
+    """basic notice call + get_x0"""
+    img = make_dataimgint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_x0() == np.asarray([-4.5, -4.5])).all()
+    assert (img.get_x0(True) == np.asarray([-4.5])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice_get_x1(make_dataimgint):
+    """basic notice call + get_x1"""
+    img = make_dataimgint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_x1() == np.asarray([10.5, 11.5])).all()
+    assert (img.get_x1(True) == np.asarray([10.5])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice_get_y(make_dataimgint):
+    """basic notice call + get_y"""
+    img = make_dataimgint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_y() == np.asarray([10, 5])).all()
+    assert (img.get_y(True) == np.asarray([10])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice2d(make_dataimgint):
+    """basic notice2d call.
+
+    Given that we only have two items the testing is not
+    going to be extensive.
+    """
+    img = make_dataimgint
+
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.mask == np.asarray([True, False])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_ignore2d(make_dataimgint):
+    """basic ignore2d call.
+
+    Given that we only have two items the testing is not
+    going to be extensive.
+    """
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)", ignore=True)
+    assert (img.mask == np.asarray([False, True])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice2d_get_filter(make_dataimgint):
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert img.get_filter() == 'Rectangle(-100,10,100,11)'
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice2d_get_filter_expr(make_dataimgint):
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert img.get_filter_expr() == 'Rectangle(-100,10,100,11)'
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice2d_get_x0(make_dataimgint):
+    """basic notice2d call + get_x0"""
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.get_x0() == np.asarray([-4.5, -4.5])).all()
+    assert (img.get_x0(True) == np.asarray([-4.5])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice2d_get_x1(make_dataimgint):
+    """basic notice2d call + get_x1"""
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.get_x1() == np.asarray([10.5, 11.5])).all()
+    assert (img.get_x1(True) == np.asarray([10.5])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice2d_get_y(make_dataimgint):
+    """basic notice2d call + get_y"""
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.get_y() == np.asarray([10, 5])).all()
+    assert (img.get_y(True) == np.asarray([10])).all()
+
+
+def test_dataimgint_get_dims(make_dataimgint):
+    assert make_dataimgint.get_dims() == (1, 2)
+
+
+def test_dataimgint_get_img(make_dataimgint):
+    img = make_dataimgint
+    ival = img.get_img()
+    assert ival.shape == (2, 1)
+    assert (ival == np.asarray([[10], [5]])).all()
+
+
+def test_dataimgint_get_img_model_no_filter(make_dataimgint):
+    """Check we can evaluate a model
+
+    The Data2DInt case also adds a filter to check that the routine
+    ignores this filter, but as we currently don't understand the
+    filtering we skip this step.
+
+    """
+    img = make_dataimgint
+
+    # This model evaluates
+    #   mdl.c + mdl.cx1 * x0 + mdl.cy1 * x1
+    #
+    # which becomes, because we use the middle of the bin
+    #
+    #   10 + 1 * (-4.5) + 10 * (10.5, 11.5)
+    #   = (110.5, 120.5)
+    #
+    mdl = Polynom2D()
+    mdl.c = 10
+    mdl.cy1 = 10
+    mdl.cx1 = 1
+
+    ivals = img.get_img(mdl)
+    assert len(ivals) == 2
+    assert ivals[0].shape == (2, 1)
+    assert ivals[1].shape == (2, 1)
+    assert (ivals[0] == np.asarray([[10], [5]])).all()
+    assert (ivals[1] == np.asarray([[110.5], [120.5]])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_get_max_pos(make_dataimgint):
+    """No idea wy this fails"""
+    assert make_dataimgint.get_max_pos() == (-4.5, 10.5)
+
+
+def test_dataimgint_get_bounding_mask(make_dataimgint):
+    assert make_dataimgint.get_bounding_mask() == (True, None)
+
+
+@pytest.mark.parametrize("method",
+                         ["get_error",
+                          "get_imgerr",
+                          "get_staterror",
+                          "get_syserror",
+                          "get_yerr"
+                         ])
+def test_dataimgint_method_is_none(method, make_dataimgint):
+    """Check those methods that return None"""
+    func = getattr(make_dataimgint, method)
+    assert func() is None
+
+
+@pytest.mark.parametrize("attribute",
+                         ["eqpos",
+                          "sky",
+                          "staterror",
+                          "syserror"
+                         ])
+def test_dataimgint_attribute_is_none(attribute, make_dataimgint):
+    """Check those attributes that return None"""
+    attr = getattr(make_dataimgint, attribute)
+    assert attr is None
+
+
+@pytest.mark.parametrize("dclass", [Data2D, DataIMG])
+def test_1379_evaluation_unintegrated(dclass):
+    """Check that delta2d does not evaluate (i.e. only 0's).
+
+    This is based on the code that lead to showing #1379.
+    """
+
+    x0, x1, y, shape = dataspace2d([10,15])
+
+    data = dclass("temp", x0, x1, y, shape=shape)
+
+    # It is important that xpos/ypos is not set to either an integer
+    # value or to half-pixel (as this is used for the bin edges in the
+    # integrated case).
+    #
+    mdl = Delta2D("mdl")
+    mdl.xpos = 4.3
+    mdl.ypos = 8.9
+    mdl.ampl = 100
+    assert mdl.integrate  # ensure it's integrates
+
+    out = data.eval_model(mdl)
+    assert len(out) == len(y)
+    assert set(out) == {0.0}
+
+
+@pytest.mark.parametrize("dclass", [Data2DInt, DataIMGInt])
+def test_1379_evaluation_integrated(dclass):
+    """Check that delta2d does get evaluate at some point.
+
+    This is based on the code that lead to showing #1379.
+    """
+
+    x0, x1, y, shape = dataspace2d([10,15])
+
+    data = dclass("temp", x0 - 0.5, x1 - 0.5,
+                  x0 + 0.5, x1 + 0.5, y,
+                  shape=shape)
+
+    mdl = Delta2D("mdl")
+    mdl.xpos = 4.3
+    mdl.ypos = 8.9
+    mdl.ampl = 100
+    assert mdl.integrate  # ensure it's integrates
+
+    out = data.eval_model(mdl)
+    assert len(out) == len(y)
+    assert set(out) == {0.0, 100.0}
+    assert out.sum() == 100.0
+    assert out.argmax() == 83
+
+    # An internal check that we are actually selecting the correct
+    # pixel.
+    #
+    assert x0[83] == 4.0
+    assert x1[83] == 9.0
+
+
+@pytest.mark.parametrize("dclass", [Data2DInt, DataIMGInt])
+def test_1379_evaluation_model_not_integrated(dclass):
+    """If the delta2D model is not integrated all bets are off.
+
+    This is based on the code that lead to showing #1379.
+    """
+
+    x0, x1, y, shape = dataspace2d([10,15])
+
+    data = dclass("temp", x0 - 0.5, x1 - 0.5,
+                  x0 + 0.5, x1 + 0.5, y,
+                  shape=shape)
+
+    mdl = Delta2D("mdl")
+    mdl.xpos = 4.3
+    mdl.ypos = 8.9
+    mdl.ampl = 100
+    mdl.integrate = False
+
+    # As the integrate flag is False it behaves like the Data2D/DataIMG
+    # case (since the xpos/ypos value is chosen not to fall on a
+    # bin edge).
+    #
+    out = data.eval_model(mdl)
+    assert len(out) == len(y)
+    assert set(out) == {0.0}
