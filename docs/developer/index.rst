@@ -1110,7 +1110,7 @@ In Sherpa 4.14.0 and earlier, this conversion was handled by taking
 the current axes pair and applying the necessary WCS objects to create
 the selected coordinate system (that is, the argument to the
 `set_coord` call). This had the advantage of saving memory, as you
-only needed to retain the current pait of independent axes, but at the
+only needed to retain the current pair of independent axes, but at the
 expense of losing fidelity when converting between the coordinate
 systems. This has been changed so that the original independent axes
 are now stored in the object, in the ``_orig_indep_axis`` attribute,
