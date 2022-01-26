@@ -4312,6 +4312,12 @@ class DataIMG(Data2D):
 
     _extra_fields = ("sky", "eqpos", "coord")
 
+    sky = None
+    """The optional WCS object that converts to the physical coordinate system."""
+
+    eqpos = None
+    """The optional WCS object that converts to the world coordinate system."""
+
     @property
     def coord(self):
         """Return the coordinate setting.
