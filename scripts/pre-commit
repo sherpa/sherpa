@@ -29,6 +29,9 @@ import sys
 
 year = str(datetime.datetime.now().year)
 copyr = re.compile(r"(?P<comment>(#|//))\s*Copyright \(C\) (?P<years>[0-9,\s]+)(?P<institution>[\w\s]*)")
+# Only apply this to C or Python files since sherpa does not use 
+# copyright statements in others.
+ftype = re.compile(r"(hh|cc|py)$")
 changed = 0
 
 if __name__ == '__main__':
@@ -36,6 +39,7 @@ if __name__ == '__main__':
     proc = subprocess.Popen("git diff --name-only --staged",
                             shell=True, stdout=subprocess.PIPE)
     filenames = proc.stdout.read().decode().split()
+    filenames = [f for f in filenames if ftype.match(f)]
 
     for f in filenames:
         try:
