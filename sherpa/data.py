@@ -1570,6 +1570,14 @@ class Data1DInt(Data1D):
 class Data2D(Data):
     _fields = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
 
+    # Why should we add shape to extra-fields instead? See #1359 to
+    # fix #47.
+    #
+    # It would change the notebook output slightly so we don't change
+    # for now.
+    #
+    # _extra_fields = ("shape", )
+
     def __init__(self, name, x0, x1, y, shape=None, staterror=None, syserror=None):
         self.shape = shape
         super().__init__(name, (x0, x1), y, staterror, syserror)
