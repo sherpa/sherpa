@@ -1623,13 +1623,35 @@ class Data2D(Data):
         return ''
 
     def get_max_pos(self, dep=None):
+        """Return the coordinates of the maximum value.
+
+        Parameters
+        ----------
+        dep : ndarray or None, optional
+            The data to search and it must match the current data
+            filter. If not given then the dependent axis is used.
+
+        Returns
+        -------
+        coords : pair or list of pairs
+            The coordinates of the maximum location. The data values
+            match the values returned by `get_x0` and `get_x1`. If
+            there is only one maximum pixel then a pair is returned
+            otherwise a list of pairs is returned.
+
+        See Also
+        --------
+        get_dep, get_x0, get_x1
+
+        """
         if dep is None:
             dep = self.get_dep(True)
         x0 = self.get_x0(True)
         x1 = self.get_x1(True)
 
+        # TODO: Should be able to just use numpy.argmax
         pos = numpy.asarray(numpy.where(dep == dep.max())).squeeze()
-        if pos.ndim == 0:  # DATA-NOTE: Could this ever be False?!
+        if pos.ndim == 0:
             pos = int(pos)
             return x0[pos], x1[pos]
 
@@ -1639,6 +1661,24 @@ class Data2D(Data):
     # Also, we do not filter, as imager needs M x N (or
     # L x M x N) array
     def get_img(self, yfunc=None):
+        """Return the dependent axis as a 2D array.
+
+        The data is not filtered.
+
+        Parameters
+        ----------
+        yfunc : sherpa.models.model.Model instance or None, optional
+            If set then it is a model that is evaluated on the data
+            grid and returned along with the dependent axis.
+
+        Returns
+        -------
+        img : ndarray or (ndarray, ndarray)
+            The data as a 2D array or a pair of 2D arrays when yfunc
+            is set.
+
+        """
+
         self._check_shape()
         y_img = self.get_y(False, yfunc)
         if yfunc is not None:
