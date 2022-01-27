@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021
+#  Copyright (C) 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -707,19 +707,17 @@ def test_data2_get_x0(data):
 
 @pytest.mark.parametrize("data", (Data2DInt, ), indirect=True)
 def test_data2_int_get_x0(data):
-    actual = data.get_x1()
-    numpy.testing.assert_array_equal(actual, X1_2D)
+    numpy.testing.assert_array_equal(data.get_x0(), X0_2D)
 
 
 @pytest.mark.parametrize("data", (Data2D, ), indirect=True)
 def test_data2_get_x1(data):
-    numpy.testing.assert_array_equal(data.get_x0(), X0_2D)
+    numpy.testing.assert_array_equal(data.get_x1(), X1_2D)
 
 
 @pytest.mark.parametrize("data", (Data2DInt, ), indirect=True)
 def test_data2_int_get_x1(data):
-    actual = data.get_x1()
-    numpy.testing.assert_array_equal(actual, X1_2D)
+    numpy.testing.assert_array_equal(data.get_x1(), X1_2D)
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
@@ -1013,7 +1011,9 @@ def test_data2d_int_eval_model_to_fit(array_sizes_fixture):
     from sherpa.models import Gauss2D
 
     x0, x1, dx, y = array_sizes_fixture
-    data2 = Data2DInt('name', x0.flatten(), x0.flatten() + dx, x1.flatten(), x1.flatten() + dx, y.flatten(),
+    data2 = Data2DInt('name', x0.flatten(), x1.flatten(),
+                      x0.flatten() + dx, x1.flatten() + dx,
+                      y.flatten(),
                       staterror=numpy.sqrt(y).flatten())
 
     model2 = Gauss2D()
