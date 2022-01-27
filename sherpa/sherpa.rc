@@ -1,10 +1,22 @@
 # SHERPA_VERSION 4.14.2
 [options]
-# Plotting packages available- pylab
-plot_pkg   : pylab dummy
+# Plotting backends (space separated list)
+# will be tried in order, the first one the imports is set as default
+# plotting backend. If no listed backend can be imported, Sherpa sets
+# a dummy backend as default.
+# The backend can be changed in a running sherpa session.
+# The following line would try all available backends:
+# plot_pkg   : pylab dummy
+plot_pkg   : pylab
 
 # IO packages (space separated list) in the order they will be tried
-io_pkg     : crates pyfits dummy
+# The first backend that imports successfully is set as default I/O backend.
+# If no listed backend can be imported, Sherpa sets
+# a dummy backend as default.
+# The backend can be changed in a running sherpa session.
+# The following line would try all available backends:
+# io_pkg   : crates pyfits dummy
+io_pkg     : crates
 
 [statistics]
 # If true, use truncation value in Cash, C-stat
