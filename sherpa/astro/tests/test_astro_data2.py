@@ -2018,56 +2018,44 @@ def test_dataimgint_show(make_dataimgint):
     assert len(out) == 12
 
 
-@pytest.mark.xfail
 def test_dataimgint_x0lo(make_dataimgint):
     assert make_dataimgint.x0lo == pytest.approx([-5, -5])
 
 
-@pytest.mark.xfail
 def test_dataimgint_x1lo(make_dataimgint):
     assert make_dataimgint.x1lo == pytest.approx([10, 11])
 
 
-@pytest.mark.xfail
 def test_dataimgint_x0hi(make_dataimgint):
     assert make_dataimgint.x0hi == pytest.approx([-4, -4])
 
 
-@pytest.mark.xfail
 def test_dataimgint_x1hi(make_dataimgint):
     assert make_dataimgint.x1hi == pytest.approx([11, 12])
 
 
-@pytest.mark.xfail
 def test_dataimgint_get_x0(make_dataimgint):
-    """This copies the Data2DInt case but fails"""
     x0 = np.asarray([-5, -5])
     x = (x0 + x0 + 1) / 2
 
     assert (make_dataimgint.get_x0() == x).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_x0(make_dataimgint):
-    """This copies the Data2DInt case but fails"""
     x0 = np.asarray([-5, -5])
     x = (x0 + x0 + 1) / 2
 
     assert (make_dataimgint.x0 == x).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_get_x1(make_dataimgint):
-    """This copies the Data2DInt case but fails"""
     x1 = np.asarray([10, 11])
     x = (x1 + x1 + 1) / 2
 
     assert (make_dataimgint.get_x1() == x).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_x1(make_dataimgint):
-    """This copies the Data2DInt case but fails"""
     x1 = np.asarray([10, 11])
     x = (x1 + x1 + 1) / 2
 
@@ -2167,7 +2155,7 @@ def test_dataimgint_ignore_get_filter_expr(make_dataimgint):
     assert img.get_filter_expr() == ''
 
 
-@pytest.mark.xfail
+# given how notice test above fails, how is this working?
 def test_dataimgint_notice_get_x0(make_dataimgint):
     """basic notice call + get_x0"""
     img = make_dataimgint
@@ -2194,7 +2182,6 @@ def test_dataimgint_notice_get_y(make_dataimgint):
     assert (img.get_y(True) == np.asarray([10])).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_notice2d(make_dataimgint):
     """basic notice2d call.
 
@@ -2207,7 +2194,6 @@ def test_dataimgint_notice2d(make_dataimgint):
     assert (img.mask == np.asarray([True, False])).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_ignore2d(make_dataimgint):
     """basic ignore2d call.
 
@@ -2219,21 +2205,18 @@ def test_dataimgint_ignore2d(make_dataimgint):
     assert (img.mask == np.asarray([False, True])).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_notice2d_get_filter(make_dataimgint):
     img = make_dataimgint
     img.notice2d("rect(-100, 10, 100, 11)")
     assert img.get_filter() == 'Rectangle(-100,10,100,11)'
 
 
-@pytest.mark.xfail
 def test_dataimgint_notice2d_get_filter_expr(make_dataimgint):
     img = make_dataimgint
     img.notice2d("rect(-100, 10, 100, 11)")
     assert img.get_filter_expr() == 'Rectangle(-100,10,100,11)'
 
 
-@pytest.mark.xfail
 def test_dataimgint_notice2d_get_x0(make_dataimgint):
     """basic notice2d call + get_x0"""
     img = make_dataimgint
@@ -2242,7 +2225,6 @@ def test_dataimgint_notice2d_get_x0(make_dataimgint):
     assert (img.get_x0(True) == np.asarray([-4.5])).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_notice2d_get_x1(make_dataimgint):
     """basic notice2d call + get_x1"""
     img = make_dataimgint
@@ -2251,7 +2233,6 @@ def test_dataimgint_notice2d_get_x1(make_dataimgint):
     assert (img.get_x1(True) == np.asarray([10.5])).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_notice2d_get_y(make_dataimgint):
     """basic notice2d call + get_y"""
     img = make_dataimgint
@@ -2302,9 +2283,7 @@ def test_dataimgint_get_img_model_no_filter(make_dataimgint):
     assert (ivals[1] == np.asarray([[110.5], [120.5]])).all()
 
 
-@pytest.mark.xfail
 def test_dataimgint_get_max_pos(make_dataimgint):
-    """No idea wy this fails"""
     assert make_dataimgint.get_max_pos() == (-4.5, 10.5)
 
 
@@ -2383,7 +2362,6 @@ def test_dataimgint_sky(make_dataimgint):
     assert sky[3] == pytest.approx(x1 + 2)
 
 
-@pytest.mark.xfail
 def test_dataimgint_sky_coords_unchanged(make_dataimgint):
     """Just because sky is set we don't change axis data."""
 
@@ -2412,7 +2390,6 @@ def test_dataimgint_set_sky(make_dataimgint):
     assert img.coord == "physical"
 
 
-@pytest.mark.xfail
 def test_dataimgint_set_sky_x0hi(make_dataimgint):
     """x0hi is changed
 
@@ -2431,7 +2408,6 @@ def test_dataimgint_set_sky_x0hi(make_dataimgint):
     assert img.x0hi == pytest.approx(x)
 
 
-@pytest.mark.xfail
 def test_dataimgint_set_sky_get_x1(make_dataimgint):
     """get_x1 is changed
 
@@ -2450,7 +2426,6 @@ def test_dataimgint_set_sky_get_x1(make_dataimgint):
     assert img.get_x1() == pytest.approx(x)
 
 
-@pytest.mark.xfail
 def test_dataimgint_sky_coords_reset(make_dataimgint):
     """We can get back to the logical units
 

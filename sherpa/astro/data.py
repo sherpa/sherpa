@@ -4742,6 +4742,42 @@ class DataIMGInt(DataIMG):
     def _init_data_space(self, filter, *data):
         return IntegratedDataSpace2D(filter, *data)
 
+    def get_x0(self, filter=False):
+        indep = self._data_space.get(filter)
+        return (indep.x0lo + indep.x0hi) / 2.0
+
+    def get_x1(self, filter=False):
+        indep = self._data_space.get(filter)
+        return (indep.x1lo + indep.x1hi) / 2.0
+
+    @property
+    def x0lo(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x0lo
+
+    @property
+    def x0hi(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x0hi
+
+    @property
+    def x1lo(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x1lo
+
+    @property
+    def x1hi(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x1hi
+
     def get_logical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
