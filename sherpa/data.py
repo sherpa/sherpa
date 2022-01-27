@@ -1759,6 +1759,34 @@ class Data2DInt(Data2D):
         Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
                     ignore=ignore, integrated=True)
 
+    @property
+    def x0lo(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x0lo
+
+    @property
+    def x0hi(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x0hi
+
+    @property
+    def x1lo(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x1lo
+
+    @property
+    def x1hi(self):
+        """
+        Property kept for compatibility
+        """
+        return self._data_space.x1hi
+
 
 # Notebook representations
 #

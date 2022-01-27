@@ -1469,7 +1469,6 @@ def test_data2dint_create(make_data2dint):
     assert not(hasattr(img, "header"))
 
 
-@pytest.mark.xfail
 def test_data2dint_show(make_data2dint):
     """Check we can show a basic integrated 2D data set.
 
@@ -1521,6 +1520,22 @@ def test_data2dint_x1(make_data2dint):
     x = (x1 + x1 + 1) / 2
 
     assert (make_data2dint.x1 == x).all()
+
+
+def test_data2dint_x0lo(make_data2dint):
+    assert (make_data2dint.x0lo == [-5, -5]).all()
+
+
+def test_data2dint_x0hi(make_data2dint):
+    assert (make_data2dint.x0hi == [-4, -4]).all()
+
+
+def test_data2dint_x1lo(make_data2dint):
+    assert (make_data2dint.x1lo == [10, 11]).all()
+
+
+def test_data2dint_x1hi(make_data2dint):
+    assert (make_data2dint.x1hi == [11, 12]).all()
 
 
 def test_data2dint_get_y(make_data2dint):
@@ -1686,8 +1701,7 @@ def test_data2dint_get_bounding_mask(make_data2dint):
                          ])
 def test_data2dint_method_is_none(method, make_data2dint):
     """Check those methods that return None"""
-    img = make_data2dint
-    func = getattr(img, method)
+    func = getattr(make_data2dint, method)
     assert func() is None
 
 
@@ -1697,6 +1711,5 @@ def test_data2dint_method_is_none(method, make_data2dint):
                          ])
 def test_data2dint_attribute_is_none(attribute, make_data2dint):
     """Check those attributes that return None"""
-    img = make_data2dint
-    attr = getattr(img, attribute)
+    attr = getattr(make_data2dint, attribute)
     assert attr is None
