@@ -4542,9 +4542,10 @@ class DataIMG(Data2D):
         self._set_coord(coord)
 
     def get_filter_expr(self):
-        if self._region is not None:
-            return str(self._region)
-        return ''
+        if self._region is None:
+            return ""
+
+        return str(self._region)
 
     get_filter = get_filter_expr
 
@@ -4618,44 +4619,42 @@ class DataIMG(Data2D):
 
     def get_bounding_mask(self):
         mask = self.mask
-        shape = None
-        if numpy.iterable(self.mask):
-            # create bounding box around noticed image regions
-            mask = numpy.array(self.mask).reshape(*self.shape)
+        if not numpy.iterable(self.mask):
+            return mask, None
 
-            # TODO: should replace 'mask == True' with mask but
-            # not sure we have a good set of tests
-            x0_i, x1_i = numpy.where(mask == True)
+        # create bounding box around noticed image regions
+        mask = numpy.array(self.mask).reshape(*self.shape)
 
-            x0_lo = x0_i.min()
-            x0_hi = x0_i.max()
-            x1_lo = x1_i.min()
-            x1_hi = x1_i.max()
+        x0_i, x1_i = numpy.where(mask)
 
-            # TODO: subset mask and then ask its shape
-            shape = mask[x0_lo:x0_hi + 1, x1_lo:x1_hi + 1].shape
-            mask = mask[x0_lo:x0_hi + 1, x1_lo:x1_hi + 1]
+        x0_lo = x0_i.min()
+        x0_hi = x0_i.max()
+        x1_lo = x1_i.min()
+        x1_hi = x1_i.max()
 
-            mask = mask.ravel()
+        # TODO: subset mask and then ask its shape
+        shape = mask[x0_lo:x0_hi + 1, x1_lo:x1_hi + 1].shape
+        mask = mask[x0_lo:x0_hi + 1, x1_lo:x1_hi + 1]
+        mask = mask.ravel()
         return mask, shape
 
     def get_img(self, yfunc=None):
         # FIXME add support for coords to image class -> DS9
         self._check_shape()
         y_img = self.filter_region(self.get_dep(False))
-        if yfunc is not None:
-            m = self.eval_model_to_fit(yfunc)
-            if numpy.iterable(self.mask):
-                # if filtered, the calculated model must be padded up
-                # to the data size to preserve img shape and WCS coord
-                m = pad_bounding_box(m, self.mask)
-            y_img = (y_img, self.filter_region(m))
+        if yfunc is None:
+            return y_img.reshape(*self.shape)
 
-        if yfunc is not None:
-            y_img = (y_img[0].reshape(*self.shape),
-                     y_img[1].reshape(*self.shape))
-        else:
-            y_img = y_img.reshape(*self.shape)
+        m = self.eval_model_to_fit(yfunc)
+        if numpy.iterable(self.mask):
+            # if filtered, the calculated model must be padded up
+            # to the data size to preserve img shape and WCS coord
+            m = pad_bounding_box(m, self.mask)
+
+        y_img = (y_img, self.filter_region(m))
+
+        y_img = (y_img[0].reshape(*self.shape),
+                 y_img[1].reshape(*self.shape))
         return y_img
 
     def get_axes(self):

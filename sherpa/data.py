@@ -1689,19 +1689,19 @@ class Data2D(Data):
 
         self._check_shape()
         y_img = self.get_y(False, yfunc)
-        if yfunc is not None:
-            y_img = (y_img[0].reshape(*self.shape),
-                     y_img[1].reshape(*self.shape))
-        else:
-            y_img = y_img.reshape(*self.shape)
-        return y_img
+        if yfunc is None:
+            return y_img.reshape(*self.shape)
+
+        return (y_img[0].reshape(*self.shape),
+                y_img[1].reshape(*self.shape))
 
     def get_imgerr(self):
         self._check_shape()
         err = self.get_error()
-        if err is not None:
-            err = err.reshape(*self.shape)
-        return err
+        if err is None:
+            return None
+
+        return err.reshape(*self.shape)
 
     def to_contour(self, yfunc=None):
         return (self.get_x0(True),
