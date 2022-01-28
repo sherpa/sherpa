@@ -31,6 +31,7 @@ import pytest
 from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
+from sherpa.astro.io.wcs import WCS
 from sherpa.astro.utils._region import Region
 from sherpa.data import Data2D, Data2DInt
 from sherpa.models import Delta2D, Polynom2D
@@ -2018,6 +2019,26 @@ def test_dataimgint_show(make_dataimgint):
 
 
 @pytest.mark.xfail
+def test_dataimgint_x0lo(make_dataimgint):
+    assert make_dataimgint.x0lo == pytest.approx([-5, -5])
+
+
+@pytest.mark.xfail
+def test_dataimgint_x1lo(make_dataimgint):
+    assert make_dataimgint.x1lo == pytest.approx([10, 11])
+
+
+@pytest.mark.xfail
+def test_dataimgint_x0hi(make_dataimgint):
+    assert make_dataimgint.x0hi == pytest.approx([-4, -4])
+
+
+@pytest.mark.xfail
+def test_dataimgint_x1hi(make_dataimgint):
+    assert make_dataimgint.x1hi == pytest.approx([11, 12])
+
+
+@pytest.mark.xfail
 def test_dataimgint_get_x0(make_dataimgint):
     """This copies the Data2DInt case but fails"""
     x0 = np.asarray([-5, -5])
@@ -2314,6 +2335,119 @@ def test_dataimgint_attribute_is_none(attribute, make_dataimgint):
     """Check those attributes that return None"""
     attr = getattr(make_dataimgint, attribute)
     assert attr is None
+
+
+def test_dataimgint_no_sky(make_dataimgint):
+    """Basic check (rely on base class to check all the combinations)."""
+
+    with pytest.raises(DataErr) as de:
+        make_dataimgint.get_physical()
+
+    assert str(de.value) == "data set 'ival' does not contain a physical coordinate system"
+
+
+def test_dataimgint_sky(make_dataimgint):
+    """We can convert coordinates.
+
+    We assume the base class tests are good here, so this is a
+    minimal check.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    # The "logical" coordinates are
+    #  lo = [-5, 10], [-5, 11]
+    #  hi = [-4, 11], [-4, 12]
+    #
+    # so these get converted to
+    #
+    #   new = (orig - crpix) * cdelt + crval
+    #
+    # which is
+    #  lo = [87.5, 125.5], [87.5, 127.5]
+    #  hi = [89.5, 127.5], [89.5, 129.5]
+    #
+    x0 = np.asarray([87.5, 87.5])
+    x1 = np.asarray([125.5, 127.5])
+
+    sky = img.get_physical()
+
+    assert len(sky) == 4
+    assert sky[0] == pytest.approx(x0)
+    assert sky[1] == pytest.approx(x1)
+    assert sky[2] == pytest.approx(x0 + 2)
+    assert sky[3] == pytest.approx(x1 + 2)
+
+
+@pytest.mark.xfail
+def test_dataimgint_sky_coords_unchanged(make_dataimgint):
+    """Just because sky is set we don't change axis data."""
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+    assert img.get_x1() == pytest.approx(x)
+
+
+def test_dataimgint_set_sky(make_dataimgint):
+    """We can change to the SKY coordinate system"""
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    assert img.coord == "logical"
+    img.set_coord("physical")
+    assert img.coord == "physical"
+
+
+@pytest.mark.xfail
+def test_dataimgint_set_sky_x0hi(make_dataimgint):
+    """x0hi is changed
+
+    We don't check all attributes.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    img.set_coord("physical")
+    x0 = np.asarray([87.5, 87.5])
+    x = x0 + 2
+    assert img.x0hi == pytest.approx(x)
+
+
+@pytest.mark.xfail
+def test_dataimgint_set_sky_get_x1(make_dataimgint):
+    """get_x1 is changed
+
+    We don't check all accessors.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    img.set_coord("physical")
+    x1 = np.asarray([125.5, 127.5])
+    x = (x1 + x1 + 2) / 2
+    assert img.get_x1() == pytest.approx(x)
 
 
 @pytest.mark.parametrize("dclass", [Data2D, DataIMG])
