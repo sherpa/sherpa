@@ -58,7 +58,7 @@ if __name__ == '__main__':
                               '  ' + m.group('institution'), end='')
                 else:
                     print(line, end='')
-            subprocess.Popen("git add " + f, shell=True)
+            # subprocess.Popen("git add " + f, shell=True)
         except FileNotFoundError:
             # file was removed with "git rm" so there is nothing to check here
             pass
