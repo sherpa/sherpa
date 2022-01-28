@@ -97,17 +97,20 @@ namespace sherpa { namespace astro { namespace xspec {
       //
       struct NoError : std::runtime_error
       {
-	using std::runtime_error::runtime_error;
+	NoError(const char* msg) : std::runtime_error(msg) {}
+	NoError(const std::string& msg) : std::runtime_error(msg) {}
       };
 
       struct ValueError : std::runtime_error
       {
-	using std::runtime_error::runtime_error;
+	ValueError(const char* msg) : std::runtime_error(msg) {}
+	ValueError(const std::string& msg) : std::runtime_error(msg) {}
       };
 
       struct TypeError : std::runtime_error
       {
-	using std::runtime_error::runtime_error;
+	TypeError(const char* msg) : std::runtime_error(msg) {}
+	TypeError(const std::string& msg) : std::runtime_error(msg) {}
       };
 
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
