@@ -2450,6 +2450,26 @@ def test_dataimgint_set_sky_get_x1(make_dataimgint):
     assert img.get_x1() == pytest.approx(x)
 
 
+@pytest.mark.xfail
+def test_dataimgint_sky_coords_reset(make_dataimgint):
+    """We can get back to the logical units
+
+    We only check one of the values.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+    img.set_coord("physical")
+    img.set_coord("logical")
+
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+    assert img.get_x1() == pytest.approx(x)
+
+
 @pytest.mark.parametrize("dclass", [Data2D, DataIMG])
 def test_1379_evaluation_unintegrated(dclass):
     """Check that delta2d does not evaluate (i.e. only 0's).
