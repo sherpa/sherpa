@@ -239,9 +239,6 @@ class Session(NoNewAttributesAfterInit):
 
         self._methods = {}
         self._itermethods = {'none': {'name': 'none'},
-                             'primini': {'name': 'primini',
-                                         'maxiters': 10,
-                                         'tol': 1.0e-3},
                              'sigmarej': {'name': 'sigmarej',
                                           'maxiters': 5,
                                           'hrej': 3,
@@ -1687,7 +1684,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        name : {'none', 'primini', 'sigmarej'}
+        name : {'none', 'sigmarej'}
            The name of the iterative fitting scheme set by
            `set_iter_method`.
 
@@ -1779,7 +1776,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         >>> list_iter_methods()
-        ['none', 'primini', 'sigmarej']
+        ['none', 'sigmarej']
 
         """
         keys = list(self._itermethods.keys())
@@ -1796,7 +1793,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        meth : { 'none', 'primini', 'sigmarej' }
+        meth : { 'none', 'sigmarej' }
            The name of the scheme used during the fit; 'none' means no
            scheme is used. It is only valid to change the scheme
            when a chi-square statistic is in use.
@@ -1819,10 +1816,6 @@ class Session(NoNewAttributesAfterInit):
         -----
         The parameters of each scheme are described in
         `set_iter_method_opt`.
-
-        The ``primini`` scheme is used for re-calculating statistical
-        errors, using the best-fit model parameters from the
-        *previous* fit, until the fit can no longer be improved.
 
         This is a chi-square statistic where the variance is computed
         from model amplitudes derived in the previous iteration of the
@@ -1862,12 +1855,7 @@ class Session(NoNewAttributesAfterInit):
                322
                http://adsabs.harvard.edu/abs/1995ApJ...438..322W
 
-        .. [2] "Bias-Free Parameter Estimation with Few Counts, by
-               Iterative Chi-Squared Minimization", Kearns, Primini, &
-               Alexander, 1995, ADASS IV, 331
-               http://adsabs.harvard.edu/abs/1995ASPC...77..331K
-
-        .. [3] http://iraf.net/irafhelp.php?val=sfit
+        .. [2] http://iraf.net/irafhelp.php?val=sfit
 
         Examples
         --------
@@ -1919,15 +1907,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The supported fields for the ``primini`` scheme are:
-
-        maxiters
-           The maximum number of iterations to perform.
-
-        tol
-           The iteration stops when the change in the best-fit
-           statistic varies by less than this value.
-
         The supported fields for the ``sigmarej`` scheme are:
 
         grow

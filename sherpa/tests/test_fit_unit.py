@@ -246,8 +246,8 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi,
         to the source only.
     stat : sherpa.stats.Stat instance, optional
         The statistic object to use. If not set uses a WStat object.
-    itermethod : {None, True, False}
-        None means no iterated fit, True means sigmarej, False means primini.
+    itermethod : {None, True}
+        None means no iterated fit, True means sigmarej.
 
     Returns
     -------
@@ -319,8 +319,6 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi,
     elif itermethod:
         iopts = {'name': 'sigmarej', 'maxiters': 5,
                  'hrej': 3, 'lrej': 3, 'grow': 0}
-    else:
-        iopts = {'name': 'primini', 'maxiters': 10, 'tol': 1.0e-3}
 
     return Fit(src, mdl, stat=statobj, itermethod_opts=iopts)
 
@@ -2357,7 +2355,7 @@ def setup_single_iter(stat, sigmarej=True):
     stat : sherpa.stats.Stat instance
         The statistic object to use
     sigmarej : bool, optional
-        If True use sigmarej, otherwise Primini
+        If True use sigmarej
 
     Returns
     -------
@@ -2381,14 +2379,12 @@ def setup_single_iter(stat, sigmarej=True):
     if sigmarej:
         iopts = {'name': 'sigmarej', 'maxiters': 5,
                  'hrej': 3, 'lrej': 3, 'grow': 0}
-    else:
-        iopts = {'name': 'primini', 'maxiters': 10, 'tol': 1.0e-3}
 
     return Fit(data, mdl, stat=stat, itermethod_opts=iopts)
 
 
 @pytest.mark.parametrize("stat", [LeastSq, Cash, CStat])
-@pytest.mark.parametrize("sigmarej", [True, False])
+@pytest.mark.parametrize("sigmarej", [True])
 def test_fit_iterfit_fails_nonchi2(stat, sigmarej):
     """Check that iterfit fails with non-chi2/leastsq stats"""
 
@@ -2399,15 +2395,13 @@ def test_fit_iterfit_fails_nonchi2(stat, sigmarej):
 
     if sigmarej:
         emsg = "Sigma-rejection"
-    else:
-        emsg = "Primini's"
 
     emsg += " method requires a deviates array; use a chi-square  statistic"
     assert str(excinfo.value) == emsg
 
 
 @pytest.mark.parametrize("stat", [LeastSq, Cash, CStat, WStat])
-@pytest.mark.parametrize("sigmarej", [True, False])
+@pytest.mark.parametrize("sigmarej", [True])
 def test_fit_iterfit_fails_nonchi2_wstat(stat, sigmarej):
     """Check that iterfit fails with wstat
 
@@ -2423,8 +2417,6 @@ def test_fit_iterfit_fails_nonchi2_wstat(stat, sigmarej):
 
     if sigmarej:
         emsg = "Sigma-rejection"
-    else:
-        emsg = "Primini's"
 
     emsg += " method requires a deviates array; use a chi-square  statistic"
     assert str(excinfo.value) == emsg

@@ -360,7 +360,6 @@ def test_list_iter_methods():
     assert len(methods) > 1  # do not check exact number
     assert 'none' in methods
     assert 'sigmarej' in methods
-    assert 'primini' in methods
 
 
 def test_get_method_default():
