@@ -1841,7 +1841,7 @@ class Session(NoNewAttributesAfterInit):
         caution.
 
         The ``sigmarej`` scheme is based on the IRAF ``sfit`` function
-        [3]_, where after a fit data points are excluded if the value
+        [2]_, where after a fit data points are excluded if the value
         of ``(data-model)/error)`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
         has converged. The error removal can be asymmetric, since
