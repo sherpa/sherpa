@@ -616,3 +616,266 @@ def test_show_conf_basic(clean_ui):
     assert got[9] == ""
     assert got[10] == ""
     assert got[11] == ""
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_freeze_parameter(string, clean_ui):
+    """Can we freeze a parameter?"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    assert not mdl.c1.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+    if string:
+        ui.freeze("mdl.c1")
+    else:
+        ui.freeze(mdl.c1)
+
+    assert mdl.c1.frozen
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 2
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_freeze_frozen_parameter(string, clean_ui):
+    """Can we freeze a frozen_parameter?"""
+
+    mdl = ui.create_model_component("polynom1d", "mdl")
+    ui.set_source(mdl)
+    assert mdl.c1.frozen
+    assert ui.get_num_par_thawed() == 1
+    assert ui.get_num_par_frozen() == 9
+
+    if string:
+        ui.freeze("mdl.c1")
+    else:
+        ui.freeze(mdl.c1)
+
+    assert mdl.c1.frozen
+    assert ui.get_num_par_thawed() == 1
+    assert ui.get_num_par_frozen() == 9
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_freeze_alwaysfrozen_parameter(string, clean_ui):
+    """Can we freeze an always-frozen parameter?"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    assert mdl.ref.alwaysfrozen
+    assert mdl.ref.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+    if string:
+        ui.freeze("mdl.ref")
+    else:
+        ui.freeze(mdl.ref)
+
+    assert mdl.ref.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_thaw_parameter(string, clean_ui):
+    """Can we thaw a parameter?"""
+
+    mdl = ui.create_model_component("polynom1d", "mdl")
+    ui.set_source(mdl)
+    assert mdl.c1.frozen
+    assert ui.get_num_par_thawed() == 1
+    assert ui.get_num_par_frozen() == 9
+
+    if string:
+        ui.thaw("mdl.c1")
+    else:
+        ui.thaw(mdl.c1)
+
+    assert not mdl.c1.frozen
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 8
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_thaw_thawed_parameter(string, clean_ui):
+    """Can we thaw a thawed parameter? String argument"""
+
+    mdl = ui.create_model_component("polynom1d", "mdl")
+    ui.set_source(mdl)
+    assert not mdl.c0.frozen
+    assert ui.get_num_par_thawed() == 1
+    assert ui.get_num_par_frozen() == 9
+
+    if string:
+        ui.thaw("mdl.c0")
+    else:
+        ui.thaw(mdl.c0)
+
+    assert not mdl.c0.frozen
+    assert ui.get_num_par_thawed() == 1
+    assert ui.get_num_par_frozen() == 9
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_thaw_alwaysfrozen_parameter(string, clean_ui):
+    """Can we thaw an always-frozen parameter?"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    assert mdl.ref.alwaysfrozen
+    assert mdl.ref.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+    with pytest.raises(ParameterErr) as pe:
+        if string:
+            ui.thaw("mdl.ref")
+        else:
+            ui.thaw(mdl.ref)
+
+    assert mdl.ref.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+    assert str(pe.value) == "parameter mdl.ref is always frozen and cannot be thawed"
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_freeze_model(string, clean_ui):
+    """Can we freeze a model?
+
+    We use a model with an alwaysfrozen parameter.
+    """
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    assert mdl.ref.frozen
+    assert not mdl.c1.frozen
+    assert not mdl.c2.frozen
+    assert not mdl.ampl.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+    if string:
+        ui.freeze("mdl")
+    else:
+        ui.freeze(mdl)
+
+    assert mdl.ref.frozen
+    assert mdl.c1.frozen
+    assert mdl.c2.frozen
+    assert mdl.ampl.frozen
+    assert ui.get_num_par_thawed() == 0
+    assert ui.get_num_par_frozen() == 4
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_thaw_model(string, clean_ui):
+    """Can we thaw a model?
+
+    We use a model with an alwaysfrozen parameter.
+    """
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    mdl.c1.freeze()
+    mdl.ampl.freeze()
+
+    assert mdl.ref.frozen
+    assert mdl.c1.frozen
+    assert not mdl.c2.frozen
+    assert mdl.ampl.frozen
+    assert ui.get_num_par_thawed() == 1
+    assert ui.get_num_par_frozen() == 3
+
+    if string:
+        ui.thaw("mdl")
+    else:
+        ui.thaw(mdl)
+
+    assert mdl.ref.frozen
+    assert not mdl.c1.frozen
+    assert not mdl.c2.frozen
+    assert not mdl.ampl.frozen
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_freeze_multi_arguments(string, clean_ui):
+    """Check we can combine model and parameters"""
+
+    mdl1 = ui.create_model_component("logparabola", "mdl1")
+    mdl2 = ui.create_model_component("polynom1d", "mdl2")
+    ui.set_source(mdl1 + mdl2)
+    assert not mdl1.c2.frozen
+    assert not mdl2.c0.frozen
+    assert ui.get_num_par_thawed() == 4
+    assert ui.get_num_par_frozen() == 10
+
+    if string:
+        ui.freeze("mdl2", "mdl1.c2")
+    else:
+        ui.freeze(mdl2, mdl1.c2)
+
+    assert mdl1.c2.frozen
+    assert mdl2.c0.frozen
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 12
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_thaw_multi_arguments(string, clean_ui):
+    """Check we can combine model and parameters"""
+
+    mdl1 = ui.create_model_component("logparabola", "mdl1")
+    mdl2 = ui.create_model_component("polynom1d", "mdl2")
+    ui.set_source(mdl1 + mdl2)
+    mdl1.c1.freeze()
+    mdl1.ampl.freeze()
+    assert mdl1.c1.frozen
+    assert mdl1.ampl.frozen
+    assert mdl2.c2.frozen
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 12
+
+    if string:
+        ui.thaw("mdl1", "mdl2.c2")
+    else:
+        ui.thaw(mdl1, mdl2.c2)
+
+    assert not mdl1.c1.frozen
+    assert not mdl1.ampl.frozen
+    assert not mdl2.c2.frozen
+    assert ui.get_num_par_thawed() == 5
+    assert ui.get_num_par_frozen() == 9
+
+
+def test_freeze_no_arguments(clean_ui):
+    """This is a no-op"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+    ui.freeze()
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+
+def test_thaw_no_arguments(clean_ui):
+    """This is a no-op"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+    mdl.c1.freeze()
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 2
+
+    ui.thaw()
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 2
