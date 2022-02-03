@@ -32,7 +32,7 @@ copyr = re.compile(r"(?P<comment>(#|//))\s*Copyright \(C\) (?P<years>[0-9,\s]+)(
 # Only apply this to C or Python files since sherpa does not use
 # copyright statements in others files, also, do not change in extern
 # directory.
-ftype = re.compile(r"^((?!extern).)*(hh|cc|c|py)$")
+ftype = re.compile(r"^((?!extern).)*(hh|cc|c|h|py)$")
 changed = 0
 
 if __name__ == '__main__':
