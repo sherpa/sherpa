@@ -303,6 +303,23 @@ def test_err_estimate_errors_on_frozen(method, clean_ui):
 
 
 @pytest.mark.parametrize("method", [ui.conf, ui.covar, ui.proj])
+def test_err_estimate_errors_model_all_frozen(method, clean_ui):
+    """Check we error out with frozen model with conf/proj/covar.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    ui.set_source(ui.polynom1d.mdl)
+    for par in mdl.pars:
+        par.freeze()
+
+    with pytest.raises(ParameterErr) as exc:
+        method(mdl)
+
+    assert str(exc.value) == "Model 'polynom1d.mdl' has no thawed parameters"
+
+
+@pytest.mark.parametrize("method", [ui.conf, ui.covar, ui.proj])
 @pytest.mark.parametrize("id", [1, "xx"])
 @pytest.mark.parametrize("otherids", [[2, 3], ["foo", "bar"]])
 def test_err_estimate_errors_on_list_argument(method, id, otherids, clean_ui):
@@ -533,50 +550,6 @@ def test_err_estimate_single_parameter(strings, idval, otherids, clean_ui):
 
     assert res.parmins == pytest.approx([ERR_EST_C1_MIN])
     assert res.parmaxes == pytest.approx([ERR_EST_C1_MAX])
-
-
-@pytest.mark.parametrize("strings", [False, True])
-@pytest.mark.parametrize("idval,otherids",
-                         [(1, (2, 3)),
-                          (2, [3, 1]),
-                          (3, [2, 1])])
-def test_err_estimate_model_all_frozen(strings, idval, otherids, clean_ui):
-    """What happens when the model is all frozen?"""
-
-    # This is a bit ugly
-    if strings:
-        idval = str(idval)
-        if type(otherids) == tuple:
-            otherids = (str(otherids[0]), str(otherids[1]))
-        else:
-            otherids = [str(otherids[0]), str(otherids[1])]
-
-    datasets = tuple([idval] + list(otherids))
-
-    setup_err_estimate_multi_ids(strings=strings)
-
-    zero = ui.create_model_component("scale1d", "zero")
-    zero.c0 = 0
-    zero.c0.freeze()
-
-    for id in datasets:
-        # In this case we have
-        #   orig == mdl
-        # but let's be explicit in case the code changes
-        #
-        orig = ui.get_source(id)
-        ui.set_source(id, orig + zero)
-
-    ui.fit(idval, *otherids)
-
-    ui.conf(*datasets, zero)
-    res = ui.get_conf_results()
-
-    assert res.datasets == datasets
-    assert res.parnames == ("mdl.c0", "mdl.c1")
-
-    assert res.parmins == pytest.approx([ERR_EST_C0_MIN, ERR_EST_C1_MIN])
-    assert res.parmaxes == pytest.approx([ERR_EST_C0_MAX, ERR_EST_C1_MAX])
 
 
 def test_show_all_empty(clean_ui):

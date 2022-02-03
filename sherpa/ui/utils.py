@@ -9701,9 +9701,19 @@ class Session(NoNewAttributesAfterInit):
                 continue
 
             if isinstance(arg, sherpa.models.Model):
+                norig = len(parlist)
                 for par in arg.pars:
                     if not par.frozen:
                         parlist.append(par)
+
+                # If there were no free parameters then error out.
+                # Should this be a ParameterErr or a ModelErr? Neither
+                # have an existing label for this case. Pick ParameterErr
+                # to match the case when a single parameter is frozen.
+                #
+                if len(parlist) == norig:
+                    emsg = f"Model '{arg.name}' has no thawed parameters"
+                    raise sherpa.utils.err.ParameterErr(emsg)
 
                 continue
 
