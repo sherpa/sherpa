@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2021
+#  Copyright (C) 2007, 2016, 2017, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -39,8 +39,8 @@ from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
-from sherpa.models.basic import Sin, Const1D, Box1D, Polynom1D, Scale1D, \
-    Integrate1D
+from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
+    Scale1D, Integrate1D
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -1224,3 +1224,83 @@ def test_cache_clear_multiple(caplog):
     assert c._cache_ctr['check'] == 0
     assert c._cache_ctr['hits'] == 0
     assert c._cache_ctr['misses'] == 0
+
+
+@pytest.mark.xfail
+def test_model_freeze():
+    """Can we freeze all the parameters in a model?"""
+
+    mdl = Polynom1D()
+    mdl.c2.val = 30
+    mdl.c7.val = 87
+    mdl.offset.val = -2
+    mdl.c2.thaw()
+    mdl.c7.thaw()
+    mdl.offset.thaw()
+    assert mdl.thawedpars == pytest.approx([1.0, 30, 87, -2])
+
+    mdl.freeze()
+    assert mdl.thawedpars == []
+
+
+@pytest.mark.xfail
+def test_model_thaw():
+    """Can we freeze all the parameters in a model?"""
+
+    mdl = Polynom1D()
+    expected = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0]
+
+    for p, val in zip(mdl.pars, expected):
+        p.val = val
+
+    assert mdl.thawedpars == pytest.approx([2.0])
+
+    mdl.thaw()
+    assert mdl.thawedpars == pytest.approx(expected)
+
+
+@pytest.mark.xfail
+def test_model_freeze_already_frozen():
+    """Check it's a no-op rather than an error"""
+
+    mdl = Scale1D()
+    mdl.c0.freeze()
+    assert mdl.thawedpars == []
+
+    mdl.freeze()
+    assert mdl.thawedpars == []
+
+
+@pytest.mark.xfail
+def test_model_thaw_already_thawed():
+    """Check it's a no-op rather than an error"""
+
+    mdl = Scale1D()
+    assert mdl.thawedpars == [1.0]
+
+    mdl.thaw()
+    assert mdl.thawedpars == [1.0]
+
+
+@pytest.mark.xfail
+def test_model_freeze_alwaysfrozen():
+    """Check it's a no-op rather than an error for an alwaysfrozen parameter"""
+
+    mdl = LogParabola()
+    mdl.c2.freeze()
+    assert mdl.thawedpars == [1.0, 1.0]
+
+    mdl.freeze()
+    assert mdl.thawedpars == []
+
+
+@pytest.mark.xfail
+def test_model_thaw_alwaysfrozen():
+    """Check we skip an alwaysfrozen parameter"""
+
+    mdl = LogParabola()
+    mdl.c2.freeze()
+    assert mdl.thawedpars == [1.0, 1.0]
+
+    mdl.thaw()
+    assert mdl.thawedpars == [1.0, 1.0, 1.0]
