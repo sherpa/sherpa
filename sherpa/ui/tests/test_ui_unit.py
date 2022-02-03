@@ -879,3 +879,35 @@ def test_thaw_no_arguments(clean_ui):
     ui.thaw()
     assert ui.get_num_par_thawed() == 2
     assert ui.get_num_par_frozen() == 2
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_freeze_invalid_arguments(string, clean_ui):
+    """We error out with an invalid argument"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+
+    with pytest.raises(ArgumentTypeErr) as ae:
+        if string:
+            ui.freeze("1")
+        else:
+            ui.freeze(1)
+
+    assert str(ae.value) == "'par' must be a parameter or model object or expression string"
+
+
+@pytest.mark.parametrize("string", [True, False])
+def test_thaw_invalid_arguments(string, clean_ui):
+    """We error out with an invalid argument"""
+
+    mdl = ui.create_model_component("logparabola", "mdl")
+    ui.set_source(mdl)
+
+    with pytest.raises(ArgumentTypeErr) as ae:
+        if string:
+            ui.thaw("1")
+        else:
+            ui.thaw(1)
+
+    assert str(ae.value) == "'par' must be a parameter or model object or expression string"
