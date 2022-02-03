@@ -1226,7 +1226,6 @@ def test_cache_clear_multiple(caplog):
     assert c._cache_ctr['misses'] == 0
 
 
-@pytest.mark.xfail
 def test_model_freeze():
     """Can we freeze all the parameters in a model?"""
 
@@ -1243,7 +1242,6 @@ def test_model_freeze():
     assert mdl.thawedpars == []
 
 
-@pytest.mark.xfail
 def test_model_thaw():
     """Can we freeze all the parameters in a model?"""
 
@@ -1259,7 +1257,6 @@ def test_model_thaw():
     assert mdl.thawedpars == pytest.approx(expected)
 
 
-@pytest.mark.xfail
 def test_model_freeze_already_frozen():
     """Check it's a no-op rather than an error"""
 
@@ -1271,7 +1268,6 @@ def test_model_freeze_already_frozen():
     assert mdl.thawedpars == []
 
 
-@pytest.mark.xfail
 def test_model_thaw_already_thawed():
     """Check it's a no-op rather than an error"""
 
@@ -1282,7 +1278,6 @@ def test_model_thaw_already_thawed():
     assert mdl.thawedpars == [1.0]
 
 
-@pytest.mark.xfail
 def test_model_freeze_alwaysfrozen():
     """Check it's a no-op rather than an error for an alwaysfrozen parameter"""
 
@@ -1294,7 +1289,6 @@ def test_model_freeze_alwaysfrozen():
     assert mdl.thawedpars == []
 
 
-@pytest.mark.xfail
 def test_model_thaw_alwaysfrozen():
     """Check we skip an alwaysfrozen parameter"""
 

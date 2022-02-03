@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -326,7 +326,7 @@ import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
-from sherpa.utils.err import ModelErr
+from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils import formatting
 
 from .parameter import Parameter
@@ -792,6 +792,29 @@ class Model(NoNewAttributesAfterInit):
 
         for p in self.pars:
             p.reset()
+
+    def freeze(self):
+        """Freeze any thawed parameters of the model."""
+
+        for p in self.pars:
+            p.freeze()
+
+    def thaw(self):
+        """Thaw any frozen parameters of the model.
+
+        Those parameters that are marked as "always frozen" are
+        skipped.
+
+        """
+
+        # Note that we have to handle "always frozen" cases, but rather
+        # than asking for permission we just handle the failure case.
+        #
+        for p in self.pars:
+            try:
+                p.thaw()
+            except ParameterErr:
+                continue
 
 
 class CompositeModel(Model):
