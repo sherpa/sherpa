@@ -652,11 +652,11 @@ Never forget to update the year of the copyright notice?
 
 Git offers `pre-commit hooks <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>`_
 that can do file checks for you before a commit is executed. The script in
-`sherpa/pre-commit` will check if the copyright notice in any of the files in the
+`scripts/pre-commit` will check if the copyright notice in any of the files in the
 current commit must be updated and, if so, add the current year to the copyright notice
 and abort the commit so that you can manually check before commiting again.
 
-To use this opt-in functionality, simply copy the file to the appropriate location:
+To use this opt-in functionality, simply copy the file to the appropriate location::
 
   cp scripts/pre-commit .git/hooks
 
