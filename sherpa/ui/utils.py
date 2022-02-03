@@ -7508,20 +7508,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_par(par).set(val, min, max, frozen)
 
-    def _freeze_thaw_par_or_model(self, par, action):
-        if isinstance(par, string_types):
-            par = self._eval_model_expression(par, 'parameter or model')
-
-        _check_type(par, (sherpa.models.Parameter, sherpa.models.Model), 'par',
-                    'a parameter or model object or expression string')
-
-        if isinstance(par, sherpa.models.Parameter):
-            getattr(par, action)()
-        else:
-            for p in par.pars:
-                if not p.alwaysfrozen:
-                    getattr(p, action)()
-
     def freeze(self, *args):
         """Fix model parameters so they are not changed by a fit.
 
@@ -7570,9 +7556,15 @@ class Session(NoNewAttributesAfterInit):
         >>> freeze(gal.nh, src.abund)
 
         """
-        par = list(args)
-        for p in par:
-            self._freeze_thaw_par_or_model(p, 'freeze')
+        for par in list(args):
+            if isinstance(par, string_types):
+                par = self._eval_model_expression(par, 'parameter or model')
+
+            try:
+                par.freeze()
+            except AttributeError:
+                raise ArgumentTypeErr('badarg', 'par',
+                                      'a parameter or model object or expression string')
 
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
@@ -7627,9 +7619,16 @@ class Session(NoNewAttributesAfterInit):
         >>> thaw(gal.nh, src.abund)
 
         """
-        par = list(args)
-        for p in par:
-            self._freeze_thaw_par_or_model(p, 'thaw')
+        for par in list(args):
+            if isinstance(par, string_types):
+                par = self._eval_model_expression(par, 'parameter or model')
+
+            try:
+                par.thaw()
+            except AttributeError:
+                raise ArgumentTypeErr('badarg', 'par',
+                                      'a parameter or model object or expression string')
+
 
     def link(self, par, val):
         """Link a parameter to a value.
