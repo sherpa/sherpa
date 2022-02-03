@@ -9677,7 +9677,7 @@ class Session(NoNewAttributesAfterInit):
         args : sequence of sherpa.models.Parameter, sherpa.models.Model, int, or str
             The dataset (when an integer or str) to evaluate, the
             model parameter to apply the error estimate on (must be
-            thawed), or a model frmo which all the thawed parameters
+            thawed), or a model from which all the thawed parameters
             are used.
         methodname : str
             One of the valid error estimates (sub-classes of

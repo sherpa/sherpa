@@ -482,7 +482,7 @@ def test_err_estimate_model(strings, idval, otherids, clean_ui):
 
     # I wanted to have zero.co thawed at this stage, but then we can not
     # use the ERR_EST_C0/1_xxx values as the fit has changed (and mdl.c0
-    # anbd zero.c0 are degenerate to boot).
+    # and zero.c0 are degenerate to boot).
     #
     ui.conf(*datasets, mdl)
     res = ui.get_conf_results()
