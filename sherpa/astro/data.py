@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1626,7 +1626,7 @@ must be an integer.""")
         self._plot_fac = 0
         self.units = "channel"
         self.quality_filter = None
-        Data1D.__init__(self, name, channel, counts, staterror, syserror)
+        super().__init__(name, channel, counts, staterror, syserror)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -4347,7 +4347,7 @@ class DataIMG(Data2D):
         self.coord = coord
         self.header = {} if header is None else header
         self._region = None
-        Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
+        super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data

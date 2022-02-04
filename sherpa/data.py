@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -134,7 +134,7 @@ class DataSpace1D(EvaluationSpace1D):
             the x axis of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, _check_nomask(x))
+        super().__init__(_check_nomask(x))
 
     def get(self, filter=False):
         """
@@ -200,7 +200,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
             the higher bounds array of this data space
         """
         self.filter = filter
-        EvaluationSpace1D.__init__(self, _check_nomask(xlo), _check_nomask(xhi))
+        super().__init__(_check_nomask(xlo), _check_nomask(xhi))
 
     def get(self, filter=False):
         """
@@ -1059,7 +1059,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
         self.name = name
         self.datasets = tuple(datasets)
         self.numcores = numcores
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def eval_model_to_fit(self, modelfuncs):
         if self.numcores == 1:
@@ -1130,7 +1130,7 @@ class Data1D(Data):
     _fields = ("name", "x", "y", "staterror", "syserror")
 
     def __init__(self, name, x, y, staterror=None, syserror=None):
-        Data.__init__(self, name, (x, ), y, staterror, syserror)
+        super().__init__(name, (x, ), y, staterror, syserror)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data
@@ -1390,7 +1390,7 @@ class Data1DAsymmetricErrs(Data1D):
     def __init__(self, name, x, y, elo, ehi, staterror=None, syserror=None):
         self.elo = elo
         self.ehi = ehi
-        Data1D.__init__(self, name, x, y, staterror=staterror, syserror=syserror)
+        super().__init__(name, x, y, staterror=staterror, syserror=syserror)
 
     def get_yerr(self, filter=False, staterrfunc=None):
         return self.elo, self.ehi
@@ -1572,7 +1572,7 @@ class Data2D(Data):
 
     def __init__(self, name, x0, x1, y, shape=None, staterror=None, syserror=None):
         self.shape = shape
-        Data.__init__(self, name, (x0, x1), y, staterror, syserror)
+        super().__init__(name, (x0, x1), y, staterror, syserror)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data
