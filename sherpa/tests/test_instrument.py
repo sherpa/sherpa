@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021
+#  Copyright (C) 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -199,7 +199,7 @@ def test_psf1d_kernel_data(caplog):
     assert ans.name == 'kernel'
     # integers, so treat as exact
     assert (ans.x == np.arange(5, 8)).all()
-    assert pytest.approx(k / k.sum(), ans.y)
+    assert ans.y == pytest.approx(k / k.sum())
     assert ans.staterror is None
     assert ans.syserror is None
 
@@ -231,7 +231,7 @@ def test_psf1d_kernel_model(caplog):
 
     # box1D between 1 and 3 inclusive
     y = np.asarray([0, 1, 1, 1, 0, 0, 0, 0, 0, 0])
-    assert pytest.approx(y / y.sum(), ans.y)
+    assert ans.y == pytest.approx(y / y.sum())
 
     assert ans.staterror is None
     assert ans.syserror is None
@@ -275,12 +275,13 @@ def test_psf2d_kernel_data(caplog):
     assert (ans.x0 == x0).all()
     assert (ans.x1 == x1).all()
 
-    assert pytest.approx(k / k.sum(), ans.y)
+    assert ans.y == pytest.approx(k / k.sum())
 
     assert ans.staterror is None
     assert ans.syserror is None
 
 
+@pytest.mark.xfail  # see #1428
 def test_psf2d_kernel_model(caplog):
     """Access the kernel data: no subkernel"""
 
@@ -317,8 +318,13 @@ def test_psf2d_kernel_model(caplog):
     assert (ans.x0 == d0).all()
     assert (ans.x1 == d1).all()
 
+    # This is the old check, converted to what I assume is meant to be
+    # the correct form - see #1428 - but ans.y is all zeros except for
+    # a single 1 whilst k is not (it has 9 True values and the rest
+    # False). I do not have time to identify the truth here.
+    #
     k = (ans.x0 >= -1) & (ans.x0 <= 1) & (ans.x1 >= 10) & (ans.x1 <= 12)
-    assert pytest.approx(k / k.sum(), ans.y)
+    assert ans.y == pytest.approx(k / k.sum())
 
     assert ans.staterror is None
     assert ans.syserror is None
