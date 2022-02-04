@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1677,8 +1677,6 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
 
-    # Iterative Fitting Methods for CIAO 4.3 testing
-
     def get_iter_method_name(self):
         """Return the name of the iterative fitting scheme.
 
@@ -1791,6 +1789,9 @@ class Session(NoNewAttributesAfterInit):
         Control whether an iterative scheme should be applied to
         the fit.
 
+        .. versionchanged:: 4.14.1
+           The "primini" scheme has been removed from Sherpa.
+
         Parameters
         ----------
         meth : { 'none', 'sigmarej' }
@@ -1814,7 +1815,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The parameters of each scheme are described in
+        The parameters of the schemes are described in
         `set_iter_method_opt`.
 
         This is a chi-square statistic where the variance is computed
