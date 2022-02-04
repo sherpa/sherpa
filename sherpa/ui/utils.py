@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -607,35 +607,39 @@ class Session(NoNewAttributesAfterInit):
                  self._current_stat.__str__()))
 
     def _get_show_fit(self):
-        fit_str = ''
-        if self._fit_results is not None:
-            fit_str += self._get_show_method()
-            fit_str += '\n'
-            fit_str += self._get_show_stat()
-            fit_str += '\n'
-            fit_str += 'Fit:'
-            fit_str += self.get_fit_results().format() + '\n\n'
+        if self._fit_results is None:
+            return ''
+
+        fit_str = self._get_show_method()
+        fit_str += '\n'
+        fit_str += self._get_show_stat()
+        fit_str += '\n'
+        fit_str += 'Fit:'
+        fit_str += self.get_fit_results().format() + '\n\n'
         return fit_str
 
     def _get_show_conf(self):
-        conf_str = ''
-        if self._confidence_results is not None:
-            conf_str += 'Confidence:'
-            conf_str += self.get_conf_results().format() + '\n\n'
+        if self._confidence_results is None:
+            return ''
+
+        conf_str = 'Confidence:'
+        conf_str += self.get_conf_results().format() + '\n\n'
         return conf_str
 
     def _get_show_proj(self):
-        proj_str = ''
-        if self._projection_results is not None:
-            proj_str += 'Projection:'
-            proj_str += self.get_proj_results().format() + '\n\n'
+        if self._projection_results is None:
+            return ''
+
+        proj_str = 'Projection:'
+        proj_str += self.get_proj_results().format() + '\n\n'
         return proj_str
 
     def _get_show_covar(self):
-        covar_str = ''
-        if self._covariance_results is not None:
-            covar_str += 'Covariance:'
-            covar_str += self.get_covar_results().format() + '\n\n'
+        if self._covariance_results is None:
+            return ''
+
+        covar_str = 'Covariance:'
+        covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
     def show_stat(self, outfile=None, clobber=False):
@@ -8102,8 +8106,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._fit_results is None:
             raise SessionErr('nofit', 'fit')
-        else:
-            return self._fit_results
+
+        return self._fit_results
 
     def guess(self, id=None, model=None, limits=True, values=True):
         """Estimate the parameter values and ranges given the loaded data.
@@ -9471,8 +9475,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._covariance_results is None:
             raise SessionErr('noaction', "covariance")
-        else:
-            return self._covariance_results
+
+        return self._covariance_results
 
     def get_conf_results(self):
         """Return the results of the last `conf` run.
@@ -9568,8 +9572,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._confidence_results is None:
             raise SessionErr('noaction', "confidence")
-        else:
-            return self._confidence_results
+
+        return self._confidence_results
 
     def get_proj_results(self):
         """Return the results of the last `proj` run.
@@ -9659,30 +9663,68 @@ class Session(NoNewAttributesAfterInit):
         """
         if self._projection_results is None:
             raise SessionErr('noaction', "projection")
-        else:
-            return self._projection_results
+
+        return self._projection_results
 
     def _est_errors(self, args, methodname):
-        # Any argument that is a model parameter should be detected
-        # and added to the list of parameters for which we want limits.
-        # Else, the argument is an integer or string denoting a
-        # data set ID.
+        """Evaluate the errors for the given arguments.
+
+        The formatted output of the estimation is logged at the
+        info level.
+
+        Parameters
+        ----------
+        args : sequence of sherpa.models.Parameter, sherpa.models.Model, int, or str
+            The dataset (when an integer or str) to evaluate, the
+            model parameter to apply the error estimate on (must be
+            thawed), or a model from which all the thawed parameters
+            are used.
+        methodname : str
+            One of the valid error estimates (sub-classes of
+            sherpa.estmethods.EstMethod).
+
+        Returns
+        -------
+        result : sherpa.fit.ErrorEstResults instance
+
+        """
+
         id = None
         parlist = []
-        otherids = ()
+        otherids = []
         for arg in args:
-            if type(arg) is sherpa.models.Parameter:
-                if arg.frozen is False:
-                    parlist.append(arg)
-                else:
+            if isinstance(arg, sherpa.models.Parameter):
+                if arg.frozen:
                     raise sherpa.utils.err.ParameterErr('frozen', arg.fullname)
+
+                parlist.append(arg)
+                continue
+
+            if isinstance(arg, sherpa.models.Model):
+                norig = len(parlist)
+                for par in arg.pars:
+                    if not par.frozen:
+                        parlist.append(par)
+
+                # If there were no free parameters then error out.
+                # Should this be a ParameterErr or a ModelErr? Neither
+                # have an existing label for this case. Pick ParameterErr
+                # to match the case when a single parameter is frozen.
+                #
+                if len(parlist) == norig:
+                    emsg = f"Model '{arg.name}' has no thawed parameters"
+                    raise sherpa.utils.err.ParameterErr(emsg)
+
+                continue
+
+            if id is None:
+                id = arg
             else:
-                if id is None:
-                    id = arg
-                else:
-                    otherids = otherids + (arg,)
-        if (len(parlist) == 0):
+                otherids.append(arg)
+
+        if len(parlist) == 0:
             parlist = None
+
         ids, f = self._get_fit(id, otherids, self._estmethods[methodname])
         res = f.est_errors(self._methods, parlist)
         res.datasets = ids
@@ -9705,17 +9747,18 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id : int or str, optional
-           The data set that provides the data. If not given then
-           all data sets with an associated model are used simultaneously.
-        otherids : sequence of int or str, optional
-           Other data sets to use in the calculation.
-        parameters : optional
+           The data set, or sets, that provides the data. If not given
+           then all data sets with an associated model are used
+           simultaneously.
+        parameter : sherpa.models.parameter.Parameter, optional
            The default is to calculate the confidence limits on all
-           thawed parameters of the model, or models, for all the
-           data sets. The evaluation can be restricted by listing
-           the parameters to use. Note that each parameter should be
-           given as a separate argument, rather than as a list.
-           For example ``covar(g1.ampl, g1.sigma)``.
+           thawed parameters of the model, or models, for all the data
+           sets. The evaluation can be restricted by listing the
+           parameters to use. Note that each parameter should be given
+           as a separate argument, rather than as a list.  For example
+           ``covar(g1.ampl, g1.sigma)``.
+        model : sherpa.models.model.Model, optional
+           Select all the thawed parameters in the model.
 
         See Also
         --------
@@ -9808,7 +9851,13 @@ class Session(NoNewAttributesAfterInit):
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
-        >>> covar("obs1", ["obs5", "obs6"], clus.kt)
+        >>> covar("obs1", "obs5", "obs6", clus.kt)
+
+        Estimate the errors for all the thawed parameters from the
+        ``line`` model and the ``clus.kt`` parameter for datasets 1,
+        3, and 4:
+
+        >>> covar(1, 3, 4, line, clus.kt)
 
         """
         self._covariance_results = self._est_errors(args, 'covariance')
@@ -9831,17 +9880,18 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id : int or str, optional
-           The data set that provides the data. If not given then
-           all data sets with an associated model are used simultaneously.
-        otherids : sequence of int or str, optional
-           Other data sets to use in the calculation.
-        parameters : optional
+           The data set, or sets, that provides the data. If not given
+           then all data sets with an associated model are used
+           simultaneously.
+        parameter : sherpa.models.parameter.Parameter, optional
            The default is to calculate the confidence limits on all
-           thawed parameters of the model, or models, for all the
-           data sets. The evaluation can be restricted by listing
-           the parameters to use. Note that each parameter should be
-           given as a separate argument, rather than as a list.
-           For example ``conf(g1.ampl, g1.sigma)``.
+           thawed parameters of the model, or models, for all the data
+           sets. The evaluation can be restricted by listing the
+           parameters to use. Note that each parameter should be given
+           as a separate argument, rather than as a list.  For example
+           ``conf(g1.ampl, g1.sigma)``.
+        model : sherpa.models.model.Model, optional
+           Select all the thawed parameters in the model.
 
         See Also
         --------
@@ -10003,13 +10053,19 @@ class Session(NoNewAttributesAfterInit):
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
-        >>> conf("obs1", ["obs5", "obs6"], clus.kt)
+        >>> conf("obs1", "obs5", "obs6", clus.kt)
 
         Only use two cores when evaluating the errors for the parameters
         used in the model for data set 3:
 
         >>> set_conf_opt('numcores', 2)
         >>> conf(3)
+
+        Estimate the errors for all the thawed parameters from the
+        ``line`` model and the ``clus.kt`` parameter for datasets 1,
+        3, and 4:
+
+        >>> conf(1, 3, 4, line, clus.kt)
 
         """
         self._confidence_results = self._est_errors(args, 'confidence')
@@ -10034,17 +10090,18 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id : int or str, optional
-           The data set that provides the data. If not given then
-           all data sets with an associated model are used simultaneously.
-        otherids : sequence of int or str, optional
-           Other data sets to use in the calculation.
-        parameters : optional
+           The data set, or sets, that provides the data. If not given
+           then all data sets with an associated model are used
+           simultaneously.
+        parameter : sherpa.models.parameter.Parameter, optional
            The default is to calculate the confidence limits on all
-           thawed parameters of the model, or models, for all the
-           data sets. The evaluation can be restricted by listing
-           the parameters to use. Note that each parameter should be
-           given as a separate argument, rather than as a list.
-           For example ``proj(g1.ampl, g1.sigma)``.
+           thawed parameters of the model, or models, for all the data
+           sets. The evaluation can be restricted by listing the
+           parameters to use. Note that each parameter should be given
+           as a separate argument, rather than as a list.  For example
+           ``proj(g1.ampl, g1.sigma)``.
+        model : sherpa.models.model.Model, optional
+           Select all the thawed parameters in the model.
 
         See Also
         --------
