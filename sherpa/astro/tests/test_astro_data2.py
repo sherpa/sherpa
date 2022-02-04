@@ -494,59 +494,6 @@ def test_416_a():
 
 
 @requires_group
-def test_416_b(caplog):
-    """The second test case from issue #416
-
-    This is to make sure this hasn't changed.
-
-    This used to use channels but it has been changed to add an RMF so
-    we can filter in energy space, as it is not clear what non-integer
-    channels should mean.
-
-    """
-
-    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 0, 0])
-
-    pha = DataPHA('416', x, y)
-
-    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
-                           name='416')
-    pha.set_arf(rmf)
-    pha.set_analysis('energy')
-
-    pha.notice(3.5, 6.5)
-    pha.group_counts(3)
-
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        pha.ignore_bad()
-
-    # It's not obvious why this has switched to a boolean
-    assert pha.mask
-
-    # Mask is also interesting (currently just reporting
-    # this behavior)
-    mask = [True] * 5 + [False] * 5
-    assert pha.get_mask() == pytest.approx(mask)
-
-    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
-    assert pha.grouping == pytest.approx(grouping)
-
-    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
-    assert pha.quality == pytest.approx(quality)
-
-    dep = pha.get_dep(filter=True)
-    assert dep == pytest.approx([3])
-
-    # check captured log
-    #
-    emsg = 'filtering grouped data with quality flags, previous filters deleted'
-    assert caplog.record_tuples == [
-        ('sherpa.astro.data', logging.WARNING, emsg)
-        ]
-
-
-@requires_group
 def test_416_c():
     """The third test case from issue #416
 
@@ -1253,6 +1200,293 @@ def test_pha_grouping_size(grouping, make_test_pha):
         pha.grouping = grouping
 
     assert str(de.value) == 'size mismatch between channel and grouping'
+
+
+@requires_group
+def test_pha_ignore_bad_group_quality(caplog):
+    """Check handling of ignore_bad when quality and grouping set.
+
+    This used to be called test_416_b but has been expanded to
+    check a few more things. See also
+    test_pha_ignore_bad_quality which is meant to
+    be the same but with an ungrouped dataset (so the
+    results won't quite match).
+
+    """
+
+    # The energy range matches the channel values to make
+    # things easier.
+    #
+    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 1, 0])
+
+    pha = DataPHA('416', x, y)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    assert pha.get_filter(format="%.1f") == "1.0:11.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 11))
+
+    # No grouping or filtering yet
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx(y)
+
+    assert not pha.grouped
+
+    # After this we have
+    # - two groups, channels 1-5 and 6-10
+    # - the first group has quality=0, the second quality=2
+    # - the noticed range is channels 3-7 before grouping
+    #   which becomes 1-11 after grouping (i.e. all points)
+    #
+    pha.notice(3.5, 6.5)
+    assert pha.get_filter(format="%.1f") == "3.0:7.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
+
+    # Only filtering
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx(y[2:6])
+
+    pha.group_counts(3)
+    assert pha.get_filter(format="%.1f") == "1.0:11.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 11))
+
+    # Grouped and filtered
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx([3, 2])
+
+    assert pha.mask == pytest.approx([True] * 2)
+    assert pha.get_mask() == pytest.approx([True] * 10)
+
+    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    assert pha.grouping == pytest.approx(grouping)
+
+    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    assert pha.quality == pytest.approx(quality)
+    assert pha.quality_filter is None
+
+    assert pha.grouped
+
+    # By calling ignore_bad we have
+    # - removed the channels with quality=2, which is
+    #   channels 6-10
+    # - removed the noticed range
+    #
+    assert len(caplog.record_tuples) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.ignore_bad()
+
+    # check captured log
+    #
+    emsg = 'filtering grouped data with quality flags, previous filters deleted'
+    assert caplog.record_tuples == [
+        ('sherpa.astro.data', logging.WARNING, emsg)
+        ]
+
+    assert pha.grouped
+
+    # We have reverted the energy filter, so the mask attribute
+    # is back to a boolean.
+    #
+    assert type(pha.mask) is bool
+    assert pha.mask
+
+    # However, get_mask reflects the quality filter, so is 5 True
+    # followed by 5 False.
+    #
+    mask = [True] * 5 + [False] * 5
+    assert pha.get_mask() == pytest.approx(mask)
+
+    # What about the quality fields?
+    #
+    assert pha.quality == pytest.approx(quality)
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 5)
+
+    # Saying all that though, the filter expression does not
+    # know we are ignoring channels 6-10.
+    #
+    # TODO: This is likely a bug.
+    #
+    assert pha.get_filter(format="%.1f") == "1.0:11.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 6))
+
+    # Grouped and quality-filtered (even though get_filter
+    # returns 1:11 here).
+    #
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    # check there have been no more messages.
+    #
+    assert len(caplog.record_tuples) == 1
+
+
+@pytest.mark.parametrize("groupit", [False, True])
+def test_pha_ignore_bad_quality(groupit, caplog):
+    """Check handling of ignore_bad when quality set but no grouping.
+
+    See test_pha_ignore_bad_group_quality. The case when
+    the quality array is not set is handled earlier by
+    test_pha_ignore_bad_no_quality
+
+    The groupit flag is used to ensure the results are
+    the same if the data has no grouping data at all
+    (False) or has grouping but is not used (True).
+
+    """
+
+    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    y = np.asarray([0, 0, 0, 2, 1, 1, 0, 0, 1, 0])
+
+    pha = DataPHA('416', x, y)
+
+    rmf = create_delta_rmf(x, x + 1, e_min=x, e_max=x + 1,
+                           name='416')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    grps = np.asarray([1, -1, -1, -1, -1] * 2)
+    if groupit:
+        pha.grouping = grps
+
+    assert not pha.grouped
+
+    assert pha.get_filter(format="%.1f") == "1.0:11.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 11))
+
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx(y)
+
+    # After this we have
+    # - the noticed range is channels 3-7
+    #
+    pha.notice(3.5, 6.5)
+    assert pha.get_filter(format="%.1f") == "3.0:7.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
+
+    # Only filtering
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx(y[2:6])
+
+    mask = [False] * 2 + [True] * 4 + [False] * 4
+    assert pha.mask == pytest.approx(mask)
+    assert pha.get_mask() == pytest.approx(mask)
+
+    if groupit:
+        assert pha.grouping == pytest.approx(grps)
+    else:
+        assert pha.grouping is None
+
+    assert not pha.grouped
+    assert pha.quality is None
+    assert pha.quality_filter is None
+
+    # Now apply quality filtering without grouping. We choose
+    # the same quality range as test_pha_grouped_filtered_quality_warns
+    #
+    quality = [0] * 5 + [2] * 5
+    pha.quality = quality
+    assert pha.quality == pytest.approx(quality)
+    assert pha.quality_filter is None
+
+    # By calling ignore_bad we have
+    # - removed the channels with quality=2, which is
+    #   channels 6-10
+    #
+    assert len(caplog.record_tuples) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.ignore_bad()
+
+    assert not pha.grouped
+
+    # check captured log; at the moment this DOES NOT warn the
+    # user about the filter being removed.
+    #
+    assert len(caplog.record_tuples) == 0
+
+    # The mask changed (the channel=6 value is now filtered out).
+    #
+    mask2 = [False] * 2 + [True] * 3 + [False] * 5
+    assert pha.mask == pytest.approx(mask2)
+    assert pha.get_mask() == pytest.approx(mask2)
+
+    # What about the quality fields?
+    #
+    assert pha.quality == pytest.approx(quality)
+    assert pha.quality_filter is None
+
+    # The filter expression has changed to reflect the quality filter;
+    # this is unlike the grouped version above.
+    #
+    assert pha.get_filter(format="%.1f") == "3.0:6.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 6))
+
+    # noticed and quality-filtered.
+    #
+    assert pha.get_dep(filter=False) == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx(y[2:5])
+
+    # check there have been no more messages.
+    #
+    assert len(caplog.record_tuples) == 0
+
+
+@requires_group
+def test_361():
+    """Check issue #361
+
+    This is also tested in test_filter_bad_notice_361 in
+    sherpa/astro/ui/tests/test_filtering.py using the UI
+    interface.
+    """
+
+    # energy ranges are
+    #   0.1-0.2, 0.2-0.3, ..., 1.0-1.1
+    # and when grouped we get
+    #   0.1-0.3, 0.3-0.5, 0.5-0.7, 0.7-0.9, 0.9-1.1
+    # with counts
+    #   12, 6, 11, 8, 3
+    # and then the quality array knocks out the
+    #   0.5-0.7 group (11 counts).
+    #
+    x = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    y = np.asarray([5, 7, 2, 4, 6, 5, 8, 0, 1, 2])
+    grp = np.asarray([1, -1] * 5)
+    qual = np.zeros(10)
+    qual[4:6] = 2
+
+    pha = DataPHA('361', x, y,
+                  grouping=grp, quality=qual)
+
+    elo = x * 0.1
+    ehi = (x + 1) * 0.1
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi,
+                           name='4361')
+    pha.set_arf(rmf)
+    pha.set_analysis('energy')
+
+    assert pha.grouped
+    assert pha.get_dep() == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx([12, 6, 11, 8, 3])
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 11))
+
+    pha.ignore_bad()
+    assert pha.get_dep() == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx([12, 6, 8, 3])
+    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3, 4, 7, 8, 9, 10])
+
+    pha.notice(0.35, 0.8)
+    assert pha.get_dep() == pytest.approx(y)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 8])
+
+    # The issue in #361 seems to come from evaluating an array
+    # of the expected length as created by the model. We can
+    # be more-direct here and check the problematic call.
+    #
+    assert pha.get_noticed_channels() == pytest.approx([3, 4, 7, 8])
 
 
 @requires_fits
