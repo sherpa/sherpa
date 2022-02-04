@@ -7508,28 +7508,17 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_par(par).set(val, min, max, frozen)
 
-    def _freeze_thaw_par_or_model(self, par, action):
-        if isinstance(par, string_types):
-            par = self._eval_model_expression(par, 'parameter or model')
-
-        _check_type(par, (sherpa.models.Parameter, sherpa.models.Model), 'par',
-                    'a parameter or model object or expression string')
-
-        if isinstance(par, sherpa.models.Parameter):
-            getattr(par, action)()
-        else:
-            for p in par.pars:
-                if not p.alwaysfrozen:
-                    getattr(p, action)()
-
-    # DOC-TODO: is this the best way to document the arguments?
     def freeze(self, *args):
         """Fix model parameters so they are not changed by a fit.
 
-        If called with no arguments, then all parameters
-        of models in source expressions are frozen. The
-        arguments can be parameters or models (in which case
-        all parameters of the model are frozen).
+        The arguments can be parameters or models, in which case all
+        parameters of the model are frozen. If no arguments are
+        given then nothing is changed.
+
+        Parameters
+        ----------
+        args : sequence of str or Parameter or Model
+            The parameters or models to freeze.
 
         See Also
         --------
@@ -7567,18 +7556,27 @@ class Session(NoNewAttributesAfterInit):
         >>> freeze(gal.nh, src.abund)
 
         """
-        par = list(args)
-        for p in par:
-            self._freeze_thaw_par_or_model(p, 'freeze')
+        for par in list(args):
+            if isinstance(par, string_types):
+                par = self._eval_model_expression(par, 'parameter or model')
 
-    # DOC-TODO: is this the best way to document the arguments?
+            try:
+                par.freeze()
+            except AttributeError:
+                raise ArgumentTypeErr('badarg', 'par',
+                                      'a parameter or model object or expression string')
+
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
 
-        If called with no arguments, then all parameters
-        of models in source expressions are thawed. The
-        arguments can be parameters or models (in which case
-        all parameters of the model are thawed).
+        The arguments can be parameters or models, in which case all
+        parameters of the model are thawed. If no arguments are
+        given then nothing is changed.
+
+        Parameters
+        ----------
+        args : sequence of str or Parameter or Model
+            The parameters or models to thaw.
 
         See Also
         --------
@@ -7594,6 +7592,11 @@ class Session(NoNewAttributesAfterInit):
         The `freeze` function can be used to reverse this setting,
         so that parameters are "frozen" and so remain constant during
         a fit.
+
+        Certain parameters may be marked as "always frozen", in which
+        case using the parameter in a call to `thaw` will raise an
+        error. If the model is sent to `thaw` then the "always frozen"
+        parameter will be skipped.
 
         Examples
         --------
@@ -7616,9 +7619,16 @@ class Session(NoNewAttributesAfterInit):
         >>> thaw(gal.nh, src.abund)
 
         """
-        par = list(args)
-        for p in par:
-            self._freeze_thaw_par_or_model(p, 'thaw')
+        for par in list(args):
+            if isinstance(par, string_types):
+                par = self._eval_model_expression(par, 'parameter or model')
+
+            try:
+                par.thaw()
+            except AttributeError:
+                raise ArgumentTypeErr('badarg', 'par',
+                                      'a parameter or model object or expression string')
+
 
     def link(self, par, val):
         """Link a parameter to a value.
@@ -7630,10 +7640,10 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par
+        par : str or Parameter
            The parameter to link.
         val
-           The value - wihch can be a numeric value or a function
+           The value - which can be a numeric value or a function
            of other model parameters, to set `par` to.
 
         See Also
@@ -7701,7 +7711,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par
+        par : str or Parameter
            The parameter to unlink. If the parameter is not linked
            then nothing happens.
 
