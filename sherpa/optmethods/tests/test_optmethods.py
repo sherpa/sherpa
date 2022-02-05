@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,8 @@
 import pytest
 
 from sherpa.optmethods import _tstoptfct
-from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead
+from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead, \
+    grid_search
 from sherpa.utils import _ncpus
 
 
@@ -49,10 +50,15 @@ def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
 
 
 ###############################################################################
+def test_gridsearch_maxfev():
+    fct = _tstoptfct.rosenbrock
+    x0, xmin, xmax, fmin = init(fct.__name__, 2)
+    result = grid_search(fct, x0, xmin, xmax, maxfev=4)
+    assert result[4]['nfev'] == 4
+
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_rosenbrock(opt, npar=4):
     tst_opt(opt, _tstoptfct.rosenbrock, npar)
-
 
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
                                  pytest.param(minim, marks=pytest.mark.xfail),
