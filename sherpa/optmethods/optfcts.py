@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -430,23 +430,24 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
                     msg = "%s must be of length %d" % (seq, npar)
                     raise TypeError(msg)
 
-    answer = eval_stat_func(x)
     sequence_results = list(parallel_map(eval_stat_func, sequence, numcores))
+    answer = sequence_results[0]
     for xresult in sequence_results[1:]:
         if xresult[0] < answer[0]:
             answer = xresult
 
     fval = answer[0]
     x = answer[1:]
-    nfev = len(sequence_results) + 1
+    nfev = len(sequence_results)
     ierr = 0
     status, msg = _get_saofit_msg(ierr, ierr)
     rv = (status, x, fval)
     rv += (msg, {'info': ierr, 'nfev': nfev})
 
-    # TODO: should we just use case-insensitive comparison?
-    if method in ['NelderMead', 'neldermead', 'Neldermead', 'nelderMead']:
-        # re.search( '^[Nn]elder[Mm]ead', method ):
+    if maxfev is not None:
+        maxfev -= nfev
+
+    if method is not None and method.lower() == 'neldermead':
         nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
                                verbose=verbose)
         tmp_nm_result = list(nm_result)
@@ -454,8 +455,7 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         tmp_nm_result_4['nfev'] += nfev
         rv = tuple(tmp_nm_result)
 
-    if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
-        # re.search( '^[Ll]ev[Mm]ar', method ):
+    if method is not None and method.lower() == 'levmar':
         levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
                               gtol=ftol, maxfev=maxfev, verbose=verbose)
         tmp_levmar_result = list(levmar_result)
