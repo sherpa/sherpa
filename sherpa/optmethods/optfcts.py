@@ -404,6 +404,8 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
         grid = numpy.mgrid[list_ranges]
         mynfev = pow(N, npar)
+        if maxfev is not None:
+            mynfev = min(maxfev, mynfev)
         grid = list(map(numpy.ravel, grid))
         sequence = []
         for index in range(mynfev):
