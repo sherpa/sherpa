@@ -426,7 +426,7 @@ def test_err_estimate_multi_ids(strings, idval, otherids, clean_ui):
     res = ui.get_fit_results()
     assert res.datasets == datasets
     assert res.numpoints == 10  # sum of datasets 1, 2, 3
-    assert res.statval == 3.379367979541458
+    assert res.statval == pytest.approx(3.379367979541458)
 
     # since there's a model assigned to dataset not-used the
     # overall statistic is not the same as res.statval.
@@ -492,7 +492,7 @@ def test_err_estimate_model(strings, idval, otherids, clean_ui):
     res = ui.get_fit_results()
     assert res.datasets == datasets
     assert res.numpoints == 10
-    assert res.statval == 3.379367979541458
+    assert res.statval == pytest.approx(3.379367979541458)
     assert ui.calc_stat() == pytest.approx(4255.615602052843)
     assert mdl.c0.val == pytest.approx(46.046607302070015)
     assert mdl.c1.val == pytest.approx(-1.9783953989993386)
