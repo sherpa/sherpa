@@ -56,6 +56,12 @@ def test_gridsearch_maxfev():
     result = grid_search(fct, x0, xmin, xmax, maxfev=4)
     assert result[4]['nfev'] == 4
 
+def test_gridsearch_maxfev():
+    fct = _tstoptfct.rosenbrock
+    x0, xmin, xmax, fmin = init(fct.__name__, 2)
+    result = grid_search(fct, x0, xmin, xmax, num=2, method='nEldErmEad')
+    assert result[4]['nfev'] == 313
+
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_rosenbrock(opt, npar=4):
     tst_opt(opt, _tstoptfct.rosenbrock, npar)

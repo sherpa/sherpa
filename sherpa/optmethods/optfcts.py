@@ -422,6 +422,9 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         ranges = []
         for index in range(npar):
             ranges.append([xmin[index], xmax[index]])
+        if method is not None:
+            # save some nfevs for method
+            num -= 1
         sequence = make_sequence(ranges, num)
     else:
         if not numpy.iterable(sequence):
