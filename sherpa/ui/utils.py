@@ -239,9 +239,6 @@ class Session(NoNewAttributesAfterInit):
 
         self._methods = {}
         self._itermethods = {'none': {'name': 'none'},
-                             'primini': {'name': 'primini',
-                                         'maxiters': 10,
-                                         'tol': 1.0e-3},
                              'sigmarej': {'name': 'sigmarej',
                                           'maxiters': 5,
                                           'hrej': 3,
@@ -1684,14 +1681,12 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
 
-    # Iterative Fitting Methods for CIAO 4.3 testing
-
     def get_iter_method_name(self):
         """Return the name of the iterative fitting scheme.
 
         Returns
         -------
-        name : {'none', 'primini', 'sigmarej'}
+        name : {'none', 'sigmarej'}
            The name of the iterative fitting scheme set by
            `set_iter_method`.
 
@@ -1783,7 +1778,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         >>> list_iter_methods()
-        ['none', 'primini', 'sigmarej']
+        ['none', 'sigmarej']
 
         """
         keys = list(self._itermethods.keys())
@@ -1798,9 +1793,12 @@ class Session(NoNewAttributesAfterInit):
         Control whether an iterative scheme should be applied to
         the fit.
 
+        .. versionchanged:: 4.14.1
+           The "primini" scheme has been removed from Sherpa.
+
         Parameters
         ----------
-        meth : { 'none', 'primini', 'sigmarej' }
+        meth : { 'none', 'sigmarej' }
            The name of the scheme used during the fit; 'none' means no
            scheme is used. It is only valid to change the scheme
            when a chi-square statistic is in use.
@@ -1821,12 +1819,8 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The parameters of each scheme are described in
+        The parameters of the schemes are described in
         `set_iter_method_opt`.
-
-        The ``primini`` scheme is used for re-calculating statistical
-        errors, using the best-fit model parameters from the
-        *previous* fit, until the fit can no longer be improved.
 
         This is a chi-square statistic where the variance is computed
         from model amplitudes derived in the previous iteration of the
@@ -1852,7 +1846,7 @@ class Session(NoNewAttributesAfterInit):
         caution.
 
         The ``sigmarej`` scheme is based on the IRAF ``sfit`` function
-        [3]_, where after a fit data points are excluded if the value
+        [2]_, where after a fit data points are excluded if the value
         of ``(data-model)/error)`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
         has converged. The error removal can be asymmetric, since
@@ -1866,12 +1860,7 @@ class Session(NoNewAttributesAfterInit):
                322
                http://adsabs.harvard.edu/abs/1995ApJ...438..322W
 
-        .. [2] "Bias-Free Parameter Estimation with Few Counts, by
-               Iterative Chi-Squared Minimization", Kearns, Primini, &
-               Alexander, 1995, ADASS IV, 331
-               http://adsabs.harvard.edu/abs/1995ASPC...77..331K
-
-        .. [3] http://iraf.net/irafhelp.php?val=sfit
+        .. [2] http://iraf.net/irafhelp.php?val=sfit
 
         Examples
         --------
@@ -1923,15 +1912,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The supported fields for the ``primini`` scheme are:
-
-        maxiters
-           The maximum number of iterations to perform.
-
-        tol
-           The iteration stops when the change in the best-fit
-           statistic varies by less than this value.
-
         The supported fields for the ``sigmarej`` scheme are:
 
         grow
