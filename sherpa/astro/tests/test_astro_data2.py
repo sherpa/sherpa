@@ -1184,22 +1184,160 @@ def test_pha_remove_grouping(make_test_pha):
 
     # Can we remove the grouping column?
     pha.grouping = None
+    # This thinks that pha.grouped is sill set
     assert not pha.grouped
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx(no_data)
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize("grouping", [True, [1, 1], np.ones(10)])
-def test_pha_grouping_size(grouping, make_test_pha):
-    """Check we error out if grouping has the wrong size"""
+def test_pha_remove_quality(make_test_pha):
+    """Check we can remove the quality array."""
 
-    # These currently do not raise an error
+    pha = make_test_pha
+    assert pha.quality is None
+
+    no_data = [1, 2, 0, 3]
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx(no_data)
+
+    pha.quality = [0, 0, 0, 2]
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx(no_data)
+
+    pha.quality = None
+    d3 = pha.get_dep(filter=True)
+    assert d3 == pytest.approx(no_data)
+
+
+@pytest.mark.xfail
+def test_pha_remove_quality_bad(make_test_pha):
+    """Check we can remove the quality array after calling ignore_bad
+
+    Here we ensure we have a "bad" value that will be
+    marked bad by ignore_bad.
+
+    What is the expected behavior after removing the
+    quality array? See #1427
+    """
+
+    pha = make_test_pha
+    assert pha.quality is None
+
+    no_data = [1, 2, 0, 3]
+
+    pha.quality = [0, 0, 0, 2]
+    pha.ignore_bad()
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([1, 2, 0])
+
+    # At the moment d2 == [1, 2, 0] so the quality filter remains
+    pha.quality = None
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx(no_data)
+
+
+def test_pha_quality_bad_filter(make_test_pha):
+    """What is the filter expression when ignore bad + filter"""
+
+    pha = make_test_pha
+    assert pha.get_filter() == "1:4"
+
+    pha.ignore(hi=1)
+    assert pha.get_filter() == "2:4"
+
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([2, 0, 3])
+
+    pha.quality = [0, 0, 0, 2]
+    pha.ignore_bad()
+
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([2, 0])
+    assert pha.get_filter() == "2:3"
+
+
+@pytest.mark.xfail
+def test_pha_quality_bad_filter_remove(make_test_pha):
+    """test_pha_quality_bad_filter then remove the quality array
+
+    What is the expected behavior after removing the
+    quality array? See #1427
+    """
+
+    pha = make_test_pha
+    pha.ignore(hi=1)
+    pha.quality = [0, 0, 0, 2]
+    pha.ignore_bad()
+
+    # At the moment the filter still includes the quality filter
+    pha.quality = None
+    assert pha.get_filter() == "2:4"
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("label", ["grouping", "quality"])
+@pytest.mark.parametrize("vals", [True, [1, 1], np.ones(10)])
+def test_pha_column_size(label, vals, make_test_pha):
+    """Check we error out if column=label has the wrong size"""
+
     pha = make_test_pha
     with pytest.raises(DataErr) as de:
-        pha.grouping = grouping
+        # This does not throw an error
+        setattr(pha, label, vals)
 
-    assert str(de.value) == 'size mismatch between channel and grouping'
+    assert str(de.value) == f"size mismatch between channel and {label}"
+
+
+@pytest.mark.xfail
+def test_pha_change_grouping_type(make_test_pha):
+    """Check the grouping column is converted to int"""
+    pha = make_test_pha
+    grp = np.asarray([1.0, -1.0, -1.0, 1.0])
+    pha.grouping = grp
+
+    # Since integer values can do an exact check
+    assert (pha.grouping == np.asarray([1, -1, -1, 1])).all()
+    # At the moment the array is not converted to an int type
+    assert pha.grouping.dtype == np.int16
+
+
+@pytest.mark.xfail
+def test_pha_change_quality_type(make_test_pha):
+    """Check the quality column is converted to int"""
+    pha = make_test_pha
+    # technically negative numbers are allowed
+    qual = np.asarray([0.0, 2.0, 5.0, -1.0])
+    pha.quality = qual
+
+    # Since integer values can do an exact check
+    assert (pha.quality == np.asarray([0, 2, 5, -1])).all()
+    # At the moment the array is not converted to an int type
+    assert pha.quality.dtype == np.int16
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("label", ["grouping", "quality"])
+def test_pha_change_grouping_rounding(label, make_test_pha):
+    """What happens with non-integer values?
+
+    Unlike test_pha_change_grouping/quality_type we can more-easily
+    use the same input array, whicih makes it easier to test both
+    columns with the same routine. It is actually unclear what
+    we should do with input like this - should we error out,
+    silently truncate, or perhaps warn the user. For the moment
+    test assuming silent truncation.
+
+    """
+
+    pha = make_test_pha
+    vals = np.asarray([0.5, 1.5, -0.5, 0.9])
+    setattr(pha, label, vals)
+
+    # At the moment there is no conversion so the return
+    # value matches the input (i.e. vals).
+    #
+    got = getattr(pha, label)
+    assert (got == np.asarray([0, 1, 0, 0])).all()
 
 
 @requires_group
