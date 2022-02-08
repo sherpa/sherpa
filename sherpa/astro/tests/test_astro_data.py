@@ -2607,6 +2607,22 @@ def test_invalid_independent_axis(data_args):
 
 
 @pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, RMF_ARGS, IMG_ARGS, IMGINT_ARGS])
+def test_invalid_independent_axis_component(data_args):
+    """What happens if we use mis-matched sizes?
+
+    We remove one entry from the second component,
+    """
+
+    data_class, args = data_args
+    data = data_class(*args)
+    indep = list(data.indep)
+    indep[1] = indep[1][:-1]
+    # At the moment this does not error out
+    data.indep = tuple(indep)
+
+
+@pytest.mark.parametrize("data_args",
                          [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_set_independent_axis_to_none(data_args):
     """What happens if we clear the independent axis?"""

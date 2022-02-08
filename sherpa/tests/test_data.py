@@ -1811,6 +1811,34 @@ def test_invalid_independent_axis(data):
         data.indep = tuple(list(indep) * 2)
 
 
+@pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)
+def test_invalid_independent_axis_component_size(data):
+    """What happens if we use mis-matched sizes?
+
+    It only makes sense to do this for data classes with
+    multiple components. We remove one entry from the
+    second component,
+    """
+
+    indep = list(data.indep)
+    indep[1] = indep[1][:-1]
+    # At the moment this does not error out
+    data.indep = tuple(indep)
+
+
+@pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)
+def test_invalid_independent_axis_component_none(data):
+    """What happens if we use mis-matched sizes (by setting one to None).
+
+    See test_invalid_independent_axis_component_size.
+    """
+
+    indep = list(data.indep)
+    indep[1] = None
+    # At the moment this does not error out
+    data.indep = tuple(indep)
+
+
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_set_independent_axis_to_none(data):
     """What happens if we clear the independent axis?
