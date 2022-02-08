@@ -2624,6 +2624,38 @@ def test_invalid_independent_axis_component(data_args):
 
 @pytest.mark.parametrize("data_args",
                          [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
+def test_invalid_dependent_axis(data_args):
+    """What happens if the dependent axis does not match the independent axis?
+
+    We do not include DataRMF as it's not clear what the dependent axis is
+    here.
+    """
+
+    data_class, args = data_args
+    data = data_class(*args)
+    # This currently does not fail
+    data.y = data.y[:-2]
+
+
+@pytest.mark.parametrize("data_class,args",
+                         [(DataARF, (ELO, EHI, np.ones(10))),
+                          (DataPHA, (CHANS, np.ones(10))),
+                          (DataIMG, (X0, X1, np.ones(34))),
+                          (DataIMGInt, (X0, X1, X0 + 1, X1 + 1, np.ones(2))),
+                          ])
+def test_make_invalid_dependent_axis(data_class, args):
+    """What happens if call constructor with invalid independent axis?
+
+    We do not include DataRMF as it's not clear what the dependent axis is
+    here.
+    """
+
+    # This does not raise an error
+    data_class("wrong", *args)
+
+
+@pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_set_independent_axis_to_none(data_args):
     """What happens if we clear the independent axis?"""
 

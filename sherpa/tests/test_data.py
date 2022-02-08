@@ -1840,6 +1840,36 @@ def test_invalid_independent_axis_component_none(data):
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_invalid_dependent_axis(data):
+    """What happens if the dependent axis does not match the independent axis?
+    """
+
+    # This currently does not fail
+    data.y = data.y[:-2]
+
+
+@pytest.mark.parametrize("data_class", ALL_DATA_CLASSES)
+def test_make_invalid_dependent_axis(data_class):
+    """What happens if call constructor with invalid independent axis?
+    """
+
+    # Take the correct arguments and reduce the independent axis by one.
+    # Use a copy of everything just in case.
+    args = []
+    for arg in INSTANCE_ARGS[data_class]:
+        if isinstance(arg, numpy.ndarray):
+            arg = arg.copy()
+
+        args.append(arg)
+
+    ypos = POS_Y_ARRAY[data_class]
+    args[ypos] = args[ypos][:-1]
+
+    # This does not raise an error
+    data_class(*args)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_set_independent_axis_to_none(data):
     """What happens if we clear the independent axis?
 
