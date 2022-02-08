@@ -210,8 +210,18 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         xhi : array_like
             the higher bounds array of this data space
         """
+        xlo = _check_nomask(xlo)
+        xhi = _check_nomask(xhi)
+
+        # We only have to check if xhi is None, as if it's set then the
+        # superclass will check the length. We do need to support both
+        # values being None though.
+        #
+        if xlo is not None and xhi is None:
+            raise DataErr("mismatchn", "lo", "hi", len(xlo), "None")
+
         self.filter = filter
-        super().__init__(_check_nomask(xlo), _check_nomask(xhi))
+        super().__init__(xlo, xhi)
 
     def get(self, filter=False):
         """
@@ -290,6 +300,8 @@ class DataSpace2D():
         self.filter = filter
         self.x_axis = PointAxis(x0)
         self.y_axis = PointAxis(x1)
+        if self.x_axis.size != self.y_axis.size:
+            raise DataErr("mismatchn", "x0", "x1", self.x_axis.size, self.y_axis.size)
 
     def get(self, filter=False):
         """
@@ -363,6 +375,8 @@ class IntegratedDataSpace2D():
         self.filter = filter
         self.x_axis = IntegratedAxis(x0lo, x0hi)
         self.y_axis = IntegratedAxis(x1lo, x1hi)
+        if self.x_axis.size != self.y_axis.size:
+            raise DataErr("mismatchn", "x0", "x1", self.x_axis.size, self.y_axis.size)
 
     def get(self, filter=False):
         """

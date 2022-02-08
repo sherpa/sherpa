@@ -1581,7 +1581,10 @@ def test_ispace2d_mismatch():
 
     x0 = numpy.arange(10)
     x1 = numpy.arange(11)
-    IntegratedDataSpace2D(Filter(), x0[:-1], x1[:-1], x0[1:], x1[1:])
+
+    with pytest.raises(DataErr,
+                       match="size mismatch between x0 and x1: 9 vs 10"):
+        IntegratedDataSpace2D(Filter(), x0[:-1], x1[:-1], x0[1:], x1[1:])
 
 
 @pytest.fixture
@@ -2068,7 +2071,7 @@ def test_invalid_independent_axis(data):
         data.indep = tuple(list(indep) * 2)
 
 
-@pytest.mark.parametrize("data", (Data1DInt, pytest.param(Data2D, marks=pytest.mark.xfail), Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)
 def test_invalid_independent_axis_component_size(data):
     """What happens if we use mis-matched sizes?
 
@@ -2080,12 +2083,11 @@ def test_invalid_independent_axis_component_size(data):
     indep = list(data.indep)
     indep[1] = indep[1][:-1]
     with pytest.raises(DataErr,
-                       match="^size mismatch between .* and .*$"):
-        # XFAIL: this does not error out for the Data2D case
+                       match=r"^size mismatch between (lo|x0) and (hi|x1): (10|100|99) vs (9|99|100)$"):
         data.indep = tuple(indep)
 
 
-@pytest.mark.parametrize("data", (pytest.param(Data1DInt, marks=pytest.mark.xfail), pytest.param(Data2D, marks=pytest.mark.xfail), Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)
 def test_invalid_independent_axis_component_none(data):
     """What happens if we use mis-matched sizes (by setting one to None).
 
@@ -2095,8 +2097,7 @@ def test_invalid_independent_axis_component_none(data):
     indep = list(data.indep)
     indep[1] = None
     with pytest.raises(DataErr,
-                       match=r"^size mismatch between .* and .*: (\d+|None) vs \d+$"):
-        # XFAIL: this does not error out except for Data2DInt
+                       match=r"^size mismatch between (lo|x0) and (hi|x1): (10|100|None) vs (0|100|None)$"):
         data.indep = tuple(indep)
 
 
