@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2630,3 +2630,43 @@ def test_pha_channel0_subtract():
         np.array([0, 1, 2, 0, 3, 1], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
     assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
+
+
+@pytest.mark.xfail
+def test_set_channel_sets_independent_axis():
+    """What happens if the channel attribute is set?
+
+    This is meant to check if the independent axis is also
+    changed to match the new channel setting.
+
+    """
+    chans = np.arange(1, 5)
+    counts = chans + 1
+    d = DataPHA("x", chans, counts)
+
+    # XFAIL: the independent axis is not changed
+    chans2 = np.arange(10, 20)
+    d.channel = chans2
+    assert len(d.indep) == 1
+    assert d.indep[0] == pytest.approx(chans2)
+    assert d.y == pytest.approx(counts)
+
+
+@pytest.mark.xfail
+def test_set_counts_sets_y_axis():
+    """What happens if the counts attribute is set?
+
+    This is meant to check if the dependent axis is also
+    changed to match the new counts setting.
+
+    """
+    chans = np.arange(1, 5)
+    counts = chans + 1
+    d = DataPHA("x", chans, counts)
+
+    # XFAIL: the y axis is not changed
+    counts2 = chans + 5
+    d.counts = counts2
+    assert len(d.indep) == 1
+    assert d.indep[0] == pytest.approx(chans)
+    assert d.y == pytest.approx(counts2)
