@@ -148,22 +148,23 @@ def test_base_data_instantiation():
         BaseData()
 
 
-@pytest.mark.xfail(reason="DataND did not serve any purpose and had a misleading name")
-def test_base_datand_instantiation():
-    DataND()
-
-
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt, Data1DInt), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt), indirect=True)
 def test_data_get_x(data):
-    with pytest.raises(NameError):
+    with pytest.raises(AttributeError):
         data.get_x()
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
+@pytest.mark.xfail
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_x_special(data):
+    # XFAIL: These classes still provide get_x
+    with pytest.raises(AttributeError):
+        data.get_x()
+
+
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 def test_data_get_x0(data):
-    with pytest.raises(NameError):
+    with pytest.raises(AttributeError):
         data.get_x0()
 
 
@@ -189,7 +190,7 @@ def test_load_arrays(data_for_load_arrays):
     numpy.testing.assert_array_equal(new_data.get_dep(), data.get_dep())
 
 
-# DATA-NOTE: In the current Sherpa DataND cannot be correctly loaded using load_arrays
+# DATA-NOTE: In the current Sherpa Data cannot be correctly loaded using load_arrays
 @pytest.mark.xfail
 @pytest.mark.parametrize("data_for_load_arrays", (Data, ), indirect=True)
 def test_load_arrays_data(data_for_load_arrays):
@@ -214,10 +215,9 @@ def test_load_arrays_no_errors(data_no_errors):
     numpy.testing.assert_array_equal(new_data.get_dep(), data.get_dep())
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 def test_data_get_x1(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.get_x1()
 
 
@@ -567,32 +567,22 @@ def test_data_1d_to_component_plot(data):
     numpy.testing.assert_array_equal(actual[5], expected[5])
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, ), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data1D, Data1DInt), indirect=True)
 def test_data_to_contour(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.to_contour()
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, ), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt), indirect=True)
 def test_data_to_plot(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.to_plot()
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, ), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt), indirect=True)
 def test_data_to_component_plot(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.to_component_plot()
-
-
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
-def test_data_1d_to_contour(data):
-    with pytest.raises(DataErr):
-        data.to_contour()
 
 
 def test_data_simul_fit(data_simul_fit):
@@ -760,11 +750,10 @@ def test_data2_get_imgerr(data):
     numpy.testing.assert_array_equal(data.get_imgerr(), expected_error)
 
 
-@pytest.mark.xfail(reason="Didn't really make sense to have this method for 2D classes")
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 def test_data2_get_xerr(data):
-    # DATA-NOTE: why is this true for Data2DInt as well?
-    assert data.get_xerr() is None
+    with pytest.raises(AttributeError):
+        data.get_xerr()
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
