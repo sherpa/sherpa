@@ -372,10 +372,15 @@ def test_data_get_dep_filter(data):
     numpy.testing.assert_array_equal(data.get_dep(filter=True), Y_ARRAY[:X_THRESHOLD + 1])
 
 
-@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+@pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
 def test_data_set_dep_filter(data):
-    data.set_dep([0, 1])
-    numpy.testing.assert_array_equal(data.get_dep(filter=True), [0, 1])
+    # This used to be [0, 1] but why would we want this, so check we
+    # can call set_dep with the expected argument size.
+    #
+    data.set_dep([0, 1] * 5)
+    numpy.testing.assert_array_equal(data.get_dep(filter=True), [0, 1] * 5)
+
+    # There's also support for scalar values.
     data.set_dep(0)
     numpy.testing.assert_array_equal(data.get_dep(filter=True), [0] * Y_ARRAY.size)
 
