@@ -2063,7 +2063,8 @@ def test_invalid_independent_axis(data):
     """
 
     indep = data.indep
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="^data set 'data_test' sent wrong tuple size for the independent axis: [124] not [248]$"):
         data.indep = tuple(list(indep) * 2)
 
 

@@ -4984,6 +4984,10 @@ class DataIMGInt(DataIMG):
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
     def _init_data_space(self, filter, *data):
+        ndata = len(data)
+        if ndata != 4:
+            raise DataErr("wrongaxiscount", self.name, 4, ndata)
+
         return IntegratedDataSpace2D(filter, *data)
 
     def get_x0(self, filter=False):

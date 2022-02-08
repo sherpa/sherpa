@@ -1303,6 +1303,10 @@ class Data1D(Data):
         return html_data1d(self)
 
     def _init_data_space(self, filter, *data):
+        ndata = len(data)
+        if ndata != 1:
+            raise DataErr("wrongaxiscount", self.name, 1, ndata)
+
         return DataSpace1D(filter, *data)
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
@@ -1589,6 +1593,10 @@ class Data1DInt(Data1D):
         return html_data1dint(self)
 
     def _init_data_space(self, filter, *data):
+        ndata = len(data)
+        if ndata != 2:
+            raise DataErr("wrongaxiscount", self.name, 2, ndata)
+
         return IntegratedDataSpace1D(filter, *data)
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
@@ -1767,6 +1775,10 @@ class Data2D(Data):
         return html_data2d(self)
 
     def _init_data_space(self, filter, *data):
+        ndata = len(data)
+        if ndata != 2:
+            raise DataErr("wrongaxiscount", self.name, 2, ndata)
+
         return DataSpace2D(filter, *data)
 
     def get_x0(self, filter=False):
@@ -1926,6 +1938,10 @@ class Data2DInt(Data2D):
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
     def _init_data_space(self, filter, *data):
+        ndata = len(data)
+        if ndata != 4:
+            raise DataErr("wrongaxiscount", self.name, 4, ndata)
+
         return IntegratedDataSpace2D(filter, *data)
 
     def get_x0(self, filter=False):
