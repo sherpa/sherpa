@@ -1800,6 +1800,18 @@ def test_reduce_axis_size_2d(data):
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_invalid_independent_axis(data):
+    """What happens if we use the wrong number of independent axes?
+
+    We just duplicate the current axes.
+    """
+
+    indep = data.indep
+    with pytest.raises(TypeError):
+        data.indep = tuple(list(indep) * 2)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_set_independent_axis_to_none(data):
     """What happens if we clear the independent axis?
 

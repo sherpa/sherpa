@@ -2592,6 +2592,21 @@ IMG_ARGS = DataIMG, ("img", X0, X1, IMG_ONES)
 IMGINT_ARGS = DataIMGInt, ("imgint", X0, X1, X0 + 1, X1 + 1, IMG_ONES)
 
 @pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, RMF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
+def test_invalid_independent_axis(data_args):
+    """What happens if we use the wrong number of independent axes?
+
+    We just duplicate the current axes.
+    """
+
+    data_class, args = data_args
+    data = data_class(*args)
+    indep = data.indep
+    with pytest.raises(TypeError):
+        data.indep = tuple(list(indep) * 2)
+
+
+@pytest.mark.parametrize("data_args",
                          [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_set_independent_axis_to_none(data_args):
     """What happens if we clear the independent axis?"""
