@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro.ui.utils import Session
-from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.utils import parse_expr
 from sherpa.utils.err import DataErr
@@ -2573,3 +2573,46 @@ def test_set_counts_sets_y_axis():
     assert len(d.indep) == 1
     assert d.indep[0] == pytest.approx(chans)
     assert d.y == pytest.approx(counts2)
+
+
+# We don't really care if the arguments don't make much sense, at least
+# not until we add validation code which will mean these need fixing up.
+#
+ELO = np.array([0.1, 0.2, 0.3])
+EHI = np.array([0.2, 0.3, 0.4])
+ONES = np.ones(3)
+CHANS = np.arange(1, 4)
+X0 = np.array([1, 2, 3, 4] * 3)
+X1 = np.array([1] * 4 + [2] * 4 + [3] * 4)
+IMG_ONES = np.ones(12)
+ARF_ARGS = DataARF, ("arf", ELO, EHI, ONES)
+RMF_ARGS = DataRMF, ("emf", 3, ELO, EHI, ONES, ONES, ONES, ONES)
+PHA_ARGS = DataPHA, ("pha", CHANS, ONES)
+IMG_ARGS = DataIMG, ("img", X0, X1, IMG_ONES)
+IMGINT_ARGS = DataIMGInt, ("imgint", X0, X1, X0 + 1, X1 + 1, IMG_ONES)
+
+@pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
+def test_set_independent_axis_to_none(data_args):
+    """What happens if we clear the independent axis?"""
+
+    data_class, args = data_args
+    data = data_class(*args)
+
+    assert all(d is not None for d in data.indep)
+
+    indep = [None for d in data.indep]
+    data.set_indep(tuple(indep))
+    assert all(d is None for d in data.indep)
+
+
+def test_set_independent_axis_to_none_pha_channel():
+    """What happens if we clear the independent axis via channel?"""
+
+    data = PHA_ARGS[0](*PHA_ARGS[1])
+    assert data.channel is not None
+    assert data.indep[0] is not None
+
+    data.channel = None
+    assert len(data.indep) == 1
+    assert data.indep[0] is None

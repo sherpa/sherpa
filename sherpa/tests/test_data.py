@@ -1713,3 +1713,21 @@ def test_data2dint_attribute_is_none(attribute, make_data2dint):
     """Check those attributes that return None"""
     attr = getattr(make_data2dint, attribute)
     assert attr is None
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_set_independent_axis_to_none(data):
+    """What happens if we clear the independent axis?
+
+    It's not entirely clear what we mean by setting the independent
+    axis to None: do we need to set all components or is it sufficient
+    to use a single None. Similarly, what should the response be. We
+    currently only test the current behavior.
+
+    """
+
+    assert all(d is not None for d in data.indep)
+
+    indep = [None for d in data.indep]
+    data.set_indep(tuple(indep))
+    assert all(d is None for d in data.indep)
