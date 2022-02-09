@@ -2591,6 +2591,72 @@ PHA_ARGS = DataPHA, ("pha", CHANS, ONES)
 IMG_ARGS = DataIMG, ("img", X0, X1, IMG_ONES)
 IMGINT_ARGS = DataIMGInt, ("imgint", X0, X1, X0 + 1, X1 + 1, IMG_ONES)
 
+
+def test_is_mask_reset_pha():
+    """What happens to the mask attribute after the independent axis is changed? PHA"""
+
+    data = PHA_ARGS[0](*PHA_ARGS[1])
+
+    # Pick a value somewhere within the independent axis
+    assert data.mask is True
+    data.ignore(None, 2)
+    assert data.mask == pytest.approx([False, False, True])
+
+    # Change the independent axis, but to something of the same
+    # length.
+    data.indep = (data.channel + 20, )
+
+    # This is a regression test as there is an argument that the mask
+    # should be cleared.
+    assert data.mask == pytest.approx([False, False, True])
+
+
+def test_is_mask_reset_pha_channel():
+    """What happens to the mask attribute after the channel is changed? PHA
+
+    Extends test_is_mask_reset_pha
+    """
+
+    data = PHA_ARGS[0](*PHA_ARGS[1])
+    data.ignore(None, 2)
+
+    # Change the independent axis via the channel field
+    data.channel += 40
+
+    # This is a regression test as there is an argument that the mask
+    # should be cleared.
+    assert data.mask == pytest.approx([False, False, True])
+
+
+@pytest.mark.parametrize("data_args",
+                         [IMG_ARGS, IMGINT_ARGS])
+def test_is_mask_reset_img(data_args):
+    """What happens to the mask attribute after the independent axis is changed? img/imgint"""
+
+    data_class, args = data_args
+    data = data_class(*args)
+
+    # Pick a value somewhere within the independent axis
+    assert data.mask is True
+    data.notice2d("rect(0,0,3,3)", ignore=True)
+
+    # The filter depends on the intepretation of the bin edges so just
+    # check something has happened (the values are for the img and
+    # imgint variants).
+    #
+    omask = data.mask.copy()
+    assert omask.sum() in [3, 8]
+
+    # Change the independent axis, but to something of the same
+    # length.
+    indep = [x + 40 for x in data.indep]
+    data.indep = tuple(indep)
+
+    # This is a regression test as there is an argument that the mask
+    # should be cleared.
+    assert data.mask == pytest.approx(omask)
+
+
 @pytest.mark.parametrize("data_args",
                          [ARF_ARGS, RMF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_invalid_independent_axis(data_args):

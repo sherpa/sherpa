@@ -1715,6 +1715,29 @@ def test_data2dint_attribute_is_none(attribute, make_data2dint):
     assert attr is None
 
 
+# We do not include the base Data in this list because the
+# notice/ignore call does not match the 1D cases.
+#
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_is_mask_reset(data):
+    """What happens to the mask attribute after the independent axis is changed?"""
+
+    # Pick a value somewhere within the independent axis
+    assert data.mask is True
+    data.ignore(None, 4)
+    assert isinstance(data.mask, numpy.ndarray)
+    omask = data.mask.copy()
+
+    # Change the independent axis, but to something of the same
+    # length.
+    indep = [x + 100 for x in data.indep]
+    data.indep = tuple(indep)
+
+    # This is a regression test as there is an argument that the mask
+    # should be cleared.
+    assert data.mask == pytest.approx(omask)
+
+
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
 def test_reduce_axis_size_1d(data):
     """What happens if we reduce the independent axis?"""
