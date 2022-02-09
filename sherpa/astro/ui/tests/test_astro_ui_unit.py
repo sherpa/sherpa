@@ -1856,3 +1856,72 @@ def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui):
 
     # Looks like it's returning mean of channel values in group
     assert ui.get_dep() == pytest.approx([4.5, 4])
+
+
+@requires_fits
+@requires_data
+def test_image_filter_coord_change_same(make_data_path, clean_astro_ui):
+    """What happens to the mask after a coordinate change? NO CHANGE
+
+    This is really just a way to test the DataIMG class without having
+    to set up all the values. There was some interesting behavior with
+    calc_data_sum2d which was down to whether changing the coord would
+    change the mask, so this is an explicit test of that behavior.
+
+    """
+
+    ui.load_image("foo", make_data_path("image2.fits"))
+    assert ui.get_filter("foo") == ""
+
+    ui.set_coord("foo", "physical")
+    ui.notice2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+
+    # Is there no way to get the mask data via the UI interface,
+    # without calling save_filter?
+    #
+    d = ui.get_data("foo")
+    assert d.mask.sum() == 2500
+
+    ui.set_coord("foo", "physical")
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+    assert d.mask.sum() == 2500
+
+
+@requires_fits
+@requires_data
+def test_image_filter_coord_change(make_data_path, clean_astro_ui):
+    """What happens to the mask after a coordinate change?
+
+    This is the more-general case of test_image_filter_coord_change_same
+    but it's not actually clear what should be done here when the
+    coordinate setting is changed - should the mask be removed as
+    we don't store the mask expression with a way to update it to
+    match the new coordianate setting.
+
+    """
+
+    ui.load_image("foo", make_data_path("image2.fits"))
+    assert ui.get_filter("foo") == ""
+
+    ui.set_coord("foo", "physical")
+    ui.notice2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+
+    # Is there no way to get the mask data via the UI interface,
+    # without calling save_filter?
+    #
+    d = ui.get_data("foo")
+    assert d.mask.sum() == 2500
+
+    ui.set_coord("foo", "logical")
+
+    # This expression is no-longer technically valid, but we do
+    # not change it yet.
+    #
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+
+    # We know what the mask was, so assume it hasn't changed.
+    # We could also just clear the mask so d.mask would be True.
+    #
+    assert d.mask.sum() == 2500
