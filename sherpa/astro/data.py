@@ -1363,8 +1363,6 @@ class DataPHA(Data1D):
     ----------
     name : str
         Used to store the file name, for data read from a file.
-    channel
-    counts
     staterror
     syserror
     bin_lo
@@ -1592,8 +1590,9 @@ must be an integer.""")
         channel = _check(channel)
         counts = _check(counts)
 
-        self.channel = channel
-        self.counts = counts
+        # These are now aliases to indep and y so do not need to be set
+        # self.channel = channel
+        # self.counts = counts
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.quality = quality
@@ -1627,6 +1626,32 @@ must be an integer.""")
         self.units = "channel"
         self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
+
+    # Set up the aliases for channel and counts
+    #
+    @property
+    def channel(self):
+        """The channel array.
+
+        This is the first, and only, element of the indep attribute.
+        """
+        return self.indep[0]
+
+    @channel.setter
+    def channel(self, val):
+        self.indep = (val, )
+
+    @property
+    def counts(self):
+        """The counts array.
+
+        This is an alias for the y attribute.
+        """
+        return self.y
+
+    @counts.setter
+    def counts(self, val):
+        self.y = val
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA

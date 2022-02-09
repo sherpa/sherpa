@@ -1032,7 +1032,6 @@ def test_img_get_filter_compare_filtering(make_test_image):
     assert maska.max() == 1
 
 
-@pytest.mark.xfail
 def test_pha_change_channels(make_test_pha):
     """What happens if we change the channel/count values?
 
@@ -1065,13 +1064,11 @@ def test_pha_change_channels(make_test_pha):
     assert np.all(pha.get_indep()[0] == channels2)
     assert np.all(pha.get_dep() == counts2)
 
-    # XFAIL: These currently return the original data
     assert len(pha.indep) == 1
     assert np.all(pha.indep[0] == channels2)
     assert np.all(pha.dep == counts2)
 
 
-@pytest.mark.xfail
 def test_pha_add_channels(make_test_pha):
     """What happens if we increase the number of channels/counts?
 
@@ -1090,13 +1087,11 @@ def test_pha_add_channels(make_test_pha):
     assert np.all(pha.get_indep()[0] == channels2)
     assert np.all(pha.get_dep() == counts2)
 
-    # XFAIL: These currently return the original data
     assert len(pha.indep) == 1
     assert np.all(pha.indep[0] == channels2)
     assert np.all(pha.dep == counts2)
 
 
-@pytest.mark.xfail
 def test_pha_remove_channels(make_test_pha):
     """What happens if we decrease the number of channels/counts?
 
@@ -1115,7 +1110,6 @@ def test_pha_remove_channels(make_test_pha):
     assert np.all(pha.get_indep()[0] == channels2)
     assert np.all(pha.get_dep() == counts2)
 
-    # XFAIL: These currently return the original data
     assert len(pha.indep) == 1
     assert np.all(pha.indep[0] == channels2)
     assert np.all(pha.dep == counts2)

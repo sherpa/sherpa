@@ -2632,7 +2632,6 @@ def test_pha_channel0_subtract():
     assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
 
 
-@pytest.mark.xfail
 def test_set_channel_sets_independent_axis():
     """What happens if the channel attribute is set?
 
@@ -2644,7 +2643,6 @@ def test_set_channel_sets_independent_axis():
     counts = chans + 1
     d = DataPHA("x", chans, counts)
 
-    # XFAIL: the independent axis is not changed
     chans2 = np.arange(10, 20)
     d.channel = chans2
     assert len(d.indep) == 1
@@ -2652,7 +2650,6 @@ def test_set_channel_sets_independent_axis():
     assert d.y == pytest.approx(counts)
 
 
-@pytest.mark.xfail
 def test_set_counts_sets_y_axis():
     """What happens if the counts attribute is set?
 
@@ -2664,7 +2661,6 @@ def test_set_counts_sets_y_axis():
     counts = chans + 1
     d = DataPHA("x", chans, counts)
 
-    # XFAIL: the y axis is not changed
     counts2 = chans + 5
     d.counts = counts2
     assert len(d.indep) == 1
