@@ -793,6 +793,45 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return DataSpaceND(filter, data)
 
+    def _set_related(self, attr, val):
+        """Set a field that must match the independent axes size.
+
+        The value can be None or something with the same length as the
+        independent axis. This is intended to be use from the property
+        setter.
+
+        """
+        if val is None:
+            setattr(self, f"_{attr}", None)
+            return
+
+        if not numpy.iterable(val):
+            raise DataErr("notanarray")
+
+        val = _check(val)
+        nelem = self.size
+        if nelem is None:
+            setattr(self, f"_{attr}", val)
+            return
+
+        nval = len(val)
+        if nval != nelem:
+            raise DataErr('mismatchn', 'independent axis', attr, nelem, nval)
+
+        setattr(self, f"_{attr}", val)
+
+    @property
+    def y(self):
+        """The dependent axis.
+
+        If set, it must match the size of the independent axes.
+        """
+        return self._y
+
+    @y.setter
+    def y(self, val):
+        self._set_related("y", val)
+
     @property
     def size(self):
         """The number of elements in the data set.

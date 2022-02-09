@@ -2102,14 +2102,15 @@ def test_grouped_pha_set_y_invalid_size(make_grouped_pha):
     # This is "not actionable" as we can't work out how to change
     # the counts channels, so it should error.
     #
-    # this does not error out
-    pha.set_dep([2, 3])
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and y: 5 vs 2"):
+        pha.set_dep([2, 3])
 
 
-@pytest.mark.parametrize("related", ["staterror", "syserror",
+@pytest.mark.parametrize("related", [pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail),
                                      "y", "counts",
-                                     "backscal", "areascal",
-                                     "grouping", "quality"])
+                                     pytest.param("backscal", marks=pytest.mark.xfail), pytest.param("areascal", marks=pytest.mark.xfail),
+                                     pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
 def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
     """Can we set the value to a 2-element array?"""
     pha = make_grouped_pha
@@ -2118,8 +2119,14 @@ def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
     # This is "not actionable" as we can't work out how to change
     # the counts channels, so it should error.
     #
-    # this does not error out
-    setattr(pha, related, [2, 3])
+    # Handle y/counts alias here
+    related = "y" if related == "counts" else related
+    emsg = f"size mismatch between independent axis and {related}: 5 vs 2"
+
+    # XFAIL: this does not error out except for the y and counts cases
+    with pytest.raises(DataErr,
+                       match=emsg):
+        setattr(pha, related, [2, 3])
 
 
 @pytest.mark.parametrize("column", ["staterror", "syserror",

@@ -943,9 +943,9 @@ def test_set_dep_array_wrong(clean_ui):
     ones = np.ones(4)
     ui.load_arrays(1, x, ones)
 
-    # this does not error out
-    ui.set_dep([2, 4, 5])
-    assert ui.get_dep() == pytest.approx([2, 4, 5])
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and y: 4 vs 3"):
+        ui.set_dep([2, 4, 5])
 
 
 def test_set_staterror_none(clean_ui):

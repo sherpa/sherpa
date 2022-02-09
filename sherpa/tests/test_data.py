@@ -1906,8 +1906,9 @@ def test_dependent_field_can_not_be_a_scalar(data):
     fields are not all handled the same.
     """
 
-    # does not raise an error
-    data.y = 2
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        data.y = 2
 
 
 @pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)
@@ -2106,8 +2107,9 @@ def test_invalid_dependent_axis(data):
     """What happens if the dependent axis does not match the independent axis?
     """
 
-    # This currently does not fail
-    data.y = data.y[:-2]
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: 100? vs 9?8$"):
+        data.y = data.y[:-2]
 
 
 @pytest.mark.parametrize("data_class", ALL_DATA_CLASSES)
@@ -2127,8 +2129,9 @@ def test_make_invalid_dependent_axis(data_class):
     ypos = POS_Y_ARRAY[data_class]
     args[ypos] = args[ypos][:-1]
 
-    # This does not raise an error
-    data_class(*args)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: 100? vs 9?9$"):
+        data_class(*args)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2220,8 +2223,9 @@ def test_dep_must_be_1d(data):
     """Check that the dependent data must be 1D."""
 
     dep = data.dep.reshape(2, data.dep.size // 2)
-    # does not raise an error
-    data.set_dep(dep)
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
+        data.set_dep(dep)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2429,10 +2433,9 @@ def test_data_change_independent_element(data_copy):
     assert data.indep[0][1] > 0
 
     # change the second element of the first component
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError,
+                       match="assignment destination is read-only"):
         data.indep[0][1] = -100
-
-    assert str(err.value) == "assignment destination is read-only"
 
 
 @pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
@@ -2513,10 +2516,9 @@ def test_data1d_do_we_copy_the_independent_axis_v2():
 
     data = Data1D("change", x, y)
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError,
+                       match="assignment destination is read-only"):
         data.indep[0][1] = -20
-
-    assert str(err.value) == "assignment destination is read-only"
 
 
 def test_data1d_do_we_copy_the_dependent_axis():

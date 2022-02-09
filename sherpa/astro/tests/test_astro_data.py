@@ -2697,8 +2697,9 @@ def test_invalid_dependent_axis(data_args):
 
     data_class, args = data_args
     data = data_class(*args)
-    # This currently does not fail
-    data.y = data.y[:-2]
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: (3|12) vs (10?)$"):
+        data.y = data.y[:-2]
 
 
 @pytest.mark.parametrize("data_class,args",
@@ -2714,8 +2715,9 @@ def test_make_invalid_dependent_axis(data_class, args):
     here.
     """
 
-    # This does not raise an error
-    data_class("wrong", *args)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: (3|12) vs (2|10|34)$"):
+        data_class("wrong", *args)
 
 
 def test_pha_fails_when_bin_lo_is_invalid():
@@ -2794,8 +2796,9 @@ def test_pha_dependent_field_can_not_be_a_scalar(related):
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
-    # does not raise an error
-    setattr(data, related, 2)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        setattr(data, related, 2)
 
 
 @pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
@@ -2901,7 +2904,7 @@ def test_pha_independent_axis_can_not_be_a_set_sequence():
     data.set_indep(([{"abc", False, 23.4}] * 3, ))
 
 
-@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("field", ["y", "counts", pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail), pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
 def test_pha_related_field_can_not_be_a_set(field):
     """Check we error out if y/counts/... is a set
 
@@ -2914,8 +2917,10 @@ def test_pha_related_field_can_not_be_a_set(field):
     data_class, args = PHA_ARGS
     data = data_class(*args)
 
-    # this does not fail
-    setattr(data, field, {"abc", False, 23.4})
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
+        # XFAIL: does not raise an error except for y/counts
+        setattr(data, field, {"abc", False, 23.4})
 
 
 @pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
@@ -3183,10 +3188,9 @@ def test_pha_change_independent_element():
     assert pha.indep[0][1] == 2
 
     # change the second element of the first component
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError,
+                       match="assignment destination is read-only"):
         pha.indep[0][1] = -100
-
-    assert str(err.value) == "assignment destination is read-only"
 
 
 @pytest.mark.parametrize("field", ["y", "dep", "counts"])

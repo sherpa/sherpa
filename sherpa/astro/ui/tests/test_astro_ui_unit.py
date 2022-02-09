@@ -2297,13 +2297,9 @@ def test_pha_set_dep_array(simple_pha):
 def test_pha_set_dep_array_wrong(simple_pha):
     """What happens if set_dep is called with an array with the wrong length?"""
 
-    # this does not error out
-    ui.set_dep([2, 4, 5])
-
-    # this does error out
-    with pytest.raises(TypeError,
-                       match="input array sizes do not match, data: 3 vs group: 9"):
-        ui.get_dep()
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and y: 9 vs 3"):
+        ui.set_dep([2, 4, 5])
 
 
 def test_pha_get_staterror(simple_pha):

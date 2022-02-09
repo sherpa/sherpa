@@ -1169,6 +1169,20 @@ class DataRMF(DataOgipResponse):
         self._hi = energ_hi
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
 
+    # Although we have a Data1DInt-like dataset, the dependent axis
+    # does not match the independent axes. So we have to remove the
+    # checks on y. We could enforce the internal constraints but this
+    # is hard to do sensibly, so just do not bother.
+    #
+    @property
+    def y(self):
+        """The dependent axis."""
+        return self._y
+
+    @y.setter
+    def y(self, val):
+        self._y = val
+
     def _repr_html_(self):
         """Return a HTML (string) representation of the RMF
         """
