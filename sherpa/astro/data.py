@@ -3388,7 +3388,7 @@ must be an integer.""")
         else:
             val = SherpaFloat(val)
             dep = numpy.array([val] * len(self.get_indep()[0]))
-        setattr(self, 'counts', dep)
+        self.counts = dep
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error.
