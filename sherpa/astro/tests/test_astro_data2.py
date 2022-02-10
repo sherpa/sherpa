@@ -1321,7 +1321,7 @@ def test_pha_change_grouping_rounding(label, make_test_pha):
     """What happens with non-integer values?
 
     Unlike test_pha_change_grouping/quality_type we can more-easily
-    use the same input array, whicih makes it easier to test both
+    use the same input array, which makes it easier to test both
     columns with the same routine. It is actually unclear what
     we should do with input like this - should we error out,
     silently truncate, or perhaps warn the user. For the moment
