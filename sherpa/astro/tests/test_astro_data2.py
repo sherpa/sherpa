@@ -1921,7 +1921,7 @@ def test_1209_response(mode, fexpr, make_data_path):
 @requires_fits
 @requires_data
 def test_1209_background(make_data_path):
-    """Do we pick up the header keywords from the backkground?
+    """Do we pick up the header keywords from the background?
 
     This is related to issue #1209
 
