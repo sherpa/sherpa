@@ -1184,7 +1184,7 @@ def test_pha_remove_grouping(make_test_pha):
 
     # Can we remove the grouping column?
     pha.grouping = None
-    # This thinks that pha.grouped is sill set
+    # This thinks that pha.grouped is still set
     assert not pha.grouped
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx(no_data)
