@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -134,6 +134,17 @@ __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatR
 
 
 def _notice_resp(chans, arf, rmf):
+    """Notice the channel range for the associated responses
+
+    Parameters
+    ----------
+    chans : ndarray
+        The noticed channel values.
+    arf : sherpa.astro.data.DataARF or None
+    rmf : sherpa.astro.data.DataRMF or None
+
+    """
+
     bin_mask = None
 
     if rmf is not None and arf is not None:
@@ -1615,7 +1626,7 @@ must be an integer.""")
         self._plot_fac = 0
         self.units = "channel"
         self.quality_filter = None
-        Data1D.__init__(self, name, channel, counts, staterror, syserror)
+        super().__init__(name, channel, counts, staterror, syserror)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -2843,7 +2854,7 @@ must be an integer.""")
         """Exclude channels marked as bad.
 
         Ignore any bin in the PHA data set which has a quality value
-        that is larger than zero.
+        that is not equal to zero.
 
         Raises
         ------
@@ -2852,8 +2863,7 @@ must be an integer.""")
 
         See Also
         --------
-        ignore : Exclude data from the fit.
-        notice : Include data in the fit.
+        ignore, notice
 
         Notes
         -----
@@ -3825,6 +3835,24 @@ must be an integer.""")
         return expand_grouped_mask(self.mask, groups)
 
     def get_noticed_expr(self):
+        """Returns the current set of noticed channels.
+
+        The values returned are always in channels, no matter the
+        current analysis setting.
+
+        Returns
+        -------
+        expr : str
+            The noticed channel range as a string of comma-separated
+            "low-high" values. As these are channel filters the low
+            and high values are inclusive. If all channels have been
+            filtered out then "No noticed channels" is returned.
+
+        See Also
+        --------
+        get_filter, get_noticed_channels
+
+        """
         chans = self.get_noticed_channels()
         if self.mask is False or len(chans) == 0:
             return 'No noticed channels'
@@ -3848,6 +3876,19 @@ must be an integer.""")
             channel units, which uses ``format="%i"``).
         delim : str, optional
             The string used to mark the low-to-high range.
+
+        Returns
+        -------
+        expr : str
+            The noticed channel range as a string of comma-separated
+            ranges, where the low and high values are separated by
+            the `delim` string. The units of the ranges are controlled
+            by the analysis setting. If all bins have been
+            filtered out then "No noticed bins" is returned.
+
+        See Also
+        --------
+        get_noticed_channels, get_noticed_expr
 
         Examples
         --------
@@ -4306,7 +4347,7 @@ class DataIMG(Data2D):
         self.coord = coord
         self.header = {} if header is None else header
         self._region = None
-        Data2D.__init__(self, name, x0, x1, y, shape, staterror, syserror)
+        super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data

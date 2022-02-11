@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1757,3 +1757,40 @@ def test_wstat_errors_data1d(clean_astro_ui, make_data_path):
         ui.get_stat_info()
 
     assert str(exc.value) == "No background data has been supplied. Use cstat"
+
+
+@pytest.mark.parametrize("label,vals",
+                         [("grouping", [1, 1, -1, -1, 1]),
+                          ("quality", [0, 0, 0, 0, 2])])
+def test_pha_column_set_none(label, vals, clean_astro_ui):
+    """Can clear with label=None."""
+
+    setfunc = getattr(ui, f"set_{label}")
+    getfunc = getattr(ui, f"get_{label}")
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
+    setfunc(vals)
+    assert getfunc() == pytest.approx(vals)
+
+    setfunc(None)
+    assert getfunc() is None
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("label", ["grouping", "quality"])
+@pytest.mark.parametrize("vals",
+                         [True, False, [1, 2, 3], np.ones(20)])
+def test_pha_column_has_correct_size(label, vals, clean_astro_ui):
+    """Check that the label column is the right size.
+
+    This is related to issue #1160.
+    """
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
+    pha = ui.get_data()
+
+    with pytest.raises(DataErr) as de:
+        # This does not throw an error
+        getattr(ui, f"set_{label}")(vals)
+
+    assert str(de.value) == f"size mismatch between channel and {label}"
