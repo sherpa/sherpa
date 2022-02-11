@@ -1908,3 +1908,82 @@ def test_set_independent_axis_to_none(data):
     indep = [None for d in data.indep]
     data.set_indep(tuple(indep))
     assert all(d is None for d in data.indep)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("column", ["staterror", "syserror"])
+def test_set_error_axis_wrong_length(data, column):
+    """What happens if the column is set to the wrong length?"""
+
+    col = getattr(data, column)
+    assert col is not None
+
+    # does not raise an error
+    setattr(data, column, [1, 2])
+
+
+def test_data1d_mismatched_related_fields():
+    """Check setting the related fields to different sizes: Data1D
+
+    This is a regression test to check when the mis-match is detected,
+    if it is. It is important that we have not set the dependent axis
+    here, as there is likely to be better support for checking the
+    dependent and independent axes than the related axes.
+
+    The assumption here is that we don't need to test all the classes.
+    """
+
+    # Create an empty object, set the syserror and staterror fields to
+    # different lengths, then set the independent axis.
+    #
+    # Ideally one of these calls will error out but currently they do not.
+    #
+    d = Data1D("x", None, None)
+
+    d.staterror = [1, 2, 3, 4]
+    d.syserror = [2, 3, 4, 5, 20, 12]
+    d.set_indep(([2.3], ))
+
+    mdl = Polynom1D()
+    mdl.c0 = 10
+    mdl.c1 = 2
+    ans = d.eval_model(mdl)
+    assert ans == pytest.approx([14.6])
+
+
+# should be ALL_DATA_CLASSES but only some of the classes pass
+@pytest.mark.parametrize("data", (pytest.param(Data1D, marks=pytest.mark.xfail), pytest.param(Data1DInt, marks=pytest.mark.xfail), Data2D, Data2DInt), indirect=True)
+def test_indep_must_be_1d(data):
+    """Check that the indep data must be 1D.
+
+    Do we report an error because the dimensionality does not match
+    or that the length check fails.
+    """
+
+    indep = [d.reshape(2, d.size // 2) for d in data.indep]
+    with pytest.raises(TypeError) as te:
+        # XFAIL: does not raise an error for Data1D types but does for Data2D
+        data.indep = indep
+
+    emsg = "Data arrays should be 1-dimensional. Did you call 'flatten()' on [["
+    assert str(te.value).startswith(emsg)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_dep_must_be_1d(data):
+    """Check that the dependent data must be 1D."""
+
+    dep = data.dep.reshape(2, data.dep.size // 2)
+    # does not raise an error
+    data.set_dep(dep)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("column", ["staterror", "syserror"])
+def test_error_must_be_1d(data, column):
+    """Check that the error data must be 1D."""
+
+    err = getattr(data, column)
+    err = err.reshape(2, err.size // 2)
+    # does not raise an error
+    setattr(data, column, err)

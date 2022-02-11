@@ -2745,3 +2745,21 @@ def test_set_independent_axis_to_none_pha_channel():
     data.channel = None
     assert len(data.indep) == 1
     assert data.indep[0] is None
+
+
+# Should we remove support for the error columns for DataARF/DataRMF?
+#
+@pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, RMF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
+@pytest.mark.parametrize("column", ["staterror", "syserror"])
+def test_set_error_axis_wrong_length(data_args, column):
+    """What happens if the column is set to the wrong length?"""
+
+    data_class, args = data_args
+    data = data_class(*args)
+
+    col = getattr(data, column)
+    assert col is None
+
+    # does not raise an error
+    setattr(data, column, [1, 2])
