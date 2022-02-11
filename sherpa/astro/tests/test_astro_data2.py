@@ -642,6 +642,24 @@ def make_test_pha():
     return DataPHA('p', chans, counts)
 
 
+@pytest.fixture
+def make_grouped_pha():
+    """A simple PHA with grouping
+
+    Note that this does have a quality=2 bin that is
+    ignored.
+    """
+
+    chans = np.asarray([1, 2, 3, 4, 5], dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3, 12], dtype=np.int16)
+    grp = np.asarray([1, -1, -1, 1, 1], dtype=np.int16)
+    qual = np.asarray([0, 0, 0, 0, 2], dtype=np.int16)
+    pha = DataPHA('grp', chans, counts,
+                  grouping=grp, quality=qual)
+    pha.ignore_bad()
+    return pha
+
+
 def test_img_get_img(make_test_image):
     img = make_test_image
     ival = img.get_img()
@@ -2029,6 +2047,114 @@ def test_361():
     # be more-direct here and check the problematic call.
     #
     assert pha.get_noticed_channels() == pytest.approx([3, 4, 7, 8])
+
+
+def test_grouped_pha_get_y(make_grouped_pha):
+    """Quality filtering and grouping is applied: get_y
+
+    As noted in issue #1438 it's not obvious what get_y is meant to
+    return. It is not the same as get_dep as there's post-processing.
+    So just test the current behavior.
+
+    """
+    pha = make_grouped_pha
+
+    # grouped counts are [3, 3, 12]
+    # channel widths are [3, 1, 1]
+    # which gives [1, 3, 12]
+    # but the last group is marked bad by quality,
+    # so we expect [1, 3]
+    #
+    assert pha.get_y() == pytest.approx([1, 3])
+
+
+def test_grouped_pha_mask(make_grouped_pha):
+    """What is the default mask setting?"""
+    pha = make_grouped_pha
+    assert np.isscalar(pha.mask)
+    assert pha.mask
+
+
+def test_grouped_pha_get_mask(make_grouped_pha):
+    """What is the default get_mask value?"""
+    pha = make_grouped_pha
+    assert pha.get_mask() == pytest.approx([True] * 4 + [False])
+
+
+# Should this really return "1:4" as the fifth channel has been
+# excluded? At the moment check the current behavior.
+#
+def test_grouped_pha_get_filter(make_grouped_pha):
+    """What is the default get_filter value?"""
+    pha = make_grouped_pha
+    assert pha.get_filter() == "1:5"
+
+
+def test_grouped_pha_set_filter(make_grouped_pha):
+    """What happens with a simple filter?"""
+    pha = make_grouped_pha
+    pha.ignore(hi=2)
+    assert pha.get_filter() == "4"
+
+
+# What should get_dep(filter=False) return here? Should it
+# include the quality=2 filtered bin (12) or not? At the
+# moment it does, so we test against this behavior, but it
+# might be something we want to change.
+#
+@pytest.mark.parametrize("filter,expected",
+                         [(False, [1, 2, 0, 3, 12]),
+                          (True, [3, 3])])
+def test_grouped_pha_get_dep(filter, expected, make_grouped_pha):
+    """Quality filtering and grouping is applied: get_dep"""
+    pha = make_grouped_pha
+    assert pha.get_dep(filter=filter) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("filter,expected",
+                         [(False, [1, 2, 0, 3, 12]),
+                          (True, [3])])
+def test_grouped_pha_filter_get_dep(filter, expected, make_grouped_pha):
+    """What happens after a simple filter?
+
+    We do this because the behavior of test_grouped_get_filter
+    and test_grouped_pha_get_dep has been unclear.
+    """
+    pha = make_grouped_pha
+    pha.ignore(hi=2)
+    assert pha.get_dep(filter=filter) == pytest.approx(expected)
+
+
+def test_grouped_pha_set_y_invalid_size(make_grouped_pha):
+    """What happens if change a grouped PHA counts/y setting?
+
+    See also test_grouped_pha_set_related_invalid_size which
+    is essentially the same but for other fields.
+    """
+    pha = make_grouped_pha
+
+    # Pick an array that matches the grouped/filtered data size.
+    # This is "not actionable" as we can't work out how to change
+    # the counts channels, so it should error.
+    #
+    # this does not error out
+    pha.set_dep([2, 3])
+
+
+@pytest.mark.parametrize("related", ["staterror", "syserror",
+                                     "y", "counts",
+                                     "backscal", "areascal",
+                                     "grouping", "quality"])
+def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
+    """Can we set the value to a 2-element array?"""
+    pha = make_grouped_pha
+
+    # Pick an array that matches the grouped/filtered data size.
+    # This is "not actionable" as we can't work out how to change
+    # the counts channels, so it should error.
+    #
+    # this does not error out
+    setattr(pha, related, [2, 3])
 
 
 @requires_fits
