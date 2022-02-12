@@ -1237,6 +1237,17 @@ def test_data_filter_invalid_size(vals):
     assert str(de.value) == 'size mismatch between mask and data array'
 
 
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_data_apply_filter_invalid_size(data):
+    """There's no filter applied but the argument is the wrong size.
+
+    Test related to issue #1439 which is an issue with the DataPHA class.
+    """
+
+    # this does not raise an error
+    data.apply_filter([1, 2])
+
+
 @pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
 @pytest.mark.parametrize("ignore", [False, True])
 def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
