@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2008, 2016, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -375,8 +376,8 @@ def _counts(data, lo, hi, func, *args):
         data.notice()  # clear filter
         data.notice(lo, hi)
         counts = func(*args).sum()
-        data.notice()
     finally:
+        # restore the old filter
         data.mask = old_mask
         if old_quality_filter is not None:
             data.quality_filter = old_quality_filter
@@ -386,20 +387,14 @@ def _counts(data, lo, hi, func, *args):
 
 def _counts2d(data, reg, func, *args):
     old_mask = data.mask
-    coord = getattr(data, 'coord', None)
     old_region = getattr(data, '_region', None)
     try:
         data.notice2d()  # save and clear filter
-
         data.notice2d(reg)
         counts = func(*args).sum()
-        data.notice2d()
     finally:
+        # restore the old filter
         data.mask = old_mask
-
-        if coord is not None:
-            data.set_coord(coord)
-
         if old_region is not None:
             data._region = old_region
 
