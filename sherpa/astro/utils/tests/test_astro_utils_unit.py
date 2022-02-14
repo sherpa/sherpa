@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -21,8 +21,12 @@
 import numpy as np
 import pytest
 
+from sherpa.astro.data import DataPHA, DataIMG, DataIMGInt
 from sherpa.astro import ui
+from sherpa.astro import utils
 from sherpa.astro.utils import do_group, filter_resp, range_overlap_1dint
+from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.utils.err import IOErr
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -220,3 +224,269 @@ def test_do_group_single_group(func, expected):
 
     ans = do_group([6, 4, 2, 1, -1, 3], [1, -1, -1, -1, -1, -1], func)
     assert ans == pytest.approx([expected])
+
+
+def make_data(data_class):
+    """Create a test data object of the given class.
+
+    Using a string means it is easier to support the various
+    PHA "types" - eg basic, grouping, grouping+quality
+    """
+
+    x0 = np.asarray([1, 3, 7, 12])
+    y = np.asarray([2, 3, 4, 5])
+    if data_class == "1d":
+        return Data1D('x1', x0, y)
+
+    if data_class == "1dint":
+        return Data1DInt('xint1', x0, np.asarray([3, 5, 8, 15]), y)
+
+    chans = np.arange(1, 5)
+    if data_class == "pha":
+        return DataPHA('pha', chans, y)
+
+    # These are a special case to check out grpuping and quality handling.
+    grp = np.asarray([1, -1, 1, 1])
+    qual = np.asarray([0, 0, 2, 0])
+    pha = DataPHA('pha', chans, y, grouping=grp, quality=qual)
+    if data_class == "grp":
+        return pha
+
+    if data_class == "qual":
+        pha.ignore_bad()
+        return pha
+
+    x0 = np.asarray([1, 2, 3] * 2)
+    x1 = np.asarray([1, 1, 1, 2, 2, 2])
+    y = np.asarray([2, 3, 4, 5, 6, 7])
+    if data_class == "2d":
+        return Data2D('x2', x0, x1, y, shape=(2, 3))
+
+    if data_class ==  "2dint":
+        return Data2DInt('xint2', x0, x1, x0 + 1, x1 + 1, y, shape=(2, 3))
+
+    if data_class == "img":
+        return DataIMG('img', x0, x1, y, shape=(2, 3))
+
+    if data_class == "imgint":
+        return DataIMGInt('imgi', x0, x1, x0 + 1, x1 + 1, y, shape=(2, 3))
+
+    assert False
+
+
+@pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual"])
+def test_calc_data_sum_invalid_range(data_class):
+    """lo > hi"""
+
+    data = make_data(data_class)
+    with pytest.raises(IOErr) as err:
+        utils.calc_data_sum(data, 10, 2)
+
+    # TODO: This error message is not great.
+    #
+    assert str(err.value) == "the energy range is not consistent, 10 !< 2"
+
+
+@pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual"])
+def test_calc_data_sum_no_range(data_class):
+    """Call calc_data_sum(data)"""
+
+    data = make_data(data_class)
+    assert utils.calc_data_sum(data) == 14
+
+
+@pytest.mark.parametrize("name", ["lo", "hi"])
+@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 2), (2, 0), (3, 3),
+                                            (4, 0), (6, 0), (7, 4), (11, 0), (12, 5),
+                                            (13, 0), (15, 0)])
+def test_calc_data_sum_only_one_limit_1d(name, limit, expected):
+    """Call calc_data_sum(data, lo or hi): Data1D
+
+    It is not clear what the intended behavior is - either for the
+    PHA case, which seems to drive the calc_data_sum code, or for
+    other data sets, so just act as a regression test.
+    """
+
+    data = make_data("1d")
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum(data, **{name: limit}) == expected
+    assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+@pytest.mark.parametrize("name", ["lo", "hi"])
+@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 0), (2, 2), (3, 0),
+                                            (4, 3), (6, 0), (7, 0), (11, 0), (12, 0),
+                                            (13, 5), (15, 0)])
+def test_calc_data_sum_only_one_limit_1dint(name, limit, expected):
+    """Call calc_data_sum(data, lo or hi): Data1DInt"""
+
+    data = make_data("1dint")
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum(data, **{name: limit}) == expected
+    assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+@pytest.mark.parametrize("name", ["lo", "hi"])
+@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 2), (2, 3), (3, 4),
+                                            (4, 5), (5, 0), (6, 0), (15, 0)])
+def test_calc_data_sum_only_one_limit_pha(name, limit, expected):
+    """Call calc_data_sum(data, lo or hi): DataPHA"""
+
+    data = make_data("pha")
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum(data, **{name: limit}) == expected
+    assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+@pytest.mark.parametrize("data_class", ["grp", "qual"])
+@pytest.mark.parametrize("name", ["lo", "hi"])
+@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 5), (2, 5), (3, 4),
+                                            (4, 5), (5, 0), (6, 0), (15, 0)])
+def test_calc_data_sum_only_one_limit_pha_grouped(name, limit, expected, data_class):
+    """Call calc_data_sum(data, lo or hi): DataPHA (group/quality)
+
+    It looks like the quality array is ignored (which is probably
+    not a great idea).
+    """
+
+    data = make_data(data_class)
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum(data, **{name: limit}) == expected
+    assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+@pytest.mark.parametrize("frange,expected", [((0, 20), 14), ((0, 10), 9),
+                                             ((2, 3), 3),
+                                             ((2, 10), 7), ((3, 7), 7),
+                                             ((4, 6), 0),
+                                             ((3, 12), 12), ((1, 13), 14),
+                                             ((20, 22), 0)])
+def test_calc_data_sum_filtered_1d(frange, expected):
+    """Filter out everything and then check with both lo/hi set: Data1D
+
+    The tests are jmeant to check in part whether the upper limit is
+    inclusive or exclusive, in particular comparing the Data1D and
+    Data1DInt cases.
+
+    """
+
+    data = make_data("1d")
+    data.ignore()
+    assert not data.mask
+    assert utils.calc_data_sum(data, *frange) == expected
+    assert not data.mask
+
+
+@pytest.mark.parametrize("frange,expected", [((0, 20), 14), ((0, 10), 9),
+                                             ((2, 3), 2),
+                                             ((2, 10), 9),((3, 7), 3),
+                                             ((4, 6), 3),
+                                             ((3, 12), 7), ((1, 13), 14),
+                                             ((20, 22), 0)])
+def test_calc_data_sum_filtered_1dint(frange, expected):
+    """Filter out everything and then check with both lo/hi set: Data1DInt"""
+
+    data = make_data("1dint")
+    data.ignore()
+    assert not data.mask
+    assert utils.calc_data_sum(data, *frange) == expected
+    assert not data.mask
+
+
+@pytest.mark.parametrize("frange,expected", [((0, 10), 14), ((0, 4), 14),
+                                             ((2, 3), 7),
+                                             ((2, 10), 12),
+                                             ((1, 1), 2),
+                                             ((2, 2), 3),
+                                             ((3, 3), 4),
+                                             ((4, 4), 5),
+                                             ((3, 4), 9),
+                                             ((3, 5), 9),
+                                             ((3, 12), 9),
+                                             ((1, 13), 14),
+                                             ((20, 22), 0)])
+def test_calc_data_sum_filtered_pha(frange, expected):
+    """Filter out everything and then check with both lo/hi set: DataPHA"""
+
+    data = make_data("pha")
+    data.ignore()
+    assert not data.mask
+    assert utils.calc_data_sum(data, *frange) == expected
+    assert not data.mask
+
+
+@pytest.mark.parametrize("data_class", ["grp", "qual"])
+@pytest.mark.parametrize("frange,expected", [((0, 10), 14), ((0, 4), 14),
+                                             ((2, 3), 9),
+                                             ((2, 10), 14),
+                                             ((1, 1), 5),
+                                             ((2, 2), 5),
+                                             ((3, 3), 4),  # this is technically filtered-out by bad quality
+                                             ((4, 4), 5),
+                                             ((3, 4), 9),
+                                             ((3, 5), 9),
+                                             ((3, 12), 9),
+                                             ((1, 13), 14),
+                                             ((20, 22), 0)])
+def test_calc_data_sum_filtered_pha_grouped(frange, expected, data_class):
+    """Filter out everything and then check with both lo/hi set: DataPHA (grouped/quality)"""
+
+    data = make_data(data_class)
+    data.ignore()
+    assert not data.mask
+    assert utils.calc_data_sum(data, *frange) == expected
+    assert not data.mask
+
+
+@pytest.mark.parametrize("data_class", ["2d", "img", "2dint", "imgint"])
+def test_calc_data_sum_no_range_2d(data_class):
+    """What happens when data is not 1D?
+
+    It looks like we still sum up the data.
+    """
+
+    data = make_data(data_class)
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum(data) == 27
+    assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+@pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual",
+                                        "2d", "2dint"])
+def test_calc_data_sum2d_no_range_1d(data_class):
+    """What happens when data is not an IMG class
+
+    Note that this includes 2d/2dint classes
+    """
+
+    data = make_data(data_class)
+    with pytest.raises(AttributeError) as err:
+        utils.calc_data_sum2d(data)
+
+    assert str(err.value).endswith(" object has no attribute 'notice2d'")
+
+
+@pytest.mark.parametrize("data_class", ["img", "imgint"])
+def test_calc_data_sum2d_no_range_2d(data_class):
+    """Call calc_data_sum2d(data)"""
+
+    data = make_data(data_class)
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum2d(data) == 27
+    assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+# We can not use DataIMGInt here because of issue #1379
+# @pytest.mark.parametrize("data_class", ["img", "imgint"])
+@pytest.mark.parametrize("data_class", ["img"])
+def test_calc_data_sum2d_filtered_2d(data_class):
+    """Call calc_data_sum2d(data, region)"""
+
+    data = make_data(data_class)
+    data.notice2d("rect(0, 0, 2, 2)", ignore=True)
+    assert np.iterable(data.mask)
+    omask = data.mask.copy()
+    orig = data.get_dep(filter=True).copy()
+    assert utils.calc_data_sum2d(data, "rect(0, 0, 2, 3)") == 16
+    assert data.mask == pytest.approx(omask)
+    assert data.get_dep(filter=True) == pytest.approx(orig)
