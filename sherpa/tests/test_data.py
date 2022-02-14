@@ -50,12 +50,11 @@ DATA_2D_CLASSES = (Data2D, Data2DInt)
 ALL_DATA_CLASSES = DATA_1D_CLASSES + DATA_2D_CLASSES
 REALLY_ALL_DATA_CLASSES = (Data, ) + ALL_DATA_CLASSES
 
-DATA1D_ARGS = NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
 DATA_ARGS = NAME, (X_ARRAY,), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
+DATA1D_ARGS = NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
 DATA1DINT_ARGS = NAME, X_ARRAY - 0.5, X_ARRAY + 0.5, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY
 DATA2D_ARGS = NAME, X0_2D, X1_2D, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D
 DATA2DINT_ARGS = NAME, X0_2D - 0.5, X1_2D - 0.5, X0_2D + 0.5, X1_2D + 0.5, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D
-DATA_NO_ERRORS_ARGS = NAME, X_ARRAY, Y_ARRAY
 
 
 INSTANCE_ARGS = {
@@ -109,8 +108,16 @@ def data(request):
 
 
 @pytest.fixture
-def data_no_errors():
-    return Data(*DATA_NO_ERRORS_ARGS)
+def data_no_errors(request):
+    data_class = request.param
+
+    # Use the normal arguments but remove the error values
+    all_args = INSTANCE_ARGS[data_class]
+    no_errors = all_args[:POS_STATERR_ARRAY[data_class]]
+    out = data_class(*no_errors)
+    assert out.staterror is None
+    assert out.syserror is None
+    return out
 
 
 @pytest.fixture
@@ -141,22 +148,23 @@ def test_base_data_instantiation():
         BaseData()
 
 
-@pytest.mark.xfail(reason="DataND did not serve any purpose and had a misleading name")
-def test_base_datand_instantiation():
-    DataND()
-
-
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt, Data1DInt), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt), indirect=True)
 def test_data_get_x(data):
-    with pytest.raises(NameError):
+    with pytest.raises(AttributeError):
         data.get_x()
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
+@pytest.mark.xfail
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_x_special(data):
+    # XFAIL: These classes still provide get_x
+    with pytest.raises(AttributeError):
+        data.get_x()
+
+
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 def test_data_get_x0(data):
-    with pytest.raises(NameError):
+    with pytest.raises(AttributeError):
         data.get_x0()
 
 
@@ -182,7 +190,7 @@ def test_load_arrays(data_for_load_arrays):
     numpy.testing.assert_array_equal(new_data.get_dep(), data.get_dep())
 
 
-# DATA-NOTE: In the current Sherpa DataND cannot be correctly loaded using load_arrays
+# DATA-NOTE: In the current Sherpa Data cannot be correctly loaded using load_arrays
 @pytest.mark.xfail
 @pytest.mark.parametrize("data_for_load_arrays", (Data, ), indirect=True)
 def test_load_arrays_data(data_for_load_arrays):
@@ -190,12 +198,13 @@ def test_load_arrays_data(data_for_load_arrays):
     session.load_arrays(*args)
 
 
+@pytest.mark.parametrize("data_no_errors", ALL_DATA_CLASSES, indirect=True)
 def test_load_arrays_no_errors(data_no_errors):
     from sherpa.astro.ui.utils import Session
     session = Session()
     data = data_no_errors
     data_class = data.__class__
-    data_args = DATA_NO_ERRORS_ARGS
+    data_args = INSTANCE_ARGS[data_class]
     args = data_args + (data_class,)
     session.load_arrays(*args)
     new_data = session.get_data(data.name)
@@ -206,10 +215,9 @@ def test_load_arrays_no_errors(data_no_errors):
     numpy.testing.assert_array_equal(new_data.get_dep(), data.get_dep())
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 def test_data_get_x1(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.get_x1()
 
 
@@ -364,10 +372,15 @@ def test_data_get_dep_filter(data):
     numpy.testing.assert_array_equal(data.get_dep(filter=True), Y_ARRAY[:X_THRESHOLD + 1])
 
 
-@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+@pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
 def test_data_set_dep_filter(data):
-    data.set_dep([0, 1])
-    numpy.testing.assert_array_equal(data.get_dep(filter=True), [0, 1])
+    # This used to be [0, 1] but why would we want this, so check we
+    # can call set_dep with the expected argument size.
+    #
+    data.set_dep([0, 1] * 5)
+    numpy.testing.assert_array_equal(data.get_dep(filter=True), [0, 1] * 5)
+
+    # There's also support for scalar values.
     data.set_dep(0)
     numpy.testing.assert_array_equal(data.get_dep(filter=True), [0] * Y_ARRAY.size)
 
@@ -383,12 +396,14 @@ def test_data_get_staterror_filter(data):
     numpy.testing.assert_array_equal(data.get_staterror(filter=True), STATISTICAL_ERROR_ARRAY[:X_THRESHOLD + 1])
 
 
+@pytest.mark.parametrize("data_no_errors", DATA_1D_CLASSES, indirect=True)
 def test_data_get_staterror_func(data_no_errors):
     data_no_errors.mask = X_ARRAY <= X_THRESHOLD
     stat_error = data_no_errors.get_staterror(filter=False, staterrfunc=lambda x: MULTIPLIER * x)  # type: numpy.ndarray
     numpy.testing.assert_array_equal(stat_error, MULTIPLIER * Y_ARRAY)
 
 
+@pytest.mark.parametrize("data_no_errors", DATA_1D_CLASSES, indirect=True)
 def test_data_get_staterror_filter_func(data_no_errors):
     data_no_errors.mask = X_ARRAY <= X_THRESHOLD
     stat_error = data_no_errors.get_staterror(filter=True, staterrfunc=lambda x: MULTIPLIER * x)  # type: numpy.ndarray
@@ -557,32 +572,22 @@ def test_data_1d_to_component_plot(data):
     numpy.testing.assert_array_equal(actual[5], expected[5])
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, ), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data1D, Data1DInt), indirect=True)
 def test_data_to_contour(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.to_contour()
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, ), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt), indirect=True)
 def test_data_to_plot(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.to_plot()
 
 
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data, ), indirect=True)
+@pytest.mark.parametrize("data", (Data, Data2D, Data2DInt), indirect=True)
 def test_data_to_component_plot(data):
-    with pytest.raises(DataErr):
+    with pytest.raises(AttributeError):
         data.to_component_plot()
-
-
-@pytest.mark.xfail(reason="methods did not belong and were removed")
-@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
-def test_data_1d_to_contour(data):
-    with pytest.raises(DataErr):
-        data.to_contour()
 
 
 def test_data_simul_fit(data_simul_fit):
@@ -750,11 +755,10 @@ def test_data2_get_imgerr(data):
     numpy.testing.assert_array_equal(data.get_imgerr(), expected_error)
 
 
-@pytest.mark.xfail(reason="Didn't really make sense to have this method for 2D classes")
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 def test_data2_get_xerr(data):
-    # DATA-NOTE: why is this true for Data2DInt as well?
-    assert data.get_xerr() is None
+    with pytest.raises(AttributeError):
+        data.get_xerr()
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
