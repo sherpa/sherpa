@@ -229,8 +229,9 @@ def test_do_group_single_group(func, expected):
 def make_data(data_class):
     """Create a test data object of the given class.
 
-    Using a string means it is easier to support the various
-    PHA "types" - eg basic, grouping, grouping+quality
+    Using a string means it is easier to support the various PHA
+    "types" - eg basic, grouping, grouping+quality.
+
     """
 
     x0 = np.asarray([1, 3, 7, 12])
@@ -245,7 +246,14 @@ def make_data(data_class):
     if data_class == "pha":
         return DataPHA('pha', chans, y)
 
-    # These are a special case to check out grpuping and quality handling.
+    # We want to provide PHA tests that check out the grouping and
+    # quality handling (but it is not worth trying all different
+    # variants), so we have "grp" for grouping and no quality [*], and
+    # "qual" for groupbing and quality.
+    #
+    # [*] by which I mean we have not called ignore_bad, not that
+    # there is no quality array.
+    #
     grp = np.asarray([1, -1, 1, 1])
     qual = np.asarray([0, 0, 2, 0])
     pha = DataPHA('pha', chans, y, grouping=grp, quality=qual)
@@ -289,22 +297,54 @@ def test_calc_data_sum_invalid_range(data_class):
 
 @pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual"])
 def test_calc_data_sum_no_range(data_class):
-    """Call calc_data_sum(data)"""
+    """Call calc_data_sum(data)
+
+    The following comment holds for the remaining calc_data_sum tests:
+    we are primarily interested in using these as regression tests. In
+    most places we can explain what is going on based on the behavior
+    of the notice methods, but there may be places where it is less
+    clear.
+
+    One such place is the handling of channels that have been removed
+    by a quality filter (i.e. a DataPHA object on which ignore_bad has
+    been called that has quality != 0 channels). The code currently
+    doesn't care about the quality filter, and this is what we test
+    against, but we may decide to change this behavior at some point.
+
+    As well as the test of calc_data_sum the tests often call a method
+    on the data object before calling the method and then compare it
+    to the same call after calling the calc routine. This is to check
+    that we have restored the filter expression correctly.
+
+    """
 
     data = make_data(data_class)
+    orig = data.get_dep(filter=True).copy()
     assert utils.calc_data_sum(data) == 14
+    assert data.get_dep(filter=True) == pytest.approx(orig)
 
 
 @pytest.mark.parametrize("name", ["lo", "hi"])
-@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 2), (2, 0), (3, 3),
-                                            (4, 0), (6, 0), (7, 4), (11, 0), (12, 5),
-                                            (13, 0), (15, 0)])
+@pytest.mark.parametrize("limit,expected", [(0, 0),
+                                            (1, 2),
+                                            (2, 0),
+                                            (3, 3),
+                                            (4, 0),
+                                            (6, 0),
+                                            (7, 4),
+                                            (11, 0),
+                                            (12, 5),
+                                            (13, 0),
+                                            (15, 0)])
 def test_calc_data_sum_only_one_limit_1d(name, limit, expected):
     """Call calc_data_sum(data, lo or hi): Data1D
 
-    It is not clear what the intended behavior is - either for the
-    PHA case, which seems to drive the calc_data_sum code, or for
-    other data sets, so just act as a regression test.
+    The code is written so that if either lo or hi is given and the
+    other is None then we behave the same, hence the use of the name
+    parameter for the test. The code is written as a regression test,
+    rather than from first principles. The 1D/1DInt/PHA cases are
+    subtly different, hence the different tests.
+
     """
 
     data = make_data("1d")
@@ -314,9 +354,17 @@ def test_calc_data_sum_only_one_limit_1d(name, limit, expected):
 
 
 @pytest.mark.parametrize("name", ["lo", "hi"])
-@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 0), (2, 2), (3, 0),
-                                            (4, 3), (6, 0), (7, 0), (11, 0), (12, 0),
-                                            (13, 5), (15, 0)])
+@pytest.mark.parametrize("limit,expected", [(0, 0),
+                                            (1, 0),
+                                            (2, 2),
+                                            (3, 0),
+                                            (4, 3),
+                                            (6, 0),
+                                            (7, 0),
+                                            (11, 0),
+                                            (12, 0),
+                                            (13, 5),
+                                            (15, 0)])
 def test_calc_data_sum_only_one_limit_1dint(name, limit, expected):
     """Call calc_data_sum(data, lo or hi): Data1DInt"""
 
@@ -327,8 +375,14 @@ def test_calc_data_sum_only_one_limit_1dint(name, limit, expected):
 
 
 @pytest.mark.parametrize("name", ["lo", "hi"])
-@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 2), (2, 3), (3, 4),
-                                            (4, 5), (5, 0), (6, 0), (15, 0)])
+@pytest.mark.parametrize("limit,expected", [(0, 0),
+                                            (1, 2),
+                                            (2, 3),
+                                            (3, 4),
+                                            (4, 5),
+                                            (5, 0),
+                                            (6, 0),
+                                            (15, 0)])
 def test_calc_data_sum_only_one_limit_pha(name, limit, expected):
     """Call calc_data_sum(data, lo or hi): DataPHA"""
 
@@ -340,14 +394,16 @@ def test_calc_data_sum_only_one_limit_pha(name, limit, expected):
 
 @pytest.mark.parametrize("data_class", ["grp", "qual"])
 @pytest.mark.parametrize("name", ["lo", "hi"])
-@pytest.mark.parametrize("limit,expected", [(0, 0), (1, 5), (2, 5), (3, 4),
-                                            (4, 5), (5, 0), (6, 0), (15, 0)])
+@pytest.mark.parametrize("limit,expected", [(0, 0),
+                                            (1, 5),
+                                            (2, 5),
+                                            (3, 4),
+                                            (4, 5),
+                                            (5, 0),
+                                            (6, 0),
+                                            (15, 0)])
 def test_calc_data_sum_only_one_limit_pha_grouped(name, limit, expected, data_class):
-    """Call calc_data_sum(data, lo or hi): DataPHA (group/quality)
-
-    It looks like the quality array is ignored (which is probably
-    not a great idea).
-    """
+    """Call calc_data_sum(data, lo or hi): DataPHA (group/quality)"""
 
     data = make_data(data_class)
     orig = data.get_dep(filter=True).copy()
@@ -355,18 +411,21 @@ def test_calc_data_sum_only_one_limit_pha_grouped(name, limit, expected, data_cl
     assert data.get_dep(filter=True) == pytest.approx(orig)
 
 
-@pytest.mark.parametrize("frange,expected", [((0, 20), 14), ((0, 10), 9),
+@pytest.mark.parametrize("frange,expected", [((0, 20), 14),
+                                             ((0, 10), 9),
                                              ((2, 3), 3),
-                                             ((2, 10), 7), ((3, 7), 7),
+                                             ((2, 10), 7),
+                                             ((3, 7), 7),
                                              ((4, 6), 0),
-                                             ((3, 12), 12), ((1, 13), 14),
+                                             ((3, 12), 12),
+                                             ((1, 13), 14),
                                              ((20, 22), 0)])
 def test_calc_data_sum_filtered_1d(frange, expected):
     """Filter out everything and then check with both lo/hi set: Data1D
 
-    The tests are jmeant to check in part whether the upper limit is
-    inclusive or exclusive, in particular comparing the Data1D and
-    Data1DInt cases.
+    For the 1D case the filter ranges should be inclusive. We do not
+    test too many cases, as the assumption is that the existing
+    notice/ignore tests cover these more thoroughly.
 
     """
 
@@ -377,14 +436,24 @@ def test_calc_data_sum_filtered_1d(frange, expected):
     assert not data.mask
 
 
-@pytest.mark.parametrize("frange,expected", [((0, 20), 14), ((0, 10), 9),
+@pytest.mark.parametrize("frange,expected", [((0, 20), 14),
+                                             ((0, 10), 9),
                                              ((2, 3), 2),
-                                             ((2, 10), 9),((3, 7), 3),
+                                             ((2, 10), 9),
+                                             ((3, 7), 3),
                                              ((4, 6), 3),
-                                             ((3, 12), 7), ((1, 13), 14),
+                                             ((3, 12), 7),
+                                             ((1, 13), 14),
                                              ((20, 22), 0)])
 def test_calc_data_sum_filtered_1dint(frange, expected):
-    """Filter out everything and then check with both lo/hi set: Data1DInt"""
+    """Filter out everything and then check with both lo/hi set: Data1DInt
+
+    For the 1DInt case the filter ranges should be inclusive for the
+    lower limit and exclusive for the upper limit. We do not test too
+    many cases, as the assumption is that the existing notice/ignore
+    tests cover these more thoroughly.
+
+    """
 
     data = make_data("1dint")
     data.ignore()
@@ -393,7 +462,8 @@ def test_calc_data_sum_filtered_1dint(frange, expected):
     assert not data.mask
 
 
-@pytest.mark.parametrize("frange,expected", [((0, 10), 14), ((0, 4), 14),
+@pytest.mark.parametrize("frange,expected", [((0, 10), 14),
+                                             ((0, 4), 14),
                                              ((2, 3), 7),
                                              ((2, 10), 12),
                                              ((1, 1), 2),
@@ -406,7 +476,15 @@ def test_calc_data_sum_filtered_1dint(frange, expected):
                                              ((1, 13), 14),
                                              ((20, 22), 0)])
 def test_calc_data_sum_filtered_pha(frange, expected):
-    """Filter out everything and then check with both lo/hi set: DataPHA"""
+    """Filter out everything and then check with both lo/hi set: DataPHA
+
+    We test a few more cases than the 1D/1DInt cases because we want
+    to include tests of the bad-quality channel case (not relevant
+    here with the "pha" test but it is relevant for the "grp" and
+    "qual" data obects we test below in
+    test_calc_data_sum_filtered_pha_grouped.
+
+    """
 
     data = make_data("pha")
     data.ignore()
@@ -416,7 +494,8 @@ def test_calc_data_sum_filtered_pha(frange, expected):
 
 
 @pytest.mark.parametrize("data_class", ["grp", "qual"])
-@pytest.mark.parametrize("frange,expected", [((0, 10), 14), ((0, 4), 14),
+@pytest.mark.parametrize("frange,expected", [((0, 10), 14),
+                                             ((0, 4), 14),
                                              ((2, 3), 9),
                                              ((2, 10), 14),
                                              ((1, 1), 5),
@@ -451,12 +530,14 @@ def test_calc_data_sum_no_range_2d(data_class):
     assert data.get_dep(filter=True) == pytest.approx(orig)
 
 
-@pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual",
+@pytest.mark.parametrize("data_class", ["1d", "1dint",
+                                        "pha", "grp", "qual",
                                         "2d", "2dint"])
 def test_calc_data_sum2d_no_range_1d(data_class):
     """What happens when data is not an IMG class
 
-    Note that this includes 2d/2dint classes
+    Note that this includes 2d/2dint classes as they all fail.
+
     """
 
     data = make_data(data_class)
@@ -468,7 +549,20 @@ def test_calc_data_sum2d_no_range_1d(data_class):
 
 @pytest.mark.parametrize("data_class", ["img", "imgint"])
 def test_calc_data_sum2d_no_range_2d(data_class):
-    """Call calc_data_sum2d(data)"""
+    """Call calc_data_sum2d(data)
+
+    The following comment holds for the remaining calc_data_sum2d tests:
+    we are primarily interested in using these as regression tests. In
+    most places we can explain what is going on based on the behavior
+    of the notice2d methods, but there may be places where
+    it is less clear.
+
+    As well as the test of calc_data_sum2d the tests often call a method
+    on the data object before calling the method and then compare it
+    to the same call after calling the calc routine. This is to check
+    that we have restored the filter expression correctly.
+
+    """
 
     data = make_data(data_class)
     orig = data.get_dep(filter=True).copy()
@@ -476,9 +570,8 @@ def test_calc_data_sum2d_no_range_2d(data_class):
     assert data.get_dep(filter=True) == pytest.approx(orig)
 
 
-# We can not use DataIMGInt here because of issue #1379
-# @pytest.mark.parametrize("data_class", ["img", "imgint"])
-@pytest.mark.parametrize("data_class", ["img"])
+# XFAIL: We can not use DataIMGInt here because of issue #1379
+@pytest.mark.parametrize("data_class", ["img", pytest.param("imgnit", marks=pytest.mark.xfail)])
 def test_calc_data_sum2d_filtered_2d(data_class):
     """Call calc_data_sum2d(data, region)"""
 
