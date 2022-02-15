@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -102,6 +102,7 @@ set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
@@ -253,6 +254,7 @@ set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
@@ -423,6 +425,7 @@ set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
@@ -545,6 +548,7 @@ set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
@@ -1054,6 +1058,7 @@ set_method_opt("ftol", 1)
 set_method_opt("gtol", 1)
 set_method_opt("maxfev", 1)
 set_method_opt("numcores", 1)
+set_method_opt("transform", 1)
 set_method_opt("verbose", 1)
 set_method_opt("xtol", 1)
 
@@ -1111,6 +1116,7 @@ set_method_opt("ftol", 1)
 set_method_opt("gtol", 1)
 set_method_opt("maxfev", 1)
 set_method_opt("numcores", 1)
+set_method_opt("transform", 1)
 set_method_opt("verbose", 1)
 set_method_opt("xtol", 1)
 

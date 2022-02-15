@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -73,7 +73,7 @@ import numpy
 from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
-
+from sherpa.models.parameter import hugeval
 from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
 
@@ -226,6 +226,94 @@ def _set_limits(x, xmin, xmax):
         return 1
 
     return 0
+
+
+class NoTransformation:
+    def __init__(self, lo, hi):
+        self.lo = lo
+        self.hi = hi
+        return
+
+    def calc_covar(self, m, n, info, fjac):
+        covar = None
+        if info > 0:
+            fjac = numpy.reshape(numpy.ravel(fjac, order='F'),
+                                 (m, n), order='F')
+            if m != n:
+                covar = fjac[:n, :n]
+            else:
+                covar = fjac
+        return covar
+
+    def int2ext(self, x):
+        return x
+
+    def ext2int(self, x):
+        return x
+
+
+class Transformation(NoTransformation):
+
+    def __init__(self, lo, hi):
+        NoTransformation.__init__(self, lo, hi)
+        self.int2ext_funcs, self.ext2int_funcs = self.init()
+        return
+
+    def init(self):
+        int2ext = []
+        ext2int = []
+        myhugeval = hugeval / 10.0
+        for a, b in zip(self.lo, self.hi):
+            if a <= - myhugeval and b >= myhugeval:
+                int2ext.append(self.return_arg)
+                ext2int.append(self.return_arg)
+            elif a <= - myhugeval:
+                int2ext.append(self.int2ext_hi)
+                ext2int.append(self.ext2int_hi)
+            elif b >= myhugeval:
+                int2ext.append(self.int2ext_lo)
+                ext2int.append(self.ext2int_lo)
+            else:
+                int2ext.append(self.int2ext_all)
+                ext2int.append(self.ext2int_all)
+        return int2ext, ext2int 
+
+    def int2ext_all(self, ii, x):
+        b_a = self.hi[ii] - self.lo[ii]
+        sin_p1 = numpy.sin(x) + 1.0
+        return self.lo[ii] + b_a / 2. * sin_p1
+
+    def int2ext_hi(self, ii, x):
+        return self.hi[ii] - (self.hi[ii] - x)**2
+
+    def int2ext_lo(self, ii, x):
+        return self.lo[ii] + (x - self.lo[ii])**2
+
+    def int2ext(self, x):
+        result = numpy.empty_like(x)
+        for ii, (func, arg) in enumerate(zip(self.int2ext_funcs, x)):
+            result[ii] = func(ii, arg)
+        return result
+
+    def ext2int(self, x):
+        result = numpy.empty_like(x)
+        for ii, (func, arg) in enumerate(zip(self.ext2int_funcs, x)):
+            result[ii] = func(ii, arg)
+        return result
+
+    def ext2int_all(self, ii, x):
+        x_a = x - self.lo[ii]
+        b_a = self.hi[ii] - self.lo[ii]
+        return numpy.arcsin(2.0 * x_a / b_a  - 1.0)
+
+    def ext2int_lo(self, ii, x):
+        return numpy.sqrt(x -self.lo[ii]) + self.lo[ii]
+
+    def ext2int_hi(self, ii, x):
+        return numpy.sqrt(self.hi[ii] - x) - self.hi[ii]
+
+    def return_arg(self, ii, x):
+        return x
 
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -1080,7 +1168,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
+          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0,
+          transform=False):
     """Levenberg-Marquardt optimization method.
 
     The Levenberg-Marquardt method is an interface to the MINPACK
@@ -1213,12 +1302,24 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     n = len(x)
     fjac = numpy.empty((m*n,))
 
-    x, fval, nfev, info, fjac = \
-        _saoopt.cpp_lmdif(stat_cb1, fcn_parallel_counter, numcores, m, x, ftol,
-                          xtol, gtol, maxfev, epsfcn, factor, verbose, xmin,
-                          xmax, fjac)
+    if transform:
+        tfmt = Transformation(xmin, xmax)
+    else:
+        tfmt = NoTransformation(xmin, xmax)
 
-    if info > 0:
+    def stat_cb1_transform(arg):
+        val = stat_cb1(tfmt.int2ext(arg))
+        return val
+    cb1 = stat_cb1_transform
+
+    xint, fval, nfev, info, fjac = \
+        _saoopt.cpp_lmdif(cb1, fcn_parallel_counter, numcores, m,
+                          tfmt.ext2int(x), ftol, xtol, gtol, maxfev, epsfcn,
+                          factor, verbose, tfmt.ext2int(xmin),
+                          tfmt.ext2int(xmax), fjac, transform)
+    x = tfmt.int2ext(xint)
+
+    if info > 0 and transform is False:
         fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
 
         if m != n:
@@ -1233,6 +1334,8 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             nfev += nm_result[4]['nfev']
             x = nm_result[1]
             fval = nm_result[2]
+    else:
+        covar = None
 
     if error:
         raise error.pop()
@@ -1247,8 +1350,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     if info == 0:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar,
                                      'num_parallel_map': num_parallel_map[0]})
+        if covar is not None:
+            rv[4]['covar'] = covar
+
     else:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
                                      'num_parallel_map': num_parallel_map[0]})
