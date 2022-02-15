@@ -249,7 +249,7 @@ def make_data(data_class):
     # We want to provide PHA tests that check out the grouping and
     # quality handling (but it is not worth trying all different
     # variants), so we have "grp" for grouping and no quality [*], and
-    # "qual" for groupbing and quality.
+    # "qual" for grouping and quality.
     #
     # [*] by which I mean we have not called ignore_bad, not that
     # there is no quality array.

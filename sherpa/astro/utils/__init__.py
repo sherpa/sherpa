@@ -123,7 +123,7 @@ def compile_energy_grid(arglist):
 
 
 def bounds_check(lo, hi):
-    """Ensure that the imits of a filter make sense.
+    """Ensure that the limits of a filter make sense.
 
     Note that if only one of them is given we always return
     that value first.
@@ -397,7 +397,7 @@ def _counts(data, lo, hi, func, *args):
 
     It is then time to restore the original filter, which is done in a
     finally block so that any errors calling func or the notice calls
-    does not change the data object.
+    do not change the data object.
 
     The use of the name counts is a bit of a mis-nomer as this could
     be used on non-PHA data, but the user only sees this via
