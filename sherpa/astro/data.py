@@ -4400,7 +4400,7 @@ class DataIMG(Data2D):
         # Unfortunately we can't re-create the original data used to
         # create the object, but we can fake it using the last-selected
         # coordinate system (which could lead to some issues for the
-        # world sytem - see #1390 - but there's little we can do here).
+        # world system - see #1380 - but there's little we can do here).
         # The two-step process is to get around the behavior of the
         # NoNewAttributesAfterInit parent class.
         #
