@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2017, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -497,17 +498,14 @@ def test_stats_calc_stat_wstat_diffbins():
     data, model = setup_single_pha(True, False, background=True)
 
     # Tweak data to have one-less bin than the background
+    counts = data.counts[:-1]
+    staterr = data.staterror[:-1]
+    grouping = data.grouping[:-1]
+
     data.channel = data.channel[:-1]
-    data.counts = data.channel[:-1]
-    for attr in ['staterror', 'syserror', 'grouping', 'quality',
-                 'backscal']:
-        val = getattr(data, attr)
-        if val is not None:
-            try:
-                setattr(data, attr, val[:-1])
-            except TypeError:
-                # assume a scalar, so leave be
-                pass
+    data.counts = counts
+    data.staterror = staterr
+    data.grouping = grouping
 
     # There is no Sherpa error for this, which seems surprising
     with pytest.raises(TypeError):

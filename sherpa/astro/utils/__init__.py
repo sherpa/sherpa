@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2008, 2016, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -122,6 +123,16 @@ def compile_energy_grid(arglist):
 
 
 def bounds_check(lo, hi):
+    """Ensure that the limits of a filter make sense.
+
+    Note that if only one of them is given we always return
+    that value first.
+    """
+
+    # TODO: this error message is not ideal, as it assumes the
+    # units are energy when the values could be wavelengths,
+    # channels, or for a non PHA dataset. See issue #1443
+    #
     if lo is not None and hi is not None and lo > hi:
         raise IOErr('boundscheck', lo, hi)
 
@@ -368,6 +379,31 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
 
 
 def _counts(data, lo, hi, func, *args):
+    """Sum up the data for the range lo to hi.
+
+    The routine starts by saving the current filter, which is a
+    combination of the mask field and - if set, which it is only for
+    PHA data with ignore_bad called - the quality_filter field.
+
+    The existing noticed range of the data set is ignored,
+    and instead the range lo-hi is used (the meaning is slightly
+    different to the notice method when one of the two fields
+    is None but the other is set; see bounds_check).
+
+    At this point the func method is called, with the remaining
+    arguments. It is assumed that this is a method of the
+    data object, but there is no requirement. The return value
+    is summed up and this value will be returned by the routine.
+
+    It is then time to restore the original filter, which is done in a
+    finally block so that any errors calling func or the notice calls
+    do not change the data object.
+
+    The use of the name counts is a bit of a mis-nomer as this could
+    be used on non-PHA data, but the user only sees this via
+    calc_data_sum/calc_model_sum.
+
+    """
     lo, hi = bounds_check(lo, hi)
     old_mask = data.mask
     old_quality_filter = getattr(data, 'quality_filter', None)
@@ -375,8 +411,8 @@ def _counts(data, lo, hi, func, *args):
         data.notice()  # clear filter
         data.notice(lo, hi)
         counts = func(*args).sum()
-        data.notice()
     finally:
+        # restore the old filter
         data.mask = old_mask
         if old_quality_filter is not None:
             data.quality_filter = old_quality_filter
@@ -385,21 +421,29 @@ def _counts(data, lo, hi, func, *args):
 
 
 def _counts2d(data, reg, func, *args):
+    """Sum up the data for the given region.
+
+    This is the same as _counts but for a data object that supports
+    the notice2d method (so currently DataIMG and DataIMGInt). It has
+    the same structure as _counts except that the fields used to save
+    and restore the state of the data object match the DataIMG
+    interface (i.e. mask and optional _region rather than mask and an
+    optional quality_filter)
+
+    The use of the name counts is a bit of a mis-nomer as this could
+    be used on non-PHA data, but the user only sees this via
+    calc_data_sum2d/calc_model_sum2d.
+
+    """
     old_mask = data.mask
-    coord = getattr(data, 'coord', None)
     old_region = getattr(data, '_region', None)
     try:
         data.notice2d()  # save and clear filter
-
         data.notice2d(reg)
         counts = func(*args).sum()
-        data.notice2d()
     finally:
+        # restore the old filter
         data.mask = old_mask
-
-        if coord is not None:
-            data.set_coord(coord)
-
         if old_region is not None:
             data._region = old_region
 
