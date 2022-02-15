@@ -963,13 +963,22 @@ categorization holds as it depends on whether the optional
 :py:attr:`~sherpa.astro.data.DataIMG.eqpos` attributes are set when
 the :py:class:`~sherpa.astro.data.DataIMG` object is created.
 
+.. _dataimg_no_shape:
+
 Using a coordinate system directly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. note::
+   It is expected that the `~sherpa.astro.data.DataIMG` object
+   is used with a rectangular grid of data and a ``shape`` attribute
+   set up to describe the grid shape, as used in the :ref:`next
+   section <dataimg_with_shape>`, but it is not required, as shown
+   here.
+
 If the independent axes are known, and not calculated via a coordinate
 transform, then they can just be set when creating the
-:py:class:`~sherpa.astro.data.DataIMG` object, leaving the
-:py:attr:`~sherpa.astro.data.DataIMG.coord` attribute set to
+`~sherpa.astro.data.DataIMG` object, leaving the
+`~sherpa.astro.data.DataIMG.coord` attribute set to
 ``logical``.
 
   >>> x0 = np.asarray([1000, 1200, 2000])
@@ -989,7 +998,7 @@ transform, then they can just be set when creating the
   coord     = logical
 
 This can then be used to evaluate a two-dimensional model,
-such as :py:class:`~sherpa.models.basic.Gauss2D`:
+such as `~sherpa.models.basic.Gauss2D`:
 
   >>> from sherpa.models.basic import Gauss2D
   >>> mdl = Gauss2D()
@@ -1011,21 +1020,23 @@ such as :py:class:`~sherpa.models.basic.Gauss2D`:
   array([32.08564744, 28.71745887, 32.08564744])
 
 Attempting to change the coordinate system with
-:py:class:`~sherpa.astro.data.DataIMF.set_coord` will error out with a
-:py:class:`sherpa.utils.err.DataErr` instance reporting that the data
+`~sherpa.astro.data.DataIMF.set_coord` will error out with a
+`~sherpa.utils.err.DataErr` instance reporting that the data
 set does not specify a shape.
+
+.. _dataimg_with_shape:
 
 The shape attribute
 ^^^^^^^^^^^^^^^^^^^
 
 The ``shape`` argument can be set when creating a
-:py:class:`~sherpa.astro.data.DataIMG` object to indicate that the
+`~sherpa.astro.data.DataIMG` object to indicate that the
 data represents an "image", that is a rectangular, contiguous, set of
 pixels. It is defined as ``(nx1, nx0)``, and so matches the ndarray
 ``shape`` attribute from NumPy. Operations that treat the dataset as a
 2D grid often require that the ``shape`` attribute is set.
 
-  >>> x1, x0 = np.mgridp1L4, 1:5]
+  >>> x1, x0 = np.mgrid[1:4, 1:5]
   >>> y2 = (x0 - 2.5)**2 + (x1 - 2)**2
   >>> y = np.sqrt(y2)
   >>> d = DataIMG('img', x0.flatten(), x1.flatten(),
@@ -1055,17 +1066,17 @@ pixels. It is defined as ``(nx1, nx0)``, and so matches the ndarray
   (4, 3)
 
 Attempting to change the coordinate system with
-:py:class:`~sherpa.astro.data.DataIMF.set_coord` will error out with a
-:py:class:`sherpa.utils.err.DataErr` instance reporting that the data
+`~sherpa.astro.data.DataIMF.set_coord` will error out with a
+`~sherpa.utils.err.DataErr` instance reporting that the data
 set does not contain the required coordinate system.
 
 Setting a coordinate system
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`sherpa.astro.io.wcs.WCS` class is used to add a
+The `sherpa.astro.io.wcs.WCS` class is used to add a
 coordinate system to an image. It has support for linear (translation
-and scale) and "wcs" - currently tangent-plane projections -
-conversions.
+and scale) and "wcs" - currently only tangent-plane projections
+are supported - conversions.
 
   >>> from sherpa.astro.io.wcs import WCS
   >>> sky = WCS("sky", "LINEAR", [1000,2000], [1, 1], [2, 2])
@@ -1089,7 +1100,7 @@ conversions.
 With this we can change to the "physical" coordinate system, which
 represents the conversion sent to the ``sky`` argument, and so get the
 independent axis in the converted system with the
-:py:meth:`sherpa.astro.data.DataIMG.set_coord` method:
+`~sherpa.astro.data.DataIMG.set_coord` method:
 
   >>> d.get_axes()
   (array([1., 2., 3.]), array([1., 2.]))
@@ -1109,13 +1120,13 @@ arguments sent in as ``x0`` and ``x1`` when creating the object):
 In Sherpa 4.14.0 and earlier, this conversion was handled by taking
 the current axes pair and applying the necessary WCS objects to create
 the selected coordinate system (that is, the argument to the
-`set_coord` call). This had the advantage of saving memory, as you
+`~sherpa.astro.data.DataIMG.set_coord` call). This had the advantage of saving memory, as you
 only needed to retain the current pair of independent axes, but at the
 expense of losing fidelity when converting between the coordinate
 systems. This has been changed so that the original independent axes
 are now stored in the object, in the ``_orig_indep_axis`` attribute,
 and this is now used whenever the coordinate system is changed. This
-does increase the memory size of a `DataIMG` object, and makes it
+does increase the memory size of a `~sherpa.astro.data.DataIMG` object, and makes it
 harder to load in picked files created with an old Sherpa version (the
-code will do it's best to create the necessary information but it is
+code will do its best to create the necessary information but it is
 not guaranteed to work well in all cases).
