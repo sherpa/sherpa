@@ -4641,8 +4641,9 @@ class DataIMG(Data2D):
         # FIXME add support for coords to image class -> DS9
         self._check_shape()
         y_img = self.filter_region(self.get_dep(False))
+        y_img = y_img.reshape(*self.shape)
         if yfunc is None:
-            return y_img.reshape(*self.shape)
+            return y_img
 
         m = self.eval_model_to_fit(yfunc)
         if numpy.iterable(self.mask):
@@ -4650,11 +4651,8 @@ class DataIMG(Data2D):
             # to the data size to preserve img shape and WCS coord
             m = pad_bounding_box(m, self.mask)
 
-        y_img = (y_img, self.filter_region(m))
-
-        y_img = (y_img[0].reshape(*self.shape),
-                 y_img[1].reshape(*self.shape))
-        return y_img
+        return (y_img,
+                self.filter_region(m).reshape(*self.shape))
 
     def get_axes(self):
         # FIXME: how to filter an axis when self.mask is size of self.y?
