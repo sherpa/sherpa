@@ -589,6 +589,253 @@ def make_test_pha():
     return DataPHA('p', chans, counts)
 
 
+def test_img_get_img(make_test_image):
+    img = make_test_image
+    ival = img.get_img()
+    assert ival.shape == (20, 30)
+    assert ival == pytest.approx(np.ones(20 * 30).reshape((20, 30)))
+
+
+def test_img_get_img_filter_none1(make_test_image):
+    """get_img when all the data has been filtered: mask is False
+
+    It is not obvious what is meant to happen here (the docs suggest
+    the filter is ignored but there is some handling of filters), so
+    this should be treated as a regresion test. See issue #1447
+
+    """
+    img = make_test_image
+    img.notice2d(ignore=True)
+
+    # safety check to ensure all the data has been ignored
+    assert img.mask is False
+
+    shape = (20, 30)
+    expected = np.ones(shape)
+
+    ival = img.get_img()
+    assert ival.shape == shape
+    assert ival == pytest.approx(expected)
+
+
+def test_img_get_img_filter_none2(make_test_image):
+    """get_img when all the data has been filtered: mask is array of False"""
+
+    img = make_test_image
+    img.notice2d("rect(0,0,10000,10000)", ignore=True)
+
+    # safety check to ensure all the data has been ignored
+    assert np.iterable(img.mask)
+    assert not np.any(img.mask)
+
+    shape = (20, 30)
+    ival = img.get_img()
+    assert ival.shape == shape
+    assert not np.any(np.isfinite(ival))
+
+
+def test_img_get_img_filter_some(make_test_image):
+    """get_img when some of the data has been filtered.
+
+    Unlike filtering out all the data, this does filter the response.
+
+    """
+    img = make_test_image
+    # use a shape that's easy to filter
+    img.notice2d("rect(4250, 3840,4256,3842)")
+
+    # safety check to ensure that a subset of the data has been masked out
+    assert np.iterable(img.mask)
+    assert np.any(img.mask)
+    assert not np.all(img.mask)
+
+    # It looks like RECT is inclusive for low and high edges.
+    shape = (20, 30)
+    expected = np.zeros(20 * 30) * np.nan
+    idx = np.hstack((np.arange(305, 312), np.arange(335, 342), np.arange(365, 372)))
+    expected[idx] = 1
+    expected.resize(shape)
+
+    ival = img.get_img()
+    assert ival.shape == shape
+
+    # pytest.approx follows IEEE so nan != nan, hence we
+    # have to filter out the values we expect.
+    #
+    good = np.isfinite(expected)
+    assert np.isfinite(ival) == pytest.approx(good)
+    assert ival[good] == pytest.approx(expected[good])
+
+
+def image_callable(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 20 * 30
+    assert len(x1) == 20 * 30
+    assert x0[0] == pytest.approx(4245)
+    assert x1[0] == pytest.approx(3830)
+    assert x0[-1] == pytest.approx(4274)
+    assert x1[-1] == pytest.approx(3849)
+    return np.ones(x0.size) + 2
+
+
+def image_callable_filtered(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 21
+    assert len(x1) == 21
+    assert x0[0] == pytest.approx(4250)
+    assert x1[0] == pytest.approx(3840)
+    assert x0[-1] == pytest.approx(4256)
+    assert x1[-1] == pytest.approx(3842)
+    return np.ones(x0.size) + 2
+
+
+def image_callable_filtered2(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 11
+    assert len(x1) == 11
+    assert x0[0] == pytest.approx(4247)
+    assert x1[0] == pytest.approx(3831)
+    assert x0[-1] == pytest.approx(4248)
+    assert x1[-1] == pytest.approx(3834)
+    return np.ones(x0.size) + 2
+
+
+def image_callable_none(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 0
+    assert len(x1) == 0
+    return np.asarray([])
+
+
+def test_img_get_img_model(make_test_image):
+    """What happens when we give a callable function to get_img?
+
+    The idea is that it will be a model, but all we need is
+    a callable.
+
+    """
+    img = make_test_image
+    ival, mval = img.get_img(image_callable)
+
+    shape = (20, 30)
+    expected1 = np.ones(shape)
+    expected2 = np.ones(shape) * 3
+
+    # The data
+    assert ival.shape == shape
+    assert ival == pytest.approx(expected1)
+
+    # The callable
+    assert mval.shape == shape
+    assert mval == pytest.approx(expected2)
+
+
+def test_img_get_img_model_filter_none1(make_test_image):
+    """See test_img_get_img_filter_none1. Issue #1447"""
+
+    img = make_test_image
+    img.notice2d(ignore=True)
+    with pytest.raises(DataErr) as err:
+        img.get_img(image_callable)
+
+    assert str(err.value) == "mask excludes all data"
+
+
+def test_img_get_img_model_filter_none2(make_test_image):
+    """See test_img_get_img_filter_none2. Issue #1447"""
+
+    img = make_test_image
+    img.notice2d("rect(2000,3000,7000,5000)", ignore=True)
+    ival, mval = img.get_img(image_callable_none)
+
+    shape = (20, 30)
+    assert ival.shape == shape
+    assert mval.shape == shape
+
+    assert not np.any(np.isfinite(ival))
+    assert not np.any(np.isfinite(mval))
+
+
+def test_img_get_img_model_filter_some(make_test_image):
+    """get_img with a callable and having a filter"""
+
+    img = make_test_image
+    # use a shape that's easy to filter
+    img.notice2d("rect(4250, 3840,4256,3842)")
+
+    ival, mval = img.get_img(image_callable_filtered)
+
+    shape = (20, 30)
+    idx = np.hstack((np.arange(305, 312), np.arange(335, 342), np.arange(365, 372)))
+
+    expected1 = np.zeros(20 * 30) * np.nan
+    expected1[idx] = 1
+    expected1.resize(shape)
+
+    expected2 = np.zeros(20 * 30) * np.nan
+    expected2[idx] = 3
+    expected2.resize(shape)
+
+    assert ival.shape == shape
+    assert mval.shape == shape
+
+    # pytest.approx follows IEEE so nan != nan, hence we
+    # have to filter out the values we expect.
+    #
+    good = np.isfinite(expected1)
+    assert np.isfinite(ival) == pytest.approx(good)
+    assert np.isfinite(mval) == pytest.approx(good)
+    assert ival[good] == pytest.approx(expected1[good])
+    assert mval[good] == pytest.approx(expected2[good])
+
+
+def test_img_get_img_model_filter_some2(make_test_image):
+    """test_img_get_img_model_filter_some but with a non-rectangular filter
+
+    We have been using a fitler that is rectangular, so matches the
+    grid. Let's see what happens if the filter like a circle so that
+    the bounding box does not match the filter.
+
+    """
+
+    img = make_test_image
+    img.notice2d("circle(4247.8, 3832.1, 2)")
+
+    # check
+    assert img.mask.sum() == 11
+
+    print(np.where(img.mask))
+
+    ival, mval = img.get_img(image_callable_filtered2)
+
+    shape = (20, 30)
+    idx = np.asarray([32, 33, 34, 61, 62, 63, 64, 92, 93, 94, 123])
+
+    expected1 = np.zeros(20 * 30) * np.nan
+    expected1[idx] = 1
+    expected1.resize(shape)
+
+    expected2 = np.zeros(20 * 30) * np.nan
+    expected2[idx] = 3
+    expected2.resize(shape)
+
+    assert ival.shape == shape
+    assert mval.shape == shape
+
+    # pytest.approx follows IEEE so nan != nan, hence we
+    # have to filter out the values we expect.
+    #
+    good = np.isfinite(expected1)
+    assert np.isfinite(ival) == pytest.approx(good)
+    assert np.isfinite(mval) == pytest.approx(good)
+    assert ival[good] == pytest.approx(expected1[good])
+    assert mval[good] == pytest.approx(expected2[good])
+
+
 def test_img_set_coord_invalid(make_test_image):
     """An invalid coord setting"""
     d = make_test_image
