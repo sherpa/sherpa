@@ -4632,9 +4632,8 @@ class DataIMG(Data2D):
         x1_lo = x1_i.min()
         x1_hi = x1_i.max()
 
-        # TODO: subset mask and then ask its shape
-        shape = mask[x0_lo:x0_hi + 1, x1_lo:x1_hi + 1].shape
         mask = mask[x0_lo:x0_hi + 1, x1_lo:x1_hi + 1]
+        shape = mask.shape
         mask = mask.ravel()
         return mask, shape
 
