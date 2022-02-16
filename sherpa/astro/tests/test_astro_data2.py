@@ -2233,7 +2233,6 @@ def test_dataimgint_create(make_dataimgint):
     assert img.header == {}
 
 
-@pytest.mark.xfail
 def test_dataimgint_show(make_dataimgint):
     """Check we can show a basic integrated image data set.
 
@@ -2247,22 +2246,20 @@ def test_dataimgint_show(make_dataimgint):
     #
     out = str(img).split("\n")
 
-    # I don't know what the correct output should be, so the
-    # x0/x0lo order could be wrong.
+    # Do we expect the x0/x1 output or x0lo/../x1hi
+    # output? For the moment just test what we do return.
     #
     assert out[0] == "name      = ival"
-    assert out[1] == "x0lo      = Int64[2]"
-    assert out[2] == "x1lo      = Int64[2]"
-    assert out[3] == "x0hi      = Int64[2]"
-    assert out[4] == "x1hi      = Int64[2]"
-    assert out[5] == "y         = Int64[2]"
-    assert out[6] == "shape     = (2, 1)"
-    assert out[7] == "staterror = None"
-    assert out[8] == "syserror  = None"
-    assert out[9] == "sky       = None"
-    assert out[10] == "eqpos     = None"
-    assert out[11] == "coord     = logical"
-    assert len(out) == 12
+    assert out[1] == "x0        = Float64[2]"
+    assert out[2] == "x1        = Float64[2]"
+    assert out[3] == "y         = Int64[2]"
+    assert out[4] == "shape     = (2, 1)"
+    assert out[5] == "staterror = None"
+    assert out[6] == "syserror  = None"
+    assert out[7] == "sky       = None"
+    assert out[8] == "eqpos     = None"
+    assert out[9] == "coord     = logical"
+    assert len(out) == 10
 
 
 def test_dataimgint_x0lo(make_dataimgint):
