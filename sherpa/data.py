@@ -774,7 +774,30 @@ class Data(NoNewAttributesAfterInit, BaseData):
             an instance of the dataspace associated with this data set.
 
         """
+
         return DataSpaceND(filter, data)
+
+    @property
+    def size(self):
+        """The number of elements in the data set.
+
+        Returns
+        -------
+        size : int or None
+            If the size has not been set then None is returned.
+        """
+
+        try:
+            dataspace = self._data_space
+        except AttributeError:
+            # In case called during initialization
+            return None
+
+        ogrid = dataspace.get().grid[0]
+        if ogrid is None:
+            return None
+
+        return len(ogrid)
 
     @property
     def dep(self):
@@ -817,17 +840,49 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @property
     def indep(self):
-        """
-        Return the grid of the data space associated with this data set.
+        """The grid of the data space associated with this data set.
+
+        When set, the field must be set to a tuple, even for a
+        one-dimensional data set.
 
         Returns
         -------
         tuple of array_like
+
         """
         return self._data_space.get().grid
 
     @indep.setter
     def indep(self, val):
+
+        # This is a "low-level" check so raise a normal Python error
+        # rather than DataErr.
+        #
+        if not isinstance(val, tuple):
+            raise TypeError(f"independent axis must be sent a tuple, not {type(val).__name__}")
+
+        # If the grid has already been set then check we have the correct size.
+        # There is an argument that this logic should be in self._init_data_space
+        # but we over-ride that method in all the classes so it is simpler
+        # to do here.
+        #
+        # Note that validation of the val field is done by
+        # _init_data_space and not here.
+        #
+        nold = self.size
+        if nold is None:
+            if val[0] is None:
+                # There is nothing to do.
+                return
+
+        else:
+            if val[0] is None:
+                raise DataErr("independent axis can not be cleared")
+
+            nnew = len(val[0])
+            if nold != nnew:
+                raise DataErr(f"independent axis can not change size: {nold} to {nnew}")
+
         self._data_space = self._init_data_space(self._data_space.filter, *val)
 
     def get_indep(self, filter=False):
@@ -890,17 +945,19 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         Parameters
         ----------
-        val
-
-        Returns
-        -------
+        val : sequence or number
+            If a number then it is used for each element.
 
         """
         if numpy.iterable(val):
             dep = numpy.asarray(val, SherpaFloat)
         else:
+            nelem = self.size
+            if nelem is None:
+                raise DataErr("Unable to use a scalar as no size has been set for the object")
+
             val = SherpaFloat(val)
-            dep = val * numpy.ones(len(self.get_indep()[0]), dtype=SherpaFloat)
+            dep = val * numpy.ones(nelem, dtype=SherpaFloat)
 
         self.y = dep
 
@@ -1861,10 +1918,14 @@ class Data2DInt(Data2D):
         return IntegratedDataSpace2D(filter, *data)
 
     def get_x0(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
     def get_x1(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x1lo + indep.x1hi) / 2.0
 

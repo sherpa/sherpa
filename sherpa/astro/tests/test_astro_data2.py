@@ -1404,19 +1404,9 @@ def test_pha_add_channels(make_test_pha):
     pha = make_test_pha
 
     channels2 = np.arange(1, 6, dtype=int)
-    counts2 = np.asarray([1, 2, 0, 3, 2], dtype=int)
-    pha.channel = channels2
-    pha.counts = counts2
-    assert np.all(pha.channel == channels2)
-    assert np.all(pha.counts == counts2)
-
-    assert len(pha.get_indep()) == 1
-    assert np.all(pha.get_indep()[0] == channels2)
-    assert np.all(pha.get_dep() == counts2)
-
-    assert len(pha.indep) == 1
-    assert np.all(pha.indep[0] == channels2)
-    assert np.all(pha.dep == counts2)
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 4 to 5"):
+        pha.channel = channels2
 
 
 def test_pha_remove_channels(make_test_pha):
@@ -1427,19 +1417,9 @@ def test_pha_remove_channels(make_test_pha):
     pha = make_test_pha
 
     channels2 = np.arange(1, 4, dtype=int)
-    counts2 = np.asarray([3, 1, 2], dtype=int)
-    pha.channel = channels2
-    pha.counts = counts2
-    assert np.all(pha.channel == channels2)
-    assert np.all(pha.counts == counts2)
-
-    assert len(pha.get_indep()) == 1
-    assert np.all(pha.get_indep()[0] == channels2)
-    assert np.all(pha.get_dep() == counts2)
-
-    assert len(pha.indep) == 1
-    assert np.all(pha.indep[0] == channels2)
-    assert np.all(pha.dep == counts2)
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 4 to 3"):
+        pha.channel = channels2
 
 
 @pytest.mark.parametrize("requested,expected",

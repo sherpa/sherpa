@@ -4987,10 +4987,14 @@ class DataIMGInt(DataIMG):
         return IntegratedDataSpace2D(filter, *data)
 
     def get_x0(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
     def get_x1(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x1lo + indep.x1hi) / 2.0
 

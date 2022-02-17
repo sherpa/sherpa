@@ -1974,19 +1974,9 @@ def test_reduce_axis_size_1d(data):
     for indep in data.indep:
         smaller.append(indep[1:-1])
 
-    data.indep = tuple(smaller)
-
-    # Check what has changed.
-    #
-    assert len(data.indep) == nindep
-    for indep in data.indep:
-        assert len(indep) == 8
-
-    # Note that the other values have not changed.
-    #
-    for attr in ["dep", "staterror", "syserror"]:
-        aval = getattr(data, attr)
-        assert len(aval) == 10
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 10 to 8"):
+        data.indep = tuple(smaller)
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
@@ -2018,21 +2008,9 @@ def test_reduce_axis_size_2d(data):
     for indep in data.indep:
         smaller.append(indep[1:-1])
 
-    data.indep = tuple(smaller)
-
-    # Check what has changed.
-    #
-    assert len(data.indep) == nindep
-    for indep in data.indep:
-        assert len(indep) == 98
-
-    # Note that the other values have not changed.
-    #
-    assert data.shape == (10, 10)
-
-    for attr in ["dep", "staterror", "syserror"]:
-        aval = getattr(data, attr)
-        assert len(aval) == 100
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 100 to 98"):
+        data.indep = tuple(smaller)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2044,8 +2022,8 @@ def test_reduce_axis_size_2d(data):
 def test_invalid_independent_axis_not_a_tuple_set_indep(val, etype, data):
     """The independent axis must be a tuple: set_indep"""
 
-    # There is no consistent error message to test here
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError,
+                       match=f"independent axis must be sent a tuple, not {etype}"):
         data.set_indep(val)
 
 
@@ -2058,8 +2036,8 @@ def test_invalid_independent_axis_not_a_tuple_set_indep(val, etype, data):
 def test_invalid_independent_axis_not_a_tuple_indep(val, etype, data):
     """The independent axis must be a tuple: .indep"""
 
-    # There is no consistent error message to test here
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError,
+                       match=f"independent axis must be sent a tuple, not {etype}"):
         data.indep = val
 
 
@@ -2139,20 +2117,14 @@ def test_make_invalid_dependent_axis(data_class):
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_set_independent_axis_to_none(data):
-    """What happens if we clear the independent axis?
-
-    It's not entirely clear what we mean by setting the independent
-    axis to None: do we need to set all components or is it sufficient
-    to use a single None. Similarly, what should the response be. We
-    currently only test the current behavior.
-
-    """
+    """What happens if we clear the independent axis?"""
 
     assert all(d is not None for d in data.indep)
 
     indep = [None for d in data.indep]
-    data.set_indep(tuple(indep))
-    assert all(d is None for d in data.indep)
+    with pytest.raises(DataErr,
+                       match="independent axis can not be cleared"):
+        data.set_indep(tuple(indep))
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2221,8 +2193,9 @@ def test_indep_must_be_1d(data):
     or that the length check fails.
     """
 
-    indep = [d.reshape(2, d.size // 2) for d in data.indep]
-    with pytest.raises(DataErr, match="Array must be 1D"):
+    indep = tuple([d.reshape(2, d.size // 2) for d in data.indep])
+    with pytest.raises(DataErr,
+                       match="^independent axis can not change size: 100? to 2$"):
         data.indep = indep
 
 
@@ -2379,8 +2352,7 @@ def test_data_is_empty(data_class, args):
     """There is no size attribute"""
 
     data = data_class("empty", *args)
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size is None
 
 
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
@@ -2391,8 +2363,7 @@ def test_data_size_1d(data):
     easier to check given the existing test infrastructure.
     """
 
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 10
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
@@ -2403,8 +2374,7 @@ def test_data_size_2d(data):
     easier to check given the existing test infrastructure.
     """
 
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 100
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
@@ -2415,15 +2385,12 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(TypeError,
-                       match="object of type 'NoneType' has no len()"):
+    with pytest.raises(DataErr,
+                       match="Unable to use a scalar as no size has been set for the object"):
         data.set_dep(2)
 
 
-#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])
-@pytest.mark.parametrize("data_class,args",
-                         [(Data2D, [None] * 3),
-                          pytest.param(Data2DInt, [None] * 5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])
 @pytest.mark.parametrize("index", ["x0", "x1"])
 def test_data_empty_get_x_2d(data_class, args, index):
     """What happens when there's no data?
@@ -2433,7 +2400,6 @@ def test_data_empty_get_x_2d(data_class, args, index):
 
     data = data_class("empty", *args)
     getfunc = getattr(data, f"get_{index}")
-    # XFAIL: for Data2DInt there's a TypeError about adding None to None
     assert getfunc() is None
 
 

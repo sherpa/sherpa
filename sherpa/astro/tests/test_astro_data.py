@@ -2523,21 +2523,16 @@ def test_pha_channel0_subtract():
 
 
 def test_set_channel_sets_independent_axis():
-    """What happens if the channel attribute is set?
+    """What happens if the channel attribute is set?"""
 
-    This is meant to check if the independent axis is also
-    changed to match the new channel setting.
-
-    """
     chans = np.arange(1, 5)
     counts = chans + 1
     d = DataPHA("x", chans, counts)
 
     chans2 = np.arange(10, 20)
-    d.channel = chans2
-    assert len(d.indep) == 1
-    assert d.indep[0] == pytest.approx(chans2)
-    assert d.y == pytest.approx(counts)
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 4 to 10"):
+        d.channel = chans2
 
 
 def test_set_counts_sets_y_axis():
@@ -2755,8 +2750,9 @@ def test_set_independent_axis_to_none(data_args):
     assert all(d is not None for d in data.indep)
 
     indep = [None for d in data.indep]
-    data.set_indep(tuple(indep))
-    assert all(d is None for d in data.indep)
+    with pytest.raises(DataErr,
+                       match="independent axis can not be cleared"):
+        data.set_indep(tuple(indep))
 
 
 def test_set_independent_axis_to_none_pha_channel():
@@ -2766,9 +2762,9 @@ def test_set_independent_axis_to_none_pha_channel():
     assert data.channel is not None
     assert data.indep[0] is not None
 
-    data.channel = None
-    assert len(data.indep) == 1
-    assert data.indep[0] is None
+    with pytest.raises(DataErr,
+                       match="independent axis can not be cleared"):
+        data.channel = None
 
 
 # Should we remove support for the error columns for DataARF/DataRMF?
@@ -3099,16 +3095,14 @@ def test_data_is_empty(data_class, args):
     """There is no size attribute"""
 
     data = data_class("empty", *args)
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size is None
 
 
 def test_datapha_size():
     """Check the size field."""
 
     data = PHA_ARGS[0](*PHA_ARGS[1])
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 3
 
 
 @pytest.mark.parametrize("data_args", [IMG_ARGS, IMGINT_ARGS])
@@ -3116,8 +3110,7 @@ def test_data2d_size(data_args):
     """Check the size field."""
 
     data = data_args[0](*data_args[1])
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 12
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
@@ -3128,15 +3121,12 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(TypeError,
-                       match="object of type 'NoneType' has no len()"):
+    with pytest.raises(DataErr,
+                       match="Unable to use a scalar as no size has been set for the object"):
         data.set_dep(2)
 
 
-#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
-@pytest.mark.parametrize("data_class,args",
-                         [(DataIMG, [None] * 3),
-                          pytest.param(DataIMGInt, [None] * 5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
 @pytest.mark.parametrize("index", ["x0", "x1"])
 def test_data_empty_get_x_2d(data_class, args, index):
     """What happens when there's no data?
@@ -3146,7 +3136,6 @@ def test_data_empty_get_x_2d(data_class, args, index):
 
     data = data_class("empty", *args)
     getfunc = getattr(data, f"get_{index}")
-    # XFAIL: for Data2DInt there's a TypeError about adding None to None
     assert getfunc() is None
 
 
