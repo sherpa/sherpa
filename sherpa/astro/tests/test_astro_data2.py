@@ -28,11 +28,15 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
+from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
+from sherpa.astro.io.wcs import WCS
 from sherpa.astro.utils._region import Region
+from sherpa.data import Data2D, Data2DInt
+from sherpa.models import Delta2D, Polynom2D
 from sherpa.plot import backend, dummy_backend
+from sherpa.utils import dataspace2d
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
@@ -583,6 +587,253 @@ def make_test_pha():
     chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
     counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
     return DataPHA('p', chans, counts)
+
+
+def test_img_get_img(make_test_image):
+    img = make_test_image
+    ival = img.get_img()
+    assert ival.shape == (20, 30)
+    assert ival == pytest.approx(np.ones(20 * 30).reshape((20, 30)))
+
+
+def test_img_get_img_filter_none1(make_test_image):
+    """get_img when all the data has been filtered: mask is False
+
+    It is not obvious what is meant to happen here (the docs suggest
+    the filter is ignored but there is some handling of filters), so
+    this should be treated as a regresion test. See issue #1447
+
+    """
+    img = make_test_image
+    img.notice2d(ignore=True)
+
+    # safety check to ensure all the data has been ignored
+    assert img.mask is False
+
+    shape = (20, 30)
+    expected = np.ones(shape)
+
+    ival = img.get_img()
+    assert ival.shape == shape
+    assert ival == pytest.approx(expected)
+
+
+def test_img_get_img_filter_none2(make_test_image):
+    """get_img when all the data has been filtered: mask is array of False"""
+
+    img = make_test_image
+    img.notice2d("rect(0,0,10000,10000)", ignore=True)
+
+    # safety check to ensure all the data has been ignored
+    assert np.iterable(img.mask)
+    assert not np.any(img.mask)
+
+    shape = (20, 30)
+    ival = img.get_img()
+    assert ival.shape == shape
+    assert not np.any(np.isfinite(ival))
+
+
+def test_img_get_img_filter_some(make_test_image):
+    """get_img when some of the data has been filtered.
+
+    Unlike filtering out all the data, this does filter the response.
+
+    """
+    img = make_test_image
+    # use a shape that's easy to filter
+    img.notice2d("rect(4250, 3840,4256,3842)")
+
+    # safety check to ensure that a subset of the data has been masked out
+    assert np.iterable(img.mask)
+    assert np.any(img.mask)
+    assert not np.all(img.mask)
+
+    # It looks like RECT is inclusive for low and high edges.
+    shape = (20, 30)
+    expected = np.zeros(20 * 30) * np.nan
+    idx = np.hstack((np.arange(305, 312), np.arange(335, 342), np.arange(365, 372)))
+    expected[idx] = 1
+    expected.resize(shape)
+
+    ival = img.get_img()
+    assert ival.shape == shape
+
+    # pytest.approx follows IEEE so nan != nan, hence we
+    # have to filter out the values we expect.
+    #
+    good = np.isfinite(expected)
+    assert np.isfinite(ival) == pytest.approx(good)
+    assert ival[good] == pytest.approx(expected[good])
+
+
+def image_callable(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 20 * 30
+    assert len(x1) == 20 * 30
+    assert x0[0] == pytest.approx(4245)
+    assert x1[0] == pytest.approx(3830)
+    assert x0[-1] == pytest.approx(4274)
+    assert x1[-1] == pytest.approx(3849)
+    return np.ones(x0.size) + 2
+
+
+def image_callable_filtered(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 21
+    assert len(x1) == 21
+    assert x0[0] == pytest.approx(4250)
+    assert x1[0] == pytest.approx(3840)
+    assert x0[-1] == pytest.approx(4256)
+    assert x1[-1] == pytest.approx(3842)
+    return np.ones(x0.size) + 2
+
+
+def image_callable_filtered2(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 11
+    assert len(x1) == 11
+    assert x0[0] == pytest.approx(4247)
+    assert x1[0] == pytest.approx(3831)
+    assert x0[-1] == pytest.approx(4248)
+    assert x1[-1] == pytest.approx(3834)
+    return np.ones(x0.size) + 2
+
+
+def image_callable_none(x0, x1):
+    """Check that we call the routine correctly (DataIMG/get_img)"""
+
+    assert len(x0) == 0
+    assert len(x1) == 0
+    return np.asarray([])
+
+
+def test_img_get_img_model(make_test_image):
+    """What happens when we give a callable function to get_img?
+
+    The idea is that it will be a model, but all we need is
+    a callable.
+
+    """
+    img = make_test_image
+    ival, mval = img.get_img(image_callable)
+
+    shape = (20, 30)
+    expected1 = np.ones(shape)
+    expected2 = np.ones(shape) * 3
+
+    # The data
+    assert ival.shape == shape
+    assert ival == pytest.approx(expected1)
+
+    # The callable
+    assert mval.shape == shape
+    assert mval == pytest.approx(expected2)
+
+
+def test_img_get_img_model_filter_none1(make_test_image):
+    """See test_img_get_img_filter_none1. Issue #1447"""
+
+    img = make_test_image
+    img.notice2d(ignore=True)
+    with pytest.raises(DataErr) as err:
+        img.get_img(image_callable)
+
+    assert str(err.value) == "mask excludes all data"
+
+
+def test_img_get_img_model_filter_none2(make_test_image):
+    """See test_img_get_img_filter_none2. Issue #1447"""
+
+    img = make_test_image
+    img.notice2d("rect(2000,3000,7000,5000)", ignore=True)
+    ival, mval = img.get_img(image_callable_none)
+
+    shape = (20, 30)
+    assert ival.shape == shape
+    assert mval.shape == shape
+
+    assert not np.any(np.isfinite(ival))
+    assert not np.any(np.isfinite(mval))
+
+
+def test_img_get_img_model_filter_some(make_test_image):
+    """get_img with a callable and having a filter"""
+
+    img = make_test_image
+    # use a shape that's easy to filter
+    img.notice2d("rect(4250, 3840,4256,3842)")
+
+    ival, mval = img.get_img(image_callable_filtered)
+
+    shape = (20, 30)
+    idx = np.hstack((np.arange(305, 312), np.arange(335, 342), np.arange(365, 372)))
+
+    expected1 = np.zeros(20 * 30) * np.nan
+    expected1[idx] = 1
+    expected1.resize(shape)
+
+    expected2 = np.zeros(20 * 30) * np.nan
+    expected2[idx] = 3
+    expected2.resize(shape)
+
+    assert ival.shape == shape
+    assert mval.shape == shape
+
+    # pytest.approx follows IEEE so nan != nan, hence we
+    # have to filter out the values we expect.
+    #
+    good = np.isfinite(expected1)
+    assert np.isfinite(ival) == pytest.approx(good)
+    assert np.isfinite(mval) == pytest.approx(good)
+    assert ival[good] == pytest.approx(expected1[good])
+    assert mval[good] == pytest.approx(expected2[good])
+
+
+def test_img_get_img_model_filter_some2(make_test_image):
+    """test_img_get_img_model_filter_some but with a non-rectangular filter
+
+    We have been using a fitler that is rectangular, so matches the
+    grid. Let's see what happens if the filter like a circle so that
+    the bounding box does not match the filter.
+
+    """
+
+    img = make_test_image
+    img.notice2d("circle(4247.8, 3832.1, 2)")
+
+    # check
+    assert img.mask.sum() == 11
+
+    print(np.where(img.mask))
+
+    ival, mval = img.get_img(image_callable_filtered2)
+
+    shape = (20, 30)
+    idx = np.asarray([32, 33, 34, 61, 62, 63, 64, 92, 93, 94, 123])
+
+    expected1 = np.zeros(20 * 30) * np.nan
+    expected1[idx] = 1
+    expected1.resize(shape)
+
+    expected2 = np.zeros(20 * 30) * np.nan
+    expected2[idx] = 3
+    expected2.resize(shape)
+
+    assert ival.shape == shape
+    assert mval.shape == shape
+
+    # pytest.approx follows IEEE so nan != nan, hence we
+    # have to filter out the values we expect.
+    #
+    good = np.isfinite(expected1)
+    assert np.isfinite(ival) == pytest.approx(good)
+    assert np.isfinite(mval) == pytest.approx(good)
+    assert ival[good] == pytest.approx(expected1[good])
+    assert mval[good] == pytest.approx(expected2[good])
 
 
 def test_img_set_coord_invalid(make_test_image):
@@ -1942,3 +2193,583 @@ def test_1209_background(make_data_path):
     assert d.header["TELESCOP"] == "XMM"
     assert d.header["INSTRUME"] == "EMOS1"
     assert d.header["FILTER"] == "Medium"
+
+
+@pytest.fixture
+def make_dataimgint():
+    """Create a simple IMG Int data set."""
+
+    # a 1 by 2 grid.
+    #
+    x1, x0 = np.mgrid[10:12, -5:-4]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.asarray([10, 5])
+
+    return DataIMGInt("ival", x0, x1, x0 + 1, x1 + 1,
+                      y, shape=shape)
+
+
+def test_dataimgint_create(make_dataimgint):
+    """Check we can create a basic integrated image data set.
+
+    See issue #1379
+    """
+
+    x0 = np.asarray([-5, -5])
+    x1 = np.asarray([10, 11])
+
+    img = make_dataimgint
+
+    assert (img.dep == [10, 5]).all()
+
+    assert len(img.indep) == 4
+    assert (img.indep[0] == x0).all()
+    assert (img.indep[1] == x1).all()
+    assert (img.indep[2] == (x0 + 1)).all()
+    assert (img.indep[3] == (x1 + 1)).all()
+
+    assert img.header == {}
+
+
+def test_dataimgint_show(make_dataimgint):
+    """Check we can show a basic integrated image data set.
+
+    See issue #1379
+    """
+
+    img = make_dataimgint
+
+    # This fails because there's problems getting x0 and x0lo
+    # attributes.
+    #
+    out = str(img).split("\n")
+
+    # Do we expect the x0/x1 output or x0lo/../x1hi
+    # output? For the moment just test what we do return.
+    #
+    assert out[0] == "name      = ival"
+    assert out[1] == "x0        = Float64[2]"
+    assert out[2] == "x1        = Float64[2]"
+    assert out[3] == "y         = Int64[2]"
+    assert out[4] == "shape     = (2, 1)"
+    assert out[5] == "staterror = None"
+    assert out[6] == "syserror  = None"
+    assert out[7] == "sky       = None"
+    assert out[8] == "eqpos     = None"
+    assert out[9] == "coord     = logical"
+    assert len(out) == 10
+
+
+def test_dataimgint_x0lo(make_dataimgint):
+    assert make_dataimgint.x0lo == pytest.approx([-5, -5])
+
+
+def test_dataimgint_x1lo(make_dataimgint):
+    assert make_dataimgint.x1lo == pytest.approx([10, 11])
+
+
+def test_dataimgint_x0hi(make_dataimgint):
+    assert make_dataimgint.x0hi == pytest.approx([-4, -4])
+
+
+def test_dataimgint_x1hi(make_dataimgint):
+    assert make_dataimgint.x1hi == pytest.approx([11, 12])
+
+
+def test_dataimgint_get_x0(make_dataimgint):
+    x0 = np.asarray([-5, -5])
+    x = (x0 + x0 + 1) / 2
+
+    assert (make_dataimgint.get_x0() == x).all()
+
+
+def test_dataimgint_x0(make_dataimgint):
+    x0 = np.asarray([-5, -5])
+    x = (x0 + x0 + 1) / 2
+
+    assert (make_dataimgint.x0 == x).all()
+
+
+def test_dataimgint_get_x1(make_dataimgint):
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+
+    assert (make_dataimgint.get_x1() == x).all()
+
+
+def test_dataimgint_x1(make_dataimgint):
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+
+    assert (make_dataimgint.x1 == x).all()
+
+
+def test_dataimgint_get_y(make_dataimgint):
+    assert (make_dataimgint.get_y() == [10, 5]).all()
+
+
+def test_dataimgint_y(make_dataimgint):
+    assert (make_dataimgint.y == [10, 5]).all()
+
+
+def test_dataimgint_get_dep(make_dataimgint):
+    assert (make_dataimgint.get_dep() == [10, 5]).all()
+
+
+def test_dataimgint_get_x0label(make_dataimgint):
+    assert make_dataimgint.get_x0label() == "x0"
+
+
+def test_dataimgint_get_x1label(make_dataimgint):
+    assert make_dataimgint.get_x1label() == "x1"
+
+
+def test_dataimgint_get_ylabel(make_dataimgint):
+    assert make_dataimgint.get_ylabel() == "y"
+
+
+def test_dataimgint_get_axes(make_dataimgint):
+    """This copies the Data2DInt case but is different"""
+    axes = make_dataimgint.get_axes()
+    assert len(axes) == 4
+
+    # What are these values? They are not the input values
+    # to DataIMGInt.
+    #
+    assert (axes[0] == [-0.5]).all()
+    assert (axes[1] == [-0.5, 0.5]).all()
+    assert (axes[2] == [0.5]).all()
+    assert (axes[3] == [0.5, 1.5]).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice(make_dataimgint):
+    """basic notice call
+
+    It is not entirely clear whether we expect the
+    notice call to work here when notice2d is present.
+    """
+    img = make_dataimgint
+
+    # The mask attribute can be True, False, or a ndarray. Fortunately
+    # using an ndarray as a truthy value throws a ValueError.
+    #
+    assert img.mask
+
+    # Data is defined on x0=-5, x1=10,11
+    # so this excludes the second point.
+    #
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.mask == np.asarray([True, False])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_ignore(make_dataimgint):
+    """basic ignore call"""
+    img = make_dataimgint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert (img.mask == np.asarray([False, True])).all()
+
+
+def test_dataimgint_ignore_get_filter(make_dataimgint):
+    """What exactly does get_filter return here?
+
+    The current behavior does not look sensible.
+    """
+    img = make_dataimgint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert img.get_filter() == ''
+
+
+def test_dataimgint_ignore_get_filter_expr(make_dataimgint):
+    """What exactly does get_filter_expr return here?
+
+    The current behavior does not look sensible.
+    """
+    img = make_dataimgint
+
+    assert img.mask
+    img.notice(x1lo=10, x1hi=11, ignore=True)
+    assert img.get_filter_expr() == ''
+
+
+# given how notice test above fails, how is this working?
+def test_dataimgint_notice_get_x0(make_dataimgint):
+    """basic notice call + get_x0"""
+    img = make_dataimgint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_x0() == np.asarray([-4.5, -4.5])).all()
+    assert (img.get_x0(True) == np.asarray([-4.5])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice_get_x1(make_dataimgint):
+    """basic notice call + get_x1"""
+    img = make_dataimgint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_x1() == np.asarray([10.5, 11.5])).all()
+    assert (img.get_x1(True) == np.asarray([10.5])).all()
+
+
+@pytest.mark.xfail
+def test_dataimgint_notice_get_y(make_dataimgint):
+    """basic notice call + get_y"""
+    img = make_dataimgint
+    img.notice(x1lo=10, x1hi=11)
+    assert (img.get_y() == np.asarray([10, 5])).all()
+    assert (img.get_y(True) == np.asarray([10])).all()
+
+
+def test_dataimgint_notice2d(make_dataimgint):
+    """basic notice2d call.
+
+    Given that we only have two items the testing is not
+    going to be extensive.
+    """
+    img = make_dataimgint
+
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.mask == np.asarray([True, False])).all()
+
+
+def test_dataimgint_ignore2d(make_dataimgint):
+    """basic ignore2d call.
+
+    Given that we only have two items the testing is not
+    going to be extensive.
+    """
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)", ignore=True)
+    assert (img.mask == np.asarray([False, True])).all()
+
+
+def test_dataimgint_notice2d_get_filter(make_dataimgint):
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert img.get_filter() == 'Rectangle(-100,10,100,11)'
+
+
+def test_dataimgint_notice2d_get_filter_expr(make_dataimgint):
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert img.get_filter_expr() == 'Rectangle(-100,10,100,11)'
+
+
+def test_dataimgint_notice2d_get_x0(make_dataimgint):
+    """basic notice2d call + get_x0"""
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.get_x0() == np.asarray([-4.5, -4.5])).all()
+    assert (img.get_x0(True) == np.asarray([-4.5])).all()
+
+
+def test_dataimgint_notice2d_get_x1(make_dataimgint):
+    """basic notice2d call + get_x1"""
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.get_x1() == np.asarray([10.5, 11.5])).all()
+    assert (img.get_x1(True) == np.asarray([10.5])).all()
+
+
+def test_dataimgint_notice2d_get_y(make_dataimgint):
+    """basic notice2d call + get_y"""
+    img = make_dataimgint
+    img.notice2d("rect(-100, 10, 100, 11)")
+    assert (img.get_y() == np.asarray([10, 5])).all()
+    assert (img.get_y(True) == np.asarray([10])).all()
+
+
+def test_dataimgint_get_dims(make_dataimgint):
+    assert make_dataimgint.get_dims() == (1, 2)
+
+
+def test_dataimgint_get_img(make_dataimgint):
+    img = make_dataimgint
+    ival = img.get_img()
+    assert ival.shape == (2, 1)
+    assert (ival == np.asarray([[10], [5]])).all()
+
+
+def test_dataimgint_get_img_model_no_filter(make_dataimgint):
+    """Check we can evaluate a model
+
+    The Data2DInt case also adds a filter to check that the routine
+    ignores this filter, but as we currently don't understand the
+    filtering we skip this step.
+
+    """
+    img = make_dataimgint
+
+    # This model evaluates
+    #   mdl.c + mdl.cx1 * x0 + mdl.cy1 * x1
+    #
+    # which becomes, because we use the middle of the bin
+    #
+    #   10 + 1 * (-4.5) + 10 * (10.5, 11.5)
+    #   = (110.5, 120.5)
+    #
+    mdl = Polynom2D()
+    mdl.c = 10
+    mdl.cy1 = 10
+    mdl.cx1 = 1
+
+    ivals = img.get_img(mdl)
+    assert len(ivals) == 2
+    assert ivals[0].shape == (2, 1)
+    assert ivals[1].shape == (2, 1)
+    assert (ivals[0] == np.asarray([[10], [5]])).all()
+    assert (ivals[1] == np.asarray([[110.5], [120.5]])).all()
+
+
+def test_dataimgint_get_max_pos(make_dataimgint):
+    assert make_dataimgint.get_max_pos() == (-4.5, 10.5)
+
+
+def test_dataimgint_get_bounding_mask(make_dataimgint):
+    assert make_dataimgint.get_bounding_mask() == (True, None)
+
+
+@pytest.mark.parametrize("method",
+                         ["get_error",
+                          "get_imgerr",
+                          "get_staterror",
+                          "get_syserror",
+                          "get_yerr"
+                         ])
+def test_dataimgint_method_is_none(method, make_dataimgint):
+    """Check those methods that return None"""
+    func = getattr(make_dataimgint, method)
+    assert func() is None
+
+
+@pytest.mark.parametrize("attribute",
+                         ["eqpos",
+                          "sky",
+                          "staterror",
+                          "syserror"
+                         ])
+def test_dataimgint_attribute_is_none(attribute, make_dataimgint):
+    """Check those attributes that return None"""
+    attr = getattr(make_dataimgint, attribute)
+    assert attr is None
+
+
+def test_dataimgint_no_sky(make_dataimgint):
+    """Basic check (rely on base class to check all the combinations)."""
+
+    with pytest.raises(DataErr) as de:
+        make_dataimgint.get_physical()
+
+    assert str(de.value) == "data set 'ival' does not contain a physical coordinate system"
+
+
+def test_dataimgint_sky(make_dataimgint):
+    """We can convert coordinates.
+
+    We assume the base class tests are good here, so this is a
+    minimal check.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    # The "logical" coordinates are
+    #  lo = [-5, 10], [-5, 11]
+    #  hi = [-4, 11], [-4, 12]
+    #
+    # so these get converted to
+    #
+    #   new = (orig - crpix) * cdelt + crval
+    #
+    # which is
+    #  lo = [87.5, 125.5], [87.5, 127.5]
+    #  hi = [89.5, 127.5], [89.5, 129.5]
+    #
+    x0 = np.asarray([87.5, 87.5])
+    x1 = np.asarray([125.5, 127.5])
+
+    sky = img.get_physical()
+
+    assert len(sky) == 4
+    assert sky[0] == pytest.approx(x0)
+    assert sky[1] == pytest.approx(x1)
+    assert sky[2] == pytest.approx(x0 + 2)
+    assert sky[3] == pytest.approx(x1 + 2)
+
+
+def test_dataimgint_sky_coords_unchanged(make_dataimgint):
+    """Just because sky is set we don't change axis data."""
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+    assert img.get_x1() == pytest.approx(x)
+
+
+def test_dataimgint_set_sky(make_dataimgint):
+    """We can change to the SKY coordinate system"""
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    assert img.coord == "logical"
+    img.set_coord("physical")
+    assert img.coord == "physical"
+
+
+def test_dataimgint_set_sky_x0hi(make_dataimgint):
+    """x0hi is changed
+
+    We don't check all attributes.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    img.set_coord("physical")
+    x0 = np.asarray([87.5, 87.5])
+    x = x0 + 2
+    assert img.x0hi == pytest.approx(x)
+
+
+def test_dataimgint_set_sky_get_x1(make_dataimgint):
+    """get_x1 is changed
+
+    We don't check all accessors.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+
+    img.set_coord("physical")
+    x1 = np.asarray([125.5, 127.5])
+    x = (x1 + x1 + 2) / 2
+    assert img.get_x1() == pytest.approx(x)
+
+
+def test_dataimgint_sky_coords_reset(make_dataimgint):
+    """We can get back to the logical units
+
+    We only check one of the values.
+    """
+
+    img = make_dataimgint
+    img.sky= WCS("sky", "LINEAR",
+                 crval=[100.5, 110.5],
+                 crpix=[1.5, 2.5],
+                 cdelt=[2, 2])
+    img.set_coord("physical")
+    img.set_coord("logical")
+
+    x1 = np.asarray([10, 11])
+    x = (x1 + x1 + 1) / 2
+    assert img.get_x1() == pytest.approx(x)
+
+
+@pytest.mark.parametrize("dclass", [Data2D, DataIMG])
+def test_1379_evaluation_unintegrated(dclass):
+    """Check that delta2d does not evaluate (i.e. only 0's).
+
+    This is based on the code that lead to showing #1379.
+    """
+
+    x0, x1, y, shape = dataspace2d([10,15])
+
+    data = dclass("temp", x0, x1, y, shape=shape)
+
+    # It is important that xpos/ypos is not set to either an integer
+    # value or to half-pixel (as this is used for the bin edges in the
+    # integrated case).
+    #
+    mdl = Delta2D("mdl")
+    mdl.xpos = 4.3
+    mdl.ypos = 8.9
+    mdl.ampl = 100
+    assert mdl.integrate  # ensure it's integrates
+
+    out = data.eval_model(mdl)
+    assert len(out) == len(y)
+    assert set(out) == {0.0}
+
+
+@pytest.mark.parametrize("dclass", [Data2DInt, DataIMGInt])
+def test_1379_evaluation_integrated(dclass):
+    """Check that delta2d does get evaluate at some point.
+
+    This is based on the code that lead to showing #1379.
+    """
+
+    x0, x1, y, shape = dataspace2d([10,15])
+
+    data = dclass("temp", x0 - 0.5, x1 - 0.5,
+                  x0 + 0.5, x1 + 0.5, y,
+                  shape=shape)
+
+    mdl = Delta2D("mdl")
+    mdl.xpos = 4.3
+    mdl.ypos = 8.9
+    mdl.ampl = 100
+    assert mdl.integrate  # ensure it's integrates
+
+    out = data.eval_model(mdl)
+    assert len(out) == len(y)
+    assert set(out) == {0.0, 100.0}
+    assert out.sum() == 100.0
+    assert out.argmax() == 83
+
+    # An internal check that we are actually selecting the correct
+    # pixel.
+    #
+    assert x0[83] == 4.0
+    assert x1[83] == 9.0
+
+
+@pytest.mark.parametrize("dclass", [Data2DInt, DataIMGInt])
+def test_1379_evaluation_model_not_integrated(dclass):
+    """If the delta2D model is not integrated all bets are off.
+
+    This is based on the code that lead to showing #1379.
+    """
+
+    x0, x1, y, shape = dataspace2d([10,15])
+
+    data = dclass("temp", x0 - 0.5, x1 - 0.5,
+                  x0 + 0.5, x1 + 0.5, y,
+                  shape=shape)
+
+    mdl = Delta2D("mdl")
+    mdl.xpos = 4.3
+    mdl.ypos = 8.9
+    mdl.ampl = 100
+    mdl.integrate = False
+
+    # As the integrate flag is False it behaves like the Data2D/DataIMG
+    # case (since the xpos/ypos value is chosen not to fall on a
+    # bin edge).
+    #
+    out = data.eval_model(mdl)
+    assert len(out) == len(y)
+    assert set(out) == {0.0}
