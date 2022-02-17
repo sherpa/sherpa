@@ -1276,10 +1276,16 @@ def test_write_pha_missing_column(column, is_ascii, tmp_path):
     At the moment we write out the file.
     """
 
-    chans = np.arange(1, 4, dtype=np.int32)
-    counts = np.arange(1, 4, dtype=np.int32)
+    if column == "channel":
+        chans = None
+        counts = np.arange(1, 4, dtype=np.int32)
+    elif column == "counts":
+        chans = np.arange(1, 4, dtype=np.int32)
+        counts = None
+    else:
+        assert False, "unknown column"
+
     pha = DataPHA("tmp", chans, counts)
-    setattr(pha, column, None)
 
     tmpfile = tmp_path / 'test.out'
     assert not tmpfile.exists()
