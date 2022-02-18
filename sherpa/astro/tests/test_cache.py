@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2018, 2019, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2018, 2019, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,8 @@ import numpy
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_group, requires_xspec
 
 from sherpa.models import Polynom1D, SimulFitModel
 from sherpa.models.basic import Gauss1D
@@ -33,6 +35,7 @@ from sherpa.astro import ui
 
 
 @requires_data
+@requires_group
 @requires_fits
 @requires_xspec
 def test_ARFModelPHA(make_data_path, clean_astro_ui):

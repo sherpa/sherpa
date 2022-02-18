@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,13 +30,14 @@ import pytest
 
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, \
-    requires_xspec, requires_fits
+    requires_xspec, requires_fits, requires_group
 
 from sherpa.astro import ui
 from sherpa.models.basic import Gauss2D
 
 
 @requires_xspec
+@requires_group
 @requires_fits
 @requires_data
 def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
