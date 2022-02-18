@@ -97,6 +97,7 @@ for mod_name in ['sherpa.utils._utils',
                  'sherpa.astro.utils._utils',
                  'sherpa.astro.utils._pileup',
                  'sherpa.astro.utils._region',
+                 'sherpa.astro.utils._wcs',
                  'sherpa.astro.models._modelfcts',
                  'sherpa.astro.io.pyfits_backend',
                  'sherpa.image.DS9',
@@ -287,7 +288,7 @@ main_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
-copyright = '2019-2021, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
+copyright = '2019-2022, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
 author = 'Chandra X-ray Center, Smithsonian Astrophysical Observatory'
 
 # The version info for the project you're documenting, acts as replacement for
