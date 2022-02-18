@@ -68,6 +68,8 @@ jobs:
           NUMPYVER='numpy'
         fi
         pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER}
+        # Ensure we use an old-enough setuptools: see issue #1456
+        pip install 'setuptools < 60'
 
     - name: Build Sherpa
       run: |

@@ -73,6 +73,9 @@ jobs:
           python3 -m venv --system-site-packages tests
           source tests/bin/activate
 
+          # Ensure we use an old-enough setuptools: see issue #1456
+          pip install 'setuptools < 60'
+
           # without this we get configure errors when building fftw and I don't know why
           # (this adds the --disable-dependency-tracking option). A google suggests it
           # could be a make vs gmake issue but we can't easily change this (and it may
