@@ -95,7 +95,7 @@ import warnings
 
 import numpy
 
-from sherpa.data import Data1DInt, Data2D, Data, Data2DInt, Data1D, \
+from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
@@ -625,7 +625,7 @@ def html_img(img):
 
         # shape is better defined for DataIMG than Data2D
         meta.append(('Shape',
-                     ('{1} by {0} pixels'.format(*img.shape))))
+                     (f'{img.shape[1]} by {img.shape[0]} pixels')))
 
         meta.append(('Number of bins', len(img.y)))
 
@@ -969,6 +969,8 @@ class DataOgipResponse(Data1DInt):
         return elo, ehi
 
     def _get_data_space(self, filter=False):
+        # TODO: the class has no _lo/_hi attributes so what is this
+        #       meant to do?
         return EvaluationSpace1D(self._lo, self._hi)
 
 
@@ -1065,7 +1067,7 @@ class DataARF(DataOgipResponse):
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
-        if args != ():
+        if args:
             (arf, rmf) = args
             if rmf != () and len(arf[0]) > len(rmf[0]):
                 model = rebin(model, arf[0], arf[1], rmf[0], rmf[1])
@@ -1203,7 +1205,7 @@ class DataRMF(DataOgipResponse):
 
         # Rebin the high-res source model from the PHA down to the size
         # the RMF expects.
-        if args != ():
+        if args:
             (rmf, pha) = args
             if pha != () and len(pha[0]) > len(rmf[0]):
                 src = rebin(src, pha[0], pha[1], rmf[0], rmf[1])
@@ -1315,7 +1317,8 @@ def validate_wavelength_limits(wlo, whi, emax):
         if lo < 0 and hi < 0:
             # Both limits were 0 so we can do nothing
             return None
-        elif hi < 0:
+
+        if hi < 0:
             # The original query was 0 to x which maps to hc/x to None
             # but we need to know if hc/x is > emax or not
             if lo < emax:
@@ -2285,7 +2288,7 @@ must be an integer.""")
         try:
             return mid[val]
         except IndexError:
-            raise DataErr(f'invalid group number: {val}')
+            raise DataErr(f'invalid group number: {val}') from None
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
@@ -2293,7 +2296,7 @@ must be an integer.""")
         try:
             return (elo[val] + ehi[val]) / 2.0
         except IndexError:
-            raise DataErr('invalidchannel', val)
+            raise DataErr('invalidchannel', val) from None
 
     def _channel_to_wavelength(self, val, group=True, response_id=None):
         tiny = numpy.finfo(numpy.float32).tiny
@@ -2915,9 +2918,9 @@ must be an integer.""")
             if self.mask is not True:
                 self.mask = self.mask & qual_flags
                 return
-            else:
-                self.mask = qual_flags
-                return
+
+            self.mask = qual_flags
+            return
 
         # self.quality_filter used for pre-grouping filter
         self.quality_filter = qual_flags
@@ -3564,7 +3567,7 @@ must be an integer.""")
                 bkg_staterr_list.append(berr)
 
             nbkg = len(bkg_staterr_list)
-            assert (nbkg > 0)
+            assert nbkg > 0  # TODO: should we remove this assert?
             if nbkg == 1:
                 bkgsum = bkg_staterr_list[0]
             else:
@@ -3778,8 +3781,8 @@ must be an integer.""")
         if self.plot_fac:
             from sherpa.plot import backend
             latex = backend.get_latex_for_string(
-                '^{}'.format(self.plot_fac))
-            ylabel += ' X {}{}'.format(self.units.capitalize(), latex)
+                f'^{self.plot_fac}')
+            ylabel += f' X {self.units.capitalize()}{latex}'
         return ylabel
 
     @staticmethod
@@ -3851,7 +3854,7 @@ must be an integer.""")
         if self.mask is True or not self.grouped:
             if self.quality_filter is not None:
                 return self.quality_filter
-            elif numpy.iterable(self.mask):
+            if numpy.iterable(self.mask):
                 return self.mask
             return None
 
@@ -4334,18 +4337,33 @@ class DataIMG(Data2D):
 
     _extra_fields = ("sky", "eqpos", "coord")
 
-    def _get_coord(self):
+    sky = None
+    """The optional WCS object that converts to the physical coordinate system."""
+
+    eqpos = None
+    """The optional WCS object that converts to the world coordinate system."""
+
+    @property
+    def coord(self):
+        """Return the coordinate setting.
+
+        The attribute is one of 'logical', 'physical', or
+        'world'. Use `set_coord` to change the setting.
+
+        """
         return self._coord
 
+    # We do not set this to @coord.setter as the attribute should be
+    # changed with set_coord when outside the methods of this class.
+    #
     def _set_coord(self, val):
         coord = str(val).strip().lower()
 
         if coord in ('logical', 'image'):
             coord = 'logical'
 
-        elif coord in ('physical',):
+        elif coord == 'physical':
             self._check_physical_transform()
-            coord = 'physical'
 
         elif coord in ('world', 'wcs'):
             self._check_world_transform()
@@ -4356,22 +4374,23 @@ class DataIMG(Data2D):
 
         self._coord = coord
 
-    # You should use set_coord rather than changing coord directly,
-    # otherwise constraints set in set_coord are not run. This is
-    # probably an error in set_coord (i.e. this logic should be
-    # moved into _set_coord).
-    #
-    coord = property(_get_coord, _set_coord,
-                     doc='Coordinate system of independent axes')
-
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
                  header=None):
         self.sky = sky
         self.eqpos = eqpos
-        self.coord = coord
+        self._set_coord(coord)
         self.header = {} if header is None else header
         self._region = None
+
+        # Store the original axes so we can always recreate the other
+        # systems without having to worry about numerical differences
+        # from switching between systems. This is an explicit decision
+        # to go for repeatable behavior at the expense of using more
+        # memory. See #1380 for more information.
+        #
+        self._orig_indep_axis = (self.coord, x0, x1)
+
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
     def _repr_html_(self):
@@ -4403,12 +4422,28 @@ class DataIMG(Data2D):
         # self.__dict__['_get_physical']=(lambda : None)
         # self.__dict__['_get_world']=(lambda : None)
 
-        if 'header' not in state:
-            self.header = {}
+        # Unfortunately we can't re-create the original data used to
+        # create the object, but we can fake it using the last-selected
+        # coordinate system (which could lead to some issues for the
+        # world system - see #1380 - but there's little we can do here).
+        # The two-step process is to get around the behavior of the
+        # NoNewAttributesAfterInit parent class.
+        #
+        if "_orig_indep_axis" not in state:
+            state["_orig_indep_axis"] = None
 
         self.__dict__.update(state)
 
-        # _set_coord will correctly define the _get_* WCS function pointers.
+        if 'header' not in state:
+            self.header = {}
+
+        if self._orig_indep_axis is None:
+            self._orig_indep_axis = (self.coord, self.x0, self.x1)
+
+        # This may check the data is correct, based on the coord setting,
+        # but is it worth it? It may catch a case when data is loaded into
+        # a system without WCS support.
+        #
         self._set_coord(state['_coord'])
 
         # This used to always use the _region setting to create a
@@ -4519,50 +4554,60 @@ class DataIMG(Data2D):
 
         return (x0, x1)
 
+    # Convert from the _orig_indep_axis tuple (coord, x0, x1) to the
+    # required data system (if it isn't already set).
+    #
+    def _get_coordsys(self, coord):
+        if self.coord == coord:
+            return self.get_indep()
+
+        (base, x0, x1) = self._orig_indep_axis
+        x0 = x0.copy()
+        x1 = x1.copy()
+        if base == coord:
+            return (x0, x1)
+
+        conv = getattr(self, f'_{base}_to_{coord}')
+        return conv(x0, x1)
+
     def get_logical(self):
-        coord = self.coord
-        x0, x1 = self.get_indep()
-        if coord != 'logical':
-            x0 = x0.copy()
-            x1 = x1.copy()
-            x0, x1 = getattr(self, '_' + coord + '_to_logical')(x0, x1)
-        return (x0, x1)
+        return self._get_coordsys("logical")
 
     def get_physical(self):
-        coord = self.coord
-        x0, x1 = self.get_indep()
-        if coord != 'physical':
-            x0 = x0.copy()
-            x1 = x1.copy()
-            x0, x1 = getattr(self, '_' + coord + '_to_physical')(x0, x1)
-        return (x0, x1)
+        return self._get_coordsys("physical")
 
     def get_world(self):
-        coord = self.coord
-        x0, x1 = self.get_indep()
-        if coord != 'world':
-            x0 = x0.copy()
-            x1 = x1.copy()
-            x0, x1 = getattr(self, '_' + coord + '_to_world')(x0, x1)
-        return (x0, x1)
+        return self._get_coordsys("world")
 
     # For compatibility with old Sherpa keywords
     get_image = get_logical
     get_wcs = get_world
 
     def set_coord(self, coord):
+        """Change the `coord` attribute.
+
+        Parameters
+        ----------
+        coord : {'logical', 'image', 'physical', 'world', 'wcs'}
+            The coordinate system to use. Note that "image" is a
+            synomym for "logical" and "wcs" is a synomyn for "world".
+
+        """
+
         coord = str(coord).strip().lower()
-        # Destroys original data to conserve memory for big imgs
         good = ('logical', 'image', 'physical', 'world', 'wcs')
         if coord not in good:
             raise DataErr('badchoices', 'coordinates', coord, ", ".join(good))
 
-        if coord.startswith('wcs'):
+        if coord == 'wcs':
             coord = 'world'
-        elif coord.startswith('image'):
+        elif coord == 'image':
             coord = 'logical'
 
-        func = getattr(self, 'get_' + coord)
+        if coord == self.coord:
+            return
+
+        func = getattr(self, f'get_{coord}')
         self.indep = func()
         self._set_coord(coord)
 
@@ -4686,6 +4731,9 @@ class DataIMG(Data2D):
         # dummy placeholders needed b/c img shape may not be square!
         axis0 = numpy.arange(self.shape[1], dtype=float) + 1.
         axis1 = numpy.arange(self.shape[0], dtype=float) + 1.
+        if self.coord == 'logical':
+            return (axis0, axis1)
+
         dummy0 = numpy.ones(axis0.size, dtype=float)
         dummy1 = numpy.ones(axis1.size, dtype=float)
 
@@ -4693,7 +4741,7 @@ class DataIMG(Data2D):
             axis0, dummy = self._logical_to_physical(axis0, dummy0)
             dummy, axis1 = self._logical_to_physical(dummy1, axis1)
 
-        elif self.coord == 'world':
+        else:
             axis0, dummy = self._logical_to_world(axis0, dummy0)
             dummy, axis1 = self._logical_to_world(dummy1, axis1)
 
@@ -4701,27 +4749,23 @@ class DataIMG(Data2D):
 
     def get_x0label(self):
         "Return label for first dimension in 2-D view of independent axis/axes"
-        if self.coord in ('logical', 'image'):
-            return 'x0'
-        elif self.coord in ('physical',):
+        if self.coord == 'physical':
             return 'x0 (pixels)'
-        elif self.coord in ('world', 'wcs'):
+        if self.coord == 'world':
             return 'RA (deg)'
-        else:
-            return 'x0'
+
+        return 'x0'
 
     def get_x1label(self):
         """
         Return label for second dimension in 2-D view of independent axis/axes
         """
-        if self.coord in ('logical', 'image'):
-            return 'x1'
-        elif self.coord in ('physical',):
+        if self.coord == 'physical':
             return 'x1 (pixels)'
-        elif self.coord in ('world', 'wcs'):
+        if self.coord == 'world':
             return 'DEC (deg)'
-        else:
-            return 'x1'
+
+        return 'x1'
 
     def to_contour(self, yfunc=None):
         y = self.filter_region(self.get_dep(False))
@@ -4740,11 +4784,16 @@ class DataIMG(Data2D):
                 self.get_x1label())
 
     def filter_region(self, data):
-        if data is not None and numpy.iterable(self.mask):
-            filter = numpy.ones(len(self.mask), dtype=SherpaFloat)
-            filter[~self.mask] = numpy.nan
-            return data * filter
-        return data
+        if data is None or not numpy.iterable(self.mask):
+            return data
+
+        # We do not want to change the data array hence the
+        # explicit copy: this is done via astype to ensure
+        # we convert to a type that can accept NaN values.
+        #
+        out = data.astype(dtype=SherpaFloat, casting="safe", copy=True)
+        out[~self.mask] = numpy.nan
+        return out
 
 
 class DataIMGInt(DataIMG):
@@ -4755,7 +4804,7 @@ class DataIMGInt(DataIMG):
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
-        self.coord = coord
+        self._set_coord(coord)
         self.header = {} if header is None else header
         self.shape = shape
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
@@ -4802,45 +4851,51 @@ class DataIMGInt(DataIMG):
     def get_logical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord != 'logical':
-            x0lo = x0lo.copy()
-            x1lo = x1lo.copy()
-            convert = getattr(self, '_' + coord + '_to_logical')
-            x0lo, x1lo = convert(x0lo, x1lo)
+        if coord == 'logical':
+            return (x0lo, x1lo, x0hi, x1hi)
 
-            x0hi = x0hi.copy()
-            x1hi = x1hi.copy()
-            x0hi, x1hi = convert(x0hi, x1hi)
+        x0lo = x0lo.copy()
+        x1lo = x1lo.copy()
+        convert = getattr(self, f'_{coord}_to_logical')
+        x0lo, x1lo = convert(x0lo, x1lo)
+
+        x0hi = x0hi.copy()
+        x1hi = x1hi.copy()
+        x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
 
     def get_physical(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord != 'physical':
-            x0lo = x0lo.copy()
-            x1lo = x1lo.copy()
-            convert = getattr(self, '_' + coord + '_to_physical')
-            x0lo, x1lo = convert(x0lo, x1lo)
+        if coord == 'physical':
+            return (x0lo, x1lo, x0hi, x1hi)
 
-            x0hi = x0hi.copy()
-            x1hi = x1hi.copy()
-            x0hi, x1hi = convert(x0hi, x1hi)
+        x0lo = x0lo.copy()
+        x1lo = x1lo.copy()
+        convert = getattr(self, f'_{coord}_to_physical')
+        x0lo, x1lo = convert(x0lo, x1lo)
+
+        x0hi = x0hi.copy()
+        x1hi = x1hi.copy()
+        x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
 
     def get_world(self):
         coord = self.coord
         x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord != 'world':
-            x0lo = x0lo.copy()
-            x1lo = x1lo.copy()
-            convert = getattr(self, '_' + coord + '_to_world')
-            x0lo, x1lo = convert(x0lo, x1lo)
+        if coord == 'world':
+            return (x0lo, x1lo, x0hi, x1hi)
 
-            x0hi = x0hi.copy()
-            x1hi = x1hi.copy()
-            x0hi, x1hi = convert(x0hi, x1hi)
+        x0lo = x0lo.copy()
+        x1lo = x1lo.copy()
+        convert = getattr(self, f'_{coord}_to_world')
+        x0lo, x1lo = convert(x0lo, x1lo)
+
+        x0hi = x0hi.copy()
+        x1hi = x1hi.copy()
+        x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
 
@@ -4855,6 +4910,9 @@ class DataIMGInt(DataIMG):
         axis0hi = numpy.arange(self.shape[1], dtype=float) + 0.5
         axis1hi = numpy.arange(self.shape[0], dtype=float) + 0.5
 
+        if self.coord == 'logical':
+            return (axis0lo, axis1lo, axis0hi, axis1hi)
+
         dummy0 = numpy.ones(axis0lo.size, dtype=float)
         dummy1 = numpy.ones(axis1lo.size, dtype=float)
 
@@ -4865,7 +4923,7 @@ class DataIMGInt(DataIMG):
             dummy, axis1lo = self._logical_to_physical(dummy1, axis1lo)
             dummy, axis1hi = self._logical_to_physical(dummy1, axis1hi)
 
-        elif self.coord == 'world':
+        else:
             axis0lo, dummy = self._logical_to_world(axis0lo, dummy0)
             axis0hi, dummy = self._logical_to_world(axis0hi, dummy0)
 

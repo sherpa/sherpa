@@ -581,6 +581,59 @@ def make_test_image():
 
 
 @pytest.fixture
+def make_test_image_sky():
+    """A simple image with just sky WCS
+
+    """
+
+    crval = [2000.5, -5000.5]
+    cdelt = [2.0, 4.0]
+    crpix = [-2.0, 3.0]
+    sky = WCS("physical", "LINEAR", crval=crval, crpix=crpix, cdelt=cdelt)
+
+    # logical: x=1, 2, 3
+    #          y=1, 2
+    #
+    x1, x0 = np.mgrid[1:3, 1:4]
+    shape = x0.shape
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.ones(x0.size)
+    return DataIMG('sky-ey', x0, x1, y, shape=shape, sky=sky)
+
+
+# This is a regression test - the values were calculated by
+# Sherpa/WCS and not from first principles.
+#
+WORLD_X0 = np.asarray([30.10151131, 30., 29.89848869, 30.10154255, 30., 29.89845745])
+WORLD_X1 = np.asarray([ 9.89998487, 9.9000001, 9.89998487, 9.99998461, 10., 9.99998461])
+
+
+@pytest.fixture
+def make_test_image_world():
+    """A simple image with just world WCS
+
+    """
+
+    crval = [30, 10]
+    cdelt = [-0.1, 0.1]
+    crpix = [2.0, 2.0]
+    eqpos = WCS("world", "WCS", crval=crval, crpix=crpix, cdelt=cdelt)
+
+    # logical: x=1, 2, 3
+    #          y=1, 2
+    #
+    x1, x0 = np.mgrid[1:3, 1:4]
+    shape = x0.shape
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.ones(x0.size)
+    return DataIMG('world-ey', x0, x1, y, shape=shape, eqpos=eqpos)
+
+
+@pytest.fixture
 def make_test_pha():
     """A simple PHA"""
 
@@ -834,6 +887,23 @@ def test_img_get_img_model_filter_some2(make_test_image):
     assert np.isfinite(mval) == pytest.approx(good)
     assert ival[good] == pytest.approx(expected1[good])
     assert mval[good] == pytest.approx(expected2[good])
+
+
+def test_img_can_not_set_coord(make_test_image):
+    """The coord attribute is not writeable.
+
+    It used to be, but now we require the user to change
+    it with the set_coord method.
+    """
+    d = make_test_image
+
+    # This dataset does not have a physical system, but we
+    # do not get a DataErr but an AttributeError.
+    #
+    with pytest.raises(AttributeError) as ae:
+        d.coord = "physical"
+
+    assert str(ae.value) == "can't set attribute"
 
 
 def test_img_set_coord_invalid(make_test_image):
@@ -2021,6 +2091,255 @@ def test_pickle_image_filter(ignore, region, expected, make_test_image):
     assert str(d2._region) == expected
 
 
+def test_img_sky_create(make_test_image_sky):
+    d = make_test_image_sky
+    assert d.sky is not None
+    assert d.eqpos is None
+
+
+def test_img_world_create(make_test_image_world):
+    d = make_test_image_world
+    assert d.sky is None
+    assert d.eqpos is not None
+
+
+def test_img_sky_show(make_test_image_sky):
+    d = make_test_image_sky
+    out = str(d).split("\n")
+    assert out[0] == "name      = sky-ey"
+    assert out[1] == "x0        = Int64[6]"
+    assert out[2] == "x1        = Int64[6]"
+    assert out[3] == "y         = Float64[6]"
+    assert out[4] == "shape     = (2, 3)"
+    assert out[5] == "staterror = None"
+    assert out[6] == "syserror  = None"
+    assert out[7] == "sky       = physical"
+    assert out[8] == " crval    = [ 2000.5,-5000.5]"
+    assert out[9] == " crpix    = [-2., 3.]"
+    assert out[10] == " cdelt    = [2.,4.]"
+    assert out[11] == "eqpos     = None"
+    assert out[12] == "coord     = logical"
+    assert len(out) == 13
+
+
+def test_img_world_show(make_test_image_world):
+    d = make_test_image_world
+    out = str(d).split("\n")
+    assert out[0] == "name      = world-ey"
+    assert out[1] == "x0        = Int64[6]"
+    assert out[2] == "x1        = Int64[6]"
+    assert out[3] == "y         = Float64[6]"
+    assert out[4] == "shape     = (2, 3)"
+    assert out[5] == "staterror = None"
+    assert out[6] == "syserror  = None"
+    assert out[7] == "sky       = None"
+    assert out[8] == "eqpos     = world"
+    assert out[9] == " crval    = [30.,10.]"
+    assert out[10] == " crpix    = [2.,2.]"
+    assert out[11] == " cdelt    = [-0.1, 0.1]"
+    assert out[12] == " crota    = 0"
+    assert out[13] == " epoch    = 2000"
+    assert out[14] == " equinox  = 2000"
+    assert out[15] == "coord     = logical"
+    assert len(out) == 16
+
+
+def test_img_sky_pickle(make_test_image_sky):
+    """Very basic test of pickling"""
+    d = make_test_image_sky
+    d.set_coord("physical")
+
+    d2 = pickle.loads(pickle.dumps(d))
+    assert d2.coord == "physical"
+    assert d2.eqpos is None
+
+    # We don't have an easy way to check for WCS equivalence
+    # so just rely on string representation.
+    #
+    assert str(d2.sky) == str(d.sky)
+
+    # check the independent axes are converted
+    assert (d2.x0 == d.x0).all()
+    assert (d2.x1 == d.x1).all()
+
+
+def test_img_world_pickle(make_test_image_world):
+    """Very basic test of pickling"""
+    d = make_test_image_world
+    d.set_coord("wcs")
+
+    d2 = pickle.loads(pickle.dumps(d))
+    assert d2.coord == "world"
+    assert d2.sky is None
+
+    # We don't have an easy way to check for WCS equivalence
+    # so just rely on string representation.
+    #
+    assert str(d2.sky) == str(d.sky)
+
+    # check the independent axes are converted
+    assert (d2.x0 == d.x0).all()
+    assert (d2.x1 == d.x1).all()
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["logical"],
+                                  ["physical", "logical", "physical", "logical", "physical", "logical"]])
+def test_img_sky_logical(path, make_test_image_sky):
+    """The logical axes are as expected. Inspired by issue 1380."""
+    d = make_test_image_sky
+    for coord in path:
+        d.set_coord(coord)
+
+    x1, x0 = np.mgrid[1:3, 1:4]
+    assert (d.x0 == x0.flatten()).all()
+    assert (d.x1 == x1.flatten()).all()
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["logical"],
+                                  ["world", "logical", "world", "logical", "world", "logical"]])
+def test_img_world_logical(path, make_test_image_world):
+    """The logical axes are as expected. Inspired by issue 1380."""
+    d = make_test_image_world
+    for coord in path:
+        d.set_coord(coord)
+
+    x1, x0 = np.mgrid[1:3, 1:4]
+    assert (d.x0 == x0.flatten()).all()
+    assert (d.x1 == x1.flatten()).all()
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["physical"],
+                                  ["logical", "physical", "logical", "physical", "logical"]])
+def test_img_sky_physical(path, make_test_image_sky):
+    """The physical axes are as expected. Inspired by issue 1380."""
+    d = make_test_image_sky
+    for coord in path:
+        d.set_coord(coord)
+
+    d.set_coord("physical")
+    x1, x0 = np.mgrid[1:3, 1:4]
+    x0 = (x0 + 2.0) * 2.0 + 2000.5
+    x1 = (x1 - 3.0) * 4.0 - 5000.5
+
+    assert (d.x0 == x0.flatten()).all()
+    assert (d.x1 == x1.flatten()).all()
+
+
+def test_img_world_physical(make_test_image_world):
+    """The physical axes are not defined."""
+    d = make_test_image_world
+    with pytest.raises(DataErr) as de:
+        d.set_coord("physical")
+
+    assert str(de.value) == "data set 'world-ey' does not contain a physical coordinate system"
+
+
+def test_img_sky_world(make_test_image_sky):
+    """The world axes are not defined."""
+    d = make_test_image_sky
+    with pytest.raises(DataErr) as de:
+        d.set_coord("world")
+
+    assert str(de.value) == "data set 'sky-ey' does not contain a world coordinate system"
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["logical"],
+                                  ["world", "logical", "world", "logical", "world", "logical"]])
+def test_img_world_world(path, make_test_image_world):
+    """The world axes are as expected. Inspired by issue 1380."""
+    d = make_test_image_world
+    for coord in path:
+        d.set_coord(coord)
+
+    d.set_coord("world")
+    assert d.x0 == pytest.approx(WORLD_X0)
+    assert d.x1 == pytest.approx(WORLD_X1)
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["physical"],
+                                  ["logical", "physical", "logical", "physical"]])
+def test_img_sky_get_logical(path, make_test_image_sky):
+    """Check get_logical works"""
+    d = make_test_image_sky
+    for coord in path:
+        d.set_coord(coord)
+
+    x1, x0 = np.mgrid[1:3, 1:4]
+    a, b = d.get_logical()
+    assert (a == x0.flatten()).all()
+    assert (b == x1.flatten()).all()
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["world"],
+                                  ["logical", "world", "logical", "world"]])
+def test_img_world_get_logical(path, make_test_image_world):
+    """Check get_logical works"""
+    d = make_test_image_world
+    for coord in path:
+        d.set_coord(coord)
+
+    x1, x0 = np.mgrid[1:3, 1:4]
+    a, b = d.get_logical()
+    assert (a == x0.flatten()).all()
+    assert (b == x1.flatten()).all()
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["logical"],
+                                  ["physical", "logical", "physical", "logical", "physical", "logical"]])
+def test_img_sky_get_physical(path, make_test_image_sky):
+    """Check get_physical works"""
+    d = make_test_image_sky
+    for coord in path:
+        d.set_coord(coord)
+
+    x1, x0 = np.mgrid[1:3, 1:4]
+    x0 = (x0 + 2.0) * 2.0 + 2000.5
+    x1 = (x1 - 3.0) * 4.0 - 5000.5
+
+    a, b = d.get_physical()
+    assert (a == x0.flatten()).all()
+    assert (b == x1.flatten()).all()
+
+
+def test_img_world_get_physical(make_test_image_world):
+    """Check get_physical errors out"""
+    d = make_test_image_world
+    with pytest.raises(DataErr) as de:
+        d.get_physical()
+
+    assert str(de.value) == "data set 'world-ey' does not contain a physical coordinate system"
+
+
+def test_img_sky_get_world(make_test_image_sky):
+    """Check get_world errors out"""
+    d = make_test_image_sky
+    with pytest.raises(DataErr) as de:
+        d.get_world()
+
+    assert str(de.value) == "data set 'sky-ey' does not contain a world coordinate system"
+
+
+@pytest.mark.parametrize("path", [[],
+                                  ["logical"],
+                                  ["world", "logical", "world", "logical"]])
+def test_img_world_get_world(path, make_test_image_world):
+    """Check get_world works"""
+    d = make_test_image_world
+    for coord in path:
+        d.set_coord(coord)
+
+    a, b = d.get_world()
+    assert a == pytest.approx(WORLD_X0)
+    assert b == pytest.approx(WORLD_X1)
+
+
 def test_arf_checks_energy_length():
     """Just check we error out"""
 
@@ -2856,3 +3175,94 @@ def test_1379_evaluation_model_not_integrated(dclass):
     out = data.eval_model(mdl)
     assert len(out) == len(y)
     assert set(out) == {0.0}
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
+def test_1380_data(coord, make_data_path):
+    """The contour data should ideally remain the same.
+
+    See also sherpa/astro/ui/tests/test_astro_ui_plot.py::test_1380_plot
+
+    This is the origin of the problem.
+    """
+
+    infile = make_data_path("image2.fits")
+    img = io.read_image(infile)
+
+    assert isinstance(img, DataIMG)
+    assert img.coord == "logical"
+
+    (x0_1, x1_1, y_1, xl_1, yl_1) = img.to_contour()
+
+    # We do not check the output of this call. It is important
+    # to call set_coord rather than change the coord attribute.
+    #
+    img.set_coord(coord)
+    img.to_contour()
+
+    # We do check that we get back the same data as we
+    # originally did.
+    #
+    img.set_coord("logical")
+    (x0_3, x1_3, y_3, xl_3, yl_3) = img.to_contour()
+
+    assert xl_3 == xl_1
+    assert yl_3 == yl_1
+    assert (y_3 == y_1).all()
+    assert (x0_3 == x0_1).all()
+    assert (x1_3 == x1_1).all()
+
+
+@requires_fits
+@requires_data
+def test_1380_pickle(make_data_path):
+    """Can we pickle and restore an image?
+
+    The fix for 1380 added new data that is pickled, so just
+    check it works. Technically this should work but the
+    state handling has had to be tweaked to allow old state
+    files to be read in, so this just checks that new data
+    is not affected by this. We don't have any "old" state
+    files lying around that we can use here.
+
+    There are a number of existing image pickle tests but
+    they don't check the coordinate settings used here.
+    """
+
+    infile = make_data_path("image2.fits")
+    img = io.read_image(infile)
+    img.set_coord("physical")
+
+    x0_1, x1_1 = img.indep
+
+    img2 = pickle.loads(pickle.dumps(img))
+
+    assert img2.coord == "physical"
+
+    x0_2, x1_2 = img2.indep
+
+    # this test should not need pytest.approx
+    assert (x0_2 == x0_1).all()
+    assert (x1_2 == x1_1).all()
+
+    img2.set_coord("logical")
+    assert img.coord == "physical"
+    assert img2.coord == "logical"
+
+    img.set_coord("logical")
+
+    x0_3, x1_3 = img.indep
+    x0_4, x1_4 = img2.indep
+
+    assert (x0_4 == x0_3).all()
+    assert (x1_4 == x1_3).all()
+
+    assert (x0_3 != x0_1).all()
+
+    # This is an internal check and may get changed if the
+    # implementation changes.
+    #
+    assert img._orig_indep_axis[0] == "logical"
+    assert img2._orig_indep_axis[0] == "logical"

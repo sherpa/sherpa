@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021
+#  Copyright (C) 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -4042,3 +4042,39 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path, 
         ui.plot_model()
 
     assert ui.get_filter() == expected
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
+def test_1380_plot(coord, make_data_path, clean_astro_ui):
+    """The contour data should ideally remain the same.
+
+    See also sherpa/astro/tests/test_astro_data2.py::test_1380_data
+
+    This is the actual bug report (it only fails when a valid plot
+    backend is present but we try even if there's no backend just
+    to check).
+
+    """
+
+    infile = make_data_path("image2.fits")
+    ui.load_image(infile)
+
+    img = ui.get_data()
+    assert isinstance(img, ui.DataIMG)
+    assert ui.get_coord() == "logical"
+
+    # All we do here is check we can call contour_data, not that the
+    # plot has actually done anything.
+    #
+    ui.contour_data()
+
+    # We can not call contour_data when the world coordinate-system
+    # is set, but fortunately this is not needed to trigger #1380;
+    # we just need the set_coord call.
+    #
+    ui.set_coord(coord)
+
+    ui.set_coord("logical")
+    ui.contour_data()

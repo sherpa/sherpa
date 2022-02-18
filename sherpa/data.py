@@ -803,7 +803,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def set_dep(self, val):
         """
-        Set the dependent variable values"
+        Set the dependent variable values.
 
         Parameters
         ----------

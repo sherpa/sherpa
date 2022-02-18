@@ -211,7 +211,7 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
 
     >>> d = read_table('src.fits')
 
-    Create A `sherpa.data.Data1DInt` object from the first three
+    Create a `sherpa.data.Data1DInt` object from the first three
     columns in the file ``src.fits``:
 
     >>> d = read_table('src.fits', ncols=3, dstype=Data1DInt)

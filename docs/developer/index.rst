@@ -935,3 +935,198 @@ We can view the model plot object::
     ylabel = y
     title  = Model
     histo_prefs = {'yerrorbars': False, 'ecolor': None, ... , 'linecolor': None}
+
+
+.. _dataimg_coords:
+
+Coordinate conversion for image data
+------------------------------------
+
+The :py:class:`sherpa.data.Data2D` class provides basic support for
+fitting models to two-dimensional data; that is, data with two
+independent axes (called "x0" and "x1" although they should be
+accessed via the :py:attr:`~sherpa.data.Data2D.indep` attribute).  The
+:py:class:`sherpa.astro.data.DataIMG` class extends the 2D support to
+include the concept of a coordinate system, allowing the independent
+axis to be one of:
+
+- ``logical``
+- ``image``
+- ``world``
+
+where the aim is that the logical system refers to a pixel number (no
+coordinate system), image is a linear transform of the logical system,
+and world identifies a projection from the image system onto the
+celestial sphere. However, there is no requirement that this
+categorization holds as it depends on whether the optional
+:py:attr:`~sherpa.astro.data.DataIMG.sky` and
+:py:attr:`~sherpa.astro.data.DataIMG.eqpos` attributes are set when
+the :py:class:`~sherpa.astro.data.DataIMG` object is created.
+
+.. _dataimg_no_shape:
+
+Using a coordinate system directly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+   It is expected that the `~sherpa.astro.data.DataIMG` object
+   is used with a rectangular grid of data and a ``shape`` attribute
+   set up to describe the grid shape, as used in the :ref:`next
+   section <dataimg_with_shape>`, but it is not required, as shown
+   here.
+
+If the independent axes are known, and not calculated via a coordinate
+transform, then they can just be set when creating the
+`~sherpa.astro.data.DataIMG` object, leaving the
+`~sherpa.astro.data.DataIMG.coord` attribute set to
+``logical``.
+
+  >>> x0 = np.asarray([1000, 1200, 2000])
+  >>> x1 = np.asarray([-500, 500, -500])
+  >>> y = np.asarray([10, 200, 30])
+  >>> d = DataIMG("example", x0, x1, y)
+  >>> print(d)
+  name      = example
+  x0        = Int64[3]
+  x1        = Int64[3]
+  y         = Int64[3]
+  shape     = None
+  staterror = None
+  syserror  = None
+  sky       = None
+  eqpos     = None
+  coord     = logical
+
+This can then be used to evaluate a two-dimensional model,
+such as `~sherpa.models.basic.Gauss2D`:
+
+  >>> from sherpa.models.basic import Gauss2D
+  >>> mdl = Gauss2D()
+  >>> mdl.xpos = 1500
+  >>> mdl.ypos = -100
+  >>> mdl.fwhm = 1000
+  >>> mdl.ampl = 100
+  >>> print(mdl)
+  gauss2d
+     Param        Type          Value          Min          Max      Units
+     -----        ----          -----          ---          ---      -----
+     gauss2d.fwhm thawed         1000  1.17549e-38  3.40282e+38
+     gauss2d.xpos thawed         1500 -3.40282e+38  3.40282e+38
+     gauss2d.ypos thawed         -100 -3.40282e+38  3.40282e+38
+     gauss2d.ellip frozen            0            0        0.999
+     gauss2d.theta frozen            0     -6.28319      6.28319    radians
+     gauss2d.ampl thawed          100 -3.40282e+38  3.40282e+38
+  >>> d.eval_model(mdl)
+  array([32.08564744, 28.71745887, 32.08564744])
+
+Attempting to change the coordinate system with
+`~sherpa.astro.data.DataIMF.set_coord` will error out with a
+`~sherpa.utils.err.DataErr` instance reporting that the data
+set does not specify a shape.
+
+.. _dataimg_with_shape:
+
+The shape attribute
+^^^^^^^^^^^^^^^^^^^
+
+The ``shape`` argument can be set when creating a
+`~sherpa.astro.data.DataIMG` object to indicate that the
+data represents an "image", that is a rectangular, contiguous, set of
+pixels. It is defined as ``(nx1, nx0)``, and so matches the ndarray
+``shape`` attribute from NumPy. Operations that treat the dataset as a
+2D grid often require that the ``shape`` attribute is set.
+
+  >>> x1, x0 = np.mgrid[1:4, 1:5]
+  >>> y2 = (x0 - 2.5)**2 + (x1 - 2)**2
+  >>> y = np.sqrt(y2)
+  >>> d = DataIMG('img', x0.flatten(), x1.flatten(),
+  ...             y.flatten(), shape=y.shape)
+  >>> print(d)
+  name      = img
+  x0        = Int64[12]
+  x1        = Int64[12]
+  y         = Float64[12]
+  shape     = (3, 4)
+  staterror = None
+  syserror  = None
+  sky       = None
+  eqpos     = None
+  coord     = logical
+  >>> d.get_x0()
+  array([1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4])
+  >>> d.get_x1()
+  array([1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3])
+  >>> d.get_dep()
+  array([1.80277564, 1.11803399, 1.11803399, 1.80277564, 1.5       ,
+         0.5       , 0.5       , 1.5       , 1.80277564, 1.11803399,
+         1.11803399, 1.80277564])
+  >>> d.get_axes()
+  (array([1., 2., 3., 4.]), array([1., 2., 3.]))
+  >>> d.get_dims()
+  (4, 3)
+
+Attempting to change the coordinate system with
+`~sherpa.astro.data.DataIMF.set_coord` will error out with a
+`~sherpa.utils.err.DataErr` instance reporting that the data
+set does not contain the required coordinate system.
+
+Setting a coordinate system
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `sherpa.astro.io.wcs.WCS` class is used to add a
+coordinate system to an image. It has support for linear (translation
+and scale) and "wcs" - currently only tangent-plane projections
+are supported - conversions.
+
+  >>> from sherpa.astro.io.wcs import WCS
+  >>> sky = WCS("sky", "LINEAR", [1000,2000], [1, 1], [2, 2])
+  >>> x1, x0 = np.mgrid[1:3, 1:4]
+  >>> d = DataIMG("img", x0.flatten(), x1.flatten(), np.ones(x1.size), shape=x0.shape, sky=sky)
+  >>> print(d)
+  name      = img
+  x0        = Int64[6]
+  x1        = Int64[6]
+  y         = Float64[6]
+  shape     = (2, 3)
+  staterror = None
+  syserror  = None
+  sky       = sky
+   crval    = [1000.,2000.]
+   crpix    = [1.,1.]
+   cdelt    = [2.,2.]
+  eqpos     = None
+  coord     = logical
+
+With this we can change to the "physical" coordinate system, which
+represents the conversion sent to the ``sky`` argument, and so get the
+independent axis in the converted system with the
+`~sherpa.astro.data.DataIMG.set_coord` method:
+
+  >>> d.get_axes()
+  (array([1., 2., 3.]), array([1., 2.]))
+  >>> d.set_coord("physical")
+  >>> d.get_axes()
+  (array([1000., 1002., 1004.]), array([2000., 2002.]))
+  >>> d.indep
+  (array([1000., 1002., 1004., 1000., 1002., 1004.]), array([2000., 2000., 2000., 2002., 2002., 2002.]))
+
+It is possible to switch back to the original coordinate system (the
+arguments sent in as ``x0`` and ``x1`` when creating the object):
+
+  >>> d.set_coord("logical")
+  >>> d.indep
+  (array([1, 2, 3, 1, 2, 3]), array([1, 1, 1, 2, 2, 2]))
+
+In Sherpa 4.14.0 and earlier, this conversion was handled by taking
+the current axes pair and applying the necessary WCS objects to create
+the selected coordinate system (that is, the argument to the
+`~sherpa.astro.data.DataIMG.set_coord` call). This had the advantage of saving memory, as you
+only needed to retain the current pair of independent axes, but at the
+expense of losing fidelity when converting between the coordinate
+systems. This has been changed so that the original independent axes
+are now stored in the object, in the ``_orig_indep_axis`` attribute,
+and this is now used whenever the coordinate system is changed. This
+does increase the memory size of a `~sherpa.astro.data.DataIMG` object, and makes it
+harder to load in picked files created with an old Sherpa version (the
+code will do its best to create the necessary information but it is
+not guaranteed to work well in all cases).
