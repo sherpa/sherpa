@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021
+#  Copyright (C) 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -31,7 +31,7 @@ import pytest
 from sherpa.astro import ui
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_plotting, requires_xspec
+    requires_group, requires_plotting, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, \
     IdentifierErr, IOErr, ModelErr
 import sherpa.astro.utils
@@ -2395,6 +2395,7 @@ def test_sample_flux_pha_bkg_no_source(idval, make_data_path, clean_astro_ui,
 
 @requires_data
 @requires_fits
+@requires_group
 @requires_xspec
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,

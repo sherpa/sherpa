@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022
 #       Smithsonian Astrophysical Observatory
 #
 #
@@ -37,7 +37,7 @@ from sherpa.stats import Cash, CStat, WStat, LeastSq, UserStat, \
     Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Chi2DataVar
 from sherpa.utils.err import StatErr
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_xspec
+    requires_group, requires_xspec
 
 logger = logging.getLogger("sherpa")
 
@@ -397,6 +397,7 @@ def compare_results(expected, got, tol=1e-6):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 def test_chi2xspecvar_stat(hide_logging, reset_xspec, setup_group):
@@ -418,6 +419,7 @@ def test_chi2xspecvar_stat(hide_logging, reset_xspec, setup_group):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 def test_chi2modvar_stat(hide_logging, reset_xspec, setup_group):
@@ -439,6 +441,7 @@ def test_chi2modvar_stat(hide_logging, reset_xspec, setup_group):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 def test_chi2constvar_stat(hide_logging, reset_xspec, setup_group):
@@ -460,6 +463,7 @@ def test_chi2constvar_stat(hide_logging, reset_xspec, setup_group):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 def test_chi2gehrels_stat(hide_logging, reset_xspec, setup_group):
@@ -481,6 +485,7 @@ def test_chi2gehrels_stat(hide_logging, reset_xspec, setup_group):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 def test_leastsq_stat(hide_logging, reset_xspec, setup_group):
@@ -545,6 +550,7 @@ def test_cash_stat(stat, hide_logging, reset_xspec, setup):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 @pytest.mark.parametrize('stat', [MyChiWithBkg, MyChiNoBkg])
@@ -590,6 +596,7 @@ def test_mycash(stat, hide_logging, reset_xspec, setup_bkg):
 
 
 @requires_fits
+@requires_group
 @requires_xspec
 @requires_data
 @pytest.mark.parametrize('stat', [MyChiWithBkg, MyChiNoBkg])
