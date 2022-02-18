@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021
+#  Copyright (C) 2016, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -132,6 +132,7 @@ class SmokeTest(unittest.TestCase):
         self.x = np.asarray([1, 2, 3])
         self.x2 = self.x + 1
         self.y = np.asarray([1, 2, 3])
+        ui.clean()
 
     def tearDown(self):
         ui.clean()
@@ -147,9 +148,8 @@ class SmokeTest(unittest.TestCase):
         ui.set_method("levmar")
         ui.fit()
         model = ui.get_model_component("p")
-        expected = [0, 1]
-        observed = [model.c0.val, model.c1.val]
-        assert_almost_equal(observed, expected)
+        assert_almost_equal(model.c0.val, 0)
+        assert_almost_equal(model.c1.val, 1)
 
     # Using skipIf directly as we need these tests to run when there is no pytest installed, so we can't use
     # the decorators in sherpa.utils.testing
