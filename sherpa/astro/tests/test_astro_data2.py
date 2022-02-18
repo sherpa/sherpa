@@ -1283,6 +1283,89 @@ def test_img_get_filter_compare_filtering(make_test_image):
     assert maska.max() == 1
 
 
+def test_pha_change_channels(make_test_pha):
+    """What happens if we change the channel/count values?
+
+    We have several ways of getting the independent and dependent
+    axes.
+    """
+    pha = make_test_pha
+
+    channels = [1, 2, 3, 4]
+    counts = [1, 2, 0, 3]
+    assert np.all(pha.channel == channels)
+    assert np.all(pha.counts == counts)
+
+    assert len(pha.get_indep()) == 1
+    assert np.all(pha.get_indep()[0] == channels)
+    assert np.all(pha.get_dep() == counts)
+
+    assert len(pha.indep) == 1
+    assert np.all(pha.indep[0] == channels)
+    assert np.all(pha.dep == counts)
+
+    channels2 = [2, 3, 4, 5]
+    counts2 = [20, 30, 20, 10]
+    pha.channel = channels2
+    pha.counts = counts2
+    assert np.all(pha.channel == channels2)
+    assert np.all(pha.counts == counts2)
+
+    assert len(pha.get_indep()) == 1
+    assert np.all(pha.get_indep()[0] == channels2)
+    assert np.all(pha.get_dep() == counts2)
+
+    assert len(pha.indep) == 1
+    assert np.all(pha.indep[0] == channels2)
+    assert np.all(pha.dep == counts2)
+
+
+def test_pha_add_channels(make_test_pha):
+    """What happens if we increase the number of channels/counts?
+
+    Extends test_pha_change_channels
+    """
+    pha = make_test_pha
+
+    channels2 = np.arange(1, 6, dtype=int)
+    counts2 = np.asarray([1, 2, 0, 3, 2], dtype=int)
+    pha.channel = channels2
+    pha.counts = counts2
+    assert np.all(pha.channel == channels2)
+    assert np.all(pha.counts == counts2)
+
+    assert len(pha.get_indep()) == 1
+    assert np.all(pha.get_indep()[0] == channels2)
+    assert np.all(pha.get_dep() == counts2)
+
+    assert len(pha.indep) == 1
+    assert np.all(pha.indep[0] == channels2)
+    assert np.all(pha.dep == counts2)
+
+
+def test_pha_remove_channels(make_test_pha):
+    """What happens if we decrease the number of channels/counts?
+
+    Extends test_pha_change_channels
+    """
+    pha = make_test_pha
+
+    channels2 = np.arange(1, 4, dtype=int)
+    counts2 = np.asarray([3, 1, 2], dtype=int)
+    pha.channel = channels2
+    pha.counts = counts2
+    assert np.all(pha.channel == channels2)
+    assert np.all(pha.counts == counts2)
+
+    assert len(pha.get_indep()) == 1
+    assert np.all(pha.get_indep()[0] == channels2)
+    assert np.all(pha.get_dep() == counts2)
+
+    assert len(pha.indep) == 1
+    assert np.all(pha.indep[0] == channels2)
+    assert np.all(pha.dep == counts2)
+
+
 @pytest.mark.parametrize("requested,expected",
                          [("bin", "channel"), ("Bin", "channel"),
                           ("channel", "channel"), ("ChannelS", "channel"),
