@@ -25,7 +25,10 @@ from .test import PyTest
 from .sherpa_config import sherpa_config
 from .xspec_config import xspec_config
 
+# Switching to setuptools here currently breaks the build.
 from numpy.distutils.command.build_ext import build_ext
+# from setuptools.command.build_ext import build_ext
+
 
 commands = {
     'build_ext': build_ext,

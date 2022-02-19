@@ -21,7 +21,7 @@
 import shutil
 import os
 
-from numpy.distutils.command.develop import develop as _develop
+from setuptools.command.develop import develop as _develop
 
 
 class develop(_develop):

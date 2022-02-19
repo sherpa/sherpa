@@ -21,6 +21,7 @@
 
 from setuptools.extension import Extension
 
+
 # Include directory for Sherpa headers
 sherpa_inc = ['sherpa/include', 'sherpa/utils/src']
 
