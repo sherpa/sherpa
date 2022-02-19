@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2014, 2016, 2017, 2018, 2020
-#       Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2017, 2018, 2020, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 #
 
 
-from numpy.distutils.core import Extension
+from setuptools.extension import Extension
 
 # Include directory for Sherpa headers
 sherpa_inc = ['sherpa/include', 'sherpa/utils/src']
