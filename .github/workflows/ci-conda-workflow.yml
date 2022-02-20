@@ -59,7 +59,7 @@ jobs:
             os: ubuntu-latest
             python-version: 3.7
             numpy-version: 1.19
-            install-type: install
+            install-type: develop
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
