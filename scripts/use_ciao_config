@@ -69,11 +69,6 @@ fi
 #
 echo "Updating $cfg"
 
-# This change will hopefully be made to the Sherpa distribution
-# so it can be removed from here.
-#
-sed -i "s|bdist_wheel = sherpa_config bdist_wheel|bdist_wheel = sherpa_config xspec_config bdist_wheel|" $cfg
-
 sed -i "s|#install_dir=build|install_dir=${CONDA_PREFIX}|" $cfg
 sed -i "s|#configure=None|configure=None|" $cfg
 
