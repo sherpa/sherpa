@@ -310,7 +310,7 @@ class Transformation(NoTransformation):
         return numpy.sqrt(x -self.lo[ii]) + self.lo[ii]
 
     def ext2int_hi(self, ii, x):
-        return numpy.sqrt(self.hi[ii] - x) - self.hi[ii]
+        return self.hi[ii] - numpy.sqrt(self.hi[ii] - x)
 
     def return_arg(self, ii, x):
         return x
