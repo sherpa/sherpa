@@ -835,15 +835,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         y = self.get_dep(filter)
+        if yfunc is None:
+            return y
 
-        if yfunc is not None:
-            if filter:
-                yfunc = self.eval_model_to_fit(yfunc)
-            else:
-                yfunc = self.eval_model(yfunc)
-            y = (y, yfunc)
-
-        return y
+        if filter:
+            y2 = self.eval_model_to_fit(yfunc)
+        else:
+            y2 = self.eval_model(yfunc)
+        return (y, y2)
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error on the dependent axis of a data set.
@@ -1185,12 +1184,11 @@ class Data1D(Data):
 
         """
         y = self.get_dep(filter)
+        if yfunc is None:
+            return y
 
-        if yfunc is not None:
-            model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
-            y = y, model_evaluation
-
-        return y
+        model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
+        return (y, model_evaluation)
 
     def get_bounding_mask(self):
         mask = self.mask
@@ -1320,8 +1318,8 @@ class Data1D(Data):
         data_space = self._data_space.get(filter)
         if use_evaluation_space:
             return data_space.for_model(model).grid
-        else:
-            return data_space.grid
+
+        return data_space.grid
 
     def notice(self, xlo=None, xhi=None, ignore=False):
         """Notice or ignore the given range.
