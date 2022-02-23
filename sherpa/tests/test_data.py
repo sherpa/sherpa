@@ -1027,37 +1027,33 @@ def array_sizes_fixture():
 def test_data2d_wrong_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2D('name', x0, x1, y.flatten(), staterror=numpy.sqrt(y).flatten())
-
-    assert str(err.value) == "Array must be 1D"
 
 
 def test_data2d_wrong_y_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2D('name', x0.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
-
-    assert str(err.value) == "Array must be 1D"
 
 
 def test_data2d_int_wrong_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2DInt('name', x0, x0, x1, x1, y.flatten(), staterror=numpy.sqrt(y).flatten())
-
-    assert str(err.value) == "Array must be 1D"
 
 
 def test_data2d_int_wrong_y_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2DInt('name', x0.flatten(), x0.flatten(), x1.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
-
-    assert str(err.value) == "Array must be 1D"
 
 
 # https://github.com/sherpa/sherpa/issues/628
@@ -1558,8 +1554,8 @@ def test_data1d_get_y_checks_model_dim():
     data = Data1D("x", None, None)
     mdl = Polynom2D()
 
-    with pytest.raises(TypeError,
-                       match=r"function missing required argument 'x1lo' \(pos 3\)"):
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         data.get_y(yfunc=mdl)
 
 
@@ -2250,29 +2246,27 @@ def test_error_must_be_1d(data, column):
     setattr(data, column, err)
 
 
-#@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-@pytest.mark.parametrize("data", (Data1D, pytest.param(Data1DInt, marks=pytest.mark.xfail)), indirect=True)
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
 def test_data_eval_model_checks_dimensionality_1d(data, funcname):
     """Does eval_model check the model dimensionality?"""
 
     model = Polynom2D()
     func = getattr(data, funcname)
-    with pytest.raises(TypeError):
-        # XFAIL: Data1DInt does not raise an error
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         func(model)
 
 
-#@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
-@pytest.mark.parametrize("data", (pytest.param(Data2D, marks=pytest.mark.xfail), Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
 def test_data_eval_model_checks_dimensionality_2d(data, funcname):
     """Does eval_model check the model dimensionality?"""
 
     model = Polynom1D()
     func = getattr(data, funcname)
-    with pytest.raises(TypeError):
-        # XFAIL: Data2D does not raise an error
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 2D and 1D"):
         func(model)
 
 

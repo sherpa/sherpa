@@ -178,9 +178,9 @@ class DataSpace1D(EvaluationSpace1D):
         """
         evaluation_space = None
 
-        if model is not None and hasattr(model, "evaluation_space"):
-            if self not in model.evaluation_space:
-                evaluation_space = self
+        if model is not None and hasattr(model, "evaluation_space") \
+           and self not in model.evaluation_space:
+            evaluation_space = self
 
         return self if evaluation_space is None else evaluation_space
 
@@ -245,9 +245,9 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         """
         evaluation_space = None
 
-        if model is not None and hasattr(model, "evaluation_space"):
-            if self not in model.evaluation_space:
-                evaluation_space = self
+        if model is not None and hasattr(model, "evaluation_space") \
+           and self not in model.evaluation_space:
+            evaluation_space = self
 
         return self if evaluation_space is None else evaluation_space
 
@@ -736,6 +736,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _extra_fields = ()
     """Any extra fields that should be displayed by str(object)."""
 
+    ndim = None
+    "The dimensionality of the dataset, if defined, or None."
+
     def __init__(self, name, indep, y, staterror=None, syserror=None):
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
@@ -1053,9 +1056,21 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.notice(*args, **kwargs)
 
     def eval_model(self, modelfunc):
+        """Evaluate the model on the independent axis."""
+        mdim = getattr(modelfunc, "ndim", None)
+        ddim = getattr(self, "ndim", None)
+        if None not in [mdim, ddim] and mdim != ddim:
+            raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
+
         return modelfunc(*self.get_indep())
 
     def eval_model_to_fit(self, modelfunc):
+        """Evaluate the model on the independent axis after filtering."""
+        mdim = getattr(modelfunc, "ndim", None)
+        ddim = getattr(self, "ndim", None)
+        if None not in [mdim, ddim] and mdim != ddim:
+            raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
+
         return modelfunc(*self.get_indep(filter=True))
 
     def to_guess(self):
@@ -1199,6 +1214,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
 
 class Data1D(Data):
     _fields = ("name", "x", "y", "staterror", "syserror")
+    ndim = 1
 
     def __init__(self, name, x, y, staterror=None, syserror=None):
         super().__init__(name, (x, ), y, staterror, syserror)
@@ -1212,6 +1228,12 @@ class Data1D(Data):
         return DataSpace1D(filter, *data)
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
+
+        if model is not None:
+            mdim = getattr(model, "ndim", None)
+            if mdim is not None and mdim != 1:
+                raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
+
         return self.get_evaluation_indep(filter, model, use_evaluation_space)[0]
 
     def get_xerr(self, filter=False, yfunc=None):
@@ -1258,6 +1280,10 @@ class Data1D(Data):
         y = self.get_dep(filter)
         if yfunc is None:
             return y
+
+        mdim = getattr(yfunc, "ndim", None)
+        if mdim is not None and mdim != 1:
+            raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
 
         model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
         return (y, model_evaluation)
@@ -1643,6 +1669,7 @@ class Data1DInt(Data1D):
 
 class Data2D(Data):
     _fields = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+    ndim = 2
 
     # Why should we add shape to extra-fields instead? See #1359 to
     # fix #47.

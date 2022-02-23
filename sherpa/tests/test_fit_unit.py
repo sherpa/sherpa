@@ -2811,9 +2811,9 @@ def make_data(data_class):
     assert False  # programmer error
 
 
-@pytest.mark.parametrize("data_class,model_class",
-                         [(Data1D, Const2D), (Data2D, Const1D)])
-def test_fit_ensures_data_and_model_dimensionality_matches(data_class, model_class):
+@pytest.mark.parametrize("data_class,ddim,model_class,mdim",
+                         [(Data1D, 1, Const2D, 2), (Data2D, 2, Const1D, 1)])
+def test_fit_ensures_data_and_model_dimensionality_matches(data_class, ddim, model_class, mdim):
     """Check that we error out when the dimensionality does not match.
 
     This does not catch the combined data or model (DataSimulFit and
@@ -2823,5 +2823,6 @@ def test_fit_ensures_data_and_model_dimensionality_matches(data_class, model_cla
 
     data = make_data(data_class)
     model = model_class()
-    # does not raise an error
-    Fit(data, model)
+    with pytest.raises(DataErr,
+                       match=f"Data and model dimensionality do not match: {ddim}D and {mdim}D"):
+        Fit(data, model)

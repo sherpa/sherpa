@@ -596,7 +596,7 @@ def test_save_delchi_image_fails(tmp_path):
 
     out = tmp_path / "does-not-exist"
     with pytest.raises(AttributeError,
-                       match=r"save_delchi\(\) does not apply for images"):
+                       match=r"^save_delchi\(\) does not apply for images$"):
         ui.save_delchi(str(out))
 
 
@@ -1967,8 +1967,9 @@ def test_set_source_checks_dimensionality_1d(clean_astro_ui):
     chans = np.arange(1, 5)
     ui.load_arrays(1, chans, chans * 0, ui.DataPHA)
 
-    # does not raise an error
-    ui.set_source(ui.const2d.mdl)
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
+        ui.set_source(ui.const2d.mdl)
 
 
 def test_set_source_checks_dimensionality_2d(clean_astro_ui):
@@ -1979,11 +1980,11 @@ def test_set_source_checks_dimensionality_2d(clean_astro_ui):
     y = np.asarray([1] * 4)
     ui.load_arrays(1, x0, x1, y, (2, 2), ui.DataIMG)
 
-    # does not raise an error
-    ui.set_source(ui.const1d.mdl)
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 2D and 1D"):
+        ui.set_source(ui.const1d.mdl)
 
 
-@pytest.mark.xfail
 def test_model_dimensionality_check_is_not_triggered_calc_stat(clean_astro_ui):
     """We can still end up where a model and dataset dimensionality do not match.
 
@@ -1996,7 +1997,6 @@ def test_model_dimensionality_check_is_not_triggered_calc_stat(clean_astro_ui):
 
     chans = np.arange(1, 5)
     ui.load_arrays(1, chans, chans * 0)
-    # XFAIL: there is no ndim attribute
     assert ui.get_data().ndim == 1
 
     # Changing the data set currently does not reset the source model
@@ -2011,7 +2011,6 @@ def test_model_dimensionality_check_is_not_triggered_calc_stat(clean_astro_ui):
         ui.calc_stat()
 
 
-@pytest.mark.xfail
 def test_model_dimensionality_check_is_not_triggered_plot_model(clean_astro_ui):
     """We can still end up where a model and dataset dimensionality do not match.
 
@@ -2024,7 +2023,6 @@ def test_model_dimensionality_check_is_not_triggered_plot_model(clean_astro_ui):
 
     chans = np.arange(1, 5)
     ui.load_arrays(1, chans, chans * 0)
-    # XFAIL: there is no ndim attribute
     assert ui.get_data().ndim == 1
 
     src = ui.get_source()

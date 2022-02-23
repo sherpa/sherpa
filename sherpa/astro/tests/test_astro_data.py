@@ -2974,7 +2974,8 @@ def test_pha_eval_model_checks_dimensionality_pha(funcname):
     data = DataPHA('tmp', np.arange(3), np.arange(3))
     model = Gauss2D()
     func = getattr(data, funcname)
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         func(model)
 
 

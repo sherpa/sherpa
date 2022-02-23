@@ -6262,14 +6262,28 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(model):
             model = self._eval_model_expression(model)
 
-        self._set_item(id, model, self._sources, sherpa.models.Model,
-                       'source model',
-                       'a model object or model expression string')
+        # Check data and model dimensionality matches (catch here
+        # as it is the most likely place a mistake could happen, even
+        # though there are still ways a user could end up with a
+        # mis-matched model. This means we can not just use
+        # _set_item but have to do it manually.
+        #
+        _check_type(model, sherpa.models.Model, 'source model',
+                    'a model object or model expression string')
 
+        # Fit(data, model) does the dimensionality validation. Note
+        # that we assume that any convolution-style model (e.g.  a PSF
+        # or a PHA response) does not change the dimensionality check.
+        #
+        id = self._fix_id(id)
+        data = self._data.get(id)
+        if data is not None:
+            sherpa.fit.Fit(data, model)
+
+        self._sources[id] = model
         self._runparamprompt(model.pars)
 
         # Delete any previous model set with set_full_model()
-        id = self._fix_id(id)
         mdl = self._models.pop(id, None)
         if mdl is not None:
             warning("Clearing convolved model\n'%s'\nfor dataset %s" %
@@ -7936,16 +7950,22 @@ class Session(NoNewAttributesAfterInit):
         return f
 
     def _prepare_fit(self, id, otherids=()):
+        """Ensure we have all the requested ids, datasets, and models.
+
+        """
 
         # prep data ids for fitting
         ids = self._get_fit_ids(id, otherids)
 
-        # Gather up lists of data objects and models to fit
-        # to them.  Add to lists *only* if there actually is
-        # a model to fit.  E.g., if data sets 1 and 2 exist,
-        # but only data set 1 has a model, then "fit all" is
-        # understood to mean "fit 1".  If both data sets have
-        # models, then "fit all" means "fit 1 and 2 together".
+        # Which of the requested ids have
+        # - data
+        # - model
+        # - the data and model match dimensionality
+        #
+        # At present we only check the first two here, as the assumption
+        # is that the results are going to be used to create a Fit object
+        # and that will check the last condition.
+        #
         datasets = []
         models = []
         fit_to_ids = []
@@ -7955,20 +7975,12 @@ class Session(NoNewAttributesAfterInit):
             if i in self._models or i in self._sources:
                 mod = self.get_model(i)
 
-            # The issue with putting a try/catch here is that if an exception
-            # is thrown folding a model, it will be swallowed up and the user
-            # will be confused why the model is not fit.
-            # ex. PSF folding where parameter values are particular
-            #
-            #
-            # try:
-            #    mod = self.get_model(i)
-            # except:
-            #    mod = None
-            if mod is not None:
-                datasets.append(ds)
-                models.append(mod)
-                fit_to_ids.append(i)
+            if mod is None:
+                continue
+
+            datasets.append(ds)
+            models.append(mod)
+            fit_to_ids.append(i)
 
         # If no data sets have models assigned to them, stop now.
         if len(models) < 1:
