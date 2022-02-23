@@ -1990,18 +1990,20 @@ must be an integer.""")
         filter = bool_cast(filter)
         self.notice_response(False)
         arf, rmf = self.get_response()
-        newarf = None
 
-        if arf is not None and rmf is not None:
-            specresp = arf.get_dep()
-            elo, ehi = arf.get_indep()
-            lo, hi = self._get_ebins(group=False)
+        # Should we allow an ARF-only analysis?
+        if arf is None or rmf is None:
+            return None
 
-            newarf = interpolate(lo, elo, specresp)
-            newarf[newarf <= 0] = 1.
+        specresp = arf.get_dep()
+        elo, ehi = arf.get_indep()
+        lo, hi = self._get_ebins(group=False)
 
-            if filter:
-                newarf = self.apply_filter(newarf, self._middle)
+        newarf = interpolate(lo, elo, specresp)
+        newarf[newarf <= 0] = 1.
+
+        if filter:
+            newarf = self.apply_filter(newarf, self._middle)
 
         return newarf
 
@@ -2034,14 +2036,12 @@ must be an integer.""")
         from sherpa.astro import instrument
 
         if pileup_model is not None:
-            resp = instrument.PileupResponse1D(self, pileup_model)
-        elif len(self._responses) > 1:
-            resp = instrument.MultipleResponse1D(self)
-        else:
-            resp = instrument.Response1D(self)
+            return instrument.PileupResponse1D(self, pileup_model)
 
-        return resp
+        if len(self._responses) > 1:
+            return instrument.MultipleResponse1D(self)
 
+        return instrument.Response1D(self)
 
     def _get_ebins(self, response_id=None, group=True):
         """Return the low and high edges of the independent axis.
@@ -2283,7 +2283,6 @@ must be an integer.""")
         # the group).
         #
         mid = numpy.floor(mid)
-
         val = numpy.asarray(val).astype(numpy.int_) - 1
         try:
             return mid[val]
