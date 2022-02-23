@@ -3270,11 +3270,9 @@ must be an integer.""")
             bkg.group_adapt_snr(minimum, maxLength=maxLength,
                                 tabStops=tabStops, errorCol=errorCol)
 
-    def eval_model(self, modelfunc):
-        return modelfunc(*self.get_indep(filter=False))
-
     def eval_model_to_fit(self, modelfunc):
-        return self.apply_filter(modelfunc(*self.get_indep(filter=True)))
+        model = super().eval_model_to_fit(modelfunc)
+        return self.apply_filter(model)
 
     def sum_background_data(self,
                             get_bdata_func=(lambda key, bkg: bkg.counts)):
