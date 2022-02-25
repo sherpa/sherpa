@@ -1697,18 +1697,14 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     assert pha.get_filter() == "2:4"
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize("label", ["grouping", "quality"])
-@pytest.mark.parametrize("vals", [True, [1, 1], np.ones(10)])
-def test_pha_column_size(label, vals, make_test_pha):
-    """Check we error out if column=label has the wrong size"""
+@pytest.mark.parametrize("field", ["grouping", "quality"])
+def test_pha_change_xxx_non_integer_value(field, make_test_pha):
+    """What happens if send grouping/quality values that can not be converted to an array?"""
 
     pha = make_test_pha
-    with pytest.raises(DataErr) as de:
-        # This does not throw an error
-        setattr(pha, label, vals)
-
-    assert str(de.value) == f"size mismatch between channel and {label}"
+    invalid = [None, "x", {}, set()]
+    # This does not error out
+    setattr(pha, field, invalid)
 
 
 @pytest.mark.xfail
@@ -2156,6 +2152,20 @@ def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
     #
     # this does not error out
     setattr(pha, related, [2, 3])
+
+
+@pytest.mark.parametrize("column", ["staterror", "syserror",
+                                    "y", "counts",
+                                    "backscal", "areascal",
+                                    "grouping", "quality"])
+def test_pha_check_related_fields_correct_size(column, make_grouped_pha):
+    """Can we set the value to a 2-element array?"""
+
+    d = DataPHA('example', None, None)
+    setattr(d, column, np.asarray([2, 10, 3]))
+
+    # This does not error out
+    d.indep = (np.asarray([2, 3, 4, 5]), )
 
 
 @pytest.mark.parametrize("label", ["filter", "grouping"])

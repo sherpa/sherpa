@@ -732,7 +732,7 @@ def test_data2_get_dims(data):
 
 # DATA-NOTE: Not sure this should work, really, as the 1D implementation does not account for the difference in 2D
 #  data, but in 2D it is hard with the current implementation to figure out the shape is self.shape is None
-@pytest.mark.xfail()
+@pytest.mark.xfail
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 def test_data2_get_dims_no_shape(data):
     data.shape = None
@@ -1222,19 +1222,46 @@ def test_data_filter_no_data():
     assert str(de.value) == 'mask excludes all data'
 
 
-@pytest.mark.parametrize("vals", [4, [4], [[2, 3, 4]], [[2, 3], [3, 2]]])
-def test_data_filter_invalid_size(vals):
-    """Check we get a size-mismatch error"""
+def test_data_filter_invalid_size_scalar():
+    """Check we get a size-mismatch error when sent a scalar"""
 
     x = numpy.asarray([1, 2, 5])
     d = Data1D('x', x, x)
     d.ignore(None, 2)
     assert d.mask == pytest.approx([False, False, True])
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr) as err:
+        d.apply_filter(4)
+
+    assert str(err.value) == 'size mismatch between mask and data array'
+
+
+@pytest.mark.parametrize("vals", [[4], [2, 3, 4, 5]])
+def test_data_filter_invalid_size_sequence(vals):
+    """Check we get a size-mismatch error: sequence sent a 1D array"""
+
+    x = numpy.asarray([1, 2, 5])
+    d = Data1D('x', x, x)
+    d.ignore(None, 2)
+
+    with pytest.raises(DataErr) as err:
         d.apply_filter(vals)
 
-    assert str(de.value) == 'size mismatch between mask and data array'
+    assert str(err.value) == 'size mismatch between mask and data array'
+
+
+@pytest.mark.parametrize("vals", [[[2, 3, 4]], [[2, 3], [3, 2]]])
+def test_data_filter_invalid_size_sequence_nd(vals):
+    """Check we get a size-mismatch error: sequence sent a nD array"""
+
+    x = numpy.asarray([1, 2, 5])
+    d = Data1D('x', x, x)
+    d.ignore(None, 2)
+
+    with pytest.raises(DataErr) as err:
+        d.apply_filter(vals)
+
+    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -1257,11 +1284,10 @@ def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
     xhi = numpy.asarray([2, 3, 8])
     y = numpy.zeros(3)
     d = Data1D('tmp', xlo, xhi, y)
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr) as err:
         d.notice(lo, hi, ignore=ignore)
 
-    err = f'strings not allowed in {emsg} bound list'
-    assert str(de.value) == err
+    assert str(err.value) == f'strings not allowed in {emsg} bound list'
 
 
 @pytest.mark.parametrize("expected,args",
@@ -1749,6 +1775,27 @@ def test_is_mask_reset(data):
     assert data.mask == pytest.approx(omask)
 
 
+@pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)
+def test_dependent_field_can_not_be_a_scalar(data):
+    """This is to contrast with test_related_fields_can_not_be_a_scalar.
+
+    This is tested elsewhere but leave here to point out that the related
+    fields are not all handled the same.
+    """
+
+    # does not raise an error
+    data.y = 2
+
+
+@pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("related", ["syserror", "staterror"])
+def test_related_field_can_not_be_a_scalar(related, data):
+    """The related fields (staterror/syserror) can not be a scalar."""
+
+    # does not raise an error
+    setattr(data, related, 2)
+
+
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
 def test_reduce_axis_size_1d(data):
     """What happens if we reduce the independent axis?"""
@@ -1931,6 +1978,23 @@ def test_set_error_axis_wrong_length(data, column):
 
     # does not raise an error
     setattr(data, column, [1, 2])
+
+
+@pytest.mark.parametrize("column", ["y", "staterror", "syserror"])
+def test_check_related_fields_correct_size(column):
+    """If we set a related field before the independent axis, what happens if different?
+
+    I am just doing this for Data1D rather than trying to cover
+    all cases. There is a DataPHA version in
+    sherpa/astro/tests/test_astro_data2.py called
+    test_grouped_pha_check_related_fields_correct_size
+    """
+
+    d = Data1D('example', None, None)
+    setattr(d, column, numpy.asarray([2, 10, 3]))
+
+    # does not raise an error
+    d.indep = (numpy.asarray([2, 3, 4, 5]), )
 
 
 def test_data1d_mismatched_related_fields():

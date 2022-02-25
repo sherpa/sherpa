@@ -796,7 +796,7 @@ def test_ungroup():
     '''
     session = Session()
     testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
-                       np.zeros(50), bin_lo=1, bin_hi=10)
+                       np.zeros(50))
     session.set_data(1, testdata)
     session.ungroup(1)
     session.group_bins(1, 5)
@@ -819,11 +819,9 @@ def test_unsubtract():
     '''
     session = Session()
     testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
-                       np.zeros(50),
-                       bin_lo=1, bin_hi=10)
+                       np.zeros(50))
     testbkg = DataPHA('testbkg', np.arange(50, dtype=float) + .5,
-                      np.zeros(50),
-                      bin_lo=1, bin_hi=10)
+                      np.zeros(50))
     session.set_data(1, testdata)
     session.set_bkg(1, testbkg)
     session.unsubtract(1)
@@ -2763,3 +2761,87 @@ def test_set_error_axis_wrong_length(data_args, column):
 
     # does not raise an error
     setattr(data, column, [1, 2])
+
+
+@pytest.mark.parametrize("related", ["y", "counts"])
+def test_pha_dependent_field_can_not_be_a_scalar(related):
+    """This is to contrast with test_pha_related_fields_can_not_be_a_scalar.
+
+    This is tested elsewhere but leave here to point out that the related
+    fields are not all handled the same.
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+    # does not raise an error
+    setattr(data, related, 2)
+
+
+@pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
+def test_pha_bin_field_must_match_initialization(vals):
+    """The bin_lo/hi must match when creating the object"""
+
+    data_class, args = PHA_ARGS
+    # this does not raise an error
+    data_class(*args, bin_lo=[1, 2, 3], bin_hi=vals)
+
+
+@pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
+def test_pha_bin_field_must_match_after(vals):
+    """The bin_lo/hi must match when creating the object"""
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+    data.bin_hi = [4, 5, 6]
+    # this does not raise an error
+    data.bin_lo = vals
+
+
+@pytest.mark.parametrize("field", ["bin_lo", "bin_hi"])
+@pytest.mark.parametrize("vals", [True, 0, np.asarray(1)])
+def test_pha_bin_field_can_not_be_a_scalar(field, vals):
+    """The bin_lo/hi fields can not be a scalar.
+
+    Note that these fields are different to sys/staterror.
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+    # this does not raise an error
+    setattr(data, field, vals)
+
+
+@pytest.mark.parametrize("field", ["bin_lo", "bin_hi"])
+@pytest.mark.parametrize("vals", [[1, 1], np.ones(10)])
+def test_pha_bin_field_can_not_be_a_sequence_wrong_size(field, vals):
+    """The bin_lo/hi fields can not be a scalar.
+
+    Note that these fields are different to sys/staterror.
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+    # this does not raise an error
+    setattr(data, field, vals)
+
+
+@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("vals", [True, 0, np.asarray(1)])
+def test_pha_related_field_can_not_be_a_scalar(related, vals):
+    """The related fields (staterror/syserror/grouping/quality) can not be a scalar."""
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+    # this does not raise an error
+    setattr(data, related, vals)
+
+
+@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("vals", [[1, 1], np.ones(10)])
+def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
+    """Check we error out if column=label has the wrong size: sequence"""
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+    # this does not raise an error
+    setattr(data, label, vals)
