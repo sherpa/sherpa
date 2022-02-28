@@ -1840,7 +1840,7 @@ def test_pha_does_set_grouping_set_grouped(clean_astro_ui):
 
     ui.set_grouping([1, -1, 1, 1, 1])
 
-    # ui.get_dep returns somethng when grouped
+    # ui.get_dep returns something when grouped
     assert pha.grouping is not None
     assert not pha.grouped
     assert ui.get_dep() == pytest.approx(counts)
@@ -1854,5 +1854,5 @@ def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui):
     ui.set_grouping([1, -1, 1, -1, -1])
     ui.group()
 
-    # Looks like it's returning sum of group / number of channels in group
+    # Looks like it's returning mean of channel values in group
     assert ui.get_dep() == pytest.approx([4.5, 4])
