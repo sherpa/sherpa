@@ -1934,3 +1934,79 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui):
     # We could also just clear the mask so d.mask would be True.
     #
     assert d.mask.sum() == 2500
+
+
+def test_set_source_checks_dimensionality_1d(clean_astro_ui):
+    """Check that you can not set a model of the wrong dimensionality"""
+
+    chans = np.arange(1, 5)
+    ui.load_arrays(1, chans, chans * 0, ui.DataPHA)
+
+    # does not raise an error
+    ui.set_source(ui.const2d.mdl)
+
+
+def test_set_source_checks_dimensionality_2d(clean_astro_ui):
+    """Check that you can not set a model of the wrong dimensionality"""
+
+    x0 = np.asarray([1, 2, 1, 2])
+    x1 = np.asarray([1, 1, 1, 1])
+    y = np.asarray([1] * 4)
+    ui.load_arrays(1, x0, x1, y, (2, 2), ui.DataIMG)
+
+    # does not raise an error
+    ui.set_source(ui.const1d.mdl)
+
+
+@pytest.mark.xfail
+def test_model_dimensionality_check_is_not_triggered_calc_stat(clean_astro_ui):
+    """We can still end up where a model and dataset dimensionality do not match.
+
+    So check that other parts of the system catch this error: calc_stat
+    """
+
+    ui.load_arrays(1, np.asarray([1, 2, 1, 1]), np.asarray([1, 1, 2, 2]),
+                   np.asarray([1, 1, 1, 1]), (2, 2), ui.DataIMG)
+    ui.set_source(ui.const2d.mdl)
+
+    chans = np.arange(1, 5)
+    ui.load_arrays(1, chans, chans * 0)
+    # XFAIL: there is no ndim attribute
+    assert ui.get_data().ndim == 1
+
+    # Changing the data set currently does not reset the source model
+    # so check this.
+    src = ui.get_source()
+    assert src.ndim == 2
+
+    # However, this creates a Fit object and so does error out
+    #
+    with pytest.raises(DataErr) as err:
+        ui.calc_stat()
+
+    assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"
+
+
+@pytest.mark.xfail
+def test_model_dimensionality_check_is_not_triggered_plot_model(clean_astro_ui):
+    """We can still end up where a model and dataset dimensionality do not match.
+
+    So check that other parts of the system catch this error: plot_model
+    """
+
+    ui.load_arrays(1, np.asarray([1, 2, 1, 1]), np.asarray([1, 1, 2, 2]),
+                   np.asarray([1, 1, 1, 1]), (2, 2), ui.DataIMG)
+    ui.set_source(ui.const2d.mdl)
+
+    chans = np.arange(1, 5)
+    ui.load_arrays(1, chans, chans * 0)
+    # XFAIL: there is no ndim attribute
+    assert ui.get_data().ndim == 1
+
+    src = ui.get_source()
+    assert src.ndim == 2
+
+    with pytest.raises(DataErr) as err:
+        ui.plot_model()
+
+    assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"

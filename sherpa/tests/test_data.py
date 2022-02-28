@@ -2090,3 +2090,29 @@ def test_error_must_be_1d(data, column):
     err = err.reshape(2, err.size // 2)
     # does not raise an error
     setattr(data, column, err)
+
+
+#@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1D, pytest.param(Data1DInt, marks=pytest.mark.xfail)), indirect=True)
+@pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
+def test_data_eval_model_checks_dimensionality_1d(data, funcname):
+    """Does eval_model check the model dimensionality?"""
+
+    model = Polynom2D()
+    func = getattr(data, funcname)
+    with pytest.raises(TypeError):
+        # XFAIL: Data1DInt does not raise an error
+        func(model)
+
+
+#@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (pytest.param(Data2D, marks=pytest.mark.xfail), Data2DInt), indirect=True)
+@pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
+def test_data_eval_model_checks_dimensionality_2d(data, funcname):
+    """Does eval_model check the model dimensionality?"""
+
+    model = Polynom1D()
+    func = getattr(data, funcname)
+    with pytest.raises(TypeError):
+        # XFAIL: Data2D does not raise an error
+        func(model)

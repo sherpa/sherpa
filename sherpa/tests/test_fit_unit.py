@@ -95,11 +95,11 @@ import numpy as np
 import pytest
 
 from sherpa.fit import Fit, StatInfoResults
-from sherpa.data import Data1D, DataSimulFit
+from sherpa.data import Data1D, Data2D, DataSimulFit
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.models.model import SimulFitModel
-from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, StepLo1D
+from sherpa.models.basic import Const1D, Const2D, Gauss1D, Polynom1D, StepLo1D
 from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
@@ -2813,3 +2813,30 @@ def test_fit_dof_neg1(stat, method, success):
     fit = Fit(d, mdl, stat=stat(), method=method())
     fres = fit.fit()
     assert fres.succeeded == success
+
+
+def make_data(data_class):
+    if data_class == Data1D:
+        return Data1D("x", [1, 2, 3], [3, 5, 2])
+
+    if data_class == Data2D:
+        return Data2D("x", [1, 2, 1, 2], [1, 1, 2, 2], [1, 2, 3, 4],
+                      shape=(2, 2))
+
+    assert False  # programmer error
+
+
+@pytest.mark.parametrize("data_class,model_class",
+                         [(Data1D, Const2D), (Data2D, Const1D)])
+def test_fit_ensures_data_and_model_dimensionality_matches(data_class, model_class):
+    """Check that we error out when the dimensionality does not match.
+
+    This does not catch the combined data or model (DataSimulFit and
+    SimulFitModel).
+
+    """
+
+    data = make_data(data_class)
+    model = model_class()
+    # does not raise an error
+    Fit(data, model)

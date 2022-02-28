@@ -27,6 +27,7 @@ import pytest
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.models.basic import Gauss2D
 from sherpa.utils import parse_expr
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
@@ -2845,3 +2846,14 @@ def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
     data = data_class(*args)
     # this does not raise an error
     setattr(data, label, vals)
+
+
+@pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
+def test_pha_eval_model_checks_dimensionality_pha(funcname):
+    """Does eval_model check the model dimensionality?"""
+
+    data = DataPHA('tmp', np.arange(3), np.arange(3))
+    model = Gauss2D()
+    func = getattr(data, funcname)
+    with pytest.raises(TypeError):
+        func(model)
