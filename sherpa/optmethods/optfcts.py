@@ -1177,11 +1177,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             return h
 
         def calc_params(self):
-            h = self.calc_h(self.pars)
             params = []
-            for ii in range(len(h)):
+            for ii in range(len(self.h)):
                 tmp_pars = numpy.copy(self.pars)
-                tmp_pars[ii] += h[ii]
+                tmp_pars[ii] += self.h[ii]
                 tmp_pars = numpy.append(ii, tmp_pars)
                 params.append(tmp_pars)
             return tuple(params)
