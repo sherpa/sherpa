@@ -1881,6 +1881,34 @@ def test_reduce_axis_size_2d(data):
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("val,etype",
+                         [(1, "int"),
+                          ([1, 2, 3], "list"),
+                          (numpy.asarray([1,2, 3]), "ndarray")
+                          ])
+def test_invalid_independent_axis_not_a_tuple_set_indep(val, etype, data):
+    """The independent axis must be a tuple: set_indep"""
+
+    # There is no consistent error message to test here
+    with pytest.raises(TypeError):
+        data.set_indep(val)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("val,etype",
+                         [(1, "int"),
+                          ([1, 2, 3], "list"),
+                          (numpy.asarray([1,2, 3]), "ndarray")
+                          ])
+def test_invalid_independent_axis_not_a_tuple_indep(val, etype, data):
+    """The independent axis must be a tuple: .indep"""
+
+    # There is no consistent error message to test here
+    with pytest.raises(TypeError):
+        data.indep = val
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_invalid_independent_axis(data):
     """What happens if we use the wrong number of independent axes?
 
