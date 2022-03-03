@@ -188,6 +188,9 @@ if HAS_PYTEST:
     def requires_xspec(test_function):
         return requires_package("xspec required", "sherpa.astro.xspec")(test_function)
 
+    def requires_iminuit(test_function):
+        return requires_package("iminuit required", "iminuit")(test_function)
+
 else:
 
     def wrapped():
@@ -213,6 +216,8 @@ else:
     requires_ds9 = make_fake()
 
     requires_xspec = make_fake()
+
+    requires_iminuit = make_fake()
 
     def requires_package(*args):
         return make_fake()

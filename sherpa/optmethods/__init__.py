@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -812,69 +812,18 @@ class NelderMead(OptMethod):
         OptMethod.__init__(self, name, neldermead)
 
 
-###############################################################################
+try:
+    from iminuit import Minuit
+    from sherpa.optmethods.myminuit import myminuit
 
-# # from sherpa.optmethods.fminpowell import *
-# # from sherpa.optmethods.nmpfit import *
+    tmp = list(__all__)
+    tmp.append('Minuit')
+    __all__ = tuple(tmp)
 
-# # from sherpa.optmethods.odrpack import odrpack
-# # from sherpa.optmethods.stogo import stogo
-# # from sherpa.optmethods.chokkan import chokkanlbfgs
-# # from sherpa.optmethods.odr import odrf77
+    class Minuit(OptMethod):
+        r"""https://iminuit.readthedocs.io/en/stable/"""
+        def __init__(self, name='minuit'):
+            OptMethod.__init__(self, name, myminuit)
 
-# # def myall( targ, arg ):
-# #     fubar = list( targ )
-# #     fubar.append( arg )
-# #     return tuple( fubar )
-
-# # __all__ = myall( __all__, 'Bobyqa' )
-# # __all__ = myall( __all__, 'Chokkan' )
-# # __all__ = myall( __all__, 'cppLevMar' )
-# # __all__ = myall( __all__, 'Dif_Evo' )
-# # __all__ = myall( __all__, 'MarLev' )
-# # __all__ = myall( __all__, 'MyMinim' )
-# # __all__ = myall( __all__, 'Nelder_Mead' )
-# # __all__ = myall( __all__, 'NMPFIT' )
-# # __all__ = myall( __all__, 'Newuoa' )
-# # __all__ = myall( __all__, 'Odr' )
-# # __all__ = myall( __all__, 'OdrPack' )
-# # __all__ = myall( __all__, 'PortChi' )
-# # __all__ = myall( __all__, 'PortFct' )
-# # __all__ = myall( __all__, 'ScipyPowell' )
-# # __all__ = myall( __all__, 'StoGo' )
-
-# # class Chokkan(OptMethod):
-# #     def __init__(self, name='chokkan'):
-# #         OptMethod.__init__(self, name, chokkanlbfgs)
-
-# # class cppLevMar(OptMethod):
-
-# #    def __init__(self, name='clevmar'):
-# # 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
-
-# # class MyMinim(OptMethod):
-
-# #     def __init__(self, name='simplex'):
-# # 	OptMethod.__init__(self, name, minim)
-
-# # class NMPFIT(OptMethod):
-# #     def __init__(self, name='pytools_nmpfit'):
-# #         OptMethod.__init__(self, name, nmpfit.pytools_nmpfit)
-
-# # class OdrPack(OptMethod):
-# #     def __init__(self, name='odrpack'):
-# #         OptMethod.__init__(self, name, odrpack)
-
-# # class Odr(OptMethod):
-# #     def __init__(self, name='odr'):
-# #         OptMethod.__init__(self, name, odrf77)
-
-# # class ScipyPowell(OptMethod):
-# #     def __init__(self, name='scipypowell'):
-# #         OptMethod.__init__(self, name, my_fmin_powell)
-
-# # class StoGo(OptMethod):
-# #     def __init__(self, name='stogo'):
-# # 	OptMethod.__init__(self, name, stogo)
-
-###############################################################################
+except ImportError:
+    pass
