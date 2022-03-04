@@ -7,19 +7,20 @@ The sherpa.astro.data module
 .. automodule:: sherpa.astro.data
 
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
-      DataPHA
+      DataOgipResponse
       DataARF
       DataRMF
+      DataRosatRMF
+      DataPHA
       DataIMG
       DataIMGInt
-      DataRosatRMF
-   
+
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: DataPHA DataARF DataRMF DataIMG DataIMGInt DataRosatRMF
+.. inheritance-diagram:: DataOgipResponse DataARF DataRMF DataRosatRMF DataPHA DataIMG DataIMGInt
    :parts: 1
