@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -7437,8 +7437,7 @@ class Session(sherpa.ui.utils.Session):
 
         A group is indicated by a sequence of flag values starting
         with ``1`` and then ``-1`` for all the channels in the group,
-        following [1]_.  Setting the grouping column automatically
-        turns on the grouping flag for that data set.
+        following [1]_.
 
         Parameters
         ----------
@@ -7494,10 +7493,11 @@ class Session(sherpa.ui.utils.Session):
         --------
 
         Copy the grouping array from data set 2 into the default data
-        set:
+        set and ensure it is applied:
 
         >>> grp = get_grouping(2)
         >>> set_grouping(grp)
+        >>> group()
 
         Copy the grouping from data set "src1" to the source and the
         first background data set of "src2":
@@ -7505,6 +7505,7 @@ class Session(sherpa.ui.utils.Session):
         >>> grp = get_grouping("src1")
         >>> set_grouping("src2", grp)
         >>> set_grouping("src2", grp, bkg_id=1)
+        >>> group("src2")
 
         """
         if val is None:

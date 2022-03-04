@@ -1787,10 +1787,72 @@ def test_pha_column_has_correct_size(label, vals, clean_astro_ui):
     """
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
-    pha = ui.get_data()
 
     with pytest.raises(DataErr) as de:
         # This does not throw an error
         getattr(ui, f"set_{label}")(vals)
 
     assert str(de.value) == f"size mismatch between channel and {label}"
+
+
+@pytest.mark.parametrize("label", ["grouping", "quality"])
+def test_pha_column_checks_pha(label, clean_astro_ui):
+    """Check we error out with a non-PHA class"""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.Data1D)
+
+    with pytest.raises(ArgumentErr) as err:
+        getattr(ui, f"get_{label}")()
+
+    assert str(err.value) == "data set 1 does not contain PHA data"
+
+
+@pytest.mark.parametrize("label", ["grouping", "quality"])
+def test_pha_column_converts_to_int(label, clean_astro_ui):
+    """Check that the label column is converted to an int"""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
+
+    getfunc = getattr(ui, f"get_{label}")
+    setfunc = getattr(ui, f"set_{label}")
+    assert getfunc() is None
+
+    vals = [2.0, -2.0, 1.5, 1.9, 1.2]
+    setfunc(vals)
+
+    got = getfunc()
+    assert len(got) == 5
+    assert isinstance(got, np.ndarray)
+    assert issubclass(got.dtype.type, np.integer)
+    assert got == pytest.approx([2, -2, 1, 1, 1])
+
+
+def test_pha_does_set_grouping_set_grouped(clean_astro_ui):
+    """If the grouping column is set is the data automatically grouped?"""
+
+    counts = [5, 4, 2, 3, 7]
+    ui.load_arrays(1, [1, 2, 3, 4, 5], counts, ui.DataPHA)
+    pha = ui.get_data()
+
+    assert pha.grouping is None
+    assert not pha.grouped
+    assert ui.get_dep() == pytest.approx(counts)
+
+    ui.set_grouping([1, -1, 1, 1, 1])
+
+    # ui.get_dep returns something when grouped
+    assert pha.grouping is not None
+    assert not pha.grouped
+    assert ui.get_dep() == pytest.approx(counts)
+
+
+
+def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui):
+    """Regression test for get_dep with grouped data"""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
+    ui.set_grouping([1, -1, 1, -1, -1])
+    ui.group()
+
+    # Looks like it's returning mean of channel values in group
+    assert ui.get_dep() == pytest.approx([4.5, 4])
