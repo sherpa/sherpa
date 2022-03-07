@@ -2857,3 +2857,118 @@ def test_pha_eval_model_checks_dimensionality_pha(funcname):
     func = getattr(data, funcname)
     with pytest.raises(TypeError):
         func(model)
+
+
+def test_datapha_create_not_ndarray():
+    """If sent non nd-array fields, does __init__ convert them?
+
+    This is a regression test.
+    """
+
+    d = DataPHA('x', [1, 2, 3], (4, 5, 6),
+                staterror=(8, 7, 6), syserror=[2, 3, 4],
+                grouping=(1, 1, -1), quality=(0, 0, 0),
+                backscal=[2, 3, 4], areascal=(0.1, 0.2, 0.9))
+
+    assert isinstance(d.indep, tuple)
+    assert len(d.indep) == 1
+    assert isinstance(d.indep[0], np.ndarray)
+
+    assert isinstance(d.channel, np.ndarray)
+    assert isinstance(d.y, np.ndarray)
+    assert isinstance(d.counts, np.ndarray)
+    assert isinstance(d.staterror, tuple)
+    assert isinstance(d.syserror, list)
+
+    assert isinstance(d.grouping, tuple)
+    assert isinstance(d.quality, tuple)
+
+    assert isinstance(d.areascal, tuple)
+    assert isinstance(d.backscal, list)
+
+
+@pytest.mark.parametrize("field", ["staterror", "syserror",
+                                   "grouping", "quality",
+                                   "areascal", "backscal"])
+def test_datapha_set_not_ndarray(field):
+    """What happens if the field is set to a non-ndarray after creation?
+
+    This is a regression test.
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+
+    setattr(data, field, tuple([1] * len(data.y)))
+    got = getattr(data, field)
+
+    assert isinstance(got, tuple)
+
+
+def test_datapha_mask_set_not_ndarray():
+    """What happens if the mask field is set to a non-ndarray after creation?
+
+    This is a regression test.
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+
+    data.mask = tuple([1] * len(data.y))
+
+    assert isinstance(data.mask, np.ndarray)
+
+
+def test_dataimg_create_not_ndarray():
+    """If sent non nd-array fields, does __init__ convert them?
+
+    This is a regression test.
+    """
+
+    x1, x0 = np.mgrid[2:5, 3:5]
+    shape = x0.shape
+    x0 = list(x0.flatten())
+    x1 = tuple(x1.flatten())
+    listval = [1] * len(x0)
+    tupleval = tuple(listval)
+    d = DataIMG('x', x0, x1, listval, shape=shape,
+                staterror=tupleval, syserror=listval)
+
+    assert isinstance(d.indep, tuple)
+    assert len(d.indep) == 2
+    assert isinstance(d.indep[0], np.ndarray)
+    assert isinstance(d.indep[1], np.ndarray)
+
+    assert isinstance(d.y, np.ndarray)
+    assert isinstance(d.staterror, tuple)
+    assert isinstance(d.syserror, list)
+
+
+@pytest.mark.parametrize("field", ["staterror", "syserror"])
+def test_dataimg_set_not_ndarray(field):
+    """What happens if the field is set to a non-ndarray after creation?
+
+    This is a regression test.
+    """
+
+    data_class, args = IMG_ARGS
+    data = data_class(*args)
+
+    setattr(data, field, tuple([1] * len(data.y)))
+    got = getattr(data, field)
+
+    assert isinstance(got, tuple)
+
+
+def test_dataimg_mask_set_not_ndarray():
+    """What happens if the mask field is set to a non-ndarray after creation?
+
+    This is a regression test.
+    """
+
+    data_class, args = IMG_ARGS
+    data = data_class(*args)
+
+    data.mask = tuple([1] * len(data.y))
+
+    assert isinstance(data.mask, np.ndarray)

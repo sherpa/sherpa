@@ -2116,3 +2116,107 @@ def test_data_eval_model_checks_dimensionality_2d(data, funcname):
     with pytest.raises(TypeError):
         # XFAIL: Data2D does not raise an error
         func(model)
+
+
+def test_data1d_create_not_ndarray():
+    """If sent non nd-array fields, does __init__ convert them?
+
+    This is a regression test.
+    """
+
+    d = Data1D('x', [1, 2, 3], (4, 5, 6),
+               staterror=(8, 7, 6), syserror=[2, 3, 4])
+
+    assert isinstance(d.indep, tuple)
+    assert len(d.indep) == 1
+    assert isinstance(d.indep[0], numpy.ndarray)
+
+    assert isinstance(d.y, numpy.ndarray)
+    assert isinstance(d.staterror, tuple)
+    assert isinstance(d.syserror, list)
+
+
+def test_data1dint_create_not_ndarray():
+    """If sent non nd-array fields, does __init__ convert them?
+
+    This is a regression test.
+    """
+
+    d = Data1DInt('x', [2, 3, 4], (2.5, 4.5, 4.8), (4, 5, 6),
+               staterror=(8, 7, 6), syserror=[2, 3, 4])
+
+    assert isinstance(d.indep, tuple)
+    assert len(d.indep) == 2
+    assert isinstance(d.indep[0], numpy.ndarray)
+    assert isinstance(d.indep[1], numpy.ndarray)
+
+    assert isinstance(d.y, numpy.ndarray)
+    assert isinstance(d.staterror, tuple)
+    assert isinstance(d.syserror, list)
+
+
+def test_data2d_create_not_ndarray():
+    """If sent non nd-array fields, does __init__ convert them?
+
+    This is a regression test.
+    """
+
+    d = Data2D('x', [2, 3, 4], (15, 16, 17), (4, 5, 6),
+               staterror=(8, 7, 6), syserror=[2, 3, 4])
+
+    assert isinstance(d.indep, tuple)
+    assert len(d.indep) == 2
+    assert isinstance(d.indep[0], numpy.ndarray)
+    assert isinstance(d.indep[1], numpy.ndarray)
+
+    assert isinstance(d.y, numpy.ndarray)
+    assert isinstance(d.staterror, tuple)
+    assert isinstance(d.syserror, list)
+
+
+def test_data2dint_create_not_ndarray():
+    """If sent non nd-array fields, does __init__ convert them?
+
+    This is a regression test.
+    """
+
+    d = Data2DInt('x', [2, 3, 4], (15, 16, 17),
+                  (2.5, 4.5, 4.8), (16, 17, 18), (4, 5, 6),
+                  staterror=(8, 7, 6), syserror=[2, 3, 4])
+
+    assert isinstance(d.indep, tuple)
+    assert len(d.indep) == 4
+    assert isinstance(d.indep[0], numpy.ndarray)
+    assert isinstance(d.indep[1], numpy.ndarray)
+    assert isinstance(d.indep[2], numpy.ndarray)
+    assert isinstance(d.indep[3], numpy.ndarray)
+
+    assert isinstance(d.y, numpy.ndarray)
+    assert isinstance(d.staterror, tuple)
+    assert isinstance(d.syserror, list)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("field", ["staterror", "syserror"])
+def test_data_set_not_ndarray(data, field):
+    """What happens if the field is set to a non-ndarray after creation?
+
+    This is a regression test.
+    """
+
+    setattr(data, field, tuple([1] * len(data.y)))
+    got = getattr(data, field)
+
+    assert isinstance(got, tuple)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_data_mask_set_not_ndarray(data):
+    """What happens if the mask field is set to a non-ndarray after creation?
+
+    This is a regression test.
+    """
+
+    data.mask = tuple([1] * len(data.y))
+
+    assert isinstance(data.mask, numpy.ndarray)
