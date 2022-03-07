@@ -2284,8 +2284,8 @@ def test_data1d_create_not_ndarray():
     assert isinstance(d.indep[0], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 def test_data1dint_create_not_ndarray():
@@ -2303,8 +2303,8 @@ def test_data1dint_create_not_ndarray():
     assert isinstance(d.indep[1], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 def test_data2d_create_not_ndarray():
@@ -2322,8 +2322,8 @@ def test_data2d_create_not_ndarray():
     assert isinstance(d.indep[1], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 def test_data2dint_create_not_ndarray():
@@ -2344,8 +2344,8 @@ def test_data2dint_create_not_ndarray():
     assert isinstance(d.indep[3], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)

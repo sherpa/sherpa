@@ -2886,7 +2886,7 @@ def test_pha_independent_axis_can_not_be_a_set():
     data = data_class(*args)
 
     with pytest.raises(DataErr,
-                       match="Array must be a sequence or None"):
+                       match="Array must be 1D"):
         data.set_indep(({"abc", False, 23.4}, ))
 
 
@@ -2997,8 +2997,8 @@ def test_datapha_create_not_ndarray():
     assert isinstance(d.channel, np.ndarray)
     assert isinstance(d.y, np.ndarray)
     assert isinstance(d.counts, np.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, np.ndarray)
+    assert isinstance(d.syserror, np.ndarray)
 
     assert isinstance(d.grouping, tuple)
     assert isinstance(d.quality, tuple)
@@ -3060,8 +3060,8 @@ def test_dataimg_create_not_ndarray():
     assert isinstance(d.indep[1], np.ndarray)
 
     assert isinstance(d.y, np.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, np.ndarray)
+    assert isinstance(d.syserror, np.ndarray)
 
 
 @pytest.mark.parametrize("field", ["staterror", "syserror"])

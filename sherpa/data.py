@@ -76,7 +76,7 @@ __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
            'Data1DAsymmetricErrs', 'Data2D', 'Data2DInt')
 
 
-def _check(array):
+def _check(array, warn_on_convert=True):
     if array is None:
         # There may be valid reasons for the array to be None, e.g. that's what we do in fake_pha
         return array
@@ -87,7 +87,9 @@ def _check(array):
 
         return array
 
-    warnings.warn(f"Converting array {array} to numpy array.")
+    if warn_on_convert:
+        warnings.warn(f"Converting array {array} to numpy array.")
+
     array = numpy.asanyarray(array)
     return _check(array)
 
@@ -95,7 +97,11 @@ def _check(array):
 def _check_nomask(array):
     if hasattr(array, 'mask'):
         warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
-    return array
+
+    # Ensure we do NumPy conversions after checking for mask to
+    # make sure we don't end up removing .mask in the following.
+    #
+    return _check(array, warn_on_convert=False)
 
 
 def _check_dep(array):
@@ -116,7 +122,11 @@ def _check_err(array, masktemplate):
     if hasattr(array, 'mask') and \
        (not hasattr(masktemplate, 'mask') or not numpy.all(array.mask == masktemplate.mask)):
         warnings.warn(f'The mask of {array} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.')
-    return array
+
+    # Ensure we do NumPy conversions after checking for mask to
+    # make sure we don't end up removing .mask in the following.
+    #
+    return _check(array, warn_on_convert=False)
 
 
 class DataSpace1D(EvaluationSpace1D):
