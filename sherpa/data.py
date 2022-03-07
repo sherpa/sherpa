@@ -416,20 +416,20 @@ class IntegratedDataSpace2D():
 
 
 class DataSpaceND():
+    """Class for representing arbitray N-Dimensional data domains
+
+    Parameters
+    ----------
+    filter : Filter
+        A filter object that initialized this data space.
+    indep : tuple of array_like
+        The tuple of independent axes.
+
     """
-    Class for representing arbitray N-Dimensional data domains
-    """
+
     def __init__(self, filter, indep):
-        """
-        Parameters
-        ----------
-        filter : Filter
-            a filter object that initialized this data space
-        indep : tuple of array_like
-            the tuple of independent axes.
-        """
         self.filter = filter
-        self.indep = _check_nomask(indep)
+        self.indep = tuple(_check_nomask(d) for d in indep)
 
     def get(self, filter=False):
         """
