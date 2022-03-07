@@ -56,6 +56,10 @@ DATA1DINT_ARGS = NAME, X_ARRAY - 0.5, X_ARRAY + 0.5, Y_ARRAY, STATISTICAL_ERROR_
 DATA2D_ARGS = NAME, X0_2D, X1_2D, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D
 DATA2DINT_ARGS = NAME, X0_2D - 0.5, X1_2D - 0.5, X0_2D + 0.5, X1_2D + 0.5, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D
 
+EMPTY_DATA_OBJECTS = [(Data1D, [None] * 2),
+                      (Data1DInt, [None] * 3),
+                      (Data2D, [None] * 3),
+                      (Data2DInt, [None] * 5)]
 
 INSTANCE_ARGS = {
     Data1D: DATA1D_ARGS,
@@ -2220,3 +2224,67 @@ def test_data_mask_set_not_ndarray(data):
     data.mask = tuple([1] * len(data.y))
 
     assert isinstance(data.mask, numpy.ndarray)
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_is_empty(data_class, args):
+    """There is no size attribute"""
+
+    data = data_class("empty", *args)
+    with pytest.raises(AttributeError):
+        data.size
+
+
+@pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
+def test_data_size_1d(data):
+    """Check the size field.
+
+    This is separated into 1D and 2D cases as it is
+    easier to check given the existing test infrastructure.
+    """
+
+    with pytest.raises(AttributeError):
+        data.size
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data_size_2d(data):
+    """Check the size field.
+
+    This is separated into 1D and 2D cases as it is
+    easier to check given the existing test infrastructure.
+    """
+
+    with pytest.raises(AttributeError):
+        data.size
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
+    """Check out how we error out.
+
+    This is a regression test.
+    """
+
+    data = data_class("empty", *args)
+    with pytest.raises(TypeError) as err:
+        data.set_dep(2)
+
+    assert str(err.value) == "object of type 'NoneType' has no len()"
+
+
+#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])
+@pytest.mark.parametrize("data_class,args",
+                         [(Data2D, [None] * 3),
+                          pytest.param(Data2DInt, [None] * 5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("index", ["x0", "x1"])
+def test_data_empty_get_x_2d(data_class, args, index):
+    """What happens when there's no data?
+
+    This is a regression test.
+    """
+
+    data = data_class("empty", *args)
+    getfunc = getattr(data, f"get_{index}")
+    # XFAIL: for Data2DInt there's a TypeError about adding None to None
+    assert getfunc() is None

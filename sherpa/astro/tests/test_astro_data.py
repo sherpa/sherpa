@@ -33,6 +33,11 @@ from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
+EMPTY_DATA_OBJECTS = [(DataPHA, [None] * 2),
+                      (DataIMG, [None] * 3),
+                      (DataIMGInt, [None] * 5)]
+
+
 def _monotonic_warning(response_type, filename):
     return UserWarning("The {} '{}' has a non-monotonic ENERG_LO array".format(response_type, filename))
 
@@ -2972,3 +2977,60 @@ def test_dataimg_mask_set_not_ndarray():
     data.mask = tuple([1] * len(data.y))
 
     assert isinstance(data.mask, np.ndarray)
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_is_empty(data_class, args):
+    """There is no size attribute"""
+
+    data = data_class("empty", *args)
+    with pytest.raises(AttributeError):
+        data.size
+
+
+def test_datapha_size():
+    """Check the size field."""
+
+    data = PHA_ARGS[0](*PHA_ARGS[1])
+    with pytest.raises(AttributeError):
+        data.size
+
+
+@pytest.mark.parametrize("data_args", [IMG_ARGS, IMGINT_ARGS])
+def test_data2d_size(data_args):
+    """Check the size field."""
+
+    data = data_args[0](*data_args[1])
+    with pytest.raises(AttributeError):
+        data.size
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
+    """Check out how we error out.
+
+    This is a regression test.
+    """
+
+    data = data_class("empty", *args)
+    with pytest.raises(TypeError) as err:
+        data.set_dep(2)
+
+    assert str(err.value) == "object of type 'NoneType' has no len()"
+
+
+#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
+@pytest.mark.parametrize("data_class,args",
+                         [(DataIMG, [None] * 3),
+                          pytest.param(DataIMGInt, [None] * 5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("index", ["x0", "x1"])
+def test_data_empty_get_x_2d(data_class, args, index):
+    """What happens when there's no data?
+
+    This is a regression test.
+    """
+
+    data = data_class("empty", *args)
+    getfunc = getattr(data, f"get_{index}")
+    # XFAIL: for Data2DInt there's a TypeError about adding None to None
+    assert getfunc() is None
