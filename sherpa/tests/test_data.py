@@ -45,6 +45,17 @@ STAT_ERROR_2D = Y_2D / 5
 X_THRESHOLD = 3
 MULTIPLIER = 2
 
+# Make sure we don't change these accidentally by changing an objects values
+X_ARRAY.setflags(write=False)
+Y_ARRAY.setflags(write=False)
+SYSTEMATIC_ERROR_ARRAY.setflags(write=False)
+STATISTICAL_ERROR_ARRAY.setflags(write=False)
+X0_2D.setflags(write=False)
+X1_2D.setflags(write=False)
+Y_2D.setflags(write=False)
+SYS_ERROR_2D.setflags(write=False)
+STAT_ERROR_2D.setflags(write=False)
+
 DATA_1D_CLASSES = (Data1D, Data1DInt)
 DATA_2D_CLASSES = (Data2D, Data2DInt)
 ALL_DATA_CLASSES = DATA_1D_CLASSES + DATA_2D_CLASSES
@@ -109,6 +120,26 @@ def data(request):
     data_class = request.param
 
     return data_class(*INSTANCE_ARGS[data_class])
+
+
+@pytest.fixture
+def data_copy(request):
+    data_class = request.param
+
+    # At present we allow the fields of the data object to use
+    # the input arguments, rather than copying them. As the
+    # arguments in INSTANCE_ARGS have been marked read-only we
+    # need to explicitly copy them to make them writeable for
+    # those tests where we want to change the elements.
+    #
+    args = list(INSTANCE_ARGS[data_class])
+    for i in range(1, len(args)):
+        try:
+            args[i] = args[i].copy()
+        except AttributeError:
+            pass
+
+    return data_class(*args)
 
 
 @pytest.fixture
@@ -2303,3 +2334,130 @@ def test_data_empty_get_x_2d(data_class, args, index):
     getfunc = getattr(data, f"get_{index}")
     # XFAIL: for Data2DInt there's a TypeError about adding None to None
     assert getfunc() is None
+
+
+@pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
+def test_data_change_independent_element(data_copy):
+    """What happens if we change an element of the independent axis?"""
+
+    data = data_copy
+
+    # The x axis is > 0. but just check this
+    assert data.indep[0][1] > 0
+
+    expected = [d.copy() for d in data.indep]
+    expected[0][1] = -100
+
+    # change the second element of the first component
+    data.indep[0][1] = -100
+
+    # check we have only changed the one element
+    assert len(data.indep) == len(expected)
+    for e, n in zip(expected, data.indep):
+        assert n == pytest.approx(e)
+
+
+@pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
+def test_data_change_dependent_element(data_copy):
+    """What happens if we change an element of the dependent axis?"""
+
+    data = data_copy
+
+    #just check we are changing the value
+    assert data.dep[1] > 0
+
+    expected = data.dep.copy()
+    expected[1] = -1000
+
+    # change the second element
+    data.dep[1] = -1000
+
+    # check we have only changed the one element
+    assert data.dep == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("field", ["staterror", "syserror"])
+def test_data_change_related_element(data_copy, field):
+    """What happens if we change an element of a 'related' field?"""
+
+    data = data_copy
+
+    attr = getattr(data, field)
+
+    #just check we are changing the value
+    assert attr[1] < 500
+
+    expected = attr.copy()
+    expected[1] = 1000
+
+    # change the second element
+    attr[1] = 1000
+
+    # check we have only changed the one element
+    assert attr == pytest.approx(expected)
+
+    # Use the get_<field> call to check we have been changing things.
+    #
+    getfunc = getattr(data, f"get_{field}")
+    assert getfunc(filter=False) == pytest.approx(expected)
+
+
+def test_data1d_do_we_copy_the_independent_axis():
+    """Do we copy or just use the initial argument for the independent axis?
+
+    We could do this for all the data classes but it would be a bit
+    involved to set up.
+
+    This is a regression test.
+
+    """
+
+    x = numpy.asarray([-100, 20, 45])
+    y = numpy.asarray([-13, 13, -12])
+
+    data = Data1D("change", x, y)
+
+    assert len(data.indep) == 1
+    assert data.indep[0] == pytest.approx(x)
+
+    # If an element of x is changed, does the independent axis change?
+    x[1] = -20
+    assert data.indep[0] == pytest.approx(x)
+
+
+def test_data1d_do_we_copy_the_independent_axis_v2():
+    """Do we copy or just use the initial argument for the independent axis?"""
+
+    x = numpy.asarray([-100, 20, 45])
+    y = numpy.asarray([-13, 13, -12])
+
+    data = Data1D("change", x, y)
+
+    data.indep[0][1] = -20
+
+    x[1] = -20
+    assert data.indep[0] == pytest.approx(x)
+
+
+def test_data1d_do_we_copy_the_dependent_axis():
+    """Do we copy or just use the initial argument for the dependent axis?
+
+    We could do this for all the data classes but it would be a bit
+    involved to set up.
+
+    This is a regression test.
+
+    """
+
+    x = numpy.asarray([-100, 20, 45])
+    y = numpy.asarray([-13, 13, -12])
+
+    data = Data1D("change", x, y)
+
+    assert len(data.indep) == 1
+    assert data.y == pytest.approx(y)
+
+    # If an element of x is changed, does the dependent axis change?
+    y[1] = -20
+    assert data.y == pytest.approx(y)

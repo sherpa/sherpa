@@ -3066,3 +3066,85 @@ def test_pha_apply_grouping_empty():
     orig = [2, 5]
     ans = pha.apply_grouping(orig)
     assert ans == pytest.approx(orig)
+
+
+def test_pha_change_independent_element():
+    """Special case PHA as the handling is more-complex than the
+    general data cases.
+    """
+
+    chans = np.arange(1, 10)
+    counts = np.ones(len(chans))
+    pha = DataPHA("change", chans, counts)
+
+    assert len(pha.indep) == 1
+    assert pha.indep[0][1] == 2
+
+    # change the second element of the first component
+    pha.indep[0][1] = -100
+
+    expected = chans.copy()
+    expected[1] = -100
+    assert len(pha.indep) == 1
+    assert pha.indep[0] == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("field", ["y", "dep", "counts"])
+def test_pha_change_dependent_element(field):
+    """Special case PHA as the handling is more-complex than the
+    general data cases.
+    """
+
+    chans = np.arange(1, 10)
+    counts = np.arange(11, 20)
+    pha = DataPHA("change", chans, counts)
+
+    attr = getattr(pha, field)
+    assert attr[1] == 12
+
+    # change the second element of the first component
+    attr[1] = 100
+
+    expected = counts.copy()
+    expected[1] = 100
+    assert attr == pytest.approx(expected)
+
+    # explicitly check pha.y just to make sure we really are changing the
+    # object
+    assert pha.y == pytest.approx(expected)
+
+
+def test_pha_do_we_copy_the_independent_axis():
+    """Special case PHA as the handling is more-complex than the
+    general data cases.
+
+    This is a regression test.
+    """
+
+    chans = np.arange(1, 10)
+    counts = np.ones(len(chans))
+    pha = DataPHA("change", chans, counts)
+
+    assert pha.indep[0] == pytest.approx(chans)
+
+    # what happens if we change the chans array?
+    chans[1] = -100
+    assert pha.indep[0] == pytest.approx(chans)
+
+
+def test_pha_do_we_copy_the_dependent_axis():
+    """Special case PHA as the handling is more-complex than the
+    general data cases.
+
+    This is a regression test.
+    """
+
+    chans = np.arange(1, 10)
+    counts = np.ones(len(chans))
+    pha = DataPHA("change", chans, counts)
+
+    assert pha.y == pytest.approx(counts)
+
+    # what happens if we change the counts array?
+    counts[1] = 20
+    assert pha.y == pytest.approx(counts)
