@@ -3034,3 +3034,35 @@ def test_data_empty_get_x_2d(data_class, args, index):
     getfunc = getattr(data, f"get_{index}")
     # XFAIL: for Data2DInt there's a TypeError about adding None to None
     assert getfunc() is None
+
+
+#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+@pytest.mark.parametrize("data_class,args",
+                         [pytest.param(DataPHA, [None] * 2, marks=pytest.mark.xfail),
+                          (DataIMG, [None] * 3),
+                          (DataIMGInt, [None] * 5)])
+def test_data_empty_apply_filter(data_class, args):
+    """What does apply_filter do when the data set is empty?
+
+    We could error out or just return the supplied argument, so
+    this is a regression test
+    """
+
+    data = data_class("empty", *args)
+    orig = [2, 5]
+    ans = data.apply_filter(orig)
+    # XFAIL for DataPHA get a TypeError from calling len(None)
+    assert ans == pytest.approx(orig)
+
+
+def test_pha_apply_grouping_empty():
+    """What does apply_grouping do when the data set is empty?
+
+    We could error out or just return the supplied argument, so
+    this is a regression test
+    """
+
+    pha = DataPHA("example", None, None)
+    orig = [2, 5]
+    ans = pha.apply_grouping(orig)
+    assert ans == pytest.approx(orig)

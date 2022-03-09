@@ -1279,6 +1279,21 @@ def test_data_apply_filter_invalid_size(data):
     data.apply_filter([1, 2])
 
 
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_apply_filter_empty(data_class, args):
+    """There's no data so how can we filter?
+
+    We could error out or just return the supplied argument, so
+    this is a regression test
+    """
+
+    data = data_class("empty", *args)
+
+    orig = [1, 2]
+    ans = data.apply_filter(orig)
+    assert ans == pytest.approx(orig)
+
+
 @pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
 @pytest.mark.parametrize("ignore", [False, True])
 def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
