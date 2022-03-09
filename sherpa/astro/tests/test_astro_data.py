@@ -2853,6 +2853,34 @@ def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
     setattr(data, label, vals)
 
 
+
+def test_pha_mask_size_must_match_ungrouped():
+    """Check if the mask can be set to the wrong length: data not grouped"""
+
+    chans = np.arange(1, 9)
+    counts = np.ones(8)
+    data = DataPHA("mask", chans, counts)
+    data.grouping = [1, -1, -1, 1, -1, -1, 1, 1]
+    assert not data.grouped
+
+    # does not raise an error
+    data.mask = [1, 0, 1]
+
+
+def test_pha_mask_size_must_match_grouped():
+    """Check if the mask can be set to the wrong length: data grouped"""
+
+    chans = np.arange(1, 9)
+    counts = np.ones(8)
+    data = DataPHA("mask", chans, counts)
+    data.grouping = [1, -1, -1, 1, -1, -1, 1, 1]
+    data.grouped = True
+
+    # The length is chosen to match the un-grouped data.
+    # does not raise an error
+    data.mask = [1, 0, 1, 1, 0, 1, 0, 0]
+
+
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
 def test_pha_eval_model_checks_dimensionality_pha(funcname):
     """Does eval_model check the model dimensionality?"""

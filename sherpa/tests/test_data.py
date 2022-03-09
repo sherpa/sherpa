@@ -1846,6 +1846,56 @@ def test_related_field_can_not_be_a_scalar(related, data):
     setattr(data, related, 2)
 
 
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_mask_sent_scalar_nomask(data):
+    """What happens if the mask is sent a scalar ma.nomask?"""
+
+    assert data.mask is True
+
+    # Just check we change the field
+    data.mask = False
+    assert data.mask is False
+
+    # Check that nomask is treated as "notice everything"
+    data.mask = numpy.ma.nomask
+    assert data.mask is True
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_mask_sent_scalar_non_bool(data):
+    """What happens if the mask is sent a scalar non-bool?"""
+
+    with pytest.raises(DataErr) as err:
+        data.mask = "true"
+
+    assert str(err.value) == "'mask' must be True, False, or a mask array"
+
+
+def test_mask_sent_array_non_bool():
+    """What happens if the mask is sent an array of non-bool?
+
+    Note that this succeeds, unlike the scalar non-bool case.
+    The test is only of the Data1DInt case as it is easier to
+    handle, rather than using ALL_DATA_CLASSES.
+    """
+
+    data = Data1DInt(*DATA1DINT_ARGS)
+
+    mask = [1, 0, 1.0, 0.0, "true", "false", None, -23.0, {}, {"a"}]
+    expected = [True, False, True, False, True, True, False, True, False, True]
+
+    data.mask = mask
+    assert data.mask == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+def test_mask_size_must_match(data):
+    """Check if the mask can be set to the wrong length"""
+
+    # does not raise an error
+    data.mask = [1, 0, 1]
+
+
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
 def test_reduce_axis_size_1d(data):
     """What happens if we reduce the independent axis?"""
@@ -2487,3 +2537,10 @@ def test_data1d_compare_mask_and_filter():
 
     assert data.mask == pytest.approx([0, 1, 0, 1, 0])
     assert data.get_dep(filter=True) == pytest.approx([200, 300])
+
+    # change an individual element
+    mask = data.mask
+    mask[2] = True
+
+    assert data.mask == pytest.approx([0, 1, 1, 1, 0])
+    assert data.get_dep(filter=True) == pytest.approx([200, 250, 300])
