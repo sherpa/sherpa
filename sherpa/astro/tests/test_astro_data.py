@@ -28,7 +28,7 @@ from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.models.basic import Gauss2D
-from sherpa.utils import parse_expr
+from sherpa.utils import parse_expr, SherpaFloat
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
@@ -3148,3 +3148,158 @@ def test_pha_do_we_copy_the_dependent_axis():
     # what happens if we change the counts array?
     counts[1] = 20
     assert pha.y == pytest.approx(counts)
+
+
+def test_pha_compare_mask_and_filter():
+    """We can use ignore/notice or change the mask to get the same result
+
+    A response is added so we can check with energy filtering.
+    """
+
+    x = np.arange(1, 10)
+    y = x * 10
+    data = DataPHA("ex", x, y)
+
+    elo = 0.4 + x * 0.1
+    ehi = elo + 0.1
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    data.set_rmf(rmf)
+    data.set_analysis("energy")
+
+    assert data.units == "energy"
+    assert data.mask
+
+    # Use notice/ignore
+    #
+    data.notice(0.62, 1.12)
+    data.ignore(0.74, 0.82)
+    assert data.mask == pytest.approx([0, 1, 0, 0, 1, 1, 1, 0, 0])
+    assert data.get_dep(filter=True) == pytest.approx([20, 50, 60, 70])
+
+    data.notice()
+    assert data.mask
+
+    # Change the mask array directly
+    data.mask = [0, 1, 0, 0, 1, 1, 1, 0, 0]
+
+    assert data.mask == pytest.approx([0, 1, 0, 0, 1, 1, 1, 0, 0])
+    assert data.get_dep(filter=True) == pytest.approx([20, 50, 60, 70])
+
+
+def get_img_spatial_mask():
+    """This is a regression test, but it does look sensible."""
+
+    return np.asarray([[0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+                       [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                       [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                       [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+                       [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                       [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                       [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                       [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+                      dtype=bool)
+
+
+def test_img_spatial_filter():
+    """This is really meant to check some of the assumptions of the
+    next test: test_img_combine_spatial_filter_and_mask():
+
+    """
+
+    # x0 is 10 to 24
+    # x1 is -5 to 4
+    #
+    x1, x0 = np.mgrid[-5:5, 10:25]
+    shape = (10, 15)
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(1, 151)
+    data = DataIMG("img", x0, x1, y, shape)
+
+    yimg = y.reshape(shape)
+
+    assert data.mask
+    assert data.get_filter() == ""
+    assert data._region is None
+    assert data.get_img() == pytest.approx(yimg)
+
+    # Add a spatial filter.
+    #
+    data.notice2d("circle(15, -1, 5)")
+
+    mask = get_img_spatial_mask()
+
+    assert data.mask == pytest.approx(mask.flatten())
+    assert data.get_filter() == "Circle(15,-1,5)"
+    assert data._region is not None
+
+    got = data.get_img()
+    assert np.isfinite(got) == pytest.approx(mask)
+    assert got[mask] == pytest.approx(yimg[mask])
+
+
+def test_img_combine_spatial_filter_and_mask():
+    """What happens when we have both a spatial filter and change the mask attribute?"""
+
+    # x0 is 10 to 24
+    # x1 is -5 to 4
+    #
+    x1, x0 = np.mgrid[-5:5, 10:25]
+    shape = (10, 15)
+
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(1, 151)
+    data = DataIMG("img", x0, x1, y, shape)
+
+    yimg = y.reshape(shape)
+
+    assert data.mask
+    assert data.get_filter() == ""
+    assert data._region is None
+    assert data.get_img() == pytest.approx(yimg)
+
+    # Apply a simple mask filter. We exclude those pixels
+    # with x1 equal to -3 or 2.
+    #
+    mask = np.invert((x1 == -3) | (x1 == 2))
+    data.mask = mask
+
+    yimg = yimg.astype(SherpaFloat)
+    yimg[2, :] = np.nan
+    yimg[7, :] = np.nan
+
+    assert data.mask == pytest.approx(mask)
+    assert data.get_filter() == ""
+    assert data._region is None
+
+    good = np.isfinite(yimg)
+    got = data.get_img()
+
+    assert np.isfinite(got) == pytest.approx(good)
+    assert got[good] == pytest.approx(yimg[good])
+
+    # Add a spatial filter. This overlaps the excluded lines so the
+    # mask becomes complicated.
+    #
+    data.notice2d("circle(15, -1,5)")
+
+    # Note that although the filter has now changed the mask
+    # has not.
+    #
+    assert data.mask == pytest.approx(mask)
+    assert data.get_filter() == "Circle(15,-1,5)"
+    assert data._region is not None
+
+    assert good.sum() == 120  # just to check
+    good |= get_img_spatial_mask()
+    assert good.sum() == 138  # just to check
+
+    got = data.get_img()
+    yimg = y.reshape(shape)
+
+    assert np.isfinite(got) == pytest.approx(good)
+    assert got[good] == pytest.approx(yimg[good])

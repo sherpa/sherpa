@@ -2461,3 +2461,29 @@ def test_data1d_do_we_copy_the_dependent_axis():
     # If an element of x is changed, does the dependent axis change?
     y[1] = -20
     assert data.y == pytest.approx(y)
+
+
+def test_data1d_compare_mask_and_filter():
+    """We can use ignore/notice or change the mask to get the same result"""
+
+    x = numpy.asarray([10, 20, 25, 30, 50])
+    y = x * 10
+    data = Data1D("ex", x, y)
+
+    assert data.mask
+
+    # Use notice/ignore
+    #
+    data.notice(15, 40)
+    data.ignore(23, 27)
+    assert data.mask == pytest.approx([0, 1, 0, 1, 0])
+    assert data.get_dep(filter=True) == pytest.approx([200, 300])
+
+    data.notice()
+    assert data.mask
+
+    # Change the mask array directly
+    data.mask = [0, 1, 0, 1, 0]
+
+    assert data.mask == pytest.approx([0, 1, 0, 1, 0])
+    assert data.get_dep(filter=True) == pytest.approx([200, 300])
