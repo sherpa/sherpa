@@ -1412,7 +1412,7 @@ namespace minpack {
     int operator( )( int n, real ftol, real xtol, real gtol, int maxfev,
                      real epsfcn, real factor, int nprint, std::vector<real>& x,
                      int& nfev, real& fmin, const sherpa::Bounds<real>& bounds,
-                     std::vector<real>& fjac, int transform ) {
+                     std::vector<real>& fjac ) {
 
       int info = 0;
 
@@ -1436,7 +1436,7 @@ namespace minpack {
                       nprint, nfev, &fjac[0], ldfjac, &ipvt[0], &qtf[0],
                       &wa1[ 0 ], &wa2[0], &wa3[0], &wa4[0], bounds );
 
-        if ( info > 0 && !transform ) {
+        if ( info > 0 ) {
           this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
         }
 
@@ -1495,7 +1495,7 @@ namespace minpack {
     // de
     int minimize( int maxnfev, const sherpa::Bounds<real>& limits, real tol,
                   int npar, std::vector<real>& par, real& fmin, int& nfev ) {
-      int nprint = 0, transform = 1;
+      int nprint = 0;
       real epsfcn =
 	std::sqrt( std::numeric_limits< real >::epsilon( ) );
       real factor = 100.0;
@@ -1503,7 +1503,7 @@ namespace minpack {
       std::vector<real> diag( npar );
       std::vector<real> fjac( myfvec.size() * npar );
       return this->operator( )( npar, tol, tol, tol, maxnfev, epsfcn, factor,
-				nprint, par, nfev, fmin, limits, fjac, transform );
+				nprint, par, nfev, fmin, limits, fjac );
     }
     // de
 

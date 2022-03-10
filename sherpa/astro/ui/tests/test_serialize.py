@@ -139,6 +139,7 @@ set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
+set_method_opt("transform", False)
 set_method_opt("verbose", 1)
 
 
@@ -173,6 +174,7 @@ set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
+set_method_opt("transform", False)
 set_method_opt("verbose", 1)
 
 
@@ -778,6 +780,7 @@ set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 
 
@@ -897,6 +900,7 @@ set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 
 
@@ -953,6 +957,7 @@ set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
+set_method_opt("transform", False)
 set_method_opt("verbose", 0)
 
 

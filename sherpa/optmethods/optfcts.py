@@ -69,6 +69,7 @@ Best-fit value: 4.0
 
 import random
 import numpy
+import pdb
 
 from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
@@ -229,12 +230,10 @@ def _set_limits(x, xmin, xmax):
 
 
 class NoTransformation:
-    def __init__(self, lo, hi):
-        self.lo = lo
-        self.hi = hi
+    def __init__(self):
         return
 
-    def calc_covar(self, m, n, info, fjac):
+    def calc_covar(self, m, n, xint, info, fjac):
         covar = None
         if info > 0:
             fjac = numpy.reshape(numpy.ravel(fjac, order='F'),
@@ -245,72 +244,98 @@ class NoTransformation:
                 covar = fjac
         return covar
 
-    def int2ext(self, x):
-        return x
+    def chain_rule(self, x):
+        return numpy.ones_like(x)
 
     def ext2int(self, x):
+        return x
+
+    def int2ext(self, x):
         return x
 
 
 class Transformation(NoTransformation):
 
     def __init__(self, lo, hi):
-        NoTransformation.__init__(self, lo, hi)
-        self.int2ext_funcs, self.ext2int_funcs = self.init()
+        self.lo = lo
+        self.hi = hi
+        self.bounds, self.int2ext_fcns, self.ext2int_fcns, = self.init()
         return
 
     def init(self):
+        bounds = []
         int2ext = []
         ext2int = []
         myhugeval = hugeval / 10.0
         for a, b in zip(self.lo, self.hi):
             if a <= - myhugeval and b >= myhugeval:
+                bounds.append((None, None))
                 int2ext.append(self.return_arg)
                 ext2int.append(self.return_arg)
             elif a <= - myhugeval:
+                bounds.append((None, b))
                 int2ext.append(self.int2ext_hi)
                 ext2int.append(self.ext2int_hi)
             elif b >= myhugeval:
+                bounds.append((a, None))
                 int2ext.append(self.int2ext_lo)
                 ext2int.append(self.ext2int_lo)
             else:
+                bounds.append((a, b))
                 int2ext.append(self.int2ext_all)
                 ext2int.append(self.ext2int_all)
-        return int2ext, ext2int 
+        return bounds, int2ext, ext2int
 
-    def int2ext_all(self, ii, x):
-        b_a = self.hi[ii] - self.lo[ii]
-        sin_p1 = numpy.sin(x) + 1.0
-        return self.lo[ii] + b_a / 2. * sin_p1
+    def calc_covar(self, m, n, xint, info, fjac):
+        return None
 
-    def int2ext_hi(self, ii, x):
-        return self.hi[ii] - (self.hi[ii] - x)**2
-
-    def int2ext_lo(self, ii, x):
-        return self.lo[ii] + (x - self.lo[ii])**2
-
-    def int2ext(self, x):
+    def call_fcns(self, x, fcns):
         result = numpy.empty_like(x)
-        for ii, (func, arg) in enumerate(zip(self.int2ext_funcs, x)):
-            result[ii] = func(ii, arg)
+        for ii, (fcn, arg) in enumerate(zip(fcns, x)):
+            result[ii] = fcn(ii, arg)
         return result
 
     def ext2int(self, x):
-        result = numpy.empty_like(x)
-        for ii, (func, arg) in enumerate(zip(self.ext2int_funcs, x)):
-            result[ii] = func(ii, arg)
-        return result
+        return self.call_fcns(x, self.ext2int_fcns)
 
     def ext2int_all(self, ii, x):
         x_a = x - self.lo[ii]
         b_a = self.hi[ii] - self.lo[ii]
-        return numpy.arcsin(2.0 * x_a / b_a  - 1.0)
+        arg = 2.0 * x_a / b_a  - 1.0
+        return numpy.arcsin(arg)
 
     def ext2int_lo(self, ii, x):
+        # arg = x - self.lo[ii] + 1.0;
+        # arg_sqr = arg * arg
+        # if arg_sqr < 1.0:
+        #     return 0.0;
+        # return numpy.sqrt(arg * arg - 1.0)
         return numpy.sqrt(x -self.lo[ii]) + self.lo[ii]
 
     def ext2int_hi(self, ii, x):
+        # arg = self.hi[ii] - x + 1.0
+        # arg_sqr = arg * arg
+        # if arg_sqr < 1.0:
+        #     return 0.0
+        # return numpy.sqrt(arg_sqr - 1.0)
         return self.hi[ii] - numpy.sqrt(self.hi[ii] - x)
+
+    def int2ext_all(self, ii, x):
+        b_a = self.hi[ii] - self.lo[ii]
+        sin_p1 = numpy.sin(x) + 1.0
+        return self.lo[ii] + 0.5 *  b_a * sin_p1
+
+    def int2ext_hi(self, ii, x):
+        # return self.hi[ii] + 1.0 - numpy.sqrt(x * x + 1.0)
+        return self.hi[ii] - (self.hi[ii] - x)**2
+
+    def int2ext_lo(self, ii, x):
+        # return self.lo[ii] - 1.0 + numpy.sqrt(x * x + 1.0)
+        return self.lo[ii] + (x - self.lo[ii])**2
+
+    def int2ext(self, x):
+        return self.call_fcns(x, self.int2ext_fcns)
+
 
     def return_arg(self, ii, x):
         return x
@@ -558,7 +583,8 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 # C-version of minim
 #
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
+          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True,
+          transform=False):
 
     # TODO: rework so do not have two stat_cb0 functions which
     #       are both used
@@ -582,10 +608,20 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
             return FUNC_MAX
         return orig_fcn(x_new)
 
+    if transform:
+        tfmt = Transformation(xmin, xmax)
+    else:
+        tfmt = NoTransformation()
+
+    def cb0(arg):
+        return stat_cb0(tfmt.int2ext(arg))
+
     init = 0
-    x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
-                                           iquad, simp, ftol, step, \
-                                           xmin, xmax, x, stat_cb0)
+    result = _saoopt.minim(reflect, verbose, maxfev, init, iquad, simp, ftol,
+                           step, tfmt.ext2int(xmin), tfmt.ext2int(xmax),
+                           tfmt.ext2int(x), cb0)
+    xint, fval, neval, ifault = result
+    x = tfmt.int2ext(xint)
 
     key = {
         0: (True, 'successful termination'),
@@ -826,7 +862,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 #
 def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                initsimplex=0, finalsimplex=9, step=None, iquad=1,
-               verbose=0, reflect=True):
+               verbose=0, reflect=True, transform=False):
     r"""Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
@@ -1052,6 +1088,14 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             return FUNC_MAX
         return orig_fcn(x_new)
 
+    if transform:
+        tfmt = Transformation(xmin, xmax)
+    else:
+        tfmt = NoTransformation()
+
+    def cb0(arg):
+        return stat_cb0(tfmt.int2ext(arg))
+
     # for internal use only
     debug = False
 
@@ -1098,9 +1142,6 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if maxfev is None:
         maxfev = 1024 * len(x)
 
-    if debug:
-        print('opfcts.py neldermead() finalsimplex=%s\tisscalar=%s\titerable=%d' % (finalsimplex, numpy.isscalar(finalsimplex), numpy.iterable(finalsimplex)))
-
     def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
                 myfcn, debug, ofval=FUNC_MAX):
 
@@ -1124,8 +1165,11 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         else:
             return xx, ff, nf, er
 
-    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, finalsimplex,
-                                 ftol, step, xmin, xmax, x, stat_cb0, debug)
+    result =  simplex(verbose, maxfev, initsimplex, finalsimplex,
+                      ftol, step, tfmt.ext2int(xmin), tfmt.ext2int(xmax),
+                      tfmt.ext2int(x), cb0, debug)
+    xint, fval, nfev, ier = result
+    x = tfmt.int2ext(xint)
     if debug:
         print('f%s=%e in %d nfev' % (x, fval, nfev))
 
@@ -1133,7 +1177,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     covarerr = None
     if len(finalsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
-                       maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
+                       maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect,
+                       transform=transform)
         nelmea_x = numpy.asarray(nelmea[1], numpy.float_)
         nelmea_nfev = nelmea[4].get('nfev')
         info = nelmea[4].get('info')
@@ -1266,14 +1311,32 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             return h
 
         def calc_params(self):
-            h = self.calc_h(self.pars)
             params = []
-            for ii in range(len(h)):
+            for ii in range(len(self.h)):
                 tmp_pars = numpy.copy(self.pars)
-                tmp_pars[ii] += h[ii]
+                tmp_pars[ii] += self.h[ii]
                 tmp_pars = numpy.append(ii, tmp_pars)
                 params.append(tmp_pars)
             return tuple(params)
+
+
+    class fdJacTransform(fdJac):
+        def __init__(self, func, fvec, pars):
+            fdJac.__init__(self, func, fvec, pars)
+            return
+
+        def __call__(self, param):
+            wa = self.func(param[1:])
+            val = (wa - self.fvec) / self.h[int(param[0])]
+            return (wa - self.fvec) / self.h[int(param[0])]
+
+        def calc(self, fvec, params):
+            result = []
+            for ii, par in enumerate(params):
+                wa = self.func(par[1:])
+                result.append((wa - self.fvec) / self.h[ii])
+            fjac = numpy.concatenate(result)
+            return fjac
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -1287,7 +1350,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         return fcn(pars)[1]
 
     def fcn_parallel(pars, fvec):
-        fd_jac = fdJac(stat_cb1, fvec, pars)
+        fd_jac = fdJac(cb1, fvec, pars)
         params = fd_jac.calc_params()
         fjac = parallel_map(fd_jac, params, numcores)
         return numpy.concatenate(fjac)
@@ -1305,28 +1368,22 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     if transform:
         tfmt = Transformation(xmin, xmax)
     else:
-        tfmt = NoTransformation(xmin, xmax)
+        tfmt = NoTransformation()
 
-    def stat_cb1_transform(arg):
+    def cb1(arg):
         val = stat_cb1(tfmt.int2ext(arg))
         return val
-    cb1 = stat_cb1_transform
 
-    xint, fval, nfev, info, fjac = \
-        _saoopt.cpp_lmdif(cb1, fcn_parallel_counter, numcores, m,
-                          tfmt.ext2int(x), ftol, xtol, gtol, maxfev, epsfcn,
-                          factor, verbose, tfmt.ext2int(xmin),
-                          tfmt.ext2int(xmax), fjac, transform)
+    result = _saoopt.cpp_lmdif(cb1, fcn_parallel_counter, numcores, m,
+                               tfmt.ext2int(x), ftol, xtol, gtol, maxfev,
+                               epsfcn, factor, verbose, tfmt.ext2int(xmin),
+                               tfmt.ext2int(xmax), fjac)
+    xint, fval, nfev, info, fjac = result
     x = tfmt.int2ext(xint)
 
+    covar = tfmt.calc_covar(m, n, xint, info, fjac)
+
     if info > 0 and transform is False:
-        fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
-
-        if m != n:
-            covar = fjac[:n, :n]
-        else:
-            covar = fjac
-
         if _par_at_boundary(xmin, x, xmax, xtol):
             nm_result = neldermead(fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol),
                                    maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
@@ -1334,8 +1391,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             nfev += nm_result[4]['nfev']
             x = nm_result[1]
             fval = nm_result[2]
-    else:
-        covar = None
 
     if error:
         raise error.pop()

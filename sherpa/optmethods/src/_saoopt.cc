@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2018, 2019, 2021, 2022
+//  Copyright (C) 2007, 2018, 2019, 2021
 //        Smithsonian Astrophysical Observatory
 //
 //
@@ -134,10 +134,10 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func, Jac fd
   PyObject* py_function=NULL;
   PyObject* py_jacobian=NULL;
   DoubleArray par, lb, ub, fjac;
-  int mfct, maxnfev, nfev, info, verbose, numcores, transform;
+  int mfct, maxnfev, nfev, info, verbose, numcores;
   double fval, ftol, xtol, gtol, epsfcn, factor;
 
-  if ( !PyArg_ParseTuple( args, (char*) "OOiiO&dddiddiO&O&O&i",
+  if ( !PyArg_ParseTuple( args, (char*) "OOiiO&dddiddiO&O&O&",
 			  &py_function, &py_jacobian,
 			  &numcores, &mfct,
 			  CONVERTME(DoubleArray), &par,
@@ -145,8 +145,7 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func, Jac fd
 			  &epsfcn, &factor, &verbose,
 			  CONVERTME(DoubleArray), &lb,
 			  CONVERTME(DoubleArray), &ub,
-			  CONVERTME(DoubleArray), &fjac,
-                          &transform
+			  CONVERTME(DoubleArray), &fjac
                           ) ) {
     return NULL;
   }
@@ -187,12 +186,13 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func, Jac fd
         levmar( func, py_function, mfct );
 
       info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
-                     mypar, nfev, fval, bounds, jacobian, transform );
+                     mypar, nfev, fval, bounds, jacobian );
     } else {
+      
        minpack::LevMarDifJac< Func, Jac, PyObject*, double >
          levmar( func, py_function, mfct, fdjac, py_jacobian );      
        info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
-                      mypar, nfev, fval, bounds, jacobian, transform );
+                      mypar, nfev, fval, bounds, jacobian );
     }
 
     // info > 0 means par needs to be updated
