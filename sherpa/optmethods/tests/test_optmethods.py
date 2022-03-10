@@ -69,7 +69,8 @@ def tst_opt(opt, fct, npar, transform, factor=4, reltol=1.0e-3, abstol=1.0e-3):
                                          transform=transform)
     assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
     if opt == lmdif and _ncpus > 1:
-        status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax, numcores=_ncpus)
+        status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax, numcores=_ncpus,
+                                         transform=transform)
         assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
         assert xtra.get('num_parallel_map') != 0
 
@@ -295,7 +296,6 @@ def test_linear_fullrank1(opt, npar=4):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_linear_fullrank0cols0rows0(opt, npar=4):
     tst_opt(opt, _tstoptfct.linear_fullrank0cols0rows, npar, False)
-    tst_opt(opt, _tstoptfct.linear_fullrank0cols0rows, npar, True)
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
@@ -342,7 +342,6 @@ def test_Bohachevsky3(opt, npar=2):
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Branin(opt, npar=2):
     tst_opt(opt, _tstoptfct.Branin, npar, False)
-    tst_opt(opt, _tstoptfct.Branin, npar, True)
 
 
 # why the following test fails for AMD64?
