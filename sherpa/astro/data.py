@@ -2926,6 +2926,32 @@ must be an integer.""")
         self.quality_filter = qual_flags
 
     def _dynamic_group(self, group_func, *args, **kwargs):
+        """Group the data using the given function and arguments.
+
+        In order to support the grouping module being optional this
+        routine will error out if it is not loaded (each time it is
+        called). To support Sherpa 4.14.0 and earlier group_func can
+        be a callable, but it is expected to be a string which is the
+        name of the callable from the "group" module (which in this
+        module has been renamed to pygroup if it exists). It also allows
+        the user the capability of sending in a callable that they have
+        written without the need for the group library.
+
+        If group_func is a callable then it must return the grouping
+        and quality arrays for the new scheme.
+
+        """
+
+        if not callable(group_func):
+            if not groupstatus:
+                raise ImportErr('importfailed', 'group', 'dynamic grouping')
+
+            # The assumption is that the symbol exists so it is
+            # not worth catching the AttributeError if it does not,
+            # because that's a programming error and would have been
+            # caught in testing.
+            #
+            group_func = getattr(pygroup, group_func)
 
         keys = list(kwargs.keys())[:]
         for key in keys:
@@ -2949,18 +2975,6 @@ must be an integer.""")
 
         # warning('grouping flags have changed, noticing all bins')
 
-    # Have to move this check here; as formerly written, reference
-    # to pygroup functions happened *before* checking groupstatus,
-    # in _dynamic_group.  So we did not return the intended error
-    # message; rather, a NameError was raised stating that pygroup
-    # did not exist in global scope (not too clear to the user).
-    #
-    # The groupstatus check thus has to be done in *each* of the following
-    # group functions.
-
-    # # Dynamic grouping functions now automatically impose the
-    # # same grouping conditions on *all* associated background data sets.
-    # # CIAO 4.5 bug fix, 05/01/2012
     def group_bins(self, num, tabStops=None):
         """Group into a fixed number of bins.
 
@@ -2999,9 +3013,7 @@ must be an integer.""")
         the quality value for these channels will be set to 2.
 
         """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpNumBins, len(self.channel), num,
+        self._dynamic_group("grpNumBins", len(self.channel), num,
                             tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
@@ -3043,9 +3055,7 @@ must be an integer.""")
         for these channels will be set to 2.
 
         """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpBinWidth, len(self.channel), val,
+        self._dynamic_group("grpBinWidth", len(self.channel), val,
                             tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
@@ -3091,9 +3101,7 @@ must be an integer.""")
         quality value for these channels will be set to 2.
 
         """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpNumCounts, self.counts, num,
+        self._dynamic_group("grpNumCounts", self.counts, num,
                             maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
@@ -3146,9 +3154,7 @@ must be an integer.""")
         quality value for these channels will be set to 2.
 
         """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpSnr, self.counts, snr,
+        self._dynamic_group("grpSnr", self.counts, snr,
                             maxLength=maxLength, tabStops=tabStops,
                             errorCol=errorCol)
         for bkg_id in self.background_ids:
@@ -3199,9 +3205,7 @@ must be an integer.""")
         quality value for these channels will be set to 2.
 
         """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpAdaptive, self.counts, minimum,
+        self._dynamic_group("grpAdaptive", self.counts, minimum,
                             maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
@@ -3259,9 +3263,7 @@ must be an integer.""")
         quality value for these channels will be set to 2.
 
         """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpAdaptiveSnr, self.counts, minimum,
+        self._dynamic_group("grpAdaptiveSnr", self.counts, minimum,
                             maxLength=maxLength, tabStops=tabStops,
                             errorCol=errorCol)
         for bkg_id in self.background_ids:
