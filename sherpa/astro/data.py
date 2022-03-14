@@ -3398,26 +3398,26 @@ must be an integer.""")
             dep = self.apply_filter(dep)
         return dep
 
-    def set_dep(self, val):
-        # QUS: should this "invert" the areascaling to val
-        #      to get the stored values?
-        #
-        #      Otherwise, when areascal /= 1
-        #            y1 = d.get_dep()
-        #            d.set_dep(y1)
-        #            y2 = d.get_dep()
-        #            y1 != y2
-        #
-        # Or perhaps it removes the areascal value in this case?
-        # We already have this split in the API when background data
-        # is available and is subtracted.
-        #
-        if numpy.iterable(val):
-            dep = numpy.asarray(val, SherpaFloat)
-        else:
-            val = SherpaFloat(val)
-            dep = numpy.array([val] * len(self.get_indep()[0]))
-        self.counts = dep
+    # The code used to re-define set_dep, but the only difference
+    # from the parent class was that it set the counts attribute and
+    # not the y attribute. These are now the same so it is no-longer
+    # needed.
+    #
+    # There was the following comment in the code which we keep here:
+    #
+    # QUS: should this "invert" the areascaling to val
+    #      to get the stored values?
+    #
+    #      Otherwise, when areascal /= 1
+    #            y1 = d.get_dep()
+    #            d.set_dep(y1)
+    #            y2 = d.get_dep()
+    #            y1 != y2
+    #
+    # Or perhaps it removes the areascal value in this case?
+    # We already have this split in the API when background data
+    # is available and is subtracted.
+    #
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error.
