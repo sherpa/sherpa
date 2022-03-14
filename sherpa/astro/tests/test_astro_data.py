@@ -2579,6 +2579,24 @@ def test_set_counts_sets_y_axis():
     assert d.y == pytest.approx(counts2)
 
 
+@pytest.mark.parametrize("vals", [10, [10, 10, 10], (10, 10, 10)])
+def test_pha_can_set_dep(vals):
+    """Ensure we can call set_dep with a scalar or sequence for DataPHA"""
+
+    chans = np.arange(1, 4)
+    counts = chans[::-1]
+    data = DataPHA("simple", chans, counts)
+
+    assert data.get_dep() == pytest.approx(counts)
+
+    data.set_dep(vals)
+
+    expected = 10 * np.ones(3)
+    assert data.get_dep() == pytest.approx(expected)
+    assert data.counts == pytest.approx(expected)
+    assert data.y == pytest.approx(expected)
+
+
 # We don't really care if the arguments don't make much sense, at least
 # not until we add validation code which will mean these need fixing up.
 #
