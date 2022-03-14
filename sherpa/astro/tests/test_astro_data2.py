@@ -1671,11 +1671,11 @@ def test_pha_change_xxx_non_integer_value(field, make_test_pha):
 
     pha = make_test_pha
     invalid = [None, "x", {}, set()]
-    # This does not error out
-    setattr(pha, field, invalid)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence of integers or None"):
+        setattr(pha, field, invalid)
 
 
-@pytest.mark.xfail
 def test_pha_change_grouping_type(make_test_pha):
     """Check the grouping column is converted to int"""
     pha = make_test_pha
@@ -1684,11 +1684,9 @@ def test_pha_change_grouping_type(make_test_pha):
 
     # Since integer values can do an exact check
     assert (pha.grouping == np.asarray([1, -1, -1, 1])).all()
-    # At the moment the array is not converted to an int type
     assert pha.grouping.dtype == np.int16
 
 
-@pytest.mark.xfail
 def test_pha_change_quality_type(make_test_pha):
     """Check the quality column is converted to int"""
     pha = make_test_pha
@@ -1698,11 +1696,9 @@ def test_pha_change_quality_type(make_test_pha):
 
     # Since integer values can do an exact check
     assert (pha.quality == np.asarray([0, 2, 5, -1])).all()
-    # At the moment the array is not converted to an int type
     assert pha.quality.dtype == np.int16
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("label", ["grouping", "quality"])
 def test_pha_change_grouping_rounding(label, make_test_pha):
     """What happens with non-integer values?
@@ -1720,9 +1716,6 @@ def test_pha_change_grouping_rounding(label, make_test_pha):
     vals = np.asarray([0.5, 1.5, -0.5, 0.9])
     setattr(pha, label, vals)
 
-    # At the moment there is no conversion so the return
-    # value matches the input (i.e. vals).
-    #
     got = getattr(pha, label)
     assert (got == np.asarray([0, 1, 0, 0])).all()
 
@@ -2107,10 +2100,10 @@ def test_grouped_pha_set_y_invalid_size(make_grouped_pha):
         pha.set_dep([2, 3])
 
 
-@pytest.mark.parametrize("related", [pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail),
+@pytest.mark.parametrize("related", ["staterror", "syserror",
                                      "y", "counts",
-                                     pytest.param("backscal", marks=pytest.mark.xfail), pytest.param("areascal", marks=pytest.mark.xfail),
-                                     pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
+                                     "backscal", "areascal",
+                                     "grouping", "quality"])
 def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
     """Can we set the value to a 2-element array?"""
     pha = make_grouped_pha
@@ -2123,27 +2116,24 @@ def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
     related = "y" if related == "counts" else related
     emsg = f"size mismatch between independent axis and {related}: 5 vs 2"
 
-    # XFAIL: this does not error out except for the y and counts cases
     with pytest.raises(DataErr,
                        match=emsg):
         setattr(pha, related, [2, 3])
 
 
-@pytest.mark.parametrize("column", [pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail),
+@pytest.mark.parametrize("column", ["staterror", "syserror",
                                     "y", "counts",
-                                    pytest.param("backscal", marks=pytest.mark.xfail), pytest.param("areascal", marks=pytest.mark.xfail),
-                                    pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
+                                    "backscal", "areascal",
+                                    "grouping", "quality"])
 def test_pha_check_related_fields_correct_size(column, make_grouped_pha):
     """Can we set the value to a 2-element array?"""
 
     d = DataPHA('example', None, None)
     setattr(d, column, np.asarray([2, 10, 3]))
 
-    with pytest.raises(DataErr) as err:
-        # XFAIL: this does not error out except for the y and counts case
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 3 to 4"):
         d.indep = (np.asarray([2, 3, 4, 5]), )
-
-    assert str(err.value) == "independent axis can not change size: 3 to 4"
 
 
 @pytest.mark.parametrize("label", ["filter", "grouping"])
@@ -2156,11 +2146,12 @@ def test_pha_no_group_apply_xxx_invalid_size(label, make_test_pha):
     pha = make_test_pha
 
     func = getattr(pha, f"apply_{label}")
-    # this does not error out
-    func([1, 2])
+    with pytest.raises(DataErr,
+                       match="size mismatch between data and array: 4 vs 2"):
+        func([1, 2])
 
 
-@pytest.mark.parametrize("vals", [pytest.param([1], marks=pytest.mark.xfail), [1, 2, 3, 4, 5, 6, 7, 8]])
+@pytest.mark.parametrize("vals", [[1], [1, 2, 3, 4, 5, 6, 7, 8]])
 def test_pha_no_group_filtered_apply_filter_invalid_size(vals, make_test_pha):
     """Check apply_filter tests the data length: no quality/group, filtered
 
@@ -2174,10 +2165,8 @@ def test_pha_no_group_filtered_apply_filter_invalid_size(vals, make_test_pha):
     assert not np.all(pha.mask)
     assert np.any(pha.mask)
 
-    # This should error out, but it only does so for the > 1 element sequence,
-    # and this is not a "friendly" error message
-    #
-    with pytest.raises(ValueError):
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between filtered data and array: 2 vs [18]$"):
         pha.apply_filter(vals)
 
 
@@ -2191,8 +2180,9 @@ def test_pha_no_group_filtered_apply_grouping_invalid_size(vals, make_test_pha):
     pha = make_test_pha
     pha.ignore(hi=2)
 
-    # This should error out, but it does not.
-    pha.apply_grouping(vals)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between data and array: 4 vs [18]$"):
+        pha.apply_grouping(vals)
 
 
 @pytest.mark.parametrize("label", ["filter", "grouping"])
@@ -2211,8 +2201,8 @@ def test_pha_zero_quality_apply_xxx_invalid_size(label, vals, make_test_pha):
     pha.group()
 
     func = getattr(pha, f"apply_{label}")
-    with pytest.raises(TypeError,
-                       match="^input array sizes do not match, data: [128] vs group: 4$"):
+    with pytest.raises(DataErr,
+                       match="^size mismatch between data and array: 4 vs [128]$"):
         func(vals)
 
 
@@ -2231,10 +2221,8 @@ def test_pha_zero_quality_filtered_apply_filter_invalid_size(vals, make_test_pha
     assert not np.all(pha.mask)
     assert np.any(pha.mask)
 
-    # The error strong may depend on the NumPy version.
-    #
-    with pytest.raises(ValueError,
-                       match="^NumPy boolean array indexing "):
+    with pytest.raises(DataErr,
+                       match="^size mismatch between filtered data and array: 1 vs [28]$"):
         pha.apply_filter(vals)
 
 
@@ -2249,8 +2237,8 @@ def test_pha_zero_quality_filtered_apply_grouping_invalid_size(vals, make_test_p
 
     pha.ignore(hi=2)
 
-    with pytest.raises(TypeError,
-                       match="^input array sizes do not match, data: [128] vs group: 4$"):
+    with pytest.raises(DataErr,
+                       match="^size mismatch between data and array: 4 vs [128]$"):
         pha.apply_grouping(vals)
 
 
@@ -2260,10 +2248,8 @@ def test_pha_quality_apply_filter_invalid_size(vals, make_grouped_pha):
 
     pha = make_grouped_pha
 
-    # The error string may depend on the NumPy version.
-    #
-    with pytest.raises(ValueError,
-                       match="^NumPy boolean array indexing "):
+    with pytest.raises(DataErr,
+                       match="^size mismatch between filtered data and array: 4 vs [28]$"):
         pha.apply_filter(vals)
 
 
@@ -2278,10 +2264,8 @@ def test_pha_quality_filtered_apply_filter_invalid_size(vals, make_grouped_pha):
     assert pha.mask == pytest.approx([False, True])
     assert pha.get_mask() == pytest.approx([False, False, False, True])
 
-    # The error string may depend on the NumPy version.
-    #
-    with pytest.raises(IndexError,
-                       match="^boolean index did not match indexed array "):
+    with pytest.raises(DataErr,
+                       match="^size mismatch between filtered data and array: 1 vs [28]$"):
         pha.apply_filter(vals)
 
 
@@ -2305,7 +2289,7 @@ def test_pha_quality_apply_grouping_invalid_size(vals, make_grouped_pha):
     pha = make_grouped_pha
 
     with pytest.raises(DataErr,
-                       match="size mismatch between quality filter and data array"):
+                       match="^size mismatch between data and array: 5 vs [128]$"):
         pha.apply_grouping(vals)
 
 
@@ -2317,7 +2301,7 @@ def test_pha_quality_filtered_apply_grouping_invalid_size(vals, make_grouped_pha
     pha.ignore(hi=1)
 
     with pytest.raises(DataErr,
-                       match="size mismatch between quality filter and data array"):
+                       match="^size mismatch between data and array: 5 vs [128]+$"):
         pha.apply_grouping(vals)
 
 
@@ -2435,7 +2419,7 @@ def test_datapha_apply_grouping_quality_filter_length_check():
     pha.quality_filter = np.asarray([1, 1, 1, 1, 1], dtype=bool)
 
     with pytest.raises(DataErr,
-                       match="size mismatch between quality filter and data array"):
+                       match="size mismatch between quality filter and array: 5 vs 4"):
         pha.apply_grouping([1, 2, 3, 4])
 
 
@@ -3705,8 +3689,9 @@ def test_image_apply_filter_invalid_size(make_test_image):
 
     data = make_test_image
 
-    # this does not raise an error
-    data.apply_filter([1, 2])
+    with pytest.raises(DataErr,
+                       match="size mismatch between data and array: 600 vs 2"):
+        data.apply_filter([1, 2])
 
 
 def test_image_filtered_apply_filter_invalid_size(make_test_image):
@@ -3721,7 +3706,7 @@ def test_image_filtered_apply_filter_invalid_size(make_test_image):
     data.mask[0] = False
 
     with pytest.raises(DataErr,
-                       match="^size mismatch between mask and data array: 600 vs 2$"):
+                       match="^size mismatch between data and array: 600 vs 2$"):
         data.apply_filter([1, 2])
 
 

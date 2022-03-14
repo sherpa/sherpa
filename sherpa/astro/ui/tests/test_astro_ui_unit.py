@@ -1812,8 +1812,9 @@ def test_pha_column_has_correct_size_scalar(label, vals, clean_astro_ui):
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
 
-    # This does not throw an error
-    getattr(ui, f"set_{label}")(vals)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        getattr(ui, f"set_{label}")(vals)
 
 
 @pytest.mark.parametrize("label", ["grouping", "quality"])
@@ -1826,8 +1827,9 @@ def test_pha_column_has_correct_size_sequence(label, vals, clean_astro_ui):
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
 
-    # This does not throw an error
-    getattr(ui, f"set_{label}")(vals)
+    with pytest.raises(DataErr,
+                       match=f"size mismatch between independent axis and {label}: 5 vs {len(vals)}"):
+        getattr(ui, f"set_{label}")(vals)
 
 
 @pytest.mark.parametrize("label", ["grouping", "quality"])
@@ -1955,8 +1957,7 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui):
     #
     assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
 
-    # We know what the mask was, so assume it hasn't changed.
-    # We could also just clear the mask so d.mask would be True.
+    # Act as a regression test to check the current behavior.
     #
     assert d.mask.sum() == 2500
 
@@ -2418,14 +2419,12 @@ def test_pha_set_error_array_wrong(field, simple_pha):
 
     setfunc = getattr(ui, f"set_{field}")
 
-    # this does not error out
-    setfunc(np.asarray([1, 2, 3, 4]))
-
-    # this does error out
-    getfunc = getattr(ui, f"get_{field}")
-    with pytest.raises(TypeError,
-                       match="input array sizes do not match, data: 4 vs group: 9"):
-        getfunc()
+    # NOTE: this error is confusing, because the length should be 5 not 9
+    #       ie the filter does not match the grouped data
+    #
+    with pytest.raises(DataErr,
+                       match=f"size mismatch between independent axis and {field}: 9 vs 4"):
+        setfunc(np.asarray([1, 2, 3, 4]))
 
 
 def test_pha_set_filter_unmasked(simple_pha):

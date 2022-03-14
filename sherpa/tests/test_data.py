@@ -1108,7 +1108,7 @@ def test_data_err_masked_numpyarray(arrpos, Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     mask = numpy.random.rand(*(args[i].shape)) > 0.5
     args[i] = numpy.ma.array(args[i], mask=mask)
-    with pytest.warns(UserWarning, match="differs from the mask of the dependent array"):
+    with pytest.warns(UserWarning, match=" differs from the dependent array, "):
         data = Dataclass(*args)
     assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
 
@@ -1306,7 +1306,7 @@ def test_data_filter_invalid_size_sequence(vals):
     d.ignore(None, 2)
 
     with pytest.raises(DataErr,
-                       match=f"size mismatch between mask and data array: 3 vs {len(vals)}"):
+                       match=f"size mismatch between data and array: 3 vs {len(vals)}"):
         d.apply_filter(vals)
 
 
@@ -1330,8 +1330,9 @@ def test_data_apply_filter_invalid_size(data):
     Test related to issue #1439 which is an issue with the DataPHA class.
     """
 
-    # this does not raise an error
-    data.apply_filter([1, 2])
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between data and array: (100?) vs 2$"):
+        data.apply_filter([1, 2])
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
@@ -1345,8 +1346,9 @@ def test_data_apply_filter_empty(data_class, args):
     data = data_class("empty", *args)
 
     orig = [1, 2]
-    ans = data.apply_filter(orig)
-    assert ans == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
+        data.apply_filter(orig)
 
 
 @pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
@@ -1893,8 +1895,6 @@ def test_is_mask_reset(data):
     indep = [x + 100 for x in data.indep]
     data.indep = tuple(indep)
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
     assert data.mask == pytest.approx(omask)
 
 
@@ -1916,8 +1916,9 @@ def test_dependent_field_can_not_be_a_scalar(data):
 def test_related_field_can_not_be_a_scalar(related, data):
     """The related fields (staterror/syserror) can not be a scalar."""
 
-    # does not raise an error
-    setattr(data, related, 2)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        setattr(data, related, 2)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2154,11 +2155,12 @@ def test_set_error_axis_wrong_length(data, column):
     col = getattr(data, column)
     assert col is not None
 
-    # does not raise an error
-    setattr(data, column, [1, 2])
+    with pytest.raises(DataErr,
+                       match=rf"^size mismatch between independent axis and {column}: (100?) vs 2$"):
+        setattr(data, column, [1, 2])
 
 
-@pytest.mark.parametrize("column", ["y", pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("column", ["y", "staterror", "syserror"])
 def test_check_related_fields_correct_size(column):
     """If we set a related field before the independent axis, what happens if different?
 
@@ -2171,11 +2173,9 @@ def test_check_related_fields_correct_size(column):
     d = Data1D('example', None, None)
     setattr(d, column, numpy.asarray([2, 10, 3]))
 
-    # XFAIL: this does not error out for the errors
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 3 to 4"):
         d.indep = (numpy.asarray([2, 3, 4, 5]), )
-
-    assert str(err.value) == f"independent axis can not change size: 3 to 4"
 
 
 def test_data1d_mismatched_related_fields():
@@ -2192,19 +2192,12 @@ def test_data1d_mismatched_related_fields():
     # Create an empty object, set the syserror and staterror fields to
     # different lengths, then set the independent axis.
     #
-    # Ideally one of these calls will error out but currently they do not.
-    #
     d = Data1D("x", None, None)
 
     d.staterror = [1, 2, 3, 4]
-    d.syserror = [2, 3, 4, 5, 20, 12]
-    d.set_indep(([2.3], ))
-
-    mdl = Polynom1D()
-    mdl.c0 = 10
-    mdl.c1 = 2
-    ans = d.eval_model(mdl)
-    assert ans == pytest.approx([14.6])
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and syserror: 4 vs 6"):
+        d.syserror = [2, 3, 4, 5, 20, 12]
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2236,10 +2229,11 @@ def test_dep_must_be_1d(data):
 def test_error_must_be_1d(data, column):
     """Check that the error data must be 1D."""
 
-    err = getattr(data, column)
-    err = err.reshape(2, err.size // 2)
-    # does not raise an error
-    setattr(data, column, err)
+    errval = getattr(data, column)
+    errval = errval.reshape(2, errval.size // 2)
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
+        setattr(data, column, errval)
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -2355,7 +2349,7 @@ def test_data_set_not_ndarray(data, field):
     setattr(data, field, tuple([1] * len(data.y)))
     got = getattr(data, field)
 
-    assert isinstance(got, tuple)
+    assert isinstance(got, numpy.ndarray)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)

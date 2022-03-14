@@ -2782,8 +2782,9 @@ def test_set_error_axis_wrong_length(data_args, column):
     col = getattr(data, column)
     assert col is None
 
-    # does not raise an error
-    setattr(data, column, [1, 2])
+    with pytest.raises(DataErr,
+                       match=rf"^size mismatch between independent axis and {column}: \d+ vs 2$"):
+        setattr(data, column, [1, 2])
 
 
 @pytest.mark.parametrize("related", ["y", "counts"])
@@ -2856,8 +2857,9 @@ def test_pha_related_field_can_not_be_a_scalar(related, vals):
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
-    # this does not raise an error
-    setattr(data, related, vals)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        setattr(data, related, vals)
 
 
 @pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality"])
@@ -2867,8 +2869,9 @@ def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
-    # this does not raise an error
-    setattr(data, label, vals)
+    with pytest.raises(DataErr,
+                       match=f"^size mismatch between independent axis and {label}: 3 vs (2|10)$"):
+        setattr(data, label, vals)
 
 
 def test_pha_independent_axis_can_not_be_a_set():
@@ -2904,7 +2907,7 @@ def test_pha_independent_axis_can_not_be_a_set_sequence():
     data.set_indep(([{"abc", False, 23.4}] * 3, ))
 
 
-@pytest.mark.parametrize("field", ["y", "counts", pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail), pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
 def test_pha_related_field_can_not_be_a_set(field):
     """Check we error out if y/counts/... is a set
 
@@ -2919,11 +2922,11 @@ def test_pha_related_field_can_not_be_a_set(field):
 
     with pytest.raises(DataErr,
                        match="Array must be a sequence or None"):
-        # XFAIL: does not raise an error except for y/counts
+        # XFAIL does not raise an error for grouping/quality
         setattr(data, field, {"abc", False, 23.4})
 
 
-@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("field", [pytest.param("y", marks=pytest.mark.xfail), pytest.param("counts", marks=pytest.mark.xfail), pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail), "grouping", "quality"])
 def test_pha_related_field_can_not_be_a_set_sequence(field):
     """Check we error out if y/counts/... is a sequence of sets
 
@@ -2936,8 +2939,11 @@ def test_pha_related_field_can_not_be_a_set_sequence(field):
     data_class, args = PHA_ARGS
     data = data_class(*args)
 
-    # this does not fail
-    setattr(data, field, [{"abc", False, 23.4}] * 3)
+    # once non-quality/grouping fields fail the error check will need to be changed
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence of integers or None"):
+        # XFAIL does not raise an error except for grouping/quality
+        setattr(data, field, [{"abc", False, 23.4}] * 3)
 
 
 def test_pha_mask_size_must_match_ungrouped():
@@ -3000,11 +3006,11 @@ def test_datapha_create_not_ndarray():
     assert isinstance(d.staterror, np.ndarray)
     assert isinstance(d.syserror, np.ndarray)
 
-    assert isinstance(d.grouping, tuple)
-    assert isinstance(d.quality, tuple)
+    assert isinstance(d.grouping, np.ndarray)
+    assert isinstance(d.quality, np.ndarray)
 
-    assert isinstance(d.areascal, tuple)
-    assert isinstance(d.backscal, list)
+    assert isinstance(d.areascal, np.ndarray)
+    assert isinstance(d.backscal, np.ndarray)
 
 
 @pytest.mark.parametrize("field", ["staterror", "syserror",
@@ -3022,7 +3028,7 @@ def test_datapha_set_not_ndarray(field):
     setattr(data, field, tuple([1] * len(data.y)))
     got = getattr(data, field)
 
-    assert isinstance(got, tuple)
+    assert isinstance(got, np.ndarray)
 
 
 def test_datapha_mask_set_not_ndarray():
@@ -3077,7 +3083,7 @@ def test_dataimg_set_not_ndarray(field):
     setattr(data, field, tuple([1] * len(data.y)))
     got = getattr(data, field)
 
-    assert isinstance(got, tuple)
+    assert isinstance(got, np.ndarray)
 
 
 def test_dataimg_mask_set_not_ndarray():
@@ -3143,11 +3149,7 @@ def test_data_empty_get_x_2d(data_class, args, index):
     assert getfunc() is None
 
 
-#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
-@pytest.mark.parametrize("data_class,args",
-                         [pytest.param(DataPHA, [None] * 2, marks=pytest.mark.xfail),
-                          (DataIMG, [None] * 3),
-                          (DataIMGInt, [None] * 5)])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
 def test_data_empty_apply_filter(data_class, args):
     """What does apply_filter do when the data set is empty?
 
@@ -3157,9 +3159,9 @@ def test_data_empty_apply_filter(data_class, args):
 
     data = data_class("empty", *args)
     orig = [2, 5]
-    ans = data.apply_filter(orig)
-    # XFAIL for DataPHA get a TypeError from calling len(None)
-    assert ans == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
+        data.apply_filter(orig)
 
 
 def test_pha_apply_grouping_empty():
@@ -3171,8 +3173,9 @@ def test_pha_apply_grouping_empty():
 
     pha = DataPHA("example", None, None)
     orig = [2, 5]
-    ans = pha.apply_grouping(orig)
-    assert ans == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="The size of 'example' has not been set"):
+        pha.apply_grouping(orig)
 
 
 def test_pha_change_independent_element():

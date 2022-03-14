@@ -52,7 +52,7 @@ from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Polynom1D
 from sherpa.astro.models import Lorentz2D
-from sherpa.utils.err import FitErr, StatErr
+from sherpa.utils.err import DataErr, FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
@@ -513,9 +513,8 @@ def test_stats_calc_stat_wstat_diffbins():
     data2.set_rmf(data.get_rmf())
     data2.set_background(data.get_background())
 
-    # There is no Sherpa error for this, which seems surprising
-    with pytest.raises(TypeError,
-                       match="input array sizes do not match, data: 5 vs group: 4"):
+    with pytest.raises(DataErr,
+                       match="size mismatch between data and array: 4 vs 5"):
         statobj.calc_stat(data2, model)
 
 

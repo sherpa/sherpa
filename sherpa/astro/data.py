@@ -1531,15 +1531,9 @@ class DataPHA(Data1D):
     ----------
     name : str
         Used to store the file name, for data read from a file.
-    staterror
-    syserror
     bin_lo
     bin_hi
-    grouping
-    quality
     exposure
-    backscal
-    areascal
 
     Notes
     -----
@@ -1596,6 +1590,11 @@ class DataPHA(Data1D):
     _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
+
+    # Note that bin_lo/bin_hi are not treated as related fields as they can have a
+    # different size.
+    _related_fields = Data1D._related_fields + ("counts", "grouping", "quality",
+                                                "backscal", "areascal")
 
     def _get_grouped(self):
         return self._grouped
@@ -1803,6 +1802,27 @@ must be an integer.""")
         self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
 
+    def _set_related(self, attr, val, check_mask=True, allow_scalar=False):
+        """Set a field that must match the independent axes size.
+
+        The value can be None, a scalar (if allow_scalar is set), or
+        something with the same length as the independent axis. This
+        is intended to be use from the property setter.
+
+        """
+        if val is None:
+            setattr(self, f"_{attr}", None)
+            return
+
+        if not numpy.iterable(val):
+            if not allow_scalar:
+                raise DataErr("notanarray")
+
+            setattr(self, f"_{attr}", val)
+            return
+
+        super()._set_related(attr, val, check_mask=check_mask)
+
     # Set up the aliases for channel and counts
     #
     @property
@@ -1828,6 +1848,110 @@ must be an integer.""")
     @counts.setter
     def counts(self, val):
         self.y = val
+
+    # Set up the properties for the related fields
+    #
+    @property
+    def grouping(self):
+        """The grouping data.
+
+        A group is indicated by a sequence of flag values starting
+        with ``1`` and then ``-1`` for all the channels in the group,
+        following [1]_.  The grouping array match the number of
+        channels and it will be converted to an integer type if
+        necessary.
+
+        Returns
+        -------
+        grouping : numpy.ndarray or None
+
+        See Also
+        --------
+        group, grouped, quality
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        """
+        return self._grouping
+
+    @grouping.setter
+    def grouping(self, val):
+        # _set_related checks if it's a scalar value, so we just need
+        # to check it's convertable to ndarray.
+        #
+        if val is not None:
+            try:
+                val = numpy.asarray(val, dtype=numpy.int16)
+            except TypeError:
+                raise DataErr("notanintarray") from None
+
+        self._set_related("grouping", val)
+
+    @property
+    def quality(self):
+        """The quality data.
+
+        A quality value of 0 indicates a good channel, otherwise
+        (values >=1) the channel is considered bad and can be excluded
+        using the `ignore_bad` method, as discussed in [1]_. The
+        quality array match the number of channels and it will be
+        converted to an integer type if necessary.
+
+        Returns
+        -------
+        quality : numpy.ndarray or None
+
+        See Also
+        --------
+        group, grouping
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        """
+        return self._quality
+
+    @quality.setter
+    def quality(self, val):
+        # _set_related checks if it's a scalar value, so we just need
+        # to check it's convertable to ndarray.
+        #
+        if val is not None:
+            try:
+                val = numpy.asarray(val, dtype=numpy.int16)
+            except TypeError:
+                raise DataErr("notanintarray") from None
+
+        self._set_related("quality", val)
+
+    @property
+    def areascal(self):
+        """The area scaling value (can be a scalar or array).
+
+        If this is an array then it must match the length of channel.
+        """
+        return self._areascal
+
+    @areascal.setter
+    def areascal(self, val):
+        self._set_related("areascal", val, allow_scalar=True)
+
+    @property
+    def backscal(self):
+        """The background scaling value (can be a scalar or array).
+
+        If this is an array then it must match the length of channel.
+        """
+        return self._backscal
+
+    @backscal.setter
+    def backscal(self, val):
+        self._set_related("backscal", val, allow_scalar=True)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -2923,27 +3047,56 @@ must be an integer.""")
 
         """
         if data is None:
-            return data
+            return None
 
-        if len(data) != len(self.counts):
-            # Two possible error cases here:
-            # - mask is None, in which case the apply_grouping call will
-            #   fail with a TypeError
-            # - mask is not None but the filter does not match the data
-            #   size, which causes a ValueError from the assignment below
-            # Both could be caught here, but there used to be an attempt
-            # to do this (for the first case) which has been commented out
-            # since the initial git commit, so leave as is.
-            #
-            counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
+        nelem = self.size
+        if nelem is None:
+            raise DataErr("sizenotset", self.name)
+
+        data = _check(data, warn_on_convert=False)
+        ndata = len(data)
+
+        # We allow the data to have
+        # - the size of the data object
+        # - the size of the filtered object (with no grouping)
+        # Any other case is an error.
+        #
+        if ndata != nelem:
+
             mask = self.get_mask()
-            if mask is not None:
-                counts[mask] = numpy.asarray(data, dtype=SherpaFloat)
-                data = counts
-            # else:
-            #     raise DataErr('mismatch', "filter", "data array")
+            if mask is None:
+                raise DataErr("mismatchn", "data", "array", nelem, ndata)
 
-        return super().apply_filter(self.apply_grouping(data, groupfunc))
+            nfiltered = mask.sum()
+            if nfiltered != ndata:
+                # It is hard to get a concise error here: assume that the user
+                # would prefer to know about the filtered length.
+                #
+                raise DataErr("mismatchn", "filtered data", "array",
+                              nfiltered, ndata)
+
+            # Create an array for the full channel range and insert
+            # the user-values into it.
+            #
+            temp = numpy.zeros(nelem, dtype=SherpaFloat)
+            temp[mask] = data
+            data = temp
+
+        gdata = self.apply_grouping(data, groupfunc)
+
+        # We can not
+        #
+        #   return super().apply_filter(gdata)
+        #
+        # because the super-class does not know that gdata is a
+        # grouped dataset, and so may be smaller than self.size.  The
+        # problem is that the size attribute in the PHA case is poorly
+        # defined: does it mean the number of channels or the number
+        # of grouped channels? At the moment it means the former, and
+        # there are places where we need this behavior. Can we add an
+        # "effective size" property?
+        #
+        return self._data_space.filter.apply(gdata)
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
         """Apply the grouping scheme of the data set to the supplied data.
@@ -3040,7 +3193,22 @@ must be an integer.""")
         True
 
         """
-        if data is None or not self.grouped:
+        if data is None:
+            return None
+
+        nelem = self.size
+        if nelem is None:
+            raise DataErr("sizenotset", self.name)
+
+        data = _check(data, warn_on_convert=False)
+        ndata = len(data)
+        if ndata != nelem:
+            raise DataErr("mismatchn", "data", "array", nelem, ndata)
+
+        # TODO: This should probably apply the quality filter whether
+        # grouped or not.
+        #
+        if not self.grouped:
             return data
 
         groups = self.grouping
@@ -3048,8 +3216,9 @@ must be an integer.""")
         if filter is None:
             return do_group(data, groups, groupfunc.__name__)
 
-        if len(data) != len(filter) or len(groups) != len(filter):
-            raise DataErr('mismatch', "quality filter", "data array")
+        nfilter = len(filter)
+        if len(data) != nfilter or len(groups) != nfilter:
+            raise DataErr("mismatchn", "quality filter", "array", nfilter, len(data))
 
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]

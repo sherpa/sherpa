@@ -1111,11 +1111,9 @@ def test_set_error_array_wrong(field, clean_ui):
 
     setfunc = getattr(ui, f"set_{field}")
 
-    # this does not error out
-    setfunc(np.asarray([1, 2, 3, 4]))
-
-    getfunc = getattr(ui, f"get_{field}")
-    assert getfunc() == pytest.approx([1, 2, 3, 4])
+    with pytest.raises(DataErr,
+                       match=f"size mismatch between independent axis and {field}: 3 vs 4"):
+        setfunc(np.asarray([1, 2, 3, 4]))
 
 
 @pytest.mark.parametrize("ignore", [False, True])

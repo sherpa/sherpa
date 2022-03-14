@@ -138,18 +138,9 @@ def test_pha_write_basic(make_data_path, tmp_path):
             assert len(obj.quality) == 1024
             assert obj.quality == pytest.approx(np.zeros(1024))
 
-        if backend_is("crates"):
-            assert obj.grouping.dtype == np.dtype("int16")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype("int16")
-
-        elif backend_is("pyfits"):
-            assert obj.grouping.dtype == np.dtype(">i2")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype(">i2")
-
-        else:
-            pytest.fail("Unrecognized IO backend")
+        assert obj.grouping.dtype == np.dtype("int16")
+        if not roundtrip:
+            assert obj.quality.dtype == np.dtype("int16")
 
         one, = np.where(obj.grouping == 1)
         expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,
@@ -285,18 +276,9 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
             assert len(obj.quality) == 1024
             assert obj.quality == pytest.approx(np.zeros(1024))
 
-        if backend_is("crates"):
-            assert obj.grouping.dtype == np.dtype("int16")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype("int16")
-
-        elif backend_is("pyfits"):
-            assert obj.grouping.dtype == np.dtype(">i2")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype(">i2")
-
-        else:
-            pytest.fail("Unrecognized IO backend")
+        assert obj.grouping.dtype == np.dtype("int16")
+        if not roundtrip:
+            assert obj.quality.dtype == np.dtype("int16")
 
         one, = np.where(obj.grouping == 1)
         expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,

@@ -218,6 +218,7 @@ class DataErr(SherpaErr):
             'mismatch': 'size mismatch between %s and %s',
             'mismatchn': 'size mismatch between %s and %s: %s vs %s',
             'notanarray': "Array must be a sequence or None",
+            'notanintarray': "Array must be a sequence of integers or None",
             'not1darray': "Array must be 1D",
             'wrongaxiscount': "data set '%s' sent wrong tuple size for the independent axis: %d not %d",
             'sizenotset': "The size of '%s' has not been set",

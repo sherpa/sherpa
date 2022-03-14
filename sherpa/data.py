@@ -123,18 +123,6 @@ def _check_dep(array):
     return _check(array), True
 
 
-def _check_err(array, masktemplate):
-    '''Accept array without mask or with a mask that matches the template'''
-    if hasattr(array, 'mask') and \
-       (not hasattr(masktemplate, 'mask') or not numpy.all(array.mask == masktemplate.mask)):
-        warnings.warn(f'The mask of {array} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.')
-
-    # Ensure we do NumPy conversions after checking for mask to
-    # make sure we don't end up removing .mask in the following.
-    #
-    return _check(array, warn_on_convert=False)
-
-
 class DataSpace1D(EvaluationSpace1D):
     """
     Class for representing 1-D Data Space. Data Spaces are spaces that describe the data domain. As models can be
@@ -769,6 +757,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _extra_fields = ()
     """Any extra fields that should be displayed by str(object)."""
 
+    _related_fields = ("y", "staterror", "syserror")
+    """What fields must match the size of the independent axis.
+
+    These fields are set to None whenever the independent axis size
+    is set or changed.
+    """
+
+    _y = None
     _size = None
 
     ndim = None
@@ -778,8 +774,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
-        self.staterror = _check_err(staterror, y)
-        self.syserror = _check_err(syserror, y)
+        self.staterror = staterror
+        self.syserror = syserror
         NoNewAttributesAfterInit.__init__(self)
 
     def _check_data_space(self, dataspace):
@@ -839,12 +835,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._check_data_space(ds)
         return ds
 
-    def _set_related(self, attr, val):
+    def _set_related(self, attr, val, check_mask=True):
         """Set a field that must match the independent axes size.
 
         The value can be None or something with the same length as the
         independent axis. This is intended to be use from the property
-        setter.
+        setter. There is also a check to warn the user if the value
+        contains a NumPy masked array which does not match the
+        dependent axis.
 
         """
         if val is None:
@@ -854,8 +852,19 @@ class Data(NoNewAttributesAfterInit, BaseData):
         if not numpy.iterable(val):
             raise DataErr("notanarray")
 
-        val = _check(val)
+        # Check the mask before calling _check, which could call asarray
+        # and so lose the mask setting.
+        #
+        if check_mask and hasattr(val, "mask"):
+            if not hasattr(self.y, "mask") or \
+               len(self.y) != len(val) or \
+                   not numpy.all(self.y.mask == val.mask):
+
+                warnings.warn(f"The mask of {attr} differs from the dependent array, only the mask of the dependent array is used in Sherpa.")
+
+        val = _check(val, warn_on_convert=False)
         nval = len(val)
+
         nelem = self.size
         if nelem is None:
             # We set the object size here
@@ -879,7 +888,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @y.setter
     def y(self, val):
-        self._set_related("y", val)
+        self._set_related("y", val, check_mask=False)
 
     @property
     def size(self):
@@ -948,6 +957,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         When set, the field must be set to a tuple, even for a
         one-dimensional data set.
+
+        When set, the "related" fields such as the dependent axis and
+        the error fields are set to None if their size does not match.
 
         Returns
         -------
@@ -1070,6 +1082,30 @@ class Data(NoNewAttributesAfterInit, BaseData):
             y2 = self.eval_model(yfunc)
 
         return (y, y2)
+
+    @property
+    def staterror(self):
+        """The statistical error on the dependent axis, if set.
+
+        This must match the size of the independent axis.
+        """
+        return self._staterror
+
+    @staterror.setter
+    def staterror(self, val):
+        self._set_related("staterror", val)
+
+    @property
+    def syserror(self):
+        """The systematic error on the dependent axis, if set.
+
+        This must match the size of the independent axis.
+        """
+        return self._syserror
+
+    @syserror.setter
+    def syserror(self, val):
+        self._set_related("syserror", val)
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error on the dependent axis of a data set.
@@ -1197,6 +1233,19 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return 'y'
 
     def apply_filter(self, data):
+        if data is None:
+            return None
+
+        nelem = self.size
+        if nelem is None:
+            raise DataErr("sizenotset", self.name)
+
+        data = _check(data, warn_on_convert=False)
+        ndata = len(data)
+
+        if ndata != nelem:
+            raise DataErr("mismatchn", "data", "array", nelem, ndata)
+
         return self._data_space.filter.apply(data)
 
     def notice(self, mins, maxes, ignore=False, integrated=False):
