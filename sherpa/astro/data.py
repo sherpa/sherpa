@@ -1517,6 +1517,8 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
+        The wavelength ranges for the channels. This is intended to support
+        Chandra grating spectra.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -1531,8 +1533,6 @@ class DataPHA(Data1D):
     ----------
     name : str
         Used to store the file name, for data read from a file.
-    bin_lo
-    bin_hi
     exposure
 
     Notes
@@ -1591,9 +1591,7 @@ class DataPHA(Data1D):
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
 
-    # Note that bin_lo/bin_hi are not treated as related fields as they can have a
-    # different size.
-    _related_fields = Data1D._related_fields + ("counts", "grouping", "quality",
+    _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
                                                 "backscal", "areascal")
 
     def _get_grouped(self):
@@ -1873,6 +1871,33 @@ must be an integer.""")
 
     # Set up the properties for the related fields
     #
+    @property
+    def bin_lo(self):
+        """The lower edge of each channel, in Angstroms, or None.
+
+        The values are expected to be in descending order. This is
+        only expected to be set for Chandra grating data.
+        """
+        return self._bin_lo
+
+    @bin_lo.setter
+    def bin_lo(self, val):
+        self._set_related("bin_lo", val)
+
+    @property
+    def bin_hi(self):
+        """The upper edge of each channel, in Angstroms, or None.
+
+        The values are expected to be in descending order, with the
+        bin_hi value larger than the corresponding bin_lo element.
+        This is only expected to be set for Chandra grating data.
+        """
+        return self._bin_hi
+
+    @bin_hi.setter
+    def bin_hi(self, val):
+        self._set_related("bin_hi", val)
+
     @property
     def grouping(self):
         """The grouping data.

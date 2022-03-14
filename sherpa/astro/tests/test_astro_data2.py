@@ -2166,7 +2166,7 @@ def test_pha_no_group_filtered_apply_filter_invalid_size(vals, make_test_pha):
     assert np.any(pha.mask)
 
     with pytest.raises(DataErr,
-                       match=r"^size mismatch between filtered data and array: 2 vs [18]$"):
+                       match="^size mismatch between filtered data and array: 2 vs [18]$"):
         pha.apply_filter(vals)
 
 
@@ -2181,7 +2181,7 @@ def test_pha_no_group_filtered_apply_grouping_invalid_size(vals, make_test_pha):
     pha.ignore(hi=2)
 
     with pytest.raises(DataErr,
-                       match=r"^size mismatch between data and array: 4 vs [18]$"):
+                       match="^size mismatch between data and array: 4 vs [18]$"):
         pha.apply_grouping(vals)
 
 
@@ -3695,7 +3695,7 @@ def test_image_apply_filter_invalid_size(make_test_image):
     data = make_test_image
 
     with pytest.raises(DataErr,
-                       match="size mismatch between data and array: 600 vs 2"):
+                       match="^size mismatch between data and array: 600 vs 2$"):
         data.apply_filter([1, 2])
 
 
