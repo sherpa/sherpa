@@ -2871,6 +2871,71 @@ def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
     setattr(data, label, vals)
 
 
+def test_pha_independent_axis_can_not_be_a_set():
+    """Check we error out if x is a set
+
+    This is an attempt to see what happens if a user sends in a
+    "surprising" value. We don't want to check too many of these
+    cases, but having a few checks can be useful.
+
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+
+    # this does not raise an error
+    data.set_indep(({"abc", False, 23.4}, ))
+
+
+def test_pha_independent_axis_can_not_be_a_set_sequence():
+    """Check we error out if x is a set
+
+    This is an attempt to see what happens if a user sends in a
+    "surprising" value. We don't want to check too many of these
+    cases, but having a few checks can be useful.
+
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+
+    # this does not raise an error
+    data.set_indep(([{"abc", False, 23.4}] * 3, ))
+
+
+@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
+def test_pha_related_field_can_not_be_a_set(field):
+    """Check we error out if y/counts/... is a set
+
+    This is an attempt to see what happens if a user sends in a
+    "surprising" value. We don't want to check too many of these
+    cases, but having a few checks can be useful.
+
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+
+    # this does not fail
+    setattr(data, field, {"abc", False, 23.4})
+
+
+@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
+def test_pha_related_field_can_not_be_a_set_sequence(field):
+    """Check we error out if y/counts/... is a sequence of sets
+
+    This is an attempt to see what happens if a user sends in a
+    "surprising" value. We don't want to check too many of these
+    cases, but having a few checks can be useful.
+
+    """
+
+    data_class, args = PHA_ARGS
+    data = data_class(*args)
+
+    # this does not fail
+    setattr(data, field, [{"abc", False, 23.4}] * 3)
+
 
 def test_pha_mask_size_must_match_ungrouped():
     """Check if the mask can be set to the wrong length: data not grouped"""
