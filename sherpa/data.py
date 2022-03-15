@@ -425,9 +425,15 @@ class DataSpaceND():
         return self.indep
 
 
+# NOTE:
+#
+# Although this is labelled as supporting N-D datasets, the
+# implementation assumes that the data has been flattened to 1D arrays
+# - in particular the notice method. It is likely that we can document
+# this - i.e. that the mask is going to be 1D.
+#
 class Filter():
-    """
-    A class for representing filters of N-Dimentional datasets.
+    """A class for representing filters of N-Dimensional datasets.
     """
     def __init__(self):
         self._mask = True
@@ -444,31 +450,52 @@ class Filter():
 
     @mask.setter
     def mask(self, val):
-        if (val is True) or (val is False):
-            self._mask = val
-        # if val is of type np.bool_ and True, it failed the previous test because
-        # "is True" compares with Python "True" singelton.
-        # Yet, we do not want to allow arbitrary values that evaluate as True.
+        if val is None:
+            raise DataErr('ismask')
+
+        # The code below has to deal with bool-like values, such as
+        # numpy.ma.nomask (this evaluates to False but is not a bool),
+        # and numpy.bool_ values. The following code is intended to
+        # catch these "special" values. Note that we explicitly check
+        # for boolean values ('val is True' and 'val is False') rather
+        # than just whether val behaves like a boolean - for example
+        # 'if val or not val: ...'.
+        #
+        if not numpy.isscalar(val):
+            # Is it possible for the following to throw a conversion
+            # error? If so, we could catch it and convert it into a
+            # DataErr, but it does not seem worth it (as it's not
+            # obvious what the error to catch would be).
+            #
+            self._mask = numpy.asarray(val, bool)
+
         elif val is numpy.ma.nomask:
             self._mask = True
-        elif numpy.isscalar(val) and isinstance(val, numpy.bool_):
+
+        elif (val is True) or (val is False):
+            self._mask = val
+
+        elif isinstance(val, numpy.bool_):
+            # are there other types we could be looking for here?
             self._mask = bool(val)
-        elif (val is None) or numpy.isscalar(val):
-            raise DataErr('ismask')
+
         else:
-            self._mask = numpy.asarray(val, numpy.bool_)
+            # Note that setting mask to 2.0 will fail, but an array
+            # of 2.0's will get converted to booleans.
+            #
+            raise DataErr('ismask')
 
     def apply(self, array):
         """Apply this filter to an array
 
         Parameters
         ----------
-        array : array_like
+        array : array_like or None
             Array to be filtered
 
         Returns
         -------
-        array_like : filtered array
+        array_like : ndarray or None
 
         Raises
         ------
@@ -488,10 +515,12 @@ class Filter():
         if self.mask is False:
             raise DataErr('notmask')
 
+        # Ensure we always return a ndarray.
+        #
+        array = numpy.asarray(array)
         if self.mask is True:
             return array
 
-        array = numpy.asarray(array)
         if array.shape != self.mask.shape:
             raise DataErr('mismatch', 'mask', 'data array')
         return array[self.mask]
