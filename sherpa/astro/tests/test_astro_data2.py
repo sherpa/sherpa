@@ -2755,11 +2755,16 @@ def test_img_sky_can_filter_change_coords(make_test_image_sky):
     data.set_coord("physical")
     data.notice2d("rect(2009,-5006,2011,-5000)", ignore=True)
 
-    data.set_coord("image")
+    with warnings.catch_warnings(record=True) as ws:
+        data.set_coord("image")
+
     assert data.coord == "logical"
-    # Note that the mask/filter does not get cleared
-    assert data.mask == pytest.approx([1, 1, 1, 1, 1, 0])
-    assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
+    assert data.mask
+    assert data.get_filter() == ""
+
+    assert len(ws) == 1
+    assert str(ws[0].message) == "Region filter has been removed from 'sky-ey'"
+    assert ws[0].category == UserWarning
 
 
 def test_arf_checks_energy_length():

@@ -978,10 +978,13 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """The grid of the data space associated with this data set.
 
         When set, the field must be set to a tuple, even for a
-        one-dimensional data set.
+        one-dimensional data set. The "related" fields such as the
+        dependent axis and the error fields are set to None if their
+        size does not match.
 
-        When set, the "related" fields such as the dependent axis and
-        the error fields are set to None if their size does not match.
+        .. versionchanged:: 4.14.1
+           The filter created by `notice` and `ignore` is now cleared
+           when the independent axis is changed.
 
         Returns
         -------
@@ -989,6 +992,21 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         return self._data_space.get().grid
+
+    def _clear_filter(self):
+        """Clear out the existing filter.
+
+        This is designed for use by @indep.setter.
+
+        """
+
+        # The mask could be left as is if the independent axis has
+        # not changed, but it does not seem worth adding logic to
+        # check for this condition.
+        #
+        if self.mask is not True:
+            self.mask = True
+            warnings.warn(f"Filter has been removed from '{self.name}'")
 
     @indep.setter
     def indep(self, val):
@@ -1003,6 +1021,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
             raise TypeError(f"independent axis must be sent a tuple, not {type(val).__name__}")
 
         self._data_space = self._init_data_space(self._data_space.filter, *val)
+        self._clear_filter()
 
     def get_indep(self, filter=False):
         """Return the independent axes of a data set.

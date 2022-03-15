@@ -6569,6 +6569,10 @@ class Session(sherpa.ui.utils.Session):
         is also used by the `notice2d` and `ignore2d` series of
         commands.
 
+        .. versionchanged:: 4.14.1
+           The filter created by `notice2d` and `ignore1d` is now
+           cleared when the coordinate system is changed.
+
         Parameters
         ----------
         id : int or str

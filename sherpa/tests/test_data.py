@@ -19,6 +19,7 @@
 #
 
 import re
+import warnings
 
 import numpy
 
@@ -1890,10 +1891,16 @@ def test_is_mask_reset(data):
 
     # Change the independent axis, but to something of the same
     # length.
-    indep = [x + 100 for x in data.indep]
-    data.indep = tuple(indep)
+    with warnings.catch_warnings(record=True) as ws:
+        indep = [x + 100 for x in data.indep]
+        data.indep = tuple(indep)
 
-    assert data.mask == pytest.approx(omask)
+    # The mask has been cleared
+    assert data.mask is True
+
+    assert len(ws) == 1
+    assert str(ws[0].message) == "Filter has been removed from 'data_test'"
+    assert ws[0].category == UserWarning
 
 
 @pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)

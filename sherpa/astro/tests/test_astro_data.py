@@ -2599,11 +2599,15 @@ def test_is_mask_reset_pha():
 
     # Change the independent axis, but to something of the same
     # length.
-    data.indep = (data.channel + 20, )
+    with warnings.catch_warnings(record=True) as ws:
+        data.indep = (data.channel + 20, )
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
-    assert data.mask == pytest.approx([False, False, True])
+    # The mask has been cleared
+    assert data.mask
+
+    assert len(ws) == 1
+    assert str(ws[0].message) == "Filter has been removed from 'pha'"
+    assert ws[0].category == UserWarning
 
 
 def test_is_mask_reset_pha_channel():
@@ -2616,11 +2620,15 @@ def test_is_mask_reset_pha_channel():
     data.ignore(None, 2)
 
     # Change the independent axis via the channel field
-    data.channel = data.channel + 40
+    with warnings.catch_warnings(record=True) as ws:
+        data.channel = data.channel + 40
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
-    assert data.mask == pytest.approx([False, False, True])
+    # The mask has been cleared
+    assert data.mask
+
+    assert len(ws) == 1
+    assert str(ws[0].message) == "Filter has been removed from 'pha'"
+    assert ws[0].category == UserWarning
 
 
 @pytest.mark.parametrize("data_args",
@@ -2644,12 +2652,16 @@ def test_is_mask_reset_img(data_args):
 
     # Change the independent axis, but to something of the same
     # length.
-    indep = [x + 40 for x in data.indep]
-    data.indep = tuple(indep)
+    with warnings.catch_warnings(record=True) as ws:
+        indep = [x + 40 for x in data.indep]
+        data.indep = tuple(indep)
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
-    assert data.mask == pytest.approx(omask)
+    # The mask has been cleared
+    assert data.mask
+
+    assert len(ws) == 1
+    assert str(ws[0].message).startswith("Region filter has been removed from 'img")
+    assert ws[0].category == UserWarning
 
 
 @pytest.mark.parametrize("data_args",

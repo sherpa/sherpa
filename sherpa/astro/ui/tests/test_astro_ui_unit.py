@@ -28,6 +28,7 @@ and run on both, to avoid duplication.
 """
 
 import sys
+import warnings
 
 import numpy as np
 
@@ -1950,16 +1951,19 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui):
     d = ui.get_data("foo")
     assert d.mask.sum() == 2500
 
-    ui.set_coord("foo", "logical")
+    with warnings.catch_warnings(record=True) as ws:
+        ui.set_coord("foo", "logical")
 
-    # This expression is no-longer technically valid, but we do
-    # not change it yet.
-    #
-    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+    # The region filter has been removed
+    assert ui.get_filter("foo") == ""
 
     # Act as a regression test to check the current behavior.
     #
-    assert d.mask.sum() == 2500
+    assert d.mask
+
+    assert len(ws) == 1
+    assert str(ws[0].message).startswith("Region filter has been removed from '")
+    assert ws[0].category == UserWarning
 
 
 def test_set_source_checks_dimensionality_1d(clean_astro_ui):
