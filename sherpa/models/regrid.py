@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,6 +28,7 @@ for signal outside the data range - and then be regridded to
 match the desired grid.
 """
 
+import itertools
 import logging
 import warnings
 
@@ -112,13 +113,12 @@ class Axis():
         of the `hi` array or of the `lo` array, depending on whether
         the axis is integrated or not, respectively.
         """
-        if self.is_ascending and self.is_integrated:
-            return self.hi[-1]
-        if self.is_ascending and not self.is_integrated:
-            return self.lo[-1]
-        if self.is_integrated:
-            return self.hi[0]
-        return self.lo[0]
+
+        vals = self.hi if self.is_integrated else self.lo
+        if self.is_ascending:
+            return vals[-1]
+
+        return vals[0]
 
     @property
     def size(self):
@@ -914,13 +914,13 @@ def rebin_no_int(array, dimensions=None, scale=None):
         elif len(dimensions) != len(array.shape):
             raise RuntimeError('')
     elif scale is not None:
-        if isinstance(scale, float) or isinstance(scale, int):
+        if isinstance(scale, (float, int)):
             dimensions = map(int, map(round, map(lambda x: x * scale, array.shape)))
         elif len(scale) != len(array.shape):
             raise RuntimeError('')
     else:
         raise RuntimeError('Incorrect parameters to rebin.\n\trebin(array, dimensions=(x,y))\n\trebin(array, scale=a')
-    import itertools
+
     dY, dX = map(divmod, map(float, array.shape), dimensions)
 
     result = np.zeros(dimensions)
@@ -948,6 +948,7 @@ def rebin_no_int(array, dimensions=None, scale=None):
         result[J_, I] += array[j, i] * (1 - dy) * dx
         result[J, I_] += array[j, i] * dy * (1 - dx)
         result[J_, I_] += array[j, i] * (1 - dx) * (1 - dy)
+
     allowError = 0.001
     assert array.sum() == 0 or \
            (array.sum() < result.sum() * (1 + allowError)) and \

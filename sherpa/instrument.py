@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -435,7 +435,7 @@ class PSFModel(Model):
         self.model = None
         self.data_space = None
         self.psf_space = None
-        Model.__init__(self, name)
+        super().__init__(name)
 
     def _get_center(self):
         if self._center is not None:
@@ -724,30 +724,31 @@ class PSFModel(Model):
 
         We only check the resolution in one dimention and assume they are the same
         """
-        if hasattr(self.kernel, "sky"):
-            # This corresponds to the case when the kernel is actually a psf image, not just a model.
+        if not hasattr(self.kernel, "sky"):
+            return self.SAME_RESOLUTION
 
-            try:
-                psf_pixel_size = self.kernel.sky.cdelt
-            except AttributeError:
-                # If the kernel does not have a pixel size, issue a warning and keep going
-                warnings.warn("PSF Image does not have a pixel size. Sherpa will assume "
-                              "the pixel size is the same as the data")
-                return self.SAME_RESOLUTION
+        # This corresponds to the case when the kernel is actually a psf image, not just a model.
+        try:
+            psf_pixel_size = self.kernel.sky.cdelt
+        except AttributeError:
+            # If the kernel does not have a pixel size, issue a warning and keep going
+            warnings.warn("PSF Image does not have a pixel size. Sherpa will assume "
+                          "the pixel size is the same as the data")
+            return self.SAME_RESOLUTION
 
-            try:
-                data_pixel_size = data.sky.cdelt
-            except AttributeError:
-                warnings.warn("Data Image does not have a pixel size. Sherpa will assume "
-                              "the pixel size is the same as the PSF")
-                return self.SAME_RESOLUTION
+        try:
+            data_pixel_size = data.sky.cdelt
+        except AttributeError:
+            warnings.warn("Data Image does not have a pixel size. Sherpa will assume "
+                          "the pixel size is the same as the PSF")
+            return self.SAME_RESOLUTION
 
-            if numpy.allclose(psf_pixel_size, data_pixel_size):
-                return self.SAME_RESOLUTION
-            if psf_pixel_size[0] < data_pixel_size[0]:
-                return self.BETTER_RESOLUTION
-            if psf_pixel_size[0] > data_pixel_size[0]:
-                return self.WORSE_RESOLUTION
+        if numpy.allclose(psf_pixel_size, data_pixel_size):
+            return self.SAME_RESOLUTION
+        if psf_pixel_size[0] < data_pixel_size[0]:
+            return self.BETTER_RESOLUTION
+        if psf_pixel_size[0] > data_pixel_size[0]:
+            return self.WORSE_RESOLUTION
 
         return self.SAME_RESOLUTION
 
@@ -779,4 +780,4 @@ class PSFSpace2D(EvaluationSpace2D):
         x = numpy.arange(x_start, x_range_end, step_x)
         y = numpy.arange(y_start, y_range_end, step_y)
         self.data_2_psf_pixel_size_ratio = (step_x, step_y)
-        super(PSFSpace2D, self).__init__(x, y)
+        super().__init__(x, y)
