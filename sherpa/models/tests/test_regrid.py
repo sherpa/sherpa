@@ -1,4 +1,5 @@
-# Copyright 2018, 2020, 2021 Smithsonian Astrophysical Observatory
+# Copyright 2018, 2020, 2021, 2022
+# Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 # following conditions are met:
@@ -23,14 +24,16 @@
 import numpy as np
 
 import pytest
-from pytest import approx
 
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt, Data1D
+from sherpa.fit import Fit
 from sherpa.models.basic import Box1D
 from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, \
     RegriddableModel2D, ArithmeticModel, Gauss2D, basic, model
+from sherpa.optmethods import LevMar
+from sherpa.stats import LeastSq
 from sherpa.utils.err import ModelErr
 from sherpa.utils import neville, linear_interp
 from sherpa.utils import akima
@@ -57,7 +60,7 @@ def setup2d():
     x = [2, 3, 2, 3]
     y = [2, 2, 3, 3]
     xhi = [2.1, 3.5, 2.1, 3.5]
-    yhi = [2.1, 2.1, 3, 3.5]
+    yhi = [2.1, 2.1, 3.5, 3.5]
 
     # This is the result when rebinning [100, ] * 4
     z = [225, ] * 4
@@ -87,13 +90,13 @@ def test_evaluate_model_on_arbitrary_grid_point_list(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, 1)
+    assert_fit_1d(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
     regrid_model.grid = [1, 2, 3, 4, 5]
 
-    assert_fit(ui, my_model, 0)
+    assert_fit_1d(ui, my_model, 0)
 
 
 def test_evaluate_model_on_arbitrary_grid_point_list_2d(setup2d):
@@ -117,13 +120,13 @@ def test_evaluate_model_on_arbitrary_grid_point_list_2d(setup2d):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, (1, 1))
+    assert_fit_2d(ui, my_model, (1, 1))
 
     # Now fit with a different grid.
     # This is also the important part.
     regrid_model.grid = [2, 3], [2, 3]
 
-    assert_fit(ui, my_model, (0, 0))
+    assert_fit_2d(ui, my_model, (0, 0))
 
 
 def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
@@ -143,13 +146,13 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, 1)
+    assert_fit_1d(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
     regrid_model.grid = [1.5, 2.5, 3.5], [2.5, 3.5, 4.5]
 
-    assert_fit(ui, my_model, 0)
+    assert_fit_1d(ui, my_model, 0)
 
 
 def test_evaluate_model_on_arbitrary_grid_integrated_list_2d(setup2d):
@@ -162,8 +165,15 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list_2d(setup2d):
     # Load data
     ui.load_arrays(1, x, y, xhi, yhi, z, DataIMGInt)
 
+    # The model here is "clever" in that the response depends on whether
+    # the array contains the value 2.5 and the value of the x_has_25/y_has_25
+    # parameters. This means that you can get away with using an integrated
+    # grid which doesn't make sense (lo == hi), as the code used to do.
+    # However, this has been changed so that the setup is more realistic,
+    # so that we do not trigger any validation checks.
+    #
     regrid_lo = [2, 2.5, 3]
-    regrid_hi = np.array([2, 2.5, 3.5])
+    regrid_hi = np.array([2.2, 2.6, 3.5])
 
     # Get a model that evaluates on a different grid
     # This is the important part.
@@ -174,13 +184,13 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list_2d(setup2d):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, (1, 1))
+    assert_fit_2d(ui, my_model, (1, 1))
 
     # Now fit with a different grid.
     # This is also the important part.
     regrid_model.grid = x, y, xhi, yhi
 
-    assert_fit(ui, my_model, (0, 0))
+    assert_fit_2d(ui, my_model, (0, 0))
 
 
 def test_evaluate_model_on_arbitrary_grid_point_ndarray(setup):
@@ -202,13 +212,13 @@ def test_evaluate_model_on_arbitrary_grid_point_ndarray(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, 1)
+    assert_fit_1d(ui, my_model, 1)
 
     # Now fit with a different regrid.
     # This is also the important part.
     regrid_model.grid = np.array([1, 2, 3, 4, 5])
 
-    assert_fit(ui, my_model, 0)
+    assert_fit_1d(ui, my_model, 0)
 
 
 def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
@@ -228,13 +238,13 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, 1)
+    assert_fit_1d(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
     regrid_model.grid = [1.5, 2.5, 3.5], np.array([2.5, 3.5, 4.5])
 
-    assert_fit(ui, my_model, 0)
+    assert_fit_1d(ui, my_model, 0)
 
 
 def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
@@ -283,9 +293,9 @@ def test_runtime_interp():
     mdl.xhi = 4.2
     mdl.ampl = 0.4
     yregrid = tst_runtime_interp(mdl, requested, akima.akima)
-    assert 4.4 == approx(yregrid.sum())
+    assert 4.4 == pytest.approx(yregrid.sum())
     yregrid = tst_runtime_interp(mdl, requested, linear_interp)
-    assert 4.4 == approx(yregrid.sum())
+    assert 4.4 == pytest.approx(yregrid.sum())
     yregrid = tst_runtime_interp(mdl, requested, neville)
     assert - 5.0e6 > yregrid.sum()
 
@@ -294,41 +304,39 @@ def test_runtime_interp():
     requested = np.arange(2.5, 7, 0.2)
     rmdl = mdl.regrid(requested)
     ygot = d.eval_model(rmdl)
-    assert ygot == approx(yexpected)
+    assert ygot == pytest.approx(yexpected)
 
 
-def test_regrid_binaryop_1d():
+class MyConst1D(RegriddableModel1D):
+
+    def __init__(self, name='myconst1d'):
+        self.c0 = Parameter(name, 'c0', 3.1)
+        self.counter = 0
+        ArithmeticModel.__init__(self, name, (self.c0,))
+
+    def calc(self, par, *args, **kwargs):
+        x = args[0]
+        self.counter += x.size
+        return par[0]
+
+class MyGauss(RegriddableModel1D):
+
+    def __init__(self, name='mygauss'):
+        self.sigma = Parameter(name, 'sigma', 10, min=0, max=10)
+        self.pos = Parameter(name, 'pos', 0, min=-10, max=10)
+        self.ampl = Parameter(name, 'ampl', 5)
+        self.counter = 0
+        ArithmeticModel.__init__(self, name, (self.sigma, self.pos, self.ampl))
+
+    def calc(self, par, *args, **kwargs):
+        sigma, pos, ampl = par[0], par[1], par[2]
+        x = args[0]
+        self.counter += x.size
+        return ampl * np.exp(-0.5 * (args[0] - pos)**2 / sigma**2)
+
+
+def test_regrid_binaryop_1d(reset_seed):
     """issue #762, Cannot regrid a composite model (BinaryOpModel)"""
-    from sherpa.stats import LeastSq
-    from sherpa.fit import Fit
-    from sherpa.optmethods import LevMar
-
-    class MyConst1D(RegriddableModel1D):
-
-        def __init__(self, name='myconst1d'):
-            self.c0 = Parameter(name, 'c0', 3.1)
-            self.counter = 0
-            ArithmeticModel.__init__(self, name, (self.c0,))
-
-        def calc(self, par, *args, **kwargs):
-            x = args[0]
-            self.counter += x.size
-            return par[0]
-
-    class MyGauss(RegriddableModel1D):
-
-        def __init__(self, name='mygauss'):
-            self.sigma = Parameter(name, 'sigma', 10, min=0, max=10)
-            self.pos = Parameter(name, 'pos', 0, min=-10, max=10)
-            self.ampl = Parameter(name, 'ampl', 5)
-            self.counter = 0
-            ArithmeticModel.__init__(self, name, (self.sigma, self.pos, self.ampl))
-
-        def calc(self, par, *args, **kwargs):
-            sigma, pos, ampl = par[0], par[1], par[2]
-            x = args[0]
-            self.counter += x.size
-            return ampl * np.exp(-0.5 * (args[0] - pos)**2 / sigma**2)
 
     np.random.seed(0)
     leastsq = LeastSq()
@@ -396,18 +404,20 @@ def test_regrid_binaryop_2d():
     assert (ans3 == truth).all()
 
 
+class Wrappable1D(model.RegriddableModel1D):
+
+    def __init__(self, cls, name):
+        self.ncalled = []  # record the number of elements
+        self.baseclass = cls
+        self.baseclass.__init__(self, name)
+
+    def calc(self, pars, xlo, *args, **kwargs):
+        xlo = np.asarray(xlo)
+        self.ncalled.append((xlo[0], xlo[-1], xlo.size))
+        return self.baseclass.calc(self, pars, xlo, *args, **kwargs)
+
+
 def test_regrid_call_behavior():
-    class Wrappable1D(model.RegriddableModel1D):
-
-        def __init__(self, cls, name):
-            self.ncalled = []  # record the number of elements
-            self.baseclass = cls
-            self.baseclass.__init__(self, name)
-
-        def calc(self, pars, xlo, *args, **kwargs):
-            xlo = np.asarray(xlo)
-            self.ncalled.append((xlo[0], xlo[-1], xlo.size))
-            return self.baseclass.calc(self, pars, xlo, *args, **kwargs)
 
     m1 = Wrappable1D(basic.Const1D, 'm1')
     m2 = Wrappable1D(basic.Gauss1D, 'm2')
@@ -461,12 +471,13 @@ class MyModel(RegriddableModel1D):
         if 2.5 not in x:
             if p[0] == 0:
                 return [100, ] * len(x)
-            else:
-                return [100-p[0] * 100, ] * len(x)
+
+            return [100-p[0] * 100, ] * len(x)
+
         if p[0] == 1:
             return [100, ] * len(x)
-        else:
-            return [p[0]*100, ] * len(x)
+
+        return [p[0]*100, ] * len(x)
 
 
 class MyModel2D(RegriddableModel2D):
@@ -499,20 +510,21 @@ class MyModel2D(RegriddableModel2D):
         if 2.5 not in array:
             if has_25 == 0:
                 return [100, ] * len(array)
-            else:
-                return [100 - has_25 * 100, ] * len(array)
+
+            return [100 - has_25 * 100, ] * len(array)
+
         if has_25 == 1:
             return [100, ] * len(array)
-        else:
-            return [has_25 * 100, ] * len(array)
+
+        return [has_25 * 100, ] * len(array)
 
 
-def assert_fit(ui, model, value):
+def assert_fit_1d(ui, model, value):
     ui.fit()
+    assert model.has_25.val == pytest.approx(value)
 
-    try:  # 2D, two values
-        len(value)
-        assert model.x_has_25.val == approx(value[0])
-        assert model.y_has_25.val == approx(value[1])
-    except TypeError:  # 1D, one value
-        assert model.has_25.val == approx(value)
+
+def assert_fit_2d(ui, model, value):
+    ui.fit()
+    assert model.x_has_25.val == pytest.approx(value[0])
+    assert model.y_has_25.val == pytest.approx(value[1])
