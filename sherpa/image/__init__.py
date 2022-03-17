@@ -29,25 +29,48 @@ References
 
 ..  [XPA] "The XPA Messaging System", https://hea-www.harvard.edu/saord/xpa/
 
-"""
+"""  # noqa
 
+import sys
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, bool_cast
 
 import logging
 warning = logging.getLogger(__name__).warning
-backend = None
 
-try:
-    from . import ds9_backend as backend
+# Make a reference to this module so __getattr__ below can be used for backend.
+__module__ = sys.modules[__name__]
 
-except Exception as e:
-    # if DS9 is not found for some reason, like inside gdb
-    # give a useful warning and fall back on dummy_backend of noops
-    warning("imaging routines will not be available, \n" +
-            "failed to import sherpa.image.ds9_backend due to \n'%s: %s'" %
-            (type(e).__name__, str(e)))
-    from . import dummy_backend as backend
+
+def __getattr__(name):
+    # See PEP 562.
+    if name == 'backend':
+        # Load the backend module only on demand to avoid the warning on import.
+        __module__.backend = load_backend()
+        return __module__.backend
+    else:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def load_backend():
+    """Load the image backend module.
+
+    Returns
+    -------
+    backend : module
+        ds9_backend or dummy_backend.
+    """
+    try:
+        from . import ds9_backend as backend
+
+    except Exception as e:
+        # if DS9 is not found for some reason, like inside gdb
+        # give a useful warning and fall back on dummy_backend of noops
+        warning("imaging routines will not be available, \n" +
+                "failed to import sherpa.image.ds9_backend due to \n'%s: %s'" %
+                (type(e).__name__, str(e)))
+        from . import dummy_backend as backend
+    return backend
 
 
 __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',
@@ -63,12 +86,12 @@ class Image(NoNewAttributesAfterInit):
 
     def close():
         """Stop the image viewer."""
-        backend.close()
+        __module__.backend.close()
     close = staticmethod(close)
 
     def delete_frames():
         """Delete all the frames open in the image viewer."""
-        backend.delete_frames()
+        __module__.backend.delete_frames()
     delete_frames = staticmethod(delete_frames)
 
     def get_region(coord):
@@ -86,24 +109,24 @@ class Image(NoNewAttributesAfterInit):
            The region, or regions, or the empty string.
 
         """
-        return backend.get_region(coord)
+        return __module__.backend.get_region(coord)
     get_region = staticmethod(get_region)
 
     def image(self, array, shape=None, newframe=False, tile=False):
         newframe = bool_cast(newframe)
         tile = bool_cast(tile)
         if shape is None:
-            backend.image(array, newframe, tile)
+            __module__.backend.image(array, newframe, tile)
         else:
-            backend.image(array.reshape(shape), newframe, tile)
+            __module__.backend.image(array.reshape(shape), newframe, tile)
 
     def open():
         """Start the image viewer."""
-        backend.open()
+        __module__.backend.open()
     open = staticmethod(open)
 
     def set_wcs(self, keys):
-        backend.wcs(keys)
+        __module__.backend.wcs(keys)
 
     def set_region(reg, coord):
         """Set the region to display in the image viewer.
@@ -117,7 +140,7 @@ class Image(NoNewAttributesAfterInit):
            to use the current system).
 
         """
-        backend.set_region(reg, coord)
+        __module__.backend.set_region(reg, coord)
     set_region = staticmethod(set_region)
 
     def xpaget(arg):
@@ -135,7 +158,7 @@ class Image(NoNewAttributesAfterInit):
         returnval : str
 
         """
-        return backend.xpaget(arg)
+        return __module__.backend.xpaget(arg)
     xpaget = staticmethod(xpaget)
 
     def xpaset(arg, data=None):
@@ -151,7 +174,7 @@ class Image(NoNewAttributesAfterInit):
            The data for the command.
 
         """
-        return backend.xpaset(arg, data=None)
+        return __module__.backend.xpaset(arg, data=None)
     xpaset = staticmethod(xpaset)
 
 
