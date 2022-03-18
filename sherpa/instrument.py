@@ -43,20 +43,33 @@ __all__ = ('Kernel', 'PSFKernel', 'RadialProfileKernel', 'PSFModel',
            'ConvolutionModel', 'PSFSpace2D')
 
 
+def make_renorm_shape(shape):
+    """Given a shape, calculate the appropriate renorm_shape."""
+
+    out = []
+    for axis in shape:
+        out.append(get_padsize(2 * axis))
+
+    return out
+
+
 class ConvolutionModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
         if isinstance(obj, ArithmeticModel):
             return obj
+
         return ArithmeticFunctionModel(obj)
 
     @staticmethod
     def wrapkern(obj):
         if isinstance(obj, ArithmeticModel):
             return obj
-        elif callable(obj):
+
+        if callable(obj):
             return ArithmeticFunctionModel(obj)
+
         return ArithmeticConstantModel(obj, 'kernel')
 
     def __init__(self, lhs, rhs, psf):
@@ -64,8 +77,7 @@ class ConvolutionModel(CompositeModel, ArithmeticModel):
         self.rhs = self.wrapobj(rhs)
         self.psf = psf
         CompositeModel.__init__(self,
-                                ('%s(%s)' %
-                                 (self.psf.name, self.rhs.name)),
+                                f"{self.psf.name}({self.rhs.name})",
                                 (self.psf, self.lhs, self.rhs))
 
     def calc(self, p, *args, **kwargs):
@@ -99,7 +111,7 @@ class Kernel(NoNewAttributesAfterInit):
         self.pad_mask = pad_mask
         self.frac = None
         self._tcd = tcdData()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __setstate__(self, state):
         state['_tcd'] = tcdData()
@@ -111,50 +123,46 @@ class Kernel(NoNewAttributesAfterInit):
         return state
 
     def __repr__(self):
-        return "<%s kernel instance>" % type(self).__name__
+        return f"<{type(self).__name__} kernel instance>"
 
     def __str__(self):
         ss = [
-            'dshape   = %s' % str(self.dshape),
-            'kshape   = %s' % str(self.kshape),
-            #            'kernel   = %s' % type(self.kernel).__name__,
-            'skshape  = %s' % str(self.skshape),
-            'norm     = %s' % str(self.norm),
-            'origin   = %s' % str(self.origin),
-            'frozen   = %s' % str(self.frozen),
-            'center   = %s' % str(self.center),
-            'args     = %s' % str(self.args),
-            'kwargs   = %s' % str(self.kwargs),
-            'renorm_shape  = %s' % str(self.renorm_shape),
-            'renorm   = %s' % str(self.renorm),
-            'do_pad   = %s' % str(self.do_pad),
-            'pad_mask = %s' % str(self.pad_mask),
-            'frac     = %s' % str(self.frac)
+            f"dshape   = {self.dshape}",
+            f"kshape   = {self.kshape}",
+            #            "kernel   = {type(self.kernel).__name__}",
+            f"skshape  = {self.skshape}",
+            f"norm     = {self.norm}",
+            f"origin   = {self.origin}",
+            f"frozen   = {self.frozen}",
+            f"center   = {self.center}",
+            f"args     = {self.args}",
+            f"kwargs   = {self.kwargs}",
+            f"renorm_shape  = {self.renorm_shape}",
+            f"renorm   = {self.renorm}",
+            f"do_pad   = {self.do_pad}",
+            f"pad_mask = {self.pad_mask}",
+            f"frac     = {self.frac}"
         ]
-        return '\n'.join(ss)
+        return "\n".join(ss)
 
     def init_kernel(self, kernel):
         if not self.frozen:
             self._tcd.clear_kernel_fft()
 
-        renorm_shape = []
-        for axis in self.dshape:
-            renorm_shape.append(get_padsize(2 * axis))
+        renorm_shape = make_renorm_shape(self.dshape)
         self.renorm_shape = tuple(renorm_shape)
 
         kernpad = pad_data(kernel, self.dshape, self.renorm_shape)
 
-        self.renorm = self._tcd.convolve(numpy.ones(len(kernel)), kernpad,
-                                         self.dshape, renorm_shape,
-                                         self.origin)
-        self.renorm = unpad_data(self.renorm, renorm_shape, self.dshape)
+        renorm = self._tcd.convolve(numpy.ones(len(kernel)), kernpad,
+                                    self.dshape, renorm_shape,
+                                    self.origin)
+        self.renorm = unpad_data(renorm, renorm_shape, self.dshape)
         return (kernel, self.dshape)
 
     def init_data(self, data):
         if self.renorm_shape is None:
-            renorm_shape = []
-            for axis in self.dshape:
-                renorm_shape.append(get_padsize(2 * axis))
+            renorm_shape = make_renorm_shape(self.dshape)
             self.renorm_shape = tuple(renorm_shape)
 
         # pad the data and convolve with unpadded kernel
@@ -165,8 +173,10 @@ class Kernel(NoNewAttributesAfterInit):
         if self.renorm is not None:
             vals = unpad_data(vals, self.renorm_shape, self.dshape)
             vals = vals / self.renorm
+
         if self.do_pad:
             vals = vals[self.pad_mask]
+
         return vals
 
     def convolve(self, data, dshape, kernel, kshape):
@@ -184,7 +194,6 @@ class Kernel(NoNewAttributesAfterInit):
             (self.kernel, self.skshape) = self.init_kernel(kernel)
 
         vals = self.convolve(data, dshape, self.kernel, self.skshape)
-
         return self.deinit(vals)
 
 
@@ -194,7 +203,7 @@ class ConvolutionKernel(Model):
         self.kernel = kernel
         self.name = name
         self._tcd = tcdData()
-        Model.__init__(self, name)
+        super().__init__(name)
 
     def __setstate__(self, state):
         state['_tcd'] = tcdData()
@@ -206,16 +215,18 @@ class ConvolutionKernel(Model):
         return state
 
     def __repr__(self):
-        return "<%s kernel instance>" % type(self).__name__
+        return f"<{type(self).__name__} kernel instance>"
 
     def __str__(self):
         if self.kernel is None:
             raise PSFErr('notset')
+
         return "Convolution Kernel:\n" + self.kernel.__str__()
 
     def __call__(self, model, session=None):
         if self.kernel is None:
             raise PSFErr('notset')
+
         kernel = self.kernel
         if isinstance(kernel, Data):
             kernel = numpy.asarray(kernel.get_dep())
@@ -257,21 +268,26 @@ class PSFKernel(Kernel):
         self.hi = hi
         self.width = width
         self.radial = 0
-        Kernel.__init__(self, dshape, kshape, norm, frozen,
-                        center, args, kwargs,
-                        do_pad, pad_mask, origin)
-        self.origin = origin
+        super().__init__(dshape, kshape, norm, frozen,
+                         center, args, kwargs,
+                         do_pad, pad_mask, origin)
+
+        # The super-class handles a missing origin in a different
+        # manner to this class.
+        #
+        if origin is None:
+            self.origin = origin
 
     def __str__(self):
         ss = [
-            'is_model = %s' % str(self.is_model),
-            'size     = %s' % str(self.size),
-            'lo       = %s' % str(self.lo),
-            'hi       = %s' % str(self.hi),
-            'width    = %s' % str(self.width),
-            'radial   = %s' % str(self.radial)
+            "is_model = {self.is_model}",
+            "size     = {self.size}",
+            "lo       = {self.lo}",
+            "hi       = {self.hi}",
+            "width    = {self.width}",
+            "radial   = {self.radial}"
         ]
-        return Kernel.__str__(self) + '\n' + '\n'.join(ss)
+        return super().__str__() + "\n" + "\n".join(ss)
 
     def init_kernel(self, kernel):
         # If PSF dataset, normalize before kernel extraction
@@ -334,26 +350,28 @@ class RadialProfileKernel(PSFKernel):
                  pad_mask=None, do_pad=False, origin=None):
 
         self.radialsize = None
-        PSFKernel.__init__(self, dshape, kshape, is_model, norm,
-                           frozen, center, size, lo, hi, width, args, kwargs,
-                           pad_mask, do_pad, origin)
-        self.radial = 1
+        super().__init__(dshape, kshape, is_model, norm,
+                         frozen, center, size, lo, hi, width, args, kwargs,
+                         pad_mask, do_pad, origin)
+        self.radial = 1  # over-ride super-class
 
     def __str__(self):
-        return (PSFKernel.__str__(self) + '\n' +
-                'radialsize = %s' % str(self.radialsize))
+        return (super().__str__() + "\n" +
+                "radialsize = {self.radialsize}")
 
     def init_data(self, data):
-        data, dshape = PSFKernel.init_data(self, data)
+        data, dshape = super().init_data(data)
+
         # NOTICE: radial profile is 1D only!
         if self.radialsize is None:
             self.radialsize = self.dshape[0]
+
         return data, dshape
 
     def deinit(self, vals):
         # NOTICE: radial profile is 1D only!
         vals = vals[:self.radialsize]
-        return PSFKernel.deinit(self, vals)
+        return super().deinit(vals)
 
     def convolve(self, data, dshape, kernel, kshape):
         origin = self.origin
@@ -383,7 +401,6 @@ class RadialProfileKernel(PSFKernel):
             (self.kernel, self.skshape) = self.init_kernel(kernel)
 
         vals = self.convolve(data, dshape, self.kernel, self.skshape)
-
         return self.deinit(vals)
 
 
@@ -396,7 +413,7 @@ def _create_tail_grid(axis_list):
         tail = numpy.arange(grid[0] - width, 0., -width)[::-1]
         return (tail,)
 
-    elif len(axis_list) == 2:
+    if len(axis_list) == 2:
         # binned axis
         gridlo, gridhi = axis_list
         # origsize = len(gridlo)
@@ -413,24 +430,32 @@ def _create_tail_grid(axis_list):
 class PSFModel(Model):
     """Convolve a model by another model or data set.
 
+    At the moment the code does not distinguish between 1D and 2D data
+    and models.
+
     Notes
     -----
     A number of attributes are displayed as parameters, if set, but
     are not handled as parameters. The attributes are: kernel, size,
-    centre, and origin.
+    center, and origin.
 
     """
 
     def __init__(self, name='psfmodel', kernel=None):
+
+        # store the name without the leading "psfmodel." term that Model adds.
         self._name = name
+
         self._size = None
         self._origin = None
         self._center = None
         self._must_rebin = False
+
         self.radial = Parameter(name, 'radial', 0, 0, 1, hard_min=0,
                                 hard_max=1, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1, 0, 1, hard_min=0, hard_max=1,
                               alwaysfrozen=True)
+
         self.kernel = kernel
         self.model = None
         self.data_space = None
@@ -438,58 +463,83 @@ class PSFModel(Model):
         super().__init__(name)
 
     def _get_center(self):
-        if self._center is not None:
-            if len(self._center) == 1:
-                return self._center[0]
+        if self._center is not None and len(self._center) == 1:
+            return self._center[0]
+
         return self._center
 
     def _set_center(self, vals):
-        par = vals
+        if vals is None:
+            self._center = None
+            return
+
         if type(vals) in (str, numpy.string_):
             raise PSFErr('nostr')
-        elif type(vals) not in (list, tuple, numpy.ndarray):
+
+        par = vals
+        if type(vals) not in (list, tuple, numpy.ndarray):
             par = [vals]
+
         self._center = tuple(par)
-        if par is None:
-            self._center = None
 
     center = property(_get_center, _set_center, doc='array of size parameters')
 
     def _get_size(self):
-        if self._size is not None:
-            if len(self._size) == 1:
-                return self._size[0]
+        if self._size is not None and len(self._size) == 1:
+            return self._size[0]
+
         return self._size
 
     def _set_size(self, vals):
-        par = vals
+        if vals is None:
+            self._size = None
+            return
+
         if type(vals) in (str, numpy.string_):
             raise PSFErr('notstr')
-        elif type(vals) not in (list, tuple, numpy.ndarray):
+
+        par = vals
+        if type(vals) not in (list, tuple, numpy.ndarray):
             par = [vals]
+
         self._size = tuple(par)
-        if par is None:
-            self._size = None
 
     size = property(_get_size, _set_size, doc='array of size parameters')
 
     def _get_origin(self):
-        if self._origin is not None:
-            if len(self._origin) == 1:
-                return self._origin[0]
+        if self._origin is not None and len(self._origin) == 1:
+            return self._origin[0]
+
         return self._origin
 
     def _set_origin(self, vals):
-        par = vals
+        if vals is None:
+            self._origin = None
+            return
+
         if type(vals) in (str, numpy.string_):
             raise PSFErr('notstr')
-        elif type(vals) not in (list, tuple, numpy.ndarray):
+
+        par = vals
+        if type(vals) not in (list, tuple, numpy.ndarray):
             par = [vals]
+
         self._origin = tuple(par)
-        if par is None:
-            self._origin = None
 
     origin = property(_get_origin, _set_origin, doc='FFT origin')
+
+    def _get_array_str(self, name, value):
+        """Display the 'array-like' fields"""
+
+        name = f"{self._name}.{name}"
+        flag = "frozen"
+
+        # We could be a bit-more clever about this conversion but does
+        # not seem worth it.
+        value = str(value)
+
+        # Do we need to return the min/max values?
+        return f"\n   {name:12s} {flag:6s} {value:>12s} {value:>12s} {value:>12s}"
 
     def _get_str(self):
         s = ''
@@ -497,18 +547,16 @@ class PSFModel(Model):
             s += ('\n   %-12s %-6s %12s' %
                   ('%s.kernel' % self._name, 'frozen',
                    self.kernel.name))
+
         if self.size is not None:
-            s += ('\n   %-12s %-6s %12s %12s %12s' %
-                  ('%s.size' % self._name, 'frozen',
-                   self.size, self.size, self.size))
+            s += self._get_array_str("size", self.size)
+
         if self.center is not None:
-            s += ('\n   %-12s %-6s %12s %12s %12s' %
-                  ('%s.center' % self._name, 'frozen',
-                   self.center, self.center, self.center))
+            s += self._get_array_str("center", self.center)
+
         if self.origin is not None:
-            s += ('\n   %-12s %-6s %12s %12s %12s' %
-                  ('%s.origin' % self._name, 'frozen',
-                   self.origin, self.origin, self.origin))
+            s += self._get_array_str("origin", self.origin)
+
         for p in [self.radial, self.norm]:
             s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
                   (p.fullname, 'frozen', p.val, p.min, p.max, p.units))
@@ -525,6 +573,7 @@ class PSFModel(Model):
     def __call__(self, model, session=None):
         if self.kernel is None:
             raise PSFErr('notset')
+
         kernel = self.kernel
         if isinstance(kernel, Data):
             kernel = numpy.asarray(kernel.get_dep())
@@ -540,12 +589,13 @@ class PSFModel(Model):
     def calc(self, *args, **kwargs):
         if self.model is None:
             raise PSFErr('nofold')
+
         psf_space_evaluation = self.model.calc(*args, **kwargs)
 
         if self._must_rebin:
             return rebin_2d(psf_space_evaluation, self.psf_space, self.data_space).ravel()
-        else:
-            return psf_space_evaluation
+
+        return psf_space_evaluation
 
     def fold(self, data):
         # FIXME how will we know the native dimensionality of the
@@ -573,12 +623,14 @@ class PSFModel(Model):
         if pixel_size_comparison == self.SAME_RESOLUTION:  # Don't do anything special
             self.data_space = EvaluationSpace2D(*data.get_indep())
             self._must_rebin = False
+
         elif pixel_size_comparison == self.BETTER_RESOLUTION:  # Evaluate model in PSF space
             self.data_space = EvaluationSpace2D(*data.get_indep())
             self.psf_space = PSFSpace2D(self.data_space, self, data.sky.cdelt)
             kargs['args'] = self.psf_space.grid
             dshape = self.psf_space.shape
             self._must_rebin = True
+
         else:  # PSF has worse resolution, error out
             raise AttributeError("The PSF has a worse resolution than the data.")
 
@@ -605,6 +657,7 @@ class PSFModel(Model):
         else:
             if (self.kernel is None) or (not callable(self.kernel)):
                 raise PSFErr('nopsf', self._name)
+
             kshape = data.get_dims()
             # (kargs['lo'], kargs['hi'],
             # kargs['width']) = _get_axis_info(kargs['args'], dshape)
@@ -634,6 +687,7 @@ class PSFModel(Model):
 
         is_kernel = (kargs['is_model'] and not kargs['norm'] and
                      len(kshape) == 1)
+
         # Handle noticed regions for convolution
         if numpy.iterable(data.mask):
             kargs['do_pad'] = True
@@ -650,12 +704,15 @@ class PSFModel(Model):
             return
 
         self.model = PSFKernel(dshape, kshape, **kargs)
-        return
 
     def _get_kernel_data(self, data, subkernel=True):
-        self.fold(data)
+        # NOTE: do we need to return the lo and hi values as they do not
+        #       appear to be used
+        #
         if self.kernel is None:
             raise PSFErr('notset')
+
+        self.fold(data)
         kernel = self.kernel
         dep = None
         indep = None
@@ -689,12 +746,13 @@ class PSFModel(Model):
                     lo = args[3]  # subkernel offsets (lower bound)
                     hi = args[4]  # subkernel offsets (upper bound)
                     newindep.append(newaxis)
+
                 indep = newindep
 
             kshape = newshape
 
         if self.model.frac is not None:
-            info('PSF frac: %s' % self.model.frac)
+            info('PSF frac: %s', self.model.frac)
 
         if numpy.isscalar(kshape):
             kshape = [kshape]
@@ -745,8 +803,10 @@ class PSFModel(Model):
 
         if numpy.allclose(psf_pixel_size, data_pixel_size):
             return self.SAME_RESOLUTION
+
         if psf_pixel_size[0] < data_pixel_size[0]:
             return self.BETTER_RESOLUTION
+
         if psf_pixel_size[0] > data_pixel_size[0]:
             return self.WORSE_RESOLUTION
 
