@@ -462,15 +462,18 @@ class PSFModel(Model):
         self.psf_space = None
         super().__init__(name)
 
-    def _get_center(self):
-        if self._center is not None and len(self._center) == 1:
-            return self._center[0]
+    def _get_field(self, name):
+        """Return the field value"""
+        field = getattr(self, name)
+        if field is not None and len(field) == 1:
+            return field[0]
 
-        return self._center
+        return field
 
-    def _set_center(self, vals):
+    def _set_field(self, name, vals):
+        """Set the field value"""
         if vals is None:
-            self._center = None
+            setattr(self, name, None)
             return
 
         if type(vals) in (str, numpy.string_):
@@ -480,51 +483,29 @@ class PSFModel(Model):
         if type(vals) not in (list, tuple, numpy.ndarray):
             par = [vals]
 
-        self._center = tuple(par)
+        setattr(self, name, tuple(par))
+
+    def _get_center(self):
+        return self._get_field("_center")
+
+    def _set_center(self, vals):
+        self._set_field("_center", vals)
 
     center = property(_get_center, _set_center, doc='array of size parameters')
 
     def _get_size(self):
-        if self._size is not None and len(self._size) == 1:
-            return self._size[0]
-
-        return self._size
+        return self._get_field("_size")
 
     def _set_size(self, vals):
-        if vals is None:
-            self._size = None
-            return
-
-        if type(vals) in (str, numpy.string_):
-            raise PSFErr('notstr')
-
-        par = vals
-        if type(vals) not in (list, tuple, numpy.ndarray):
-            par = [vals]
-
-        self._size = tuple(par)
+        self._set_field("_size", vals)
 
     size = property(_get_size, _set_size, doc='array of size parameters')
 
     def _get_origin(self):
-        if self._origin is not None and len(self._origin) == 1:
-            return self._origin[0]
-
-        return self._origin
+        return self._get_field("_origin")
 
     def _set_origin(self, vals):
-        if vals is None:
-            self._origin = None
-            return
-
-        if type(vals) in (str, numpy.string_):
-            raise PSFErr('notstr')
-
-        par = vals
-        if type(vals) not in (list, tuple, numpy.ndarray):
-            par = [vals]
-
-        self._origin = tuple(par)
+        self._set_field("_origin", vals)
 
     origin = property(_get_origin, _set_origin, doc='FFT origin')
 
@@ -600,110 +581,84 @@ class PSFModel(Model):
     def fold(self, data):
         # FIXME how will we know the native dimensionality of the
         # raveled model without the values?
-        kargs = {}
+        kwargs = {"norm": bool_cast(self.norm.val)}
 
-        kshape = None
-        dshape = data.get_dims()
+        kwargs['size'] = self.size
+        kwargs['center'] = self.center
+        kwargs['origin'] = self.origin
+        kwargs['is_model'] = False
+        kwargs['do_pad'] = False
 
-        (size, center, origin,
-         kargs['norm'], radial) = (self.size, self.center, self.origin,
-                                   bool_cast(self.norm.val),
-                                   int(self.radial.val))
-
-        kargs['size'] = size
-        kargs['center'] = center
-        kargs['origin'] = origin
-        kargs['is_model'] = False
-        kargs['do_pad'] = False
-
-        kargs['args'] = data.get_indep()
-
-        pixel_size_comparison = self._check_pixel_size(data)
-
-        if pixel_size_comparison == self.SAME_RESOLUTION:  # Don't do anything special
-            self.data_space = EvaluationSpace2D(*data.get_indep())
-            self._must_rebin = False
-
-        elif pixel_size_comparison == self.BETTER_RESOLUTION:  # Evaluate model in PSF space
-            self.data_space = EvaluationSpace2D(*data.get_indep())
-            self.psf_space = PSFSpace2D(self.data_space, self, data.sky.cdelt)
-            kargs['args'] = self.psf_space.grid
-            dshape = self.psf_space.shape
-            self._must_rebin = True
-
-        else:  # PSF has worse resolution, error out
-            raise AttributeError("The PSF has a worse resolution than the data.")
+        (args, dshape) = self._create_spaces(data)
+        kwargs['args'] = args
 
         if isinstance(self.kernel, Data):
 
             kshape = self.kernel.get_dims()
-            # (kargs['lo'], kargs['hi'],
-            # kargs['width']) = _get_axis_info(self.kernel.get_indep(), kshape)
 
-            kargs['lo'] = [1] * len(kshape)
-            kargs['hi'] = kshape
-            kargs['width'] = [1] * len(kshape)
+            kwargs['lo'] = [1] * len(kshape)
+            kwargs['hi'] = kshape
+            kwargs['width'] = [1] * len(kshape)
 
-            if center is None:
-                kargs['center'] = [int(dim / 2.) for dim in kshape]
-                # update center param to default
-                self.center = kargs['center']
+            if self.center is None:
+                kwargs['center'] = [int(dim / 2.) for dim in kshape]
 
-            if size is None:
-                kargs['size'] = kshape
-                # update size param to default
-                self.size = kargs['size']
+            if self.size is None:
+                kwargs['size'] = kshape
 
         else:
             if (self.kernel is None) or (not callable(self.kernel)):
                 raise PSFErr('nopsf', self._name)
 
             kshape = data.get_dims()
-            # (kargs['lo'], kargs['hi'],
-            # kargs['width']) = _get_axis_info(kargs['args'], dshape)
 
-            kargs['lo'] = [1] * len(kshape)
-            kargs['hi'] = kshape
-            kargs['width'] = [1] * len(kshape)
+            kwargs['lo'] = [1] * len(kshape)
+            kwargs['hi'] = kshape
+            kwargs['width'] = [1] * len(kshape)
 
-            if center is None:
-                kargs['center'] = [int(dim / 2.) for dim in dshape]
-                # update center param to default
-                self.center = kargs['center']
+            if self.center is None:
+                kwargs['center'] = [int(dim / 2.) for dim in dshape]
 
-            if size is None:
-                kargs['size'] = dshape
-                # update size param to default
-                self.size = kargs['size']
+            if self.size is None:
+                kwargs['size'] = dshape
 
-            kargs['is_model'] = True
+            kwargs['is_model'] = True
             if hasattr(self.kernel, 'pars'):
                 # freeze all PSF model parameters if not already.
                 for par in self.kernel.pars:
                     par.freeze()
 
             if hasattr(self.kernel, 'thawedpars'):
-                kargs['frozen'] = (len(self.kernel.thawedpars) == 0)
+                kwargs['frozen'] = (len(self.kernel.thawedpars) == 0)
 
-        is_kernel = (kargs['is_model'] and not kargs['norm'] and
+        if self.center is None:
+            # update center param to default
+            self.center = kwargs['center']
+
+        if self.size is None:
+            # update size param to default
+            self.size = kwargs['size']
+
+        is_kernel = (kwargs['is_model'] and not kwargs['norm'] and
                      len(kshape) == 1)
 
         # Handle noticed regions for convolution
         if numpy.iterable(data.mask):
-            kargs['do_pad'] = True
-            kargs['pad_mask'] = data.mask
+            kwargs['do_pad'] = True
+            kwargs['pad_mask'] = data.mask
 
         if is_kernel:
-            for id in ['is_model', 'lo', 'hi', 'width', 'size']:
-                kargs.pop(id)
-            self.model = Kernel(dshape, kshape, **kargs)
+            for kwarg in ['is_model', 'lo', 'hi', 'width', 'size']:
+                kwargs.pop(kwarg)
+
+            self.model = Kernel(dshape, kshape, **kwargs)
             return
 
-        if radial:
-            self.model = RadialProfileKernel(dshape, kshape, **kargs)
+        if int(self.radial.val):
+            self.model = RadialProfileKernel(dshape, kshape, **kwargs)
             return
 
-        self.model = PSFKernel(dshape, kshape, **kargs)
+        self.model = PSFKernel(dshape, kshape, **kwargs)
 
     def _get_kernel_data(self, data, subkernel=True):
         # NOTE: do we need to return the lo and hi values as they do not
@@ -774,14 +729,40 @@ class PSFModel(Model):
 
         return dataset
 
+    def _create_spaces(self, data):
+        """Setup the data space based on the pixel size."""
+
+        # This has been pulled out of fold so is currently lacking in documentation.
+        #
+        pixel_size_comparison = self._check_pixel_size(data)
+
+        indep = data.get_indep()
+
+        # Don't do anything special
+        if pixel_size_comparison == self.SAME_RESOLUTION:
+            self.data_space = EvaluationSpace2D(*indep)
+            self._must_rebin = False
+            return (indep, data.get_dims())
+
+        # Evaluate model in PSF space
+        if pixel_size_comparison == self.BETTER_RESOLUTION:
+            self.data_space = EvaluationSpace2D(*indep)
+            self.psf_space = PSFSpace2D(self.data_space, self, data.sky.cdelt)
+            self._must_rebin = True
+            return (self.psf_space.grid, self.psf_space.shape)
+
+        # PSF has worse resolution, error out
+        raise AttributeError("The PSF has a worse resolution than the data.")
+
     def _check_pixel_size(self, data):
         """
         If the data and PSF dot not have WCS information, assume the PSF has the same resolution
         as the image.
         Otherwise check the WCS information to determine the relative resolutions.
 
-        We only check the resolution in one dimention and assume they are the same
+        We only check the resolution in one dimention and assume they are the same.
         """
+
         if not hasattr(self.kernel, "sky"):
             return self.SAME_RESOLUTION
 
