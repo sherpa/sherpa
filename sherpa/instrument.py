@@ -433,11 +433,23 @@ class PSFModel(Model):
     At the moment the code does not distinguish between 1D and 2D data
     and models.
 
+    Parameters
+    ----------
+    name : str
+        The name for the model.
+    kernel : sherpa.data.Data instance, callable, or None, optional
+        The kernel used to convolve models. This can be changed.
+
     Notes
     -----
     A number of attributes are displayed as parameters, if set, but
     are not handled as parameters. The attributes are: kernel, size,
-    center, and origin.
+    origin, and center. The size, center, and origin values are only
+    displayed when set (and will be set by the `fold` method if
+    needed). There is an attempt to ensure that the size, origin, and
+    center fields have the correct size - that is they match the
+    dimensionality of the kernel - but it is possible for an invalid
+    combination to be set.
 
     """
 
@@ -451,6 +463,8 @@ class PSFModel(Model):
         self._center = None
         self._must_rebin = False
 
+        self._kernel = None
+
         self.radial = Parameter(name, 'radial', 0, 0, 1, hard_min=0,
                                 hard_max=1, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1, 0, 1, hard_min=0, hard_max=1,
@@ -462,13 +476,65 @@ class PSFModel(Model):
         self.psf_space = None
         super().__init__(name)
 
+    def _get_kernel(self):
+        return self._kernel
+
+    def _set_kernel(self, kernel):
+
+        odim = self.ndim
+        if odim is None:
+            # avid having to check for None in code below
+            odim = 0
+
+        def clear_fields():
+            "Clear the array-like fields"
+            if self.ndim is not None and self.ndim == odim:
+                return
+
+            self.size = None
+            self.origin = None
+            self.center = None
+
+        if kernel is None:
+            self._kernel = None
+            self.ndim = None
+            clear_fields()
+            return
+
+        if isinstance(kernel, Data):
+            self._kernel = kernel
+            self.ndim = kernel.ndim
+            clear_fields()
+            return
+
+        if not callable(kernel):
+            raise PSFErr('nopsf', self._name)
+
+        # We could only allow a sherpa.models.model.Model instance here,
+        # but allowable any callable, but that means the dimensionality
+        # may not be set.
+        #
+        self._kernel = kernel
+        try:
+            self.ndim = getattr(kernel, "ndim")
+        except AttributeError:
+            self.ndim = None
+
+        clear_fields()
+
+    kernel = property(_get_kernel, _set_kernel,
+                      doc="""The kernel (sherpa.data.Data or sherpa.models.model.Model instance, callable, or None).
+
+The kernel determines the dimensionality of the model (the
+`ndim` attribute), although it can remain as `None` for
+callable arguments. The size, origin, and center fields, if
+set, must match the `ndim` field, and will be cleared if
+they do not match.
+""")
+
     def _get_field(self, name):
         """Return the field value"""
-        field = getattr(self, name)
-        if field is not None and len(field) == 1:
-            return field[0]
-
-        return field
+        return getattr(self, name)
 
     def _set_field(self, name, vals):
         """Set the field value
@@ -506,11 +572,20 @@ class PSFModel(Model):
         if type(vals) in (str, numpy.string_):
             raise PSFErr('nostr')
 
-        par = vals
         if type(vals) not in (list, tuple, numpy.ndarray):
-            par = [vals]
+            vals = [vals]
 
-        setattr(self, name, tuple(par))
+        nvals = len(vals)
+        if self.ndim is not None and nvals != self.ndim:
+            # remove leading underscore from the name when reporting an error
+            raise PSFErr("mismatch_dims", self.name, name[1:], self.ndim, nvals)
+
+        if self.ndim == 1:
+            vals = vals[0]
+        else:
+            vals = tuple(vals)
+
+        setattr(self, name, vals)
 
     def _get_center(self):
         return self._get_field("_center")
@@ -606,80 +681,110 @@ class PSFModel(Model):
         return psf_space_evaluation
 
     def fold(self, data):
-        # FIXME how will we know the native dimensionality of the
-        # raveled model without the values?
+        """The data to be convolved by the PSF.
+
+        Parameters
+        ----------
+        data : sherpa.data.Data or sherpa.models.model.Model instance or a callable
+            It must match the dimensionality of the kernel.
+
+        Raises
+        ------
+        sherpa.utils.err.PSFErr
+            The kernel has not been set.
+
+        """
+
+        if self.kernel is None:
+            raise PSFErr('nopsf', self._name)
+
         kwargs = {"norm": bool_cast(self.norm.val)}
 
-        kwargs['size'] = self.size
-        kwargs['center'] = self.center
+        # TODO: Should we treat origin as we do center and size?
         kwargs['origin'] = self.origin
-        kwargs['is_model'] = False
-        kwargs['do_pad'] = False
 
         (args, dshape) = self._create_spaces(data)
         kwargs['args'] = args
 
         if isinstance(self.kernel, Data):
+            kwargs['is_model'] = False
 
             kshape = self.kernel.get_dims()
+            nkernel = self.ndim
 
-            kwargs['lo'] = [1] * len(kshape)
-            kwargs['hi'] = kshape
-            kwargs['width'] = [1] * len(kshape)
+            if nkernel != data.ndim:
+                raise PSFErr("mismatch_dims", self.kernel.name,
+                             data.name, nkernel, data.ndim)
 
             if self.center is None:
-                kwargs['center'] = [int(dim / 2.) for dim in kshape]
+                self.center = [int(dim / 2.) for dim in kshape]
 
             if self.size is None:
-                kwargs['size'] = kshape
+                self.size = kshape
 
         else:
-            if (self.kernel is None) or (not callable(self.kernel)):
-                raise PSFErr('nopsf', self._name)
+            kwargs['is_model'] = True
 
             kshape = data.get_dims()
+            nkernel = len(kshape)
 
-            kwargs['lo'] = [1] * len(kshape)
-            kwargs['hi'] = kshape
-            kwargs['width'] = [1] * len(kshape)
+            # To support using any callable, not just a model, we need
+            # to allow the kernel dimensions to be unknown. The
+            # alternative is to require the kernel to have a ndim
+            # attribute, but there are a number of places the code
+            # allows the kernel to not be a model instance (e.g. the
+            # checks for pars/thawedpars).
+            #
+            if self.ndim is not None and nkernel != self.ndim:
+                raise PSFErr("mismatch_dims", self.kernel.name, data.name, self.ndim, nkernel)
 
             if self.center is None:
-                kwargs['center'] = [int(dim / 2.) for dim in dshape]
+                self.center = [int(dim / 2.) for dim in dshape]
 
             if self.size is None:
-                kwargs['size'] = dshape
+                self.size = dshape
 
-            kwargs['is_model'] = True
             if hasattr(self.kernel, 'pars'):
                 # freeze all PSF model parameters if not already.
                 for par in self.kernel.pars:
                     par.freeze()
 
+            # TODO: shouldn't thawedpars always be True with the above?
+            #
             if hasattr(self.kernel, 'thawedpars'):
                 kwargs['frozen'] = (len(self.kernel.thawedpars) == 0)
 
-        if self.center is None:
-            # update center param to default
-            self.center = kwargs['center']
+        kwargs['center'] = self.center
+        kwargs['size'] = self.size
 
-        if self.size is None:
-            # update size param to default
-            self.size = kwargs['size']
-
+        # TODO: Why is this restricted to 1D?
         is_kernel = (kwargs['is_model'] and not kwargs['norm'] and
-                     len(kshape) == 1)
+                     nkernel == 1)
 
         # Handle noticed regions for convolution
         if numpy.iterable(data.mask):
             kwargs['do_pad'] = True
             kwargs['pad_mask'] = data.mask
+        else:
+            kwargs['do_pad'] = False
 
         if is_kernel:
-            for kwarg in ['is_model', 'lo', 'hi', 'width', 'size']:
+            for kwarg in ['is_model', 'size']:
                 kwargs.pop(kwarg)
 
             self.model = Kernel(dshape, kshape, **kwargs)
             return
+
+        # TODO:
+        # If these are not set some tests seem to go into an infinite loop
+        # eg calling a convolved model in
+        # sherpa/models/tests/test_regrid_unit.py::test_regrid1d_works_with_convolution_style
+        # Does this indicate that there should be better argument checking
+        # or defaults?
+        #
+        kwargs['lo'] = numpy.ones(nkernel)
+        kwargs['hi'] = kshape
+        kwargs['width'] = numpy.ones(nkernel)
 
         # TODO: why is this not just checking 'self.radial.val > 0'
         # instead of 'int(self.radial.val)'? Aren't they the same, and
@@ -709,7 +814,7 @@ class PSFModel(Model):
             dep = numpy.asarray(kernel.get_dep())
             indep = kernel.get_indep()
 
-        elif callable(kernel):
+        else:
             dep = kernel(*self.model.args, **self.model.kwargs)
             indep = self.model.args
 

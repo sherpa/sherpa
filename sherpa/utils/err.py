@@ -272,6 +272,7 @@ class PSFErr(SherpaErr):
             'notset': 'PSF kernel has not been set',
             'nopsf': "model '%s' does not have an associated PSF function",
             'mismatch': 'array size mismatch between %s and %s',
+            'mismatch_dims': "kernel '%s' and data '%s' do not match: %dD vs %dD",
             'badsize': 'PSF kernel size must be <=  data size, kernel: %s data: %s',
             'ndim': 'PSF model dimension must be <= 2'
             }

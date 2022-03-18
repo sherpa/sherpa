@@ -32,7 +32,7 @@ from sherpa.stats import LeastSq
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
 from sherpa.models.parameter import hugeval
-from sherpa.utils.err import ArgumentErr, IdentifierErr, StatErr, SessionErr
+from sherpa.utils.err import ArgumentErr, IdentifierErr, PSFErr, StatErr, SessionErr
 from sherpa import ui
 
 # As the user model is called UserModel, refer to the Sherpa version
@@ -248,21 +248,23 @@ def test_ui_set_full_model_2d(clean_ui, setup_ui_2d):
 def test_ui_set_full_model_mismatch_2d(clean_ui, setup_ui):
     ui.load_psf('psf1', 'gauss2d.g1')
     ui.set_full_model('psf1(gauss2d.g2)+const2d.c1')
-    # Ideally this would fail but it currently does not
-    ui.get_model()
+    with pytest.raises(PSFErr,
+                       match="kernel 'gauss2d.g1' and data 'dataspace1d' do not match: 2D vs 1D"):
+        ui.get_model()
 
 
 def test_ui_set_full_model_2d_mismatch_1d(clean_ui, setup_ui_2d):
     ui.load_psf('psf1', 'gauss1d.g1')
     ui.set_full_model('psf1(gauss1d.g2 ) +const1d.c1')
-    # Ideally this would fail but it currently does not
-    ui.get_model()
+    with pytest.raises(PSFErr,
+                       match="kernel 'gauss1d.g1' and data 'dataspace2d' do not match: 1D vs 2D"):
+        ui.get_model()
 
 
 def test_ui_set_full_model_checks_dimensions_match(clean_ui, setup_ui_2d):
     ui.load_psf('psf1', 'gauss2d.g1')
     with pytest.raises(ArgumentErr,
-                       match=r"invalid model expression: Models do not match: 2D \(gauss2d.g1\) and 1D \(gauss1d.g2\)"):
+                       match=r"invalid model expression: Models do not match: 2D \(psfmodel.psf1\) and 1D \(gauss1d.g2\)"):
         ui.set_full_model('psf1(gauss1d.g2)+const2d.c1')
 
 
