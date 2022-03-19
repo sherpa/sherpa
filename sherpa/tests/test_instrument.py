@@ -98,6 +98,88 @@ def test_psf1d_show():
     check(out, 7, NORM)
 
 
+def test_psf1d_model_show():
+    """What happens when the kernel is a model?"""
+
+    box1 = Box1D('box1')
+    box1.xlow = 2
+    box1.xhi = 5
+    m = PSFModel("pmodel1", box1)
+
+    dfold = Data1D('fold', np.arange(10), np.zeros(10))
+    m.fold(dfold)
+
+    out = str(m).split("\n")
+    assert len(out) == 8
+    assert out[0] == "pmodel1"
+    assert out[1] == "   Param        Type          Value          Min          Max      Units"
+    assert out[2] == "   -----        ----          -----          ---          ---      -----"
+    assert out[3] == "   pmodel1.kernel frozen         box1"
+    assert out[4] == "   pmodel1.size frozen           10           10           10"
+    assert out[5] == "   pmodel1.center frozen            5            5            5"
+    assert out[6] == "   pmodel1.radial frozen            0            0            1           "
+    assert out[7] == "   pmodel1.norm frozen            1            0            1           "
+
+
+def test_psf2d_data_show():
+    """What happens when the kernel is a Data2D instance?"""
+
+    y, x = np.mgrid[1:4, 1:3]
+    x = x.flatten()
+    y = y.flatten()
+    z = np.ones(x.size)
+    data2 = Data2D('data2', x, y, z)
+
+    m = PSFModel("pdata2", data2)
+
+    yy, xx = np.mgrid[1:10, 1:9]
+    xx = xx.flatten()
+    yy = yy.flatten()
+    zz = np.arange(xx.size)
+    dfold = Data2D('fold', xx, yy, zz)
+    m.fold(dfold)
+
+    out = str(m).split("\n")
+    assert len(out) == 8
+    assert out[0] == "pdata2"
+    assert out[1] == "   Param        Type          Value          Min          Max      Units"
+    assert out[2] == "   -----        ----          -----          ---          ---      -----"
+    assert out[3] == "   pdata2.kernel frozen        data2"
+    assert out[4] == "   pdata2.size  frozen       (6, 6)       (6, 6)       (6, 6)"
+    assert out[5] == "   pdata2.center frozen       (3, 3)       (3, 3)       (3, 3)"
+    assert out[6] == "   pdata2.radial frozen            0            0            1           "
+    assert out[7] == "   pdata2.norm  frozen            1            0            1           "
+
+
+def test_psf2d_model_show():
+    """What happens when the kernel is a model?"""
+
+    box2 = Box2D('box2')
+    box2.xlow = 2
+    box2.xhi = 5
+    box2.yhi = 5
+    m = PSFModel("pmodel2", box2)
+
+    yy, xx = np.mgrid[1:10, 1:9]
+    xx = xx.flatten()
+    yy = yy.flatten()
+    zz = np.arange(xx.size)
+    dfold = Data2D('fold', xx, yy, zz)
+    m.fold(dfold)
+
+    print(m)
+    out = str(m).split("\n")
+    assert len(out) == 8
+    assert out[0] == "pmodel2"
+    assert out[1] == "   Param        Type          Value          Min          Max      Units"
+    assert out[2] == "   -----        ----          -----          ---          ---      -----"
+    assert out[3] == "   pmodel2.kernel frozen         box2"
+    assert out[4] == "   pmodel2.size frozen     (72, 72)     (72, 72)     (72, 72)"
+    assert out[5] == "   pmodel2.center frozen     (36, 36)     (36, 36)     (36, 36)"
+    assert out[6] == "   pmodel2.radial frozen            0            0            1           "
+    assert out[7] == "   pmodel2.norm frozen            1            0            1           "
+
+
 def test_psf1d_empty_pars():
     """What does .pars mean for an empty PSFModel?"""
 
