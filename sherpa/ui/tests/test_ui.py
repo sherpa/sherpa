@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ from sherpa.stats import LeastSq
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
 from sherpa.models.parameter import hugeval
-from sherpa.utils.err import IdentifierErr, StatErr, SessionErr
+from sherpa.utils.err import ArgumentErr, IdentifierErr, StatErr, SessionErr
 from sherpa import ui
 
 # As the user model is called UserModel, refer to the Sherpa version
@@ -178,9 +178,7 @@ def identity(x):
 
 
 @pytest.fixture
-def setup_ui(make_data_path):
-
-    ui.dataspace1d(1, 1000, dstype=ui.Data1D)
+def setup_ui_full(make_data_path, setup_ui):
 
     out = namedtuple('setup_ui_data', ['ascii', 'single', 'double',
                                        'filter'])
@@ -192,51 +190,91 @@ def setup_ui(make_data_path):
     return out
 
 
+@pytest.fixture
+def setup_ui():
+    """A version of setup_ui_full where we don't need the data."""
+
+    ui.dataspace1d(1, 1000, dstype=ui.Data1D)
+
+
+@pytest.fixture
+def setup_ui_2d():
+    """Basic 2D data set"""
+
+    ui.dataspace2d((3, 4))
+
+
 @requires_data
-def test_ui_ascii(clean_ui, setup_ui):
-    ui.load_data(1, setup_ui.ascii)
-    ui.load_data(1, setup_ui.ascii, 2)
-    ui.load_data(1, setup_ui.ascii, 2, ("col2", "col1"))
+def test_ui_ascii(clean_ui, setup_ui_full):
+    ui.load_data(1, setup_ui_full.ascii)
+    ui.load_data(1, setup_ui_full.ascii, 2)
+    ui.load_data(1, setup_ui_full.ascii, 2, ("col2", "col1"))
 
 
 # Test table model
 @requires_data
-def test_ui_table_model_ascii_table(clean_ui, setup_ui):
-    ui.load_table_model('tbl', setup_ui.single)
-    ui.load_table_model('tbl', setup_ui.double)
+def test_ui_table_model_ascii_table(clean_ui, setup_ui_full):
+    ui.load_table_model('tbl', setup_ui_full.single)
+    ui.load_table_model('tbl', setup_ui_full.double)
 
 
 # Test user model
 @requires_data
-def test_ui_user_model_ascii_table(clean_ui, setup_ui):
-    ui.load_user_model(identity, 'mdl', setup_ui.single)
-    ui.load_user_model(identity, 'mdl', setup_ui.double)
+def test_ui_user_model_ascii_table(clean_ui, setup_ui_full):
+    ui.load_user_model(identity, 'mdl', setup_ui_full.single)
+    ui.load_user_model(identity, 'mdl', setup_ui_full.double)
 
 
 @requires_data
-def test_ui_filter_ascii(clean_ui, setup_ui):
-    ui.load_filter(setup_ui.filter)
-    ui.load_filter(setup_ui.filter, ignore=True)
+def test_ui_filter_ascii(clean_ui, setup_ui_full):
+    ui.load_filter(setup_ui_full.filter)
+    ui.load_filter(setup_ui_full.filter, ignore=True)
 
 
-@requires_data
 def test_ui_add_model(clean_ui, setup_ui):
     ui.add_model(UserModel)
     ui.set_model('usermodel.user1')
 
 
-@requires_data
 def test_ui_set_full_model(clean_ui, setup_ui):
+    ui.load_psf('psf1', 'gauss1d.g1')
+    ui.set_full_model('psf1(gauss1d.g2) + const1d.c1')
+    ui.get_model()
+
+
+def test_ui_set_full_model_2d(clean_ui, setup_ui_2d):
+    ui.load_psf('psf1', 'gauss2d.g1')
+    ui.set_full_model('psf1(gauss2d.g2 ) +const2d.c1')
+    ui.get_model()
+
+
+def test_ui_set_full_model_mismatch_2d(clean_ui, setup_ui):
     ui.load_psf('psf1', 'gauss2d.g1')
     ui.set_full_model('psf1(gauss2d.g2)+const2d.c1')
+    # Ideally this would fail but it currently does not
     ui.get_model()
+
+
+def test_ui_set_full_model_2d_mismatch_1d(clean_ui, setup_ui_2d):
+    ui.load_psf('psf1', 'gauss1d.g1')
+    ui.set_full_model('psf1(gauss1d.g2 ) +const1d.c1')
+    # Ideally this would fail but it currently does not
+    ui.get_model()
+
+
+def test_ui_set_full_model_checks_dimensions_match(clean_ui, setup_ui_2d):
+    ui.load_psf('psf1', 'gauss2d.g1')
+    with pytest.raises(ArgumentErr) as err:
+        ui.set_full_model('psf1(gauss1d.g2)+const2d.c1')
+
+    assert str(err.value) == "invalid model expression: Models do not match: 2D (gauss2d.g1) and 1D (gauss1d.g2)"
 
 
 # Bug 12644
 @requires_data
-def test_ui_source_methods_with_full_model(clean_ui, setup_ui):
+def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full):
 
-    ui.load_data('full', setup_ui.ascii)
+    ui.load_data('full', setup_ui_full.ascii)
     ui.set_full_model('full', 'powlaw1d.p1')
 
     # Test Case 1
@@ -263,7 +301,7 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui):
     ui.get_source('full')
 
     # Test Case 3
-    ui.load_data('not_full', setup_ui.ascii)
+    ui.load_data('not_full', setup_ui_full.ascii)
     with pytest.raises(IdentifierErr) as exc:
         ui.get_source('not_full')
 
