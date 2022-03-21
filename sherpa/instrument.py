@@ -87,14 +87,46 @@ class ConvolutionModel(CompositeModel, ArithmeticModel):
 
 
 class Kernel(NoNewAttributesAfterInit):
-    "Base class for convolution kernels"
+    """Base class for convolution kernels
+
+    There are some validation checks made when the object is created
+    but not when fields are changed. The assumption is that concepts
+    like the dimensionality of the kernel are not going to be changed.
+
+    """
 
     def __init__(self, dshape, kshape, norm=False, frozen=True,
                  center=None, args=[], kwargs={},
                  do_pad=False, pad_mask=None, origin=None):
 
+        # As these are low-level routines use Python exceptions
+        # rather than the Sherpa-specific ones.
+        #
+        try:
+            nd = len(dshape)
+        except TypeError:
+            raise TypeError("dshape must be a sequence")
+
+        try:
+            nk = len(kshape)
+        except TypeError:
+            raise TypeError("kshape must be a sequence")
+
+        if nd != nk:
+            raise ValueError(f"dshape and kshape must be the same size, not {nd} and {nk}")
+
+        if nd == 0:
+            raise ValueError("0D kernel is not supported")
+
+        # There is a specific PSFErr here so use it.
+        if nd > 2:
+            raise PSFErr("ndim")
+
+        self.ndim = nd
+
         if origin is None:
-            origin = numpy.zeros(len(kshape))
+            origin = numpy.zeros(self.ndim)
+
         self.dshape = dshape
         self.kshape = kshape
         self.kernel = None
@@ -145,6 +177,9 @@ class Kernel(NoNewAttributesAfterInit):
         ]
         return "\n".join(ss)
 
+    # The kernel is a 1D array and does not know it's original
+    # dimensions.
+    #
     def init_kernel(self, kernel):
         if not self.frozen:
             self._tcd.clear_kernel_fft()
@@ -354,6 +389,9 @@ class RadialProfileKernel(PSFKernel):
                          frozen, center, size, lo, hi, width, args, kwargs,
                          pad_mask, do_pad, origin)
         self.radial = 1  # over-ride super-class
+
+        if self.ndim != 1:
+            raise PSFErr(f"Radial profile requires 1D data, not {self.ndim}D")
 
     def __str__(self):
         return (PSFKernel.__str__(self) + "\n" +
@@ -623,6 +661,24 @@ they do not match.
         """
         return self._model
 
+    def _set_model(self, model):
+        """Set the model, after checking the dimensions
+
+        This is not made into the model.setter property as the idea is
+        that external users do not change this setting.
+
+        """
+
+        if model is None:
+            self._model = None
+            return
+
+        # Is this worthwhile
+        if self.ndim is not None and self.ndim != model.ndim:
+            raise PSFErr(f"Dimension of model do not match the kernel: {model.ndim}D and {self.ndim}D")
+
+        self._model = model
+
     def _get_array_str(self, name, value):
         """Display the 'array-like' fields"""
 
@@ -784,7 +840,7 @@ they do not match.
             for kwarg in ['is_model', 'size']:
                 kwargs.pop(kwarg)
 
-            self._model = Kernel(dshape, kshape, **kwargs)
+            self._set_model(Kernel(dshape, kshape, **kwargs))
             return
 
         # TODO:
@@ -803,10 +859,10 @@ they do not match.
         # the former is clearer?
         #
         if int(self.radial.val):
-            self._model = RadialProfileKernel(dshape, kshape, **kwargs)
+            self._set_model(RadialProfileKernel(dshape, kshape, **kwargs))
             return
 
-        self._model = PSFKernel(dshape, kshape, **kwargs)
+        self._set_model(PSFKernel(dshape, kshape, **kwargs))
 
     def _get_kernel_data(self, data, subkernel=True):
         # NOTE: do we need to return the lo and hi values as they do not

@@ -712,19 +712,16 @@ def test_psf_set_model_to_bool(kernel_func):
         m.model = False
 
 
-@pytest.mark.parametrize("dshape,kshape",
-                         [pytest.param(None, None, marks=pytest.mark.xfail), (None, [1]), pytest.param([1], None, marks=pytest.mark.xfail),
-                          ([1], [1, 2]), ([1, 2], [1]),
-                          ([], [1]), ([1], []),
-                          ([1, 3, 4], ([1, 2, 3]))])
-def test_kernel_checks_arguments(dshape, kshape):
-    """Do these error out?
+@pytest.mark.parametrize("dshape,kshape,exc",
+                         [(None, None, TypeError), (None, [1], TypeError), ([1], None, TypeError),
+                          ([1], [1, 2], ValueError), ([1, 2], [1], ValueError),
+                          ([], [1], ValueError), ([1], [], ValueError),
+                          ([1, 3, 4], ([1, 2, 3]), PSFErr)])
+def test_kernel_checks_arguments(dshape, kshape, exc):
+    """Check that we error out"""
 
-    This is a regression test.
-    """
-
-    # XFAIL: when kshape is None a TypeError is raised from len(None)
-    Kernel(dshape, kshape)
+    with pytest.raises(exc):
+        Kernel(dshape, kshape)
 
 
 def test_kernel_is_not_0d():
@@ -734,17 +731,17 @@ def test_kernel_is_not_0d():
     This is a regression test.
     """
 
-    # This does not error out
-    Kernel([], [])
+    with pytest.raises(ValueError,
+                       match="0D kernel is not supported"):
+        Kernel([], [])
 
 
 def test_radialprofile_is_1d():
-    """Do these error out?
+    """Check that we error out"""
 
-    This is a regression test.
-    """
-
-    RadialProfileKernel([10, 10], [4, 3])
+    with pytest.raises(PSFErr,
+                       match="^Radial profile requires 1D data, not 2D$"):
+        RadialProfileKernel([10, 10], [4, 3])
 
 
 def test_kernel_repr():
