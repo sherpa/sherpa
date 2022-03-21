@@ -31,8 +31,8 @@ import pytest
 from sherpa.data import Data1D, Data2D
 from sherpa.instrument import Kernel, PSFModel, RadialProfileKernel, \
     ConvolutionKernel, PSFKernel
-from sherpa.models.basic import Box1D, Box2D, Const1D, Const2D, \
-    Gauss1D, Gauss2D, StepLo1D, TableModel
+from sherpa.models.basic import Box1D, Box2D, Const1D, Const2D, Gauss1D, \
+    StepLo1D, TableModel
 from sherpa.utils.err import PSFErr
 
 
@@ -619,21 +619,6 @@ def test_psf1d_model_given_2d_dataset():
                        match="kernel 'box1' and data 'twod' do not match: 1D vs 2D"):
         psf.fold(d)
 
-    smdl = StepLo1D()
-    smdl.xcut = 100
-    smdl.ampl = 10
-
-    cmdl = Const1D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(PSFErr,
-                       match="PSF model has not been folded"):
-        smoothed(np.arange(1, 7))
-
 
 def test_psf1d_data_given_2d_dataset():
     """Check that we error out"""
@@ -644,21 +629,6 @@ def test_psf1d_data_given_2d_dataset():
     with pytest.raises(PSFErr,
                        match="kernel 'oned' and data 'twod' do not match: 1D vs 2D"):
         psf.fold(d)
-
-    smdl = StepLo1D()
-    smdl.xcut = 100
-    smdl.ampl = 10
-
-    cmdl = Const1D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(PSFErr,
-                       match="PSF model has not been folded"):
-        smoothed(np.arange(1, 7))
 
 
 def test_psf2d_model_given_1d_dataset():
@@ -671,20 +641,6 @@ def test_psf2d_model_given_1d_dataset():
                        match="kernel 'box2' and data 'oned' do not match: 2D vs 1D"):
         psf.fold(d)
 
-    smdl = Gauss2D()
-    smdl.ampl = 1000
-
-    cmdl = Const2D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(PSFErr,
-                       match="PSF model has not been folded"):
-        smoothed(np.arange(1, 7))
-
 
 def test_psf2d_data_given_1d_dataset():
     """Check that we error out"""
@@ -695,20 +651,6 @@ def test_psf2d_data_given_1d_dataset():
     with pytest.raises(PSFErr,
                        match="kernel 'twod' and data 'oned' do not match: 2D vs 1D"):
         psf.fold(d)
-
-    smdl = Gauss2D()
-    smdl.ampl = 1000
-
-    cmdl = Const2D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(PSFErr,
-                       match="PSF model has not been folded"):
-        smoothed(np.arange(1, 7))
 
 
 @pytest.mark.parametrize("kernel_func", [make_1d_model, make_1d_data])
@@ -761,8 +703,13 @@ def test_psf_set_model_to_bool(kernel_func):
     """
 
     m = PSFModel(kernel=kernel_func())
-    # This does not error out
-    m.model = False
+    with pytest.raises(AttributeError,
+                       # The exact message depends on python version,
+                       # as 3.10 includes the attribute name - here
+                       # 'model' - and 3.9 and earlier does not.
+                       #
+                       match="can't set attribute"):
+        m.model = False
 
 
 @pytest.mark.parametrize("dshape,kshape",

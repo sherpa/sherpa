@@ -462,6 +462,7 @@ class PSFModel(Model):
         self._origin = None
         self._center = None
         self._must_rebin = False
+        self._model = None
 
         self._kernel = None
 
@@ -471,7 +472,6 @@ class PSFModel(Model):
                               alwaysfrozen=True)
 
         self.kernel = kernel
-        self.model = None
         self.data_space = None
         self.psf_space = None
         super().__init__(name)
@@ -480,6 +480,9 @@ class PSFModel(Model):
         return self._kernel
 
     def _set_kernel(self, kernel):
+
+        # Always clear the model
+        self._model = None
 
         odim = self.ndim
         if odim is None:
@@ -610,6 +613,15 @@ they do not match.
         self._set_field("_origin", vals)
 
     origin = property(_get_origin, _set_origin, doc='FFT origin')
+
+    @property
+    def model(self):
+        """The model that applies the convolution.
+
+        This is set by the `fold` method and can not be changed
+        directly.
+        """
+        return self._model
 
     def _get_array_str(self, name, value):
         """Display the 'array-like' fields"""
@@ -772,7 +784,7 @@ they do not match.
             for kwarg in ['is_model', 'size']:
                 kwargs.pop(kwarg)
 
-            self.model = Kernel(dshape, kshape, **kwargs)
+            self._model = Kernel(dshape, kshape, **kwargs)
             return
 
         # TODO:
@@ -791,10 +803,10 @@ they do not match.
         # the former is clearer?
         #
         if int(self.radial.val):
-            self.model = RadialProfileKernel(dshape, kshape, **kwargs)
+            self._model = RadialProfileKernel(dshape, kshape, **kwargs)
             return
 
-        self.model = PSFKernel(dshape, kshape, **kwargs)
+        self._model = PSFKernel(dshape, kshape, **kwargs)
 
     def _get_kernel_data(self, data, subkernel=True):
         # NOTE: do we need to return the lo and hi values as they do not
