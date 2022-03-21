@@ -44,7 +44,7 @@ from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, \
     PowLaw1D, TableModel
 from sherpa.models.model import ArithmeticModel, \
     ArithmeticConstantModel, BinaryOpModel
-from sherpa.utils.err import DataErr
+from sherpa.utils.err import DataErr, PSFErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 
 try:
@@ -1756,8 +1756,8 @@ def test_psfmodel_kernel_has_no_dimension():
     data = Data1D("data-data", x, y)
 
     m = PSFModel(kernel=TableModel())
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(PSFErr,
+                       match="PSF model dimension must be <= 2"):
         m.get_kernel(data)
 
 

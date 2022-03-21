@@ -27,7 +27,7 @@ from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, CompositeModel, Model
 from sherpa.models.parameter import Parameter
-from sherpa.models.regrid import EvaluationSpace2D, rebin_2d
+from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D, rebin_2d
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
@@ -766,11 +766,16 @@ they do not match.
         if self.kernel is None:
             raise PSFErr('nopsf', self._name)
 
-        kwargs = {"norm": bool_cast(self.norm.val)}
-
         # TODO: Should we treat origin as we do center and size?
-        kwargs['origin'] = self.origin
+        kwargs = {"norm": bool_cast(self.norm.val),
+                  "origin": self.origin
+                  }
 
+        # This validates the dimensionality of data.
+        #
+        # TODO: can we remove the ndim checks in the code below? I am
+        # not convinced yet, so leave them in.
+        #
         (args, dshape) = self._create_spaces(data)
         kwargs['args'] = args
 
@@ -783,6 +788,7 @@ they do not match.
             if nkernel != data.ndim:
                 raise PSFErr("mismatch_dims", self.kernel.name,
                              data.name, nkernel, data.ndim)
+
 
             if self.center is None:
                 self.center = [int(dim / 2.) for dim in kshape]
@@ -865,19 +871,12 @@ they do not match.
         self._set_model(PSFKernel(dshape, kshape, **kwargs))
 
     def _get_kernel_data(self, data, subkernel=True):
-        # NOTE: do we need to return the lo and hi values as they do not
-        #       appear to be used
-        #
         if self.kernel is None:
             raise PSFErr('notset')
 
         self.fold(data)
-        kernel = self.kernel
-        dep = None
-        indep = None
-        lo = None
-        hi = None
 
+        kernel = self.kernel
         if isinstance(kernel, Data):
             dep = numpy.asarray(kernel.get_dep())
             indep = kernel.get_indep()
@@ -887,6 +886,9 @@ they do not match.
             indep = self.model.args
 
         kshape = self.model.kshape
+        lo = None
+        hi = None
+
         if subkernel:
             (dep, newshape) = self.model.init_kernel(dep)
 
@@ -901,10 +903,15 @@ they do not match.
                                           self.model.hi,
                                           self.model.width,
                                           self.model.radial)
-                    newaxis = args[0]
-                    lo = args[3]  # subkernel offsets (lower bound)
-                    hi = args[4]  # subkernel offsets (upper bound)
-                    newindep.append(newaxis)
+                    newindep.append(args[0])
+
+                    # TODO: shouldn't we store these values like we do
+                    # newindep?  This looks to be a bug but we do not
+                    # have tests to check the expected behavior (it
+                    # requires DataIMG + WCS data).
+                    #
+                    lo = args[3]
+                    hi = args[4]
 
                 indep = newindep
 
@@ -919,36 +926,78 @@ they do not match.
         return (indep, dep, kshape, lo, hi)
 
     def get_kernel(self, data, subkernel=True):
+        """Return a data object representing the kernel.
 
-        indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
+        Parameters
+        ----------
+        data : sherpa.data.Data or sherpa.models.model.Model instance
+            The data to apply the kernel to. This routine will pass
+            `data` to the `fold` method.
+        subkernel : bool, optional
 
+        Returns
+        -------
+        data : sherpa.data.Data1D or sherpa.data.Data2D instance
+
+        """
+
+        kdata = self._get_kernel_data(data, subkernel)
+        indep = kdata[0]
+        dep = kdata[1]
+        kshape = kdata[2]
+
+        # ndim should be the same as self.ndim
         ndim = len(kshape)
-        if ndim == 1:
-            dataset = Data1D('kernel', indep[0], dep)
-        elif ndim == 2:
-            dataset = Data2D('kernel', indep[0], indep[1], dep,
-                             kshape[::-1])
-        else:
-            raise PSFErr('ndim')
 
-        return dataset
+        # TODO: what happens with integrated datasets? This currently
+        # returns the low edge of each bin. Should it use the center of
+        # the bin or use the full ranges? Is this even an issue?
+        #
+        if ndim == 1:
+            return Data1D('kernel', indep[0], dep)
+
+        if ndim == 2:
+            # Note that the shape order is reversed.
+            return Data2D('kernel', indep[0], indep[1], dep, kshape[::-1])
+
+        raise PSFErr('ndim')
 
     def _create_spaces(self, data):
         """Setup the data space based on the pixel size."""
 
         # This has been pulled out of fold so is currently lacking in documentation.
         #
+        # To support using any callable, not just a model, we need
+        # to allow the "kernel dimensinoality" to be unknown. The
+        # alternative is to require the kernel to nave a ndim
+        # attribute, but there are a number of places the code
+        # allows the kernel to not be a model instance (e.g. the
+        # checks for pars/thawedpars).
+        #
+        if self.ndim is not None and hasattr(data, "ndim") and data.ndim != self.ndim:
+            raise PSFErr("mismatch_dims", self.kernel.name, data.name,
+                         self.ndim, data.ndim)
+
         pixel_size_comparison = self._check_pixel_size(data)
 
         indep = data.get_indep()
 
         # Don't do anything special
         if pixel_size_comparison == self.SAME_RESOLUTION:
-            self.data_space = EvaluationSpace2D(*indep)
+            if self.ndim == 1:
+                self.data_space = EvaluationSpace1D(*indep)
+            elif self.ndim == 2:
+                self.data_space = EvaluationSpace2D(*indep)
+            else:
+                # leave in in case we support higher dimensions
+                raise PSFErr("ndim")
+
             self._must_rebin = False
             return (indep, data.get_dims())
 
-        # Evaluate model in PSF space
+        # Evaluate model in PSF space. Note that if we get here then
+        # we have to have 2D data.
+        #
         if pixel_size_comparison == self.BETTER_RESOLUTION:
             self.data_space = EvaluationSpace2D(*indep)
             self.psf_space = PSFSpace2D(self.data_space, self, data.sky.cdelt)

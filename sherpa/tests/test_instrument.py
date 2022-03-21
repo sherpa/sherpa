@@ -272,8 +272,8 @@ def test_psfmodel_kernel_has_no_dimension():
     data = Data1D("data-data", x, y)
 
     m = PSFModel(kernel=TableModel())
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(PSFErr,
+                       match="PSF model dimension must be <= 2"):
         m.get_kernel(data)
 
 

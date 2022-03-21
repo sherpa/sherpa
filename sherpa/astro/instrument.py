@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observator
+#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observator
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1187,7 +1187,7 @@ class PileupResponse1D(NoNewAttributesAfterInit):
 class PSFModel(_PSFModel):
 
     def fold(self, data):
-        _PSFModel.fold(self, data)
+        super().fold(data)
 
         # Set WCS coordinates of kernel data set to match source data set.
         if hasattr(self.kernel, "set_coord"):
@@ -1196,6 +1196,11 @@ class PSFModel(_PSFModel):
     def get_kernel(self, data, subkernel=True):
 
         indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
+
+        # ndim should be the same as self.ndim
+        ndim = len(kshape)
+        if ndim == 1:
+            return Data1D('kernel', indep[0], dep)
 
         # Use kernel data set WCS if available
         eqpos = getattr(self.kernel, 'eqpos', None)
@@ -1206,12 +1211,7 @@ class PSFModel(_PSFModel):
             eqpos = getattr(data, 'eqpos', None)
             sky = getattr(data, 'sky', None)
 
-        dataset = None
-        ndim = len(kshape)
-        if ndim == 1:
-            dataset = Data1D('kernel', indep[0], dep)
-
-        elif ndim == 2:
+        if ndim == 2:
 
             # Edit WCS to reflect the subkernel extraction in
             # physical coordinates.
@@ -1226,12 +1226,10 @@ class PSFModel(_PSFModel):
                 # FIXME: Support for WCS only (non-Chandra) coordinate
                 # transformations?
 
-            dataset = DataIMG('kernel', indep[0], indep[1], dep,
-                              kshape[::-1], sky=sky, eqpos=eqpos)
-        else:
-            raise PSFErr('ndim')
+            return DataIMG('kernel', indep[0], indep[1], dep,
+                           kshape[::-1], sky=sky, eqpos=eqpos)
 
-        return dataset
+        raise PSFErr('ndim')
 
 
 def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
