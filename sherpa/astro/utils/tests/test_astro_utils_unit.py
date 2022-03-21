@@ -571,7 +571,7 @@ def test_calc_data_sum2d_no_range_2d(data_class):
 
 
 # XFAIL: We can not use DataIMGInt here because of issue #1379
-@pytest.mark.parametrize("data_class", ["img", pytest.param("imgnit", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("data_class", ["img", pytest.param("imgint", marks=pytest.mark.xfail)])
 def test_calc_data_sum2d_filtered_2d(data_class):
     """Call calc_data_sum2d(data, region)"""
 
@@ -580,6 +580,7 @@ def test_calc_data_sum2d_filtered_2d(data_class):
     assert np.iterable(data.mask)
     omask = data.mask.copy()
     orig = data.get_dep(filter=True).copy()
+    # XFAIL: DataIMGInt returns 7, not 16
     assert utils.calc_data_sum2d(data, "rect(0, 0, 2, 3)") == 16
     assert data.mask == pytest.approx(omask)
     assert data.get_dep(filter=True) == pytest.approx(orig)

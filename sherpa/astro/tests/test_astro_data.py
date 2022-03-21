@@ -26,6 +26,7 @@ import pytest
 
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.utils import parse_expr
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
@@ -282,100 +283,6 @@ def test_bug_275(make_data_path):
 # are seen with released data products, so it is not sensible to
 # error out for all errors.
 #
-# The create_arf/create_delta_rmf routines are similar to those in
-# test_instrument.py
-#
-def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None):
-    """Create an ARF.
-
-    Parameters
-    ----------
-    elo, ehi : array
-        The energy bins (low and high, in keV) for the ARF. It is
-        assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
-        either ascending - so elo_i+1 > elo_i - or descending
-        (elo_i+1 < elo_i), and that there are no overlaps.
-    specresp : None or array, optional
-        The spectral response (in cm^2) for the ARF. It is assumed
-        to be >= 0. If not given a flat response of 1.0 is used.
-    exposure : number or None, optional
-        If not None, the exposure of the ARF in seconds.
-    ethresh : number or None, optional
-        Passed through to the DataARF call. It controls whether
-        zero-energy bins are replaced.
-
-    Returns
-    -------
-    arf : DataARF instance
-
-    """
-
-    assert elo.size == ehi.size
-    assert (exposure is None) or (exposure > 0.0)
-
-    if specresp is None:
-        specresp = np.ones(elo.size, dtype=np.float32)
-
-    return DataARF('test-arf', energ_lo=elo, energ_hi=ehi,
-                   specresp=specresp, exposure=exposure, ethresh=ethresh)
-
-
-def create_delta_rmf(rmflo, rmfhi, startchan=1,
-                     e_min=None, e_max=None, ethresh=None):
-    """Create a RMF for a delta-function response.
-
-    This is a "perfect" (delta-function) response.
-
-    Parameters
-    ----------
-    rmflo, rmfhi : array
-        The energy bins (low and high, in keV) for the RMF.
-        It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
-        bins are either ascending, so rmflo_i+1 > rmflo_i or descending
-        (rmflo_i+1 < rmflo_i), and that there are no overlaps.
-        These correspond to the Elow and Ehigh columns (represented
-        by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
-        the OGIP standard.
-    startchan : int, optional
-        The starting channel number: expected to be 0 or 1 but this is
-        not enforced.
-    e_min, e_max : None or array, optional
-        The E_MIN and E_MAX columns of the EBOUNDS block of the
-        RMF.
-    ethresh : number or None, optional
-        Passed through to the DataARF call. It controls whether
-        zero-energy bins are replaced.
-
-    Returns
-    -------
-    rmf : DataRMF instance
-
-    Notes
-    -----
-    I do not think I have the startchan=0 case correct (does the
-    f_chan array have to change?).
-    """
-
-    assert rmflo.size == rmfhi.size
-    assert startchan >= 0
-
-    # Set up the delta-function response.
-    # TODO: should f_chan start at startchan?
-    #
-    nchans = rmflo.size
-    matrix = np.ones(nchans, dtype=np.float32)
-    dummy = np.ones(nchans, dtype=np.int16)
-    f_chan = np.arange(1, nchans + 1, dtype=np.int16)
-
-    return DataRMF('delta-rmf', detchans=nchans,
-                   energ_lo=rmflo, energ_hi=rmfhi,
-                   n_grp=dummy, n_chan=dummy,
-                   f_chan=f_chan, matrix=matrix,
-                   offset=startchan,
-                   e_min=e_min, e_max=e_max,
-                   ethresh=ethresh)
-
-
 @pytest.mark.parametrize("ethresh", [0.0, -1e-10, -100])
 def test_arf_with_non_positive_thresh(ethresh):
     """Check the error-handling works when ethresh <= 0"""
@@ -409,9 +316,9 @@ def test_arf_with_swapped_energy_bounds(idx):
     energ_lo[idx], energ_hi[idx] = energ_hi[idx], energ_lo[idx]
 
     if idx != -1:
-        expected_warnings = [_bin_warning('ARF', 'test-arf'), _monotonic_warning('ARF', 'test-arf')]
+        expected_warnings = [_bin_warning('ARF', 'user-arf'), _monotonic_warning('ARF', 'user-arf')]
     else:
-        expected_warnings = [_bin_warning('ARF', 'test-arf')]
+        expected_warnings = [_bin_warning('ARF', 'user-arf')]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -447,7 +354,7 @@ def test_arf_with_non_monotonic_grid(idx):
     energ_lo[idx], energ_lo[idx1] = energ_lo[idx1], energ_lo[idx]
     energ_hi[idx], energ_hi[idx1] = energ_hi[idx1], energ_hi[idx]
 
-    expected_warnings = [_monotonic_warning('ARF', 'test-arf')]
+    expected_warnings = [_monotonic_warning('ARF', 'user-arf')]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -478,7 +385,7 @@ def test_arf_with_zero_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
+    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
 
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
@@ -500,7 +407,7 @@ def test_arf_with_zero_energy_elem_replace():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    expected_warnings = [UserWarning("The minimum ENERG_LO in the ARF 'test-arf' was 0 " +
+    expected_warnings = [UserWarning("The minimum ENERG_LO in the ARF 'user-arf' was 0 " +
                                      "and has been replaced by {}".format(ethresh))]
 
     with warnings.catch_warnings(record=True) as ws:
@@ -545,7 +452,7 @@ def test_arf_with_grid_below_thresh_zero():
     energ_lo[0] = 0.0
     energ_hi[0] = 1e-7
 
-    emsg = "The ARF 'test-arf' has an ENERG_HI value <= " + \
+    emsg = "The ARF 'user-arf' has an ENERG_HI value <= " + \
            "the replacement value of 1e-05"
 
     with pytest.raises(DataErr) as exc:
@@ -725,7 +632,7 @@ def test_arf_with_negative_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
+    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
@@ -749,7 +656,7 @@ def test_arf_with_negative_energy_elem_replace():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    expected_warnings = [UserWarning("The ARF 'test-arf' has an ENERG_LO value < 0")]
+    expected_warnings = [UserWarning("The ARF 'user-arf' has an ENERG_LO value < 0")]
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")

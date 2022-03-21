@@ -344,7 +344,7 @@ def setup_err_estimate_multi_ids(strings=False):
     and was evaluated and passed through sherpa.utils.poisson_noise
     to create the datasets.
 
-    Since we can have strnig or integer ids we allow either,
+    Since we can have string or integer ids we allow either,
     but do not try to mix them.
 
     """

@@ -497,19 +497,31 @@ def test_stats_calc_stat_wstat_diffbins():
 
     data, model = setup_single_pha(True, False, background=True)
 
-    # Tweak data to have one-less bin than the background
-    counts = data.counts[:-1]
-    staterr = data.staterror[:-1]
-    grouping = data.grouping[:-1]
+    # Tweak data to have one-less bin than the background. This
+    # used to be easy but with data validation we need to
+    # create a new object.
+    #
+    data2 = DataPHA("faked",
+                    channel=data.channel[:-1],
+                    counts=data.counts[:-1],
+                    staterror=data.staterror[:-1],
+                    grouping=data.grouping[:-1],
+                    exposure=data.exposure,
+                    backscal=data.backscal,
+                    areascal=data.areascal)
 
-    data.channel = data.channel[:-1]
-    data.counts = counts
-    data.staterror = staterr
-    data.grouping = grouping
+    # We might expect the ARF/RMF calls to fail if we add validation
+    # (to check the ARF/RMF is valid for the PHA dataset).
+    #
+    data2.set_arf(data.get_arf())
+    data2.set_rmf(data.get_rmf())
+    data2.set_background(data.get_background())
 
     # There is no Sherpa error for this, which seems surprising
-    with pytest.raises(TypeError):
-        statobj.calc_stat(data, model)
+    with pytest.raises(TypeError) as err:
+        statobj.calc_stat(data2, model)
+
+    assert str(err.value) == "input array sizes do not match, data: 5 vs group: 4"
 
 
 # Numeric answers calculated using CIAO 4.8 (sherpa 4.8.0)
