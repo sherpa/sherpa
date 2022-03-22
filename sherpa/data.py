@@ -251,6 +251,10 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         return self if evaluation_space is None else evaluation_space
 
 
+# We do not inherit from EvaluationSpace2D because that would require
+# that the x0 and x1 arrays form a grid (e.g. nx by ny) and we need
+# to be able to support a non-grid set of points.
+#
 class DataSpace2D():
     """
     Class for representing 2-D Data Spaces. Data Spaces are spaces that describe the data domain.
@@ -786,8 +790,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         get_dep : Return the dependent axis of a data set.
 
         """
-        data_space = self._data_space.get(filter)
-        return data_space.grid
+        return self._data_space.get(filter).grid
 
     def set_indep(self, val):
         self.indep = val
@@ -816,9 +819,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         dep = self.dep
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             dep = self.apply_filter(dep)
+
         return dep
 
     def set_dep(self, val):
@@ -837,7 +840,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
             dep = numpy.asarray(val, SherpaFloat)
         else:
             val = SherpaFloat(val)
-            dep = numpy.array([val] * len(self.get_indep()[0]))
+            dep = val * numpy.ones(len(self.get_indep()[0]), dtype=SherpaFloat)
+
         self.y = dep
 
     def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
@@ -862,6 +866,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
             y2 = self.eval_model_to_fit(yfunc)
         else:
             y2 = self.eval_model(yfunc)
+
         return (y, y2)
 
     def get_staterror(self, filter=False, staterrfunc=None):
@@ -897,10 +902,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
             staterror = self.apply_filter(staterror)
 
         if (staterror is None) and (staterrfunc is not None):
-            dep = self.get_dep()
-            if filter:
-                dep = self.apply_filter(dep)
+            dep = self.get_dep(filter)
             staterror = staterrfunc(dep)
+
         return staterror
 
     def get_syserror(self, filter=False):
@@ -927,9 +931,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         syserr = getattr(self, 'syserror', None)
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             syserr = self.apply_filter(syserr)
+
         return syserr
 
     def get_error(self, filter=False, staterrfunc=None):
@@ -1086,19 +1090,20 @@ class DataSimulFit(NoNewAttributesAfterInit):
             for func, data in zip(modelfuncs, self.datasets):
                 tmp_model = data.eval_model_to_fit(func)
                 total_model.append(tmp_model)
+
             return numpy.concatenate(total_model)
-        else:
-            # best to make this a different derived class
-            funcs = []
-            datasets = []
-            for func, data in zip(modelfuncs, self.datasets):
-                funcs.append(func)
-                datasets.append(data.get_indep(filter=False))
-            total_model = parallel_map_funcs(funcs, datasets, self.numcores)
-            all_model = []
-            for model, data in zip(total_model, self.datasets):
-                all_model.append(data.apply_filter(model))
-            return numpy.concatenate(all_model)
+
+        # best to make this a different derived class
+        funcs = []
+        datasets = []
+        for func, data in zip(modelfuncs, self.datasets):
+            funcs.append(func)
+            datasets.append(data.get_indep(filter=False))
+        total_model = parallel_map_funcs(funcs, datasets, self.numcores)
+        all_model = []
+        for model, data in zip(total_model, self.datasets):
+            all_model.append(data.apply_filter(model))
+        return numpy.concatenate(all_model)
 
     def to_fit(self, staterrfunc=None):
         total_dep = []
@@ -1217,6 +1222,7 @@ class Data1D(Data):
             # create bounding box around noticed image regions
             mask = numpy.array(self.mask)
             size = (mask.size,)
+
         return mask, size
 
     def get_img(self, yfunc=None):
@@ -1237,13 +1243,15 @@ class Data1D(Data):
                      y_img[1].reshape(1, y_img[1].size))
         else:
             y_img = y_img.reshape(1, y_img.size)
+
         return y_img
 
     def get_imgerr(self):
         err = self.get_error()
-        if err is not None:
-            err = err.reshape(1, err.size)
-        return err
+        if err is None:
+            return None
+
+        return err.reshape(1, err.size)
 
     def get_filter(self, format='%.4f', delim=':'):
         """Return the data filter as a string.
@@ -1287,6 +1295,7 @@ class Data1D(Data):
             mask = self.mask
         else:
             mask = numpy.ones(len(x), dtype=bool)
+
         return create_expr(x, mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
@@ -1640,6 +1649,7 @@ class Data2D(Data):
         # self._check_shape()
         if self.shape is not None:
             return self.shape[::-1]
+
         return len(self.get_x0(filter)), len(self.get_x1(filter))
 
     def get_filter_expr(self):
@@ -1672,6 +1682,7 @@ class Data2D(Data):
         """
         if dep is None:
             dep = self.get_dep(True)
+
         x0 = self.get_x0(True)
         x1 = self.get_x1(True)
 

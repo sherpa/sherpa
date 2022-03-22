@@ -1559,12 +1559,13 @@ must be an integer.""")
     def _set_response_ids(self, ids):
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
+
         keys = self._responses.keys()
         for id in ids:
             if id not in keys:
                 raise DataErr('badids', str(id), 'response', str(keys))
-        ids = list(ids)
-        self._response_ids = ids
+
+        self._response_ids = list(ids)
 
     response_ids = property(_get_response_ids, _set_response_ids,
                             doc=('IDs of defined instrument responses ' +
@@ -1576,12 +1577,13 @@ must be an integer.""")
     def _set_background_ids(self, ids):
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
+
         keys = self._backgrounds.keys()
         for id in ids:
             if id not in keys:
                 raise DataErr('badids', str(id), 'background', str(keys))
-        ids = list(ids)
-        self._background_ids = ids
+
+        self._background_ids = list(ids)
 
     background_ids = property(_get_background_ids, _set_background_ids,
                               doc='IDs of defined background data sets')
@@ -1765,9 +1767,10 @@ must be an integer.""")
         return self.units
 
     def _fix_response_id(self, id):
-        if id is None:
-            id = self.primary_response_id
-        return id
+        if id is not None:
+            return id
+
+        return self.primary_response_id
 
     def get_response(self, id=None):
         """Return the response component.
@@ -1829,6 +1832,7 @@ must be an integer.""")
         ids = self.response_ids[:]
         if id not in ids:
             ids.append(id)
+
         self.response_ids = ids
 
         # To support simulated data (e.g. issue #1209) we over-write
@@ -1987,7 +1991,6 @@ must be an integer.""")
            component).
 
         """
-        filter = bool_cast(filter)
         self.notice_response(False)
         arf, rmf = self.get_response()
 
@@ -2002,7 +2005,7 @@ must be an integer.""")
         newarf = interpolate(lo, elo, specresp)
         newarf[newarf <= 0] = 1.
 
-        if filter:
+        if bool_cast(filter):
             newarf = self.apply_filter(newarf, self._middle)
 
         return newarf
@@ -2305,6 +2308,7 @@ must be an integer.""")
                 vals = tiny
         else:
             vals[vals == 0.0] = tiny
+
         vals = hc / vals
         return vals
 
@@ -2312,9 +2316,10 @@ must be an integer.""")
     """The identifier for the background component when not set."""
 
     def _fix_background_id(self, id):
-        if id is None:
-            id = self.default_background_id
-        return id
+        if id is not None:
+            return id
+
+        return self.default_background_id
 
     def get_background(self, id=None):
         """Return the background component.
@@ -2554,8 +2559,9 @@ must be an integer.""")
 
         """
         if numpy.isscalar(scale) and scale <= 0.0:
-            scale = 1.0
-        elif numpy.iterable(scale):
+            return 1.0
+
+        if numpy.iterable(scale):
             scale = numpy.asarray(scale, dtype=SherpaFloat)
             if group:
                 if filter:
@@ -2564,6 +2570,7 @@ must be an integer.""")
                     scale = self.apply_grouping(scale, self._middle)
 
             scale[scale <= 0.0] = 1.0
+
         return scale
 
     def get_backscal(self, group=True, filter=False):
@@ -3377,7 +3384,6 @@ must be an integer.""")
         # return self.counts - self.sum_background_data()
 
         dep = self.counts
-        filter = bool_cast(filter)
 
         # The area scaling is not applied to the data, since it
         # should be being applied to the model via the *PHA
@@ -3392,8 +3398,9 @@ must be an integer.""")
                 raise DataErr("subtractlength")
             dep = dep - bkg
 
-        if filter:
+        if bool_cast(filter):
             dep = self.apply_filter(dep)
+
         return dep
 
     # The code used to re-define set_dep, but the only difference
@@ -3614,11 +3621,11 @@ must be an integer.""")
         There is no scaling by the AREASCAL setting.
         """
         syserr = self.syserror
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             syserr = self.apply_filter(syserr, self._sum_sq)
         else:
             syserr = self.apply_grouping(syserr, self._sum_sq)
+
         return syserr
 
     def get_x(self, filter=False, response_id=None):
@@ -3634,6 +3641,7 @@ must be an integer.""")
             xlabel += ' (Angstrom)'
         # elif self.units == 'channel' and self.grouped:
         #     xlabel = 'Group Number'
+
         return xlabel
 
     def _set_initial_quantity(self):
@@ -3743,8 +3751,7 @@ must be an integer.""")
         return self._fix_y_units(err, filter, response_id)
 
     def get_xerr(self, filter=False, response_id=None):
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             # If we apply a filter, make sure that
             # ebins are ungrouped before applying
             # the filter.
@@ -3883,6 +3890,7 @@ must be an integer.""")
         chans = self.get_noticed_channels()
         if self.mask is False or len(chans) == 0:
             return 'No noticed channels'
+
         return create_expr(chans, format='%i')
 
     def get_filter(self, group=True, format='%.12f', delim=':'):
