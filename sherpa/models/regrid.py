@@ -226,7 +226,7 @@ class EvaluationSpace1D():
         array
             A one-dimensional array.
         """
-        return np.zeros(self.x_axis.lo.size)
+        return np.zeros(self.x_axis.size)
 
     def overlaps(self, other):
         """Check if this evaluation space overlaps with another.
@@ -398,7 +398,7 @@ class EvaluationSpace2D():
         array
             A one dimensional array.
         """
-        size = self.x_axis.lo.size * self.y_axis.lo.size
+        size = self.x_axis.size * self.y_axis.size
         return np.zeros(size)
 
 
