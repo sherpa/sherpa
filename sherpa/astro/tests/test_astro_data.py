@@ -3414,3 +3414,134 @@ def test_img_combine_spatial_filter_and_mask():
 
     assert np.isfinite(got) == pytest.approx(good)
     assert got[good] == pytest.approx(yimg[good])
+
+
+@pytest.fixture
+def make_image_sparse():
+    """Create a grid with a missing point.
+
+    This is intended for regression tests as it's not obvious what the
+    meaning of DataIMG for this use case.
+    """
+
+    # Assume this is 3 x by 2 y and we are missing the x=2, y=2 data
+    # ppoint which has index (1, 1), with the indexes starting at 0.
+    #
+    # Assume this is 3 x by 2 y and we are missing the x=2, y=2 data
+    # ppoint which has index (1, 1), with the indexes starting at 0.
+    #
+    x0 = np.asarray([1, 2, 3, 1, 3])
+    x1 = np.asarray([1, 1, 1, 2, 2])
+    y = np.asarray([1, 2, 3, 4, 6])
+
+    # The existing documentation does not say whether this is
+    # (nx, ny) or (ny, nx). The sherpa.astro.io.read_image routine
+    # suggests it's the NumPy shape order, but it depends on what
+    # the backend.get_image_data call does for the "y" array.
+    #
+    # For now, assume it's ny, nx
+    shape = (2, 3)
+
+    return DataIMG("sparse", x0, x1, y, shape)
+
+
+def test_image_sparse_show(make_image_sparse):
+    """What happens if given a grid but missing points?
+
+    This is a regression test as it's not obvious what the
+    meaning of DataIMG for this use case.
+    """
+
+    out = str(make_image_sparse).split("\n")
+
+    assert out[0] == "name      = sparse"
+    assert out[1] == "x0        = Int64[5]"
+    assert out[2] == "x1        = Int64[5]"
+    assert out[3] == "y         = Int64[5]"
+    assert out[4] == "shape     = (2, 3)"
+    assert out[5] == "staterror = None"
+    assert out[6] == "syserror  = None"
+    assert out[7] == "sky       = None"
+    assert out[8] == "eqpos     = None"
+    assert out[9] == "coord     = logical"
+    assert len(out) == 10
+
+
+def test_image_sparse_get_indep(make_image_sparse):
+
+    out = make_image_sparse.get_indep()
+    assert len(out) == 2
+    assert out[0] == pytest.approx([1, 2, 3, 1, 3])
+    assert out[1] == pytest.approx([1, 1, 1, 2, 2])
+
+
+def test_image_sparse_get_dep(make_image_sparse):
+
+    out = make_image_sparse.get_dep()
+    assert out == pytest.approx([1, 2, 3, 4, 6])
+
+
+def test_image_sparse_get_img(make_image_sparse):
+
+    with pytest.raises(ValueError) as err:
+        make_image_sparse.get_img()
+
+    assert str(err.value) == "cannot reshape array of size 5 into shape (2,3)"
+
+
+def test_image_sparse_region_filter(make_image_sparse):
+    """Pick a region that overlaps the missing pixel"""
+
+    data = make_image_sparse
+    assert data.mask
+
+    data.notice2d("rect(2,2,4,5)")
+    assert data.mask == pytest.approx([0, 0, 0, 0, 1])
+
+    out = data.get_indep(True)
+    assert len(out) == 2
+    assert out[0] == pytest.approx([3])
+    assert out[1] == pytest.approx([2])
+
+    out = data.get_dep(True)
+    assert out == pytest.approx([6])
+
+
+def test_image_sparse_region_filter_restore(make_image_sparse):
+    """Check we can restore the region"""
+
+    data = make_image_sparse
+    assert data.mask
+
+    data.notice2d("rect(2,2,4,5)")
+    data.notice2d()
+    assert data.mask
+
+    out = data.get_indep(True)
+    assert len(out) == 2
+    assert out[0] == pytest.approx([1, 2, 3, 1, 3])
+    assert out[1] == pytest.approx([1, 1, 1, 2, 2])
+
+    out = data.get_dep(True)
+    assert out == pytest.approx([1, 2, 3, 4, 6])
+
+
+def test_image_sparse_region_filter_out_all(make_image_sparse):
+    """Pick a region that removes all points"""
+
+    data = make_image_sparse
+    assert data.mask
+
+    data.notice2d("rect(2,2,4,5)")
+    data.notice2d("circle(0, 0, 100)", ignore=True)
+
+    # The mask does not get converted to False
+    assert data.mask == pytest.approx([0] * 5)
+
+    out = data.get_indep(True)
+    assert len(out) == 2
+    assert out[0] == pytest.approx([])
+    assert out[1] == pytest.approx([])
+
+    out = data.get_dep(True)
+    assert out == pytest.approx([])
