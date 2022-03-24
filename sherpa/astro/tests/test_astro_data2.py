@@ -2129,18 +2129,21 @@ def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
         setattr(pha, related, [2, 3])
 
 
-@pytest.mark.parametrize("column", ["staterror", "syserror",
+@pytest.mark.parametrize("column", [pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail),
                                     "y", "counts",
-                                    "backscal", "areascal",
-                                    "grouping", "quality"])
+                                    pytest.param("backscal", marks=pytest.mark.xfail), pytest.param("areascal", marks=pytest.mark.xfail),
+                                    pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
 def test_pha_check_related_fields_correct_size(column, make_grouped_pha):
     """Can we set the value to a 2-element array?"""
 
     d = DataPHA('example', None, None)
     setattr(d, column, np.asarray([2, 10, 3]))
 
-    # This does not error out
-    d.indep = (np.asarray([2, 3, 4, 5]), )
+    with pytest.raises(DataErr) as err:
+        # XFAIL: this does not error out except for the y and counts case
+        d.indep = (np.asarray([2, 3, 4, 5]), )
+
+    assert str(err.value) == "independent axis can not change size: 3 to 4"
 
 
 @pytest.mark.parametrize("label", ["filter", "grouping"])
@@ -3718,7 +3721,7 @@ def test_image_filtered_apply_filter_invalid_size(make_test_image):
     data.mask[0] = False
 
     with pytest.raises(DataErr,
-                       match="size mismatch between mask and data array"):
+                       match="^size mismatch between mask and data array: 600 vs 2$"):
         data.apply_filter([1, 2])
 
 

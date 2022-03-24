@@ -77,11 +77,18 @@ __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
 
 
 def _check(array, warn_on_convert=True):
-    if array is None:
-        # There may be valid reasons for the array to be None, e.g. that's what we do in fake_pha
-        return array
 
+    # Special case support for None.
+    if array is None:
+        return None
+
+    # Assume that having a shape attribute means "this is near-enough
+    # an ndarray" that we don't need to convert it.
+    #
     if hasattr(array, "shape"):
+        # Special-case the 0-dim case
+        if len(array.shape) == 0:
+            raise DataErr("notanarray")
         if len(array.shape) != 1:
             raise DataErr("not1darray")
 
@@ -90,8 +97,7 @@ def _check(array, warn_on_convert=True):
     if warn_on_convert:
         warnings.warn(f"Converting array {array} to numpy array.")
 
-    array = numpy.asanyarray(array)
-    return _check(array)
+    return _check(numpy.asanyarray(array))
 
 
 def _check_nomask(array):
@@ -577,7 +583,7 @@ class Filter():
 
         """
         if array is None:
-            return
+            return None
 
         # Note that mask may not be a boolean but an array.
         if self.mask is False:
@@ -585,12 +591,13 @@ class Filter():
 
         # Ensure we always return a ndarray.
         #
-        array = numpy.asarray(array)
+        array = _check(array, warn_on_convert=False)
         if self.mask is True:
             return array
 
-        if array.shape != self.mask.shape:
-            raise DataErr('mismatch', 'mask', 'data array')
+        if array.size != self.mask.size:
+            raise DataErr("mismatchn", "mask", "data array", self.mask.size, array.size)
+
         return array[self.mask]
 
     def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
@@ -762,6 +769,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _extra_fields = ()
     """Any extra fields that should be displayed by str(object)."""
 
+    _size = None
+
     ndim = None
     "The dimensionality of the dataset, if defined, or None."
 
@@ -772,6 +781,41 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.staterror = _check_err(staterror, y)
         self.syserror = _check_err(syserror, y)
         NoNewAttributesAfterInit.__init__(self)
+
+    def _check_data_space(self, dataspace):
+        """Check that the data space has the correct size.
+
+        Note that this also sets the size of the data object if it as
+        not been set.
+
+        Parameters
+        ----------
+        dataspace
+            The dataspace object for the data object.
+
+        """
+
+        indep0 = dataspace.get().grid[0]
+        nold = self.size
+
+        # If there is no data then we need to update the size, unless
+        # the new data is also empty.
+        #
+        if nold is None:
+            if indep0 is None:
+                return
+
+            self._size = len(indep0)
+            return
+
+        # We could allow the independent axis to be reset to None.
+        #
+        if indep0 is None:
+            raise DataErr("independent axis can not be cleared")
+
+        nnew = len(indep0)
+        if nnew != nold:
+            raise DataErr(f"independent axis can not change size: {nold} to {nnew}")
 
     def _init_data_space(self, filter, *data):
         """
@@ -791,7 +835,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
 
-        return DataSpaceND(filter, data)
+        ds = DataSpaceND(filter, data)
+        self._check_data_space(ds)
+        return ds
 
     def _set_related(self, attr, val):
         """Set a field that must match the independent axes size.
@@ -809,8 +855,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
             raise DataErr("notanarray")
 
         val = _check(val)
+        nval = len(val)
         nelem = self.size
         if nelem is None:
+            # We set the object size here
+            self._size  = nval
             setattr(self, f"_{attr}", val)
             return
 
@@ -841,18 +890,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         size : int or None
             If the size has not been set then None is returned.
         """
-
-        try:
-            dataspace = self._data_space
-        except AttributeError:
-            # In case called during initialization
-            return None
-
-        ogrid = dataspace.get().grid[0]
-        if ogrid is None:
-            return None
-
-        return len(ogrid)
+        return self._size
 
     # Allow users to len() a data object. The idea is that this
     # represents the "number of elements" (e.g. the size of the
@@ -921,33 +959,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
     @indep.setter
     def indep(self, val):
 
-        # This is a "low-level" check so raise a normal Python error
-        # rather than DataErr.
+        # This is a low-level check so raise a normal Python error
+        # rather than DataErr. Do we want to allow a sequence here,
+        # that is not force a tuple? The concern then is that it gets
+        # harder to distinguish between a user accidentally giving x,
+        # where it's an array, rather than (x,), say.
         #
         if not isinstance(val, tuple):
             raise TypeError(f"independent axis must be sent a tuple, not {type(val).__name__}")
-
-        # If the grid has already been set then check we have the correct size.
-        # There is an argument that this logic should be in self._init_data_space
-        # but we over-ride that method in all the classes so it is simpler
-        # to do here.
-        #
-        # Note that validation of the val field is done by
-        # _init_data_space and not here.
-        #
-        nold = self.size
-        if nold is None:
-            if val[0] is None:
-                # There is nothing to do.
-                return
-
-        else:
-            if val[0] is None:
-                raise DataErr("independent axis can not be cleared")
-
-            nnew = len(val[0])
-            if nold != nnew:
-                raise DataErr(f"independent axis can not change size: {nold} to {nnew}")
 
         self._data_space = self._init_data_space(self._data_space.filter, *val)
 
@@ -1020,7 +1039,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         else:
             nelem = self.size
             if nelem is None:
-                raise DataErr("Unable to use a scalar as no size has been set for the object")
+                raise DataErr("sizenotset", self.name)
 
             val = SherpaFloat(val)
             dep = val * numpy.ones(nelem, dtype=SherpaFloat)
@@ -1362,7 +1381,9 @@ class Data1D(Data):
         if ndata != 1:
             raise DataErr("wrongaxiscount", self.name, 1, ndata)
 
-        return DataSpace1D(filter, *data)
+        ds = DataSpace1D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
 
@@ -1652,7 +1673,9 @@ class Data1DInt(Data1D):
         if ndata != 2:
             raise DataErr("wrongaxiscount", self.name, 2, ndata)
 
-        return IntegratedDataSpace1D(filter, *data)
+        ds = IntegratedDataSpace1D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
@@ -1834,7 +1857,9 @@ class Data2D(Data):
         if ndata != 2:
             raise DataErr("wrongaxiscount", self.name, 2, ndata)
 
-        return DataSpace2D(filter, *data)
+        ds = DataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x0(self, filter=False):
         return self._data_space.get(filter).x0
@@ -1997,7 +2022,9 @@ class Data2DInt(Data2D):
         if ndata != 4:
             raise DataErr("wrongaxiscount", self.name, 4, ndata)
 
-        return IntegratedDataSpace2D(filter, *data)
+        ds = IntegratedDataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x0(self, filter=False):
         if self.size is None:

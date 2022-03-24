@@ -220,6 +220,7 @@ class DataErr(SherpaErr):
             'notanarray': "Array must be a sequence or None",
             'not1darray': "Array must be 1D",
             'wrongaxiscount': "data set '%s' sent wrong tuple size for the independent axis: %d not %d",
+            'sizenotset': "The size of '%s' has not been set",
             'typecheck': 'strings not allowed in %s list',
             'wrongdim': "data set '%s' does not contain %d-D data",
             'notimage': "data set '%s' does not contain image data",

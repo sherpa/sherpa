@@ -1757,12 +1757,18 @@ must be an integer.""")
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
 
+        # Set the size of the object as soon as we know (it makes it
+        # easier to get usable error messages when checking the
+        # related fields). This is only done for the channel case to
+        # allow the counts field to be set but the channel field
+        # unset.
+        #
         channel = _check(channel)
+        if channel is not None:
+            self._size = len(channel)
+
         counts = _check(counts)
 
-        # These are now aliases to indep and y so do not need to be set
-        # self.channel = channel
-        # self.counts = counts
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.quality = quality
@@ -5002,7 +5008,9 @@ class DataIMGInt(DataIMG):
         if ndata != 4:
             raise DataErr("wrongaxiscount", self.name, 4, ndata)
 
-        return IntegratedDataSpace2D(filter, *data)
+        ds = IntegratedDataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x0(self, filter=False):
         if self.size is None:

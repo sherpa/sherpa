@@ -2884,7 +2884,7 @@ def test_pha_independent_axis_can_not_be_a_set():
     data = data_class(*args)
 
     with pytest.raises(DataErr,
-                       match="Array must be 1D"):
+                       match="Array must be a sequence or None"):
         data.set_indep(({"abc", False, 23.4}, ))
 
 
@@ -2918,7 +2918,7 @@ def test_pha_related_field_can_not_be_a_set(field):
     data = data_class(*args)
 
     with pytest.raises(DataErr,
-                       match="Array must be 1D"):
+                       match="Array must be a sequence or None"):
         # XFAIL: does not raise an error except for y/counts
         setattr(data, field, {"abc", False, 23.4})
 
@@ -3126,7 +3126,7 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
 
     data = data_class("empty", *args)
     with pytest.raises(DataErr,
-                       match="Unable to use a scalar as no size has been set for the object"):
+                       match="The size of 'empty' has not been set"):
         data.set_dep(2)
 
 

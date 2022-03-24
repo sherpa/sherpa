@@ -1293,7 +1293,7 @@ def test_data_filter_invalid_size_scalar():
     assert d.mask == pytest.approx([False, False, True])
 
     with pytest.raises(DataErr,
-                       match="size mismatch between mask and data array"):
+                       match="Array must be a sequence or None"):
         d.apply_filter(4)
 
 
@@ -1306,7 +1306,7 @@ def test_data_filter_invalid_size_sequence(vals):
     d.ignore(None, 2)
 
     with pytest.raises(DataErr,
-                       match="size mismatch between mask and data array"):
+                       match=f"size mismatch between mask and data array: 3 vs {len(vals)}"):
         d.apply_filter(vals)
 
 
@@ -1319,7 +1319,7 @@ def test_data_filter_invalid_size_sequence_nd(vals):
     d.ignore(None, 2)
 
     with pytest.raises(DataErr,
-                       match="size mismatch between mask and data array"):
+                       match="Array must be 1D"):
         d.apply_filter(vals)
 
 
@@ -2158,7 +2158,7 @@ def test_set_error_axis_wrong_length(data, column):
     setattr(data, column, [1, 2])
 
 
-@pytest.mark.parametrize("column", ["y", "staterror", "syserror"])
+@pytest.mark.parametrize("column", ["y", pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail)])
 def test_check_related_fields_correct_size(column):
     """If we set a related field before the independent axis, what happens if different?
 
@@ -2171,8 +2171,11 @@ def test_check_related_fields_correct_size(column):
     d = Data1D('example', None, None)
     setattr(d, column, numpy.asarray([2, 10, 3]))
 
-    # does not raise an error
-    d.indep = (numpy.asarray([2, 3, 4, 5]), )
+    # XFAIL: this does not error out for the errors
+    with pytest.raises(DataErr) as err:
+        d.indep = (numpy.asarray([2, 3, 4, 5]), )
+
+    assert str(err.value) == f"independent axis can not change size: 3 to 4"
 
 
 def test_data1d_mismatched_related_fields():
@@ -2214,7 +2217,7 @@ def test_indep_must_be_1d(data):
 
     indep = tuple([d.reshape(2, d.size // 2) for d in data.indep])
     with pytest.raises(DataErr,
-                       match="^independent axis can not change size: 100? to 2$"):
+                       match="Array must be 1D"):
         data.indep = indep
 
 
@@ -2406,7 +2409,7 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
 
     data = data_class("empty", *args)
     with pytest.raises(DataErr,
-                       match="Unable to use a scalar as no size has been set for the object"):
+                       match="The size of 'empty' has not been set"):
         data.set_dep(2)
 
 
