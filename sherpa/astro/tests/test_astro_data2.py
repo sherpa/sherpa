@@ -2730,6 +2730,40 @@ def test_img_world_get_world(path, make_test_image_world):
     assert b == pytest.approx(WORLD_X1)
 
 
+def test_img_sky_can_filter(make_test_image_sky):
+    """Check we can filter the image using physical coordinates"""
+    data = make_test_image_sky
+    assert data.coord == "logical"
+    assert data.mask
+    assert data.get_filter() == ""
+
+    data.set_coord("physical")
+    assert data.coord == "physical"
+    assert data.mask
+    assert data.get_filter() == ""
+
+    data.notice2d("rect(2009,-5006,2011,-5000)", ignore=True)
+    assert data.mask == pytest.approx([1, 1, 1, 1, 1, 0])
+    assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
+
+
+def test_img_sky_can_filter_change_coords(make_test_image_sky):
+    """What happens to a filter after changing coordinates?
+
+    This is a regression test.
+    """
+    data = make_test_image_sky
+
+    data.set_coord("physical")
+    data.notice2d("rect(2009,-5006,2011,-5000)", ignore=True)
+
+    data.set_coord("image")
+    assert data.coord == "logical"
+    # Note that the mask/filter does not get cleared
+    assert data.mask == pytest.approx([1, 1, 1, 1, 1, 0])
+    assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
+
+
 def test_arf_checks_energy_length():
     """Just check we error out"""
 
