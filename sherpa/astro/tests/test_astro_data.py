@@ -2742,6 +2742,26 @@ def test_make_invalid_dependent_axis(data_class, args):
     data_class("wrong", *args)
 
 
+def test_pha_fails_when_bin_lo_is_invalid():
+    """What happens when bin_lo has a different size to the data?
+
+    This is to test the order of calls in the __init__ method.
+    """
+
+    # this does not fail
+    DataPHA("something", CHANS, ONES, bin_lo=[1, 3])
+
+
+def test_pha_fails_when_bin_hi_is_invalid():
+    """What happens when bin_hi has a different size to the data?
+
+    This is to test the order of calls in the __init__ method.
+    """
+
+    # this does not fail
+    DataPHA("something", CHANS, ONES, bin_hi=[1, 3])
+
+
 @pytest.mark.parametrize("data_args",
                          [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_set_independent_axis_to_none(data_args):
