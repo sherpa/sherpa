@@ -966,8 +966,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
                                 self.get_syserror(filter))
 
     def get_yerr(self, filter=False, staterrfunc=None):
-        """
-        Return errors in dependent axis in N-D view of dependent variable
+        """Return errors in dependent axis in N-D view of dependent variable
 
         Parameters
         ----------
@@ -981,8 +980,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self.get_error(filter, staterrfunc)
 
     def get_ylabel(self, yfunc=None):
-        """
-        Return label for dependent axis in N-D view of dependent variable"
+        """Return label for dependent axis in N-D view of dependent variable
 
         Parameters
         ----------
