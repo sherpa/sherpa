@@ -273,15 +273,20 @@ class EvaluationSpace2D():
     ----------
     x, y : array_like or None, optional
         The data array, or the low end of the x and y data bins if the dataset
-        is "integrated".
+        is "integrated". These are not required to be the same length.
     xhi, yhi : array_like or None, optional
         The high end of the x and y data bins for integrated datasets.
     """
+
     def __init__(self, x=None, y=None, xhi=None, yhi=None):
         # In the 2D case the arrays are redundant, as they are flattened from a meshgrid.
         # We need to clean them up first to have proper axes.
         # This may happen when an EvaluationSpace2D is instantiated using the arrays passed to
         # the calc method.
+        #
+        # This means that this class does not check that x and y (if set) have
+        # the same length.
+        #
         x_unique, y_unique, xhi_unique, yhi_unique = self._clean_arrays(x, y, xhi, yhi)
         self.x_axis = Axis(x_unique, xhi_unique)
         self.y_axis = Axis(y_unique, yhi_unique)
