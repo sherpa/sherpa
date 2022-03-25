@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
+
 import numpy
 
 import pytest
@@ -2069,19 +2071,21 @@ def test_invalid_independent_axis(data):
         data.indep = tuple(list(indep) * 2)
 
 
-@pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, pytest.param(Data2D, marks=pytest.mark.xfail), pytest.param(Data2DInt, marks=pytest.mark.xfail)), indirect=True)
 def test_invalid_independent_axis_component_size(data):
     """What happens if we use mis-matched sizes?
 
     It only makes sense to do this for data classes with
     multiple components. We remove one entry from the
-    second component,
+    second component.
     """
 
     indep = list(data.indep)
     indep[1] = indep[1][:-1]
-    # At the moment this does not error out
-    data.indep = tuple(indep)
+    with pytest.raises(DataErr,
+                       match="^size mismatch between .* and .*$"):
+        # XFAIL: this does not error out for the 2D cases
+        data.indep = tuple(indep)
 
 
 @pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)

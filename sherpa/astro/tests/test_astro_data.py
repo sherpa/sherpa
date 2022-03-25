@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
+
 import warnings
 
 import numpy as np
@@ -2672,7 +2674,7 @@ def test_invalid_independent_axis(data_args):
 
 
 @pytest.mark.parametrize("data_args",
-                         [ARF_ARGS, RMF_ARGS, IMG_ARGS, IMGINT_ARGS])
+                         [ARF_ARGS, RMF_ARGS, pytest.param(IMG_ARGS, marks=pytest.mark.xfail), pytest.param(IMGINT_ARGS, marks=pytest.mark.xfail)])
 def test_invalid_independent_axis_component(data_args):
     """What happens if we use mis-matched sizes?
 
@@ -2683,8 +2685,11 @@ def test_invalid_independent_axis_component(data_args):
     data = data_class(*args)
     indep = list(data.indep)
     indep[1] = indep[1][:-1]
-    # At the moment this does not error out
-    data.indep = tuple(indep)
+
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between lo \(.*\) and hi \(.*\)$"):
+        # XFAIL: this does not fail for the 2D cases
+        data.indep = tuple(indep)
 
 
 @pytest.mark.parametrize("data_args",
@@ -2880,8 +2885,9 @@ def test_pha_independent_axis_can_not_be_a_set():
     data_class, args = PHA_ARGS
     data = data_class(*args)
 
-    # this does not raise an error
-    data.set_indep(({"abc", False, 23.4}, ))
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        data.set_indep(({"abc", False, 23.4}, ))
 
 
 def test_pha_independent_axis_can_not_be_a_set_sequence():

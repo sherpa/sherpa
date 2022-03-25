@@ -35,10 +35,10 @@ from sherpa.data import Data1D, Data1DInt
 from sherpa.astro import ui
 
 from sherpa.utils import linear_interp
-from sherpa.utils.err import ModelErr
+from sherpa.utils.err import DataErr, ModelErr
 
 from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
-    EvaluationSpace2D
+    EvaluationSpace2D, PointAxis, IntegratedAxis
 
 
 @pytest.fixture(params=[True, False])
@@ -975,11 +975,36 @@ def test_evaluation_space2d_empty_no_args():
     assert EvaluationSpace2D().is_empty
 
 
+@pytest.mark.parametrize("xaxis", [True, False])
+@pytest.mark.parametrize("lo,hi", [([], [2, 3]),
+                                   (None, [2, 3]),
+                                   ([1], [2, 3]),
+                                   ([1, 2], []),
+                                   ([1, 2], None),
+                                   ([1, 2], [1])
+                                   ])
+def test_evaluation_space2d_check_axes_are_integrated(xaxis, lo, hi):
+    """Check these calls fail.
+
+    Prior to 4.14.1 you could set the integrated axes to
+    different sizes.
+    """
+
+    olo = [1, 2]
+    ohi = [2, 3]
+    if xaxis:
+        args = {"x": lo, "xhi": hi, "y": olo, "yhi": ohi}
+    else:
+        args = {"x": olo, "xhi": ohi, "y": lo, "yhi": hi}
+
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between lo \(.*\) and hi \(.*\)"):
+        EvaluationSpace2D(**args)
+
+
 @pytest.mark.parametrize('xlo, xhi, ylo, yhi, is_integrated', [
-    ([1, 2], [2, 3], [1, 2], [2, 3], True),
-    ([1, 2], [2, 3], None, None, False),
-    ([1, 2], [2, 3],  [], [2, 3], False),
-    ([1, 2], [2, 3], [1, 2], [], False),
+    ([1, 2], [2, 3], [1, 2, 3], [2, 3, 4], True),
+    ([1, 2], None, [1, 2], None, False),
 ])
 def test_evaluation_space2d_is_integrated(xlo, xhi, ylo, yhi, is_integrated):
     assert EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi).is_integrated\
@@ -1002,7 +1027,8 @@ def test_evaluation_space2d_is_ascending(xlo, xhi, ylo, yhi, is_ascending):
 
 
 def test_evaluation_space2d_is_ascending_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(DataErr,
+                       match="Axis is empty or has a size of 0"):
         EvaluationSpace2D(x=None, xhi=None, y=None, yhi=None).is_ascending
 
 
@@ -1100,11 +1126,65 @@ def test_interp_method_is_callable():
         rmdl.method = True
 
 
-@pytest.mark.xfail
+def test_axis_check_not_a_scalar():
+    """Mainly to ensure this error condition is checked"""
+
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        PointAxis(23)
+
+
+def test_axis_check_not_multidim():
+    """Mainly to ensure this error condition is checked"""
+
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
+        PointAxis(np.arange(12).reshape(3, 4))
+
+
+def test_pointaxis_not_integrated():
+    """Check for the empty case"""
+
+    assert not PointAxis([]).is_integrated
+
+
+def test_integratedaxis_is_integrated():
+    """Check for the empty case"""
+
+    assert IntegratedAxis([], []).is_integrated
+
+
+def test_pointaxis_size():
+    """Pick a descending axis for fun"""
+    assert PointAxis([4, 3, 2]).size == 3
+
+
+def test_integratedaxis_size():
+    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).size == 3
+
+
+def test_pointaxis_start():
+    """Pick a descending axis for fun"""
+    assert PointAxis([4, 3, 2]).start == 2
+
+
+def test_pointaxis_end():
+    """Pick a descending axis for fun"""
+    assert PointAxis([4, 3, 2]).end == 4
+
+
+def test_integratedaxis_start():
+    """Pick a descending axis for fun"""
+    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).start == 2
+
+
+def test_integratedaxis_end():
+    """Pick a descending axis for fun"""
+    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).end == pytest.approx(4.5)
+
+
 def test_evaluationspace1d_zeros_like_empty():
 
-    # This fails with the following AttribteError error:
-    # 'NoneType' object has no attribute 'size'
     assert EvaluationSpace1D().zeros_like() == pytest.approx([])
 
 
