@@ -46,19 +46,20 @@ warning = logging.getLogger(__name__).warning
 PIXEL_RATIO_THRESHOLD = 0.1
 
 
-def _to_array(x):
-    """Convert x into a ndarray (or is None)."""
+def _to_readable_array(x):
+    """Convert x into a ndarray that can not be edited (or is None)."""
 
     if x is None:
         return None
 
-    x = np.asarray(x)
+    x = np.asarray(x).copy()
     if not np.iterable(x):
         raise DataErr("notanarray")
 
     if x.ndim != 1:
         raise DataErr("not1darray")
 
+    x.setflags(write=False)
     return x
 
 
@@ -160,7 +161,7 @@ class PointAxis(Axis):
     """
 
     def __init__(self, x):
-        self._x = _to_array(x)
+        self._x = _to_readable_array(x)
         if self._x is None:
             return
 
@@ -219,8 +220,8 @@ class IntegratedAxis(Axis):
     _hi = None
 
     def __init__(self, lo, hi):
-        self._lo = _to_array(lo)
-        self._hi = _to_array(hi)
+        self._lo = _to_readable_array(lo)
+        self._hi = _to_readable_array(hi)
 
         if self._lo is None:
             if self._hi is None:

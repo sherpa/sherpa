@@ -100,6 +100,13 @@ def _check_hist_bins(xlo, xhi):
     # is a no-op. So, we get to use the elusive Python XOR operator.
     if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
         xlo, xhi = xhi, xlo
+
+    # The input arguments may be read-only, so explicitly copy them.
+    # It also makes sure we don't change any existing data.
+    #
+    xlo = xlo.copy()
+    xhi = xhi.copy()
+
     equal = sao_fcmp(xlo[1:], xhi[:-1], _tol)
     idx, = np.where(equal == 0)
     xlo[idx + 1] = xhi[idx]

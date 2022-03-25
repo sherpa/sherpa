@@ -289,7 +289,8 @@ class DataSpace2D():
     filter : Filter
         A filter object that initialized this data space.
     x0, x1 : array_like
-        The first and second axes of this data space.
+        The first and second axes of this data space. The arrays are
+        copied.
 
     """
 
@@ -447,7 +448,8 @@ class DataSpaceND():
     filter : Filter
         A filter object that initialized this data space.
     indep : tuple of array_like
-        The tuple of independent axes.
+        The tuple of independent axes. The arrays are copied rather
+        than storing a reference.
 
     """
 

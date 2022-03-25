@@ -961,10 +961,10 @@ def test_regrid1d_int_flux():
 
 
 @pytest.mark.parametrize('x, y', [
-    (None, [1, 2]),
-    ([1, 2], None),
     (None, None),
-    ([], [1, 2]),
+    (None, [2, 3, 4]),
+    ([], [2, 3, 4]),
+    ([1, 2], None),
     ([1, 2], [])
 ])
 def test_evaluation_space2d_empty(x, y):

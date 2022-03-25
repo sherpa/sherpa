@@ -2428,16 +2428,11 @@ def test_data_change_independent_element(data_copy):
     # The x axis is > 0. but just check this
     assert data.indep[0][1] > 0
 
-    expected = [d.copy() for d in data.indep]
-    expected[0][1] = -100
-
     # change the second element of the first component
-    data.indep[0][1] = -100
+    with pytest.raises(ValueError) as err:
+        data.indep[0][1] = -100
 
-    # check we have only changed the one element
-    assert len(data.indep) == len(expected)
-    for e, n in zip(expected, data.indep):
-        assert n == pytest.approx(e)
+    assert str(err.value) == "assignment destination is read-only"
 
 
 @pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
@@ -2505,8 +2500,9 @@ def test_data1d_do_we_copy_the_independent_axis():
     assert data.indep[0] == pytest.approx(x)
 
     # If an element of x is changed, does the independent axis change?
+    xorig = x.copy()
     x[1] = -20
-    assert data.indep[0] == pytest.approx(x)
+    assert data.indep[0] == pytest.approx(xorig)
 
 
 def test_data1d_do_we_copy_the_independent_axis_v2():
@@ -2517,10 +2513,10 @@ def test_data1d_do_we_copy_the_independent_axis_v2():
 
     data = Data1D("change", x, y)
 
-    data.indep[0][1] = -20
+    with pytest.raises(ValueError) as err:
+        data.indep[0][1] = -20
 
-    x[1] = -20
-    assert data.indep[0] == pytest.approx(x)
+    assert str(err.value) == "assignment destination is read-only"
 
 
 def test_data1d_do_we_copy_the_dependent_axis():

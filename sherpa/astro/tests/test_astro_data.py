@@ -2616,7 +2616,7 @@ def test_is_mask_reset_pha_channel():
     data.ignore(None, 2)
 
     # Change the independent axis via the channel field
-    data.channel += 40
+    data.channel = data.channel + 40
 
     # This is a regression test as there is an argument that the mask
     # should be cleared.
@@ -3183,12 +3183,10 @@ def test_pha_change_independent_element():
     assert pha.indep[0][1] == 2
 
     # change the second element of the first component
-    pha.indep[0][1] = -100
+    with pytest.raises(ValueError) as err:
+        pha.indep[0][1] = -100
 
-    expected = chans.copy()
-    expected[1] = -100
-    assert len(pha.indep) == 1
-    assert pha.indep[0] == pytest.approx(expected)
+    assert str(err.value) == "assignment destination is read-only"
 
 
 @pytest.mark.parametrize("field", ["y", "dep", "counts"])
@@ -3230,8 +3228,9 @@ def test_pha_do_we_copy_the_independent_axis():
     assert pha.indep[0] == pytest.approx(chans)
 
     # what happens if we change the chans array?
+    orig = chans.copy()
     chans[1] = -100
-    assert pha.indep[0] == pytest.approx(chans)
+    assert pha.indep[0] == pytest.approx(orig)
 
 
 def test_pha_do_we_copy_the_dependent_axis():
