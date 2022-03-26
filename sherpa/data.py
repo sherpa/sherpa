@@ -64,7 +64,7 @@ from abc import ABCMeta
 
 import numpy
 
-from sherpa.models.regrid import EvaluationSpace1D
+from sherpa.models.regrid import EvaluationSpace1D, IntegratedAxis, PointAxis
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
@@ -256,24 +256,30 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
 # that the x0 and x1 arrays form a grid (e.g. nx by ny) and we need
 # to be able to support a non-grid set of points.
 #
+# The code is written to resemble sherpa.models.grid.EvaluationSpace2D
+# though, so that the checks added for that code are run here.
+#
 class DataSpace2D():
+    """Class for representing 2-D Data Spaces.
+
+    Data Spaces are spaces that describe the data domain.
+
+    Parameters
+    ----------
+    filter : Filter
+        A filter object that initialized this data space.
+    x0, x1 : array_like
+        The first and second axes of this data space.
+
     """
-    Class for representing 2-D Data Spaces. Data Spaces are spaces that describe the data domain.
-    """
+
     def __init__(self, filter, x0, x1):
-        """
-        Parameters
-        ----------
-        filter : Filter
-            a filter object that initialized this data space
-        x0 : array_like
-            the first axis of this data space
-        x1 : array_like
-            the second axis of this data space
-        """
+        x0 = _check_nomask(x0)
+        x1 = _check_nomask(x1)
+
         self.filter = filter
-        self.x0 = _check(_check_nomask(x0))
-        self.x1 = _check(_check_nomask(x1))
+        self.x_axis = PointAxis(x0)
+        self.y_axis = PointAxis(x1)
 
     def get(self, filter=False):
         """
@@ -300,44 +306,53 @@ class DataSpace2D():
 
     @property
     def grid(self):
-        """
-        Return the grid representation of this dataset.
+        """The grid representation of this dataset.
 
         The x0 and x1 arrays in the grid are one-dimensional representations of the meshgrid obtained
         from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
 
         Returns
         -------
-        tuple
-            A tuple representing the x0 and x1 axes. The tuple will contain two arrays.
+        (x0, x1) : (ndarray, ndarray)
+            A tuple representing the x0 and x1 axes.
         """
-        return self.x0, self.x1
+        return self.x_axis.x, self.y_axis.x
+
+    # Should these be deprecated now that the code attempts to mimic EvaluationSpace2D?
+    #
+    @property
+    def x0(self):
+        """Return the first axis."""
+        return self.x_axis.x
+
+    @property
+    def x1(self):
+        """Return the second axis."""
+        return self.y_axis.x
 
 
 class IntegratedDataSpace2D():
+    """Same as DataSpace2D, but for supporting integrated data sets.
+
+    Parameters
+    ----------
+    filter : Filter
+        A filter object that initialized this data space.
+    x0lo, x1lo, x0hi, x1hi : array_like
+        The lower bounds array of the first and second axes, then the
+        upper bounds.
+
     """
-    Same as DataSpace2D, but for supporting integrated data sets.
-    """
+
     def __init__(self, filter, x0lo, x1lo, x0hi, x1hi):
-        """
-        Parameters
-        ----------
-        filter : Filter
-            a filter object that initialized this data space
-        x0lo : array_like
-            the lower bounds array of the x0 axis
-        x0hi : array_like
-            the higher bounds array of the xhi axis
-        x1lo : array_like
-            the lower bounds array of the x0 axis
-        x1hi : array_like
-            the higher bounds array of the xhi axis
-        """
+        x0lo = _check_nomask(x0lo)
+        x1lo = _check_nomask(x1lo)
+        x0hi = _check_nomask(x0hi)
+        x1hi = _check_nomask(x1hi)
+
         self.filter = filter
-        self.x0lo = _check(_check_nomask(x0lo))
-        self.x1lo = _check(_check_nomask(x1lo))
-        self.x0hi = _check(_check_nomask(x0hi))
-        self.x1hi = _check(_check_nomask(x1hi))
+        self.x_axis = IntegratedAxis(x0lo, x0hi)
+        self.y_axis = IntegratedAxis(x1lo, x1hi)
 
     def get(self, filter=False):
         """
@@ -364,18 +379,40 @@ class IntegratedDataSpace2D():
 
     @property
     def grid(self):
-        """
-        Return the grid representation of this dataset.
+        """The grid representation of this dataset.
 
         The x0 and x1 arrays in the grid are one-dimensional representations of the meshgrid obtained
         from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
 
         Returns
         -------
-        tuple
-            A tuple representing the x and y axes. The tuple will contain four arrays.
+        (x0lo, x1lo, x0hi, x1hi) : (ndarray, ndarray, ndarray, ndarray)
+            The axis data.
+
         """
-        return self.x0lo, self.x1lo, self.x0hi, self.x1hi
+        return self.x_axis.lo, self.y_axis.lo, self.x_axis.hi, self.y_axis.hi
+
+    # Should these be deprecated now that the code attempts to mimic EvaluationSpace2D?
+    #
+    @property
+    def x0lo(self):
+        """Return the first axis (low edge)"""
+        return self.x_axis.lo
+
+    @property
+    def x0hi(self):
+        """Return the first axis (high edge)."""
+        return self.x_axis.hi
+
+    @property
+    def x1lo(self):
+        """Return the second axis (low edge)."""
+        return self.y_axis.lo
+
+    @property
+    def x1hi(self):
+        """Return the second axis (high edge)."""
+        return self.y_axis.hi
 
 
 class DataSpaceND():

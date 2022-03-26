@@ -2674,7 +2674,7 @@ def test_invalid_independent_axis(data_args):
 
 
 @pytest.mark.parametrize("data_args",
-                         [ARF_ARGS, RMF_ARGS, pytest.param(IMG_ARGS, marks=pytest.mark.xfail), pytest.param(IMGINT_ARGS, marks=pytest.mark.xfail)])
+                         [ARF_ARGS, RMF_ARGS, pytest.param(IMG_ARGS, marks=pytest.mark.xfail), IMGINT_ARGS])
 def test_invalid_independent_axis_component(data_args):
     """What happens if we use mis-matched sizes?
 
@@ -2688,7 +2688,7 @@ def test_invalid_independent_axis_component(data_args):
 
     with pytest.raises(DataErr,
                        match=r"^size mismatch between lo and hi: \d+ vs \d+$"):
-        # XFAIL: this does not fail for the 2D cases
+        # XFAIL: this does not fail for the Data2D case
         data.indep = tuple(indep)
 
 
