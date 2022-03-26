@@ -407,6 +407,11 @@ def test_transform_hi(opt, factor=4):
     poly.c3.max = expand(poly.c3.val, factor, 1, operator.add, operator.sub)
     result = fit.fit()
     assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084507576, 0.041377269137, 0.008749967892,
+                  0.000523424920]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
 
 
 @pytest.mark.parametrize("opt", [LevMar, NelderMead])
@@ -418,6 +423,11 @@ def test_transform_lo(opt, factor=4):
     poly.c3.min = expand(poly.c3.val, factor, -1, operator.sub, operator.add)
     result = fit.fit()
     assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084557616, 0.041377269241, 0.008749967662,
+                  0.000523424913]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
 
 
 @pytest.mark.parametrize("opt", [LevMar, NelderMead])
@@ -433,6 +443,11 @@ def test_transform_lohi(opt, factor=4):
     poly.c3.max = expand(poly.c3.val, factor, 1, operator.add, operator.sub)
     result = fit.fit()
     assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084634545, 0.041377280240, 0.008749970667,
+                  0.000523421758]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
 
 
 @pytest.mark.parametrize("opt", [LevMar, NelderMead])
@@ -444,6 +459,11 @@ def test_transform_partial(opt, factor=4):
     poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
     result = fit.fit()
     assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084632179, 0.041377269482, 0.008749967999,
+                  0.000523424925]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
 
 # @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
 #                                  pytest.param(montecarlo,
