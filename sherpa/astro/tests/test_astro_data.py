@@ -2687,7 +2687,7 @@ def test_invalid_independent_axis_component(data_args):
     indep[1] = indep[1][:-1]
 
     with pytest.raises(DataErr,
-                       match=r"^size mismatch between lo \(.*\) and hi \(.*\)$"):
+                       match=r"^size mismatch between lo and hi: \d+ vs \d+$"):
         # XFAIL: this does not fail for the 2D cases
         data.indep = tuple(indep)
 

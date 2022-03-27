@@ -54,10 +54,10 @@ def _to_array(x):
 
     x = np.asarray(x)
     if not np.iterable(x):
-        raise DataErr("Array must be a sequence or None")
+        raise DataErr("notanarray")
 
     if x.ndim != 1:
-        raise DataErr("Array must be 1D")
+        raise DataErr("not1darray")
 
     return x
 
@@ -226,15 +226,15 @@ class IntegratedAxis(Axis):
             if self._hi is None:
                 return
 
-            raise DataErr("mismatch", "lo (None)", f"hi ({len(self._hi)})")
+            raise DataErr("mismatchn", "lo", "hi", "None", len(self._hi))
 
         nlo = len(self._lo)
         if self._hi is None:
-            raise DataErr("mismatch", f"lo ({nlo})", "hi (None)")
+            raise DataErr("mismatchn", "lo", "hi", nlo, "None")
 
         nhi = len(self._hi)
         if nlo != nhi:
-            raise DataErr("mismatch", f"lo ({nlo})", f"hi ({nhi})")
+            raise DataErr("mismatchn", "lo", "hi", nlo, nhi)
 
         if nlo > 0:
             self._is_ascending = lo[-1] > lo[0]

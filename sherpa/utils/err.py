@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019, 2020
-#      Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,18 +30,38 @@ __all__ = ('EstErr', 'FitErr', 'SherpaErr', 'ArgumentErr',
 
 
 class SherpaErr(Exception):
-    "Base class for all Sherpa exceptions"
+    """Base class for all Sherpa exceptions.
 
-    def __init__(self, dict, *args):
-        if (len(args) == 0):
-            errmsg = "Generic Error"
+    Parameters
+    ----------
+    edict : dict
+        The error dictionary. The keys are the label for the message
+        and the value is a format string - using percent formats -
+        that is applied.
+    args
+        The arguments that define the message. If args is not set then
+        a generic message is used, otherwise the first element is used
+        to identify the format string from edict, to which the
+        remaining arguments are applied. If no match exists then the
+        first argument is used as the error message.
+
+    """
+
+    def __init__(self, edict, *args):
+        if len(args) == 0:
+            super().__init__("Generic Error")
+            return
+
+        # Could trap any format errors (in case code has used an argument
+        # incorrectly).
+        #
+        key = args[0]
+        if key in edict:
+            errmsg = edict[key] % args[1:]
         else:
-            key = args[0]
-            if key in dict:
-                errmsg = dict[key] % args[1:]
-            else:
-                errmsg = key
-        Exception.__init__(self, errmsg)
+            errmsg = key
+
+        super().__init__(errmsg)
 
 
 class ArgumentErr(ValueError, SherpaErr):
@@ -193,11 +213,16 @@ class DataErr(SherpaErr):
     dict = {'ismask': "'mask' must be True, False, or a mask array",
             'notmask': 'mask excludes all data',
             'nomask': "data set '%s' has no filter",
+            # mismatchn is newer and reports the size as well as the fields
+            # (reported as strings to allow a value like "None" to be used)
             'mismatch': 'size mismatch between %s and %s',
+            'mismatchn': 'size mismatch between %s and %s: %s vs %s',
+            'notanarray': "Array must be a sequence or None",
+            'not1darray': "Array must be 1D",
             'typecheck': 'strings not allowed in %s list',
             'wrongdim': "data set '%s' does not contain %d-D data",
             'notimage': "data set '%s' does not contain image data",
-            'nodim': "data set '%s' does not have any defined dimensions",
+            'nodim': "data set '%s' does not have any defined dimensions",  #  TODO: this does not appear to be used
             'zerodatasimulfit':
             "cannot create a %s instance containing no data sets",
             'staterrsimulfit':

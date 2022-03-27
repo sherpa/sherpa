@@ -83,12 +83,13 @@ def _check(array):
 
     if hasattr(array, "shape"):
         if len(array.shape) != 1:
-            raise TypeError(f"Data arrays should be 1-dimensional. Did you call 'flatten()' on {array}?)")
-    else:
-        warnings.warn(f"Converting array {array} to numpy array.")
-        array = numpy.asanyarray(array)
-        return _check(array)
-    return array
+            raise DataErr("not1darray")
+
+        return array
+
+    warnings.warn(f"Converting array {array} to numpy array.")
+    array = numpy.asanyarray(array)
+    return _check(array)
 
 
 def _check_nomask(array):

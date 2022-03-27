@@ -1027,29 +1027,37 @@ def array_sizes_fixture():
 def test_data2d_wrong_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr) as err:
         Data2D('name', x0, x1, y.flatten(), staterror=numpy.sqrt(y).flatten())
+
+    assert str(err.value) == "Array must be 1D"
 
 
 def test_data2d_wrong_y_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr) as err:
         Data2D('name', x0.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
+
+    assert str(err.value) == "Array must be 1D"
 
 
 def test_data2d_int_wrong_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr) as err:
         Data2DInt('name', x0, x0, x1, x1, y.flatten(), staterror=numpy.sqrt(y).flatten())
+
+    assert str(err.value) == "Array must be 1D"
 
 
 def test_data2d_int_wrong_y_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr) as err:
         Data2DInt('name', x0.flatten(), x0.flatten(), x1.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
+
+    assert str(err.value) == "Array must be 1D"
 
 
 # https://github.com/sherpa/sherpa/issues/628
@@ -2207,8 +2215,7 @@ def test_data1d_mismatched_related_fields():
     assert ans == pytest.approx([14.6])
 
 
-# should be ALL_DATA_CLASSES but only some of the classes pass
-@pytest.mark.parametrize("data", (pytest.param(Data1D, marks=pytest.mark.xfail), pytest.param(Data1DInt, marks=pytest.mark.xfail), Data2D, Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_indep_must_be_1d(data):
     """Check that the indep data must be 1D.
 
@@ -2217,10 +2224,7 @@ def test_indep_must_be_1d(data):
     """
 
     indep = [d.reshape(2, d.size // 2) for d in data.indep]
-    with pytest.raises(TypeError,
-                       match="^Data arrays should be 1-dimensional. " +
-                       r"Did you call 'flatten\(\)' on \[\["):
-        # XFAIL: does not raise an error for Data1D types but does for Data2D
+    with pytest.raises(DataErr, match="Array must be 1D"):
         data.indep = indep
 
 

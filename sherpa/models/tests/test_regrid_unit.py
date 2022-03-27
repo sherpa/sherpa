@@ -998,7 +998,7 @@ def test_evaluation_space2d_check_axes_are_integrated(xaxis, lo, hi):
         args = {"x": olo, "xhi": ohi, "y": lo, "yhi": hi}
 
     with pytest.raises(DataErr,
-                       match=r"^size mismatch between lo \(.*\) and hi \(.*\)"):
+                       match=r"^size mismatch between lo and hi: (\d|None) vs (\d|None)$"):
         EvaluationSpace2D(**args)
 
 
