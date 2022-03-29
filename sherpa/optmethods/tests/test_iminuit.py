@@ -40,9 +40,7 @@ def tst_opt(fct, migrad, npar, reltol=1.0e-3, abstol=1.0e-3):
     J. MORE', B. GARBOW & K. HILLSTROM,
     "Algorithm 566: Fortran Subroutines for Testing Unconstrained
     Optimization Software.", ACM TOMS, VOL. 7, PAGES 14-41 AND 136-140, 1981
-    xfail: lmdif(6), minim(5), neldermead(3), moncar(2)
     2) The remaining random 32 'global' func tests:
-    xfail: minim(14), montecarlo(0), neldermead(10)
     """
     x0, xmin, xmax, fmin = init(fct.__name__, npar)
     status, x, fval, msg, xtra = myminuit(fct, x0, xmin, xmax, migrad=migrad)
@@ -52,7 +50,7 @@ def tst_opt(fct, migrad, npar, reltol=1.0e-3, abstol=1.0e-3):
 ###############################################################################
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [True, pytest.param(True, marks=pytest.mark.xfail)])
+                         [True, pytest.param(False, marks=pytest.mark.xfail)])
 def test_rosenbrock(migrad, npar=4):
     tst_opt(_tstoptfct.rosenbrock, migrad, npar)
 
@@ -81,7 +79,7 @@ def test_brown_badly_scaled(migrad, npar=2):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_beale(migrad, npar=2):
     tst_opt(_tstoptfct.beale, migrad, npar)
@@ -147,7 +145,7 @@ def test_powell_singular(migrad, npar=4):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_wood(migrad, npar=4):
     tst_opt(_tstoptfct.wood, migrad, npar)
@@ -176,7 +174,7 @@ def test_osborne1(migrad, npar=5):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [True, pytest.param(False, marks=pytest.mark.xfail)])
+                         [True, False])
 def test_biggs(migrad, npar=6):
     tst_opt(_tstoptfct.biggs, migrad, npar)
 
@@ -313,8 +311,7 @@ def test_Ackley(migrad, npar=4):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
-                          pytest.param(False, marks=pytest.mark.xfail)])
+                         [True, False])
 def test_Booth(migrad, npar=6):
     tst_opt(_tstoptfct.Booth, migrad, npar, False)
 
@@ -329,7 +326,7 @@ def test_Bohachevsky1(migrad, npar=2):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Bohachevsky2(migrad, npar=2):
     tst_opt(_tstoptfct.Bohachevsky2, migrad, npar, False)
@@ -345,7 +342,7 @@ def test_Bohachevsky3(migrad, npar=2):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Branin(migrad, npar=2):
     tst_opt(_tstoptfct.Branin, migrad, npar, False)
@@ -377,7 +374,7 @@ def test_Cola(migrad, npar=17):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Colville(migrad, npar=4):
     tst_opt(_tstoptfct.Colville, migrad, npar, False)
@@ -401,7 +398,7 @@ def test_decanom(migrad, npar=2):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_dodecal(migrad, npar=3):
     tst_opt(_tstoptfct.dodecal, migrad, npar, False)
@@ -409,7 +406,7 @@ def test_dodecal(migrad, npar=3):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_DixonPrice(migrad, npar=5):
     tst_opt(_tstoptfct.DixonPrice, migrad, npar, False)
@@ -463,7 +460,7 @@ def test_Hartman6(migrad, npar=6):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Himmelblau(migrad, npar=2):
     tst_opt(_tstoptfct.Himmelblau, migrad, npar, False)
@@ -479,7 +476,7 @@ def test_Holzman1(migrad, npar=3):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Holzman2(migrad, npar=3):
     tst_opt(_tstoptfct.Holzman2, migrad, npar, False)
@@ -503,7 +500,7 @@ def test_Levy(migrad, npar=4):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_McCormick(migrad, npar=2):
     tst_opt(_tstoptfct.McCormick, migrad, npar, False)
@@ -519,7 +516,7 @@ def test_McKinnon(migrad, npar=2):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Michalewicz(migrad, npar=2):
     tst_opt(_tstoptfct.Michalewicz, migrad, npar, False)
@@ -543,7 +540,7 @@ def test_Rastrigin(migrad, npar=4):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_seqp(migrad, npar=2):
     tst_opt(_tstoptfct.seqp, migrad, npar, False)
@@ -598,7 +595,7 @@ def test_SixHumpCamel(migrad, npar=2):
 
 @requires_iminuit
 @pytest.mark.parametrize("migrad",
-                         [pytest.param(True, marks=pytest.mark.xfail),
+                         [True,
                           pytest.param(False, marks=pytest.mark.xfail)])
 def test_Trecanni(migrad, npar=2):
     tst_opt(_tstoptfct.Trecanni, migrad, npar, False)
