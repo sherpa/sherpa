@@ -45,6 +45,23 @@ Both types of data extend the capabilities of the
   background for the observation (for PHA files) that can then be
   subtracted from the data or a background model fit to them.
 
+Design
+------
+
+The `DataPHA` class adds support for grouping data - effectively
+reducing the number of values in a data set - and adding an extra way
+to filter the data with the quality array. The class extends
+`~sherpa.data.Data1D`, since the primary data is channels and
+counts, but it also has to act like an integrated data set
+(`~sherpa.data.Data1DInt`) in some cases. In an extension to
+OGIP support, there is limited support for the ``BIN_LO`` and
+``BIN_HI`` fields provided with Chandra grating data.
+
+The `DataIMG` class extends 2D support for "gridded" data, with
+multiple possible coordinate systems (e.g. ``logical``, ``physical``,
+and ``world``).  Along with this, spatial filters can be applied,
+using the CIAO region syntax [REGION]_.
+
 Notes
 -----
 
@@ -63,6 +80,18 @@ References
 ----------
 
 .. [AstroNoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+
+.. [OGIP_92_007] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+.. [OGIP_92_007a] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
+
+.. [CAL_92_002] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+.. [CAL_92_002a] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
+
+.. [PRIVATE_KA] Private communication with Keith Arnaud
+
+.. [REGION] https://cxc.harvard.edu/ciao/ahelp/dmregions.html
 
 Examples
 --------
@@ -978,7 +1007,8 @@ class DataOgipResponse(Data1DInt):
 class DataARF(DataOgipResponse):
     """ARF data set.
 
-    The ARF format is described in OGIP documents [1]_ and [2]_.
+    The ARF format is described in OGIP documents [CAL_92_002]_ and
+    [CAL_92_002a]_.
 
     Parameters
     ----------
@@ -1009,13 +1039,6 @@ class DataARF(DataOgipResponse):
     There is limited checking that the ARF matches the OGIP standard,
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases.
-
-    References
-    ----------
-
-    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
-
-    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
     _ui_name = "ARF"
@@ -1101,7 +1124,8 @@ class DataARF(DataOgipResponse):
 class DataRMF(DataOgipResponse):
     """RMF data set.
 
-    The RMF format is described in OGIP documents [1]_ and [2]_.
+    The RMF format is described in OGIP documents [CAL_92_002]_ and
+    [CAL_92_002a]_.
 
     Parameters
     ----------
@@ -1128,13 +1152,6 @@ class DataRMF(DataOgipResponse):
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases. If a check fails
     then a warning message is logged.
-
-    References
-    ----------
-
-    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
-
-    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
     _ui_name = "RMF"
@@ -1504,7 +1521,8 @@ def replace_xspecvar_values(src_counts, bkg_counts,
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
-    The PHA format is described in an OGIP document [1]_ and [2]_.
+    The PHA format is described in an OGIP document [OGIP_92_007]_ and
+    [OGIP_92_007a]_.
 
     Parameters
     ----------
@@ -1564,27 +1582,18 @@ class DataPHA(Data1D):
 
     The handling of the AREASCAl value - whether it is a scalar or
     array - is currently in flux. It is a value that is stored with
-    the PHA file, and the OGIP PHA standard ([1]_, [2]_) describes the
-    observed counts being divided by the area scaling before
-    comparison to the model. However, this is not valid for
-    Poisson-based statistics, and is also not how XSPEC handles
-    AREASCAL ([3]_); the AREASCAL values are used to scale the
-    exposure times instead. The aim is to add this logic to the
-    instrument models in `sherpa.astro.instrument`, such as
+    the PHA file, and the OGIP PHA standard ([OGIP_92_007]_,
+    [OGIP_92_007a]_) describes the observed counts being divided by
+    the area scaling before comparison to the model. However, this is
+    not valid for Poisson-based statistics, and is also not how XSPEC
+    handles AREASCAL ([PRIVATE_KA]_); the AREASCAL values are used to
+    scale the exposure times instead. The aim is to add this logic to
+    the instrument models in `sherpa.astro.instrument`, such as
     `sherpa.astro.instrument.RMFModelPHA`. The area scaling still has
     to be applied when calculating the background contribution to a
     spectrum, as well as when calculating the data and model values
     used for plots (following XSPEC so as to avoid sharp
     discontinuities where the area-scaling factor changes strongly).
-
-    References
-    ----------
-
-    .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
-
-    .. [2] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
-
-    .. [3] Private communication with Keith Arnaud
 
     """
     _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
@@ -1904,7 +1913,7 @@ must be an integer.""")
 
         A group is indicated by a sequence of flag values starting
         with ``1`` and then ``-1`` for all the channels in the group,
-        following [1]_.  The grouping array match the number of
+        following [OGIP_92_007]_.  The grouping array match the number of
         channels and it will be converted to an integer type if
         necessary.
 
@@ -1915,11 +1924,6 @@ must be an integer.""")
         See Also
         --------
         group, grouped, quality
-
-        References
-        ----------
-
-        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         """
         return self._grouping
@@ -1943,7 +1947,7 @@ must be an integer.""")
 
         A quality value of 0 indicates a good channel, otherwise
         (values >=1) the channel is considered bad and can be excluded
-        using the `ignore_bad` method, as discussed in [1]_. The
+        using the `ignore_bad` method, as discussed in [OGIP_92_007]_. The
         quality array match the number of channels and it will be
         converted to an integer type if necessary.
 
@@ -1954,11 +1958,6 @@ must be an integer.""")
         See Also
         --------
         group, grouping
-
-        References
-        ----------
-
-        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         """
         return self._quality
@@ -2918,7 +2917,8 @@ must be an integer.""")
     def get_backscal(self, group=True, filter=False):
         """Return the background scaling of the PHA data set.
 
-        Return the BACKSCAL setting [BSCAL]_ for the PHA data set.
+        Return the BACKSCAL setting [OGIP_92_007]_ for the PHA data
+        set.
 
         Parameters
         ----------
@@ -2947,12 +2947,6 @@ must be an integer.""")
         only the ratio of source and background BACKSCAL values is
         used. It can be a scalar or an array.
 
-        References
-        ----------
-
-        .. [BSCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
-
         Examples
         --------
 
@@ -2968,7 +2962,8 @@ must be an integer.""")
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
 
-        Return the AREASCAL setting [ASCAL]_ for the PHA data set.
+        Return the AREASCAL setting [OGIP_92_007]_ for the PHA data
+        set.
 
         Parameters
         ----------
@@ -2990,12 +2985,6 @@ must be an integer.""")
         -----
         The fractional area scale is normally set to 1, with the ARF used
         to scale the model.
-
-        References
-        ----------
-
-        .. [ASCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
@@ -3030,7 +3019,7 @@ must be an integer.""")
 
         Raises
         ------
-        TypeError
+        sherpa.utils.err.DataErr
             If the data size does not match the number of channels.
         ValueError
             If the name of groupfunc is not supported or the data
@@ -3103,10 +3092,15 @@ must be an integer.""")
         data = _check(data, warn_on_convert=False)
         ndata = len(data)
 
-        # We allow the data to have
-        # - the size of the data object
-        # - the size of the filtered object (with no grouping)
-        # Any other case is an error.
+        # We allow the data to have either (using the un-grouped data)
+        #
+        # - the size of the data object (all channels)
+        # - the size of the filtered object
+        #
+        # This is unlike the other Data classes, where only the "all
+        # channel" case is supported. We need to allow this new
+        # behavior to support model evaluation via eval_model_to_fit
+        # when using a PHA-based instrument model.
         #
         if ndata != nelem:
 
@@ -3167,7 +3161,7 @@ must be an integer.""")
 
         Raises
         ------
-        TypeError
+        sherpa.utils.err.DataErr
             If the data size does not match the number of channels.
         ValueError
             If the name of groupfunc is not supported.

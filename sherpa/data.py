@@ -35,6 +35,54 @@ and hiding the range c to d (``ignore``). This is used with the
 evaluating models on different grids to the data, and then converting
 back to the data space, whether by rebinnig or interpolation.
 
+Design
+------
+
+The design for the `Data` class assumes
+
+- the basic fields are the independent axis - which is thought of as a
+  tuple of arrays - and the dependent axis, where normally the
+  independent axis is labelled starting with ``x``, and the dependent axis
+  ``y``.
+
+- there are a number of related fields - such as the statistical and
+  systematic errors - that follow the same behavior as the
+  independent and dependent axes.
+
+- fields are converted to `ndarray` when read in.
+
+- the independent axes can either be points (`~sherpa.models.regrid.PointAxis`)
+  or integrated (`~sherpa.models.regrid.IntegratedAxis`). There is
+  currently no support for an object with a combination of point and
+  integrated axes but it could be added.
+
+- the independent axis is mediated by a "Data Space" (`DataSpaceND`,
+  `DataSpace1D`, `IntegratedDataSpace1D`, `DataSpace2D`, and
+  `IntegratedDataSpace2D`).
+
+- `Data` objects contain the `~Data.ndim` field to indicate the number of
+  independent axes it supports.
+
+- to support arbitrary dimensions, the data is treated as one-dimensional
+  arrays.
+
+- `Data` objects can be created with no data, but are fixed once an
+  axis - expected to be the independent axis but it need not be - is
+  set (see the `~Data.size` attrinbute). In general the data is
+  assumed to be set when the object is created.
+
+- there are checks to ensure that the data has the correct size, shape,
+  and potentially data type, but this is not intended to catch all
+  possible problems.
+
+- there is very-limited support for NumPy masked arrays, but it is
+  expected that any filtering has been applied before the `Data`
+  object is created.
+
+- the independent axes are marked as read-only, so the only way to change
+  a value is to replace the whole axis, in which case any existing
+  filter will be removed.
+
 Notebook support
 ----------------
 

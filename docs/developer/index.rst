@@ -698,6 +698,51 @@ Notes
 
 Notes on the design and changes to Sherpa.
 
+.. _handling_nd:
+
+N-dimensional data and models
+-----------------------------
+
+In order to support N-D data sets, models and data objects are
+designed to work with flattened arrays, so a 1D dataset has ``x`` and
+``y`` for the independent and dependent axes, and a 2D dataset will
+have ``x0``, ``x1``, and ``y`` values, with each value stored as a 1D
+`ndarray`. This makes it easy to deal with filters and sparse or
+irregularly-placed grids.
+
+::
+
+  >>> from sherpa.data import Data1D, Data1DInt, Data2D
+
+As examples, we have a one-dimension dataset with data values
+(dependent axis, y) of 2.3, 13.2, and -4.3 corresponding to the
+independent axis (x) values of 1, 2, and 5::
+
+  >>> d1 = Data1D("ex1", [1, 2, 5], [2.3, 13.2, -4.3])
+
+An "integrated" one-dimensional dataset for the independent axis
+bins 23-44, 45-50, 50-53, and 55-57, with data values of
+12, 14, 2, and 22:
+
+  >>> d2 = Data1DInt("ex2", [23, 45, 50, 55], [44, 50, 53, 57], [12, 14, 2, 22])
+
+An irregularly-gridded 2D dataset, with points at (-200, -200),
+(-200, 0), (0, 0), (200, -100), and (200, 150) can be created
+with:
+
+  >>> d3 = Data2D("ex3", [-200, -200, 0, 200, 200], [-200, 0, 0, -100, 150],
+  ... [12, 15, 23, 45, -2])
+
+A regularly-gridded 2D dataset can be created, but note that the
+arguments must be flattened:
+
+  >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
+  >>> shp = x0.shape
+  >>> x0 = x0.flatten()
+  >>> x1 = x1.flatten()
+  >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+  >>> d4 = Data2D("ex4", x0, x1, y, shape=shp)
+
 .. _model_dimensions:
 
 The dimensionality of models
@@ -724,12 +769,134 @@ current way that models are checked:
   ``ndim`` value (ignoring those models whose dimensionality
   is set to ``None``). If there is a mis-match then a
   :py:class:`sherpa.utils.err.ModelErr` is raised.
+* as :ref:`descibed below <data_design_ndim>`, the dimensions of
+  data and model can be compared.
 
 An alternative approach would have been to introdude 1D and 2D
 specific classes, from which all models derive, and then require the
 parent classes to match. This was not attempted as it would require
 significantly-larger changes to Sherpa (but this change could still be
 made in the future).
+
+.. _data_design:
+
+The data class
+--------------
+
+Prior to Sherpa 4.14.1, the `~sherpa.data.Data` object did not have
+many explicit checks on the data it was sent, instead relying on
+checks when the data was used. This has been changed to apply
+validation checks when fields are changed, rather than when the data
+is used. This has been done primarily by marking field accessors as
+property attributes, so that they can apply the validation checks when
+the field is changed.  The intention is not to catch all possible
+problems, but to cover the obvious cases.
+
+.. _data_design_ndim:
+
+Data dimensionality
+^^^^^^^^^^^^^^^^^^^
+
+`~sherpa.data.Data` objects have a `~sherpa.data.Data.ndim` field,
+which is used to ensure that the model and data dimensions match when
+using the `~sherpa.data.Data.eval_model` and
+`~sherpa.data.Data.eval_model_to_fit` methods.
+
+.. _data_design_size:
+
+The size of a data object
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `~sherpa.data.Data.size` field describes the size of a data
+object, that is the number of individual elements. Once a data object
+has its size set it can not be changed (this is new to Sherpa 4.14.1,
+as in previous versions you could change fields to any size). This
+field can also be accessed using `len`, with it returning 0 when no
+data has been set.
+
+.. _data_design_point_vs_integrated:
+
+Point versus Integrated
+^^^^^^^^^^^^^^^^^^^^^^^
+
+There is currently no easy way to identify whether a data object
+requires integrated (low and high edges) or point axes (the coordinate
+at which to evaluate the model).
+
+.. _data_design_independent_axis:
+
+Handling the independent axis
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Checks have been added in Sherpa 4.14.1 to ensure that the correct
+number of arrays are used when setting the independent axis: that is,
+a `~sherpa.data.Data1D` object uses `(x,)`, `~sherpa.data.Data1DInt`
+uses `(lo, hi)`, and `~sherpa.data.Data2D` uses `(x0, x1)`. Note that
+the arguement is expected to be a tuple, even in the
+`~sherpa.data.Data1D` case, and that the individual components are
+checked to ensure they have the same size.
+
+The handling of the independent axis is mediated by a "Data Space"
+object (`~sherpa.data.DataSpaceND`, `~sherpa.data.DataSpace1D`,
+`~sherpa.data.IntegratedDataSpace1D`, `~sherpa.data.DataSpace2D`, and
+`~sherpa.data.IntegratedDataSpace2D`) which is handled by the
+`_init_data_space` and `_check_data_space` methods of the
+`~sherpa.data.Data` class.
+
+To ensure that any filter remains valid, the independent axis is
+marked as read-only. The only way to change a value is to change the
+whole independent axis, in which case the code recognizes that the
+filter - whether just the `~sherpa.data.Data.mask` attribute or also
+any region filter for the `~sherpa.astro.data.DataIMG` case - has to
+be cleared.
+
+.. _data_design_validation:
+
+Validation
+^^^^^^^^^^
+
+Fields are converted to `ndarray` - if not `None` - and then checked
+to see if they are 1D and have the correct size. Some fields may have
+extra checks, such as the `~sherpa.astro.data.DataPHA.grouping` and
+`~sherpa.astro.data.DataPHA.quality` columns for PHA data which
+are converted to integer values.
+
+There is limited support for NumPy masked arrays, but the assumption
+is that and data has been masked before being added to a
+`~sherpa.data.Data` object.
+
+One example of where there is incomplete validation is that the
+`~sherpa.astro.data.DataPHA.bin_lo` and
+`~sherpa.astro.data.DataPHA.bin_hi` fields are not checked to ensure
+that both are set, or that they are in descending order, that the
+``bin_hi`` value is always larger than the correspondnig ``bin_lo``
+value, or that there are no overlapping bins.
+
+.. _data_design_errors:
+
+Error messages
+^^^^^^^^^^^^^^
+
+Errors are generally raised as `~sherpa.utils.err.DataErr` exceptions,
+although there are cases when a `ValueError` or `TypeError` will be
+raised. The aim is to provide some context in the message, such as::
+
+  >>> from sherpa.data import Data1D
+  >>> x = np.asarray([1, 2, 3])
+  >>> y = np.asarray([1, 2])
+  >>> data = Data1D('example', x, y)
+  sherpa.utils.err.DataErr: size mismatch between independent axis and y: 3 vs 2
+
+and::
+
+  >>> data = Data1D('example', x, x + 10)
+  >>> data.apply_filter(y)
+  sherpa.utils.err.DataErr: size mismatch between data and array: 3 vs 2
+
+For `~sherpa.astro.data.DataPHA` objects, where some length checks
+have to allow either the full size (all channels) or just the filtered
+data, the error messages could explain that both are allowed, but this
+was felt to be overly complicated, so the filtered size will be used.
 
 .. _pha_filter:
 
@@ -739,27 +906,29 @@ PHA Filtering
 Filtering of a :py:class:`~sherpa.astro.data.DataPHA` object has four
 complications compared to :py:class:`~sherpa.data.Data1D` objects:
 
-* the independent axis can be referred to in channel units (normally 1
-  to the maximum number of channels), energy units (e.g. 0.5 to 7
-  keV), or wavelength units (e.g. 20 to 22 Angstroms);
+1. the independent axis can be referred to in channel units (normally 1
+   to the maximum number of channels), energy units (e.g. 0.5 to 7
+   keV), or wavelength units (e.g. 20 to 22 Angstroms);
 
-* each channel has a width of 1, so channel filters - which are
-  generally going to be integer values - map exactly, but each channel
-  has a finite width in the derived units (that is, energy or
-  wavelength) so multiple values will map to the same channel;
+2. each channel has a width of 1, so channel filters - which are
+   generally going to be integer values - map exactly, but each
+   channel has a finite width in the derived units (that is, energy or
+   wavelength) so multiple values will map to the same channel (e.g. a
+   channel may map to the energy range of 0.4 to 0.5 keV, so any value
+   >= 0.4 and < 0.5 will map to it);
 
-* the data can be dynamically grouped via the
-  :py:attr:`~sherpa.astro.data.DataPHA.grouping` attribute, normally set
-  by methods like :py:meth:`~sherpa.astro.data.DataPHA.group_counts` and
-  controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
-  which means that the desired filter, when mapped to channel units,
-  is likely to end up partially overlapping the first and last groups,
-  which means that ``notice(a, b)`` and ``ignore(None, a); ignore(b, None)``
-  are not guaranteed to select the same range;
+3. the data can be dynamically grouped via the
+   :py:attr:`~sherpa.astro.data.DataPHA.grouping` attribute, normally set
+   by methods like :py:meth:`~sherpa.astro.data.DataPHA.group_counts` and
+   controlled by the :py:meth:`~sherpa.astro.data.DataPHA.group` method,
+   which means that the desired filter, when mapped to channel units,
+   is likely to end up partially overlapping the first and last groups,
+   which means that ``notice(a, b)`` and ``ignore(None, a); ignore(b, None)``
+   are not guaranteed to select the same range;
 
-* and there is the concept of the
-  :py:attr:`~sherpa.astro.data.DataPHA.quality` array, which defines whether
-  channels should either always be, or can temporarily be, ignored.
+4. and there is the concept of the
+   :py:attr:`~sherpa.astro.data.DataPHA.quality` array, which defines whether
+   channels should either always be, or can temporarily be, ignored.
 
 This means that a :py:meth:`~sherpa.astro.data.DataPHA.notice` or
 :py:meth:`~sherpa.astro.data.DataPHA.ignore` call has to convert from
@@ -811,18 +980,25 @@ In this case the term ``32424.43`` is converted to an
 :py:class:`~sherpa.models.model.ArithmeticConstantModel` instance and then
 combined with the remaining model instance (``XSpowerlaw``).
 
-For those models that require the
-full set of elements, such as multiplication by a :term:RMF or a convolution
-kernel, requires creating a model that can "wrap" another
-model. The wrapping model will evaluate the wrapped model on
-the requested grid, and then apply any modifications.
-Examples include the
-:py:class:`sherpa.instrument.PSFModel` class,
-which creats :py:class:`sherpa.instrument.ConvolutionModel`
-instances,
-and the :py:class:`sherpa.astro.xspec.XSConvolutionKernel`
-class, which creates :py:class:`sherpa.astro.xspec.XSConvolutionModel`
-instances.
+For those models that require the full set of elements, such as
+multiplication by a :term:`RMF` or a convolution kernel, requires
+creating a model that can "wrap" another model. The wrapping model
+will evaluate the wrapped model on the requested grid, and then apply
+any modifications.  Examples include the
+:py:class:`sherpa.instrument.PSFModel` class, which creats
+:py:class:`sherpa.instrument.ConvolutionModel` instances, and the
+:py:class:`sherpa.astro.xspec.XSConvolutionKernel` class, which
+creates :py:class:`sherpa.astro.xspec.XSConvolutionModel` instances.
+
+Wen comnining models, :py:class:`~sherpa.models.model.BinaryOpModel`
+(actually, this check is handled by the super class
+:py:class:`~sherpa.models.model.CompositeModel`), will ensure that the
+dimensions of the two expressions match. There are some models, such
+as :py:class:`~sherpa.models.basic.TableModel` and
+:py:class:`~sherpa.models.model.ArithmeticConstantModel`, which do not
+have a :py:attr:`~sherpa.models.model.Model.ndim` attribute (well, it
+is set to `None`); when combining components these are ignored, hence
+treated as having "any" dimension.
 
 .. _ui_plotting:
 
