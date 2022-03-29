@@ -38,8 +38,6 @@ def myminuit(fcn, x0, xmin, xmax, tol=EPSILON, maxfev=None, leastsqr=True,
     x0, xmin, xmax = _check_args(x0, xmin, xmax)
 
     bounds = []
-    x_tmp = None
-    y_tmp = None
     myhugeval = hugeval / 10.0
     for xxx, yyy in zip(xmin, xmax):
         x_tmp = xxx
@@ -69,17 +67,11 @@ def myminuit(fcn, x0, xmin, xmax, tol=EPSILON, maxfev=None, leastsqr=True,
             maxfev = 512 * len(x0)
         midnight.simplex(ncall=maxfev)
 
-    nfev = midnight.nfcn
-    fval = midnight.fval
-    # x = numpy.asarray([ val for val in midnight.values ])
-    x = midnight.values
-    
     if midnight.valid:
         status, msg = _get_saofit_msg(maxfev, 0)
-        if midnight.accurate:
-            pass
-        else:
+        if not midnight.accurate:
             msg += ", but uncertainties are unrealiable."
+
     else:
         fmin = midnight.fmin
         status, msg = _get_saofit_msg(maxfev, 4)
@@ -88,12 +80,10 @@ def myminuit(fcn, x0, xmin, xmax, tol=EPSILON, maxfev=None, leastsqr=True,
         if fmin.is_above_max_edm:
             msg += " Estimated distance to minimum too large."
 
-    npar = len(x)
+    rvopt = {'nfev': midnight.nfcn, 'info': 1}
+    rv = (status, midnight.values, midnight.fval, msg, rvopt)
+
     if midnight.covariance is not None:
-        covar = midnight.covariance
-        rv = (status, x, fval, msg, {'nfev': nfev,
-                                     'covar': covar, 'info': 1})
-    else:
-        rv = (status, x, fval, msg, {'nfev': nfev, 'info': 1})
+        rvopt['covar'] = midnight.covariance
 
     return rv
