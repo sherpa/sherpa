@@ -1401,6 +1401,10 @@ class Session(NoNewAttributesAfterInit):
     def list_methods(self):
         """List the optimization methods.
 
+        The list of available methods depends on what external
+        packages are installed. If the Python iminuit package is
+        installed then the "minuit" method will be available.
+
         Returns
         -------
         methods : list of str
@@ -1551,35 +1555,41 @@ class Session(NoNewAttributesAfterInit):
            The Levenberg-Marquardt method is an interface to the
            MINPACK subroutine lmdif to find the local minimum of
            nonlinear least squares functions of several variables by a
-           modification of the Levenberg-Marquardt algorithm [1]_.
+           modification of the Levenberg-Marquardt algorithm [LM]_.
 
         ``moncar``
-           The implementation of the moncar method is based on [2]_.
+           The implementation of the moncar method is based on [MONCAR]_.
 
         ``neldermead``
            The implementation of the Nelder Mead Simplex direct search
-           is based on [3]_.
+           is based on [SIMPLEX]_.
 
         ``simplex``
            This is another name for ``neldermead``.
 
+        ``minuit``
+           The Minuit2 optimizer from CERN is available if the
+           ``iminuit`` Python package [IMINUIT]_ has been installed.
+
         References
         ----------
 
-        .. [1] J.J. More, "The Levenberg Marquardt algorithm:
+        .. [LM] J.J. More, "The Levenberg Marquardt algorithm:
            implementation and theory," in Lecture Notes in Mathematics
            630: Numerical Analysis, G.A. Watson (Ed.), Springer-Verlag:
            Berlin, 1978, pp.105-116.
 
-        .. [2] Storn, R. and Price, K. "Differential Evolution: A
+        .. [MONCAR] Storn, R. and Price, K. "Differential Evolution: A
            Simple and Efficient Adaptive Scheme for Global Optimization
            over Continuous Spaces." J. Global Optimization 11, 341-359,
            1997.
 
-        .. [3] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
+        .. [SIMPLEX] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
            Paul E. Wright "Convergence Properties of the Nelder-Mead
            Simplex Algorithm in Low Dimensions", SIAM Journal on
            Optimization,Vol. 9, No. 1 (1998), pages 112-147.
+
+        .. [IMINUIT] https://iminuit.readthedocs.io/en/stable/
 
         Examples
         --------

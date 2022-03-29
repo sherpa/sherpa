@@ -51,6 +51,16 @@ Each optimizer has certain classes of problem where it is more, or
 less, successful. For instance, the `NelderMead` class should
 only be used with chi-square based statistics.
 
+The exact list of optimisers depends on what external packages
+are installed. The current list of optional optimizers is:
+
+- `Minuit` if the Python ``iminuit`` package is installed [IMINUIT]_.
+
+References
+----------
+
+.. [IMINUIT] https://iminuit.readthedocs.io/en/stable/
+
 Examples
 --------
 
@@ -813,15 +823,39 @@ class NelderMead(OptMethod):
 
 
 try:
-    from iminuit import Minuit
     from sherpa.optmethods.myminuit import myminuit
 
-    tmp = list(__all__)
-    tmp.append('Minuit')
-    __all__ = tuple(tmp)
+    __all__ = tuple(list(__all__) + ["Minuit"])
 
     class Minuit(OptMethod):
-        r"""https://iminuit.readthedocs.io/en/stable/"""
+        r"""The Minuit2 optimiser from CERN.
+
+        Minuit was designed to minimise statistical cost functions,
+        for likelihood and least-squares fits of parametric models to
+        data. It provides the best-fit parameters and error estimates
+        from likelihood profile analysis. See
+        https://iminuit.readthedocs.io/en/stable/
+
+        Attributes
+        ----------
+        ftol : number
+           The function tolerance to terminate the search for the minimum.
+        maxfev : int or `None`
+           The maximum number of function evaluations; the default
+           value of `None` means to use ``128 * n`` or ``512 * n``,
+           where `n` is the number of free parameters and ``128`` is used
+           if ``migrad`` is set.
+        leastsqr : bool
+           Should the optimiser assume least-squares (`True`) or likelihood
+           (`False`) for error estimation?
+        migrad : bool
+           If `True` then use the Migrad minimization, otherwise the Simplex
+           method.
+        verbose : int
+           The amount of information to print during the fit. The default
+           is `0`, which means no output.
+
+        """
         def __init__(self, name='minuit'):
             OptMethod.__init__(self, name, myminuit)
 
