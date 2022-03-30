@@ -1146,7 +1146,7 @@ def test_set_filter_unmasked_wrong(clean_ui):
     data = ui.get_data()
 
     with pytest.raises(DataErr,
-                       match="size mismatch between 3 and 2"):
+                       match="size mismatch between independent axis and mask: 3 vs 2"):
         ui.set_filter(np.asarray([True, False]))
 
 
@@ -1185,5 +1185,5 @@ def test_set_filter_masked_wrong(clean_ui):
     ui.ignore(lo=15, hi=45)
 
     with pytest.raises(DataErr,
-                       match="size mismatch between 3 and 2"):
+                       match="size mismatch between data and filter: 3 vs 2"):
         ui.set_filter(np.asarray([True, False]))

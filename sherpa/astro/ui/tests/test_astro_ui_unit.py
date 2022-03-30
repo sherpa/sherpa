@@ -220,7 +220,7 @@ def test_set_filter_mismatch(f, bid):
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
     with pytest.raises(DataErr,
-                       match="size mismatch between 3 and 2"):
+                       match="size mismatch between independent axis and mask: 3 vs 2"):
         ui.set_filter(f, bkg_id=bid)
 
 
@@ -240,7 +240,7 @@ def test_set_filter_mismatch_with_filter(f, bid):
     ui.ignore(3, None)  # set the .mask attribute to an array
 
     with pytest.raises(DataErr,
-                       match="size mismatch between 3 and 2"):
+                       match="size mismatch between data and filter: 3 vs 2"):
         ui.set_filter(f, bkg_id=bid)
 
 
@@ -2450,7 +2450,7 @@ def test_pha_set_filter_unmasked_wrong(simple_pha):
     """What happens when we call set_filter to an unfiltered dataset with the wrong size?"""
 
     with pytest.raises(DataErr,
-                       match="size mismatch between 5 and 2"):
+                       match="size mismatch between grouped data and mask: 5 vs 2"):
         ui.set_filter(np.asarray([True, False]))
 
 
@@ -2472,7 +2472,7 @@ def test_pha_set_filter_masked_wrong(simple_pha):
     ui.ignore(4, 8)
 
     with pytest.raises(DataErr,
-                       match="size mismatch between 5 and 2"):
+                       match="size mismatch between data and filter: 5 vs 2"):
         ui.set_filter(np.asarray([True, False]))
 
 

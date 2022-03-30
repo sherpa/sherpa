@@ -224,6 +224,110 @@ def _remove_obj_from_main(name):
             pass
 
 
+def set_dep(data, val):
+    """Set the dependent axis.
+
+    Parameters
+    ----------
+    data : sherpa.data.Data instance
+    val : scalar or array_like
+        If a scalar then use the same value for all elements.
+
+    """
+
+    if numpy.iterable(val):
+        dep = numpy.asarray(val, SherpaFloat)
+    else:
+        val = SherpaFloat(val)
+        dep = numpy.array([val] * data.size)
+
+    data.dep = dep
+
+
+def set_error(data, field, val, fractional=False):
+    """Set the error field.
+
+    Parameters
+    ----------
+    data : sherpa.data.Data instance
+    field : {"staterror", "syserror"}
+    val : None, a scalar, or array_like
+        The statistical error.
+    fractional : bool, optional
+        If `val` is a scalar then set errors to
+        `val * data.y`.
+
+    Notes
+    -----
+    The `val` field, when an array, must match the data.size
+    field, even for grouped PHA data.
+
+    """
+
+    if val is None:
+        err = None
+
+    elif numpy.iterable(val):
+        err = numpy.asarray(val, SherpaFloat)
+
+    else:
+        val = SherpaFloat(val)
+        if sherpa.utils.bool_cast(fractional):
+            err = val * data.get_dep()
+        else:
+            err = numpy.array([val] * data.size)
+
+    setattr(data, field, err)
+
+
+def set_filter(data, val, ignore=False):
+    """Set the filter field.
+
+    Parameters
+    ----------
+    data : sherpa.data.Data instance
+    val : array_like
+        The filter array (bool-like).
+    ignore : bool, optional
+        If set the filter should be inverted.
+
+    Notes
+    -----
+    The `val` field should match the mask array, that is the
+    "effective" size of the data. This is only different from
+    data.size when the data is grouped (and at least one group
+    contains multiple channels).
+
+    """
+
+    val = numpy.asarray(val, dtype=numpy.bool_)
+    nval = len(val)
+
+    # Note that we do not use data.size as the check, as that fails
+    # for grouped PHA data. Is there some way to have an "effective
+    # size" value?
+    #
+    nexp = len(data.get_y(False))
+    if numpy.iterable(data.mask):
+        if nexp != nval:
+            raise sherpa.utils.err.DataErr('mismatchn', 'data', 'filter',
+                                           nexp, nval)
+
+        if not ignore:
+            data.mask |= val
+        else:
+            data.mask &= ~val
+
+        return
+
+    # The mask attribute checks the length, so we do not have to here.
+    #
+    if not ignore:
+        data.mask = val
+    else:
+        data.mask = ~val
+
+
 ###############################################################################
 #
 # Session
@@ -2736,26 +2840,9 @@ class Session(NoNewAttributesAfterInit):
         """
         if val is None:
             val, id = id, val
-        filter = numpy.asarray(val, dtype=numpy.bool_)
+
         d = self.get_data(id)
-        if numpy.iterable(d.mask):
-            if len(d.mask) == len(filter):
-                if not ignore:
-                    d.mask |= filter
-                else:
-                    d.mask &= ~filter
-            else:
-                raise sherpa.utils.err.DataErr('mismatch',
-                                               len(d.mask), len(filter))
-        else:
-            if len(d.get_y(False)) == len(filter):
-                if not ignore:
-                    d.mask = filter
-                else:
-                    d.mask = ~filter
-            else:
-                raise sherpa.utils.err.DataErr('mismatch',
-                                               len(d.get_y(False)), len(filter))
+        set_filter(d, val, ignore=ignore)
 
     # also in sherpa.astro.utils
     def set_dep(self, id, val=None):
@@ -2802,13 +2889,8 @@ class Session(NoNewAttributesAfterInit):
         if val is None:
             val, id = id, val
         d = self.get_data(id)
-        dep = None
-        if numpy.iterable(val):
-            dep = numpy.asarray(val, SherpaFloat)
-        else:
-            val = SherpaFloat(val)
-            dep = numpy.array([val] * len(d.get_indep()[0]))
-        d.y = dep
+
+        set_dep(d, val)
 
     # DOC-NOTE: also in sherpa.utils
     def set_staterror(self, id, val=None, fractional=False):
@@ -2864,18 +2946,9 @@ class Session(NoNewAttributesAfterInit):
         """
         if val is None:
             val, id = id, val
-        err = None
+
         d = self.get_data(id)
-        fractional = sherpa.utils.bool_cast(fractional)
-        if numpy.iterable(val):
-            err = numpy.asarray(val, SherpaFloat)
-        elif val is not None:
-            val = SherpaFloat(val)
-            if fractional:
-                err = val * d.get_dep()
-            else:
-                err = numpy.array([val] * len(d.get_dep()))
-        d.staterror = err
+        set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.astro.utils
     def set_syserror(self, id, val=None, fractional=False):
@@ -2929,17 +3002,9 @@ class Session(NoNewAttributesAfterInit):
         if val is None:
             val, id = id, val
         err = None
+
         d = self.get_data(id)
-        fractional = sherpa.utils.bool_cast(fractional)
-        if numpy.iterable(val):
-            err = numpy.asarray(val, SherpaFloat)
-        elif val is not None:
-            val = SherpaFloat(val)
-            if fractional:
-                err = val * d.get_dep()
-            else:
-                err = numpy.array([val] * len(d.get_dep()))
-        d.syserror = err
+        set_error(d, "syserror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_staterror(self, id=None, filter=False):
@@ -3088,6 +3153,7 @@ class Session(NoNewAttributesAfterInit):
         err = d.get_syserror(filter)
         if err is None or not numpy.iterable(err):
             raise sherpa.utils.err.DataErr('nosyserr', id)
+
         return err
 
     # DOC-NOTE: also in sherpa.astro.utils

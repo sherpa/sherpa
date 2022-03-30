@@ -2266,30 +2266,15 @@ class Session(sherpa.ui.utils.Session):
         >>> set_filter(d >= 20)
 
         """
+
         if val is None:
             val, id = id, val
-
-        filter = numpy.asarray(val, dtype=numpy.bool_)
 
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
-        if numpy.iterable(d.mask):
-            if len(d.mask) == len(filter):
-                if not ignore:
-                    d.mask |= filter
-                else:
-                    d.mask &= ~filter
-            else:
-                raise DataErr('mismatch', len(d.mask), len(filter))
-        else:
-            if len(d.get_y(False)) == len(filter):
-                if not ignore:
-                    d.mask = filter
-                else:
-                    d.mask = ~filter
-            else:
-                raise DataErr('mismatch', len(d.get_y(False)), len(filter))
+
+        sherpa.ui.utils.set_filter(d, val, ignore=ignore)
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
@@ -2511,25 +2496,12 @@ class Session(sherpa.ui.utils.Session):
         """
         if val is None:
             val, id = id, val
+
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        dep = None
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            if numpy.iterable(val):
-                dep = numpy.asarray(val, SherpaFloat)
-            else:
-                val = SherpaFloat(val)
-                dep = numpy.array([val] * len(d.channel))
-            d.counts = dep
-        else:
-            if numpy.iterable(val):
-                dep = numpy.asarray(val, SherpaFloat)
-            else:
-                val = SherpaFloat(val)
-                dep = numpy.array([val] * len(d.get_indep()[0]))
-            d.y = dep
+        sherpa.ui.utils.set_dep(d, val)
 
     set_counts = set_dep
 
@@ -2597,16 +2569,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        fractional = sherpa.utils.bool_cast(fractional)
-        if numpy.iterable(val):
-            err = numpy.asarray(val, SherpaFloat)
-        elif val is not None:
-            val = SherpaFloat(val)
-            if fractional:
-                err = val * d.get_dep()
-            else:
-                err = numpy.array([val] * len(d.get_dep()))
-        d.staterror = err
+        sherpa.ui.utils.set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.utils
     def set_syserror(self, id, val=None, fractional=False, bkg_id=None):
@@ -2668,17 +2631,8 @@ class Session(sherpa.ui.utils.Session):
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
-        fractional = sherpa.utils.bool_cast(fractional)
 
-        if numpy.iterable(val):
-            err = numpy.asarray(val, SherpaFloat)
-        elif val is not None:
-            val = SherpaFloat(val)
-            if fractional:
-                err = val * d.get_dep()
-            else:
-                err = numpy.array([val] * len(d.get_dep()))
-        d.syserror = err
+        sherpa.ui.utils.set_error(d, "syserror", val, fractional=fractional)
 
     def set_exposure(self, id, exptime=None, bkg_id=None):
         """Change the exposure time of a PHA data set.
@@ -2743,9 +2697,11 @@ class Session(sherpa.ui.utils.Session):
             exptime = SherpaFloat(exptime)
 
         if bkg_id is not None:
-            self.get_bkg(id, bkg_id).exposure = exptime
+            d = self.get_bkg(id, bkg_id)
         else:
-            self._get_pha_data(id).exposure = exptime
+            d = self._get_pha_data(id)
+
+        d.exposure = exptime
 
     def set_backscal(self, id, backscale=None, bkg_id=None):
         """Change the area scaling of a PHA data set.
@@ -2793,9 +2749,11 @@ class Session(sherpa.ui.utils.Session):
             backscale = SherpaFloat(backscale)
 
         if bkg_id is not None:
-            self.get_bkg(id, bkg_id).backscal = backscale
+            d = self.get_bkg(id, bkg_id)
         else:
-            self._get_pha_data(id).backscal = backscale
+            d = self._get_pha_data(id)
+
+        d.backscal = backscale
 
     # DOC-TODO: the description needs improving.
     def set_areascal(self, id, area=None, bkg_id=None):
@@ -2842,9 +2800,11 @@ class Session(sherpa.ui.utils.Session):
             area = SherpaFloat(area)
 
         if bkg_id is not None:
-            self.get_bkg(id, bkg_id).areascal = area
+            d = self.get_bkg(id, bkg_id)
         else:
-            self._get_pha_data(id).areascal = area
+            d = self._get_pha_data(id)
+
+        d.areascal = area
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
     #           the bkg_id parameter.
@@ -3002,8 +2962,8 @@ class Session(sherpa.ui.utils.Session):
         >>> yerr = get_syserror("core", filter=True)
 
         """
-        d = self.get_data(id)
         id = self._fix_id(id)
+        d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
         err = d.get_syserror(filter)
@@ -3390,12 +3350,16 @@ class Session(sherpa.ui.utils.Session):
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
-        dep = d.get_y(filter)
+
         if isinstance(d, sherpa.astro.data.DataPHA):
             old = d._rate
             d._rate = False  # return predicted counts, not rate for PHA
             dep = d.get_y(filter)
             d._rate = old
+
+        else:
+            dep = d.get_y(filter)
+
         return dep
 
     get_counts = get_dep
