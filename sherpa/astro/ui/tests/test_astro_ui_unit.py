@@ -2010,3 +2010,183 @@ def test_model_dimensionality_check_is_not_triggered_plot_model(clean_astro_ui):
         ui.plot_model()
 
     assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"
+
+
+def simple_data1dint(idval):
+    """Create a simple dataset for the #1444 checks.
+
+    Usw Data1DInt rather than Data1D as the fact it's integrated
+    gives a chance to check the model evaluation.
+    """
+
+    xlo = np.asarray([1, 3, 7])
+    xhi = np.asarray([2, 7, 9])
+    y = np.asarray([5, 17, 7])
+
+    ui.load_arrays(idval, xlo, xhi, y, ui.Data1DInt)
+    ui.set_source(idval, ui.const1d.mdl)
+
+    mdl.c0 = 100
+
+
+def simple_dataimg(idval):
+    """Create a simple dataset for the #1444 checks.
+
+    We want to use DataIMG and not Data2D to ensure we have
+    notice2d.
+    """
+
+    x1, x0 = np.mgrid[1:4, 1:5]
+    y = x1 + 10 * x0
+    ui.load_arrays(idval, x0.flatten(), x1.flatten(), y.flatten(),
+                   x0.shape, ui.DataIMG)
+
+    ui.set_source(idval, ui.polynom2d.mdl)
+    mdl.c = 100
+    mdl.cx1 = 10
+    mdl.cy1 = 1
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_data_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_data_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    assert ui.calc_data_sum(id=idval) == pytest.approx(29)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_data_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_data_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    with pytest.raises(AttributeError) as exc:
+        ui.calc_data_sum2d(id=idval)
+
+    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_model_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_model_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    assert ui.calc_model_sum(id=idval) == pytest.approx(700)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_model_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_model_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    with pytest.raises(AttributeError) as exc:
+        ui.calc_model_sum2d(id=idval)
+
+    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_source_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_source_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    # TODO: what is calc_source_sum calculating here?
+    assert ui.calc_source_sum(id=idval) == pytest.approx(300)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_source_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_source_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    with pytest.raises(AttributeError) as exc:
+        ui.calc_source_sum2d(id=idval)
+
+    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_data_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_data_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_data_sum(id=idval) == pytest.approx(324)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_data_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_data_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_data_sum2d(id=idval) == pytest.approx(324)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_model_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_model_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_model_sum(id=idval) == pytest.approx(1524)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_model_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_model_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_model_sum2d(id=idval) == pytest.approx(1524)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_source_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_source_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+
+    # trigger an assertion that was added as part of #756
+    with pytest.raises(AssertionError):
+        ui.calc_source_sum(id=idval)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_source_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_source_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_source_sum2d(id=idval) == pytest.approx(1524)
