@@ -28,7 +28,7 @@ from sherpa.astro import ui
 from sherpa.astro import utils
 from sherpa.astro.utils import do_group, filter_resp, range_overlap_1dint
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -515,15 +515,12 @@ def test_calc_data_sum_filtered_pha_grouped(frange, expected, data_class):
 
 @pytest.mark.parametrize("data_class", ["2d", "img", "2dint", "imgint"])
 def test_calc_data_sum_no_range_2d(data_class):
-    """What happens when data is not 1D?
-
-    It looks like we still sum up the data.
-    """
+    """What happens when data is not 1D?"""
 
     data = make_data(data_class)
-    orig = data.get_dep(filter=True).copy()
-    assert utils.calc_data_sum(data) == 27
-    assert data.get_dep(filter=True) == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="^data set '.*' does not contain 1-D data$"):
+        utils.calc_data_sum(data)
 
 
 @pytest.mark.parametrize("data_class", ["1d", "1dint",
@@ -532,8 +529,8 @@ def test_calc_data_sum2d_no_range_1d(data_class):
     """What happens when data is not an IMG class: 1D"""
 
     data = make_data(data_class)
-    with pytest.raises(AttributeError,
-                       match="^'Data.*' object has no attribute 'notice2d'$"):
+    with pytest.raises(DataErr,
+                       match="^data set '.*' does not contain 2-D data$"):
         utils.calc_data_sum2d(data)
 
 

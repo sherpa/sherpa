@@ -2092,8 +2092,8 @@ def test_1444_1d_data_2d(idval, clean_astro_ui):
     """
 
     simple_data1dint(idval)
-    with pytest.raises(AttributeError,
-                       match="'Data1DInt' object has no attribute 'notice2d'"):
+    with pytest.raises(DataErr,
+                       match="data set '' does not contain 2-D data"):
         ui.calc_data_sum2d(id=idval)
 
 
@@ -2116,8 +2116,8 @@ def test_1444_1d_model_2d(idval, clean_astro_ui):
     """
 
     simple_data1dint(idval)
-    with pytest.raises(AttributeError,
-                       match="'Data1DInt' object has no attribute 'notice2d'"):
+    with pytest.raises(DataErr,
+                       match="data set '' does not contain 2-D data"):
         ui.calc_model_sum2d(id=idval)
 
 
@@ -2141,8 +2141,8 @@ def test_1444_1d_source_2d(idval, clean_astro_ui):
     """
 
     simple_data1dint(idval)
-    with pytest.raises(AttributeError,
-                       match="'Data1DInt' object has no attribute 'notice2d'"):
+    with pytest.raises(DataErr,
+                       match="data set '' does not contain 2-D data"):
         ui.calc_source_sum2d(id=idval)
 
 
@@ -2154,7 +2154,9 @@ def test_1444_2d_data_1d(idval, clean_astro_ui):
     """
 
     simple_dataimg(idval)
-    assert ui.calc_data_sum(id=idval) == pytest.approx(324)
+    with pytest.raises(DataErr,
+                       match="data set '' does not contain 1-D data"):
+        ui.calc_data_sum(id=idval)
 
 
 @pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
@@ -2176,7 +2178,9 @@ def test_1444_2d_model_1d(idval, clean_astro_ui):
     """
 
     simple_dataimg(idval)
-    assert ui.calc_model_sum(id=idval) == pytest.approx(1524)
+    with pytest.raises(DataErr,
+                       match="data set '' does not contain 1-D data"):
+        ui.calc_model_sum(id=idval)
 
 
 @pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
@@ -2198,9 +2202,8 @@ def test_1444_2d_source_1d(idval, clean_astro_ui):
     """
 
     simple_dataimg(idval)
-
-    # trigger an assertion that was added as part of #756
-    with pytest.raises(AssertionError):
+    with pytest.raises(DataErr,
+                       match="data set '' does not contain 1-D data"):
         ui.calc_source_sum(id=idval)
 
 
