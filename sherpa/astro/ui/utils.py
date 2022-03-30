@@ -796,13 +796,11 @@ class Session(sherpa.ui.utils.Session):
         >>> idat = unpack_arrays(x, y, ivals, (3, 4), DataIMG)
 
         """
-        dataset = None
         try:
-            dataset = sherpa.astro.io.read_arrays(*args)
+            return sherpa.astro.io.read_arrays(*args)
         except NotImplementedError:
             # if the astro backend is not set, fall back on io module version.
-            dataset = sherpa.io.read_arrays(*args)
-        return dataset
+            return sherpa.io.read_arrays(*args)
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: rework the Data type notes section (also needed for
@@ -1335,18 +1333,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
         try:
-            data = self.unpack_pha(filename, *args, **kwargs)
+            return self.unpack_pha(filename, *args, **kwargs)
         except:
             try:
-                data = self.unpack_image(filename, *args, **kwargs)
+                return self.unpack_image(filename, *args, **kwargs)
             except:
                 try:
-                    data = self.unpack_table(filename, *args, **kwargs)
+                    return self.unpack_table(filename, *args, **kwargs)
                 except:
                     # If this errors out then so be it
-                    data = self.unpack_ascii(filename, *args, **kwargs)
-
-        return data
+                    return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
                                comment='#', func=numpy.average, delta=False):
