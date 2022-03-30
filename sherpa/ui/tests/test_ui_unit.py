@@ -35,7 +35,7 @@ import pytest
 from sherpa import ui
 from sherpa.models.parameter import Parameter
 from sherpa.models.model import ArithmeticModel
-from sherpa.utils.err import ArgumentTypeErr, IdentifierErr, ParameterErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ParameterErr
 from sherpa.utils.logging import SherpaVerbosity
 
 
@@ -911,3 +911,281 @@ def test_thaw_invalid_arguments(string, clean_ui):
             ui.thaw(1)
 
     assert str(ae.value) == "'par' must be a parameter or model object or expression string"
+
+
+def test_set_dep_none(clean_ui):
+    """What happens if set_dep is called with None?"""
+
+    x = np.arange(10, 30, 5)
+    y = np.ones(4)
+    ui.load_arrays(1, x, y)
+
+    ui.set_dep(None)
+
+    # We get [nan, nan, nan, nan]
+    assert np.isnan(ui.get_dep()) == pytest.approx([1, 1, 1, 1])
+
+
+def test_set_dep_scalar(clean_ui):
+    """What happens if set_dep is called with a scalar?"""
+
+    x = np.arange(10, 30, 5)
+    ones = np.ones(4)
+    ui.load_arrays(1, x, ones)
+
+    ui.set_dep(3)
+    assert ui.get_dep() == pytest.approx(3 * ones)
+
+
+def test_set_dep_array(clean_ui):
+    """What happens if set_dep is called with an array?"""
+
+    x = np.arange(10, 30, 5)
+    ones = np.ones(4)
+    ui.load_arrays(1, x, ones)
+
+    ui.set_dep([2, 4, 5, 19])
+    assert ui.get_dep() == pytest.approx([2, 4, 5, 19])
+
+
+def test_set_dep_array_wrong(clean_ui):
+    """What happens if set_dep is called with an array with the wrong length?"""
+
+    x = np.arange(10, 30, 5)
+    ones = np.ones(4)
+    ui.load_arrays(1, x, ones)
+
+    # this does not error out
+    ui.set_dep([2, 4, 5])
+    assert ui.get_dep() == pytest.approx([2, 4, 5])
+
+
+def test_set_staterror_none(clean_ui):
+    """What happens when we set the staterror to None?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    ui.load_arrays(1, np.arange(3), np.ones(3), staterror, syserror)
+    ui.set_stat('cstat')
+
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+    # removing the statistical error means that the statistic is used;
+    # for the likelihood stats we just get 1's
+    #
+    ui.set_staterror(None)
+    assert ui.get_staterror() == pytest.approx(np.ones(3))
+    assert ui.get_syserror() == pytest.approx(syserror)
+
+    combo = np.sqrt(1 + 0.25) * np.ones(3)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_syserror_none(clean_ui):
+    """What happens when we set the syserror to None?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    ui.load_arrays(1, np.arange(3), np.ones(3), staterror, syserror)
+    ui.set_stat('cstat')
+
+    ui.set_syserror(None)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    with pytest.raises(DataErr) as err:
+        ui.get_syserror()
+
+    assert str(err.value) == "data set '1' does not specify systematic errors"
+
+    combo = staterror
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_staterror_scalar_no_fractional(clean_ui):
+    """What happens when we set the staterror to a scalar fractional=False?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    ui.load_arrays(1, np.arange(3), np.ones(3), staterror, syserror)
+    ui.set_stat('cstat')
+
+    ui.set_staterror(3)
+    assert ui.get_staterror() == pytest.approx(3 * np.ones(3))
+    assert ui.get_syserror() == pytest.approx(syserror)
+
+    combo = np.sqrt(9 + 0.25) * np.ones(3)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_syserror_scalar_no_fractional(clean_ui):
+    """What happens when we set the syserror to a scalar fractional=False?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    ui.load_arrays(1, np.arange(3), np.ones(3), staterror, syserror)
+    ui.set_stat('cstat')
+
+    ui.set_syserror(3)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(3 * np.ones(3))
+
+    combo = np.sqrt(0.01 + 9) * np.ones(3)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_staterror_scalar_fractional(clean_ui):
+    """What happens when we set the staterror to a scalar fractional=True?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, np.arange(3), y, staterror, syserror)
+    ui.set_stat('cstat')
+
+    ui.set_staterror(0.4, fractional=True)
+    assert ui.get_staterror() == pytest.approx(0.4 * y)
+    assert ui.get_syserror() == pytest.approx(syserror)
+
+    combo = np.sqrt(0.16 * y * y + 0.25)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_syserror_scalar_fractional(clean_ui):
+    """What happens when we set the syserror to a scalar fractional=True?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, np.arange(3), y, staterror, syserror)
+    ui.set_stat('cstat')
+
+    ui.set_syserror(0.4, fractional=True)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(0.4 * y)
+
+    combo = np.sqrt(0.01 + 0.16 * y * y)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_staterror_array(clean_ui):
+    """What happens when we set the staterror to an array?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, np.arange(3), y, None, syserror)
+    ui.set_stat('cstat')
+
+    ui.set_staterror(staterror)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_set_syserror_array(clean_ui):
+    """What happens when we set the syserror to an array?"""
+
+    staterror = 0.1 * np.ones(3)
+    syserror = 0.5 * np.ones(3)
+    combo = np.sqrt(0.01 + 0.25) * np.ones(3)
+
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, np.arange(3), y, staterror, None)
+    ui.set_stat('cstat')
+
+    ui.set_syserror(syserror)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+@pytest.mark.parametrize("field", ["staterror", "syserror"])
+def test_set_error_array_wrong(field, clean_ui):
+    """What happens when we set the stat/syserror to an array of the wrong length?"""
+
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, np.arange(3), y)
+    ui.set_stat('cstat')
+
+    setfunc = getattr(ui, f"set_{field}")
+
+    # this does not error out
+    setfunc(np.asarray([1, 2, 3, 4]))
+
+    getfunc = getattr(ui, f"get_{field}")
+    assert getfunc() == pytest.approx([1, 2, 3, 4])
+
+
+def test_set_filter_unmasked(clean_ui):
+    """What happens when we call set_filter to an unfiltered dataset?"""
+
+    x = np.asarray([10, 20, 30])
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, x, y)
+
+    data = ui.get_data()
+    assert data.mask
+
+    ui.set_filter(np.asarray([True, False, True]))
+    assert data.mask == pytest.approx([True, False, True])
+
+
+def test_set_filter_unmasked_wrong(clean_ui):
+    """What happens when we call set_filter to an unfiltered dataset with the wrong size?"""
+
+    x = np.asarray([10, 20, 30])
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, x, y)
+
+    data = ui.get_data()
+
+    with pytest.raises(DataErr) as err:
+        ui.set_filter(np.asarray([True, False]))
+
+    assert str(err.value) == "size mismatch between 3 and 2"
+
+
+def test_set_filter_masked(clean_ui):
+    """What happens when we call set_filter to a filtered dataset?"""
+
+    x = np.asarray([10, 20, 30, 40, 50])
+    y = np.asarray([2, 3, 4, 5, 6])
+    ui.load_arrays(1, x, y)
+
+    ui.ignore(lo=15, hi=45)
+
+    data = ui.get_data()
+    assert data.mask == pytest.approx([True, False, False, False, True])
+
+    ui.set_filter(np.asarray([True, False, True, False, False]))
+    assert data.mask == pytest.approx([True, False, True, False, True])
+
+
+def test_set_filter_masked_wrong(clean_ui):
+    """What happens when we call set_filter to a filtered dataset with the wrong size?"""
+
+    x = np.asarray([10, 20, 30])
+    y = np.asarray([2, 3, 4])
+    ui.load_arrays(1, x, y)
+
+    ui.ignore(lo=15, hi=45)
+
+    with pytest.raises(DataErr) as err:
+        ui.set_filter(np.asarray([True, False]))
+
+    assert str(err.value) == "size mismatch between 3 and 2"

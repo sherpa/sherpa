@@ -2190,3 +2190,236 @@ def test_1444_2d_source_2d(idval, clean_astro_ui):
 
     simple_dataimg(idval)
     assert ui.calc_source_sum2d(id=idval) == pytest.approx(1524)
+
+
+@pytest.fixture
+def simple_pha(clean_astro_ui):
+    """A simple grouped PHA dataset."""
+
+    chans = np.arange(1, 10)
+    counts = chans * 2
+    grouping = np.asarray([1, -1, -1, 1, 1, -1, -1, 1, 1])
+    data = ui.DataPHA('x', chans, counts)
+    data.grouping = grouping
+
+    assert not data.grouped
+    data.group()
+
+    ui.set_data(data)
+    ui.set_stat("chi2datavar")
+
+    # return the expected counts
+    return 2 * np.asarray([1 + 2 + 3, 4, 5 + 6 + 7, 8, 9])
+
+
+def test_pha_set_dep_none(simple_pha):
+    """What happens if set_dep is called with None?"""
+
+    ui.set_dep(None)
+
+    # We get [nan, nan, nan, nan, nan]
+    assert np.isnan(ui.get_dep()) == pytest.approx([1, 1, 1, 1, 1])
+
+
+def test_pha_set_dep_scalar(simple_pha):
+    """What happens if set_dep is called with a scalar?"""
+
+    ui.set_dep(3)
+    assert ui.get_dep() == pytest.approx(3 * np.ones(5))
+
+
+def test_pha_set_dep_array(simple_pha):
+    """What happens if set_dep is called with an array?"""
+
+    # The grouping is 1-3, 4, 5-7, 8, 9
+    ui.set_dep([2, 4, 5, 19, 11, 12, 13, 0, 9])
+
+    # I do not understand why get_dep returns the "average" value
+    # rather than the sum, but let's test the current behavior.
+    #
+    assert ui.get_dep() == pytest.approx([11 / 3, 19, 36 / 3, 0, 9])
+
+
+def test_pha_set_dep_array_wrong(simple_pha):
+    """What happens if set_dep is called with an array with the wrong length?"""
+
+    # this does not error out
+    ui.set_dep([2, 4, 5])
+
+    # this does error out
+    with pytest.raises(TypeError) as err:
+        ui.get_dep()
+
+    assert str(err.value) == "input array sizes do not match, data: 3 vs group: 9"
+
+
+def test_pha_get_staterror(simple_pha):
+    """Check get_staterror with a PHA dataset"""
+
+    error = np.sqrt(simple_pha)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_get_syserror(simple_pha):
+    """Check get_syserror with a PHA dataset"""
+
+    with pytest.raises(DataErr) as err:
+        ui.get_syserror()
+
+    assert str(err.value) == "data set '1' does not specify systematic errors"
+
+
+def test_pha_set_staterror_scalar_no_fractional(simple_pha):
+    """What happens when we set the staterror to a scalar fractional=False?"""
+
+    # The errors are calculated from
+    #    (3,3,3), 3, (3, 3, 3), 3, 3
+    # thanks to the grouping. Those bins with multiple values have
+    # the error values combined in quadrature.
+    #
+    error = 3 * np.sqrt([3, 1, 3, 1, 1])
+
+    ui.set_staterror(3)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_set_syserror_scalar_no_fractional(simple_pha):
+    """What happens when we set the syserror to a scalar fractional=False?"""
+
+    staterror = np.sqrt(simple_pha)
+    syserror = 2 * np.sqrt([3, 1, 3, 1, 1])
+    combo = np.sqrt(simple_pha + syserror * syserror)
+
+    ui.set_syserror(2)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_pha_set_staterror_scalar_fractional(simple_pha):
+    """What happens when we set the staterror to a scalar fractional=True?"""
+
+    vals = 0.4 * 2 * np.arange(1, 10)
+    vals2 = vals * vals
+    error = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                     vals2[4] + vals2[5] + vals2[6], vals2[7],
+                     vals2[8]])
+
+    ui.set_staterror(0.4, fractional=True)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_set_syserror_scalar_fractional(simple_pha):
+    """What happens when we set the syserror to a scalar fractional=True?"""
+
+    staterror = np.sqrt(simple_pha)
+
+    vals = 0.5 * 2 * np.arange(1, 10)
+    vals2 = vals * vals
+    syserror = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                        vals2[4] + vals2[5] + vals2[6], vals2[7],
+                        vals2[8]])
+
+    combo = np.sqrt(simple_pha + syserror * syserror)
+
+    ui.set_syserror(0.5, fractional=True)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_pha_set_staterror_array(simple_pha):
+    """What happens when we set the staterror to an array?"""
+
+    # The errors are given per channel, but the response is
+    # grouped.
+    #
+    vals = 0.1 * np.arange(1, 10)
+    vals2 = vals * vals
+    error = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                     vals2[4] + vals2[5] + vals2[6], vals2[7],
+                     vals2[8]])
+
+    ui.set_staterror(vals)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_set_syserror_array(simple_pha):
+    """What happens when we set the syserror to an array?"""
+
+    vals = 0.1 * np.arange(1, 10)
+    vals2 = vals * vals
+    syserror = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                        vals2[4] + vals2[5] + vals2[6], vals2[7],
+                        vals2[8]])
+
+    combo = np.sqrt(simple_pha + syserror * syserror)
+
+    ui.set_syserror(vals)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+@pytest.mark.parametrize("field", ["staterror", "syserror"])
+def test_pha_set_error_array_wrong(field, simple_pha):
+    """What happens when we set the stat/syserror to an array of the wrong length?"""
+
+    setfunc = getattr(ui, f"set_{field}")
+
+    # this does not error out
+    setfunc(np.asarray([1, 2, 3, 4]))
+
+    # this does error out
+    getfunc = getattr(ui, f"get_{field}")
+    with pytest.raises(TypeError) as err:
+        getfunc()
+
+    assert str(err.value) == "input array sizes do not match, data: 4 vs group: 9"
+
+
+def test_pha_set_filter_unmasked(simple_pha):
+    """What happens when we call set_filter to an unfiltered dataset?"""
+
+    data = ui.get_data()
+    assert data.mask
+
+    expected = [True, True, False, True, False]
+    ui.set_filter(expected)
+
+    assert data.mask == pytest.approx(expected)
+
+
+def test_pha_set_filter_unmasked_wrong(simple_pha):
+    """What happens when we call set_filter to an unfiltered dataset with the wrong size?"""
+
+    with pytest.raises(DataErr) as err:
+        ui.set_filter(np.asarray([True, False]))
+
+    assert str(err.value) == "size mismatch between 5 and 2"
+
+
+def test_pha_set_filter_masked(simple_pha):
+    """What happens when we call set_filter to a filtered dataset?"""
+
+    data = ui.get_data()
+
+    ui.ignore(4, 8)
+    assert data.mask == pytest.approx([True, False, False, False, True])
+
+    ui.set_filter(np.asarray([True, False, True, False, False]))
+    assert data.mask == pytest.approx([True, False, True, False, True])
+
+
+def test_pha_set_filter_masked_wrong(simple_pha):
+    """What happens when we call set_filter to a filtered dataset with the wrong size?"""
+
+    ui.ignore(4, 8)
+
+    with pytest.raises(DataErr) as err:
+        ui.set_filter(np.asarray([True, False]))
+
+    assert str(err.value) == "size mismatch between 5 and 2"
