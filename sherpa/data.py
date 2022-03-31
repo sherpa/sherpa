@@ -496,6 +496,10 @@ class DataSpaceND():
 #
 class Filter():
     """A class for representing filters of N-Dimensional datasets.
+
+    The filter does not know the size of the dataset or the values of
+    the independent axes.
+
     """
     def __init__(self):
         self._mask = True
@@ -936,6 +940,24 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @mask.setter
     def mask(self, val):
+
+        # If we have a scalar then
+        # - we do not check sizes (as it's possible to set even though
+        #   the independent axis is not set)
+        # - we do not want to convert it to a ndarray
+        #
+        # Note that numpy.iterable and numpy.isscalar are not inverses,
+        # for instance a string is both iterable and a scalar. Of
+        # course, isscalar does not think None is a scalar, hence the
+        # extra check.
+        #
+        if val is not None and not numpy.isscalar(val):
+            if self.size is None:
+                raise DataErr("The independent axis has not been set yet")
+
+            if len(val) != self.size:
+                raise DataErr("mismatchn", "independent axis", "mask", self.size, len(val))
+
         self._data_space.filter.mask = val
 
     def get_dims(self):

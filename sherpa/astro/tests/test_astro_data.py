@@ -2955,8 +2955,9 @@ def test_pha_mask_size_must_match_ungrouped():
     data.grouping = [1, -1, -1, 1, -1, -1, 1, 1]
     assert not data.grouped
 
-    # does not raise an error
-    data.mask = [1, 0, 1]
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and mask: 8 vs 3"):
+        data.mask = [1, 0, 1]
 
 
 def test_pha_mask_size_must_match_grouped():
@@ -2969,8 +2970,9 @@ def test_pha_mask_size_must_match_grouped():
     data.grouped = True
 
     # The length is chosen to match the un-grouped data.
-    # does not raise an error
-    data.mask = [1, 0, 1, 1, 0, 1, 0, 0]
+    with pytest.raises(DataErr,
+                       match="size mismatch between grouped data and mask: 4 vs 8"):
+        data.mask = [1, 0, 1, 1, 0, 1, 0, 0]
 
 
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])

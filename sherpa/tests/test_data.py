@@ -1552,16 +1552,14 @@ def test_filter_apply_none():
 
 
 def test_data_mask_when_no_elements():
-    """what happens when there's no data?
-
-    This is a regresion test until the code is changed.
-    """
+    """what happens when there's no data?"""
 
     data = Data1D("x", None, None)
     assert data.mask is True
 
-    data.mask = [1, 2]
-    assert data.mask == pytest.approx([True, True])
+    with pytest.raises(DataErr,
+                       match="The independent axis has not been set yet"):
+        data.mask = [1, 2]
 
 
 def test_data1d_get_y_checks_model_dim():
@@ -1966,8 +1964,9 @@ def test_mask_sent_array_non_bool():
 def test_mask_size_must_match(data):
     """Check if the mask can be set to the wrong length"""
 
-    # does not raise an error
-    data.mask = [1, 0, 1]
+    with pytest.raises(DataErr,
+                       match="^size mismatch between independent axis and mask: 100? vs 3$"):
+        data.mask = [1, 0, 1]
 
 
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)

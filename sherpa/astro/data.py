@@ -1849,6 +1849,28 @@ must be an integer.""")
     def counts(self, val):
         self.y = val
 
+    # Override the mask handling because the mask matches the grouped
+    # data length, not the independent axis.
+    #
+    @Data1D.mask.setter
+    def mask(self, val):
+
+        # We only need to over-ride the behavior if the data is
+        # grouped and val is a sequence (so we test with isscalar
+        # rather than iterable, to avoid selecting strings).
+        #
+        if self.grouped and val is not None and not numpy.isscalar(val):
+            # The assumption is that is the data is grouped then it contains data.
+            nexp = len(self.get_y(filter=False))
+            if len(val) != nexp:
+                raise DataErr("mismatchn", "grouped data", "mask", nexp, len(val))
+
+            self._data_space.filter.mask = val
+            return
+
+        # This is a bit messy just to call the original code
+        Data1D.mask.fset(self, val)
+
     # Set up the properties for the related fields
     #
     @property
