@@ -3151,7 +3151,7 @@ class Session(NoNewAttributesAfterInit):
         d = self.get_data(id)
         id = self._fix_id(id)
         err = d.get_syserror(filter)
-        if err is None or not numpy.iterable(err):
+        if err is None:
             raise sherpa.utils.err.DataErr('nosyserr', id)
 
         return err
@@ -4636,10 +4636,12 @@ class Session(NoNewAttributesAfterInit):
         _check_str_type(filename, "filename")
         d = self.get_data(id)
         id = self._fix_id(id)
+
         if d.mask is False:
             raise sherpa.utils.err.DataErr('notmask')
         if not numpy.iterable(d.mask):
             raise sherpa.utils.err.DataErr('nomask', id)
+
         x = d.get_indep(filter=False)[0]
         mask = numpy.asarray(d.mask, int)
         self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],

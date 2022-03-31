@@ -2966,9 +2966,11 @@ class Session(sherpa.ui.utils.Session):
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+
         err = d.get_syserror(filter)
-        if err is None or not numpy.iterable(err):
+        if err is None:
             raise DataErr('nosyserr', id)
+
         return err
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
@@ -3163,6 +3165,7 @@ class Session(sherpa.ui.utils.Session):
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+
         return d.get_indep(filter=filter)
 
     def get_axes(self, id=None, bkg_id=None):
@@ -3457,6 +3460,7 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
+
         old = d._rate
         d._rate = True     # return count rate for PHA
         rate = d.get_y(filter)
@@ -3500,9 +3504,11 @@ class Session(sherpa.ui.utils.Session):
         >>> barf = get_spectresp("eclipse", bkg_id=2)
 
         """
-        d = self._get_pha_data(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            d = self._get_pha_data(id)
+        else:
             d = self.get_bkg(id, bkg_id)
+
         return d.get_specresp(filter)
 
     def get_exposure(self, id=None, bkg_id=None):
@@ -3551,9 +3557,13 @@ class Session(sherpa.ui.utils.Session):
         >>> tbkg = get_exposure('core', bkg_id=1)
 
         """
-        if bkg_id is not None:
-            return self.get_bkg(id, bkg_id).exposure
-        return self._get_pha_data(id).exposure
+
+        if bkg_id is None:
+            d = self._get_pha_data(id)
+        else:
+            d = self.get_bkg(id, bkg_id)
+
+        return d.exposure
 
     def get_backscal(self, id=None, bkg_id=None):
         """Return the BACKSCAL scaling of a PHA data set.
@@ -3609,9 +3619,13 @@ class Session(sherpa.ui.utils.Session):
         0.00022745132446289
 
         """
-        if bkg_id is not None:
-            return self.get_bkg(id, bkg_id).backscal
-        return self._get_pha_data(id).backscal
+
+        if bkg_id is None:
+            d = self._get_pha_data(id)
+        else:
+            d = self.get_bkg(id, bkg_id)
+
+        return d.backscal
 
     def get_bkg_scale(self, id=None, bkg_id=1, units='counts',
                       group=True, filter=False):
@@ -3759,9 +3773,13 @@ class Session(sherpa.ui.utils.Session):
         >>> get_areascal(id=2, bkg_id=1)
 
         """
-        if bkg_id is not None:
-            return self.get_bkg(id, bkg_id).areascal
-        return self._get_pha_data(id).areascal
+
+        if bkg_id is None:
+            d = self._get_pha_data(id)
+        else:
+            d = self.get_bkg(id, bkg_id)
+
+        return d.areascal
 
     def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
         if filename is None:
@@ -4753,7 +4771,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             d = self._get_pha_data(id)
 
-        if d.grouping is None or not numpy.iterable(d.grouping):
+        if d.grouping is None:
             raise DataErr('nogrouping', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
@@ -4838,7 +4856,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             d = self._get_pha_data(id)
 
-        if d.quality is None or not numpy.iterable(d.quality):
+        if d.quality is None:
             raise DataErr('noquality', id)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
@@ -7445,14 +7463,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
 
-        if val is None:
-            data.grouping = None
-        else:
-            if(type(val) in (numpy.ndarray,) and
-               issubclass(val.dtype.type, numpy.integer)):
-                data.grouping = numpy.asarray(val)
-            else:
-                data.grouping = numpy.asarray(val, SherpaInt)
+        data.grouping = val
 
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
@@ -7604,14 +7615,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
 
-        if val is None:
-            data.quality = None
-        else:
-            if(type(val) in (numpy.ndarray,) and
-               issubclass(val.dtype.type, numpy.integer)):
-                data.quality = numpy.asarray(val)
-            else:
-                data.quality = numpy.asarray(val, SherpaInt)
+        data.quality = val
 
     # DOC TODO: Need to document that routines like get_quality return
     # a reference to the data - so can change the data structure
@@ -8514,8 +8518,9 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_data(overplot=True)
 
         """
-        if not self._get_pha_data(id).subtracted:
-            self._get_pha_data(id).subtract()
+        d = self._get_pha_data(id)
+        if not d.subtracted:
+            d.subtract()
 
     def unsubtract(self, id=None):
         """Undo any background subtraction for the data set.
@@ -8565,8 +8570,9 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
-        if self._get_pha_data(id).subtracted:
-            self._get_pha_data(id).unsubtract()
+        d = self._get_pha_data(id)
+        if d.subtracted:
+            d.unsubtract()
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
@@ -14079,6 +14085,7 @@ class Session(sherpa.ui.utils.Session):
         data = self.get_data(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
+
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
 
     # DOC-TODO: better comparison of calc_source_sum and calc_model_sum
@@ -14185,13 +14192,14 @@ class Session(sherpa.ui.utils.Session):
         6.179472329646446
 
         """
-        data = self.get_data(id)
-        model = None
+
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
             model = self.get_bkg_model(id, bkg_id)
         else:
+            data = self.get_data(id)
             model = self.get_model(id)
+
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
     def calc_data_sum2d(self, reg=None, id=None):
@@ -14529,13 +14537,14 @@ class Session(sherpa.ui.utils.Session):
         6.179472329646446
 
         """
-        data = self.get_data(id)
-        model = None
+
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
             model = self.get_bkg_source(id, bkg_id)
         else:
+            data = self.get_data(id)
             model = self.get_source(id)
+
         return sherpa.astro.utils.calc_source_sum(data, model, lo, hi)
 
     # DOC-TODO: no reason can't k-correct wavelength range,
@@ -14656,12 +14665,12 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_kcorr(0.5, 0.5, 2, 2, 10, bkg_id=2)
 
         """
-        data = self.get_data(id)
-        model = None
+
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
             model = self.get_bkg_source(id, bkg_id)
         else:
+            data = self.get_data(id)
             model = self.get_source(id)
 
         return sherpa.astro.utils.calc_kcorr(data, model, z, obslo, obshi,
