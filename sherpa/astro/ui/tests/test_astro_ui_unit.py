@@ -393,7 +393,7 @@ def test_save_filter_ignored(bid, tmp_path):
                            "model 1 has not been set"),
                           (ui.save_delchi,  IdentifierErr,
                            "model 1 has not been set")])
-def test_save_xxx_nodata(func, etype, emsg, tmp_path):
+def test_save_xxx_nodata(func, etype, emsg, tmp_path, clean_astro_ui):
     """Does save_xxx error out if there's no data to save? DataPHA
     """
 
