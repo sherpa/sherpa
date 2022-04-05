@@ -88,49 +88,6 @@ class Transformation(NoTransformation):
         self.chain_fcns = None
         return
 
-    def init(self):
-        '''For each parameter, decide which transformation to use.
-        A model has multiple parameters since parameters might be
-        bounded, while others are unbounded. There are four different
-        scenarios:
-            0) A parameter is unbounded
-            1) A parameter only has a high bound
-            2) A parameter only has a low bound
-            3) A parameter has both low and high bound
-        '''
-        bounds = []
-        int2ext = []
-        ext2int = []
-        chain = []
-        # cause it's faster and more accurate than cmp with max hugeval
-        myhugeval = 1.0e-1 * hugeval
-        for a, b in zip(self.lo, self.hi):
-            if a <= - myhugeval and b >= myhugeval:
-                # 0) A parameter is unbounded
-                bounds.append((None, None))
-                int2ext.append(self.return_arg)
-                ext2int.append(self.return_arg)
-                chain.append(self.chain_rule_1)
-            elif a <= - myhugeval:
-                # 1) A parameter only has a high bound
-                bounds.append((None, b))
-                int2ext.append(self.int2ext_hi)
-                ext2int.append(self.ext2int_hi)
-                chain.append(self.chain_rule_hi)
-            elif b >= myhugeval:
-                # 2) A parameter only has a low bound
-                bounds.append((a, None))
-                int2ext.append(self.int2ext_lo)
-                ext2int.append(self.ext2int_lo)
-                chain.append(self.chain_rule_lo)
-            else:
-                # 3) A parameter has both low and high  bound
-                bounds.append((a, b))
-                int2ext.append(self.int2ext_both)
-                ext2int.append(self.ext2int_both)
-                chain.append(self.chain_rule_both)
-        return bounds, int2ext, ext2int, chain
-
     def calc_covar(self, m, n, xint, info, fjac):
         '''apply the chain rule to the internal covariance matrix
 
@@ -201,6 +158,49 @@ class Transformation(NoTransformation):
         '''
         return self.hi[ii] - numpy.sqrt(self.hi[ii] - x)
 
+    def init(self):
+        '''For each parameter, decide which transformation to use.
+        A model has multiple parameters since parameters might be
+        bounded, while others are unbounded. There are four different
+        scenarios:
+            0) A parameter is unbounded
+            1) A parameter only has a high bound
+            2) A parameter only has a low bound
+            3) A parameter has both low and high bound
+        '''
+        bounds = []
+        int2ext = []
+        ext2int = []
+        chain = []
+        # cause it's faster and more accurate than cmp with max hugeval
+        myhugeval = 1.0e-1 * hugeval
+        for a, b in zip(self.lo, self.hi):
+            if a <= - myhugeval and b >= myhugeval:
+                # 0) A parameter is unbounded
+                bounds.append((None, None))
+                int2ext.append(self.return_arg)
+                ext2int.append(self.return_arg)
+                chain.append(self.chain_rule_1)
+            elif a <= - myhugeval:
+                # 1) A parameter only has a high bound
+                bounds.append((None, b))
+                int2ext.append(self.int2ext_hi)
+                ext2int.append(self.ext2int_hi)
+                chain.append(self.chain_rule_hi)
+            elif b >= myhugeval:
+                # 2) A parameter only has a low bound
+                bounds.append((a, None))
+                int2ext.append(self.int2ext_lo)
+                ext2int.append(self.ext2int_lo)
+                chain.append(self.chain_rule_lo)
+            else:
+                # 3) A parameter has both low and high  bound
+                bounds.append((a, b))
+                int2ext.append(self.int2ext_both)
+                ext2int.append(self.ext2int_both)
+                chain.append(self.chain_rule_both)
+        return bounds, int2ext, ext2int, chain
+
     def int2ext_both(self, ii, x):
         '''The transformation from external to internal coordinate for a
         parameter with upper and lower limits via the following transformation:
@@ -242,6 +242,7 @@ class Transformation(NoTransformation):
         self.bounds, self.int2ext_fcns, self.ext2int_fcns, \
             self.chain_fcns = self.init()
         return
+
 
 def check_transformation(arg, xmin, xmax):
     tfmt = None

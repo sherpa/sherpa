@@ -80,7 +80,7 @@ def tst_opt(opt, fct, npar, transform, factor=4, reltol=1.0e-3, abstol=1.0e-3):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_rosenbrock(opt, npar=4):
     tst_opt(opt, _tstoptfct.rosenbrock, npar, False)
-    tst_opt(opt, _tstoptfct.rosenbrock, npar, Transformation())
+    tst_opt(opt, _tstoptfct.rosenbrock, npar, True)
 
 
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
@@ -367,9 +367,11 @@ def test_Branin(opt, npar=2):
 # def test_Cola(opt, npar=17):
 #     tst_opt(opt, _tstoptfct.Cola, npar)
 
+
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Colville(opt, npar=4):
     tst_opt(opt, _tstoptfct.Colville, npar, False)
+
 
 def test_minim_no_reflect(reltol=1.0e-3, abstol=1.0e-3):
      fct = _tstoptfct.Colville
@@ -379,92 +381,6 @@ def test_minim_no_reflect(reltol=1.0e-3, abstol=1.0e-3):
      assert fval == pytest.approx(wrong_fval, rel=reltol, abs=abstol)
      assert fmin != wrong_fval
 
-def setup_4_transform(opt):
-    x = [ 0.5,  1.5,  2.5,  3.5,  4.5,  5.5,  6.5,  7.5,  8.5,  9.5, 10.5]
-    y = [1.6454, 1.7236, 1.9472, 2.2348, 2.6187, 2.8642, 3.1263, 3.2073, \
-         3.2852, 3.3092, 3.4496]
-    z = 11 * [0.04114]
-    data = Data1D('1', x, y, z)
-    poly = Polynom1D()
-    poly.pars[1].thaw()
-    poly.pars[2].thaw()
-    poly.pars[3].thaw()
-    method=opt()
-    method.config['transformation'] = Transformation()
-    if opt == LevMar:
-        method.config['epsfcn'] = EPSILON64
-    fit = Fit(data, poly, method=method, stat=Chi2Gehrels())
-    parvals = (1.498430848959475, 0.14469980089323808, 0.032293618881299224,
-               -0.0027772921523028238)
-    return parvals, poly, fit
-
-
-@pytest.mark.parametrize("opt", [LevMar, NelderMead])
-def test_transform_hi(opt, factor=4):
-    parvals, poly, fit = setup_4_transform(opt)
-    poly.c0.max = expand(poly.c0.val, factor, 1, operator.add, operator.sub)
-    poly.c1.max = expand(poly.c1.val, factor, 1, operator.add, operator.sub)
-    poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
-    poly.c3.max = expand(poly.c3.val, factor, 1, operator.add, operator.sub)
-    result = fit.fit()
-    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
-    if opt == LevMar:
-        expect = [0.052084507576, 0.041377269137, 0.008749967892,
-                  0.000523424920]
-        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
-        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
-
-
-@pytest.mark.parametrize("opt", [LevMar, NelderMead])
-def test_transform_lo(opt, factor=4):
-    parvals, poly, fit = setup_4_transform(opt)
-    poly.c0.min = expand(poly.c0.val, factor, -1, operator.sub, operator.add)
-    poly.c1.min = expand(poly.c1.val, factor, -1, operator.sub, operator.add)
-    poly.c2.min = expand(poly.c2.val, factor, -1, operator.sub, operator.add)
-    poly.c3.min = expand(poly.c3.val, factor, -1, operator.sub, operator.add)
-    result = fit.fit()
-    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
-    if opt == LevMar:
-        expect = [0.052084557616, 0.041377269241, 0.008749967662,
-                  0.000523424913]
-        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
-        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
-
-
-@pytest.mark.parametrize("opt", [LevMar, NelderMead])
-def test_transform_lohi(opt, factor=4):
-    parvals, poly, fit = setup_4_transform(opt)
-    poly.c0.min = expand(poly.c0.val, factor, -1, operator.sub, operator.add)
-    poly.c0.max = expand(poly.c0.val, factor, 1, operator.add, operator.sub)
-    poly.c1.min = expand(poly.c1.val, factor, -1, operator.sub, operator.add)
-    poly.c1.max = expand(poly.c1.val, factor, 1, operator.add, operator.sub)
-    poly.c2.min = expand(poly.c2.val, factor, -1, operator.sub, operator.add)
-    poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
-    poly.c3.min = expand(poly.c3.val, factor, -1, operator.sub, operator.add)
-    poly.c3.max = expand(poly.c3.val, factor, 1, operator.add, operator.sub)
-    result = fit.fit()
-    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
-    if opt == LevMar:
-        expect = [0.052084634545, 0.041377280240, 0.008749970667,
-                  0.000523421758]
-        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
-        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
-
-
-@pytest.mark.parametrize("opt", [LevMar, NelderMead])
-def test_transform_partial(opt, factor=4):
-    parvals, poly, fit = setup_4_transform(opt)
-    poly.c0.min = expand(poly.c0.val, factor, -1, operator.sub, operator.add)
-    poly.c0.max = expand(poly.c0.val, factor, 1, operator.add, operator.sub)
-    poly.c1.min = expand(poly.c1.val, factor, -1, operator.sub, operator.add)
-    poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
-    result = fit.fit()
-    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
-    if opt == LevMar:
-        expect = [0.052084632179, 0.041377269482, 0.008749967999,
-                  0.000523424925]
-        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
-        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
 
 # @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
 #                                  pytest.param(montecarlo,
@@ -677,3 +593,105 @@ def test_Trecanni(opt, npar=2):
 #                                               marks=pytest.mark.xfail)])
 # def test_Trefethen4(opt, npar=2):
 #     tst_opt(opt, _tstoptfct.Trefethen4, npar)
+
+################################Transform###################################
+def setup_4_transform(opt):
+    x = [ 0.5,  1.5,  2.5,  3.5,  4.5,  5.5,  6.5,  7.5,  8.5,  9.5, 10.5]
+    y = [1.6454, 1.7236, 1.9472, 2.2348, 2.6187, 2.8642, 3.1263, 3.2073, \
+         3.2852, 3.3092, 3.4496]
+    z = 11 * [0.04114]
+    data = Data1D('1', x, y, z)
+    poly = Polynom1D()
+    poly.pars[1].thaw()
+    poly.pars[2].thaw()
+    poly.pars[3].thaw()
+    method=opt()
+    method.config['transformation'] = Transformation()
+    if opt == LevMar:
+        method.config['epsfcn'] = EPSILON64
+    fit = Fit(data, poly, method=method, stat=Chi2Gehrels())
+    parvals = (1.498430848959475, 0.14469980089323808, 0.032293618881299224,
+               -0.0027772921523028238)
+    return parvals, poly, fit
+
+
+@pytest.mark.parametrize("opt", [LevMar, NelderMead])
+def test_transform_hi(opt, factor=4):
+    parvals, poly, fit = setup_4_transform(opt)
+    poly.c0.max = expand(poly.c0.val, factor, 1, operator.add, operator.sub)
+    poly.c1.max = expand(poly.c1.val, factor, 1, operator.add, operator.sub)
+    poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
+    poly.c3.max = expand(poly.c3.val, factor, 1, operator.add, operator.sub)
+    result = fit.fit()
+    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084507576, 0.041377269137, 0.008749967892,
+                  0.000523424920]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
+
+
+@pytest.mark.parametrize("opt", [LevMar, NelderMead])
+def test_transform_lo(opt, factor=4):
+    parvals, poly, fit = setup_4_transform(opt)
+    poly.c0.min = expand(poly.c0.val, factor, -1, operator.sub, operator.add)
+    poly.c1.min = expand(poly.c1.val, factor, -1, operator.sub, operator.add)
+    poly.c2.min = expand(poly.c2.val, factor, -1, operator.sub, operator.add)
+    poly.c3.min = expand(poly.c3.val, factor, -1, operator.sub, operator.add)
+    result = fit.fit()
+    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084557616, 0.041377269241, 0.008749967662,
+                  0.000523424913]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
+
+
+@pytest.mark.parametrize("opt", [LevMar, NelderMead])
+def test_transform_lohi(opt, factor=4):
+    parvals, poly, fit = setup_4_transform(opt)
+    poly.c0.min = expand(poly.c0.val, factor, -1, operator.sub, operator.add)
+    poly.c0.max = expand(poly.c0.val, factor, 1, operator.add, operator.sub)
+    poly.c1.min = expand(poly.c1.val, factor, -1, operator.sub, operator.add)
+    poly.c1.max = expand(poly.c1.val, factor, 1, operator.add, operator.sub)
+    poly.c2.min = expand(poly.c2.val, factor, -1, operator.sub, operator.add)
+    poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
+    poly.c3.min = expand(poly.c3.val, factor, -1, operator.sub, operator.add)
+    poly.c3.max = expand(poly.c3.val, factor, 1, operator.add, operator.sub)
+    result = fit.fit()
+    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084634545, 0.041377280240, 0.008749970667,
+                  0.000523421758]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
+
+
+@pytest.mark.parametrize("opt", [LevMar, NelderMead])
+def test_transform_partial(opt, factor=4):
+    parvals, poly, fit = setup_4_transform(opt)
+    poly.c0.min = expand(poly.c0.val, factor, -1, operator.sub, operator.add)
+    poly.c0.max = expand(poly.c0.val, factor, 1, operator.add, operator.sub)
+    poly.c1.min = expand(poly.c1.val, factor, -1, operator.sub, operator.add)
+    poly.c2.max = expand(poly.c2.val, factor, 1, operator.add, operator.sub)
+    result = fit.fit()
+    assert parvals == pytest.approx(result.parvals, abs=1.0e-6, rel=1.0e-6)
+    if opt == LevMar:
+        expect = [0.052084632179, 0.041377269482, 0.008749967999,
+                  0.000523424925]
+        covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
+        assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
+
+@pytest.mark.parametrize("opt", [lmdif, minim, neldermead])
+def test_my_transform(opt, npar=2):
+    tst_opt(opt, _tstoptfct.rosenbrock, npar, False)
+
+
+    class MyTransformation(Transformation):
+        def __init__(self):
+            Transformation.__init__(self)
+            return
+
+
+    tst_opt(opt, _tstoptfct.rosenbrock, npar, MyTransformation())
+################################Transform###################################
