@@ -19,6 +19,7 @@
 #
 
 import numpy
+import inspect
 
 from sherpa.models.parameter import hugeval
 
@@ -253,6 +254,7 @@ def check_transformation(arg, xmin, xmax):
     elif inspect.isclass(arg) and issubclass(arg, Transformation):
         tfmt = arg
     else:
-        raise TypeError("arg must inherits from class Transformation")
+        msg = "transformation must inherits from class Transformation"
+        raise TypeError(msg)
     tfmt.set_bounds(xmin, xmax)
     return tfmt

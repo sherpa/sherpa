@@ -694,4 +694,19 @@ def test_my_transform(opt, npar=2):
 
 
     tst_opt(opt, _tstoptfct.rosenbrock, npar, MyTransformation())
+
+
+@pytest.mark.parametrize("opt", [lmdif, minim, neldermead])
+def test_will_not_work(opt, npar=2):
+
+
+    class WillNotWork:
+        def __init__(self):
+            pass
+
+    with pytest.raises(TypeError) as excinfo:
+        tst_opt(opt, _tstoptfct.rosenbrock, npar, WillNotWork())
+
+    errmsg = "transformation must inherits from class Transformation"
+    assert errmsg in str(excinfo.value)
 ################################Transform###################################
