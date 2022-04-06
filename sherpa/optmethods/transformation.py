@@ -68,14 +68,14 @@ class Transformation(NoTransformation):
     ''' See the doc of the NoTransformation base class.
     This class enables an implementation of an unbounded optimization algorithm
     into a bounded one. It is capable of transforming each free parameter using
-    the appropiate transformation depending on its boundary conditions of each
-    free parameter.
+    the appropiate transformation depending on its boundary of each free
+    parameter.
     It is recommended that the class should only be used if a free parameter,
     after a fit, is sufficiently close to upper and/or lower limits. The reason
     for this is some Sherpa model parameters have large, upper and/or lower
     limits and one could lose resolution when transforming. A parameter
     with a low, equal to -hugeval, or high bound,  equal to hugeval,
-    is considered to have only a low or high bound only.
+    is considered to have a low or high bound only.
     Moreover, there is a performance penalty for transforming
     between the external and internal parameter coordinates since a
     transformation has to be done for each parameter for each iteration
@@ -254,7 +254,7 @@ def check_transformation(arg, xmin, xmax):
     elif inspect.isclass(arg) and issubclass(arg, Transformation):
         tfmt = arg
     else:
-        msg = "transformation must inherits from class Transformation"
+        msg = "transformation must inherit from class Transformation"
         raise TypeError(msg)
     tfmt.set_bounds(xmin, xmax)
     return tfmt

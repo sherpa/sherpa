@@ -69,7 +69,6 @@ Best-fit value: 4.0
 
 import random
 import numpy
-import pdb
 
 from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo

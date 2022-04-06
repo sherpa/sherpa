@@ -707,6 +707,6 @@ def test_will_not_work(opt, npar=2):
     with pytest.raises(TypeError) as excinfo:
         tst_opt(opt, _tstoptfct.rosenbrock, npar, WillNotWork())
 
-    errmsg = "transformation must inherits from class Transformation"
+    errmsg = "transformation must inherit from class Transformation"
     assert errmsg in str(excinfo.value)
 ################################Transform###################################
