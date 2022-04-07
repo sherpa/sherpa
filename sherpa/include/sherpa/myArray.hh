@@ -104,7 +104,7 @@ public:
   const std::vector<T> &get_vec() const { return vec; }
 
   virtual std::ostream &print(std::ostream &s) const {
-    for (int ii = 0; ii < size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < size(); ++ii)
       s << vec[ii] << ' ';
     return s;
   }
@@ -141,51 +141,51 @@ public:
   }
 
   Array1D<T> &operator+=(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] += rhs;
     return *this;
   }
 
   Array1D<T> &operator-=(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] -= rhs;
     return *this;
   }
 
   Array1D<T> &operator*=(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] *= rhs;
     return *this;
   }
 
   Array1D<T> &operator/=(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] /= rhs;
     return *this;
   }
 
   ////////////////////////// create extra tmp? //////////////////////////////
   Array1D<T> &operator*(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] *= rhs;
     return *this;
   }
 
   Array1D<T> &operator/(T rhs) {
     if (T(0) != rhs)
-      for (int ii = 0; ii < this->size(); ++ii)
+      for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
         vec[ii] /= rhs;
     return *this;
   }
 
   Array1D<T> &operator+(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] += rhs;
     return *this;
   }
 
   Array1D<T> &operator-(T rhs) {
-    for (int ii = 0; ii < this->size(); ++ii)
+    for (std::vector<int>::size_type ii = 0; ii < this->size(); ++ii)
       vec[ii] -= rhs;
     return *this;
   }
