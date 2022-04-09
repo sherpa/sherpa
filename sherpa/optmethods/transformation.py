@@ -159,7 +159,7 @@ class Transformation(NoTransformation):
         '''
         return self.hi[ii] - numpy.sqrt(self.hi[ii] - x)
 
-    def init(self):
+    def init(self, max_range=64):
         '''For each parameter, decide which transformation to use.
         A model has multiple parameters since parameters might be
         bounded, while others are unbounded. There are four different
@@ -176,7 +176,7 @@ class Transformation(NoTransformation):
         # cause it's faster and more accurate than cmp with max hugeval
         myhugeval = 1.0e-1 * hugeval
         for a, b in zip(self.lo, self.hi):
-            if a <= - myhugeval and b >= myhugeval:
+            if (a <= - myhugeval and b >= myhugeval) or b - a > max_range:
                 # 0) A parameter is unbounded
                 bounds.append((None, None))
                 int2ext.append(self.return_arg)

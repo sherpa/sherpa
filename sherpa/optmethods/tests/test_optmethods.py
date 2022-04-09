@@ -33,6 +33,16 @@ from sherpa.utils import _ncpus
 
 EPSILON64 = numpy.float_(numpy.finfo(numpy.float64).eps)
 
+
+class TestTransformation(Transformation):
+    def __init__(self):
+        Transformation.__init__(self)
+        return
+    def init(self, max_range=8192):
+        super().init(max_range)
+        return
+
+
 def expand(arg, factor, val, op1, op2 ):
     if arg > 0.0:
         return arg * op1(1.0, factor)
@@ -44,13 +54,13 @@ def expand(arg, factor, val, op1, op2 ):
 def init(name, npar, transform, factor):
     x0, xmin, xmax, fmin = _tstoptfct.init(name, npar)
     if transform:
-        xmin = []
-        xmax = []
-        for arg in x0:
-            xmin.append(expand(arg, factor, -1, operator.sub, operator.add))
-            xmax.append(expand(arg, factor, 1, operator.add, operator.sub))
+        xmin = numpy.empty_like(x0)
+        xmax = numpy.empty_like(x0)
+        for ii, arg in enumerate(x0):
+            xmin[ii] = expand(arg, factor, -1, operator.sub, operator.add)
+            xmax[ii] = expand(arg, factor, 1, operator.add, operator.sub)
+        assert sum(xmax - xmin) / len(x0) <= 8192
     return x0, xmin, xmax, fmin
-
 
 def tst_opt(opt, fct, npar, transform, factor=4, reltol=1.0e-3, abstol=1.0e-3):
     """The central function for all the optimization test
@@ -97,7 +107,7 @@ def test_freudensteinroth(opt, npar=4):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_powell_badly_scaled(opt, npar=2):
     tst_opt(opt, _tstoptfct.powell_badly_scaled, npar, False)
-    tst_opt(opt, _tstoptfct.powell_badly_scaled, npar, Transformation())
+    tst_opt(opt, _tstoptfct.powell_badly_scaled, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
@@ -108,31 +118,31 @@ def test_brown_badly_scaled(opt, npar=2):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_beale(opt, npar=2):
     tst_opt(opt, _tstoptfct.beale, npar, False)
-    tst_opt(opt, _tstoptfct.beale, npar, Transformation())
+    tst_opt(opt, _tstoptfct.beale, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_jennrich_sampson(opt, npar=2):
     tst_opt(opt, _tstoptfct.jennrich_sampson, npar, False)
-    tst_opt(opt, _tstoptfct.jennrich_sampson, npar, Transformation())
+    tst_opt(opt, _tstoptfct.jennrich_sampson, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_helical_valley(opt, npar=3):
     tst_opt(opt, _tstoptfct.helical_valley, npar, False)
-    tst_opt(opt, _tstoptfct.helical_valley, npar, Transformation())
+    tst_opt(opt, _tstoptfct.helical_valley, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_bard(opt, npar=3):
     tst_opt(opt, _tstoptfct.bard, npar, False)
-    tst_opt(opt, _tstoptfct.bard, npar, Transformation())
+    tst_opt(opt, _tstoptfct.bard, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_gaussian(opt, npar=3):
     tst_opt(opt, _tstoptfct.gaussian, npar, False)
-    tst_opt(opt, _tstoptfct.gaussian, npar, Transformation())
+    tst_opt(opt, _tstoptfct.gaussian, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
@@ -146,51 +156,51 @@ def test_meyer(opt, npar=3):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_gulf_research_development(opt, npar=3):
     tst_opt(opt, _tstoptfct.gulf_research_development, npar, False)
-    tst_opt(opt, _tstoptfct.gulf_research_development, npar, Transformation())
+    tst_opt(opt, _tstoptfct.gulf_research_development, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_box3d(opt, npar=3):
     tst_opt(opt, _tstoptfct.box3d, npar, False)
-    tst_opt(opt, _tstoptfct.box3d, npar, Transformation())
+    tst_opt(opt, _tstoptfct.box3d, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_powell_singular(opt, npar=4):
     tst_opt(opt, _tstoptfct.powell_singular, npar, False)
-    tst_opt(opt, _tstoptfct.powell_singular, npar, Transformation())
+    tst_opt(opt, _tstoptfct.powell_singular, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
                                  minim, montecarlo, neldermead])
 def test_wood(opt, npar=4):
     tst_opt(opt, _tstoptfct.wood, npar, False)
-    tst_opt(opt, _tstoptfct.wood, npar, Transformation())
+    tst_opt(opt, _tstoptfct.wood, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_kowalik_osborne(opt, npar=4):
     tst_opt(opt, _tstoptfct.kowalik_osborne, npar, False)
-    tst_opt(opt, _tstoptfct.kowalik_osborne, npar, Transformation(), 2)
+    tst_opt(opt, _tstoptfct.kowalik_osborne, npar, TestTransformation(), 2)
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_brown_dennis(opt, npar=4):
     tst_opt(opt, _tstoptfct.brown_dennis, npar, False)
-    tst_opt(opt, _tstoptfct.brown_dennis, npar, Transformation())
+    tst_opt(opt, _tstoptfct.brown_dennis, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_osborne1(opt, npar=5):
     tst_opt(opt, _tstoptfct.osborne1, npar, False)
-    tst_opt(opt, _tstoptfct.osborne1, npar, Transformation())
+    tst_opt(opt, _tstoptfct.osborne1, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_biggs(opt, npar=6):
     tst_opt(opt, _tstoptfct.biggs, npar, False)
-    tst_opt(opt, _tstoptfct.biggs, npar, Transformation())
+    tst_opt(opt, _tstoptfct.biggs, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif,
@@ -198,13 +208,13 @@ def test_biggs(opt, npar=6):
                                  montecarlo, neldermead])
 def test_osborne2(opt, npar=11):
     tst_opt(opt, _tstoptfct.osborne2, npar, False)
-    tst_opt(opt, _tstoptfct.osborne2, npar, Transformation())
+    tst_opt(opt, _tstoptfct.osborne2, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_watson(opt, npar=6):
     tst_opt(opt, _tstoptfct.watson, npar, False)
-    tst_opt(opt, _tstoptfct.watson, npar, Transformation())
+    tst_opt(opt, _tstoptfct.watson, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif,
@@ -213,38 +223,38 @@ def test_watson(opt, npar=6):
                                  pytest.param(neldermead, marks=pytest.mark.xfail)])
 def test_extended_rosenbrock(opt, npar=12):
     tst_opt(opt, _tstoptfct.rosenbrock, npar, False)
-    tst_opt(opt, _tstoptfct.rosenbrock, npar, Transformation())
+    tst_opt(opt, _tstoptfct.rosenbrock, npar, TestTransformation())
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_extended_powell_singular(opt, npar=8):
     tst_opt(opt, _tstoptfct.powell_singular, npar, False)
-    tst_opt(opt, _tstoptfct.powell_singular, npar, Transformation())
+    tst_opt(opt, _tstoptfct.powell_singular, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_penaltyI(opt, npar=4):
     tst_opt(opt, _tstoptfct.penaltyI, npar, False)
-    tst_opt(opt, _tstoptfct.penaltyI, npar, Transformation())
+    tst_opt(opt, _tstoptfct.penaltyI, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_penaltyII(opt, npar=4):
     tst_opt(opt, _tstoptfct.penaltyII, npar, False)
-    tst_opt(opt, _tstoptfct.penaltyII, npar, Transformation())
+    tst_opt(opt, _tstoptfct.penaltyII, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_variably_dimensioned(opt, npar=6):
     tst_opt(opt, _tstoptfct.variably_dimensioned, npar, False)
-    tst_opt(opt, _tstoptfct.variably_dimensioned, npar, Transformation())
+    tst_opt(opt, _tstoptfct.variably_dimensioned, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_trigonometric(opt, npar=4):
     tst_opt(opt, _tstoptfct.trigonometric, npar, False)
-    tst_opt(opt, _tstoptfct.trigonometric, npar, Transformation())
+    tst_opt(opt, _tstoptfct.trigonometric, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(lmdif, marks=pytest.mark.xfail),
@@ -255,43 +265,43 @@ def test_trigonometric(opt, npar=4):
                                               marks=pytest.mark.xfail)])
 def test_brown_almost_linear(opt, npar=3):
     tst_opt(opt, _tstoptfct.brown_almost_linear, npar, False)
-    tst_opt(opt, _tstoptfct.brown_almost_linear, npar, Transformation())
+    tst_opt(opt, _tstoptfct.brown_almost_linear, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_discrete_boundary(opt, npar=4):
     tst_opt(opt, _tstoptfct.discrete_boundary, npar, False)
-    tst_opt(opt, _tstoptfct.discrete_boundary, npar, Transformation())
+    tst_opt(opt, _tstoptfct.discrete_boundary, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_discrete_integral(opt, npar=4):
     tst_opt(opt, _tstoptfct.discrete_integral, npar, False)
-    tst_opt(opt, _tstoptfct.discrete_integral, npar, Transformation())
+    tst_opt(opt, _tstoptfct.discrete_integral, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_broyden_tridiagonal(opt, npar=4):
     tst_opt(opt, _tstoptfct.broyden_tridiagonal, npar, False)
-    tst_opt(opt, _tstoptfct.broyden_tridiagonal, npar, Transformation(), 2)
+    tst_opt(opt, _tstoptfct.broyden_tridiagonal, npar, TestTransformation(), 2)
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_broyden_banded(opt, npar=4):
     tst_opt(opt, _tstoptfct.broyden_banded, npar, False)
-    tst_opt(opt, _tstoptfct.broyden_banded, npar, Transformation())
+    tst_opt(opt, _tstoptfct.broyden_banded, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_linear_fullrank(opt, npar=4):
     tst_opt(opt, _tstoptfct.linear_fullrank, npar, False)
-    tst_opt(opt, _tstoptfct.linear_fullrank, npar, Transformation())
+    tst_opt(opt, _tstoptfct.linear_fullrank, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_linear_fullrank1(opt, npar=4):
     tst_opt(opt, _tstoptfct.linear_fullrank1, npar, False)
-    tst_opt(opt, _tstoptfct.linear_fullrank1, npar, Transformation())
+    tst_opt(opt, _tstoptfct.linear_fullrank1, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
@@ -302,7 +312,7 @@ def test_linear_fullrank0cols0rows0(opt, npar=4):
 @pytest.mark.parametrize("opt", [lmdif, minim, montecarlo, neldermead])
 def test_linear_chebyquad(opt, npar=9):
     tst_opt(opt, _tstoptfct.chebyquad, npar, False)
-    tst_opt(opt, _tstoptfct.chebyquad, npar, Transformation())
+    tst_opt(opt, _tstoptfct.chebyquad, npar, TestTransformation())
 
 ###############################################################################
 
@@ -313,31 +323,31 @@ def test_linear_chebyquad(opt, npar=9):
                                               marks=pytest.mark.xfail)])
 def test_Ackley(opt, npar=4):
     tst_opt(opt, _tstoptfct.Ackley, npar, False)
-    tst_opt(opt, _tstoptfct.Ackley, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Ackley, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Booth(opt, npar=6):
     tst_opt(opt, _tstoptfct.Booth, npar, False)
-    tst_opt(opt, _tstoptfct.Booth, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Booth, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Bohachevsky1(opt, npar=2):
     tst_opt(opt, _tstoptfct.Bohachevsky1, npar, False)
-    tst_opt(opt, _tstoptfct.Bohachevsky1, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Bohachevsky1, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Bohachevsky2(opt, npar=2):
     tst_opt(opt, _tstoptfct.Bohachevsky2, npar, False)
-    tst_opt(opt, _tstoptfct.Bohachevsky2, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Bohachevsky2, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Bohachevsky3(opt, npar=2):
     tst_opt(opt, _tstoptfct.Bohachevsky3, npar, False)
-    tst_opt(opt, _tstoptfct.Bohachevsky3, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Bohachevsky3, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
@@ -394,20 +404,20 @@ def test_minim_no_reflect(reltol=1.0e-3, abstol=1.0e-3):
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_decanom(opt, npar=2):
     tst_opt(opt, _tstoptfct.decanom, npar, False)
-    tst_opt(opt, _tstoptfct.decanom, npar, Transformation())
+    tst_opt(opt, _tstoptfct.decanom, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_dodecal(opt, npar=3):
     tst_opt(opt, _tstoptfct.dodecal, npar, False)
-    tst_opt(opt, _tstoptfct.dodecal, npar, Transformation())
+    tst_opt(opt, _tstoptfct.dodecal, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
                                  montecarlo, neldermead])
 def test_DixonPrice(opt, npar=5):
     tst_opt(opt, _tstoptfct.DixonPrice, npar, False)
-    tst_opt(opt, _tstoptfct.DixonPrice, npar, Transformation())
+    tst_opt(opt, _tstoptfct.DixonPrice, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -415,7 +425,7 @@ def test_DixonPrice(opt, npar=5):
                                  pytest.param(neldermead, marks=pytest.mark.xfail)])
 def test_Easom(opt, npar=5):
     tst_opt(opt, _tstoptfct.Easom, npar, False)
-    tst_opt(opt, _tstoptfct.Easom, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Easom, npar, TestTransformation())
 
 
 # @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -440,26 +450,26 @@ def test_Func1(opt, npar=2):
                                               marks=pytest.mark.xfail)])
 def test_Griewank(opt, npar=2):
     tst_opt(opt, _tstoptfct.Griewank, npar, False)
-    tst_opt(opt, _tstoptfct.Griewank, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Griewank, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
                                  montecarlo, neldermead])
 def test_Hansen(opt, npar=2):
     tst_opt(opt, _tstoptfct.Hansen, npar, False)
-    tst_opt(opt, _tstoptfct.Hansen, npar, Transformation(), 6)
+    tst_opt(opt, _tstoptfct.Hansen, npar, TestTransformation(), 6)
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Hartman6(opt, npar=6):
     tst_opt(opt, _tstoptfct.Hartman6, npar, False)
-    tst_opt(opt, _tstoptfct.Hartman6, npar, Transformation(), 6)
+    tst_opt(opt, _tstoptfct.Hartman6, npar, TestTransformation(), 6)
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Himmelblau(opt, npar=2):
     tst_opt(opt, _tstoptfct.Himmelblau, npar, False)
-    tst_opt(opt, _tstoptfct.Himmelblau, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Himmelblau, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
@@ -470,14 +480,14 @@ def test_Holzman1(opt, npar=3):
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Holzman2(opt, npar=3):
     tst_opt(opt, _tstoptfct.Holzman2, npar, False)
-    tst_opt(opt, _tstoptfct.Holzman2, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Holzman2, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo,
                                  pytest.param(neldermead, marks=pytest.mark.xfail)])
 def test_Judge(opt, npar=3):
     tst_opt(opt, _tstoptfct.Judge, npar, False)
-    tst_opt(opt, _tstoptfct.Judge, npar, Transformation(), 2)
+    tst_opt(opt, _tstoptfct.Judge, npar, TestTransformation(), 2)
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -485,13 +495,13 @@ def test_Judge(opt, npar=3):
                                  pytest.param(neldermead, marks=pytest.mark.xfail)])
 def test_Levy(opt, npar=4):
     tst_opt(opt, _tstoptfct.Levy, npar, False)
-    # tst_opt(opt, _tstoptfct.Levy, npar, Transformation())
+    # tst_opt(opt, _tstoptfct.Levy, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_McCormick(opt, npar=2):
     tst_opt(opt, _tstoptfct.McCormick, npar, False)
-    tst_opt(opt, _tstoptfct.McCormick, npar, Transformation(), 2)
+    tst_opt(opt, _tstoptfct.McCormick, npar, TestTransformation(), 2)
 
 
 # @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -505,14 +515,14 @@ def test_McCormick(opt, npar=2):
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Michalewicz(opt, npar=2):
     tst_opt(opt, _tstoptfct.Michalewicz, npar, False)
-    tst_opt(opt, _tstoptfct.Michalewicz, npar, Transformation(), 2)
+    tst_opt(opt, _tstoptfct.Michalewicz, npar, TestTransformation(), 2)
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
                                  montecarlo, neldermead])
 def test_Paviani(opt, npar=10):
     tst_opt(opt, _tstoptfct.Paviani, npar, False)
-    tst_opt(opt, _tstoptfct.Paviani, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Paviani, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -521,13 +531,13 @@ def test_Paviani(opt, npar=10):
                                               marks=pytest.mark.xfail)])
 def test_Rastrigin(opt, npar=4):
     tst_opt(opt, _tstoptfct.Rastrigin, npar, False)
-    tst_opt(opt, _tstoptfct.Rastrigin, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Rastrigin, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_seqp(opt, npar=2):
     tst_opt(opt, _tstoptfct.seqp, npar, False)
-    tst_opt(opt, _tstoptfct.seqp, npar, Transformation())
+    tst_opt(opt, _tstoptfct.seqp, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -544,7 +554,7 @@ def test_Shekel5(opt, npar=4):
                                               marks=pytest.mark.xfail)])
 def test_Shekel7(opt, npar=4):
     tst_opt(opt, _tstoptfct.Shekel7, npar, False)
-    tst_opt(opt, _tstoptfct.Shekel7, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Shekel7, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -552,7 +562,7 @@ def test_Shekel7(opt, npar=4):
                                  pytest.param(neldermead, marks=pytest.mark.xfail)])
 def test_Shekel10(opt, npar=4):
     tst_opt(opt, _tstoptfct.Shekel10, npar, False)
-    tst_opt(opt, _tstoptfct.Shekel10, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Shekel10, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -562,14 +572,14 @@ def test_Shekel10(opt, npar=4):
                                               marks=pytest.mark.xfail)])
 def test_ShekelModified(opt, npar=2):
     tst_opt(opt, _tstoptfct.ShekelModified, npar, False)
-    tst_opt(opt, _tstoptfct.ShekelModified, npar, Transformation())
+    tst_opt(opt, _tstoptfct.ShekelModified, npar, TestTransformation())
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
                                  montecarlo, neldermead])
 def test_Shubert(opt, npar=2):
     tst_opt(opt, _tstoptfct.Shubert, npar, False)
-    tst_opt(opt, _tstoptfct.Shubert, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Shubert, npar, TestTransformation())
 
 
 # @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -583,7 +593,7 @@ def test_Shubert(opt, npar=2):
 @pytest.mark.parametrize("opt", [minim, montecarlo, neldermead])
 def test_Trecanni(opt, npar=2):
     tst_opt(opt, _tstoptfct.Trecanni, npar, False)
-    tst_opt(opt, _tstoptfct.Trecanni, npar, Transformation())
+    tst_opt(opt, _tstoptfct.Trecanni, npar, TestTransformation())
 
 
 # @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
@@ -606,7 +616,7 @@ def setup_4_transform(opt):
     poly.pars[2].thaw()
     poly.pars[3].thaw()
     method=opt()
-    method.config['transformation'] = Transformation()
+    method.config['transformation'] = TestTransformation()
     if opt == LevMar:
         method.config['epsfcn'] = EPSILON64
     fit = Fit(data, poly, method=method, stat=Chi2Gehrels())
@@ -681,19 +691,6 @@ def test_transform_partial(opt, factor=4):
                   0.000523424925]
         covarerr = numpy.sqrt(result.extra_output['covar'].diagonal())
         assert expect == pytest.approx(covarerr, abs=1.0e-6, rel=1.0e-6)
-
-@pytest.mark.parametrize("opt", [lmdif, minim, neldermead])
-def test_my_transform(opt, npar=2):
-    tst_opt(opt, _tstoptfct.rosenbrock, npar, False)
-
-
-    class MyTransformation(Transformation):
-        def __init__(self):
-            Transformation.__init__(self)
-            return
-
-
-    tst_opt(opt, _tstoptfct.rosenbrock, npar, MyTransformation())
 
 
 @pytest.mark.parametrize("opt", [lmdif, minim, neldermead])
