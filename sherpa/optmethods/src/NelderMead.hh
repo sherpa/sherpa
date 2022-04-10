@@ -221,7 +221,7 @@ namespace sherpa {
         if (verbose > 2)
           std::cout << "\tOutside contraction\n";
 
-        if ( contraction < reflection ) {
+        if ( contraction <= reflection ) {
           //
           // If f  <= f  , accept x
           //     c     r           c
