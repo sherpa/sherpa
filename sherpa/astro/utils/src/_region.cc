@@ -27,6 +27,15 @@ extern "C" {
 #include "cxcregion.h"
 }
 
+#ifdef USE_CXCDM_PARSER
+#include <string>
+
+extern "C" {
+#include "ascdm.h"
+}
+#endif
+
+
 typedef struct {
   // Note that there is no semicolon after the PyObject_HEAD macro;
   // one is included in the macro definition.
@@ -41,14 +50,32 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
 static PyObject* region_invert( PyRegion* self, PyObject* args );
 
 
+// The string handling depends on whether we have access to the
+// CIAO data model, in which we case we can use dmRegParse and
+// so support FITS region files, or if we do not have it, in
+// which case we are restricted to ASCII region files via
+// regReadAsciiRegion.
+//
 static regRegion* parse_string( char* str, int fileflag ) {
 
   regRegion *reg = NULL;
+
+#ifdef USE_CXCDM_PARSER
+
+  std::string input(str);
+  if( fileflag )
+    input = "region(" + input + ")";
+
+  reg = dmRegParse( (char*)input.c_str() );
+
+#else
+
   if( fileflag ) {
     reg = regReadAsciiRegion( str, 0 ); // Verbosity set to 0
   } else {
     reg = regParse( str );
   }
+#endif
 
   return reg;
 }

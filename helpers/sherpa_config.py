@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2014, 2015, 2016, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016, 2020, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -38,6 +39,7 @@ class sherpa_config(Command):
                     ('region-include-dirs', None, "Where the region headers are located, if region is 'local'"),
                     ('region-lib-dirs', None, "Where the region libraries are located, if region is 'local'"),
                     ('region-libraries', None, "Name of the libraries that should be linked as region"),
+                    ('region-use-cxc-parser', None, "If set to True than use the CXC Data Model library to parse region files"),
                     ('wcs', None, "Whether Sherpa should build the embedded wcs library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
                     ('wcs-include-dirs', None, "Where the wcs subroutines headers are located"),
                     ('wcs-lib-dirs', None, "Where the wcs subroutines libraries are located"),
@@ -61,6 +63,7 @@ class sherpa_config(Command):
         self.region_include_dirs=None
         self.region_lib_dirs=None
         self.region_libraries='region'
+        self.region_use_cxc_parser = False
         self.wcs=None
         self.wcs_include_dirs=None
         self.wcs_lib_dirs=None
@@ -84,6 +87,12 @@ class sherpa_config(Command):
 
         if self.region_lib_dirs is None:
             self.region_lib_dirs=self.install_dir+'/lib'
+
+        # It is not clear that the other boolean options work
+        # correctly when set to False/false.
+        #
+        if not isinstance(self.region_use_cxc_parser, bool):
+            self.region_use_cxc_parser = self.region_use_cxc_parser.lower() == "true"
 
         if self.wcs_include_dirs is None:
             self.wcs_include_dirs=self.install_dir+'/include'
@@ -113,7 +122,16 @@ class sherpa_config(Command):
             configure.append('--enable-region')
         ld2, inc2, l2 = build_lib_arrays(self, 'region')
         ld, inc, l = (ld1+ld2, inc1+inc2, l1+l2)
-        self.distribution.ext_modules.append(build_ext('region', ld, inc, l))
+
+        # can we find ascdm.h (if so we can support FITS region files as long
+        # as the other settings are set up to include ascdm)?
+        #
+        region_macros = None
+        if self.region_use_cxc_parser:
+            region_macros = [("USE_CXCDM_PARSER", None)]
+
+        self.distribution.ext_modules.append(build_ext('region', ld, inc, l,
+                                                       define_macros=region_macros))
 
         if not self.disable_group:
             configure.append('--enable-group')
