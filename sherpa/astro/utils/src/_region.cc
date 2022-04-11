@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2016, 2020, 2021
+//  Copyright (C) 2009, 2016, 2020, 2021, 2022
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -25,7 +25,6 @@
 
 extern "C" {
 #include "cxcregion.h"
-#include <string>
 }
 
 typedef struct {
