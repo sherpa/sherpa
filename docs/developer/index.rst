@@ -222,6 +222,14 @@ After these steps, Sherpa can be built from source::
 
    That is, the variable is set to a space, not the empty string.
 
+.. warning::
+
+   There is a subtle difference in the region-library code when built
+   for CIAO or for Sherpa, even when using the above options. The CIAO
+   version supports using FITS and ASCII region files, rather than
+   only ASCII region files that standalone Sherpa supports. Please
+   `create an issue <https://github.com/sherpa/sherpa/issues>`_ if
+   FITS region support is needed with standalone Sherpa.
 
 Update the Zenodo citation information
 --------------------------------------
