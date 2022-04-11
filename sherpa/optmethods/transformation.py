@@ -90,19 +90,17 @@ class Transformation(NoTransformation):
         return
 
     def calc_covar(self, m, n, xint, info, fjac):
-        '''apply the chain rule to the internal covariance matrix
-
-        From https://en.wikipedia.org/wiki/Levenberg–Marquardt_algorithm:
-            ...The Jacobian matrix as defined above is not (in general)
-            a square matrix, but a rectangular matrix of size m x n,
-            where n is the number of parameter (size of the vector B).
-            The matrix multiplication (J.T J) yields the required
-            n x n square matarix...
-        '''
         covar = super().calc_covar(m, n, xint, info, fjac)
+        # From https://en.wikipedia.org/wiki/Levenberg–Marquardt_algorithm:
+        #     ...The Jacobian matrix as defined above is not (in general)
+        #     a square matrix, but a rectangular matrix of size m x n,
+        #     where n is the number of parameter (size of the vector B).
+        #     The matrix multiplication (J.T J) yields the required
+        #     n x n square matarix...
         chain = self.chain_rule(xint)
         mychain = numpy.atleast_2d(chain)
         grad = numpy.dot(mychain.T, mychain)
+        # apply the chain rule to the internal covariance matrix
         covar *= grad
         return covar
 

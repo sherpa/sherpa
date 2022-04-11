@@ -487,7 +487,6 @@ def test_Holzman2(opt, npar=3):
                                  pytest.param(neldermead, marks=pytest.mark.xfail)])
 def test_Judge(opt, npar=3):
     tst_opt(opt, _tstoptfct.Judge, npar, False)
-    tst_opt(opt, _tstoptfct.Judge, npar, TestTransformation(), 2)
 
 
 @pytest.mark.parametrize("opt", [pytest.param(minim, marks=pytest.mark.xfail),
