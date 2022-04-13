@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2017, 2021
+//  Copyright (C) 2009, 2017, 2021, 2022
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -338,23 +338,69 @@ namespace sherpa { namespace astro { namespace utils {
 			    &group ) )
       return NULL;
 
-    if( mask.get_size() == 0 ) {
-      PyErr_SetString( PyExc_TypeError,
-		       (char*)"mask array has no elements" );
+    if (mask.get_ndim() != 1) {
+      PyErr_SetString( PyExc_ValueError, (char*)"mask array must be 1D" );
+      return NULL;
+    }
+
+    if (group.get_ndim() != 1) {
+      PyErr_SetString( PyExc_ValueError, (char*)"group array must be 1D" );
+      return NULL;
+    }
+
+    // Use TypeError for the size=0 checks as this is what historically been
+    // used for this check (when only mask_size was checked).
+    //
+    npy_intp mask_size = mask.get_size();
+    npy_intp group_size = group.get_size();
+    if( mask_size == 0 ) {
+      PyErr_SetString( PyExc_TypeError, (char*)"mask array has no elements" );
+      return NULL;
+    }
+
+    if( group_size == 0 ) {
+      PyErr_SetString( PyExc_TypeError, (char*)"group array has no elements" );
+      return NULL;
+    }
+
+    if (group[0] < 0) {
+      PyErr_SetString( PyExc_ValueError, (char*)"The first element of group is negative" );
       return NULL;
     }
 
     if( EXIT_SUCCESS != res.zeros( group.get_ndim(), group.get_dims() ))
       return NULL;
 
-    npy_intp size = group.get_size();
     npy_intp jj = 0;
 
-    for( npy_intp ii = 0; ii < size; ++ii ) {
-      if( group[ ii ] >= 0 && ii != 0 )
+    // The group array starts a group with a value >= 0 and continues the
+    // group with a value < 0. The first element therefore starts a new
+    // group.
+    //
+    // The assumption is that the difference, in time, to just setting
+    //     res[ii] = mask[jj]
+    // is insignificant.
+    //
+    if( mask[jj] )
+      res[0] = true;
+
+    for( npy_intp ii = 1; ii < group_size; ++ii ) {
+      // Are we starting a new group?
+      //
+      if( group[ ii ] >= 0 ) {
 	++jj;
+	if (jj >= mask_size) {
+	  PyErr_SetString( PyExc_ValueError, (char*) "More groups than mask elements" );
+	  return NULL;
+	}
+      }
       if( mask[jj] )
 	res[ii] = true;
+    }
+
+    if (jj != (mask_size - 1)) {
+      PyErr_SetString( PyExc_ValueError, (char*) "More mask elements than groups" );
+      return NULL;
     }
 
     return Py_BuildValue( (char*)"N", res.return_new_ref() );
@@ -513,45 +559,38 @@ static PyMethodDef UtilsFcts[] = {
   FCTSPEC( rmf_fold, (sherpa::astro::utils::rmf_fold< SherpaFloatArray,
 		      SherpaUIntArray >) ),
 
-  { (char*) "do_group",
-    (PyCFunction)(sherpa::astro::utils::do_group<SherpaFloatArray, IntArray>),
-    METH_VARARGS,
-    (char*) "Group the array using OGIP standards.\n\n"
-    "Parameters\n"
-    "----------\n"
-    "data : array_like\n"
-    "    The data to group.\n"
-    "group : array_like\n"
-    "    The OGIP grouping data: 1 indicates the start of a group and\n"
-    "    -1 continues the group. See [1]_ and [2]_.\n"
-    "name : {'sum', '_sum_sq', '_max', '_min', '_middle', '_make_groups'}\n"
-    "    The grouping scheme to combine values within a group.\n\n"
-    "Returns\n"
-    "-------\n"
-    "grouped : array\n"
-    "    The grouped data. It will be smaller than data unless group only\n"
-    "    contains 1's.\n\n"
-    "References\n"
-    "----------\n\n"
-    ".. [1] \"The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)\", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html\n\n"
-    ".. [2] \"The Calibration Requirements for Spectral Analysis Addendum: Changes log\", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html\n\n"
-    "Examples\n"
-    "--------\n\n"
-    "Group the array [1, 2, 3, 4, 5, 6] into groups of length 2, 1, and 3,\n"
-    "using different grouping schemes:\n\n"
-    ">>> data = [1, 2, 3, 4, 5, 6]\n"
-    ">>> group = [1, -1, 1, 1, -1, -1]\n"
-    ">>> do_group(data, group, '_make_groups')\n"
-    "[1, 2, 3]\n"
-    ">>> do_group(data, group, 'sum')\n"
-    "[3, 3, 15]\n"
-    ">>> do_group(data, group, '_min')\n"
-    "[1, 3, 4]\n"
-    ">>> do_group(data, group, '_max')\n"
-    "[2, 3, 6]\n"
-    ">>> do_group(data, group, '_middle')\n"
-    "[1.5, 3. , 5. ]\n"
-  },
+  FCTSPECDOC( do_group, (sherpa::astro::utils::do_group<SherpaFloatArray, IntArray>),
+	      "Group the array using OGIP standards.\n\n"
+	      "Parameters\n"
+	      "----------\n"
+	      "data : array_like\n"
+	      "    The data to group.\n"
+	      "group : array_like\n"
+	      "    The OGIP grouping data: 1 indicates the start of a group and\n"
+	      "    -1 continues the group. See [OGIP92_007]_ and [OGIP92_007a]_.\n"
+	      "name : {'sum', '_sum_sq', '_max', '_min', '_middle', '_make_groups'}\n"
+	      "    The grouping scheme to combine values within a group.\n\n"
+	      "Returns\n"
+	      "-------\n"
+	      "grouped : array\n"
+	      "    The grouped data. It will be smaller than data unless group only\n"
+	      "    contains 1's.\n\n"
+	      "Examples\n"
+	      "--------\n\n"
+	      "Group the array [1, 2, 3, 4, 5, 6] into groups of length 2, 1, and 3,\n"
+	      "using different grouping schemes:\n\n"
+	      ">>> data = [1, 2, 3, 4, 5, 6]\n"
+	      ">>> group = [1, -1, 1, 1, -1, -1]\n"
+	      ">>> do_group(data, group, '_make_groups')\n"
+	      "[1, 2, 3]\n"
+	      ">>> do_group(data, group, 'sum')\n"
+	      "[3, 3, 15]\n"
+	      ">>> do_group(data, group, '_min')\n"
+	      "[1, 3, 4]\n"
+	      ">>> do_group(data, group, '_max')\n"
+	      "[2, 3, 6]\n"
+	      ">>> do_group(data, group, '_middle')\n"
+	      "[1.5, 3. , 5. ]\n" ),
 
   FCTSPEC( shrink_effarea, (sherpa::astro::utils::shrink_specresp<
 			    SherpaFloatArray >) ),
@@ -559,7 +598,31 @@ static PyMethodDef UtilsFcts[] = {
   FCTSPEC( filter_resp, (sherpa::astro::utils::filter_resp< SherpaFloatArray,
 			 SherpaUIntArray, SherpaUInt, SherpaFloat >)),
 
-  FCTSPEC( expand_grouped_mask, sherpa::astro::utils::_expand_grouped_mask),
+  FCTSPECDOC( expand_grouped_mask, sherpa::astro::utils::_expand_grouped_mask,
+	      "Expand a mask array to match the ungrouped data.\n\n"
+	      "The mask array size must match the number of groups in the\n"
+	      "group array.\n\n"
+	      "Parameters\n"
+	      "----------\n"
+	      "mask : array_like\n"
+	      "    The mask array to expand (treated as a boolean array).\n"
+	      "group : array_like\n"
+	      "    The OGIP grouping data: 1 indicates the start of a group and\n"
+	      "    -1 continues the group. See [OGIP92_007]_ and [OGIP92_007a]_.\n\n"
+	      "Returns\n"
+	      "-------\n"
+	      "full_mask : array\n"
+	      "    The mask data (booleans) expanded to match the size of group.\n\n"
+	      "Examples\n"
+	      "--------\n\n"
+	      ">>> mask = [True, False, False, True]\n"
+	      ">>> group = [1, -1, 1, 1, -1, 1, -1, -1]\n"
+	      ">>> expand_grouped_data(mask, group)\n"
+	      "[True, True, False, False, False, True, True, True]\n\n"
+              ">>> expand_grouped_mask([True, False], [1, 1])\n"
+              "[True, False]\n"
+              ">>> expand_grouped_mask([1, 0], [1, 1])\n"
+              "[True, False]\n" ),
 
   FCTSPEC( resp_init, (sherpa::astro::utils::_resp_init< SherpaFloatArray,
 		       SherpaUIntArray, SherpaUInt, SherpaFloat > )),
@@ -571,4 +634,10 @@ static PyMethodDef UtilsFcts[] = {
 };
 
 
-SHERPAMOD(_utils, UtilsFcts)
+SHERPAMODDOC(_utils, UtilsFcts,
+	     "Routines for handling Astronomy data.\n\n"
+	     "References\n"
+	     "----------\n\n"
+	     ".. [OGIP92_007] \"The OGIP Spectral File Format\", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html\n\n"
+	     ".. [OGIP92_007a] \"The OGIP Spectral File Format Addendum: Changes log\", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html\n\n"
+	     )
