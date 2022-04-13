@@ -5,7 +5,8 @@
 # plotting backend. If no listed backend can be imported, Sherpa sets
 # a dummy backend as default.
 # The backend can be changed in a running sherpa session.
-# The following line would try all available backends:
+# The following line would try all available backends until it finds one that imports correctly 
+# (i.e. all dependencies are available):
 # plot_pkg   : pylab dummy
 plot_pkg   : pylab
 
