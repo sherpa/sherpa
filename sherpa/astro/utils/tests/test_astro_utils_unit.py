@@ -596,56 +596,63 @@ def test_expand_grouped_mask_mask_is_empty(group):
 
 @pytest.mark.parametrize("mask", [[True], [False], [True, False]])
 def test_expand_grouped_mask_group_is_empty(mask):
-    """This should probably be an error"""
+    """Check we get an error"""
 
-    out = expand_grouped_mask(mask, [])
-    assert len(out) == 0
+    with pytest.raises(TypeError) as err:
+        expand_grouped_mask(mask, [])
+
+    assert str(err.value) == "group array has no elements"
 
 
 @pytest.mark.parametrize("val", [None, 0, 1, "x"])  # mask is converted to bool so a string/None are accepted
 @pytest.mark.parametrize("group", [[1], [1, -1], [1] * 10, []])
 def test_expand_grouped_mask_mask_is_scalar(val, group):
-    """What happens if mask is a scalar.
+    """Check we get an error"""
 
-    This is an edge case. It should probably error out but at the
-    moment it does not.
-    """
+    with pytest.raises(ValueError) as err:
+        expand_grouped_mask(val, group)
 
-    answer = expand_grouped_mask(val, group)
-    assert len(answer) == len(group)
+    assert str(err.value) == "mask array must be 1D"
 
 
 @pytest.mark.parametrize("val", [0, 1])  # group is converted to int so string/None fail, unlike mask
 @pytest.mark.parametrize("mask", [[True], [False], [True] * 5])
 def test_expand_grouped_mask_group_is_scalar(val, mask):
-    """What happens if group is a scalar.
+    """What happens if group is a scalar."""
 
-    This is an edge case. It should probably error out but at the
-    moment it does not.
-    """
+    with pytest.raises(ValueError) as err:
+        expand_grouped_mask(mask, val)
 
-    # The return value is hard to test, so we just check if it runs or not
-    expand_grouped_mask(mask, val)
+    assert str(err.value) == "group array must be 1D"
 
 
 @pytest.mark.parametrize("group", [[1, 1, 1], [1, -1, 1, -1, 1, -1], [1, -1, -1, -1, -1, 1, 1, 1]])
 def test_expand_grouped_mask_mask_is_to_small(group):
-    """What happens if the group and mask do not match? mask too small.
+    """What happens if the group and mask do not match? mask too small."""
 
-    This should probably be an error but it currently is not.
-    """
+    with pytest.raises(ValueError) as err:
+        expand_grouped_mask([True, False], group)
 
-    expand_grouped_mask([True, False], group)
+    assert str(err.value) == "More groups than mask elements"
 
 
 @pytest.mark.parametrize("group", [[1, 1], [1, 1, 1, 1], [1, -1, -1, 1, -1, -1, 1, -1, -1]])
 def test_expand_grouped_mask_mask_is_to_large(group):
-    """What happens if the group and mask do not match? mask too large.
+    """What happens if the group and mask do not match? mask too large."""
 
-    This should probably be an error but it currently is not.
-    """
+    with pytest.raises(ValueError) as err:
+        expand_grouped_mask([True] * 5, group)
 
-    expand_grouped_mask([True] * 5, group)
+    assert str(err.value) == "More mask elements than groups"
+
+
+def test_expand_grouped_mask_ingalid_group():
+    """What happens if the first element of groups is negative?"""
+
+    with pytest.raises(ValueError) as err:
+        expand_grouped_mask([True, False], [-1, 1])
+
+    assert str(err.value) == "The first element of group is negative"
 
 
 @pytest.mark.parametrize("mask,group,expected",
