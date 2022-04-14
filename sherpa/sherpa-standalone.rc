@@ -1,7 +1,7 @@
 # SHERPA_VERSION 4.14.2
 [options]
 # Plotting backends (space separated list)
-# will be tried in order, the first one the imports is set as default
+# will be tried in order, the first one that imports is set as default
 # plotting backend. If no listed backend can be imported, Sherpa sets
 # a dummy backend as default.
 # The backend can be changed in a running sherpa session.
