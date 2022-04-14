@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2022
 #  MIT
 #
 #
@@ -71,7 +71,7 @@ io_pkg : not_a_module
     with patch("sherpa.get_config", lambda: str(conf)):
         mod = importlib.reload(io)
 
-    assert mod.backend is None
+    assert mod.backend is io.dummy_backend
 
     # Restore the import
     mod = importlib.reload(io)

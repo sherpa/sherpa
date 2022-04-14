@@ -102,6 +102,10 @@ for iotry in io_opt:
         break
     except ImportError:
         pass
+else:
+    # None of the options in the rc file work, e.g. because it's an old file
+    # that does not have dummy listed
+    import sherpa.astro.io.dummy_backend as backend
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
