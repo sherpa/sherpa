@@ -22,19 +22,15 @@
 #include "sherpa/extension.hh"
 #include <sstream>
 #include <iostream>
-
-extern "C" {
-#include "cxcregion.h"
-}
-
-#ifdef USE_CXCDM_PARSER
 #include <string>
 
 extern "C" {
-#include "ascdm.h"
-}
-#endif
+#include "cxcregion.h"
 
+#ifdef USE_CXCDM_PARSER
+#include "ascdm.h"
+#endif
+}
 
 typedef struct {
   // Note that there is no semicolon after the PyObject_HEAD macro;
@@ -56,13 +52,12 @@ static PyObject* region_invert( PyRegion* self, PyObject* args );
 // which case we are restricted to ASCII region files via
 // regReadAsciiRegion.
 //
-static regRegion* parse_string( char* str, int fileflag ) {
+static regRegion* parse_string( std::string input, int fileflag ) {
 
   regRegion *reg = NULL;
 
 #ifdef USE_CXCDM_PARSER
 
-  std::string input(str);
   if( fileflag )
     input = "region(" + input + ")";
 
@@ -71,9 +66,9 @@ static regRegion* parse_string( char* str, int fileflag ) {
 #else
 
   if( fileflag ) {
-    reg = regReadAsciiRegion( str, 0 ); // Verbosity set to 0
+    reg = regReadAsciiRegion( (char*)input.c_str(), 0 ); // Verbosity set to 0
   } else {
-    reg = regParse( str );
+    reg = regParse( (char*)input.c_str() );
   }
 #endif
 
@@ -109,7 +104,12 @@ static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
 				     &objS, &fileflag ) )
     return NULL;
 
-  reg = parse_string( objS, fileflag );
+  // The string is not NULL (otherwise the PyArg_ParseTupleAndKeywords
+  // call would have failed) so we don't need to check here.
+  //
+  std::string name(objS);
+
+  reg = parse_string( name, fileflag );
   if (!reg) {
     const char *fmt;
     if (fileflag) {
