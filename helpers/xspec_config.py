@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2017, 2018, 2020, 2021
+#  Copyright (C) 2014-2017, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -105,7 +105,7 @@ class xspec_config(Command):
                 for major, minor, patch in [(12, 9, 0), (12, 9, 1),
                                             (12, 10, 0), (12, 10, 1),
                                             (12, 11, 0), (12, 11, 1),
-                                            (12, 12, 0)]:
+                                            (12, 12, 0), (12, 12, 1)]:
                     version = '{}.{}.{}'.format(major, minor, patch)
                     macro = 'XSPEC_{}_{}_{}'.format(major, minor, patch)
                     if xspec_version >= LooseVersion(version):
@@ -115,7 +115,7 @@ class xspec_config(Command):
                 # the "next highest" version (i.e. increase the
                 # "patch" value by 1).
                 #
-                if xspec_version >= LooseVersion("12.12.1"):
+                if xspec_version >= LooseVersion("12.12.2"):
                     self.warn("XSPEC Version is greater than 12.12.0, which is the latest supported version for Sherpa")
 
             extension = build_ext('xspec', ld, inc, l, define_macros=macros)
