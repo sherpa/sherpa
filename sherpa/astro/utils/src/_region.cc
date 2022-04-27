@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2016, 2020, 2021
+//  Copyright (C) 2009, 2016, 2020, 2021, 2022
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -22,10 +22,14 @@
 #include "sherpa/extension.hh"
 #include <sstream>
 #include <iostream>
+#include <string>
 
 extern "C" {
 #include "cxcregion.h"
-#include <string>
+
+#ifdef USE_CXCDM_PARSER
+#include "ascdm.h"
+#endif
 }
 
 typedef struct {
@@ -42,14 +46,31 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
 static PyObject* region_invert( PyRegion* self, PyObject* args );
 
 
-static regRegion* parse_string( char* str, int fileflag ) {
+// The string handling depends on whether we have access to the
+// CIAO data model, in which we case we can use dmRegParse and
+// so support FITS region files, or if we do not have it, in
+// which case we are restricted to ASCII region files via
+// regReadAsciiRegion.
+//
+static regRegion* parse_string( std::string input, int fileflag ) {
 
   regRegion *reg = NULL;
+
+#ifdef USE_CXCDM_PARSER
+
+  if( fileflag )
+    input = "region(" + input + ")";
+
+  reg = dmRegParse( (char*)input.c_str() );
+
+#else
+
   if( fileflag ) {
-    reg = regReadAsciiRegion( str, 0 ); // Verbosity set to 0
+    reg = regReadAsciiRegion( (char*)input.c_str(), 0 ); // Verbosity set to 0
   } else {
-    reg = regParse( str );
+    reg = regParse( (char*)input.c_str() );
   }
+#endif
 
   return reg;
 }
@@ -83,7 +104,12 @@ static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
 				     &objS, &fileflag ) )
     return NULL;
 
-  reg = parse_string( objS, fileflag );
+  // The string is not NULL (otherwise the PyArg_ParseTupleAndKeywords
+  // call would have failed) so we don't need to check here.
+  //
+  std::string name(objS);
+
+  reg = parse_string( name, fileflag );
   if (!reg) {
     const char *fmt;
     if (fileflag) {

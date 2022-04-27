@@ -81,12 +81,13 @@ def build_wcs_ext(library_dirs, include_dirs, libraries):
                  libraries=libraries,
                  depends=get_deps(['extension']))
 
-def build_region_ext(library_dirs, include_dirs, libraries):
+def build_region_ext(library_dirs, include_dirs, libraries, define_macros=None):
     return Extension('sherpa.astro.utils._region',
                  ['sherpa/astro/utils/src/_region.cc'],
                  sherpa_inc + include_dirs,
                  library_dirs=library_dirs,
                  libraries=(libraries),
+                 define_macros=define_macros,
                  depends=get_deps(['extension']))
 
 def build_xspec_ext(library_dirs, include_dirs, libraries, define_macros=None):
