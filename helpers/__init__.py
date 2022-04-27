@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,10 @@ from .test import PyTest
 from .sherpa_config import sherpa_config
 from .xspec_config import xspec_config
 
+from numpy.distutils.command.build_ext import build_ext
+
 commands = {
+    'build_ext': build_ext,
     'clean': clean,
     'sdist': sdist,
     'develop': develop,

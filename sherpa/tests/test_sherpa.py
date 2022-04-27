@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,6 +25,17 @@ import pytest
 import sherpa
 from sherpa import ui
 from sherpa.utils.testing import requires_data
+
+
+def test_has_version():
+    """Just check we have a version setting.
+
+    It's not obvious how we should check the version string - it
+    can be 0+untagged.blah or a.b.c+n.... so it doesn't seem
+    worth checking.
+    """
+    assert isinstance(sherpa.__version__, str)
+    assert sherpa.__version__ != ''
 
 
 def test_include_dir():
@@ -54,13 +65,10 @@ def test_reading_strings(make_data_path):
     ui.load_data(make_data_path('table.txt'), require_floats=False)
 
 
-# tmp_path is not supported by pytest 3.8.1 which we are using
-# for Python 3.5 tests, so we have to use tmpdir
-#
-def test_citation_hardcoded(tmpdir):
+def test_citation_hardcoded(tmp_path):
     """Check citation works for hardcoded queries."""
 
-    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    citefile = tmp_path / 'cite.txt'
     with citefile.open(mode='w') as fh:
         sherpa.citation('4.8.0', filename=fh, clobber=True)
 
@@ -74,7 +82,7 @@ def test_citation_hardcoded(tmpdir):
 
 
 @pytest.mark.zenodo
-def test_todo_latest_success(tmpdir):
+def test_todo_latest_success(tmp_path):
     """Check Zenodo knows about the current version.
 
     Since we don't know what the actual text should be, this
@@ -82,7 +90,7 @@ def test_todo_latest_success(tmpdir):
     information has been extracted.
     """
 
-    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    citefile = tmp_path / 'cite.txt'
     with citefile.open(mode='w') as fh:
         sherpa.citation('latest', filename=fh)
 
@@ -99,10 +107,10 @@ def test_todo_latest_success(tmpdir):
 
 
 @pytest.mark.zenodo
-def test_todo_version_fail(tmpdir):
+def test_todo_version_fail(tmp_path):
     """Check Zenodo can not found an invalid version"""
 
-    citefile = tmpdir.mkdir("citation").join("cite.txt")
+    citefile = tmp_path / 'cite.txt'
     with citefile.open(mode='w') as fh:
         sherpa.citation('4.7.0', filename=fh)
 
