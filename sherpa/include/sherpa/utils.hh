@@ -474,7 +474,7 @@ namespace sherpa { namespace utils {
   template<typename ConstFloatArrayType, typename FloatType>
   inline int neville2d( int m, int n, const ConstFloatArrayType& x, 
 			const ConstFloatArrayType& y, 
-			const sherpa::Array2d< FloatType >& fxy,
+			const sherpa::Array2D<FloatType, FloatType >& fxy,
 			FloatType xinterp, FloatType yinterp,
 			FloatType& answer ) {
 
