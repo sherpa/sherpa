@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -133,10 +133,14 @@ def compare_xspec_models(models, hard=True):
                 #
                 if [par.softmin, par.hardmin, par.softmax, par.hardmax] == [None] * 4:
                     for attr in ["min", "hard_min"]:
-                        assert getattr(xpar, attr) == -hugeval
+                        got = getattr(xpar, attr)
+                        if got != -hugeval:
+                            reports.append(f"par {xpar.name}.{attr} is not -hugeval but {got}")
 
                     for attr in ["max", "hard_max"]:
-                        assert getattr(xpar, attr) == hugeval
+                        got = getattr(xpar, attr)
+                        if got != hugeval:
+                            reports.append(f"par {xpar.name}.{attr} is not hugeval but {got}")
 
                     continue
 
