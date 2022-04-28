@@ -107,7 +107,8 @@ How do I ...
 Install from source in conda
 ----------------------------
 
-Conda can be used to install all the dependencies for Sherpa.
+Conda can be used to install all the dependencies for Sherpa, including
+:term:`XSPEC`.
 
 ::
 
@@ -186,6 +187,7 @@ should be updated to match the output above::
     region-include_dirs=${ASCDS_INSTALL}/include
     region-lib-dirs=${ASCDS_INSTALL}/lib
     region-libraries=region ascdm
+    region-use-cxc-parser=True
 
     wcs=local
     wcs-include-dirs=${ASCDS_INSTALL}/include
@@ -224,12 +226,10 @@ After these steps, Sherpa can be built from source::
 
 .. warning::
 
-   There is a subtle difference in the region-library code when built
-   for CIAO or for Sherpa, even when using the above options. The CIAO
-   version supports using FITS and ASCII region files, rather than
-   only ASCII region files that standalone Sherpa supports. Please
+   This is not guaranteed to build Sherpa in exactly the same manner
+   as used by :term:`CIAO`. Please
    `create an issue <https://github.com/sherpa/sherpa/issues>`_ if
-   FITS region support is needed with standalone Sherpa.
+   this causes problems.
 
 Update the Zenodo citation information
 --------------------------------------

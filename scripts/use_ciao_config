@@ -84,6 +84,7 @@ sed -i "s|#region=local|region=local|" $cfg
 sed -i "s|#region-include_dirs=build/include|region-include_dirs=${CONDA_PREFIX}/include|" $cfg
 sed -i "s|#region-lib-dirs=build/lib|region-lib-dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i "s|#region-libraries=region|region-libraries=region ascdm|" $cfg
+sed -i "s|#region-use-cxc-parser=False|region-use-cxc-parser=True|" $cfg
 
 sed -i "s|#wcs=local|wcs=local|" $cfg
 # Historically the setup file has used the wrong form here
