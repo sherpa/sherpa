@@ -116,7 +116,7 @@ Conda can be used to install all the dependencies for Sherpa, including
     conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa
     conda activate sherpaciao
 
-The first line installes the full `CIAO release
+The first line installs the full `CIAO release
 <https://cxc.harvard.edu/ciao/>`_ and astropy, required for building
 and running tests locally.
 

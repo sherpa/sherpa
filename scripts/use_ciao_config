@@ -99,6 +99,6 @@ sed -i "s|#fftw-lib-dirs=build/lib|fftw-lib-dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i "s|#fftw-libraries=fftw3|fftw-libraries=fftw3|" $cfg
 
 sed -i "s|#with-xspec=True|with-xspec=True|" $cfg
-sed -i "s|#xspec_include_dirs = None|xspec_include_dirs=${CONDA_PREFIX}/include|g" $cfg
-sed -i "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|g" $cfg
-sed -i "s|#xspec_version = .*|xspec_version = ${xspec_version}|g" $cfg
+sed -i "s|#xspec_include_dirs = None|xspec_include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
+sed -i "s|#xspec_version = .*|xspec_version = ${xspec_version}|" $cfg
