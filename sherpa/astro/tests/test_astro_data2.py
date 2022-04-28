@@ -922,7 +922,7 @@ def test_img_can_not_set_coord(make_test_image):
     with pytest.raises(AttributeError) as ae:
         d.coord = "physical"
 
-    assert str(ae.value) == "can't set attribute"
+    assert  "can't set attribute" in str(ae.value)
 
 
 def test_img_set_coord_invalid(make_test_image):
