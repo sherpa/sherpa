@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.12.0, 12.11.1, 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
+Sherpa supports versions 12.12.1, 12.12.0, 12.11.1, 12.11.0, 12.10.1, 12.10.0, 12.9.1, and 12.9.0
 of XSPEC [1]_, and can be built against the model library or the full
 application.  There is no guarantee of support for older or newer
 versions of XSPEC.

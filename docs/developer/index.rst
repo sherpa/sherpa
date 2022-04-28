@@ -290,11 +290,13 @@ To add a new command-line option:
 * and add support in ``pytest_configure``, such as registering
   a new mark.
 
+.. _developer-update-xspec:
+
 Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.12.0 down to 12.9.0. It may build against
+:term:`XSPEC` versions 12.12.1 down to 12.9.0. It may build against
 newer versions, but if it does it will not provide access to any new
 models in the release. The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
@@ -676,6 +678,17 @@ available.
       by addtive and then multiplicative models, using an alphabetical
       sorting - and to the appropriate ``inheritance-diagram`` rule.
 
+#. Documentation updates
+
+   The ``docs/indices.rst`` file should be updated to add the new version
+   to the list of supported versions, under the :term:`XSPEC` term, and
+   ``docs/developer/index.rst`` also lists the supported versions
+   (:ref:`developer-update-xspec`). The installation page ``docs/install.rst`` should
+   be updated to add an entry for the ``setup.cfg`` changes in
+   :ref:`build-xspec`.
+
+   The ``sherpa/astrp/xspec/__init__.py`` file also lists the supported
+   XSPEC versions.
 
 Never forget to update the year of the copyright notice?
 --------------------------------------------------------
