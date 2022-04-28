@@ -1776,23 +1776,32 @@ def test_pha_column_set_none(label, vals, clean_astro_ui):
     assert getfunc() is None
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("label", ["grouping", "quality"])
-@pytest.mark.parametrize("vals",
-                         [True, False, [1, 2, 3], np.ones(20)])
-def test_pha_column_has_correct_size(label, vals, clean_astro_ui):
-    """Check that the label column is the right size.
+@pytest.mark.parametrize("vals", [True, False])
+def test_pha_column_has_correct_size_scalar(label, vals, clean_astro_ui):
+    """Check that the label column is the right size: scalar
 
     This is related to issue #1160.
     """
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
 
-    with pytest.raises(DataErr) as de:
-        # This does not throw an error
-        getattr(ui, f"set_{label}")(vals)
+    # This does not throw an error
+    getattr(ui, f"set_{label}")(vals)
 
-    assert str(de.value) == f"size mismatch between channel and {label}"
+
+@pytest.mark.parametrize("label", ["grouping", "quality"])
+@pytest.mark.parametrize("vals", [[1, 2, 3], np.ones(20)])
+def test_pha_column_has_correct_size_sequence(label, vals, clean_astro_ui):
+    """Check that the label column is the right size: sequence
+
+    This is related to issue #1160.
+    """
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
+
+    # This does not throw an error
+    getattr(ui, f"set_{label}")(vals)
 
 
 @pytest.mark.parametrize("label", ["grouping", "quality"])
@@ -1856,3 +1865,561 @@ def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui):
 
     # Looks like it's returning mean of channel values in group
     assert ui.get_dep() == pytest.approx([4.5, 4])
+
+
+@requires_fits
+@requires_data
+def test_image_filter_coord_change_same(make_data_path, clean_astro_ui):
+    """What happens to the mask after a coordinate change? NO CHANGE
+
+    This is really just a way to test the DataIMG class without having
+    to set up all the values. There was some interesting behavior with
+    calc_data_sum2d which was down to whether changing the coord would
+    change the mask, so this is an explicit test of that behavior.
+
+    """
+
+    ui.load_image("foo", make_data_path("image2.fits"))
+    assert ui.get_filter("foo") == ""
+
+    ui.set_coord("foo", "physical")
+    ui.notice2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+
+    # Is there no way to get the mask data via the UI interface,
+    # without calling save_filter?
+    #
+    d = ui.get_data("foo")
+    assert d.mask.sum() == 2500
+
+    ui.set_coord("foo", "physical")
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+    assert d.mask.sum() == 2500
+
+
+@requires_fits
+@requires_data
+def test_image_filter_coord_change(make_data_path, clean_astro_ui):
+    """What happens to the mask after a coordinate change?
+
+    This is the more-general case of test_image_filter_coord_change_same
+    but it's not actually clear what should be done here when the
+    coordinate setting is changed - should the mask be removed as
+    we don't store the mask expression with a way to update it to
+    match the new coordianate setting.
+
+    """
+
+    ui.load_image("foo", make_data_path("image2.fits"))
+    assert ui.get_filter("foo") == ""
+
+    ui.set_coord("foo", "physical")
+    ui.notice2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+
+    # Is there no way to get the mask data via the UI interface,
+    # without calling save_filter?
+    #
+    d = ui.get_data("foo")
+    assert d.mask.sum() == 2500
+
+    ui.set_coord("foo", "logical")
+
+    # This expression is no-longer technically valid, but we do
+    # not change it yet.
+    #
+    assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+
+    # We know what the mask was, so assume it hasn't changed.
+    # We could also just clear the mask so d.mask would be True.
+    #
+    assert d.mask.sum() == 2500
+
+
+def test_set_source_checks_dimensionality_1d(clean_astro_ui):
+    """Check that you can not set a model of the wrong dimensionality"""
+
+    chans = np.arange(1, 5)
+    ui.load_arrays(1, chans, chans * 0, ui.DataPHA)
+
+    # does not raise an error
+    ui.set_source(ui.const2d.mdl)
+
+
+def test_set_source_checks_dimensionality_2d(clean_astro_ui):
+    """Check that you can not set a model of the wrong dimensionality"""
+
+    x0 = np.asarray([1, 2, 1, 2])
+    x1 = np.asarray([1, 1, 1, 1])
+    y = np.asarray([1] * 4)
+    ui.load_arrays(1, x0, x1, y, (2, 2), ui.DataIMG)
+
+    # does not raise an error
+    ui.set_source(ui.const1d.mdl)
+
+
+@pytest.mark.xfail
+def test_model_dimensionality_check_is_not_triggered_calc_stat(clean_astro_ui):
+    """We can still end up where a model and dataset dimensionality do not match.
+
+    So check that other parts of the system catch this error: calc_stat
+    """
+
+    ui.load_arrays(1, np.asarray([1, 2, 1, 1]), np.asarray([1, 1, 2, 2]),
+                   np.asarray([1, 1, 1, 1]), (2, 2), ui.DataIMG)
+    ui.set_source(ui.const2d.mdl)
+
+    chans = np.arange(1, 5)
+    ui.load_arrays(1, chans, chans * 0)
+    # XFAIL: there is no ndim attribute
+    assert ui.get_data().ndim == 1
+
+    # Changing the data set currently does not reset the source model
+    # so check this.
+    src = ui.get_source()
+    assert src.ndim == 2
+
+    # However, this creates a Fit object and so does error out
+    #
+    with pytest.raises(DataErr) as err:
+        ui.calc_stat()
+
+    assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"
+
+
+@pytest.mark.xfail
+def test_model_dimensionality_check_is_not_triggered_plot_model(clean_astro_ui):
+    """We can still end up where a model and dataset dimensionality do not match.
+
+    So check that other parts of the system catch this error: plot_model
+    """
+
+    ui.load_arrays(1, np.asarray([1, 2, 1, 1]), np.asarray([1, 1, 2, 2]),
+                   np.asarray([1, 1, 1, 1]), (2, 2), ui.DataIMG)
+    ui.set_source(ui.const2d.mdl)
+
+    chans = np.arange(1, 5)
+    ui.load_arrays(1, chans, chans * 0)
+    # XFAIL: there is no ndim attribute
+    assert ui.get_data().ndim == 1
+
+    src = ui.get_source()
+    assert src.ndim == 2
+
+    with pytest.raises(DataErr) as err:
+        ui.plot_model()
+
+    assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"
+
+
+def simple_data1dint(idval):
+    """Create a simple dataset for the #1444 checks.
+
+    Usw Data1DInt rather than Data1D as the fact it's integrated
+    gives a chance to check the model evaluation.
+    """
+
+    xlo = np.asarray([1, 3, 7])
+    xhi = np.asarray([2, 7, 9])
+    y = np.asarray([5, 17, 7])
+
+    ui.load_arrays(idval, xlo, xhi, y, ui.Data1DInt)
+    ui.set_source(idval, ui.const1d.mdl)
+
+    mdl.c0 = 100
+
+
+def simple_dataimg(idval):
+    """Create a simple dataset for the #1444 checks.
+
+    We want to use DataIMG and not Data2D to ensure we have
+    notice2d.
+    """
+
+    x1, x0 = np.mgrid[1:4, 1:5]
+    y = x1 + 10 * x0
+    ui.load_arrays(idval, x0.flatten(), x1.flatten(), y.flatten(),
+                   x0.shape, ui.DataIMG)
+
+    ui.set_source(idval, ui.polynom2d.mdl)
+    mdl.c = 100
+    mdl.cx1 = 10
+    mdl.cy1 = 1
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_data_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_data_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    assert ui.calc_data_sum(id=idval) == pytest.approx(29)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_data_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_data_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    with pytest.raises(AttributeError) as exc:
+        ui.calc_data_sum2d(id=idval)
+
+    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_model_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_model_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    assert ui.calc_model_sum(id=idval) == pytest.approx(700)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_model_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_model_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    with pytest.raises(AttributeError) as exc:
+        ui.calc_model_sum2d(id=idval)
+
+    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_source_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_source_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    # TODO: what is calc_source_sum calculating here?
+    assert ui.calc_source_sum(id=idval) == pytest.approx(300)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_1d_source_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 1D data set: calc_source_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_data1dint(idval)
+    with pytest.raises(AttributeError) as exc:
+        ui.calc_source_sum2d(id=idval)
+
+    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_data_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_data_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_data_sum(id=idval) == pytest.approx(324)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_data_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_data_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_data_sum2d(id=idval) == pytest.approx(324)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_model_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_model_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_model_sum(id=idval) == pytest.approx(1524)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_model_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_model_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_model_sum2d(id=idval) == pytest.approx(1524)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_source_1d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_source_sum
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+
+    # trigger an assertion that was added as part of #756
+    with pytest.raises(AssertionError):
+        ui.calc_source_sum(id=idval)
+
+
+@pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
+def test_1444_2d_source_2d(idval, clean_astro_ui):
+    """Check issue #1444 for a 2D data set: calc_source_sum2d
+
+    This is a regression test, in that it just tests the existing behavior.
+    """
+
+    simple_dataimg(idval)
+    assert ui.calc_source_sum2d(id=idval) == pytest.approx(1524)
+
+
+@pytest.fixture
+def simple_pha(clean_astro_ui):
+    """A simple grouped PHA dataset."""
+
+    chans = np.arange(1, 10)
+    counts = chans * 2
+    grouping = np.asarray([1, -1, -1, 1, 1, -1, -1, 1, 1])
+    data = ui.DataPHA('x', chans, counts)
+    data.grouping = grouping
+
+    assert not data.grouped
+    data.group()
+
+    ui.set_data(data)
+    ui.set_stat("chi2datavar")
+
+    # return the expected counts
+    return 2 * np.asarray([1 + 2 + 3, 4, 5 + 6 + 7, 8, 9])
+
+
+def test_pha_set_dep_none(simple_pha):
+    """What happens if set_dep is called with None?"""
+
+    ui.set_dep(None)
+
+    # We get [nan, nan, nan, nan, nan]
+    assert np.isnan(ui.get_dep()) == pytest.approx([1, 1, 1, 1, 1])
+
+
+def test_pha_set_dep_scalar(simple_pha):
+    """What happens if set_dep is called with a scalar?"""
+
+    ui.set_dep(3)
+    assert ui.get_dep() == pytest.approx(3 * np.ones(5))
+
+
+def test_pha_set_dep_array(simple_pha):
+    """What happens if set_dep is called with an array?"""
+
+    # The grouping is 1-3, 4, 5-7, 8, 9
+    ui.set_dep([2, 4, 5, 19, 11, 12, 13, 0, 9])
+
+    # I do not understand why get_dep returns the "average" value
+    # rather than the sum, but let's test the current behavior.
+    #
+    assert ui.get_dep() == pytest.approx([11 / 3, 19, 36 / 3, 0, 9])
+
+
+def test_pha_set_dep_array_wrong(simple_pha):
+    """What happens if set_dep is called with an array with the wrong length?"""
+
+    # this does not error out
+    ui.set_dep([2, 4, 5])
+
+    # this does error out
+    with pytest.raises(TypeError) as err:
+        ui.get_dep()
+
+    assert str(err.value) == "input array sizes do not match, data: 3 vs group: 9"
+
+
+def test_pha_get_staterror(simple_pha):
+    """Check get_staterror with a PHA dataset"""
+
+    error = np.sqrt(simple_pha)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_get_syserror(simple_pha):
+    """Check get_syserror with a PHA dataset"""
+
+    with pytest.raises(DataErr) as err:
+        ui.get_syserror()
+
+    assert str(err.value) == "data set '1' does not specify systematic errors"
+
+
+def test_pha_set_staterror_scalar_no_fractional(simple_pha):
+    """What happens when we set the staterror to a scalar fractional=False?"""
+
+    # The errors are calculated from
+    #    (3,3,3), 3, (3, 3, 3), 3, 3
+    # thanks to the grouping. Those bins with multiple values have
+    # the error values combined in quadrature.
+    #
+    error = 3 * np.sqrt([3, 1, 3, 1, 1])
+
+    ui.set_staterror(3)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_set_syserror_scalar_no_fractional(simple_pha):
+    """What happens when we set the syserror to a scalar fractional=False?"""
+
+    staterror = np.sqrt(simple_pha)
+    syserror = 2 * np.sqrt([3, 1, 3, 1, 1])
+    combo = np.sqrt(simple_pha + syserror * syserror)
+
+    ui.set_syserror(2)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_pha_set_staterror_scalar_fractional(simple_pha):
+    """What happens when we set the staterror to a scalar fractional=True?"""
+
+    vals = 0.4 * 2 * np.arange(1, 10)
+    vals2 = vals * vals
+    error = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                     vals2[4] + vals2[5] + vals2[6], vals2[7],
+                     vals2[8]])
+
+    ui.set_staterror(0.4, fractional=True)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_set_syserror_scalar_fractional(simple_pha):
+    """What happens when we set the syserror to a scalar fractional=True?"""
+
+    staterror = np.sqrt(simple_pha)
+
+    vals = 0.5 * 2 * np.arange(1, 10)
+    vals2 = vals * vals
+    syserror = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                        vals2[4] + vals2[5] + vals2[6], vals2[7],
+                        vals2[8]])
+
+    combo = np.sqrt(simple_pha + syserror * syserror)
+
+    ui.set_syserror(0.5, fractional=True)
+    assert ui.get_staterror() == pytest.approx(staterror)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+def test_pha_set_staterror_array(simple_pha):
+    """What happens when we set the staterror to an array?"""
+
+    # The errors are given per channel, but the response is
+    # grouped.
+    #
+    vals = 0.1 * np.arange(1, 10)
+    vals2 = vals * vals
+    error = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                     vals2[4] + vals2[5] + vals2[6], vals2[7],
+                     vals2[8]])
+
+    ui.set_staterror(vals)
+    assert ui.get_staterror() == pytest.approx(error)
+    assert ui.get_error() == pytest.approx(error)
+
+
+def test_pha_set_syserror_array(simple_pha):
+    """What happens when we set the syserror to an array?"""
+
+    vals = 0.1 * np.arange(1, 10)
+    vals2 = vals * vals
+    syserror = np.sqrt([vals2[0] + vals2[1] + vals2[2], vals2[3],
+                        vals2[4] + vals2[5] + vals2[6], vals2[7],
+                        vals2[8]])
+
+    combo = np.sqrt(simple_pha + syserror * syserror)
+
+    ui.set_syserror(vals)
+    assert ui.get_syserror() == pytest.approx(syserror)
+    assert ui.get_error() == pytest.approx(combo)
+
+
+@pytest.mark.parametrize("field", ["staterror", "syserror"])
+def test_pha_set_error_array_wrong(field, simple_pha):
+    """What happens when we set the stat/syserror to an array of the wrong length?"""
+
+    setfunc = getattr(ui, f"set_{field}")
+
+    # this does not error out
+    setfunc(np.asarray([1, 2, 3, 4]))
+
+    # this does error out
+    getfunc = getattr(ui, f"get_{field}")
+    with pytest.raises(TypeError) as err:
+        getfunc()
+
+    assert str(err.value) == "input array sizes do not match, data: 4 vs group: 9"
+
+
+def test_pha_set_filter_unmasked(simple_pha):
+    """What happens when we call set_filter to an unfiltered dataset?"""
+
+    data = ui.get_data()
+    assert data.mask
+
+    expected = [True, True, False, True, False]
+    ui.set_filter(expected)
+
+    assert data.mask == pytest.approx(expected)
+
+
+def test_pha_set_filter_unmasked_wrong(simple_pha):
+    """What happens when we call set_filter to an unfiltered dataset with the wrong size?"""
+
+    with pytest.raises(DataErr) as err:
+        ui.set_filter(np.asarray([True, False]))
+
+    assert str(err.value) == "size mismatch between 5 and 2"
+
+
+def test_pha_set_filter_masked(simple_pha):
+    """What happens when we call set_filter to a filtered dataset?"""
+
+    data = ui.get_data()
+
+    ui.ignore(4, 8)
+    assert data.mask == pytest.approx([True, False, False, False, True])
+
+    ui.set_filter(np.asarray([True, False, True, False, False]))
+    assert data.mask == pytest.approx([True, False, True, False, True])
+
+
+def test_pha_set_filter_masked_wrong(simple_pha):
+    """What happens when we call set_filter to a filtered dataset with the wrong size?"""
+
+    ui.ignore(4, 8)
+
+    with pytest.raises(DataErr) as err:
+        ui.set_filter(np.asarray([True, False]))
+
+    assert str(err.value) == "size mismatch between 5 and 2"

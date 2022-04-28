@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,9 +30,9 @@ from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
 from sherpa.models.parameter import Parameter
 from sherpa.instrument import PSFModel
 from sherpa.data import Data1D, Data1DInt
-import sherpa.astro.ui as ui
+from sherpa.astro import ui
 
-import sherpa.utils
+from sherpa.utils import linear_interp
 from sherpa.utils.err import ModelErr
 
 from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
@@ -767,7 +767,7 @@ def _test_regrid1d_int(rtol,
 @pytest.mark.parametrize("eincr", [True])
 @pytest.mark.parametrize("rincr", [True, False])
 @pytest.mark.parametrize("margs", [(5e-5, None),
-                                   (0.011, sherpa.utils.linear_interp)])
+                                   (0.011, linear_interp)])
 def test_regrid1d_interpolation(eincr, rincr, margs, setup_1d):
 
     tol, method = margs

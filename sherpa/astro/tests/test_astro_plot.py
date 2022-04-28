@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -67,7 +67,7 @@ def check_sourceplot_energy(sp, factor=0):
 
     assert sp.title == 'Source Model of '
 
-    bins = np.arange(0.1, 10.1, 0.1)
+    bins = 0.1 + 0.1 * np.arange(11)
     assert sp.xlo == pytest.approx(bins[:-1])
     assert sp.xhi == pytest.approx(bins[1:])
 
@@ -76,29 +76,7 @@ def check_sourceplot_energy(sp, factor=0):
     #
     yexp = np.asarray([9998.300959, 9997.9935414, 9997.63869638,
                        9997.23070803, 9996.76346026, 9996.2304594, 9995.62486769,
-                       9994.9395488, 9994.16712626, 9993.30005567, 9992.33071112,
-                       9991.25148615, 9990.05490914, 9988.73377265, 9987.28127577,
-                       9985.69117819, 9983.95796409, 9982.07701351, 9980.04477839,
-                       9977.85895997, 9975.51868378, 9973.02466824, 9970.37938236,
-                       9967.58718801, 9964.65446216, 9961.58969431, 9958.40355487,
-                       9955.10893021, 9951.72092088, 9948.25679985, 9944.73592864,
-                       9941.17962987, 9937.6110159, 9934.05477423, 9930.53691143,
-                       9927.08445867, 9923.7251427, 9920.48702778, 9917.39813433,
-                       9914.48604166, 9911.77748224, 9909.29793588, 9907.07123238,
-                       9905.11917118, 9903.4611666, 9902.11392658, 9901.09117249,
-                       9900.40340655, 9900.05773225, 9900.05773225, 9900.40340655,
-                       9901.09117249, 9902.11392658, 9903.4611666, 9905.11917118,
-                       9907.07123238, 9909.29793588, 9911.77748224, 9914.48604166,
-                       9917.39813433, 9920.48702778, 9923.7251427, 9927.08445867,
-                       9930.53691143, 9934.05477423, 9937.6110159, 9941.17962987,
-                       9944.73592864, 9948.25679985, 9951.72092088, 9955.10893021,
-                       9958.40355487, 9961.58969431, 9964.65446216, 9967.58718801,
-                       9970.37938236, 9973.02466824, 9975.51868378, 9977.85895997,
-                       9980.04477839, 9982.07701351, 9983.95796409, 9985.69117819,
-                       9987.28127577, 9988.73377265, 9990.05490914, 9991.25148615,
-                       9992.33071112, 9993.30005567, 9994.16712626, 9994.9395488,
-                       9995.62486769, 9996.2304594, 9996.76346026, 9997.23070803,
-                       9997.63869638, 9997.9935414, 9998.300959, 9998.5662520])
+                       9994.9395488, 9994.16712626, 9993.30005567])
 
     if factor == 1:
         yexp *= 0.1
@@ -136,7 +114,7 @@ def check_sourceplot_wavelength(sp, factor=0):
 
     # Use the code from DataPHA to convert from keV to Angstroms.
     #
-    ebins = np.arange(0.1, 10.1, 0.1)
+    ebins = 0.1 + 0.1 * np.arange(11)
     lbins = hc / ebins
     assert sp.xlo == pytest.approx(lbins[:-1])
     assert sp.xhi == pytest.approx(lbins[1:])
@@ -148,36 +126,7 @@ def check_sourceplot_wavelength(sp, factor=0):
     #
     yexp = np.asarray([10000., 10000., 10000., 10000., 10000., 10000.,
                        9999.99999864, 9999.99949354, 9999.97224156,
-                       9999.55447151, 9996.86451659, 9987.51382359,
-                       9966.695068 , 9933.27750675, 9891.33791156,
-                       9847.93710785, 9809.78226046, 9781.16179805,
-                       9763.58920097, 9756.46908383, 9758.02782873,
-                       9766.08494609, 9778.54263095, 9793.6274431,
-                       9809.96473056, 9826.55998249, 9842.73898966,
-                       9858.07743665, 9872.33534744, 9885.40252063,
-                       9897.25609947, 9907.92910978, 9917.48798344,
-                       9926.01701814, 9933.60797703, 9940.3533812,
-                       9946.34238774, 9951.65843565, 9956.37807112,
-                       9960.57053782, 9964.29784539, 9967.61512156,
-                       9970.57111803, 9973.20878565, 9975.56586528,
-                       9977.67546184, 9979.56658298, 9981.26463295,
-                       9982.79185821, 9984.16774487, 9985.40937017,
-                       9986.5317114, 9987.54791625, 9988.46953851,
-                       9989.30674326, 9990.06848503, 9990.76266241,
-                       9991.39625226, 9991.97542597, 9992.50565038,
-                       9992.99177532, 9993.43810959, 9993.84848703,
-                       9994.22632392, 9994.57466896, 9994.89624683,
-                       9995.19349616, 9995.46860277, 9995.72352864,
-                       9995.96003731, 9996.17971622, 9996.3839962,
-                       9996.57416871, 9996.75140095, 9996.9167492,
-                       9997.07117061, 9997.21553359, 9997.35062702,
-                       9997.47716842, 9997.59581118, 9997.70715101,
-                       9997.81173162, 9997.9100499 , 9998.00256036,
-                       9998.0896793 , 9998.17178835, 9998.24923778,
-                       9998.32234937, 9998.39141906, 9998.45671928,
-                       9998.51850107, 9998.57699596, 9998.63241771,
-                       9998.68496386, 9998.73481709, 9998.78214653,
-                       9998.82710888, 9998.86984944, 9998.91050307])
+                       9999.55447151])
 
     if factor == 1:
         yexp *= (lbins[:-1] - lbins[1:])
@@ -187,12 +136,19 @@ def check_sourceplot_wavelength(sp, factor=0):
     assert sp.y == pytest.approx(yexp)
 
 
-def test_sourceplot(caplog):
+@pytest.fixture
+def make_basic_datapha():
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    chans = np.arange(10)
+    los = 0.1 + 0.1 * chans
+    his = 0.1 + los
+    return DataPHA('', chans, np.ones(10),
+                   bin_lo=los, bin_hi=his)
+
+
+def test_sourceplot(caplog, make_basic_datapha):
+
+    data = make_basic_datapha
     data.units = "energy"
     assert data.rate
     assert data.plot_fac == 0
@@ -216,13 +172,10 @@ def test_sourceplot(caplog):
     check_sourceplot_energy(sp)
 
 
-def test_sourceplot_counts(caplog):
+def test_sourceplot_counts(caplog, make_basic_datapha):
     """test_sourceplot but when rate=False is chosen"""
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    data = make_basic_datapha
     data.units = "energy"
     data.rate = False
 
@@ -246,13 +199,10 @@ def test_sourceplot_counts(caplog):
 
 
 @pytest.mark.parametrize("factor", [1, 2])
-def test_sourceplot_facn(factor, caplog):
+def test_sourceplot_facn(factor, caplog, make_basic_datapha):
     """Change plot factor for test_sourceplot"""
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    data = make_basic_datapha
     data.units = "energy"
     data.plot_fac = factor
     assert data.rate
@@ -276,13 +226,10 @@ def test_sourceplot_facn(factor, caplog):
     check_sourceplot_energy(sp, factor=factor)
 
 
-def test_sourceplot_channels(caplog):
+def test_sourceplot_channels(caplog, make_basic_datapha):
     """Although we ask for channels we get energy units"""
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    data = make_basic_datapha
     data.units = "channel"
 
     # use a model that is "okay" to use with keV bins
@@ -309,13 +256,10 @@ def test_sourceplot_channels(caplog):
     check_sourceplot_energy(sp)
 
 
-def test_sourceplot_wavelength(caplog):
+def test_sourceplot_wavelength(caplog, make_basic_datapha):
     """Check we get wavelength units"""
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    data = make_basic_datapha
     data.units = "wave"
 
     # Note that the model evaluation in done in Angstroms
@@ -338,13 +282,10 @@ def test_sourceplot_wavelength(caplog):
 
 
 @pytest.mark.parametrize("factor", [1, 2])
-def test_sourceplot_wavelength_facn(factor, caplog):
+def test_sourceplot_wavelength_facn(factor, caplog, make_basic_datapha):
     """Change plot factor for test_sourceplot_wavelength"""
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    data = make_basic_datapha
     data.units = "wavelength"
     data.plot_fac = factor
     assert data.rate
@@ -366,13 +307,10 @@ def test_sourceplot_wavelength_facn(factor, caplog):
     check_sourceplot_wavelength(sp, factor=factor)
 
 
-def test_sourceplot_wavelength_counts(caplog):
+def test_sourceplot_wavelength_counts(caplog, make_basic_datapha):
     """test_sourceplot_wavelength but when rate=False is chosen"""
 
-    bins = np.arange(0.1, 10.1, 0.1)
-    data = DataPHA('', np.arange(10), np.ones(10),
-                   bin_lo=bins[:-1].copy(),
-                   bin_hi=bins[1:].copy())
+    data = make_basic_datapha
     data.units = "wave"
     data.rate = False
 

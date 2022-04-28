@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
+
 import numpy as np
 import pytest
 
@@ -531,20 +533,28 @@ def test_calc_data_sum_no_range_2d(data_class):
 
 
 @pytest.mark.parametrize("data_class", ["1d", "1dint",
-                                        "pha", "grp", "qual",
-                                        "2d", "2dint"])
+                                        "pha", "grp", "qual"])
 def test_calc_data_sum2d_no_range_1d(data_class):
-    """What happens when data is not an IMG class
-
-    Note that this includes 2d/2dint classes as they all fail.
-
-    """
+    """What happens when data is not an IMG class: 1D"""
 
     data = make_data(data_class)
     with pytest.raises(AttributeError) as err:
         utils.calc_data_sum2d(data)
 
-    assert str(err.value).endswith(" object has no attribute 'notice2d'")
+    assert re.match("^'Data.*' object has no attribute 'notice2d'",
+                    str(err.value))
+
+
+@pytest.mark.parametrize("data_class", ["2d", "2dint"])
+def test_calc_data_sum2d_no_range_2d_but_not_img(data_class):
+    """What happens when data is not an IMG class: 2D"""
+
+    data = make_data(data_class)
+    with pytest.raises(AttributeError) as err:
+        utils.calc_data_sum2d(data)
+
+    assert re.match("^'Data.*' object has no attribute 'notice2d'",
+                    str(err.value))
 
 
 @pytest.mark.parametrize("data_class", ["img", "imgint"])

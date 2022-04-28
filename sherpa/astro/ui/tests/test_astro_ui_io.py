@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2018, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,14 +23,10 @@
 # may be better placed in tests of the sherpa.astro.io module, once that
 # becomes possible
 
-import logging
-
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D
-
-logger = logging.getLogger("sherpa")
 
 
 FILE_NAME = 'acisf01575_001N001_r0085_pha3.fits'

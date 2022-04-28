@@ -22,6 +22,7 @@
 
 import logging
 import pickle
+import re
 import warnings
 
 import numpy as np
@@ -640,6 +641,24 @@ def make_test_pha():
     chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
     counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
     return DataPHA('p', chans, counts)
+
+
+@pytest.fixture
+def make_grouped_pha():
+    """A simple PHA with grouping
+
+    Note that this does have a quality=2 bin that is
+    ignored.
+    """
+
+    chans = np.asarray([1, 2, 3, 4, 5], dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3, 12], dtype=np.int16)
+    grp = np.asarray([1, -1, -1, 1, 1], dtype=np.int16)
+    qual = np.asarray([0, 0, 0, 0, 2], dtype=np.int16)
+    pha = DataPHA('grp', chans, counts,
+                  grouping=grp, quality=qual)
+    pha.ignore_bad()
+    return pha
 
 
 def test_img_get_img(make_test_image):
@@ -1678,18 +1697,14 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     assert pha.get_filter() == "2:4"
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize("label", ["grouping", "quality"])
-@pytest.mark.parametrize("vals", [True, [1, 1], np.ones(10)])
-def test_pha_column_size(label, vals, make_test_pha):
-    """Check we error out if column=label has the wrong size"""
+@pytest.mark.parametrize("field", ["grouping", "quality"])
+def test_pha_change_xxx_non_integer_value(field, make_test_pha):
+    """What happens if send grouping/quality values that can not be converted to an array?"""
 
     pha = make_test_pha
-    with pytest.raises(DataErr) as de:
-        # This does not throw an error
-        setattr(pha, label, vals)
-
-    assert str(de.value) == f"size mismatch between channel and {label}"
+    invalid = [None, "x", {}, set()]
+    # This does not error out
+    setattr(pha, field, invalid)
 
 
 @pytest.mark.xfail
@@ -2031,6 +2046,381 @@ def test_361():
     assert pha.get_noticed_channels() == pytest.approx([3, 4, 7, 8])
 
 
+def test_grouped_pha_get_y(make_grouped_pha):
+    """Quality filtering and grouping is applied: get_y
+
+    As noted in issue #1438 it's not obvious what get_y is meant to
+    return. It is not the same as get_dep as there's post-processing.
+    So just test the current behavior.
+
+    """
+    pha = make_grouped_pha
+
+    # grouped counts are [3, 3, 12]
+    # channel widths are [3, 1, 1]
+    # which gives [1, 3, 12]
+    # but the last group is marked bad by quality,
+    # so we expect [1, 3]
+    #
+    assert pha.get_y() == pytest.approx([1, 3])
+
+
+def test_grouped_pha_mask(make_grouped_pha):
+    """What is the default mask setting?"""
+    pha = make_grouped_pha
+    assert np.isscalar(pha.mask)
+    assert pha.mask
+
+
+def test_grouped_pha_get_mask(make_grouped_pha):
+    """What is the default get_mask value?"""
+    pha = make_grouped_pha
+    assert pha.get_mask() == pytest.approx([True] * 4 + [False])
+
+
+# Should this really return "1:4" as the fifth channel has been
+# excluded? At the moment check the current behavior.
+#
+def test_grouped_pha_get_filter(make_grouped_pha):
+    """What is the default get_filter value?"""
+    pha = make_grouped_pha
+    assert pha.get_filter() == "1:5"
+
+
+def test_grouped_pha_set_filter(make_grouped_pha):
+    """What happens with a simple filter?"""
+    pha = make_grouped_pha
+    pha.ignore(hi=2)
+    assert pha.get_filter() == "4"
+
+
+# What should get_dep(filter=False) return here? Should it
+# include the quality=2 filtered bin (12) or not? At the
+# moment it does, so we test against this behavior, but it
+# might be something we want to change.
+#
+@pytest.mark.parametrize("filter,expected",
+                         [(False, [1, 2, 0, 3, 12]),
+                          (True, [3, 3])])
+def test_grouped_pha_get_dep(filter, expected, make_grouped_pha):
+    """Quality filtering and grouping is applied: get_dep"""
+    pha = make_grouped_pha
+    assert pha.get_dep(filter=filter) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("filter,expected",
+                         [(False, [1, 2, 0, 3, 12]),
+                          (True, [3])])
+def test_grouped_pha_filter_get_dep(filter, expected, make_grouped_pha):
+    """What happens after a simple filter?
+
+    We do this because the behavior of test_grouped_get_filter
+    and test_grouped_pha_get_dep has been unclear.
+    """
+    pha = make_grouped_pha
+    pha.ignore(hi=2)
+    assert pha.get_dep(filter=filter) == pytest.approx(expected)
+
+
+def test_grouped_pha_set_y_invalid_size(make_grouped_pha):
+    """What happens if change a grouped PHA counts/y setting?
+
+    See also test_grouped_pha_set_related_invalid_size which
+    is essentially the same but for other fields.
+    """
+    pha = make_grouped_pha
+
+    # Pick an array that matches the grouped/filtered data size.
+    # This is "not actionable" as we can't work out how to change
+    # the counts channels, so it should error.
+    #
+    # this does not error out
+    pha.set_dep([2, 3])
+
+
+@pytest.mark.parametrize("related", ["staterror", "syserror",
+                                     "y", "counts",
+                                     "backscal", "areascal",
+                                     "grouping", "quality"])
+def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
+    """Can we set the value to a 2-element array?"""
+    pha = make_grouped_pha
+
+    # Pick an array that matches the grouped/filtered data size.
+    # This is "not actionable" as we can't work out how to change
+    # the counts channels, so it should error.
+    #
+    # this does not error out
+    setattr(pha, related, [2, 3])
+
+
+@pytest.mark.parametrize("column", ["staterror", "syserror",
+                                    "y", "counts",
+                                    "backscal", "areascal",
+                                    "grouping", "quality"])
+def test_pha_check_related_fields_correct_size(column, make_grouped_pha):
+    """Can we set the value to a 2-element array?"""
+
+    d = DataPHA('example', None, None)
+    setattr(d, column, np.asarray([2, 10, 3]))
+
+    # This does not error out
+    d.indep = (np.asarray([2, 3, 4, 5]), )
+
+
+@pytest.mark.parametrize("label", ["filter", "grouping"])
+def test_pha_no_group_apply_xxx_invalid_size(label, make_test_pha):
+    """Check apply_filter/grouping tests the data length: no quality/group
+
+    Issue #1439 points out that quality handling creates different results.
+
+    """
+    pha = make_test_pha
+
+    func = getattr(pha, f"apply_{label}")
+    # this does not error out
+    func([1, 2])
+
+
+@pytest.mark.parametrize("vals", [pytest.param([1], marks=pytest.mark.xfail), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_no_group_filtered_apply_filter_invalid_size(vals, make_test_pha):
+    """Check apply_filter tests the data length: no quality/group, filtered
+
+    This behaves differently to the apply_grouping case
+    """
+
+    pha = make_test_pha
+    pha.ignore(hi=2)
+
+    # safety check to make sure we've excluded points
+    assert not np.all(pha.mask)
+    assert np.any(pha.mask)
+
+    # This should error out, but it only does so for the > 1 element sequence,
+    # and this is not a "friendly" error message
+    #
+    with pytest.raises(ValueError):
+        pha.apply_filter(vals)
+
+
+@pytest.mark.parametrize("vals", [[1], [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_no_group_filtered_apply_grouping_invalid_size(vals, make_test_pha):
+    """Check apply_grouping tests the data length: no quality/group, filtered
+
+    This behaves differently to the apply_filter case
+    """
+
+    pha = make_test_pha
+    pha.ignore(hi=2)
+
+    # This should error out, but it does not.
+    pha.apply_grouping(vals)
+
+
+@pytest.mark.parametrize("label", ["filter", "grouping"])
+@pytest.mark.parametrize("vals", [[1], (2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_zero_quality_apply_xxx_invalid_size(label, vals, make_test_pha):
+    """Check apply_filter/grouping tests the data length: quality set to 0
+
+    We can not use make_grouped_pha and then set the quality array to
+    0's as that does not remove the quality setting (see issue #1427)
+    so we replicate most of make_grouped_pha with make_test_pha.
+
+    """
+    pha = make_test_pha
+    pha.grouping = [1, -1, -1, 1]
+    pha.quality = [0] * 4
+    pha.group()
+
+    func = getattr(pha, f"apply_{label}")
+    with pytest.raises(TypeError) as err:
+        func(vals)
+
+    assert re.match("^input array sizes do not match, data: [128] vs group: 4$",
+                    str(err.value))
+
+
+@pytest.mark.parametrize("vals", [(2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_zero_quality_filtered_apply_filter_invalid_size(vals, make_test_pha):
+    """Check apply_filter tests the data length: quality set to 0, filtered"""
+
+    pha = make_test_pha
+    pha.grouping = [1, -1, -1, 1]
+    pha.quality = [0] * 4
+    pha.group()
+
+    pha.ignore(hi=2)
+
+    # safety check to make sure we've excluded points
+    assert not np.all(pha.mask)
+    assert np.any(pha.mask)
+
+    with pytest.raises(ValueError) as err:
+        pha.apply_filter(vals)
+
+    # The error strong may depend on the NumPy version.
+    #
+    assert str(err.value).startswith("NumPy boolean array indexing ")
+
+
+@pytest.mark.parametrize("vals", [[1], (2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_zero_quality_filtered_apply_grouping_invalid_size(vals, make_test_pha):
+    """Check apply_grouping tests the data length: quality set to 0, filtered"""
+
+    pha = make_test_pha
+    pha.grouping = [1, -1, -1, 1]
+    pha.quality = [0] * 4
+    pha.group()
+
+    pha.ignore(hi=2)
+
+    with pytest.raises(TypeError) as err:
+        pha.apply_grouping(vals)
+
+    assert re.match("^input array sizes do not match, data: [128] vs group: 4$",
+                    str(err.value))
+
+
+@pytest.mark.parametrize("vals", [(2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_quality_apply_filter_invalid_size(vals, make_grouped_pha):
+    """Check apply_filter tests the data length: with quality set"""
+
+    pha = make_grouped_pha
+
+    with pytest.raises(ValueError) as err:
+        pha.apply_filter(vals)
+
+    # The error strong may depend on the NumPy version.
+    #
+    assert str(err.value).startswith("NumPy boolean array indexing ")
+
+
+@pytest.mark.parametrize("vals", [(2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_quality_filtered_apply_filter_invalid_size(vals, make_grouped_pha):
+    """Check apply_filter tests the data length: with quality set, filtered"""
+
+    pha = make_grouped_pha
+    pha.ignore(hi=1)
+
+    # safety check to make sure we've excluded points
+    assert pha.mask == pytest.approx([False, True])
+    assert pha.get_mask() == pytest.approx([False, False, False, True])
+
+    with pytest.raises(IndexError) as err:
+        pha.apply_filter(vals)
+
+    # The error strong may depend on the NumPy version.
+    #
+    assert str(err.value).startswith("boolean index did not match indexed array ")
+
+
+@pytest.mark.parametrize("vals", [pytest.param([42], marks=pytest.mark.xfail), [10, 20, 35, 42, 55]])
+def test_pha_quality_filtered_apply_filter_match_filter(vals, make_grouped_pha):
+    """What happens if the array has the correct size?"""
+
+    pha = make_grouped_pha
+    pha.ignore(hi=1)
+
+    # XFAIL: when the array matches the filtered data there's a problem
+    # matching to the ungrouped data.
+    got = pha.apply_filter(vals)
+    assert got == pytest.approx([42])
+
+
+@pytest.mark.parametrize("vals", [[1], (2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_quality_apply_grouping_invalid_size(vals, make_grouped_pha):
+    """Check apply_grouping tests the data length: with quality set"""
+
+    pha = make_grouped_pha
+
+    with pytest.raises(DataErr) as err:
+        pha.apply_grouping(vals)
+
+    assert str(err.value) == "size mismatch between quality filter and data array"
+
+
+@pytest.mark.parametrize("vals", [[1], (2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
+def test_pha_quality_filtered_apply_grouping_invalid_size(vals, make_grouped_pha):
+    """Check apply_grouping tests the data length: with quality set, filtered"""
+
+    pha = make_grouped_pha
+    pha.ignore(hi=1)
+
+    with pytest.raises(DataErr) as err:
+        pha.apply_grouping(vals)
+
+    assert str(err.value) == "size mismatch between quality filter and data array"
+
+
+def test_pha_apply_filter_check():
+    """Check that apply_filter works as expected.
+
+    We go through a number of stages - e.g.
+
+      - no filter or group
+      - only group
+      - group and filter
+
+    """
+
+    chans = np.arange(1, 21)
+    counts = np.ones(20)
+    data = DataPHA("ex", chans, counts)
+
+    all_vals = np.arange(1, 21)
+    filt_vals = np.arange(5, 17)
+
+    expected = np.arange(1, 21)
+    got = data.apply_filter(all_vals, groupfunc=np.sum)
+    assert got == pytest.approx(expected)
+
+    grouping = np.asarray([1, -1] * 10)
+    data.grouping = grouping
+    data.quality = [0] * 20
+
+    assert not data.grouped
+    data.group()
+    assert data.grouped
+
+    expected = np.asarray([3, 7, 11, 15, 19, 23, 27, 31, 35, 39])
+    got = data.apply_filter(all_vals, groupfunc=np.sum)
+    assert got == pytest.approx(expected)
+
+    # This ignores the first two groups, channels 1-2 and 3-4,
+    # and the last two groups, channels 17-18 and 19-20.
+    # Note that channel 17 is ignored even though not explicitly
+    # asked because of the use of ignore.
+    #
+    data.ignore(hi=4)
+    data.ignore(lo=18)
+
+    expected = np.asarray([11, 15, 19, 23, 27, 31])
+    got = data.apply_filter(all_vals, groupfunc=np.sum)
+    assert got == pytest.approx(expected)
+
+    # Now the data has been filtered we can check what happens when
+    # the input argument has less channels in.
+    #
+    got = data.apply_filter(filt_vals, groupfunc=np.sum)
+    assert got == pytest.approx(expected)
+
+    # Remove the grouping
+    #
+    data.ungroup()
+    assert not data.grouped
+
+    # Note that we still send in vals=arange(5, 17)
+    #
+    expected = filt_vals.copy()
+    got = data.apply_filter(filt_vals, groupfunc=np.sum)
+    assert got == pytest.approx(expected)
+
+    # We can send in the full array too
+    got = data.apply_filter(all_vals, groupfunc=np.sum)
+    assert got == pytest.approx(expected)
+
+
+
 @requires_fits
 @requires_data
 def test_xmmrgs_notice(make_data_path):
@@ -2338,6 +2728,40 @@ def test_img_world_get_world(path, make_test_image_world):
     a, b = d.get_world()
     assert a == pytest.approx(WORLD_X0)
     assert b == pytest.approx(WORLD_X1)
+
+
+def test_img_sky_can_filter(make_test_image_sky):
+    """Check we can filter the image using physical coordinates"""
+    data = make_test_image_sky
+    assert data.coord == "logical"
+    assert data.mask
+    assert data.get_filter() == ""
+
+    data.set_coord("physical")
+    assert data.coord == "physical"
+    assert data.mask
+    assert data.get_filter() == ""
+
+    data.notice2d("rect(2009,-5006,2011,-5000)", ignore=True)
+    assert data.mask == pytest.approx([1, 1, 1, 1, 1, 0])
+    assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
+
+
+def test_img_sky_can_filter_change_coords(make_test_image_sky):
+    """What happens to a filter after changing coordinates?
+
+    This is a regression test.
+    """
+    data = make_test_image_sky
+
+    data.set_coord("physical")
+    data.notice2d("rect(2009,-5006,2011,-5000)", ignore=True)
+
+    data.set_coord("image")
+    assert data.coord == "logical"
+    # Note that the mask/filter does not get cleared
+    assert data.mask == pytest.approx([1, 1, 1, 1, 1, 0])
+    assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
 
 
 def test_arf_checks_energy_length():
@@ -3266,3 +3690,32 @@ def test_1380_pickle(make_data_path):
     #
     assert img._orig_indep_axis[0] == "logical"
     assert img2._orig_indep_axis[0] == "logical"
+
+
+def test_image_apply_filter_invalid_size(make_test_image):
+    """Does an image error out if the filter is sent an invalid size?
+
+    Test related to issue #1439 which is an issue with the DataPHA class.
+    """
+
+    data = make_test_image
+
+    # this does not raise an error
+    data.apply_filter([1, 2])
+
+
+def test_image_filtered_apply_filter_invalid_size(make_test_image):
+    """Does an image error out if the filter is sent an invalid size after a filter?"""
+
+    data = make_test_image
+
+    # "Fake" a filter (this is a perfectly-valid way to set up a filter,
+    # at least at the time this code was written).
+    #
+    data.mask = np.ones(data.y.size, dtype=bool)
+    data.mask[0] = False
+
+    with pytest.raises(DataErr) as de:
+        data.apply_filter([1, 2])
+
+    assert str(de.value) == 'size mismatch between mask and data array'
