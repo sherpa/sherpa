@@ -1,0 +1,104 @@
+#!/bin/sh
+#
+# Update the Sherpa configuration file (setup.cfg) to use the
+# CIAO conda installation.
+#
+
+# Check we have the CIAO installation available.
+#
+ciaover > /dev/null
+if [ $? -ne 0 ]; then
+    echo "ERROR: CIAO does not appear to have been activated";
+    exit 1;
+fi
+
+if [ "x$ASCDS_INSTALL" = "x" ]; then
+    echo "ERROR: The ASCDS_INSTALL environment variable is not set";
+    exit 1;
+fi
+
+if [ ! -d $ASCDS_INSTALL ]; then
+    echo "ERROR: ASCDS_INSTALL does not point to a directory";
+    exit 1;
+fi
+
+# Check we have the conda version, and not the ciao-install version.
+#
+if [ "x$CONDA_PREFIX" = "x" ]; then
+    echo "ERROR: CIAO was not installed with conda."
+    exit 1;
+fi
+
+# Sanity check
+#
+if [ "$CONDA_PREFIX" != "$ASCDS_INSTALL" ]; then
+    echo "ERROR: somehow CONDA_PREFIX and ASDCS_INSTALL are not the same"
+    exit 1;
+fi
+
+# Extract the XSPEC version from the conda packaging metadata;
+# hopefully the formatting and structure remain consistent.
+#
+xspec_version=`conda list xspec-modelsonly --json | grep version | awk '{print $2;}' - | tr -d \"`
+if [ "x$xspec_version" = "x" ]; then
+    echo "ERROR: Unable to find out XSPEC version from"
+    conda list xspec-modelsonly --json
+    exit 1;
+fi
+
+echo "Found XSPEC version: $xspec_version"
+
+# Are we in the right directory
+#
+cfg=setup.cfg
+if [ ! -f $cfg ]; then
+    echo "ERROR: Unable to find $cfg";
+    exit 1;
+fi
+
+# Check the file has not been changed (this could be relaxed but
+# try this approach first).
+#
+git diff --exit-code $cfg > /dev/null
+if [ $? -ne 0 ]; then
+    echo "ERROR: $cfg has already been changed."
+    exit 1;
+fi
+
+# Apply the changes line-by-line
+#
+echo "Updating $cfg"
+
+# This change will hopefully be made to the Sherpa distribution
+# so it can be removed from here.
+#
+sed -i "s|bdist_wheel = sherpa_config bdist_wheel|bdist_wheel = sherpa_config xspec_config bdist_wheel|" $cfg
+
+sed -i "s|#install_dir=build|install_dir=${CONDA_PREFIX}|" $cfg
+sed -i "s|#configure=None|configure=None|" $cfg
+
+sed -i "s|#disable-group=True|disable-group=True|" $cfg
+sed -i "s|#disable-stk=True|disable-stk=True|" $cfg
+
+sed -i "s|#region=local|region=local|" $cfg
+sed -i "s|#region-include_dirs=build/include|region-include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i "s|#region-lib-dirs=build/lib|region-lib-dirs=${CONDA_PREFIX}/lib|" $cfg
+sed -i "s|#region-libraries=region|region-libraries=region ascdm|" $cfg
+sed -i "s|#region-use-cxc-parser=False|region-use-cxc-parser=True|" $cfg
+
+sed -i "s|#wcs=local|wcs=local|" $cfg
+# Historically the setup file has used the wrong form here
+# so support both 'include-dirs' and 'include_dirs'.
+sed -i "s|#wcs-include.dirs=build/include|wcs-include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i "s|#wcs-lib-dirs=build/lib|wcs-lib-dirs=${CONDA_PREFIX}/lib|" $cfg
+sed -i "s|#wcs-libraries=wcs|wcs-libraries=wcs|" $cfg
+
+sed -i "s|#fftw=local|fftw=local|" $cfg
+sed -i "s|#fftw-include_dirs=build/include|fftw-include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i "s|#fftw-lib-dirs=build/lib|fftw-lib-dirs=${CONDA_PREFIX}/lib|" $cfg
+sed -i "s|#fftw-libraries=fftw3|fftw-libraries=fftw3|" $cfg
+
+sed -i "s|#with-xspec=True|with-xspec=True|" $cfg
+sed -i "s|#xspec_include_dirs = None|xspec_include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
+sed -i "s|#xspec_version = .*|xspec_version = ${xspec_version}|" $cfg

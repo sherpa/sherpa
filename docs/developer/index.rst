@@ -107,72 +107,101 @@ How do I ...
 Install from source in conda
 ----------------------------
 
-Conda can be used to install all the dependencies for Sherpa.
+Conda can be used to install all the dependencies for Sherpa, including
+:term:`XSPEC`.
 
 ::
 
-    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao ds9 astropy ciao
-    conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao sherpa
-    conda install -n sherpaciao -c anaconda -c astropy sphinx graphviz sphinx-astropy sphinx_rtd_theme
+    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge ds9 astropy ciao
+    conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa
+    conda activate sherpaciao
 
-The first line installes the full `CIAO release
+The first line installs the full `CIAO release
 <https://cxc.harvard.edu/ciao/>`_ and astropy, required for building
-and running tests locally. The last line adds all requirements for
-building the documentation.  Sherpa can use either astropy or crates
-as backend for reading and writing files. The default configuration in
-Sherpa is to use astropy. However, if crates is installed (e.g. by
-installing the `ciao` package) and selected as backend in `sherpa.rc`,
-then astropy can be omitted from the install (but is still needed to
-build the docs).
+and running tests locally.
+
+If you want to also build the documentation then add (after you have
+activated the environment)::
+
+    conda install pandoc
+    pip install sphinx graphviz sphinx-astropy sphinx_rtd_theme nbsphinx ipykernel
+
+.. note::
+   Sherpa can be configured to use crates (from CIAO) or astropy for
+   it's I/O backend by changing the contents of the file
+   ``.sherpa-standalone.rc`` in your home directory. This file can be
+   found, once CIAO is installed, by using the `~sherpa.get_config`
+   routine::
+
+     % python -c 'import sherpa; print(sherpa.get_config())'
+     /home/happysherpauser/.sherpa-standalone.rc
+
+   If Sherpa was installed as part of CIAO then the file will be
+   called ``.sherpa.rc``.
+
+   The ``io_pkg`` line in this file can be changed to select
+   ``crates`` rather than ``pyfits`` which would mean that ``astropy``
+   does not need to be installed (although it would be needed to build
+   the documentation).
 
 As described in :ref:`build-from-source`, the file ``setup.cfg`` in
 the root directory of the sherpa source needs to be modified to
 configure the build. This is particularly easy in this setup, where
 all external dependencies are installed in conda and the enviroment
-variable ``ASCDS_LIB`` is set to the include directory, when the conda
-environment is activated. Thus, all that is needed is to disable the
-build of external dependencies and to set directories. The following
-lists the lines in ``setup.cfg`` that need to be modified (adjust
-xspec version as needed)::
+variable ``ASCDS_INSTALL`` (or ``CONDA_PREFIX``, which has the same
+value) can be used. For most cases, the ``scripts/use_ciao_config``
+script can be used::
 
-    # GROUP Python module
+  % ./scripts/use_ciao_config
+  Found XSPEC version: 12.12.0
+  Updating setup.cfg
+  % git diff setup.cfg
+  ...
+
+Otherwise the file can be edited manually. First find out what
+XSPEC version is present with::
+
+  % conda list xspec-modelsonly --json | grep version
+      "version": "12.12.0"
+
+then change the ``setup.cfg`` to change the following lines, noting
+that the `${ASCDS_INSTALL}` environment variable **must** be
+replaced by its actual value, and the ``xspec_version`` line
+should be updated to match the output above::
+
+    bdist_wheel = sherpa_config xspec_config bdist_wheel
+
+    install_dir=${ASCDS_INSTALL}
+
+    configure=None
+
     disable-group=True
-
-    # File Stack Python module
     disable-stk=True
 
-    # FFTW Library
     fftw=local
-    fftw-include_dirs=${ASCDS_LIB}/../include
-    fftw-lib-dirs=${ASCDS_LIB}
+    fftw-include_dirs=${ASCDS_INSTALL}/include
+    fftw-lib-dirs=${ASCDS_INSTALL}/lib
     fftw-libraries=fftw3
 
-    # Region Library
     region=local
-    region-include_dirs=${ASCDS_LIB}/../include
-    region-lib-dirs=${ASCDS_LIB}
+    region-include_dirs=${ASCDS_INSTALL}/include
+    region-lib-dirs=${ASCDS_INSTALL}/lib
     region-libraries=region ascdm
+    region-use-cxc-parser=True
 
-    # WCS Subroutines
     wcs=local
-    wcs-include-dirs=${ASCDS_LIB}/../include
-    wcs-lib-dirs=${ASCDS_LIB}
+    wcs-include-dirs=${ASCDS_INSTALL}/include
+    wcs-lib-dirs=${ASCDS_INSTALL}/lib
     wcs-libraries=wcs
 
-    # XSPEC Models
-    [xspec_config]
     with-xspec=True
-    xspec_version = 12.10.1
-    xspec_lib_dirs = ${ASCDS_LIB}
-    xspec_include_dirs = ${ASCDS_LIB}/../include
+    xspec_version = 12.12.0
+    xspec_lib_dirs = ${ASCDS_INSTALL}/lib
+    xspec_include_dirs = ${ASCDS_INSTALL}/include
 
 .. note::
-   Due to the way that the setup and install process works, environment
-   variables need to be expanded by hand. So, if your ``ASCDS_LIB`` is set to
-   ``/data/user/conda/envs/sherpaciao/lib`` then you need to expand a line like
-   ``fftw-include_dirs=${ASCDS_LIB}/../include``
-   to ``fftw-include_dirs=/data/user/conda/envs/sherpaciao/lib/../include``
-   in the list above.
+   The XSPEC version may include the patch level, such as ``12.12.0e``,
+   and this can be included in the configuration file.
 
 To avoid accidentially commiting the modified ``setup.cfg`` into git,
 the file can be marked as "assumed unchanged".
@@ -181,14 +210,9 @@ the file can be marked as "assumed unchanged".
 
     git update-index --assume-unchanged setup.cfg
 
-After these steps, the conda enviroment (here called ``sherpaciao``)
-can be activated and Sherpa can be build from source.
+After these steps, Sherpa can be built from source::
 
-::
-
-    conda activate sherpaciao
-    python setup.py develop
-
+    pip install .
 
 .. warning::
 
@@ -200,6 +224,12 @@ can be activated and Sherpa can be build from source.
 
    That is, the variable is set to a space, not the empty string.
 
+.. warning::
+
+   This is not guaranteed to build Sherpa in exactly the same manner
+   as used by :term:`CIAO`. Please
+   `create an issue <https://github.com/sherpa/sherpa/issues>`_ if
+   this causes problems.
 
 Update the Zenodo citation information
 --------------------------------------
