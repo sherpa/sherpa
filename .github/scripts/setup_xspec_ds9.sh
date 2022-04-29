@@ -19,7 +19,7 @@ echo "HEADAS=${HEADAS}"
 xspec_root=${CONDA_PREFIX}
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    ds9_os=darwinhighsierra
+    ds9_os=darwinmojave
 else
     echo "* installing dev environment"
 
@@ -43,7 +43,7 @@ download () {
 
 ### DS9 and XPA
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.8.2.1.tar.gz
+ds9_tar=ds9.${ds9_os}.8.3.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.20.tar.gz
 
 # Fetch them
