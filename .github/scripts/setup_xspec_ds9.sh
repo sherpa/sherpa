@@ -19,7 +19,7 @@ echo "HEADAS=${HEADAS}"
 xspec_root=${CONDA_PREFIX}
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    ds9_os=darwinhighsierra
+    ds9_os=darwinmojave
 else
     echo "* installing dev environment"
 
