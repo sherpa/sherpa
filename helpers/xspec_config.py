@@ -20,11 +20,43 @@
 
 from distutils.version import LooseVersion
 from distutils.cmd import Command
+import re
+
 from .extensions import build_ext, build_lib_arrays
+
+# What versions of XSPEC do we support? I am not sure what the
+# naming of the XSPEC components are, but let's stick with
+# major, minor, and patch - although this patch level is
+# numeric, and not the XSPEC patch level (e.g. "a" ..), which
+# we do not track here.
+#
+SUPPORTED_VERSIONS = [(12, 9, 0), (12, 9, 1),
+                      (12, 10, 0), (12, 10, 1),
+                      (12, 11, 0), (12, 11, 1),
+                      (12, 12, 0), (12, 12, 1)]
+
+
+MIN_VERSION = LooseVersion("{}.{}.{}".format(*min(SUPPORTED_VERSIONS)))
+MAX_VERSION = LooseVersion("{}.{}.{}".format(*max(SUPPORTED_VERSIONS)))
+
 
 def clean(xs):
     "Remove all '' entries from xs, returning the new list."
     return [x for x in xs if x != '']
+
+
+def get_version(version):
+    """Strip out any XSPEC patch level.
+
+    So '12.12.0c' gets converted to '12.12.0'. This is helpful
+    as then it makes version comparison easier.
+    """
+
+    match = re.search(r'^\d+\.\d+\.\d+', version)
+    if match is None:
+        raise ValueError(f"Invalid XSPEC version string: {version}")
+
+    return LooseVersion(match[0])
 
 
 class xspec_config(Command):
@@ -96,33 +128,21 @@ class xspec_config(Command):
         l = clean(l1 + l2 + l3 + l4 + l5)
 
         macros = []
-        xspec_raw_version = self.xspec_version
 
-        if xspec_raw_version:
-            self.announce(f"Found XSPEC version: {xspec_raw_version}", 2)
-            xspec_version = LooseVersion(xspec_raw_version)
+        if self.xspec_version:
+            self.announce(f"Found XSPEC version: {self.xspec_version}", 2)
+            xspec_version = get_version(self.xspec_version)
 
-            if xspec_version < LooseVersion("12.9.0"):
-                self.warn("XSPEC Version is less than 12.9.0, which is the minimal supported version for Sherpa")
+            for major, minor, patch in SUPPORTED_VERSIONS:
+                version = LooseVersion(f'{major}.{minor}.{patch}')
+                if xspec_version >= version:
+                    macros += [(f'XSPEC_{major}_{minor}_{patch}', None)]
 
-            # I am not sure what the naming of the XSPEC components are,
-            # but let's stick with major, minor, and patch.
-            #
-            for major, minor, patch in [(12, 9, 0), (12, 9, 1),
-                                        (12, 10, 0), (12, 10, 1),
-                                        (12, 11, 0), (12, 11, 1),
-                                        (12, 12, 0), (12, 12, 1)]:
-                version = f'{major}.{minor}.{patch}'
-                macro = f'XSPEC_{major}_{minor}_{patch}'
-                if xspec_version >= LooseVersion(version):
-                    macros += [(macro, None)]
+            if xspec_version < MIN_VERSION:
+                self.warn("XSPEC Version is less than {MIN_VERSION}, which is the minimal supported version for Sherpa")
 
-            # Since there are patches (e.g. 12.10.0c), look for
-            # the "next highest" version (i.e. increase the
-            # "patch" value by 1).
-            #
-            if xspec_version >= LooseVersion("12.12.2"):
-                self.warn("XSPEC Version is greater than 12.12.0, which is the latest supported version for Sherpa")
+            if xspec_version > MAX_VERSION:
+                self.warn(f"XSPEC Version is greater than {MAX_VERSION}, which is the latest supported version for Sherpa")
 
         extension = build_ext('xspec', ld, inc, l, define_macros=macros)
 
