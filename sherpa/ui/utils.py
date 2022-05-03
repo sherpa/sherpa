@@ -34,10 +34,11 @@ from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
+from sherpa.models.template import create_template_model
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    DataErr, IdentifierErr, ModelErr, PlotErr, SessionErr
+    DataErr, IdentifierErr, IOErr, ModelErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -323,6 +324,116 @@ def reduce_ufunc(func):
 
 copy_reg.constructor(construct_ufunc)
 copy_reg.pickle(numpy.ufunc, reduce_ufunc)
+
+
+###############################################################################
+#
+# I/O routines
+#
+###############################################################################
+
+
+def read_template_model(modelname, templatefile,
+                        sep=' ', comment='#',
+                        method=sherpa.utils.linear_interp,
+                        template_interpolator_name='default'):
+    """Read in a set of templates and create a template model.
+
+    Parameters
+    ----------
+    modelname : str
+       The identifier for this table model.
+    templatefile : str
+       The name of the file to read in. This file lists the template
+       data files.
+    sep : str, optional
+       The separator character. The default is ``' '``.
+    comment : str, optional
+       The comment character. The default is ``'#'``.
+    method : func
+       The interpolation method to use to map the input data onto the
+       coordinate grid of the data set. Linear, nearest-neighbor, and
+       polynomial schemes are provided in the sherpa.utils module.
+    template_interpolator_name : str
+       The method used to interpolate within the set of templates.
+       The default is ``default``. A value of ``None`` turns off the
+       interpolation; in this case the grid-search optimiser must be
+       used to fit the data.
+
+    Returns
+    -------
+    model
+        The template model.
+
+    """
+
+    if sherpa.utils.is_binary_file(templatefile):
+        raise IOErr("notascii", templatefile)
+
+    names, cols = sherpa.io.read_file_data(templatefile, sep=sep,
+                                           comment=comment,
+                                           require_floats=False)
+
+    ncols = len(cols)
+    nnames = len(names)
+    if ncols != nnames:
+        raise IOErr("wrongnumcols", ncols, nnames)
+
+    names = [name.strip().lower() for name in names]
+
+    filenames = None
+    modelflags = None
+    parnames = names[:]
+    parvals = []
+    for name, col in zip(names, cols):
+        # Find the column with the filenames, remove it from the set of
+        # parameter names
+        if name.startswith("file"):
+            filenames = col
+            parnames.remove(name)
+            continue
+
+        # Find the column with the modelflags, remove it from the set of
+        # parameter names
+        if name.startswith("modelflag"):
+            modelflags = col
+            parnames.remove(name)
+            continue
+
+        parvals.append(numpy.array(col, dtype=SherpaFloat))
+
+    parvals = numpy.asarray(parvals).T
+
+    if len(parvals) == 0:
+        raise IOErr("noparamcols", templatefile)
+
+    if filenames is None:
+        raise IOErr("reqcol", "filename", templatefile)
+
+    if modelflags is None:
+        raise IOErr("reqcol", "modelflag", templatefile)
+
+    templates = []
+    for filename in filenames:
+        tnames, tcols = sherpa.io.read_file_data(filename, sep=sep, comment=comment)
+
+        ntcols = len(tcols)
+        if ntcols == 1:
+            raise IOErr("onecolneedtwo", filename)
+        elif ntcols != 2:
+            raise IOErr("wrongnumcols", 2, ntcols)
+
+        tm = TableModel(filename)
+        tm.method = method  # interpolation method
+        tm.load(*tcols)
+        tm.ampl.freeze()
+        templates.append(tm)
+
+    assert(len(templates) == parvals.shape[0])
+
+    return create_template_model(modelname, parnames, parvals,
+                                 templates,
+                                 template_interpolator_name=template_interpolator_name)
 
 
 ###############################################################################
@@ -895,7 +1006,7 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
 
         if os.path.isfile(filename) and not clobber:
-            raise sherpa.utils.err.IOErr("filefound", filename)
+            raise IOErr("filefound", filename)
 
         fout = open(filename, 'wb')
         try:
@@ -6990,8 +7101,7 @@ class Session(NoNewAttributesAfterInit):
            The name of the file to read in. This file lists the
            template data files.
         dstype : data class to use, optional
-           What type of data is to be used. Supported values include
-           `Data1D` (the default) and `Data1DInt`.
+           What type of data is to be used. This is currently unused.
         sep : str, optional
            The separator character. The default is ``' '``.
         comment : str, optional
@@ -7073,68 +7183,12 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if sherpa.utils.is_binary_file(templatefile):
-            raise sherpa.utils.err.IOErr('notascii', templatefile)
+        # Note: dstype is not used
+        templatemodel = read_template_model(modelname, templatefile,
+                                            sep=sep, comment=comment,
+                                            method=method,
+                                            template_interpolator_name=template_interpolator_name)
 
-        names, cols = sherpa.io.read_file_data(templatefile,
-                                               sep=sep, comment=comment,
-                                               require_floats=False)
-
-        if len(names) > len(cols):
-            raise sherpa.utils.err.IOErr('wrongnumcols',
-                                         len(cols), len(names))
-
-        names = [name.strip().lower() for name in names]
-
-        filenames = None
-        modelflags = None
-        parnames = names[:]
-        parvals = []
-        for name, col in zip(names, cols):
-            # Find the column with the filenames, remove it from the set of
-            # parameter names
-            if name.startswith('file'):
-                filenames = col
-                parnames.remove(name)
-                continue
-            # Find the column with the modelflags, remove it from the set of
-            # parameter names
-            if name.startswith('modelflag'):
-                modelflags = col
-                parnames.remove(name)
-                continue
-            parvals.append(numpy.array(col, dtype=SherpaFloat))
-
-        parvals = numpy.asarray(parvals).T
-
-        if len(parvals) == 0:
-            raise sherpa.utils.err.IOErr('noparamcols', templatefile)
-
-        if filenames is None:
-            raise sherpa.utils.err.IOErr('reqcol', 'filename', templatefile)
-
-        if modelflags is None:
-            raise sherpa.utils.err.IOErr('reqcol', 'modelflag', templatefile)
-
-        templates = []
-        for filename in filenames:
-            tnames, tcols = sherpa.io.read_file_data(filename,
-                                                     sep=sep, comment=comment)
-            if len(tcols) == 1:
-                raise sherpa.utils.err.IOErr('onecolneedtwo', filename)
-            elif len(tcols) == 2:
-                tm = TableModel(filename)
-                tm.method = method  # interpolation method
-                tm.load(*tcols)
-                tm.ampl.freeze()
-                templates.append(tm)
-            else:
-                raise sherpa.utils.err.IOErr('wrongnumcols', 2, len(tnames))
-
-        assert(len(templates) == parvals.shape[0])
-
-        templatemodel = sherpa.models.create_template_model(modelname, parnames, parvals,
-                                                            templates, template_interpolator_name)
         self._tbl_models.append(templatemodel)
         self._add_model_component(templatemodel)
 
