@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -572,3 +572,26 @@ def override_plot_backend(request):
     if changed:
         sherpa.plot.backend = old
         sherpa.astro.plot.backend = old
+
+
+@pytest.fixture(autouse=True, scope="session")
+def cleanup_pylab_backend():
+    """Ensure that the pylab backend has closed down all windows.
+
+    This is related to https://github.com/The-Compiler/pytest-xvfb/issues/11
+    and the idea is to ensure that all matplotlib windows are closed at the
+    end of the tests.
+    """
+
+    yield
+
+    # Technically the system could have matplotlib installed but not
+    # selected. However, this is not easily checked, so just check
+    # if we can install matplotlib and, of so, close down any wnidows.
+    #
+    try:
+        from matplotlib import pyplot as plt
+    except ImportError:
+        return
+
+    plt.close(fig="all")
