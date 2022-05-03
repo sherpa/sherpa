@@ -587,7 +587,7 @@ def cleanup_pylab_backend():
 
     # Technically the system could have matplotlib installed but not
     # selected. However, this is not easily checked, so just check
-    # if we can install matplotlib and, of so, close down any wnidows.
+    # if we can install matplotlib and, if so, close down any windows.
     #
     try:
         from matplotlib import pyplot as plt
