@@ -94,8 +94,8 @@ def test_create_template_model_parnames_does_not_match():
 
     templates = [TableModel("foo")]
     parvals = np.asarray([[2.3]])
-    with pytest.raises(IndexError,
-                       match="index 1 is out of bounds"):
+    with pytest.raises(ValueError,
+                       match="number of parvals and names do not match: 1 vs 2"):
         create_template_model("foo", ["a", "b"], parvals, templates)
 
 
@@ -107,8 +107,8 @@ def test_create_template_model_parvals_not_2d():
     #
     templates = [TableModel("foo")]
     parvals = np.asarray([2.3])
-    with pytest.raises(IndexError,
-                       match="too many indices for array"):
+    with pytest.raises(ValueError,
+                       match="parvals must be 2D, sent 1D"):
         create_template_model("foo", ["a"], parvals, templates)
 
 
@@ -120,8 +120,8 @@ def test_create_template_model_parvals_wrong_size():
     #
     templates = [TableModel("foo")]
     parvals = np.arange(12).reshape(3, 4)
-    with pytest.raises(IndexError,
-                       match="list index out of range"):
+    with pytest.raises(ValueError,
+                       match="number of parvals and names do not match: 4 vs 1"):
         create_template_model("foo", ["a"], parvals, templates)
 
 
@@ -133,17 +133,18 @@ def test_create_template_model_unknown_interpolator():
     #
     templates = [TableModel("foo"), TableModel("bar")]
     parvals = np.asarray([[12], [13]])
-    tmpl = create_template_model("foo", ["a"], parvals, templates,
-                                 template_interpolator_name="made_up")
-    assert tmpl is None  # check current behavior, even if "not good"TM
+    with pytest.raises(ModelErr,
+                       match="Unknown template_interpolator_name=made_up"):
+        create_template_model("foo", ["a"], parvals, templates,
+                              template_interpolator_name="made_up")
 
 
 def test_templatemodel_wrong_number_of_pars():
     """Check we error out"""
 
     templates = [TableModel("foo"), TableModel("bar")]
-    with pytest.raises(TypeError,
-                       match="'NoneType' object is not iterable"):
+    with pytest.raises(ModelErr,
+                       match="Number of parameter values and templates do not match"):
         TemplateModel(templates=templates)
 
 
@@ -153,8 +154,8 @@ def test_templatemodel_wrong_parvals_element():
     templates = [TableModel("foo"), TableModel("bar")]
     pars = [Parameter("fooy", "x", 1), Parameter("fooy", "y", 2)]
     parvals = [[2, 3], [1], [4, 5, 54]]
-    with pytest.raises(IndexError,
-                       match="list index out of range"):
+    with pytest.raises(ModelErr,
+                       match="Number of parameter values and templates do not match"):
         TemplateModel(pars=pars, parvals=parvals,
                       templates=templates)
 
@@ -162,21 +163,45 @@ def test_templatemodel_wrong_parvals_element():
 def test_templatemodel_no_arguments():
     """What happens if we have no parameters?"""
 
-    # This is really a failure of validation as this is an internal error
-    with pytest.raises(TypeError,
-                       match="'NoneType' object is not iterable"):
-        TemplateModel("empty")
+    # We should probably error out, but we currently do not.
+    #
+    empty = TemplateModel("empty")
+    assert len(empty.pars) == 0
+
+    out = str(empty).split("\n")
+    assert out[0] == "empty"
+    assert out[1].startswith("   Param ")
+    assert out[2].startswith("   ----- ")
+    assert len(out) == 3
+
+    # What can evaluating the model do? Oh, this is an interesting error.
+    #
+    with pytest.raises(ModelErr,
+                       match="^Interpolation of template parameters "):
+        empty([1, 2, 3])
 
 
 def test_templatemodel_pars_no_templates():
     """What happens if we have pars but no templates"""
 
+    # We should probably error out, but we currently do not.
+    #
     pars = [Parameter("empty", "bob", 12)]
+    empty = TemplateModel("empty", pars=pars)
+    assert len(empty.pars) == 1
 
-    # This is really a failure of validation as this is an internal error
-    with pytest.raises(TypeError,
-                       match="'NoneType' object is not iterable"):
-        empty = TemplateModel("empty", pars=pars)
+    out = str(empty).split("\n")
+    assert out[0] == "empty"
+    assert out[1].startswith("   Param ")
+    assert out[2].startswith("   ----- ")
+    assert out[3].startswith("   empty.bob ")
+    assert len(out) == 4
+
+    # What can evaluating the model do? Oh, this is an interesting error.
+    #
+    with pytest.raises(ModelErr,
+                       match="^Interpolation of template parameters "):
+        empty([1, 2, 3])
 
 
 def test_templatemodel_templates_not_tablemodel():
