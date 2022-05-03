@@ -641,8 +641,9 @@ CIAO_TRUE
 NUMPY_INCLUDEDIR
 PYTHON_EXTRA_LDFLAGS
 PYTHON_EXTRA_LIBS
+PYTHON_PLATFORM_SITE_PKG
 PYTHON_SITE_PKG
-PYTHON_LDFLAGS
+PYTHON_LIBS
 PYTHON_CPPFLAGS
 pkgpyexecdir
 pyexecdir
@@ -12349,7 +12350,7 @@ as_fn_error $? "
 This version of the AC_PYTHON_DEVEL macro
 doesn't work properly with versions of Python before
 2.1.0. You may need to re-run configure, setting the
-variables PYTHON_CPPFLAGS, PYTHON_LDFLAGS, PYTHON_SITE_PKG,
+variables PYTHON_CPPFLAGS, PYTHON_LIBS, PYTHON_SITE_PKG,
 PYTHON_EXTRA_LIBS and PYTHON_EXTRA_LDFLAGS by hand.
 Moreover, to disable this check, set PYTHON_NOVERSIONCHECK
 to something else than an empty string.
@@ -12365,16 +12366,40 @@ $as_echo "yes" >&6; }
 	fi
 
 	#
-	# if the macro parameter ``version'' is set, honour it
+	# If the macro parameter ``version'' is set, honour it.
+	# A Python shim class, VPy, is used to implement correct version comparisons via
+	# string expressions, since e.g. a naive textual ">= 2.7.3" won't work for
+	# Python 2.7.10 (the ".1" being evaluated as less than ".3").
 	#
 	if test -n ">='2.7'"; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for a version of Python >='2.7'" >&5
 $as_echo_n "checking for a version of Python >='2.7'... " >&6; }
-		ac_supports_python_ver=`$PYTHON -c "import sys; \
-			ver = sys.version.split ()[0]; \
+                cat << EOF > ax_python_devel_vpy.py
+class VPy:
+    def vtup(self, s):
+        return tuple(map(int, s.strip().replace("rc", ".").split(".")))
+    def __init__(self):
+        import sys
+        self.vpy = tuple(sys.version_info)
+    def __eq__(self, s):
+        return self.vpy == self.vtup(s)
+    def __ne__(self, s):
+        return self.vpy != self.vtup(s)
+    def __lt__(self, s):
+        return self.vpy < self.vtup(s)
+    def __gt__(self, s):
+        return self.vpy > self.vtup(s)
+    def __le__(self, s):
+        return self.vpy <= self.vtup(s)
+    def __ge__(self, s):
+        return self.vpy >= self.vtup(s)
+EOF
+		ac_supports_python_ver=`$PYTHON -c "import ax_python_devel_vpy; \
+                        ver = ax_python_devel_vpy.VPy(); \
 			print (ver >='2.7')"`
+                rm -rf ax_python_devel_vpy*.py* __pycache__/ax_python_devel_vpy*.py*
 		if test "$ac_supports_python_ver" = "True"; then
-		   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 		else
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -12391,19 +12416,30 @@ variable to configure. See \`\`configure --help'' for reference.
 	#
 	# Check if you have distutils, else fail
 	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the distutils Python package" >&5
-$as_echo_n "checking for the distutils Python package... " >&6; }
-	ac_distutils_result=`$PYTHON -c "import distutils" 2>&1`
-	if test -z "$ac_distutils_result"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the sysconfig Python package" >&5
+$as_echo_n "checking for the sysconfig Python package... " >&6; }
+	ac_sysconfig_result=`$PYTHON -c "import sysconfig" 2>&1`
+	if test $? -eq 0; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+		IMPORT_SYSCONFIG="import sysconfig"
 	else
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-		as_fn_error $? "cannot import Python module \"distutils\".
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the distutils Python package" >&5
+$as_echo_n "checking for the distutils Python package... " >&6; }
+		ac_sysconfig_result=`$PYTHON -c "from distutils import sysconfig" 2>&1`
+		if test $? -eq 0; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			IMPORT_SYSCONFIG="from distutils import sysconfig"
+		else
+			as_fn_error $? "cannot import Python module \"distutils\".
 Please check your Python installation. The error was:
-$ac_distutils_result" "$LINENO" 5
-		PYTHON_VERSION=""
+$ac_sysconfig_result" "$LINENO" 5
+			PYTHON_VERSION=""
+		fi
 	fi
 
 	#
@@ -12412,10 +12448,19 @@ $ac_distutils_result" "$LINENO" 5
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python include path" >&5
 $as_echo_n "checking for Python include path... " >&6; }
 	if test -z "$PYTHON_CPPFLAGS"; then
-		python_path=`$PYTHON -c "import distutils.sysconfig; \
-			print (distutils.sysconfig.get_python_inc ());"`
-		plat_python_path=`$PYTHON -c "import distutils.sysconfig; \
-			print (distutils.sysconfig.get_python_inc (plat_specific=1));"`
+		if test "$IMPORT_SYSCONFIG" = "import sysconfig"; then
+			# sysconfig module has different functions
+			python_path=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_path ('include'));"`
+			plat_python_path=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_path ('platinclude'));"`
+		else
+			# old distutils way
+			python_path=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_python_inc ());"`
+			plat_python_path=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_python_inc (plat_specific=1));"`
+		fi
 		if test -n "${python_path}"; then
 			if test "${plat_python_path}" != "${python_path}"; then
 				python_path="-I$python_path -I$plat_python_path"
@@ -12434,14 +12479,14 @@ $as_echo "$PYTHON_CPPFLAGS" >&6; }
 	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python library path" >&5
 $as_echo_n "checking for Python library path... " >&6; }
-	if test -z "$PYTHON_LDFLAGS"; then
+	if test -z "$PYTHON_LIBS"; then
 		# (makes two attempts to ensure we've got a version number
 		# from the interpreter)
 		ac_python_version=`cat<<EOD | $PYTHON -
 
 # join all versioning strings, on some systems
 # major/minor numbers could be in different list elements
-from distutils.sysconfig import *
+from sysconfig import *
 e = get_config_var('VERSION')
 if e is not None:
 	print(e)
@@ -12467,8 +12512,8 @@ _ACEOF
 		ac_python_libdir=`cat<<EOD | $PYTHON -
 
 # There should be only one
-import distutils.sysconfig
-e = distutils.sysconfig.get_config_var('LIBDIR')
+$IMPORT_SYSCONFIG
+e = sysconfig.get_config_var('LIBDIR')
 if e is not None:
 	print (e)
 EOD`
@@ -12476,8 +12521,8 @@ EOD`
 		# Now, for the library:
 		ac_python_library=`cat<<EOD | $PYTHON -
 
-import distutils.sysconfig
-c = distutils.sysconfig.get_config_vars()
+$IMPORT_SYSCONFIG
+c = sysconfig.get_config_vars()
 if 'LDVERSION' in c:
 	print ('python'+c['LDVERSION'])
 else:
@@ -12492,25 +12537,25 @@ EOD`
 		then
 			# use the official shared library
 			ac_python_library=`echo "$ac_python_library" | sed "s/^lib//"`
-			PYTHON_LDFLAGS="-L$ac_python_libdir -l$ac_python_library"
+			PYTHON_LIBS="-L$ac_python_libdir -l$ac_python_library"
 		else
 			# old way: use libpython from python_configdir
 			ac_python_libdir=`$PYTHON -c \
-			  "from distutils.sysconfig import get_python_lib as f; \
+			  "from sysconfig import get_python_lib as f; \
 			  import os; \
 			  print (os.path.join(f(plat_specific=1, standard_lib=1), 'config'));"`
-			PYTHON_LDFLAGS="-L$ac_python_libdir -lpython$ac_python_version"
+			PYTHON_LIBS="-L$ac_python_libdir -lpython$ac_python_version"
 		fi
 
-		if test -z "PYTHON_LDFLAGS"; then
+		if test -z "PYTHON_LIBS"; then
 			as_fn_error $? "
   Cannot determine location of your Python DSO. Please check it was installed with
-  dynamic libraries enabled, or try setting PYTHON_LDFLAGS by hand.
+  dynamic libraries enabled, or try setting PYTHON_LIBS by hand.
 			" "$LINENO" 5
 		fi
 	fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_LDFLAGS" >&5
-$as_echo "$PYTHON_LDFLAGS" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_LIBS" >&5
+$as_echo "$PYTHON_LIBS" >&6; }
 
 
 	#
@@ -12519,11 +12564,36 @@ $as_echo "$PYTHON_LDFLAGS" >&6; }
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python site-packages path" >&5
 $as_echo_n "checking for Python site-packages path... " >&6; }
 	if test -z "$PYTHON_SITE_PKG"; then
-		PYTHON_SITE_PKG=`$PYTHON -c "import distutils.sysconfig; \
-			print (distutils.sysconfig.get_python_lib(0,0));"`
+		if test "$IMPORT_SYSCONFIG" = "import sysconfig"; then
+			PYTHON_SITE_PKG=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_path('purelib'));"`
+		else
+			# distutils.sysconfig way
+			PYTHON_SITE_PKG=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_python_lib(0,0));"`
+		fi
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_SITE_PKG" >&5
 $as_echo "$PYTHON_SITE_PKG" >&6; }
+
+
+	#
+	# Check for platform-specific site packages
+	#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python platform specific site-packages path" >&5
+$as_echo_n "checking for Python platform specific site-packages path... " >&6; }
+	if test -z "$PYTHON_SITE_PKG"; then
+		if test "$IMPORT_SYSCONFIG" = "import sysconfig"; then
+			PYTHON_PLATFORM_SITE_PKG=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_path('platlib'));"`
+		else
+			# distutils.sysconfig way
+			PYTHON_PLATFORM_SITE_PKG=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+				print (sysconfig.get_python_lib(1,0));"`
+		fi
+	fi
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_PLATFORM_SITE_PKG" >&5
+$as_echo "$PYTHON_PLATFORM_SITE_PKG" >&6; }
 
 
 	#
@@ -12532,8 +12602,8 @@ $as_echo "$PYTHON_SITE_PKG" >&6; }
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking python extra libraries" >&5
 $as_echo_n "checking python extra libraries... " >&6; }
 	if test -z "$PYTHON_EXTRA_LIBS"; then
-	   PYTHON_EXTRA_LIBS=`$PYTHON -c "import distutils.sysconfig; \
-                conf = distutils.sysconfig.get_config_var; \
+	   PYTHON_EXTRA_LIBS=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+                conf = sysconfig.get_config_var; \
                 print (conf('LIBS') + ' ' + conf('SYSLIBS'))"`
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_EXTRA_LIBS" >&5
@@ -12546,8 +12616,8 @@ $as_echo "$PYTHON_EXTRA_LIBS" >&6; }
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking python extra linking flags" >&5
 $as_echo_n "checking python extra linking flags... " >&6; }
 	if test -z "$PYTHON_EXTRA_LDFLAGS"; then
-		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import distutils.sysconfig; \
-			conf = distutils.sysconfig.get_config_var; \
+		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "$IMPORT_SYSCONFIG; \
+			conf = sysconfig.get_config_var; \
 			print (conf('LINKFORSHARED'))"`
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_EXTRA_LDFLAGS" >&5
@@ -12560,8 +12630,10 @@ $as_echo "$PYTHON_EXTRA_LDFLAGS" >&6; }
 #	AC_MSG_CHECKING([consistency of all components of python development environment])
 #	# save current global flags
 #	ac_save_LIBS="$LIBS"
+#	ac_save_LDFLAGS="$LDFLAGS"
 #	ac_save_CPPFLAGS="$CPPFLAGS"
-#	LIBS="$ac_save_LIBS $PYTHON_LDFLAGS $PYTHON_EXTRA_LDFLAGS $PYTHON_EXTRA_LIBS"
+#	LIBS="$ac_save_LIBS $PYTHON_LIBS $PYTHON_EXTRA_LIBS $PYTHON_EXTRA_LIBS"
+#	LDFLAGS="$ac_save_LDFLAGS $PYTHON_EXTRA_LDFLAGS"
 #	CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
 #	AC_LANG_PUSH([C])
 #	AC_LINK_IFELSE([
@@ -12572,6 +12644,7 @@ $as_echo "$PYTHON_EXTRA_LDFLAGS" >&6; }
 #	# turn back to default flags
 #	CPPFLAGS="$ac_save_CPPFLAGS"
 #	LIBS="$ac_save_LIBS"
+#	LDFLAGS="$ac_save_LDFLAGS"
 #
 #	AC_MSG_RESULT([$pythonexists])
 #
@@ -12579,8 +12652,8 @@ $as_echo "$PYTHON_EXTRA_LDFLAGS" >&6; }
 #	   AC_MSG_FAILURE([
 #  Could not link test program to Python. Maybe the main Python library has been
 #  installed in some non-standard library path. If so, pass it to configure,
-#  via the LDFLAGS environment variable.
-#  Example: ./configure LDFLAGS="-L/usr/non-standard-path/python/lib"
+#  via the LIBS environment variable.
+#  Example: ./configure LIBS="-L/usr/non-standard-path/python/lib"
 #  ============================================================================
 #   ERROR!
 #   You probably have to install the development version of the Python package
