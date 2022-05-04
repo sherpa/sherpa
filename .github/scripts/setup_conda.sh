@@ -52,3 +52,9 @@ echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
 conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${DOCSBUILD} ${compilers}
 
 conda activate build
+
+# Force setuptools earlier than 60 - see issue #1456. At present
+# conda seems to default to a working version, but leave this in
+# to ensure it holds, or we find out once we can no-longer do this.
+#
+conda install 'setuptools < 60'

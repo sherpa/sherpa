@@ -151,6 +151,14 @@ The full Sherpa test suite requires `pytest` and `pytest-xvfb`. These
 packages should be installed automatically for you by the test suite
 if they do not already exist.
 
+.. warning::
+
+   Sherpa includes a number of compiled extensions that use the NumPy
+   C API. Following the `advice from NumPy
+   <https://numpy.org/devdocs/reference/distutils_status_migration.html#numpy-setuptools-interaction>`_,
+   it is **strongly suggested** that `setuptools < 60` is used when
+   building Sherpa.
+
 .. note::
 
    As of the Sherpa 4.10.1 release, a Fortran compiler is no-longer
