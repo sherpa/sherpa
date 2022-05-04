@@ -23,23 +23,30 @@ jobs:
         include:
           - name: MacOS Full Build
             os: macos-latest
-            python-version: 3.8
+            python-version: "3.8"
             install-type: develop
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.10.1s
 
-          - name: Linux Minimum Setup
+          - name: Linux Minimum Setup (Python 3.8)
             os: ubuntu-latest
-            python-version: 3.8
+            python-version: "3.8"
             numpy-version: 1.18
+            install-type: develop
+            test-data: none
+
+          - name: Linux Minimum Setup (Python 3.10)
+            os: ubuntu-latest
+            python-version: "3.10"
+            numpy-version: 1.21
             install-type: develop
             test-data: none
 
           - name: Linux Full Build (Python 3.9)
             os: ubuntu-latest
-            python-version: 3.9
+            python-version: "3.9"
             install-type: develop
             fits: astropy
             test-data: submodule
@@ -48,7 +55,7 @@ jobs:
 
           - name: Linux Full Build (Python 3.8)
             os: ubuntu-latest
-            python-version: 3.8
+            python-version: "3.8"
             install-type: develop
             fits: astropy
             test-data: submodule
@@ -57,7 +64,7 @@ jobs:
 
           - name: Linux Full Build (Python 3.7)
             os: ubuntu-latest
-            python-version: 3.7
+            python-version: "3.7"
             numpy-version: 1.19
             install-type: develop
             fits: astropy
@@ -67,14 +74,14 @@ jobs:
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: 3.9
+            python-version: "3.9"
             install-type: install
             test-data: package
             matplotlib-version: 3
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
-            python-version: 3.7
+            python-version: "3.7"
             numpy-version: 1.18
             install-type: develop
             fits: astropy
