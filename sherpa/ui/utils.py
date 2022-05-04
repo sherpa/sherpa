@@ -34,7 +34,8 @@ from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
-from sherpa.models.template import create_template_model
+from sherpa.models.template import add_interpolator, create_template_model, \
+    reset_interpolators
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -835,6 +836,8 @@ class Session(NoNewAttributesAfterInit):
         self._current_stat = self._stats['chi2gehrels']
         # Add simplex as alias to neldermead
         self._methods['simplex'] = self._methods['neldermead']
+
+        reset_interpolators()
 
         self._data = {}
         self._psf = {}
@@ -7220,8 +7223,7 @@ class Session(NoNewAttributesAfterInit):
         >>> load_template_interpolator('myint', KNNInterpolator, k=4, order=3)
 
         """
-        sherpa.models.template.interpolators[
-            name] = (interpolator_class, kwargs)
+        add_interpolator(name, interpolator_class, **kwargs)
 
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',

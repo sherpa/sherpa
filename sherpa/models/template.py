@@ -86,8 +86,13 @@ from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
 
-__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator',
-           'Template')
+__all__ = ('TemplateModel', 'InterpolatingTemplateModel',
+           'KNNInterpolator', 'Template', 'add_interpolator',
+           'create_template_model', 'reset_interpolators')
+
+
+# This is reset by reset_interpolators below.
+interpolators = {}
 
 
 def create_template_model(modelname, names, parvals, templates,
@@ -419,6 +424,41 @@ class TemplateModel(ArithmeticModel):
         return table_model(x0, x1, *args, **kwargs)
 
 
-interpolators = {
-    'default': (Template, {'k': 2, 'order': 2})
-}
+def reset_interpolators():
+    """Reset the list of interpolators to the default.
+
+    If the list does not exist then recreate it.
+
+    See Also
+    --------
+    add_interpolator
+
+    """
+
+    d = globals()
+    d["interpolators"] = {
+        'default': (Template, {'k': 2, 'order': 2})
+    }
+
+
+def add_interpolator(name, interpolator, **kwargs):
+    """Add the interpolator to the list.
+
+    Parameters
+    ----------
+    name : str
+    interpolator
+       An interpolator class.
+    **kwargs
+       The arguments for the interpolator.
+
+    See Also
+    --------
+    reset_interpolators
+
+    """
+
+    interpolators[name] = (interpolator, kwargs)
+
+
+reset_interpolators()
