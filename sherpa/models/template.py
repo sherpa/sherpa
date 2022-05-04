@@ -257,28 +257,30 @@ class KNNInterpolator(InterpolatingTemplateModel):
 
     """
     def __init__(self, name, template_model, k=None, order=2):
-        self._distances = {}
         if k is None:
             # TODO: what happens if no params? What is .size meant to be?
             self.k = 2 * template_model.parvals[0].size
         else:
             self.k = k
+
         self.order = order
         InterpolatingTemplateModel.__init__(self, name, template_model)
 
     def _calc_distances(self, point):
         """What are the distances for the given set of parameters?"""
-        self._distances = {}
+        distances = []
         for i, t_point in enumerate(self.template_model.parvals):
-            self._distances[i] = numpy.linalg.norm(point - t_point, self.order)
-        self._distances = sorted(self._distances.items(), key=operator.itemgetter(1))
+            dist = numpy.linalg.norm(point - t_point, self.order)
+            distances.append((i, dist))
+
+        return sorted(distances, key=operator.itemgetter(1))
 
     def interpolate(self, point, x_out):
-        self._calc_distances(point)
-        if self._distances[0][1] == 0:
-            return self.template_model.templates[self._distances[0][0]]
+        distances = self._calc_distances(point)
+        if distances[0][1] == 0:
+            return self.template_model.templates[distances[0][0]]
 
-        k_distances = self._distances[:self.k]
+        k_distances = distances[:self.k]
         weights = [(idx, 1/numpy.array(distance)) for idx, distance in k_distances]
         y_out = numpy.zeros(len(x_out))
         for idx, weight in weights:
