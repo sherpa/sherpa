@@ -17,14 +17,23 @@ jobs:
         include:
           - name: Linux Minimum Setup
             os: ubuntu-latest
-            python-version: 3.8
+            python-version: "3.8"
             numpy-pkg: 'numpy>=1.18,<1.19'
             install-type: develop
             test-data: none
 
+          - name: Linux Build (w/o Xspec; Python 3.10)
+            os: ubuntu-latest
+            python-version: "3.10"
+            numpy-pkg: 'numpy'
+            install-type: install
+            test-data: package
+            fits-pkg: 'astropy'
+            matplotlib-pkg: 'matplotlib>=3,<4'
+
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: 3.9
+            python-version: "3.9"
             numpy-pkg: 'numpy'
             install-type: install
             test-data: package
@@ -32,7 +41,7 @@ jobs:
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
-            python-version: 3.7
+            python-version: "3.7"
             numpy-pkg: 'numpy'
             install-type: develop
             fits-pkg: 'astropy'
@@ -40,7 +49,7 @@ jobs:
 
           - name: Linux Build (submodule data w/o Matplotlib or Xspec)
             os: ubuntu-latest
-            python-version: 3.7
+            python-version: "3.7"
             numpy-pkg: 'numpy'
             install-type: develop
             fits-pkg: 'astropy'
@@ -53,7 +62,7 @@ jobs:
         submodules: 'True'
 
     - name: Pip Testing Setup - Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
 

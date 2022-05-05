@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -135,6 +135,7 @@ meta = dict(name='sherpa',
                 'Programming Language :: Python :: 3.7',
                 'Programming Language :: Python :: 3.8',
                 'Programming Language :: Python :: 3.9',
+                'Programming Language :: Python :: 3.10',
                 'Programming Language :: Python :: Implementation :: CPython',
                 'Topic :: Scientific/Engineering :: Astronomy',
                 'Topic :: Scientific/Engineering :: Physics'
