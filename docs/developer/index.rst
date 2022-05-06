@@ -424,7 +424,7 @@ available.
                            (12, 11, 0), (12, 11, 1)]
 
    This list is used to select which functions to include when
-   compiling the C++ interfce code. For reference, the defines are
+   compiling the C++ interface code. For reference, the defines are
    named ``XSPEC_<a>_<b>_<c>`` for each supported XSPEC release
    ``<a>.<b>.<c>`` (the XSPEC patch level is not included).
 
