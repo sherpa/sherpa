@@ -51,7 +51,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.11.1
+            xspec-version: 12.12.1
 
           - name: Linux Full Build (Python 3.8)
             os: ubuntu-latest

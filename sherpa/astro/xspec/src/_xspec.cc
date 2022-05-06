@@ -316,16 +316,29 @@ extern "C" {
   xsccCall xszbabs;
 
 #ifdef XSPEC_12_9_1
-  xsf77Call ismabs_;
   xsccCall slimbbmodel;
+#endif
+
+#ifdef XSPEC_12_11_0
+  xsccCall beckerwolff;
+#endif
+
+#ifdef XSPEC_12_12_1
+  xsF77Call ismabs_;
+  xsF77Call ismdust_;
+  xsF77Call olivineabs_;
+#else
+
+#ifdef XSPEC_12_9_1
+  xsf77Call ismabs_;
 #endif
 
 #ifdef XSPEC_12_11_0
   xsf77Call ismdust_;
   xsf77Call olivineabs_;
-  xsccCall beckerwolff;
 #endif
 
+#endif // XSPEC_12_12_1
 
 // XSPEC table models; in XSPEC 12.10.1 these have been consolidated
 // into the tabint routine, but that is only available to C++, and
@@ -1386,7 +1399,12 @@ static PyMethodDef XSpecMethods[] = {
 
   XSPECMODELFCT_C_NORM(C_carbatm, 4),
   XSPECMODELFCT_C_NORM(C_hatm, 4),
+
+#ifdef XSPEC_12_12_1
+  XSPECMODELFCT_DBL(ismabs, 31),
+#else
   XSPECMODELFCT(ismabs, 31),
+#endif
 
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),
   XSPECMODELFCT_C_NORM(C_snapec, 7),
@@ -1408,9 +1426,17 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM(jet, 16),
 #endif
 
+#ifdef XSPEC_12_12_1
+  XSPECMODELFCT_DBL(ismdust, 3),
+  XSPECMODELFCT_DBL(olivineabs, 2),
+#else
 #ifdef XSPEC_12_11_0
   XSPECMODELFCT(ismdust, 3),
   XSPECMODELFCT(olivineabs, 2),
+#endif
+#endif // XSPEC_12_12_1
+
+#ifdef XSPEC_12_11_0
   XSPECMODELFCT_C(C_logconst, 1),
   XSPECMODELFCT_C(C_log10con, 1),
 #endif

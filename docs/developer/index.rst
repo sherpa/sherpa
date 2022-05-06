@@ -290,11 +290,13 @@ To add a new command-line option:
 * and add support in ``pytest_configure``, such as registering
   a new mark.
 
+.. _developer-update-xspec:
+
 Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.12.0 down to 12.9.0. It may build against
+:term:`XSPEC` versions 12.12.1 down to 12.9.0. It may build against
 newer versions, but if it does it will not provide access to any new
 models in the release. The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
@@ -413,28 +415,18 @@ available.
 
    Current version: `helpers/xspec_config.py <https://github.com/sherpa/sherpa/blob/master/helpers/xspec_config.py>`_.
 
-   When adding support for XSPEC 12.11.1, the code in the ``run``
-   method was changed to include the triple ``(12, 11, 1)``::
+   When adding support for XSPEC 12.11.1, the top-level
+   ``SUPPORTED_VERSIONS`` list was changed to include the triple
+   ``(12, 11, 1)``::
 
-       for major, minor, patch in [(12, 9, 0), (12, 9, 1),
-                                   (12, 10, 0), (12, 10, 1),
-                                   (12, 11, 0), (12, 11, 1)]:
-           version = '{}.{}.{}'.format(major, minor, patch)
-           macro = 'XSPEC_{}_{}_{}'.format(major, minor, patch)
-           if xspec_version >= LooseVersion(version):
-               macros += [(macro, None)]
+     SUPPORTED_VERSIONS = [(12, 9, 0), (12, 9, 1),
+                           (12, 10, 0), (12, 10, 1),
+                           (12, 11, 0), (12, 11, 1)]
 
-   and the version check to::
-
-       # Since there are patches (e.g. 12.10.0c), look for the
-       # "next highest version.
-       if xspec_version >= LooseVersion("12.11.2"):
-           self.warn("XSPEC Version is greater than 12.11.1, which is the latest supported version for Sherpa")
-
-   The define should be named ``XSPEC_<a>_<b>_<c>`` for XSPEC release
-   ``<a>.<b>.<c>`` (the XSPEC patch level is not included). This define
-   is used when compiling the XSPEC model interface, to select which
-   functions to include.
+   This list is used to select which functions to include when
+   compiling the C++ interface code. For reference, the defines are
+   named ``XSPEC_<a>_<b>_<c>`` for each supported XSPEC release
+   ``<a>.<b>.<c>`` (the XSPEC patch level is not included).
 
    .. note:: The Sherpa build system requires that the user indicate the
 	     version of XSPEC being used, via the ``xspec_config.xspec_version``
@@ -676,6 +668,17 @@ available.
       by addtive and then multiplicative models, using an alphabetical
       sorting - and to the appropriate ``inheritance-diagram`` rule.
 
+#. Documentation updates
+
+   The ``docs/indices.rst`` file should be updated to add the new version
+   to the list of supported versions, under the :term:`XSPEC` term, and
+   ``docs/developer/index.rst`` also lists the supported versions
+   (:ref:`developer-update-xspec`). The installation page ``docs/install.rst`` should
+   be updated to add an entry for the ``setup.cfg`` changes in
+   :ref:`build-xspec`.
+
+   The ``sherpa/astro/xspec/__init__.py`` file also lists the supported
+   XSPEC versions.
 
 Never forget to update the year of the copyright notice?
 --------------------------------------------------------
