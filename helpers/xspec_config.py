@@ -18,7 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from distutils.version import LooseVersion
 from distutils.cmd import Command
 import re
 
@@ -26,9 +25,8 @@ from .extensions import build_ext, build_lib_arrays
 
 # What versions of XSPEC do we support? I am not sure what the
 # naming of the XSPEC components are, but let's stick with
-# major, minor, and patch - although this patch level is
-# numeric, and not the XSPEC patch level (e.g. "a" ..), which
-# we do not track here.
+# major, minor, and micro. We drop the patch level - e.g.
+# "c" in "12.12.0c" as that is not helpful to track here.
 #
 SUPPORTED_VERSIONS = [(12, 9, 0), (12, 9, 1),
                       (12, 10, 0), (12, 10, 1),
@@ -36,8 +34,12 @@ SUPPORTED_VERSIONS = [(12, 9, 0), (12, 9, 1),
                       (12, 12, 0), (12, 12, 1)]
 
 
-MIN_VERSION = LooseVersion("{}.{}.{}".format(*min(SUPPORTED_VERSIONS)))
-MAX_VERSION = LooseVersion("{}.{}.{}".format(*max(SUPPORTED_VERSIONS)))
+# We could use packaging.versions.Version here, but for our needs we
+# can get away with a tuple of integers. That is, we do not need the
+# full support for PEP-440.
+#
+MIN_VERSION = min(SUPPORTED_VERSIONS)
+MAX_VERSION = max(SUPPORTED_VERSIONS)
 
 
 def clean(xs):
@@ -48,15 +50,31 @@ def clean(xs):
 def get_version(version):
     """Strip out any XSPEC patch level.
 
-    So '12.12.0c' gets converted to '12.12.0'. This is helpful
-    as then it makes version comparison easier.
+    So '12.12.0c' gets converted to '12.12.0', and then to (12, 12,
+    0). This is helpful as then it makes version comparison easier, as
+    we can rely on the standard tuple ordering.
+
+    Parameters
+    ----------
+    version : str
+        The XSPEC version string, of the form "12.12.0c", so it can
+        include the XSPEC patch level.
+
+    Returns
+    -------
+    (major, minor, micro) : tuple of int
+        The XSPEC patchlevel is ignored.
+
     """
 
-    match = re.search(r'^\d+\.\d+\.\d+', version)
+    # XSPEC versions do not match PEP 440, so strip out the trailing
+    # text (which indicates the XSPEC patch level).
+    #
+    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
     if match is None:
         raise ValueError(f"Invalid XSPEC version string: {version}")
 
-    return LooseVersion(match[0])
+    return (int(match[1]), int(match[2]), int(match[3]))
 
 
 class xspec_config(Command):
@@ -133,10 +151,10 @@ class xspec_config(Command):
             self.announce(f"Found XSPEC version: {self.xspec_version}", 2)
             xspec_version = get_version(self.xspec_version)
 
-            for major, minor, patch in SUPPORTED_VERSIONS:
-                version = LooseVersion(f'{major}.{minor}.{patch}')
+            for version in SUPPORTED_VERSIONS:
                 if xspec_version >= version:
-                    macros += [(f'XSPEC_{major}_{minor}_{patch}', None)]
+                    major, minor, micro = version
+                    macros += [(f'XSPEC_{major}_{minor}_{micro}', None)]
 
             if xspec_version < MIN_VERSION:
                 self.warn("XSPEC Version is less than {MIN_VERSION}, which is the minimal supported version for Sherpa")

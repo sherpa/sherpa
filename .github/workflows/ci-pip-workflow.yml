@@ -99,7 +99,7 @@ jobs:
       if: matrix.test-data == 'submodule'
       run: |
         pip install -r test_requirements.txt
-        pip install pytest-cov 
+        pip install pytest-cov
 
         pytest --cov=sherpa --cov-report=xml
 

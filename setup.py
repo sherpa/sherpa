@@ -45,8 +45,6 @@ try:
     from numpy.distutils import core
 
 except ImportError:
-    import sys
-
     print((
         "You need to install NUMPY in order to build Sherpa\n"
         "Other dependencies will be automatically installed\n"
