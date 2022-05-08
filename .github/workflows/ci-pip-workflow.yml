@@ -106,7 +106,7 @@ jobs:
         TEST: ${{ matrix.test-data }}
       run: |
         git submodule deinit -f .
-        sherpa_test || exit 1
+        sherpa_test
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
@@ -134,4 +134,4 @@ jobs:
             smokevars="-f ${FITS} ${smokevars}"
         fi
         cd ${HOME}
-        sherpa_smoke ${smokevars} || exit 1
+        sherpa_smoke ${smokevars}
