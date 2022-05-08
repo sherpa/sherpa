@@ -93,20 +93,12 @@ jobs:
       with:
         submodules: 'True'
 
+    # https://stackoverflow.com/questions/63648591/how-to-install-x11-before-testing-with-github-actions-for-macos
     - name: Install XQuartz on macOS
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        curl -LO https://github.com/XQuartz/XQuartz/releases/download/XQuartz-2.8.1/XQuartz-2.8.1.dmg
-        hdiutil attach XQuartz-2.8.1.dmg
-        cd /Volumes/XQuartz-2.8.1
-        sudo installer -pkg /Volumes/XQuartz-2.8.1/XQuartz.pkg -target /
-        if [ $? != 0 ] ; then
-            exit 1
-        fi
-        cd -
-        hdiutil detach /Volumes/XQuartz-2.8.1
-        rm XQuartz-2.8.1.dmg
+        brew install --cask xquartz
 
     - name: Conda Setup
       shell: bash
