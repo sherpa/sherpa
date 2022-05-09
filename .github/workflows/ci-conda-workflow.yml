@@ -166,12 +166,42 @@ jobs:
       run: |
         git submodule deinit -f .
 
-    - name: Tests
+    # run the smoke test first as it's small/quick to do
+    - name: Smoke Tests
       shell: bash
       env:
-        TEST: ${{ matrix.test-data }}
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }}
+      run: |
+        if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
+        if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
+        smokevars="${XSPECTEST} ${FITSTEST} -v 3"
+        echo "** smoke test: ${smokevars}"
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        cd /home
+        sherpa_smoke ${smokevars}
+
+    - name: Internal check
+      if: matrix.test-data == 'submodule' && matrix.install-type != 'develop'
+      shell: bash
+      env:
+        INSTALLTYPE: ${{ matrix.install-type }}
+      run: |
+        # At the moment "Submodule Tests" requires the develop
+        # install-type, otherwise the "python setup.py test" call will
+        # lead to the develop build to be re-run, meaning that the
+        # install option is not tested. When we change to pytest we
+        # can switch to something like 'cd $HOME; pytest sherpa'
+        #
+        echo "ERROR: submodule test can not be run with install-type=${INSTALLTYPE}"
+        exit 1
+
+    - name: Submodule Tests
+      if: matrix.test-data == 'submodule'
+      shell: bash
+      env:
+        INSTALLTYPE: ${{ matrix.install-type }}
       run: |
         if [ "$RUNNER_OS" == "macOS" ]; then
           # make sure pytext-xvfb can find Xvfb
@@ -179,7 +209,18 @@ jobs:
         fi
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        source .github/scripts/test.sh
+        conda install -yq pytest-cov
+        python setup.py -q test -a "--cov sherpa --cov-report xml"
+
+    - name: sherpa_test Tests
+      if: matrix.test-data == 'package' || matrix.test-data == 'none'
+      shell: bash
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        conda install -yq pytest-cov
+        cd $HOME
+        sherpa_test --cov sherpa --cov-report xml
 
     - name: upload coverage
       uses: codecov/codecov-action@v2
