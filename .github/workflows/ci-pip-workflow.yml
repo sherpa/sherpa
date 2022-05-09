@@ -134,5 +134,6 @@ jobs:
         if [ ${FITS} != '' ] ; then
             smokevars="-f ${FITS} ${smokevars}"
         fi
+        echo "** smoke test: ${smokevars}"
         cd ${HOME}
         sherpa_smoke ${smokevars}
