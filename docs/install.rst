@@ -10,17 +10,23 @@ refresher (or prefer to act first, and read documentation later),
 the following commands can be used to install Sherpa, depending on
 your environment and set up.
 
-::
+#. Using conda
 
-    conda install -c sherpa sherpa
+   ::
 
-::
+     conda install -c sherpa sherpa
 
-    pip install sherpa
+#. Install Sherpa using pip
 
-::
+   ::
 
-    python setup.py install
+     pip install sherpa
+
+#. Building from source
+
+   ::
+
+     pip install .
 
 Requirements
 ============
@@ -402,64 +408,49 @@ C++ compilers to use if not found by ``setup.py``.
 
    That is, the variable is set to a space, not the empty string.
 
+.. _install-build:
+
 A standard installation
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-From the root of the Sherpa source tree, Sherpa can be built by saying::
+From the root of the Sherpa source tree, Sherpa can be built with
 
-    python setup.py build
+::
 
-and installed with one of::
+  pip install .
 
-    python setup.py install
-    python setup.py install --user
+.. _developer-build:
 
 A development build
 ^^^^^^^^^^^^^^^^^^^
 
-The ``develop`` option should be used when developing Sherpa (such as
-adding new functionality or fixing a bug)::
+Use::
 
-    python setup.py develop
+  pip install -e . --verbose
 
-Tests can then be run with the ``test`` option::
+when developing Sherpa (the ``--verbose`` option is optional).
+Tests can then be run with::
 
-    python setup.py test
+  pytest
 
-The ``test`` command is a wrapper that calls ``pytest`` under the hood,
-and includes the ``develop`` command.
+You can pass additional arguments to ``pytest``.  As examples, the
+following two commands run all the tests in ``test_data.py`` and then
+a single named test in this file::
 
-You can pass additional arguments to ``pytest`` with the ``-a`` or
-``--pytest-args`` arguments.  As examples, the following two commands
-run all the tests in ``test_data.py`` and then a single named
-test in this file::
-
-    python setup.py test -a sherpa/tests/test_data.py
-    python setup.py test -a sherpa/tests/test_data.py::test_data_eval_model
+  pytest sherpa/tests/test_data.py
+  pytest sherpa/tests/test_data.py::test_data_eval_model
 
 The full set of options, including those added by the Sherpa test
 suite - which are listed at the end of the ``custom options``
 section - can be found with::
 
-    python setup.py test -a "--pyargs sherpa --help"
+  pytest sherpa --help
 
 and to pass an argument to the Sherpa test suite (there are currently
 three options, namely ``--test-data``, ``--runslow``, and
-``-runzenodo``)::
+``--runzenodo``)::
 
-    python setup.py test -a "--pyargs sherpa --runslow"
-
-.. note::
-
-   If you run both ``install`` and ``develop`` or ``test`` in the same
-   Python environment you end up with two competing installations of
-   Sherpa which result in unexpected behavior. If this happens, simply
-   run ``pip uninstall sherpa`` as many times as necessary, until you
-   get an error message that no more Sherpa installations are
-   available. At this point you can re-install Sherpa.
-
-   The same issue may occur if you install a Sherpa binary release and
-   then try to build Sherpa from source in the same environment.
+    pytest sherpa --runslow
 
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
@@ -476,14 +467,8 @@ test suite will include tests that check that DS9 can be used from
 Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
 on how X-windows is set up). This can be avoided by installing the
-`X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_.
-
-.. note::
-
-   Although the standard Python setuptools approach is used to build
-   Sherpa, there may be issues when using some of the other build
-   targets, such as ``build_ext``. Please report these to the
-   `Sherpa issues page <https://github.com/sherpa/sherpa/issues/>`_.
+`X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_
+and the ``pytest-xvfb`` package.
 
 Building the documentation
 --------------------------
@@ -554,6 +539,12 @@ tests depends on what optional packages are available and how
 Sherpa was configured when built)::
 
     sherpa_test
+
+.. note::
+
+   The `sherpa_test` command accepts the ``--test-data``, ``--runslow``,
+   and ``--runzenodo`` arguments from the
+   :ref:`development build <developer-build>` section.
 
 The ``sherpa`` Anaconda channel contains the ``sherpatest`` package, which
 provides a number of data files in ASCII and :term:`FITS` formats. This is

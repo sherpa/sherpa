@@ -436,7 +436,7 @@ available.
 
 #. Attempt to build the XSPEC interface with::
 
-     python setup.py develop
+     pip install -e .
 
    This requires that the ``xspec_config`` section of the ``setup.cfg``
    file has been set up correctly for the new XSPEC release. The exact
