@@ -1,15 +1,5 @@
 #!/usr/bin/env bash -e
 
-if [ "`uname -s`" == "Darwin" ] ; then
-    export DISPLAY=":99"
-    export PATH="${PATH}:/opt/X11/bin"
-    # Run headless Xvfb
-    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
-    if [ $? != 0 ] ; then
-        exit 1
-    fi
-fi
-
 # Build smoke test switches, to ensure requested dependencies are reachable
 if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
 if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
