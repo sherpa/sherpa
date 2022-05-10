@@ -117,17 +117,12 @@ class xspec_config(Command):
         pass
 
     def run(self):
+        if not self.with_xspec:
+            return
+
         package = 'sherpa.astro.xspec'
         dist_packages = self.distribution.packages
         dist_data = self.distribution.package_data
-
-        if not self.with_xspec:
-            if package in dist_packages:
-                dist_packages.remove(package)
-            if package in dist_data:
-                del dist_data[package]
-
-            return
 
         if package not in dist_packages:
             dist_packages.append(package)
