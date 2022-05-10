@@ -27,6 +27,7 @@ from numpy import VisibleDeprecationWarning
 
 import pytest
 
+from sherpa.utils.err import RuntimeErr
 from sherpa.utils.testing import get_datadir, set_datadir
 
 try:
@@ -595,3 +596,23 @@ def cleanup_pylab_backend():
         return
 
     plt.close(fig="all")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def cleanup_ds9_backend():
+    """Ensure that the DS9 window has closed down.
+
+    The DS9 window can be left after the tests are run. This fixture
+    attempts to close down any DS9 instance that has been started.
+
+    """
+
+    yield
+
+    # If DS9 is not available this will lead to a warning message,
+    # but there's no way to stop this. The code could import ds9_backend
+    # instead of backend but then it would have to deal with failure,
+    # and it does not seem an improvement.
+    #
+    from sherpa.image import backend
+    backend.close()
