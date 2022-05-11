@@ -87,12 +87,12 @@ jobs:
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
       run: |
-        python setup.py ${{ matrix.install-type }}
+        pip install . --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       run: |
-        python setup.py ${{ matrix.install-type }}
+        pip install -e . --verbose
 
     - name: install pytest-xvfb
       if: matrix.test-data == 'package'
