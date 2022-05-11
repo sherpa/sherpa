@@ -49,7 +49,7 @@ Before you issue a pull request, we ask to run the test suite locally.
 Assuming everything is set up to install Sherpa from source, it can be
 installed in development mode with ``pip``::
 
-  pip install -e .
+  pip install -e .[test]
 
 "Development mode" means that the tests will pick up changes in the
 Python source files without running ``pip`` again (which can take some

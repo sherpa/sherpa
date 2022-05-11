@@ -138,7 +138,7 @@ jobs:
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        pip install . --verbose
+        pip install .[test] --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
@@ -147,7 +147,7 @@ jobs:
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        pip install -e . --verbose
+        pip install -e .[test] --verbose
 
     - name: Install the test data?
       if: matrix.test-data == 'package'
@@ -155,7 +155,6 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
         pip install ./sherpa-test-data
-        pip install pytest-xvfb
 
     - name: Remove submodule
       if: matrix.test-data == 'none' || matrix.test-data == 'package'
@@ -203,7 +202,7 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
-        python setup.py -q test -a "--cov sherpa --cov-report xml"
+        pytest --pyargs sherpa --cov sherpa --cov-report xml
 
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
