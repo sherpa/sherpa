@@ -120,16 +120,6 @@ class xspec_config(Command):
         if not self.with_xspec:
             return
 
-        package = 'sherpa.astro.xspec'
-        dist_packages = self.distribution.packages
-        dist_data = self.distribution.package_data
-
-        if package not in dist_packages:
-            dist_packages.append(package)
-
-        if package not in dist_data:
-            dist_data[package] = ['tests/test_*.py']
-
         ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
         ld2, inc2, l2 = build_lib_arrays(self, 'cfitsio')
         ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
