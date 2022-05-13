@@ -41,16 +41,13 @@ import sherpa.plot
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_arf
-from sherpa.astro.plot import ARFPlot, BkgDataPlot, FluxHistogram, ModelHistogram, \
-    OrderPlot, SourcePlot, BkgSourcePlot, ComponentModelPlot, ComponentSourcePlot, \
-    ModelPHAHistogram, BkgModelHistogram, BkgModelPHAHistogram, \
-    DataPHAPlot
+import sherpa.astro.plot
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
-from sherpa.plot import FitPlot, PlotErr
+import sherpa.plot
 
-from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
+from sherpa.utils.err import DataErr, IdentifierErr, ModelErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_pylab, requires_xspec
 
@@ -334,7 +331,7 @@ def test_get_arf_plot(idval, clean_astro_ui):
     else:
         ap = ui.get_arf_plot(idval)
 
-    assert isinstance(ap, ARFPlot)
+    assert isinstance(ap, sherpa.astro.plot.ARFPlot)
 
     assert ap.xlo == pytest.approx(_energies_lo)
     assert ap.xhi == pytest.approx(_energies_hi)
@@ -359,7 +356,7 @@ def test_get_arf_plot_recalc(idval, clean_astro_ui):
     else:
         ap = ui.get_arf_plot(idval, recalc=False)
 
-    assert isinstance(ap, ARFPlot)
+    assert isinstance(ap, sherpa.astro.plot.ARFPlot)
     assert ap.xlo is None
     assert ap.y is None
     assert ap.title is None
@@ -376,7 +373,7 @@ def test_get_order_plot(idval, clean_astro_ui):
     else:
         op = ui.get_order_plot(idval)
 
-    assert isinstance(op, OrderPlot)
+    assert isinstance(op, sherpa.astro.plot.OrderPlot)
 
     # Why is this using analysis=channel?
     # Would this be changed by #884?
@@ -405,7 +402,7 @@ def test_get_order_plot_recalc(idval, clean_astro_ui):
     else:
         op = ui.get_order_plot(idval, recalc=False)
 
-    assert isinstance(op, OrderPlot)
+    assert isinstance(op, sherpa.astro.plot.OrderPlot)
     assert op.xlo is None
     assert op.y is None
     assert op.title == 'Model'
@@ -422,7 +419,7 @@ def test_get_bkg_plot(idval, clean_astro_ui):
     else:
         bp = ui.get_bkg_plot(idval)
 
-    assert isinstance(bp, BkgDataPlot)
+    assert isinstance(bp, sherpa.astro.plot.BkgDataPlot)
 
     assert bp.xlo == pytest.approx(_data_chan)
 
@@ -490,7 +487,7 @@ def test_get_model_plot(idval, clean_astro_ui):
     else:
         mp = ui.get_model_plot(idval)
 
-    assert isinstance(mp, ModelHistogram)
+    assert isinstance(mp, sherpa.astro.plot.ModelHistogram)
 
     assert mp.xlo == pytest.approx(_data_chan)
     assert mp.xhi == pytest.approx(_data_chan + 1)
@@ -575,7 +572,7 @@ def test_get_source_plot_energy(idval, clean_astro_ui):
         ui.set_analysis(idval, 'energy')
         sp = ui.get_source_plot(idval)
 
-    assert isinstance(sp, SourcePlot)
+    assert isinstance(sp, sherpa.astro.plot.SourcePlot)
 
     assert sp.xlo == pytest.approx(_energies_lo)
     assert sp.xhi == pytest.approx(_energies_hi)
@@ -753,8 +750,8 @@ def test_get_bkg_fit_plot(idval, clean_astro_ui):
 
     dp = fp.dataplot
     mp = fp.modelplot
-    assert isinstance(dp, BkgDataPlot)
-    assert isinstance(mp, BkgModelPHAHistogram)
+    assert isinstance(dp, sherpa.astro.plot.BkgDataPlot)
+    assert isinstance(mp, sherpa.astro.plot.BkgModelPHAHistogram)
 
     assert dp.title == 'example-bkg'
     assert mp.title == 'Background Model Contribution'
@@ -788,8 +785,8 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
 
     dp = fp.dataplot
     mp = fp.modelplot
-    assert isinstance(dp, BkgDataPlot)
-    assert isinstance(mp, BkgModelPHAHistogram)
+    assert isinstance(dp, sherpa.astro.plot.BkgDataPlot)
+    assert isinstance(mp, sherpa.astro.plot.BkgModelPHAHistogram)
 
     assert dp.title == 'example-bkg'
     assert mp.title == 'Background Model Contribution'
@@ -817,8 +814,8 @@ def check_bkg_fit(plotfunc, isfit=True):
 
     dplot = ui._session._bkgdataplot
     mplot = ui._session._bkgmodelplot
-    assert isinstance(dplot, BkgDataPlot)
-    assert isinstance(mplot, BkgModelPHAHistogram)
+    assert isinstance(dplot, sherpa.astro.plot.BkgDataPlot)
+    assert isinstance(mplot, sherpa.astro.plot.BkgModelPHAHistogram)
 
     # check the "source" plots are not set
     for plot in [ui._session._dataplot, ui._session._modelplot]:
@@ -951,7 +948,7 @@ def check_bkg_model(plotfunc, isfit=True):
     assert ui._session._bkgsourceplot.y is None
 
     plot = ui._session._bkgmodelhisto
-    assert isinstance(plot, BkgModelHistogram)
+    assert isinstance(plot, sherpa.astro.plot.BkgModelHistogram)
     assert plot.xlo is not None
     assert plot.xhi is not None
     assert plot.y is not None
@@ -980,7 +977,7 @@ def check_bkg_source(plotfunc, isfit=True):
     assert ui._session._bkgmodelhisto.y is None
 
     plot = ui._session._bkgsourceplot
-    assert isinstance(plot, BkgSourcePlot)
+    assert isinstance(plot, sherpa.astro.plot.BkgSourcePlot)
     assert plot.xlo is not None
     assert plot.xhi is not None
     assert plot.y is not None
@@ -1225,7 +1222,7 @@ def check_pha1_model_component_plot(mplot, mdl):
     This is for when the response is included.
     """
 
-    assert isinstance(mplot, ComponentModelPlot)
+    assert isinstance(mplot, sherpa.astro.plot.ComponentModelPlot)
 
     # The plot title includes the exposure time whose output could change
     # so do not use an equality check but something a bit-more forgiving
@@ -1320,7 +1317,7 @@ def test_pha1_get_model_component_plot_no_response(clean_astro_ui, basic_pha1_bg
     mplot = ui.get_model_component_plot('pl')
     print(mplot)
 
-    assert isinstance(mplot, ComponentModelPlot)
+    assert isinstance(mplot, sherpa.astro.plot.ComponentModelPlot)
     assert mplot.title == 'Model component: powlaw1d.pl'
 
     xlo = np.arange(33, 677)
@@ -2051,7 +2048,7 @@ def validate_flux_histogram(fhist, energy):
     """
 
     assert fhist is not None
-    assert isinstance(fhist, FluxHistogram)
+    assert isinstance(fhist, sherpa.astro.plot.FluxHistogram)
 
     # Very minimal checks.
     #
@@ -2111,7 +2108,7 @@ def test_pha1_plot_foo_flux(energy, plotfunc, getfunc, correlated, clean_astro_u
 
     # At this point the return should be None
     res = getfunc(recalc=False)
-    assert isinstance(res, FluxHistogram)
+    assert isinstance(res, sherpa.astro.plot.FluxHistogram)
     assert res.flux is None
     assert res.xlo is None
     assert res.y is None
@@ -2207,7 +2204,7 @@ def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
 
     empty = getfunc(recalc=False)
     assert empty is not None
-    assert isinstance(empty, FluxHistogram)
+    assert isinstance(empty, sherpa.astro.plot.FluxHistogram)
 
     for field in ["modelvals", "flux", "xlo", "xhi", "y"]:
         assert getattr(empty, field) is None
@@ -3114,13 +3111,13 @@ def test_pha1_data_plot_recalc(clean_astro_ui, basic_pha1):
     ui.ignore(5, None)
 
     p = ui.get_data_plot(recalc=False)
-    assert isinstance(p, DataPHAPlot)
+    assert isinstance(p, sherpa.astro.plot.DataPHAPlot)
     assert p.xlo.size == 42
     assert (p.xlo[0] + p.xhi[0]) / 2 == pytest.approx(0.5183)
     assert (p.xlo[-1] + p.xhi[-1]) / 2 == pytest.approx(8.2198)
 
     p = ui.get_data_plot(recalc=True)
-    assert isinstance(p, DataPHAPlot)
+    assert isinstance(p, sherpa.astro.plot.DataPHAPlot)
     assert p.xlo.size == 26
     assert (p.xlo[0] + p.xhi[0]) / 2 == pytest.approx(1.0658)
     assert (p.xlo[-1] + p.xhi[-1]) / 2 == pytest.approx(4.4822)
@@ -3140,10 +3137,10 @@ def test_get_xxx_plot_nodata(getfunc, idval, clean_astro_ui):
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("ptype,extraargs,pclass,nbins1,nbins2",
-                         [('model', [], ModelHistogram, 644, 252),
-                          ('model_component', ['pl'], ComponentModelPlot, 644, 252),
-                          ('source', [], SourcePlot, 1090, 1090),
-                          ('source_component', ['pl'], ComponentSourcePlot, 1090, 1090)])
+                         [('model', [], sherpa.astro.plot.ModelHistogram, 644, 252),
+                          ('model_component', ['pl'], sherpa.astro.plot.ComponentModelPlot, 644, 252),
+                          ('source', [], sherpa.astro.plot.SourcePlot, 1090, 1090),
+                          ('source_component', ['pl'], sherpa.astro.plot.ComponentSourcePlot, 1090, 1090)])
 def test_pha1_model_plot_recalc(ptype, extraargs, pclass, nbins1, nbins2,
                                 clean_astro_ui, basic_pha1):
     """Basic testing of get_model_plot(recalc=False)"""
@@ -3176,16 +3173,16 @@ def test_pha1_fit_plot_recalc(clean_astro_ui, basic_pha1):
     ui.ignore(5, None)
 
     p = ui.get_fit_plot('tst', recalc=False)
-    assert isinstance(p, FitPlot)
-    assert isinstance(p.dataplot, DataPHAPlot)
-    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert isinstance(p, sherpa.plot.FitPlot)
+    assert isinstance(p.dataplot, sherpa.astro.plot.DataPHAPlot)
+    assert isinstance(p.modelplot, sherpa.astro.plot.ModelPHAHistogram)
     assert p.dataplot.xlo.size == 42
     assert p.modelplot.xlo.size == 42
 
     p = ui.get_fit_plot('tst', recalc=True)
-    assert isinstance(p, FitPlot)
-    assert isinstance(p.dataplot, DataPHAPlot)
-    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert isinstance(p, sherpa.plot.FitPlot)
+    assert isinstance(p.dataplot, sherpa.astro.plot.DataPHAPlot)
+    assert isinstance(p.modelplot, sherpa.astro.plot.ModelPHAHistogram)
     assert p.dataplot.xlo.size == 26
     assert p.modelplot.xlo.size == 26
 
@@ -3218,14 +3215,14 @@ def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
     ui.set_bkg_model(ui.polynom1d.bpl)
 
     p = ui.get_bkg_fit_plot(recalc=False)
-    assert isinstance(p, FitPlot)
+    assert isinstance(p, sherpa.plot.FitPlot)
     assert p.dataplot is None
     assert p.modelplot is None
 
     p = ui.get_bkg_fit_plot(recalc=True)
-    assert isinstance(p, FitPlot)
-    assert isinstance(p.dataplot, DataPHAPlot)
-    assert isinstance(p.modelplot, ModelPHAHistogram)
+    assert isinstance(p, sherpa.plot.FitPlot)
+    assert isinstance(p.dataplot, sherpa.astro.plot.DataPHAPlot)
+    assert isinstance(p.modelplot, sherpa.astro.plot.ModelPHAHistogram)
     assert p.dataplot.xlo.size == 26
     assert p.modelplot.xlo.size == 26
     assert p.dataplot.title == 'my-name.pi'
@@ -3313,7 +3310,7 @@ def test_datapha_plot_after_clean():
 
     prefs['yerrorbars'] = False
 
-    assert isinstance(d1, DataPHAPlot)
+    assert isinstance(d1, sherpa.astro.plot.DataPHAPlot)
     assert not d1.histo_prefs['yerrorbars']
 
     s.clean()
@@ -3322,7 +3319,7 @@ def test_datapha_plot_after_clean():
     # Check the yerrorbars setting is back to True
     #
     d2 = s.get_data_plot()
-    assert isinstance(d2, DataPHAPlot)
+    assert isinstance(d2, sherpa.astro.plot.DataPHAPlot)
 
     prefs = s.get_data_plot_prefs()
 

@@ -38,13 +38,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 
 from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
-from sherpa.plot import CDFPlot, DataPlot, FitPlot, ModelPlot, \
-    PDFPlot, PSFPlot, PSFKernelPlot, ScatterPlot, TracePlot,\
-    DataContour, ModelContour, SourceContour, ResidContour, \
-    RatioContour, FitContour, LRHistogram, \
-    ModelHistogramPlot, ResidPlot, RatioPlot, DelchiPlot, ChisqrPlot, \
-    DataHistogramPlot, SplitPlot
-
+import sherpa.plot
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
 from sherpa.utils.testing import requires_plotting, requires_pylab
@@ -116,9 +110,9 @@ def test_get_fit_plot(idval, clean_ui):
     else:
         f = ui.get_fit_plot(idval)
 
-    assert isinstance(f, FitPlot)
-    assert isinstance(f.dataplot, DataPlot)
-    assert isinstance(f.modelplot, ModelPlot)
+    assert isinstance(f, sherpa.plot.FitPlot)
+    assert isinstance(f.dataplot, sherpa.plot.DataPlot)
+    assert isinstance(f.modelplot, sherpa.plot.ModelPlot)
 
     dp = f.dataplot
     mp = f.modelplot
@@ -857,7 +851,7 @@ def test_plot_psf(session):
     s.plot_psf()
 
     plotobj = s.get_psf_plot()
-    assert isinstance(plotobj, PSFPlot)
+    assert isinstance(plotobj, sherpa.plot.PSFPlot)
     assert plotobj.title == 'gauss1d.psfmdl'
     assert plotobj.xlabel == 'x'
     assert plotobj.ylabel == 'y'
@@ -941,7 +935,7 @@ def test_plot_kernel(session, caplog):
     assert logmsg == 'PSF frac: 1.0'
 
     plotobj = s.get_kernel_plot()
-    assert isinstance(plotobj, PSFKernelPlot)
+    assert isinstance(plotobj, sherpa.plot.PSFKernelPlot)
     assert plotobj.title == 'PSF Kernel'
     assert plotobj.xlabel == 'x'
     assert plotobj.ylabel == 'y'
@@ -1290,12 +1284,12 @@ def test_contour_multiple(session):
 @requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("plotfunc,title,pcls",
-                         [("data", "", DataContour),
-                          ("model", "Model", ModelContour),
-                          ("source", "Source", SourceContour),
-                          ("resid", "Residuals", ResidContour),
-                          ("ratio", "Ratio of Data to Model", RatioContour),
-                          ("fit", "", FitContour),
+                         [("data", "", sherpa.plot.DataContour),
+                          ("model", "Model", sherpa.plot.ModelContour),
+                          ("source", "Source", sherpa.plot.SourceContour),
+                          ("resid", "Residuals", sherpa.plot.ResidContour),
+                          ("ratio", "Ratio of Data to Model", sherpa.plot.RatioContour),
+                          ("fit", "", sherpa.plot.FitContour),
                           ("fit_resid", None, None)])
 def test_contour_xxx(plotfunc, title, pcls, session):
     """Check we can call contour_xxx()/get_xxx_contour().
@@ -1383,7 +1377,7 @@ def test_get_scatter_plot_empty(session):
 
     s = session()
     p = s.get_scatter_plot()
-    assert isinstance(p, ScatterPlot)
+    assert isinstance(p, sherpa.plot.ScatterPlot)
     for f in ['x', 'y', 'xerr', 'yerr', 'xlabel', 'ylabel', 'title']:
         assert getattr(p, f) is None
 
@@ -1403,7 +1397,7 @@ def test_get_scatter_plot(session):
     s.plot_scatter(x, y)
 
     p = s.get_scatter_plot()
-    assert isinstance(p, ScatterPlot)
+    assert isinstance(p, sherpa.plot.ScatterPlot)
 
     assert p.x == pytest.approx(x)
     assert p.y == pytest.approx(y)
@@ -1429,7 +1423,7 @@ def test_get_scatter_plot_labels_noname(session):
     s.plot_scatter(x, y, xlabel='a x', ylabel='43')
 
     p = s.get_scatter_plot()
-    assert isinstance(p, ScatterPlot)
+    assert isinstance(p, sherpa.plot.ScatterPlot)
 
     assert p.x == pytest.approx(x)
     assert p.y == pytest.approx(y)
@@ -1455,7 +1449,7 @@ def test_get_scatter_plot_labels(session):
     s.plot_scatter(x, y, xlabel='a x', ylabel='43', name='Fred Fred')
 
     p = s.get_scatter_plot()
-    assert isinstance(p, ScatterPlot)
+    assert isinstance(p, sherpa.plot.ScatterPlot)
 
     assert p.x == pytest.approx(x)
     assert p.y == pytest.approx(y)
@@ -1475,7 +1469,7 @@ def test_get_trace_plot_empty(session):
 
     s = session()
     p = s.get_trace_plot()
-    assert isinstance(p, TracePlot)
+    assert isinstance(p, sherpa.plot.TracePlot)
     for f in ['x', 'y', 'xerr', 'yerr', 'xlabel', 'ylabel', 'title']:
         assert getattr(p, f) is None
 
@@ -1494,7 +1488,7 @@ def test_get_trace_plot(session):
     s.plot_trace(y)
 
     p = s.get_trace_plot()
-    assert isinstance(p, TracePlot)
+    assert isinstance(p, sherpa.plot.TracePlot)
 
     assert p.x == pytest.approx([0, 1, 2])
     assert p.y == pytest.approx(y)
@@ -1521,7 +1515,7 @@ def test_get_trace_plot_labels_noname(session):
     s.plot_trace(y, xlabel='stats')
 
     p = s.get_trace_plot()
-    assert isinstance(p, TracePlot)
+    assert isinstance(p, sherpa.plot.TracePlot)
 
     assert p.x == pytest.approx([0, 1, 2])
     assert p.y == pytest.approx(y)
@@ -1549,7 +1543,7 @@ def test_get_trace_plot_labels(session):
     s.plot_trace(y, xlabel='stats', name='Awesome sauce')
 
     p = s.get_trace_plot()
-    assert isinstance(p, TracePlot)
+    assert isinstance(p, sherpa.plot.TracePlot)
 
     assert p.x == pytest.approx([0, 1, 2])
     assert p.y == pytest.approx(y)
@@ -1565,7 +1559,7 @@ def test_get_cdf_plot_empty(session):
 
     s = session()
     p = s.get_cdf_plot()
-    assert isinstance(p, CDFPlot)
+    assert isinstance(p, sherpa.plot.CDFPlot)
     for f in ["points", "x", "y", "median", "lower", "upper", "xlabel", "ylabel", "title"]:
         assert getattr(p, f) is None
 
@@ -1631,7 +1625,7 @@ def test_plot_cdf(session):
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
-    assert isinstance(p, CDFPlot)
+    assert isinstance(p, sherpa.plot.CDFPlot)
 
     xsort = np.sort(x)
     assert p.points == pytest.approx(x)
@@ -1655,7 +1649,7 @@ def test_plot_cdf_labels_noname(session):
     s.plot_cdf(x, xlabel='a b')
 
     p = s.get_cdf_plot()
-    assert isinstance(p, CDFPlot)
+    assert isinstance(p, sherpa.plot.CDFPlot)
 
     assert p.xlabel == 'a b'
     assert p.ylabel == 'p(<=a b)'
@@ -1672,7 +1666,7 @@ def test_plot_cdf_labels(session):
     s.plot_cdf(x, xlabel='a b', name='b a')
 
     p = s.get_cdf_plot()
-    assert isinstance(p, CDFPlot)
+    assert isinstance(p, sherpa.plot.CDFPlot)
 
     assert p.xlabel == 'a b'
     assert p.ylabel == 'p(<=a b)'
@@ -1686,7 +1680,7 @@ def test_show_cdf_plot_empty(session):
     s = session()
 
     p = s.get_cdf_plot()
-    assert isinstance(p, CDFPlot)
+    assert isinstance(p, sherpa.plot.CDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 10
@@ -1721,7 +1715,7 @@ def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
     s.plot_cdf(x)
 
     p = s.get_cdf_plot()
-    assert isinstance(p, CDFPlot)
+    assert isinstance(p, sherpa.plot.CDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 10
@@ -1742,7 +1736,7 @@ def test_get_pdf_plot_empty(session):
 
     s = session()
     p = s.get_pdf_plot()
-    assert isinstance(p, PDFPlot)
+    assert isinstance(p, sherpa.plot.PDFPlot)
     for f in ["points", "xlo", "xhi", "y", "xlabel", "ylabel", "title"]:
         assert getattr(p, f) is None
 
@@ -1757,7 +1751,7 @@ def test_plot_pdf(session):
     s.plot_pdf(x)
 
     p = s.get_pdf_plot()
-    assert isinstance(p, PDFPlot)
+    assert isinstance(p, sherpa.plot.PDFPlot)
 
     xgrid = np.arange(2, 8.5, 0.5)
 
@@ -1852,7 +1846,7 @@ def test_plot_pdf_labels_noname(session):
     s.plot_pdf(x, xlabel='x^2 x', bins=4)
 
     p = s.get_pdf_plot()
-    assert isinstance(p, PDFPlot)
+    assert isinstance(p, sherpa.plot.PDFPlot)
 
     assert p.xlo.size == 4
     assert p.xhi.size == 4
@@ -1873,7 +1867,7 @@ def test_plot_pdf_labels(session):
     s.plot_pdf(x, xlabel='x^2 x', name='no name', bins=4)
 
     p = s.get_pdf_plot()
-    assert isinstance(p, PDFPlot)
+    assert isinstance(p, sherpa.plot.PDFPlot)
 
     assert p.xlo.size == 4
     assert p.xhi.size == 4
@@ -1891,7 +1885,7 @@ def test_show_pdf_plot_empty(session):
     s = session()
 
     p = s.get_pdf_plot()
-    assert isinstance(p, PDFPlot)
+    assert isinstance(p, sherpa.plot.PDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 8
@@ -1920,7 +1914,7 @@ def test_show_pdf_plot(session, old_numpy_printing):
     s.plot_pdf(x, bins=3, normed=False)
 
     p = s.get_pdf_plot()
-    assert isinstance(p, PDFPlot)
+    assert isinstance(p, sherpa.plot.PDFPlot)
 
     toks = str(p).split('\n')
     assert len(toks) == 8
@@ -1946,12 +1940,12 @@ def test_data_plot_recalc(session):
     s.load_arrays(1, [20, 30, 40], [25, 40, 60], [10, 12, 14], Data1DInt)
 
     p = s.get_data_plot(recalc=False)
-    assert isinstance(p, DataHistogramPlot)
+    assert isinstance(p, sherpa.plot.DataHistogramPlot)
     assert p.xlo is None
     assert p.y is None
 
     p = s.get_data_plot(recalc=True)
-    assert isinstance(p, DataHistogramPlot)
+    assert isinstance(p, sherpa.plot.DataHistogramPlot)
     assert p.xlo == pytest.approx([20, 30, 40])
     assert p.xhi == pytest.approx([25, 40, 60])
     assert p.y == pytest.approx([10, 12, 14])
@@ -2026,13 +2020,13 @@ def test_model_plot_recalc(ptype, extraargs, session):
     # just use the ModelPlot.
     #
     p = func(*extraargs, recalc=False)
-    assert isinstance(p, ModelHistogramPlot)
+    assert isinstance(p, sherpa.plot.ModelHistogramPlot)
     assert p.xlo is None
     assert p.xhi is None
     assert p.y is None
 
     p = func(*extraargs, recalc=True)
-    assert isinstance(p, ModelHistogramPlot)
+    assert isinstance(p, sherpa.plot.ModelHistogramPlot)
     assert p.xlo == pytest.approx([20, 30, 40])
     assert p.xhi == pytest.approx([25, 40, 60])
     assert p.y == pytest.approx([162.5, 450, 1200])
@@ -2040,10 +2034,10 @@ def test_model_plot_recalc(ptype, extraargs, session):
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("ptype,pclass,y1,y2",
-                         [('resid', ResidPlot, [-10, -12], [-20, -28, -36]),
-                          ('ratio', RatioPlot, [1/11, 0], [1/3, 12/40, 14/50]),
-                          ('delchi', DelchiPlot, [-5, -6], [-10, -14, -18]),
-                          ('chisqr', ChisqrPlot, [25, 36], [100, 14*14, 18*18]),
+                         [('resid', sherpa.plot.ResidPlot, [-10, -12], [-20, -28, -36]),
+                          ('ratio', sherpa.plot.RatioPlot, [1/11, 0], [1/3, 12/40, 14/50]),
+                          ('delchi', sherpa.plot.DelchiPlot, [-5, -6], [-10, -14, -18]),
+                          ('chisqr', sherpa.plot.ChisqrPlot, [25, 36], [100, 14*14, 18*18]),
                           ])
 def test_xxx_plot_recalc(ptype, pclass, y1, y2, session):
     """Basic testing of get_xxx_plot(recalc=False)
@@ -2102,7 +2096,7 @@ def test_fit_plot_recalc(session):
     s.set_source(mdl)
 
     p = s.get_fit_plot(recalc=False)
-    assert isinstance(p, FitPlot)
+    assert isinstance(p, sherpa.plot.FitPlot)
 
     assert p.dataplot.x == pytest.approx([1, 2])
     assert p.dataplot.y == pytest.approx([1, 0])
@@ -2111,7 +2105,7 @@ def test_fit_plot_recalc(session):
     assert p.modelplot.y == pytest.approx([11, 12])
 
     p = s.get_fit_plot(recalc=True)
-    assert isinstance(p, FitPlot)
+    assert isinstance(p, sherpa.plot.FitPlot)
 
     assert p.dataplot.x == pytest.approx([20, 30, 40])
     assert p.dataplot.y == pytest.approx([10, 12, 14])
@@ -2141,7 +2135,7 @@ def check_pvalue(caplog, plot):
     assert toks[4].startswith('p-value          =  0.') or \
         toks[4].startswith('p-value          <  0.01')
 
-    assert isinstance(plot, LRHistogram)
+    assert isinstance(plot, sherpa.plot.LRHistogram)
     assert plot.xlabel == 'Likelihood Ratio'
     assert plot.ylabel == 'Frequency'
     assert plot.title == 'Likelihood Ratio Distribution'
@@ -2255,7 +2249,7 @@ def test_get_split_plot(session):
 
     s = session()
     splot = s.get_split_plot()
-    assert isinstance(splot, SplitPlot)
+    assert isinstance(splot, sherpa.plot.SplitPlot)
     assert splot.rows == 2
     assert splot.cols == 1
 
@@ -2466,13 +2460,13 @@ def test_data_contour_recalc(session):
     s.load_arrays(1, nx0, nx1, ny, Data2D)
 
     p = s.get_data_contour(recalc=False)
-    assert isinstance(p, DataContour)
+    assert isinstance(p, sherpa.plot.DataContour)
     assert p.x0 == pytest.approx(x0)
     assert p.x1 == pytest.approx(x1)
     assert p.y == pytest.approx(y)
 
     p = s.get_data_contour(recalc=True)
-    assert isinstance(p, DataContour)
+    assert isinstance(p, sherpa.plot.DataContour)
     assert p.x0 == pytest.approx(nx0)
     assert p.x1 == pytest.approx(nx1)
     assert p.y == pytest.approx(ny)
@@ -2510,14 +2504,14 @@ def test_model_contour_recalc(session):
     s.set_source('cmdl')
 
     p = s.get_model_contour(recalc=False)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(x0)
     assert p.x1 == pytest.approx(x1)
     # just check the model isn't flat
     assert p.y.min() < p.y.max()
 
     p = s.get_model_contour(recalc=True)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(nx0)
     assert p.x1 == pytest.approx(nx1)
     # just check the model is flat
@@ -2556,14 +2550,14 @@ def test_source_contour_recalc(session):
     s.set_source('cmdl')
 
     p = s.get_source_contour(recalc=False)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(x0)
     assert p.x1 == pytest.approx(x1)
     # just check the model isn't flat
     assert p.y.min() < p.y.max()
 
     p = s.get_source_contour(recalc=True)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(nx0)
     assert p.x1 == pytest.approx(nx1)
     # just check the model is flat
@@ -2602,14 +2596,14 @@ def test_ratio_contour_recalc(session):
     s.set_source('cmdl')
 
     p = s.get_ratio_contour(recalc=False)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(x0)
     assert p.x1 == pytest.approx(x1)
     # just check the model isn't flat
     assert p.y.min() < p.y.max()
 
     p = s.get_ratio_contour(recalc=True)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(nx0)
     assert p.x1 == pytest.approx(nx1)
 
@@ -2650,14 +2644,14 @@ def test_resid_contour_recalc(session):
     s.set_source('cmdl')
 
     p = s.get_resid_contour(recalc=False)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(x0)
     assert p.x1 == pytest.approx(x1)
     # just check the model isn't flat
     assert p.y.min() < p.y.max()
 
     p = s.get_resid_contour(recalc=True)
-    assert isinstance(p, ModelContour)
+    assert isinstance(p, sherpa.plot.ModelContour)
     assert p.x0 == pytest.approx(nx0)
     assert p.x1 == pytest.approx(nx1)
 
@@ -2698,11 +2692,11 @@ def test_fit_contour_recalc(session):
     s.set_source('cmdl')
 
     p = s.get_fit_contour(recalc=False)
-    assert isinstance(p, FitContour)
+    assert isinstance(p, sherpa.plot.FitContour)
     pd = p.datacontour
     pm = p.modelcontour
-    assert isinstance(pd, DataContour)
-    assert isinstance(pm, ModelContour)
+    assert isinstance(pd, sherpa.plot.DataContour)
+    assert isinstance(pm, sherpa.plot.ModelContour)
     assert pd.x0 == pytest.approx(x0)
     assert pd.x1 == pytest.approx(x1)
     assert pm.x0 == pytest.approx(x0)
@@ -2712,11 +2706,11 @@ def test_fit_contour_recalc(session):
     assert pm.y.min() < pm.y.max()
 
     p = s.get_fit_contour(recalc=True)
-    assert isinstance(p, FitContour)
+    assert isinstance(p, sherpa.plot.FitContour)
     pd = p.datacontour
     pm = p.modelcontour
-    assert isinstance(pd, DataContour)
-    assert isinstance(pm, ModelContour)
+    assert isinstance(pd, sherpa.plot.DataContour)
+    assert isinstance(pm, sherpa.plot.ModelContour)
     assert pd.x0 == pytest.approx(nx0)
     assert pd.x1 == pytest.approx(nx1)
     assert pm.x0 == pytest.approx(nx0)
