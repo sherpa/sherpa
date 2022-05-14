@@ -50,7 +50,8 @@ TEST2 = [4, 5, 6]
 #
 # Note: this test could be run even if plotting is not available,
 # since in that case the initial get_data_plot_prefs() call will
-# return an empty dictionary rather than a filled one.
+# return an empty dictionary rather than a filled one. However,
+# this seems to cause problems so keep the fixture.
 #
 @requires_plotting
 def test_set_log():
@@ -65,6 +66,36 @@ def test_set_log():
     assert not session.get_data_plot_prefs()['xlog']
     session.set_ylinear()
     assert not session.get_data_plot_prefs()['ylog']
+
+
+@requires_plotting
+def test_set_log_clean():
+    """Cleaning the session resets the plot preferences."""
+
+    # relies on the tests in test_set_log
+    session = Session()
+    session.set_xlog()
+    session.set_ylog()
+
+    session.clean()
+    assert not session.get_data_plot_prefs()['xlog']
+    assert not session.get_data_plot_prefs()['ylog']
+
+
+@requires_plotting
+def test_set_log_does_not_change_other_sessions():
+    """The plot preferences in different sessions are distinct.
+    """
+
+    session1 = Session()
+    session2 = Session()
+    session1.set_xlog()
+    session2.set_ylog()
+
+    assert session1.get_data_plot_prefs()['xlog']
+    assert not session1.get_data_plot_prefs()['ylog']
+    assert not session2.get_data_plot_prefs()['xlog']
+    assert session2.get_data_plot_prefs()['ylog']
 
 
 # bug #262
