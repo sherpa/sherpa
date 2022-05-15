@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021
+#  Copyright (C) 2016, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -100,7 +100,10 @@ def test_id_checks_session_unexpected(session, setting):
                          [(Session, True), (AstroSession, False)])
 @pytest.mark.parametrize("setting", ['arf', 'bkg', 'bkgchisqr', 'bkgdelchi', 'bkgfit',
                                      'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-                                     'order'])
+                                     'order',
+                                     # "energy", "photon",  these are currently both valid for astro
+                                     "astrocompsource", "astrocompmodel", "astrodata",
+                                     "astrosource", "astromodel"])
 def test_id_checks_astro_session(session, success, setting):
     """Do some common identifiers fail for astro but not default?"""
 

@@ -1002,3 +1002,24 @@ def test_issue_16():
     assert s.list_data_ids() == []
     assert s.list_model_ids() == []
     assert s.list_model_components() == []
+
+
+@pytest.mark.parametrize("value", ["data", "model", "source", "fit", "resid", "ratio",
+                                   "delchi", "chisqr", "psf", "kernel", "compsource",
+                                   "compmodel", "source_component", "model_component",])
+def test_set_default_id_check_invalid(value):
+    """Check we error out with an invalid id.
+
+    There are other checks of this logic, but not as simple
+    as this. The test in
+    sherpa/astro/ui/tests/test_astro_session.py::test_id_checks_astro_session
+    adds a test for astro-specific keywords.
+
+    """
+
+    s = Session()
+
+    with pytest.raises(IdentifierErr) as err:
+        s.set_default_id(value)
+
+    assert str(err.value) == f"identifier '{value}' is a reserved word"
