@@ -47,7 +47,7 @@ from sherpa.models import basic
 from sherpa.models.template import create_template_model
 import sherpa.plot
 
-from sherpa.utils.err import DataErr, IdentifierErr, ModelErr, PlotErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ModelErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_plotting, requires_pylab, requires_xspec
 
@@ -3734,15 +3734,78 @@ def test_set_plot_opt_with_plot_y():
 
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
-def test_set_opt_invalid(cls):
-    """Check we error out if called with an invalid option"""
+@pytest.mark.parametrize("name", [None, 1, {}])
+def test_set_opt_not_string(cls, name):
+    """Check we error out if called with an argument that is not a string."""
+
+    s = cls()
+    with pytest.raises(ArgumentTypeErr) as exc:
+        s.set_ylog(name)
+
+    assert str(exc.value) == "'plottype' must be a string"
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("name", ["notdata",  "fit-allthe-things", " fi", "fi",
+                                  "source_component", "model_component",
+                                  "astrodata", "astrosource", "astromodel",
+                                  "flux",
+                                  "bkg_model", "bkg_source", "bkg_fit", "bkg_resid", "bkg_ratio", "bkg_chisqr", "bkg_delchi"])
+def test_set_opt_invalid(cls, name):
+    """Check we error out if called with an invalid option.
+
+    The logic for what is and isn't supported in calls like set_xlog
+    has not really been documented, so just test some possible names
+    which do not work. This is a regression test, so values may be
+    added or removed over time.
+    """
 
     s = cls()
     with pytest.raises(PlotErr) as exc:
-        s.set_xlog('notdata')
+        s.set_xlog(name)
 
-    msg = "Plot type 'notdata' not found in ["
+    msg = f"Plot type '{str(name).strip()}' not found in ["
     assert str(exc.value).startswith(msg)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("name", ["all", " all", "all ", "  all   ",
+                                  "data", " data", "data ", " data   ",
+                                  "source", "model",
+                                  "resid", "ratio", "delchi", "chisqr",
+                                  "fit",
+                                  "compmodel", "compsource"])
+def test_set_opt_valid(cls, name):
+    """What names are accepted for set_xlog/ylog/...?
+
+    The logic for what is and isn't supported in calls like set_xlog
+    has not really been documented, so just test some possible names
+    which do work. This is a regression test, so values may be
+    added or removed over time.
+    """
+
+    # All we care about here is that the call does not raise an error
+    s = cls()
+    s.set_xlog(name)
+    s.set_ylog(name)
+    s.set_xlinear(name)
+    s.set_ylinear(name)
+
+
+@pytest.mark.parametrize("name", ["bkg", "bkgfit", "bkgresid", "bkgratio", "bkgdelchi",
+                                  "order", "energy", "photon"])
+def test_set_opt_valid_astro(name):
+    """What names are accepted for set_xlog/ylog/...? Astro Session only
+    """
+
+    # All we care about here is that the call does not raise an error
+    s = sherpa.astro.ui.utils.Session()
+    s.set_xlog(name)
+    s.set_ylog(name)
+    s.set_xlinear(name)
+    s.set_ylinear(name)
 
 
 @requires_pylab

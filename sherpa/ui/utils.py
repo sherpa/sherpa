@@ -12160,6 +12160,8 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.backend.end()
 
     def _set_plot_item(self, plottype, item, value):
+
+        _check_type(plottype, string_types, 'plottype', 'a string')
         keys = list(self._plot_types.keys())
 
         plottype = plottype.strip().lower()
