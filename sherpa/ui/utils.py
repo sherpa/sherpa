@@ -48,8 +48,6 @@ numpy.set_printoptions(threshold=int(config.get('verbosity',
                                                 'arraylength',
                                                 fallback=1000000)))
 
-string_types = (str, )
-
 __all__ = ('ModelWrapper', 'Session')
 
 BUILTINS = sys.modules["builtins"]
@@ -71,7 +69,7 @@ def _check_type(arg, argtype, argname, argdesc, nottype=None):
 
 def _check_str_type(arg: str, argname: str) -> None:
     """Ensure that arg (with name argname) is a string"""
-    if isinstance(arg, string_types):
+    if _is_str(arg):
         return
 
     raise ArgumentTypeErr('badarg', argname, "a string")
@@ -79,6 +77,10 @@ def _check_str_type(arg: str, argname: str) -> None:
 
 def _is_integer(val):
     return isinstance(val, (int, numpy.integer))
+
+
+def _is_str(val):
+    return isinstance(val, (str, ))
 
 
 def _is_subclass(t1, t2):
@@ -1280,7 +1282,7 @@ class Session(NoNewAttributesAfterInit):
 
         This does not treat None as a valid identifier.
         """
-        return (_is_integer(id) or isinstance(id, string_types))
+        return (_is_integer(id) or _is_str(id))
 
     def _fix_id(self, id):
         """Validate the dataset id.
@@ -1618,7 +1620,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_method('neldermead')
 
         """
-        if isinstance(meth, string_types):
+        if _is_str(meth):
             meth = self._get_method_by_name(meth)
         else:
             _check_type(meth, sherpa.optmethods.OptMethod, 'meth',
@@ -2192,7 +2194,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_stat('cash')
 
         """
-        if isinstance(stat, string_types):
+        if _is_str(stat):
             stat = self._get_stat_by_name(stat)
         else:
             _check_type(stat, sherpa.stats.Stat, 'stat',
@@ -5993,7 +5995,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
 
         self._set_item(id, model, self._models, sherpa.models.Model, 'model',
@@ -6119,7 +6121,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
 
         self._set_item(id, model, self._sources, sherpa.models.Model,
@@ -6177,7 +6179,7 @@ class Session(NoNewAttributesAfterInit):
         self._sources.pop(id, None)
 
     def _check_model(self, model):
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -7084,7 +7086,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kernel = filename_or_model
-        if isinstance(filename_or_model, string_types):
+        if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -7148,7 +7150,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kernel = filename_or_model
-        if isinstance(filename_or_model, string_types):
+        if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -7275,7 +7277,7 @@ class Session(NoNewAttributesAfterInit):
             id, psf, = psf, id
         id = self._fix_id(id)
 
-        if isinstance(psf, string_types):
+        if _is_str(psf):
             psf = self._eval_model_expression(psf)
 
         self._set_item(id, psf, self._psf, sherpa.instrument.PSFModel, 'psf',
@@ -7414,7 +7416,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def _check_par(self, par, argname='par'):
-        if isinstance(par, string_types):
+        if _is_str(par):
             par = self._eval_model_expression(par, 'parameter')
         _check_type(par, sherpa.models.Parameter, argname,
                     'a parameter object or parameter expression string')
@@ -7573,7 +7575,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         for par in list(args):
-            if isinstance(par, string_types):
+            if _is_str(par):
                 par = self._eval_model_expression(par, 'parameter or model')
 
             try:
@@ -7636,7 +7638,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         for par in list(args):
-            if isinstance(par, string_types):
+            if _is_str(par):
                 par = self._eval_model_expression(par, 'parameter or model')
 
             try:
@@ -7714,7 +7716,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         par = self._check_par(par)
-        if isinstance(val, string_types):
+        if _is_str(val):
             val = self._eval_model_expression(val, 'parameter link')
         par.link = val
 

@@ -28,7 +28,7 @@ import numpy
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _check_type, _check_str_type
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
@@ -45,9 +45,6 @@ from sherpa.astro.data import DataPHA
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
-
-
-string_types = (str, )
 
 
 __all__ = ('Session',)
@@ -8872,7 +8869,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         kernel = filename_or_model
-        if isinstance(filename_or_model, string_types):
+        if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -9261,7 +9258,7 @@ class Session(sherpa.ui.utils.Session):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         self._set_item(id, model, self._pileup_models, sherpa.models.Model,
                        'model', 'a model object or model expression string')
@@ -9458,7 +9455,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         bkg_id = self._fix_background_id(id, bkg_id)
 
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -9580,7 +9577,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         bkg_id = self._fix_background_id(id, bkg_id)
 
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -14805,7 +14802,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if isinstance(outfile, string_types):
+        if _is_str(outfile):
             if os.path.isfile(outfile):
                 if sherpa.utils.bool_cast(clobber):
                     os.remove(outfile)
