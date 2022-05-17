@@ -59,7 +59,7 @@ class Session(sherpa.ui.utils.Session):
     def __init__(self):
 
         self.clean()
-        sherpa.ui.utils.Session.__init__(self)
+        super().__init__()
 
     ###########################################################################
     # High-level utilities
@@ -122,7 +122,7 @@ class Session(sherpa.ui.utils.Session):
             self.__dict__['_background_sources'] = state.pop(
                 '_background_models')
 
-        sherpa.ui.utils.Session.__setstate__(self, state)
+        super().__setstate__(state)
 
     def clean(self):
         """Clear out the current Sherpa session.
@@ -182,7 +182,7 @@ class Session(sherpa.ui.utils.Session):
         #
         self._xspec_state = None
 
-        sherpa.ui.utils.Session.clean(self)
+        super().clean()
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
 
@@ -275,7 +275,8 @@ class Session(sherpa.ui.utils.Session):
             self._xspec_state = sherpa.astro.xspec.get_xsstate()
         else:
             self._xspec_state = None
-        sherpa.ui.utils.Session.save(self, filename, clobber)
+
+        super().save(filename, clobber)
 
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
@@ -321,7 +322,7 @@ class Session(sherpa.ui.utils.Session):
         >>> restore('/data/m31/setup.sherpa')
 
         """
-        sherpa.ui.utils.Session.restore(self, filename)
+        super().restore(filename)
         if hasattr(sherpa.astro, "xspec"):
             if self._xspec_state is not None:
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
@@ -6773,7 +6774,8 @@ class Session(sherpa.ui.utils.Session):
 
         if lo is not None or hi is not None:
             self._notice_warning()
-        sherpa.ui.utils.Session.notice(self, lo, hi, **kwargs)
+
+        super().notice(lo, hi, **kwargs)
 
     notice.__doc__ = sherpa.ui.utils.Session.notice.__doc__
 
@@ -6781,7 +6783,8 @@ class Session(sherpa.ui.utils.Session):
 
         if lo is not None or hi is not None:
             self._notice_warning()
-        sherpa.ui.utils.Session.ignore(self, lo, hi, **kwargs)
+
+        super().ignore(lo, hi, **kwargs)
 
     ignore.__doc__ = sherpa.ui.utils.Session.ignore.__doc__
 
@@ -8958,7 +8961,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_full_model("src", smodel)
 
         """
-        sherpa.ui.utils.Session.set_full_model(self, id, model)
+        super().set_full_model(id, model)
 
         if model is None:
             id, model = model, id
