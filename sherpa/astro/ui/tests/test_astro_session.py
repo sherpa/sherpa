@@ -99,7 +99,7 @@ def test_set_iter_method_unknown_string(session):
 def test_set_iter_method_not_a_string(session):
     s = Session()
     with pytest.raises(ArgumentTypeErr,
-                       match="^'23' must be a string$"):
+                       match="^'meth' must be a string$"):
         s.set_iter_method(23)
 
 

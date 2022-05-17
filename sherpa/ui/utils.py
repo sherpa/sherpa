@@ -1909,7 +1909,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_iter_method('none')
 
         """
-        _check_str_type(meth, meth)
+        _check_str_type(meth, "meth")
 
         if meth not in self._itermethods:
             raise TypeError(f'{meth} is not an iterative fitting method')
