@@ -61,10 +61,11 @@ _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 ###############################################################################
 
 
-def _check_type(arg, argtype, argname, argdesc, nottype=None):
-    if ((not isinstance(arg, argtype)) or
-            ((nottype is not None) and isinstance(arg, nottype))):
-        raise ArgumentTypeErr('badarg', argname, argdesc)
+def _check_type(arg, argtype, argname, argdesc):
+    if isinstance(arg, argtype):
+        return
+
+    raise ArgumentTypeErr('badarg', argname, argdesc)
 
 
 def _check_str_type(arg: str, argname: str) -> None:
