@@ -2870,3 +2870,44 @@ def test_plot_fit_resid_handles_resid_log(idval, clean_ui):
 
     assert axes[1].xaxis.get_scale() == 'log'
     assert axes[1].yaxis.get_scale() == 'linear'
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("label", ["source", "model"])
+@pytest.mark.parametrize("idval", [None, 1, "bob"])
+def test_get_foo_component_plot_recalc(session, label, idval):
+    """get_foo_component_plot(recalc=False) should not need a model.
+
+    At the moment it does, hence the xfail mark. See issue #1512
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    plot = getattr(s, f"plot_{label}_component")
+    get = getattr(s, f"get_{label}_component_plot")
+
+    mdl = s.create_model_component('polynom1d', 'mdl')
+    mdl.c0 = 10
+    mdl.c1 = 1
+
+    if idval is None:
+        s.load_arrays(1, [-1, 1, 2], [5, 12, 3])
+        s.set_source(mdl)
+    else:
+        s.load_arrays(idval, [-1, 1, 2], [5, 12, 3])
+        s.set_source(idval, mdl)
+
+    if idval is None:
+        plot(mdl)
+        plotobj = get(recalc=False)
+    else:
+        plot(idval, mdl)
+        plotobj = get(idval, recalc=False)
+
+    # The main check is that the get call does not fail, but add some
+    # basic check (fortunately as there is no response here the source
+    # and model values are the same).
+    #
+    assert plotobj.y == pytest.approx([9, 11, 12])
