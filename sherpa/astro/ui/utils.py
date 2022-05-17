@@ -28,7 +28,7 @@ import numpy
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _check_type
+from sherpa.ui.utils import _check_type, _check_str_type
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
@@ -3828,7 +3828,7 @@ class Session(sherpa.ui.utils.Session):
     def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4353,7 +4353,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         id = self._fix_id(id)
 
         if bkg_id is not None:
@@ -4458,7 +4458,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4548,7 +4548,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4645,7 +4645,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4730,7 +4730,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4808,7 +4808,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         id = self._fix_id(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4893,7 +4893,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         id = self._fix_id(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4971,7 +4971,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
 
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii=ascii, clobber=clobber)
@@ -5041,7 +5041,7 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         id = self._fix_id(id)
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
                                     ascii=ascii, clobber=clobber)
@@ -5121,7 +5121,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
         else:
@@ -6533,8 +6533,8 @@ class Session(sherpa.ui.utils.Session):
         if quantity is None:
             id, quantity = quantity, id
 
-        _check_type(quantity, string_types, 'quantity', 'a string')
-        _check_type(type, string_types, 'type', 'a string')
+        _check_str_type(quantity, "quantity")
+        _check_str_type(type, "type")
 
         ids = self.list_data_ids()
         if id is not None:
@@ -6660,7 +6660,7 @@ class Session(sherpa.ui.utils.Session):
         if coord is None:
             id, coord = coord, id
 
-        _check_type(coord, string_types, 'coord', 'a string')
+        _check_str_type(coord, "coord")
 
         ids = self.list_data_ids()
         if id is not None:
