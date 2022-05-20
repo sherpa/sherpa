@@ -1,5 +1,271 @@
 Release Notes
 
+Sherpa 4.14.1
+=============
+This release of Sherpa includes various enhancements, documentation updates, bug fixes, and infrastructure changes.
+
+* enhancements:
+    * various plotting backend improvements
+    * various i/o backend improvements
+    * data object class improvements
+    * basic support for Xspec 12.12.1
+    * beta support for python 3.10
+* documentation changes:
+    * updated build with CIAO documentation
+    * Add a missing class (DataOgipResponse) to the documentation
+    * Improves the docstrings for DataPHA
+    * fixed typos in plot docs
+    * clean up readthedocs issues such as missing bullets
+* Infrastructure changes:
+    * updates for compatibility with Clang 12.0
+    * updates to the regression tests
+* bug fixes:
+    * Improve the FITS headers created when writing out a PHA file (to better match OGIP standards)
+    * addresses delete_model_component call failing if a key does not exist
+    * fixed issue with writing a PHA dataset as a table rather than a PHA file
+    * ensure FITS column access is case insensitive 
+    * image handling and image coordinates 
+
+Details
+-------
+
+#1030 - Update lev3fft test to use PHYSICAL not WCS
+    Update a 2D image test to use physical rather than WCS coordinates for the fit.
+
+#1185 - Simplify switching the astro.io backend
+    Add dummy_module, docs, and test case for switching the sherpa.astro.io backend.
+    io backend are now tried in a default order (crates, pyfits, dummy)
+
+#1191 - Make it easier to switch the plotting backend 
+    Make is easier to switch the plotting backend (note that we currently only have on
+    backend implemented anyway)
+
+#1207 - Improve OGIP headers in PHA files
+    Improve the FITS headers created when writing out a PHA file (to better match OGIP
+    standards). Fixes #488 and #1209
+
+#1314 - test: add requires_data decorator
+    Add a needed decorator for a test. There's no functional change to the code.
+
+#1317 - Add requires group test decorators
+    Ensure the tests that require the group library are marked with the requires_group
+    decorator.
+
+#1318 - Adjust a test for python 3.10
+    Adjust a test so that it passes with Python 3.10
+
+#1326 - Write-up that environment variable in setup.cfg need to be expanded
+    Add a detail to developer docs about compiling in a conda ciao environment
+
+#1328 - Versioneer cleanup
+    Update the versioneer module we use from 0.14 to 0.21 (latest).
+
+#1331 - optmethods: remove Deprecation warning about invalid escape string
+    Remove a deprecation warning from sherpa.optmethods.optfcts and update some fake_pha
+    tests to each use a fixed random seed.
+
+#1332 - Add Instrument test
+    improved the psf tests, adding low-level tests of the tcdData class
+
+#1337 - Fix import statements
+    Change from using __import__ to importlib.import_module.
+
+#1338 - clean up some C/C++ code in the _psf.cc file
+    Minor clean up of C/C++ code
+
+#1339 - Add codecov.yml to fix path issue and update codecov uploader
+    Fix path parsing issue on codecov as well as updated for the new codecov uploader
+
+#1340 - Change how the sherpa config file is accessed
+    Support environments where the HOME environment variable is not set when accessing
+    the Sherpa configuration file.
+
+#1347 -  Refactored array classes cause std::vector has non-virtual destructor
+    std::vector has non-virtual destructor so in this PR the refactored Array (1D and 2D)
+    classes no longer inherit from std::vector
+
+#1348 - Minor internal code cleanup tracking errors
+    Minor internal changes to how some errors are raised. There should be no
+    user-visible differences due to this changes.
+
+#1351 - Update the sherpa-test-data repo to the latest from main
+    updates that reference to the latest copy
+
+#1353 - Fix issue with delete_model_component
+    The delete_model_component call could fail in certain circumstances, so fix those
+    cases. Fixes #16
+
+#1355 - Minor cleanup of the I/O code
+    Minor internal clean-up of the I/O code. There should be no user-visible changes.
+
+#1359 - Improve writing out data objects as a table (fix #47)
+    Fix writing out of PHA datasets as a generic table (both ASCII and FITS formats).
+    Fixes #47
+
+#1360 - Add missing export statement to clang 12 note
+    Update documentation to be clearer on how to build on clang 12 and avoid compiler
+    error on implicit function declarations
+
+#1361 - Ensure FITS column access is case insensitive for the pyfits I/O backend (fix #143)
+    Allow FITS colummn access with the pyfits backend to be case insensitive. Fixes #143.
+
+#1365 - Simplify a test (fix #541)
+    Remove duplicated code in a test (fix #541).
+
+#1370 - Minor tweaks to handling of PHA settings
+    Improve the checking of the factor and rate settings of set_analysis and the
+    plot_fac attribute of the DataPHA class, and add a few tests that exercise some
+    corner cases of the DataPHA class.
+
+#1374 - Address aarch/ppc64le test failures
+    Update tests to that they pass on aarch64. Fixes #1372
+
+#1376 - Very-minor tweaks to docs/tests
+    Fix a minor test issue and an unused reference in the documentation.
+
+#1387 - minimize C++ code duplications (rebase)
+    Remove code duplication in the XSPEC module.
+
+#1399 - Allow conf/covar/proj to be used with XSPEC model parameters (regression)
+    Ensure that conf, covar, and proj can be called with an XSPEC model parameter.
+    Fixes #1397.
+
+#1401 - Modified region code to remove implicit prototype error
+    This change updates the extern region code in sherpa to resolve a missing prototype
+    which causes build issues with clang 12.0.
+
+#1403 - Updates to fix typos in the plot documentation 
+    Update to fix a few typos in the plot documentation
+
+#1410 - Add script and docs for pre-commit hook to update copyright
+    Add example script for a git pre-commit hook that checks the copyright is up to date.
+
+#1411 - Add sphinx_rtd_theme to sphinx extensions and set min version
+    Our readthedocs pages have had some visual issues (in particular, bullets point
+    where missing from output) for a while. This fixes that by ensuring we are using
+    a recent version of the sphinx theme.
+
+#1413 - Add more editor/OS exclusions to .gitignore
+    Add a VSCode workspace summary files and MacOS directory preview files to .gitignore
+
+#1414 - Improve the handling of image coordinates
+    Address an error when converting between different coordinate systems for images.
+    Fixes #1380.
+
+#1415 - RTD fix missing and changed symbols
+    Update the ReadTheDocs build to cope with changes in #1191
+
+#1418 - Fix minor test issues
+    Address several minor test issues.
+
+#1419 - Keep .rc file backwards compatible
+    Default rc files will work in older version of sherpa as well.
+
+#1421 - Address usability issues with Data2DInt and DataIMGInt classes
+    Fix issues using the Data2DInt and DataIMGInt classes (#1379).
+
+#1423 - fix a compiler bug on macOS
+    update to address compiler issue when compiling on macOS
+
+#1424 - rm primini stat method
+    This PR removes the primini iterative statistical method. Please see issue #1392
+    for details
+
+#1425 - Allow users to freeze models
+    Models can now be frozen or thawed, which just calls the requested on all the 
+    parameters of the model (except for "alwaysfrozen" parameters which are skipped).
+    This is only relevant for users who are accessing the objects directly since the ui
+    versions of freeze and thaw already implemented this behavior. Fixes #1080.
+
+#1429 - Tests: fix up test problems shown by pytest 7.0.0
+    Fix up several tests so they can be run with pytest 7.0.0. Fixes #1428
+
+#1434 - Fix aarch64 test failures
+    Allow the tests to pass on aarch64 (numerical precision checks).
+
+#1435 - Minor clean up of the data code
+    Improves the docstrings for DataPHA, adds tests for several corner-cases, and makes
+    some minor code improvements to the code.
+
+#1440 - Minor clean up of the data routines
+    Address several minor code-style changes in the data handling (code and tests).
+
+#1441 - Clean up the data tests
+    Clean up of the data tests which were added as part of the data-class rework in #614.
+
+#1442 - Ensure channel and count fields for PHA are aliases of independent and dependent axes
+    Ensure that channel and the independent axis and counts and the dependent axis are 
+    synonymous for the DataPHA class.#1451 - Tests: ensure sherpa smoke tests are done
+    in a clean environment
+
+#1453 - Tests: mark those that require the group module
+    Note a number of tests that require the group module.
+
+#1454 - RTD: update copyright year and fix WCS library
+    Update the sphinx build instructions so that changes from PR #1414 will be documented
+    correctly on systems where the documentation is being built without first compiling
+    the code (such as read-the-docs).
+
+#1455 - RTD: update the build-from-CIAO documentation
+    Update the "build with CIAO" documentation to match the CIAO 4.14 conda instructions
+    and automate the process.
+
+#1458 - Improve several issues when building and testing Sherpa
+    Minor improvements to the build and test installation. The use of setuptools has
+    been restricted to match the current advice from NumPy (< 60, from 
+    https://numpy.org/devdocs/reference/distutils_status_migration.html).
+
+#1461 - Minor grouping cleanup
+    Minor internal change to how the group routines work for PHA objects.
+
+#1462 - Docs: fix up documentation of ui.set_grouping
+    Fix the documentation for set_grouping to match the code.
+
+#1463 - rm a redundant call to calc_h
+    Removed a redundant call the the calc_h method in the class fdJac
+
+#1464 - RTD: include the DataOgipResponse class in the documentation
+    Add a missing class (DataOgipResponse) to the documentation.
+
+#1473 - Data test minor cleanup
+    Minor test clean-ups.
+
+#1474 - Add basic tests of data validation
+    Ensure we test a number of corner cases related to data validation.
+
+#1484 - Include ciao region patch
+    Allow the CXC Data Model library to be used to parse region files, if available. 
+    This is primarily intended for building Sherpa as part of CIAO.
+
+#1485 - get_header_data is an official method of the astro.io backend
+    An internal change to make sure that the get_header_data routine is part of the 
+    astro I/O backend API.
+
+#1490  - Basic support for XSPEC 12.12.1
+    Allow Sherpa to be built with XSPEC 12.12.1. It does not provide access to the three
+    new models - polconst, pollin, and polpow - added in this release of XSPEC.
+
+#1492 - Make tests pass on 3.10
+    One of the tests fails in Python 3.10 because the error message has been changed.
+
+#1493  - Remove deprecated distutils.version.LooseVersion
+    The distutils.version.LooseVersion class is now marked as deprecated so remove its
+    use when building Sherpa and when importing the Sherpa XSPEC module.
+
+#1494 - Update AX_PYTHON_DEVEL.m4 from serial 17 to 25
+    This update covers the cleanup of distutils in the configure files for grplib (and 
+    stklib in the case of standalone sherpa).
+
+#1495 - Note that we support Python 3.10
+    Note that Sherpa can be built using Python 3.10 and add two Python 3.10 CI test runs.
+
+#1496 -  DS9 update from 8.2.1 to 8.3
+    Update to use ds9 v8.3 since v8.2.1 is no longer available
+
+#1497 - Tests: ensure matplotlib windows are closed after all tests are run
+    Ensure that our tests can run on CI cleanly.
+
+
 Sherpa 4.14.0
 =============
 This release of Sherpa includes various documentation updates,  bug fixes, enhancements, and infrastructure changes.
