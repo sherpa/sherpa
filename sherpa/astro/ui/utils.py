@@ -186,6 +186,9 @@ class Session(sherpa.ui.utils.Session):
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
 
+        # The keys are used by the set_xlog/... calls to identify what
+        # plot objects are changed by a given set_xxx(label) call.
+        #
         self._plot_types['order'] = [self._orderplot]
         self._plot_types['energy'] = [self._energyfluxplot]
         self._plot_types['photon'] = [self._photonfluxplot]
@@ -205,11 +208,14 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['bkgdelchi'] = [self._bkgdelchiplot]
         self._plot_types['bkgchisqr'] = [self._bkgchisqrplot]
 
+        # The keys of _plot_type_names are used to define the
+        # labels that can be used in plot() calls.
+        #
         self._plot_type_names['order'] = 'order'
         # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
         # self._plot_type_names['photon'] = 'photon'
         self._plot_type_names['astrocompsource'] = 'source_component'
-        self._plot_type_names['astrocompmodel'] = 'model_componentl'
+        self._plot_type_names['astrocompmodel'] = 'model_componentl'  # NOTE: typo here
 
         self._plot_type_names['astrodata'] = 'data'
         self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
