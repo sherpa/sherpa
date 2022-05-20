@@ -362,6 +362,9 @@ class Session(NoNewAttributesAfterInit):
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
+        # The keys are used by the set_xlog/... calls to identify what
+        # plot objects are changed by a given set_xxx(label) call.
+        #
         self._plot_types = {
             'data': [self._dataplot, self._datahistplot],
             'model': [self._modelplot, self._modelhistplot],
@@ -377,6 +380,11 @@ class Session(NoNewAttributesAfterInit):
             'compmodel': [self._compmdlplot]
         }
 
+        # The keys define the labels that can be used in calls to
+        # plot(), and the values map to the get_<value>_plot call used
+        # to create the particular plot entry. The keys are also used
+        # to determine the set of forbidden identifiers.
+        #
         self._plot_type_names = {
             'data': 'data',
             'model': 'model',
@@ -394,6 +402,8 @@ class Session(NoNewAttributesAfterInit):
             'compmodel': 'model_component',
         }
 
+        # This isn't actually used at the moment.
+        #
         self._contour_types = {
             'data': self._datacontour,
             'model': self._modelcontour,
@@ -405,6 +415,11 @@ class Session(NoNewAttributesAfterInit):
             'kernel': self._kernelcontour
         }
 
+        # The keys define the labels that can be used in calls to
+        # contour(), and the values map to the get_<value>_contour
+        # call used to create the particular contour entry. The keys
+        # are also used to determine the set of forbidden identifiers.
+        #
         self._contour_type_names = {
             'data': 'data',
             'model': 'model',
@@ -416,6 +431,10 @@ class Session(NoNewAttributesAfterInit):
             'kernel': 'kernel',
         }
 
+        # This is used by the get_<key>_image calls to access the
+        # relevant image class. The keys are not included in any
+        # check of valid identifiers.
+        #
         self._image_types = {
             'data': sherpa.image.DataImage(),
             'model': sherpa.image.ModelImage(),
