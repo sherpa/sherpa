@@ -348,15 +348,6 @@ class Session(NoNewAttributesAfterInit):
         self._traceplot = sherpa.plot.TracePlot()
         self._scatterplot = sherpa.plot.ScatterPlot()
 
-        self._datacontour = sherpa.plot.DataContour()
-        self._modelcontour = sherpa.plot.ModelContour()
-        self._sourcecontour = sherpa.plot.SourceContour()
-        self._fitcontour = sherpa.plot.FitContour()
-        self._residcontour = sherpa.plot.ResidContour()
-        self._ratiocontour = sherpa.plot.RatioContour()
-        self._psfcontour = sherpa.plot.PSFContour()
-        self._kernelcontour = sherpa.plot.PSFKernelContour()
-
         self._intproj = sherpa.plot.IntervalProjection()
         self._intunc = sherpa.plot.IntervalUncertainty()
         self._regproj = sherpa.plot.RegionProjection()
@@ -402,38 +393,32 @@ class Session(NoNewAttributesAfterInit):
             'compmodel': 'model_component',
         }
 
-        # This isn't actually used at the moment.
+        # This is used by the get_<key>_contour calls to access the
+        # relevant contour class. The keys define the labels that can be
+        # used in calls to contour(), and are also used to determine
+        # the set of forbidden identifiers.
         #
         self._contour_types = {
-            'data': self._datacontour,
-            'model': self._modelcontour,
-            'source': self._sourcecontour,
-            'fit': self._fitcontour,
-            'resid': self._residcontour,
-            'ratio': self._ratiocontour,
-            'psf': self._psfcontour,
-            'kernel': self._kernelcontour
+            "data": sherpa.plot.DataContour(),
+            "model": sherpa.plot.ModelContour(),
+            "source": sherpa.plot.SourceContour(),
+            "fit": sherpa.plot.FitContour(),
+            "resid": sherpa.plot.ResidContour(),
+            "ratio": sherpa.plot.RatioContour(),
+            "psf": sherpa.plot.PSFContour(),
+            "kernel": sherpa.plot.PSFKernelContour()
         }
 
-        # The keys define the labels that can be used in calls to
-        # contour(), and the values map to the get_<value>_contour
-        # call used to create the particular contour entry. The keys
-        # are also used to determine the set of forbidden identifiers.
+        # This is a temporary structure, and will be removed once
+        # the plot code has been updated.
         #
-        self._contour_type_names = {
-            'data': 'data',
-            'model': 'model',
-            'source': 'source',
-            'fit': 'fit',
-            'resid': 'resid',
-            'ratio': 'ratio',
-            'psf': 'psf',
-            'kernel': 'kernel',
-        }
+        self._contour_type_names = {k: k for k in self._contour_types.keys()}
 
         # This is used by the get_<key>_image calls to access the
-        # relevant image class. The keys are not included in any
-        # check of valid identifiers.
+        # relevant image class. The keys are not included in any check
+        # of valid identifiers, unlike _plot_types and _contour_types,
+        # as there is no image() call that acts like plot() or
+        # contour().
         #
         self._image_types = {
             'data': sherpa.image.DataImage(),
@@ -1348,7 +1333,7 @@ class Session(NoNewAttributesAfterInit):
         if not self._valid_id(id):
             raise ArgumentTypeErr('intstr')
 
-        badkeys = self._plot_type_names.keys() | self._contour_type_names.keys()
+        badkeys = self._plot_type_names.keys() | self._contour_types.keys()
         if id in badkeys:
             raise IdentifierErr('badid', id)
 
@@ -11588,7 +11573,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._datacontour
+        plotobj = self._contour_types["data"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
@@ -11686,7 +11671,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._modelcontour
+        plotobj = self._contour_types["model"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11734,7 +11719,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._sourcecontour
+        plotobj = self._contour_types["source"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
         return plotobj
@@ -11836,11 +11821,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._fitcontour
+        plotobj = self._contour_types["fit"]
 
-        dataobj = self.get_data_contour(id, recalc=recalc)
-        modelobj = self.get_model_contour(id, recalc=recalc)
         if recalc:
+            dataobj = self.get_data_contour(id, recalc=recalc)
+            modelobj = self.get_model_contour(id, recalc=recalc)
             plotobj.prepare(dataobj, modelobj)
 
         return plotobj
@@ -11889,7 +11874,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._residcontour
+        plotobj = self._contour_types["resid"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11938,7 +11923,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._ratiocontour
+        plotobj = self._contour_types["ratio"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
@@ -11982,7 +11967,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfcontour
+        plotobj = self._contour_types["psf"]
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
@@ -12027,7 +12012,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelcontour
+        plotobj = self._contour_types["kernel"]
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
