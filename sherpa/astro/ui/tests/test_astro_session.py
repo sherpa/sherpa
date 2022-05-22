@@ -158,7 +158,10 @@ def test_id_checks_session(session, setting):
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
-@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace'])
+@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace',
+                                     "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
+                                     "bkg_delchi", "bkg_chisqr", "bkg_fit"
+                                     ])
 def test_id_checks_session_unexpected(session, setting):
     """These identifiers are allowed. Should they be?"""
 
