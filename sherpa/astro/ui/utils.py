@@ -192,28 +192,31 @@ class Session(sherpa.ui.utils.Session):
         #
         self._plot_types['data'].append(self._dataphaplot)
         self._plot_types['model'].append(self._modelhisto)
-        self._plot_types['compmodel'].append(self._astrocompmdlplot)
+        self._plot_types['model_component'].append(self._astrocompmdlplot)
         self._plot_types['source'].append(self._astrosourceplot)
-        self._plot_types['compsource'].append(self._astrocompsrcplot)
+        self._plot_types['source_component'].append(self._astrocompsrcplot)
 
         self._plot_types['arf'] = [self._arfplot]
         self._plot_types['order'] = [self._orderplot]
 
         self._plot_types['bkg'] = [self._bkgdataplot]
-        self._plot_types['bkgmodel'] = [self._bkgmodelhisto]
-        self._plot_types['bkgfit'] = [self._bkgfitplot]
-        self._plot_types['bkgsource'] = [self._bkgsourceplot]
-        self._plot_types['bkgratio'] = [self._bkgratioplot]
-        self._plot_types['bkgresid'] = [self._bkgresidplot]
-        self._plot_types['bkgdelchi'] = [self._bkgdelchiplot]
-        self._plot_types['bkgchisqr'] = [self._bkgchisqrplot]
+        self._plot_types['bkg_model'] = [self._bkgmodelhisto]
+        self._plot_types['bkg_fit'] = [self._bkgfitplot]
+        self._plot_types['bkg_source'] = [self._bkgsourceplot]
+        self._plot_types['bkg_ratio'] = [self._bkgratioplot]
+        self._plot_types['bkg_resid'] = [self._bkgresidplot]
+        self._plot_types['bkg_delchi'] = [self._bkgdelchiplot]
+        self._plot_types['bkg_chisqr'] = [self._bkgchisqrplot]
+
+        # Set up aliases (bkgxxx to bkg_xxx).
+        #
+        for key in ["model", "fit", "source", "ratio", "resid", "delchi", "chisqr"]:
+            self._plot_types_alias[f"bkg{key}"] = f"bkg_{key}"
 
         # The keys of _plot_type_names are used to define the
         # labels that can be used in plot() calls.
         #
         self._plot_type_names['order'] = 'order'
-        # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
-        # self._plot_type_names['photon'] = 'photon'
         self._plot_type_names['astrocompsource'] = 'source_component'
         self._plot_type_names['astrocompmodel'] = 'model_componentl'  # NOTE: typo here
 

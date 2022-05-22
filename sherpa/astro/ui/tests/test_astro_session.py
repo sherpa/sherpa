@@ -37,7 +37,8 @@ from sherpa.io import get_ascii_data
 from sherpa.models import Const1D
 import sherpa.models.basic
 from sherpa.ui.utils import Session
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, IdentifierErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IdentifierErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -2070,3 +2071,58 @@ def test_fit_checks_kwarg(session, msg):
 
     with pytest.raises(TypeError, match=msg):
         s.fit(unknown_argument=True)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("alias,original",
+                         [("compsource", "source_component"),
+                          ("compmodel", "model_component")])
+def test_plot_alias_warning(session, alias, original, caplog):
+    """Check we get a deprecated warning from using a plot alias.
+
+    Support for aliases is intended to be short-term, but ensure
+    they are tested. This is only relevant for the set_xlog/...
+    family of commands.
+    """
+
+    s = session()
+    assert len(caplog.record_tuples) == 0
+    s.set_xlog(alias)
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.WARNING
+    assert msg == f"The argument '{alias}' is deprecated and '{original}' should be used instead"
+
+
+@pytest.mark.parametrize("session,success", [(Session, False), (AstroSession, True)])
+@pytest.mark.parametrize("key", ["model", "fit", "source", "ratio", "resid", "delchi", "chisqr"])
+def test_astro_plot_alias_warning(session, success, key, caplog):
+    """Check we get a deprecated warning from using a plot alias.
+
+    Support for aliases is intended to be short-term, but ensure
+    they are tested. This is only relevant for the set_xlog/...
+    family of commands.
+    """
+
+    alias = f"bkg{key}"
+    original = f"bkg_{key}"
+
+    s = session()
+    assert len(caplog.record_tuples) == 0
+
+    if success:
+        s.set_xlog(alias)
+        assert len(caplog.record_tuples) == 1
+
+        loc, lvl, msg = caplog.record_tuples[0]
+        assert loc == "sherpa.ui.utils"
+        assert lvl == logging.WARNING
+        assert msg == f"The argument '{alias}' is deprecated and '{original}' should be used instead"
+
+    else:
+        # Check this errors out (i.e. is not an alias).
+        #
+        with pytest.raises(PlotErr, match=rf"^Plot type '{alias}' not found in \[.*\]$"):
+            s.set_xlog(alias)

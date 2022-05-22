@@ -36,7 +36,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, ModelErr, SessionErr
+    IdentifierErr, ModelErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -373,9 +373,9 @@ class Session(NoNewAttributesAfterInit):
         self._plot_types = {
             'data': [self._dataplot, self._datahistplot],
             'model': [self._modelplot, self._modelhistplot],
-            'compmodel': [self._compmdlplot, self._compmdlhistplot],
+            'model_component': [self._compmdlplot, self._compmdlhistplot],
             'source': [self._sourceplot, self._sourcehistplot],
-            'compsource': [self._compsrcplot, self._compsrchistplot],
+            'source_component': [self._compsrcplot, self._compsrchistplot],
             'fit': [self._fitplot],
             'resid': [self._residplot],
             'ratio': [self._ratioplot],
@@ -385,14 +385,28 @@ class Session(NoNewAttributesAfterInit):
             'kernel': [self._kernelplot]
         }
 
+        # Set up aliases so that calls to set_xlog/.. will still
+        # succeed, but the user will be told to use the new
+        # name. These keys are also used, along with _plot_type_names,
+        # to determine the set of forbidden identifiers.
+        #
+        # We could use _plot_type_names to identify this mapping,
+        # by identifying those cases when the key does not equal the
+        # value, but _plot_type_names is also used for the plot()
+        # command, and so has other labels that are currently not
+        # supported by set_xlog/...
+        #
+        self._plot_types_alias = {
+            "compsource": "source_component",
+            "compmodel": "model_component"
+        }
+
         # The keys define the labels that can be used in calls to
         # plot(), and the values map to the get_<value>_plot call used
         # to create the particular plot entry. The keys are also used
         # to determine the set of forbidden identifiers.
         #
         self._plot_type_names = {k: k for k in self._plot_types.keys()}
-        self._plot_type_names['source_component'] = 'source_component'
-        self._plot_type_names['model_component'] = 'model_component'
 
         # Now over-ride the compsource/model labels.
         #
@@ -1345,11 +1359,52 @@ class Session(NoNewAttributesAfterInit):
         if _is_integer(id):
             return id
 
-        badkeys = self._plot_type_names.keys() | self._contour_type_names.keys()
+        badkeys = self._plot_type_names.keys() | self._plot_types_alias.keys() | self._contour_type_names.keys()
         if id in badkeys:
             raise IdentifierErr("badid", id)
 
         return id
+
+    def _get_plottype(self, plottype):
+        """Return the name to refer to a given plot type.
+
+        This supports aliases for the plot name. If an alias is used
+        then a warning message is logged, telling the user the name
+        they should use instead.
+
+        Parameters
+        ----------
+        plottype : str
+            The requested plot type, such as "data".
+
+        Returns
+        -------
+        answer : str
+            The actual plot type (which may match the input).
+
+        Raises
+        ------
+        PlotErr
+            The plottype argument is not valid.
+
+        """
+
+        if plottype in self._plot_types:
+            return plottype
+
+        try:
+            answer = self._plot_types_alias[plottype]
+        except KeyError:
+            allowed = list(self._plot_types)
+            raise PlotErr("wrongtype", plottype, str(allowed)) from None
+
+        # This could be a warnings.warn(..., DeprecationWarning)
+        # message but then most users would not see the message, so we
+        # use the logger interface instead. It does mean that the
+        # message will be repeated each time it is used.
+        #
+        warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
+        return answer
 
     def _get_item(self, id, itemdict, itemdesc, errdesc):
         id = self._fix_id(id)
@@ -12298,11 +12353,7 @@ class Session(NoNewAttributesAfterInit):
         if plottype == "all":
             keys = allowed
         else:
-            if plottype not in self._plot_types:
-                raise sherpa.utils.err.PlotErr(
-                    "wrongtype", plottype, str(allowed))
-
-            keys = [plottype]
+            keys = [self._get_plottype(plottype)]
 
         for key in keys:
             for plot in self._plot_types[key]:
