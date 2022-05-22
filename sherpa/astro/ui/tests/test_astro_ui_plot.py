@@ -3783,7 +3783,7 @@ def test_set_opt_not_string(cls, name):
                                   # future, at which point they can be added to the test.
                                   #
                                   # "compsource", "compmodel"
-                                  "astrodata", "astrosource", "astromodel",
+                                  # "astrodata", "astrosource", "astromodel",
                                   "flux",
                                   # "bkgmodel", "bkgsource", "bkgfit", "bkgresid", "bkgratio", "bkgchisqr", "bkgdelchi"
                                   "energy", "photon"
@@ -3834,7 +3834,7 @@ def test_set_opt_valid(cls, name):
 
 @pytest.mark.parametrize("name", ["bkg",
                                   "bkg_fit", "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio", "bkg_delchi", "bkg_chisqr",
-                                  "bkgfit", "bkgmodel", "bkgsource", "bkgresid", "bkgratio", "bkgdelchi", "bkgchisqr",  # temporary
+                                  "bkgfit", "bkgmodel", "bkgsource", "bkgresid", "bkgratio", "bkgdelchi", "bkgchisqr",  # these are aliased to bkg_xxx
                                   "order"])
 def test_set_opt_valid_astro(name):
     """What names are accepted for set_xlog/ylog/...? Astro Session only
@@ -3961,7 +3961,7 @@ def test_set_plot_opt_explicit_astro():
     s.set_source(1, mdl)
     s.set_bkg_source(1, mdl)
 
-    s.plot('data', 'model', 'bkg', 'bkgmodel')
+    s.plot('data', 'model', 'bkg', 'bkg_model')
 
     fig = plt.gcf()
     assert len(fig.axes) == 4
@@ -3987,7 +3987,7 @@ def test_set_plot_opt_explicit_astro():
     #
     s.set_ylog('model')
 
-    s.plot('data', 'model', 'bkg', 'bkgmodel')
+    s.plot('data', 'model', 'bkg', 'bkg_model')
 
     fig = plt.gcf()
     assert len(fig.axes) == 4
@@ -4005,6 +4005,47 @@ def test_set_plot_opt_explicit_astro():
     assert fig.axes[3].get_yscale() == 'linear'
 
     plt.close(fig)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_plot_opt_alias(cls, caplog):
+    """Check that at least one alias works.
+
+    While we support aliases we should check we see the
+    messages.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    assert len(caplog.record_tuples) == 0
+    s.plot("compmodel", "m1", "compsource", 2, "m1")
+    assert len(caplog.record_tuples) == 2
+
+    for loc, lvl, _ in caplog.record_tuples:
+        assert loc == "sherpa.ui.utils"
+        assert lvl == logging.WARNING
+
+    assert caplog.record_tuples[0][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
+    assert caplog.record_tuples[1][2] == "The argument 'compsource' is deprecated and 'source_component' should be used instead"
+
+    # Check we see the message multiple times; that is, it is not like
+    # a deprecation warning which is only shown once.
+    #
+    s.plot("compmodel", "m1")
+    assert len(caplog.record_tuples) == 3
+    assert caplog.record_tuples[2][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
 
 
 def check_plot2_xscale(xscale):

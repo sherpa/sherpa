@@ -40,7 +40,7 @@ from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
+from sherpa.utils.err import ArgumentTypeErr, IdentifierErr, PlotErr
 from sherpa.utils.testing import requires_plotting, requires_pylab
 
 
@@ -1054,11 +1054,9 @@ def test_plot_contour_error_out_invalid(plottype, session):
 
     s = session()
     func = getattr(s, plottype)
-    with pytest.raises(ArgumentErr) as exc:
+    msg = r"Plot type 'fooflan flim flam' not found in \[.*\]"
+    with pytest.raises(PlotErr, match=msg):
         func("fooflan flim flam")
-
-    emsg = "'fooflan flim flam' is not a valid plot type"
-    assert str(exc.value) == emsg
 
 
 @requires_pylab

@@ -353,8 +353,15 @@ class Session(NoNewAttributesAfterInit):
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
-        # The keys are used by the set_xlog/... calls to identify what
-        # plot objects are changed by a given set_xxx(label) call.
+        # The keys of _plot_types are used to define:
+        # a) the mapping from get_<key>_plot to the plot objects
+        #    (that is, there must be a matching get_<key>_plot method)
+        # b) valid arguments for the plot() call
+        # c) the arguments that set_xlog/... accept
+        # d) a set of names that can not be used as a dataset identifier
+        #    (because of point b); see also _contour_types
+        #
+        # Note that not all plot_xxx commands use this structure.
         #
         self._plot_types = {
             "data": [self._dataplot, self._datahistplot],
@@ -379,28 +386,6 @@ class Session(NoNewAttributesAfterInit):
             "compmodel": "model_component"
         }
 
-        # The keys define the labels that can be used in calls to
-        # plot(), and the values map to the get_<value>_plot call used
-        # to create the particular plot entry. The keys are also used
-        # to determine the set of forbidden identifiers.
-        #
-        self._plot_type_names = {
-            'data': 'data',
-            'model': 'model',
-            'source': 'source',
-            'fit': 'fit',
-            'resid': 'resid',
-            'ratio': 'ratio',
-            'delchi': 'delchi',
-            'chisqr': 'chisqr',
-            'psf': 'psf',
-            'kernel': 'kernel',
-            'source_component': 'source_component',
-            'model_component': 'model_component',
-            'compsource': 'source_component',
-            'compmodel': 'model_component',
-        }
-
         # This is used by the get_<key>_contour calls to access the
         # relevant contour class. The keys define the labels that can be
         # used in calls to contour(), and are also used to determine
@@ -416,11 +401,6 @@ class Session(NoNewAttributesAfterInit):
             "psf": sherpa.plot.PSFContour(),
             "kernel": sherpa.plot.PSFKernelContour()
         }
-
-        # This is a temporary structure, and will be removed once
-        # the plot code has been updated.
-        #
-        self._contour_type_names = {k: k for k in self._contour_types.keys()}
 
         # This is used by the get_<key>_image calls to access the
         # relevant image class. The keys are not included in any check
@@ -1341,17 +1321,16 @@ class Session(NoNewAttributesAfterInit):
         if not self._valid_id(id):
             raise ArgumentTypeErr('intstr')
 
-        badkeys = self._plot_type_names.keys() | self._contour_types.keys()
-        if id in badkeys:
+        if _is_integer(id):
+            return id
+
+        if self._check_plottype(id) or self._check_contourtype(id):
             raise IdentifierErr('badid', id)
 
         return id
 
     def _get_plottype(self, plottype):
-        """Return the name to refer to a given plot type.
-
-        This is a temporary routine while we support plot aliases.
-        """
+        """Return the name to refer to a given plot type."""
 
         if plottype in self._plot_types_alias:
             answer = self._plot_types_alias[plottype]
@@ -1363,11 +1342,30 @@ class Session(NoNewAttributesAfterInit):
             warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
             return answer
 
-        elif plottype in self._plot_types:
+        if plottype in self._plot_types:
             return plottype
 
         allowed = list(self._plot_types.keys())
         raise PlotErr("wrongtype", plottype, str(allowed))
+
+    def _check_plottype(self, plottype):
+        """Is this a valid plot type (including aliases)?"""
+
+        return plottype in self._plot_types or plottype in self._plot_types_alias
+
+    def _get_contourtype(self, plottype):
+        """Return the name to refer to a given contour type."""
+
+        if plottype in self._contour_types:
+            return plottype
+
+        allowed = list(self._contour_types.keys())
+        raise PlotErr("wrongtype", plottype, str(allowed))
+
+    def _check_contourtype(self, plottype):
+        """Is this a valid contour type?"""
+
+        return plottype in self._contour_types
 
     def _get_item(self, id, itemdict, itemdesc, errdesc):
         id = self._fix_id(id)
@@ -12146,32 +12144,30 @@ class Session(NoNewAttributesAfterInit):
         if plotmeth not in ["plot", "contour"]:
             raise ArgumentErr(f"Unsupported plotmeth={plotmeth}")
 
+        get = getattr(self, f"_get_{plotmeth}type")
+        check = getattr(self, f"_check_{plotmeth}type")
+
         plots = []
-        allowed_types = getattr(self, f"_{plotmeth}_type_names")
         args = list(args)
 
         while args:
             plottype = args.pop(0)
             _check_str_type(plottype, "plottype")
-            plottype = plottype.lower()
-
-            try:
-                plotname = allowed_types[plottype]
-            except KeyError:
-                raise ArgumentErr("badplottype", plottype) from None
+            plottype = get(plottype.lower())
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
-            # plot/contour type.
+            # plot/contour type. This is a bit messy while we
+            # support old aliases.
             #
             getargs = []
             while args:
-                if args[0] in allowed_types:
+                if check(args[0]):
                     break
 
                 getargs.append(args.pop(0))
 
-            funcname = f"get_{plotname}_{plotmeth}"
+            funcname = f"get_{plottype}_{plotmeth}"
             getfunc = getattr(self, funcname)
 
             # Need to make sure we have a copy of each plot

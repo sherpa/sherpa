@@ -1027,8 +1027,8 @@ def test_issue_16():
 
 
 @pytest.mark.parametrize("value", ["data", "model", "source", "fit", "resid", "ratio",
-                                   "delchi", "chisqr", "psf", "kernel", "compsource",
-                                   "compmodel", "source_component", "model_component",])
+                                   "delchi", "chisqr", "psf", "kernel",
+                                   "source_component", "model_component",])
 def test_set_default_id_check_invalid(value):
     """Check we error out with an invalid id.
 

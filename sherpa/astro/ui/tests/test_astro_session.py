@@ -168,6 +168,7 @@ def test_set_iter_method_opt_sigmarej_lrej(session):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("setting", ['chisqr', 'compmodel', 'compsource', 'data',
+                                     "model_component", "source_component",
                                      'delchi', 'fit', 'kernel', 'model',
                                      'psf', 'ratio', 'resid', 'source'])
 def test_id_checks_session(session, setting):
@@ -181,8 +182,6 @@ def test_id_checks_session(session, setting):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("setting", ["cdf", "energy", "lr", "photon", "pdf", "scatter", "trace",
-                                     "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
-                                     "bkg_delchi", "bkg_chisqr", "bkg_fit"
                                      ])
 def test_id_checks_session_unexpected(session, setting):
     """These identifiers are allowed. Should they be?
@@ -201,11 +200,15 @@ def test_id_checks_session_unexpected(session, setting):
 
 @pytest.mark.parametrize("session,success",
                          [(Session, True), (AstroSession, False)])
-@pytest.mark.parametrize("setting", ['arf', 'bkg', 'bkgchisqr', 'bkgdelchi', 'bkgfit',
-                                     'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-                                     'order',
-                                     "astrocompsource", "astrocompmodel", "astrodata",
-                                     "astrosource", "astromodel"])
+@pytest.mark.parametrize("setting", ['arf', 'bkg',
+                                     "bkg_chisqr", "bkg_delchi", "bkg_fit",
+                                     "bkg_model", "bkg_ratio", "bkg_resid", "bkg_source",
+                                     "order",
+                                     "bkgmodel", "bkgsource", "bkgresid", "bkgratio",
+                                     "bkgdelchi", "bkgchisqr", "bkgfit",
+                                     "astrocompmodel", "astrocompsource", "astrodata",
+                                     "astrosource", "astromodel"
+                                     ])
 def test_id_checks_astro_session(session, success, setting):
     """Do some common identifiers fail for astro but not default?"""
 

@@ -211,27 +211,15 @@ class Session(sherpa.ui.utils.Session):
         for key in ["model", "fit", "source", "ratio", "resid", "delchi", "chisqr"]:
             self._plot_types_alias[f"bkg{key}"] = f"bkg_{key}"
 
-        # The keys of _plot_type_names are used to define the
-        # labels that can be used in plot() calls.
+        # These are left-over from earlier, when they may have meant
+        # something different but no-longer do. It is probably
+        # time to remoove them.
         #
-        self._plot_type_names["order"] = "order"
-        # self._plot_type_names["energy"] = "energy"  - how to do energy/flux plots?
-        # self._plot_type_names["photon"] = "photon"
-        self._plot_type_names["astrocompsource"] = "source_component"
-        self._plot_type_names["astrocompmodel"] = "model_componentl"  # NOTE: typo here
-
-        self._plot_type_names["astrodata"] = "data"
-        self._plot_type_names["astrosource"] = "source"  # is this meaningful anymore
-        self._plot_type_names["astromodel"] = "model"  # is this meaningful anymore
-        self._plot_type_names["arf"] = "arf"
-        self._plot_type_names["bkg"] = "bkg"
-        self._plot_type_names["bkgmodel"] = "bkg_model"
-        self._plot_type_names["bkgfit"] = "bkg_fit"
-        self._plot_type_names["bkgsource"] = "bkg_source"
-        self._plot_type_names["bkgratio"] = "bkg_ratio"
-        self._plot_type_names["bkgresid"] = "bkg_resid"
-        self._plot_type_names["bkgdelchi"] = "bkg_delchi"
-        self._plot_type_names["bkgchisqr"] = "bkg_chisqr"
+        self._plot_types_alias["astrocompsource"] = "source_component"
+        self._plot_types_alias["astrocompmodel"] = "model_componentl"  # NOTE typo here
+        self._plot_types_alias["astrodata"] = "data"
+        self._plot_types_alias["astrosource"] = "source"
+        self._plot_types_alias["astromodel"] = "model"
 
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
