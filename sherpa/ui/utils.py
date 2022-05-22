@@ -36,7 +36,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, ModelErr, SessionErr
+    IdentifierErr, ModelErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -357,18 +357,26 @@ class Session(NoNewAttributesAfterInit):
         # plot objects are changed by a given set_xxx(label) call.
         #
         self._plot_types = {
-            'data': [self._dataplot, self._datahistplot],
-            'model': [self._modelplot, self._modelhistplot],
-            'source': [self._sourceplot, self._sourcehistplot],
-            'fit': [self._fitplot],
-            'resid': [self._residplot],
-            'ratio': [self._ratioplot],
-            'delchi': [self._delchiplot],
-            'chisqr': [self._chisqrplot],
-            'psf': [self._psfplot],
-            'kernel': [self._kernelplot],
-            'compsource': [self._compsrcplot],
-            'compmodel': [self._compmdlplot]
+            "data": [self._dataplot, self._datahistplot],
+            "model": [self._modelplot, self._modelhistplot],
+            "source": [self._sourceplot, self._sourcehistplot],
+            "fit": [self._fitplot],
+            "resid": [self._residplot],
+            "ratio": [self._ratioplot],
+            "delchi": [self._delchiplot],
+            "chisqr": [self._chisqrplot],
+            "psf": [self._psfplot],
+            "kernel": [self._kernelplot],
+            "source_component": [self._compsrcplot],
+            "model_component": [self._compmdlplot]
+        }
+
+        # Temporary aliases so that calls to set_xlog/.. will still succeed,
+        # but the user will be told to use the new name.
+        #
+        self._plot_types_alias = {
+            "compsource": "source_component",
+            "compmodel": "model_component"
         }
 
         # The keys define the labels that can be used in calls to
@@ -1338,6 +1346,28 @@ class Session(NoNewAttributesAfterInit):
             raise IdentifierErr('badid', id)
 
         return id
+
+    def _get_plottype(self, plottype):
+        """Return the name to refer to a given plot type.
+
+        This is a temporary routine while we support plot aliases.
+        """
+
+        if plottype in self._plot_types_alias:
+            answer = self._plot_types_alias[plottype]
+
+            # This could be a warnings.warn(..., DeprecationWarning)
+            # message but then most users would not see it, thanks to
+            # the way Python handles them.
+            #
+            warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
+            return answer
+
+        elif plottype in self._plot_types:
+            return plottype
+
+        allowed = list(self._plot_types.keys())
+        raise PlotErr("wrongtype", plottype, str(allowed))
 
     def _get_item(self, id, itemdict, itemdesc, errdesc):
         id = self._fix_id(id)
@@ -12200,15 +12230,13 @@ class Session(NoNewAttributesAfterInit):
     def _set_plot_item(self, plottype, item, value):
 
         _check_str_type(plottype, 'plottype')
-        keys = list(self._plot_types.keys())
+        allowed = list(self._plot_types.keys())
 
         plottype = plottype.strip().lower()
-        if plottype != "all":
-            if plottype not in self._plot_types:
-                raise sherpa.utils.err.PlotErr(
-                    'wrongtype', plottype, str(keys))
-
-            keys = [plottype]
+        if plottype == "all":
+            keys = allowed
+        else:
+            keys = [self._get_plottype(plottype)]
 
         for key in keys:
             for plot in self._plot_types[key]:
