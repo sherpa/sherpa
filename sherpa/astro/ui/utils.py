@@ -5307,7 +5307,8 @@ class Session(sherpa.ui.utils.Session):
             If None then a "perfect" RMF is generated, otherwise it gives
             the name of the two-dimensional image file which stores the
             response information (the format of this file matches that
-            created by the CIAO tool rmfimg [1]_).
+            created by the CIAO tool
+            `rmfimg <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_).
         name : str, optional
             The name of the RMF data set
 
@@ -5318,12 +5319,6 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         create_arf, get_rmf, set_rmf, unpack_rmf
-
-        References
-        ----------
-
-        .. [1] http://cxc.harvard.edu/ciao/ahelp/rmfimg.html
-
         """
 
         if fname is None:
@@ -6633,15 +6628,11 @@ class Session(sherpa.ui.utils.Session):
         ``x=1.5`` and ``y=0.5`` to ``y=1.5``.
 
         The 'physical' and 'world' coordinate systems rely on FITS
-        World Coordinate System (WCS) standard [1]_. The 'physical'
+        `World Coordinate System (WCS) standard
+        <https://fits.gsfc.nasa.gov/fits_wcs.html>`_. The 'physical'
         system refers to a linear transformation, with possible
         offset, of the 'logical' system. The 'world' system refers to
         the mapping to a celestial coordinate system.
-
-        References
-        ----------
-
-        .. [1] http://fits.gsfc.nasa.gov/fits_wcs.html
 
         Examples
         --------
@@ -6817,10 +6808,10 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The region syntax support is provided by the CIAO region
-        library [1]_, and supports the following shapes (the
-        capitalized parts of the name indicate the minimum length of
-        the name that is supported):
+        The region syntax support is provided by the `CIAO region
+        library <https://cxc.harvard.edu/ciao/ahelp/dmregions.html>`_,
+        and supports the following shapes (the capitalized parts of the name
+        indicate the minimum length of the name that is supported):
 
         =========  ===================================================
         Name       Arguments
@@ -6889,11 +6880,6 @@ class Session(sherpa.ui.utils.Session):
         Unfortunately you can not combine region shapes using this
         syntax. That is ``region(s1.reg)+region(s2.reg)`` is not
         supported.
-
-        References
-        ----------
-
-        .. [1] http://cxc.harvard.edu/ciao/ahelp/dmregions.html
 
         Examples
         --------
@@ -8533,8 +8519,10 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        Unlike X-Spec [1]_, Sherpa does not automatically subtract
-        the background estimate from the data.
+        Unlike `X-Spec
+        <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecSpectralFitting.html>`_,
+        Sherpa does not automatically subtract the background estimate
+        from the data.
 
         Background subtraction can only be performed when data and
         background are of the same length.  If the data and background
@@ -8551,19 +8539,13 @@ class Session(sherpa.ui.utils.Session):
 
         where src_exposure and bg_exposure are the source and
         background exposure times, and src_backscal and bg_backscal
-        are the source and background backscales.  The backscale, read
-        from the ``BACKSCAL`` header keyword of the PHA file [2]_, is
-        the ratio of data extraction area to total detector area.
+        are the source and background backscales.  The backscale, `read
+        from the ``BACKSCAL`` header keyword of the PHA file
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html>`_,
+        is the ratio of data extraction area to total detector area.
 
         The ``subtracted`` field of a dataset is set to ``True`` when
         the background is subtracted.
-
-        References
-        ----------
-
-        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecSpectralFitting.html
-
-        .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html
 
         Examples
         --------
@@ -8866,10 +8848,10 @@ class Session(sherpa.ui.utils.Session):
                       id=str(id), bkg_models=bkg_models)
         d.name = 'faked'
 
-
     ###########################################################################
     # PSF
     ###########################################################################
+
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         kernel = filename_or_model
         if isinstance(filename_or_model, string_types):
@@ -13618,7 +13600,8 @@ class Session(sherpa.ui.utils.Session):
                 covar_matrix=None):
         """Calculate the equivalent width of an emission or absorption line.
 
-        The equivalent width [1]_ is calculated in the selected units
+        The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
+        is calculated in the selected units
         for the data set (which can be retrieved with `get_analysis`).
 
         .. versionchanged:: 4.10.1
@@ -13677,11 +13660,6 @@ class Session(sherpa.ui.utils.Session):
         calc_source_sum : Calculate the un-convolved model signal.
         get_default_id : Return the default data set identifier.
         set_model : Set the source model expression.
-
-        References
-        ----------
-
-        .. [1] http://en.wikipedia.org/wiki/Equivalent_width
 
         Examples
         --------
