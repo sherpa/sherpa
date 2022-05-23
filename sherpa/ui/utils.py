@@ -429,15 +429,15 @@ class Session(NoNewAttributesAfterInit):
         # contour().
         #
         self._image_types = {
-            'data': sherpa.image.DataImage(),
-            'model': sherpa.image.ModelImage(),
-            'source': sherpa.image.SourceImage(),
-            'ratio': sherpa.image.RatioImage(),
-            'resid': sherpa.image.ResidImage(),
-            'psf': sherpa.image.PSFImage(),
-            'kernel': sherpa.image.PSFKernelImage(),
-            'model_component': sherpa.image.ComponentModelImage(),
-            'source_component': sherpa.image.ComponentSourceImage()
+            "data": sherpa.image.DataImage(),
+            "model": sherpa.image.ModelImage(),
+            "source": sherpa.image.SourceImage(),
+            "ratio": sherpa.image.RatioImage(),
+            "resid": sherpa.image.ResidImage(),
+            "psf": sherpa.image.PSFImage(),
+            "kernel": sherpa.image.PSFKernelImage(),
+            "model_component": sherpa.image.ComponentModelImage(),
+            "source_component": sherpa.image.ComponentSourceImage()
         }
 
     def save(self, filename='sherpa.save', clobber=False):
@@ -12139,15 +12139,15 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
 
-    def _multi_plot(self, args, plotmeth='plot', **kwargs):
+    def _multi_plot(self, args, plotmeth="plot", **kwargs):
         if len(args) == 0:
-            raise ArgumentTypeErr('plotargs')
+            raise ArgumentTypeErr("plotargs")
 
-        if plotmeth not in ['plot', 'contour']:
-            raise ArgumentErr("Unsupported plotmeth={}".format(plotmeth))
+        if plotmeth not in ["plot", "contour"]:
+            raise ArgumentErr(f"Unsupported plotmeth={plotmeth}")
 
         plots = []
-        allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))
+        allowed_types = getattr(self, f"_{plotmeth}_type_names")
         args = list(args)
 
         while args:
@@ -12158,7 +12158,7 @@ class Session(NoNewAttributesAfterInit):
             try:
                 plotname = allowed_types[plottype]
             except KeyError:
-                raise ArgumentErr('badplottype', plottype) from None
+                raise ArgumentErr("badplottype", plottype) from None
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
@@ -12171,7 +12171,7 @@ class Session(NoNewAttributesAfterInit):
 
                 getargs.append(args.pop(0))
 
-            funcname = 'get_{}_{}'.format(plotname, plotmeth)
+            funcname = f"get_{plotname}_{plotmeth}"
             getfunc = getattr(self, funcname)
 
             # Need to make sure we have a copy of each plot
@@ -12181,7 +12181,7 @@ class Session(NoNewAttributesAfterInit):
             plots.append(copy.deepcopy(getfunc(*getargs)))
 
         if len(plots) == 1:
-            plotmeth = getattr(self, '_' + plotmeth)
+            plotmeth = getattr(self, f"_{plotmeth}")
             plotmeth(plots[0], **kwargs)
             return
 
@@ -12189,7 +12189,7 @@ class Session(NoNewAttributesAfterInit):
         ncols = int((len(plots) + 1) / 2.0)
         sp = self._splitplot
         sp.reset(nrows, ncols)
-        plotmeth = getattr(sp, 'add' + plotmeth)
+        plotmeth = getattr(sp, f"add{plotmeth}")
 
         try:
             sherpa.plot.backend.begin()

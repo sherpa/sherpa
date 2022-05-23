@@ -189,22 +189,22 @@ class Session(sherpa.ui.utils.Session):
         # The keys are used by the set_xlog/... calls to identify what
         # plot objects are changed by a given set_xxx(label) call.
         #
-        self._plot_types['order'] = [self._orderplot]
+        self._plot_types["order"] = [self._orderplot]
         self._plot_types["source_component"].append(self._astrocompsrcplot)
         self._plot_types["model_component"].append(self._astrocompmdlplot)
 
-        self._plot_types['data'].append(self._dataphaplot)
-        self._plot_types['source'].append(self._astrosourceplot)
-        self._plot_types['model'].append(self._modelhisto)
-        self._plot_types['arf'] = [self._arfplot]
-        self._plot_types['bkg'] = [self._bkgdataplot]
-        self._plot_types['bkg_model'] = [self._bkgmodelhisto]
-        self._plot_types['bkg_fit'] = [self._bkgfitplot]
-        self._plot_types['bkg_source'] = [self._bkgsourceplot]
-        self._plot_types['bkg_ratio'] = [self._bkgratioplot]
-        self._plot_types['bkg_resid'] = [self._bkgresidplot]
-        self._plot_types['bkg_delchi'] = [self._bkgdelchiplot]
-        self._plot_types['bkg_chisqr'] = [self._bkgchisqrplot]
+        self._plot_types["data"].append(self._dataphaplot)
+        self._plot_types["source"].append(self._astrosourceplot)
+        self._plot_types["model"].append(self._modelhisto)
+        self._plot_types["arf"] = [self._arfplot]
+        self._plot_types["bkg"] = [self._bkgdataplot]
+        self._plot_types["bkg_model"] = [self._bkgmodelhisto]
+        self._plot_types["bkg_fit"] = [self._bkgfitplot]
+        self._plot_types["bkg_source"] = [self._bkgsourceplot]
+        self._plot_types["bkg_ratio"] = [self._bkgratioplot]
+        self._plot_types["bkg_resid"] = [self._bkgresidplot]
+        self._plot_types["bkg_delchi"] = [self._bkgdelchiplot]
+        self._plot_types["bkg_chisqr"] = [self._bkgchisqrplot]
 
         # Set up temporary aliases
         #
@@ -214,24 +214,24 @@ class Session(sherpa.ui.utils.Session):
         # The keys of _plot_type_names are used to define the
         # labels that can be used in plot() calls.
         #
-        self._plot_type_names['order'] = 'order'
-        # self._plot_type_names['energy'] = 'energy'  - how to do energy/flux plots?
-        # self._plot_type_names['photon'] = 'photon'
-        self._plot_type_names['astrocompsource'] = 'source_component'
-        self._plot_type_names['astrocompmodel'] = 'model_componentl'
+        self._plot_type_names["order"] = "order"
+        # self._plot_type_names["energy"] = "energy"  - how to do energy/flux plots?
+        # self._plot_type_names["photon"] = "photon"
+        self._plot_type_names["astrocompsource"] = "source_component"
+        self._plot_type_names["astrocompmodel"] = "model_componentl"  # NOTE: typo here
 
-        self._plot_type_names['astrodata'] = 'data'
-        self._plot_type_names['astrosource'] = 'source'  # is this meaningful anymore
-        self._plot_type_names['astromodel'] = 'model'  # is this meaningful anymore
-        self._plot_type_names['arf'] = 'arf'
-        self._plot_type_names['bkg'] = 'bkg'
-        self._plot_type_names['bkgmodel'] = 'bkg_model'
-        self._plot_type_names['bkgfit'] = 'bkg_fit'
-        self._plot_type_names['bkgsource'] = 'bkg_source'
-        self._plot_type_names['bkgratio'] = 'bkg_ratio'
-        self._plot_type_names['bkgresid'] = 'bkg_resid'
-        self._plot_type_names['bkgdelchi'] = 'bkg_delchi'
-        self._plot_type_names['bkgchisqr'] = 'bkg_chisqr'
+        self._plot_type_names["astrodata"] = "data"
+        self._plot_type_names["astrosource"] = "source"  # is this meaningful anymore
+        self._plot_type_names["astromodel"] = "model"  # is this meaningful anymore
+        self._plot_type_names["arf"] = "arf"
+        self._plot_type_names["bkg"] = "bkg"
+        self._plot_type_names["bkgmodel"] = "bkg_model"
+        self._plot_type_names["bkgfit"] = "bkg_fit"
+        self._plot_type_names["bkgsource"] = "bkg_source"
+        self._plot_type_names["bkgratio"] = "bkg_ratio"
+        self._plot_type_names["bkgresid"] = "bkg_resid"
+        self._plot_type_names["bkgdelchi"] = "bkg_delchi"
+        self._plot_type_names["bkgchisqr"] = "bkg_chisqr"
 
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
