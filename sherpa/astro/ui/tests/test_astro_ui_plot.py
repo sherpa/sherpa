@@ -3851,6 +3851,52 @@ def test_set_plot_opt_explicit(cls):
         assert ax.get_yscale() == 'linear', idx
 
 
+@requires_plotting
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("name,extraargs",
+                         [("data", []), ("model", []), ("source", []),
+                          pytest.param("model_component", ["mdl"], marks=pytest.mark.xfail),
+                          pytest.param("source_component", ["mdl"], marks=pytest.mark.xfail)
+                          ])
+def test_set_plot_opt_changes_fields(cls, name, extraargs):
+    """Does "all" change all the type-specific plots?
+
+    This is a regression test for whether "all" changes
+    all the plots related to a plot type. We only check
+    a subset of the plot types.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    getfunc = getattr(s, f"get_{name}_plot")
+    p1 = getfunc(1, *extraargs, recalc=False)
+    p2 = getfunc(2, *extraargs, recalc=False)
+
+    assert not p1.plot_prefs["xlog"]
+    assert not p1.plot_prefs["ylog"]
+    assert not p2.histo_prefs["xlog"]
+    assert not p2.histo_prefs["ylog"]
+
+    s.set_xlog("all")
+
+    assert p1.plot_prefs["xlog"]
+    assert not p1.plot_prefs["ylog"]
+    assert p2.histo_prefs["xlog"]
+    assert not p2.histo_prefs["ylog"]
+
+
 @requires_pylab
 def test_set_plot_opt_explicit_astro():
     """Check we can call set_xlog('data') with astro data.
