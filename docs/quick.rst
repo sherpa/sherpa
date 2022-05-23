@@ -53,7 +53,7 @@ The following data - where ``x`` is the independent axis and
     >>> err_true = 0.2
     >>> y = ampl_true * np.exp(-0.5 * (x - pos_true)**2 / sigma_true**2)
     >>> y += np.random.normal(0., err_true, x.shape)
-    >>> plt.plot(x, y, 'ko');
+    >>> out = plt.plot(x, y, 'ko')
 
 .. image:: _static/quick/data1d.png
 
@@ -220,14 +220,15 @@ so we start with it (the optimiser can be changed and the data re-fit):
     >>> from sherpa.optmethods import LevMar
     >>> opt = LevMar()
     >>> print(opt)
-    name    = levmar
-    ftol    = 1.19209289551e-07
-    xtol    = 1.19209289551e-07
-    gtol    = 1.19209289551e-07
-    maxfev  = None
-    epsfcn  = 1.19209289551e-07
-    factor  = 100.0
-    verbose = 0
+    name     = levmar
+    ftol     = 1.1920928955078125e-07
+    xtol     = 1.1920928955078125e-07
+    gtol     = 1.1920928955078125e-07
+    maxfev   = None
+    epsfcn   = 1.1920928955078125e-07
+    factor   = 100.0
+    numcores = 1
+    verbose  = 0
 
 .. _quick-gauss1d-fit:
     
@@ -319,9 +320,9 @@ As the model can be
 :doc:`evaluated directly <evaluation/index>`,
 this plot can also be created manually::
 
-   >>> plt.plot(d.x, d.y, 'ko', label='Data')
-   >>> plt.plot(d.x, g(d.x), linewidth=2, label='Gaussian')
-   >>> plt.legend(loc=2);
+   >>> out = plt.plot(d.x, d.y, 'ko', label='Data')
+   >>> out = plt.plot(d.x, g(d.x), linewidth=2, label='Gaussian')
+   >>> out = plt.legend(loc=2);
 
 .. image:: _static/quick/data1d_gauss_fit.png
 
@@ -479,7 +480,7 @@ The default error estimation routine is
 
     >>> from sherpa.estmethods import Confidence
     >>> gefit.estmethod = Confidence()
-    >>> print(gefit.estmethod)
+    >>> print(gefit.estmethod)  # doctest: +SKIP
     name         = confidence
     sigma        = 1
     eps          = 0.01
@@ -502,12 +503,6 @@ attribute. Note that a message is displayed to the screen when each
 bound is calculated, to indicate progress::
   
     >>> errors = gefit.est_errors()
-    gerr.fwhm lower bound:	-0.0326327
-    gerr.fwhm upper bound:	0.0332578
-    gerr.pos lower bound:	-0.0140981
-    gerr.pos upper bound:	0.0140981
-    gerr.ampl lower bound:	-0.0456119
-    gerr.ampl upper bound:	0.0456119
 
 The results can be displayed::
   
@@ -548,9 +543,9 @@ ranges::
     >>> dvals = zip(errors.parnames, errors.parvals, errors.parmins,
     ... errors.parmaxes)
     >>> pvals = {d[0]: {'val': d[1], 'min': d[2], 'max': d[3]}
-                 for d in dvals}
+    ...          for d in dvals}
     >>> pvals['gerr.pos']
-    {'min': -0.014098074065578947, 'max': 0.014098074065578947, 'val': 1.2743015983545292}
+    {'val': 1.2743015983545256, 'min': -0.014098074065595156, 'max': 0.014098074065595156}
              
 .. todo::
 
@@ -605,7 +600,7 @@ This can take some time, depending on the complexity of the model and
 number of steps requested. The resulting data looks like::
    
    >>> iproj.plot()
-   >>> plt.axhline(geres.statval + 9, linestyle='dotted');
+   >>> out = plt.axhline(geres.statval + 9, linestyle='dotted');
 
 .. image:: _static/quick/data1d_pos_iproj.png
 
@@ -673,14 +668,14 @@ contours)::
     >>> x0.resize(ny, nx)
     >>> x1.resize(ny, nx)
     >>> y.resize(ny, nx)
-    >>> plt.imshow(y, origin='lower', cmap='viridis_r', aspect='auto',
-    ...            extent=(x0.min(), x0.max(), x1.min(), x1.max()))
-    >>> plt.colorbar()
-    >>> plt.xlabel(rproj.xlabel)
-    >>> plt.ylabel(rproj.ylabel)
+    >>> out = plt.imshow(y, origin='lower', cmap='viridis_r', aspect='auto',
+    ...                  extent=(x0.min(), x0.max(), x1.min(), x1.max()))
+    >>> out = plt.colorbar()
+    >>> out = plt.xlabel(rproj.xlabel)
+    >>> out = plt.ylabel(rproj.ylabel)
     >>> cs = plt.contour(x0, x1, y, levels=lvls)
     >>> lbls = [(v, r"${}\sigma$".format(i+1)) for i, v in enumerate(lvls)]
-    >>> plt.clabel(cs, lvls, fmt=dict(lbls));
+    >>> out = plt.clabel(cs, lvls, fmt=dict(lbls));
 
 .. image:: _static/quick/data1d_pos_fwhm_rproj_manual.png
 
@@ -759,8 +754,7 @@ To reduce the number of parameters being fit, the ``frozen`` attribute
 can be set::
 
     >>> for n in ['cx1', 'cy1', 'cx2y1', 'cx1y2', 'cx2y2']:
-       ...:     getattr(p2, n).frozen = True
-       ...:
+    ...     getattr(p2, n).frozen = True
     >>> print(p2)
     p2
        Param        Type          Value          Min          Max      Units
@@ -837,12 +831,12 @@ and then displaying it::
     ...                  ticks=[0, 20000, 40000])
     ...     plt.title(title)
     ...
-    >>> plt.figure(figsize=(8, 3))
-    >>> plt.subplot(1, 3, 1);
+    >>> out = plt.figure(figsize=(8, 3))
+    >>> out = plt.subplot(1, 3, 1);
     >>> pimg(y, "Data")
-    >>> plt.subplot(1, 3, 2)
+    >>> out = plt.subplot(1, 3, 2)
     >>> pimg(m2, "Model")
-    >>> plt.subplot(1, 3, 3)
+    >>> out = plt.subplot(1, 3, 3)
     >>> pimg(y - m2, "Residual")
 
 .. image:: _static/quick/data2d_residuals.png
@@ -890,8 +884,8 @@ for the signal::
 There is **no** requirement that the data sets have a common grid,
 as can be seen in a raw view of the data::
 
-    >>> plt.plot(x1, y1)
-    >>> plt.plot(x2, y2)
+    >>> out = plt.plot(x1, y1)
+    >>> out = plt.plot(x2, y2)
    
 .. image:: _static/quick/quick_simulfit_data.png
 
@@ -972,12 +966,12 @@ The data can then be viewed (in this case a separate grid
 is used, but the
 :ref:`data objects could be used to define the grid <evaluation_data>`)::
 
-    >>> plt.plot(x1, y1, label='Data 1')
-    >>> plt.plot(x2, y2, label='Data 2')
+    >>> out = plt.plot(x1, y1, label='Data 1')
+    >>> out = plt.plot(x2, y2, label='Data 2')
     >>> x = np.arange(4000, 5000, 10)
-    >>> plt.plot(x, (fpoly + flor)(x), linestyle='dotted', label='Fit 1')
-    >>> plt.plot(x, fpoly(x), linestyle='dotted', label='Fit 2')
-    >>> plt.legend();
+    >>> out = plt.plot(x, (fpoly + flor)(x), linestyle='dotted', label='Fit 1')
+    >>> out = plt.plot(x, fpoly(x), linestyle='dotted', label='Fit 2')
+    >>> out = plt.legend()
 
 .. image:: _static/quick/quick_simulfit_fit.png
 

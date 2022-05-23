@@ -65,8 +65,8 @@ and counts empty, because these will be filled in by the simulation::
   >>> from sherpa.astro.data import DataPHA
   >>> from sherpa.astro.io import read_arf, read_rmf, read_pha
   >>> data = DataPHA(name='any', channel=None, counts=None, exposure=10000.)
-  >>> data.set_arf(read_arf('9774.arf'))
-  >>> data.set_rmf(read_rmf('9774.rmf'))
+  >>> data.set_arf(read_arf('sherpa-test-data/sherpatest/9774.arf'))
+  >>> data.set_rmf(read_rmf('sherpa-test-data/sherpatest/9774.rmf'))
 
 Alternatively, one could read in a PHA file (``data =
 read_pha('9774_bg.pi')``). In this case, the response and backgrounds
@@ -136,7 +136,7 @@ complex models which may include such components as the instrumental
 backgound (which should not be folded through the ARF) or arbitary
 other components::
 
-  >>> fake_pha(data, model=inst_bkg + my_arf(my_rmf(srcmodel)), is_source=False)
+  >>> fake_pha(data, model=inst_bkg + my_arf(my_rmf(srcmodel)), is_source=False)  # doctest: +SKIP
 
 .. image:: ../_static/evaluation/fake_pha.png
 
@@ -156,7 +156,7 @@ One way to include background is to sample it from a
 loaded into the dataset before running the simluation and, if not done
 before, the scale of the background scaling has to be set::
 
-  >>> data.set_background(read_pha('9774_bg.pi'))
+  >>> data.set_background(read_pha('sherpa-test-data/sherpatest/9774_bg.pi'))
   >>> data.backscal = 9.6e-06
   >>> fake_pha(data, srcmdl, add_bkgs=True)
 

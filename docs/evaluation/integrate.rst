@@ -76,12 +76,12 @@ each bin::
     >>> y
     array([-22.5,   2.5,  27.5,  52.5])
 
-Thanks to the easy functonal form chosen for this example,
+Thanks to the easy functional form chosen for this example,
 it is easy to confirm that these are the values of the
 integrated model::
   
     >>> (y[:-1] + y[1:]) * 5 / 2.0
-    array([-22.5,   2.5,  27.5,  52.5])
+    array([-50.,  75., 200.])
 
 Turning off the ``integrate`` flag for this model shows that it
 uses the low-edge of the bin when evaluating the model::
