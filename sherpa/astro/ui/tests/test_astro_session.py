@@ -180,12 +180,18 @@ def test_id_checks_session(session, setting):
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
-@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace',
+@pytest.mark.parametrize("setting", ["cdf", "energy", "lr", "photon", "pdf", "scatter", "trace",
                                      "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
                                      "bkg_delchi", "bkg_chisqr", "bkg_fit"
                                      ])
 def test_id_checks_session_unexpected(session, setting):
-    """These identifiers are allowed. Should they be?"""
+    """These identifiers are allowed. Should they be?
+
+    This test has morphed to be a test of "expected" labels that are
+    allowed, so the test name is a bit of a mis-nomer, but is left as
+    is.
+
+    """
 
     s = session()
     s.load_arrays(setting, [1, 2], [1, 2])
@@ -198,7 +204,6 @@ def test_id_checks_session_unexpected(session, setting):
 @pytest.mark.parametrize("setting", ['arf', 'bkg', 'bkgchisqr', 'bkgdelchi', 'bkgfit',
                                      'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
                                      'order',
-                                     # "energy", "photon",  these are currently both valid for astro
                                      "astrocompsource", "astrocompmodel", "astrodata",
                                      "astrosource", "astromodel"])
 def test_id_checks_astro_session(session, success, setting):

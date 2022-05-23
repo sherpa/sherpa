@@ -190,8 +190,6 @@ class Session(sherpa.ui.utils.Session):
         # plot objects are changed by a given set_xxx(label) call.
         #
         self._plot_types['order'] = [self._orderplot]
-        self._plot_types['energy'] = [self._energyfluxplot]
-        self._plot_types['photon'] = [self._photonfluxplot]
         self._plot_types["source_component"].append(self._astrocompsrcplot)
         self._plot_types["model_component"].append(self._astrocompmdlplot)
 

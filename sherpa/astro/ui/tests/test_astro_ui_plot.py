@@ -3786,6 +3786,7 @@ def test_set_opt_not_string(cls, name):
                                   "astrodata", "astrosource", "astromodel",
                                   "flux",
                                   # "bkgmodel", "bkgsource", "bkgfit", "bkgresid", "bkgratio", "bkgchisqr", "bkgdelchi"
+                                  "energy", "photon"
                                   ])
 def test_set_opt_invalid(cls, name):
     """Check we error out if called with an invalid option.
@@ -3834,7 +3835,7 @@ def test_set_opt_valid(cls, name):
 @pytest.mark.parametrize("name", ["bkg",
                                   "bkg_fit", "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio", "bkg_delchi", "bkg_chisqr",
                                   "bkgfit", "bkgmodel", "bkgsource", "bkgresid", "bkgratio", "bkgdelchi", "bkgchisqr",  # temporary
-                                  "order", "energy", "photon"])
+                                  "order"])
 def test_set_opt_valid_astro(name):
     """What names are accepted for set_xlog/ylog/...? Astro Session only
     """
