@@ -88,6 +88,35 @@ def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
+def _find_subclasses(module, basetype):
+    """Identify all subclasses in a module.
+
+    Parameters
+    ----------
+    module
+        The module to inspect.
+    basetype
+        The base class used.
+
+    Returns
+    -------
+    store : dict
+        The selected subclasses stored by the lower-case name of the
+        class (so if there are multiple classes which differ only in
+        capitalisation there is no guarantee which one will be
+        selected).
+
+    """
+
+    store = {}
+    for name in module.__all__:
+        cls = getattr(module, name)
+        if not _is_subclass(cls, basetype):
+            continue
+
+        store[name.lower()] = cls()
+
+    return store
 
 
 def get_plot_prefs(plotobj):
@@ -128,8 +157,7 @@ def reduce_ufunc(func):
     modname = getattr(func, '__module__', 'numpy')
     funcname = func.__name__
     if func is not getattr(sys.modules[modname], funcname, None):
-        raise ValueError("module '%s' does not contain ufunc '%s'" %
-                         (modname, funcname))
+        raise ValueError(f"module '{modname}' does not contain ufunc '{funcname}'")
     return (construct_ufunc, (modname, funcname))
 
 
@@ -151,7 +179,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
         self.modeltype = modeltype
         self.args = args
         self.kwargs = kwargs
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __call__(self, name):
         _check_str_type(name, "name")
@@ -166,12 +194,11 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
     def __getattr__(self, name):
         if name.startswith('_'):
-            raise AttributeError("'%s\' object has no attribute '%s'" %
-                                 (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
         return self(name)
 
     def __repr__(self):
-        return '<%s model type>' % self.modeltype.__name__
+        return f"<{self.modeltype.__name__} model type>"
 
     def __str__(self):
         if self.modeltype.__doc__ is not None:
@@ -187,7 +214,7 @@ def _assign_obj_to_main(name, obj):
 def _assign_model_to_main(name, model):
     # Ask sys what the __main__ module is; packages such
     # as IPython can add their own __main__ module.
-    model.name = '%s.%s' % (type(model).__name__.lower(), name)
+    model.name = f"{type(model).__name__.lower()}.{name}"
     _assign_obj_to_main(name, model)
 
 
@@ -270,7 +297,6 @@ class Session(NoNewAttributesAfterInit):
         self._default_id = 1
         self._paramprompt = False
 
-        self._methods = {}
         self._itermethods = {'none': {'name': 'none'},
                              'sigmarej': {'name': 'sigmarej',
                                           'maxiters': 5,
@@ -278,19 +304,9 @@ class Session(NoNewAttributesAfterInit):
                                           'lrej': 3,
                                           'grow': 0}}
 
-        self._stats = {}
-        self._estmethods = {}
-
-        modules = (sherpa.optmethods, sherpa.stats, sherpa.estmethods)
-        basetypes = (sherpa.optmethods.OptMethod, sherpa.stats.Stat,
-                     sherpa.estmethods.EstMethod)
-        objdicts = (self._methods, self._stats, self._estmethods)
-
-        for mod, base, odict in zip(modules, basetypes, objdicts):
-            for name in mod.__all__:
-                cls = getattr(mod, name)
-                if _is_subclass(cls, base):
-                    odict[name.lower()] = cls()
+        self._stats = _find_subclasses(sherpa.stats, sherpa.stats.Stat)
+        self._methods = _find_subclasses(sherpa.optmethods, sherpa.optmethods.OptMethod)
+        self._estmethods = _find_subclasses(sherpa.estmethods, sherpa.estmethods.EstMethod)
 
         self._current_method = self._methods['levmar']
         self._current_itermethod = self._itermethods['none']
@@ -461,11 +477,8 @@ class Session(NoNewAttributesAfterInit):
         if os.path.isfile(filename) and not clobber:
             raise sherpa.utils.err.IOErr("filefound", filename)
 
-        fout = open(filename, 'wb')
-        try:
+        with open(filename, 'wb') as fout:
             pickle.dump(self, fout, 2)  # Use newer binary protocol
-        finally:
-            fout.close()
 
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
@@ -513,11 +526,8 @@ class Session(NoNewAttributesAfterInit):
         """
         _check_str_type(filename, "filename")
 
-        fin = open(filename, 'rb')
-        try:
+        with open(filename, 'rb') as fin:
             obj = pickle.load(fin)
-        finally:
-            fin.close()
 
         if not isinstance(obj, Session):
             raise ArgumentErr('nosession', filename)
@@ -540,82 +550,106 @@ class Session(NoNewAttributesAfterInit):
                 self._model_autoassign_func(name, cmpt)
 
     def _get_show_data(self, id=None):
-        data_str = ''
-        ids = self.list_data_ids()
         if id is not None:
             ids = [self._fix_id(id)]
-        for id in ids:
-            data_str += 'Data Set: %s\n' % id
-            data_str += self.get_data(id).__str__() + '\n\n'
+        else:
+            ids = self.list_data_ids()
+
+        data_str = ""
+        for idval in ids:
+            data_str += f"Data Set: {idval}\n"
+            data_str += str(self.get_data(idval)) + "\n\n"
+
         return data_str
 
     def _get_show_filter(self, id=None):
-        filt_str = ''
-        ids = self.list_data_ids()
         if id is not None:
             ids = [self._fix_id(id)]
-        for id in ids:
-            filt_str += 'Data Set Filter: %s\n' % id
-            filt_str += self.get_data(id).get_filter_expr() + '\n\n'
+        else:
+            ids = self.list_data_ids()
+
+        filt_str = ""
+        for idval in ids:
+            filt_str += f"Data Set Filter: {idval}\n"
+            filt_str += self.get_data(idval).get_filter_expr() + "\n\n"
+
         return filt_str
 
     def _get_show_model(self, id=None):
-        model_str = ''
-        ids = self.list_data_ids()
         mdl_ids = self.list_model_ids()
         if id is not None:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in mdl_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += self.get_model(id).__str__() + '\n\n'
+        else:
+            ids = self.list_data_ids()
+
+        model_str = ""
+        for idval in ids:
+            if idval not in mdl_ids:
+                continue
+
+            model_str += f"Model: {idval}\n"
+            model_str += str(self.get_model(idval)) + "\n\n"
+
         return model_str
 
     def _get_show_source(self, id=None):
-        model_str = ''
-        ids = self.list_data_ids()
         src_ids = self._sources.keys()
         if id is not None:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in src_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += self.get_source(id).__str__() + '\n\n'
+        else:
+            ids = self.list_data_ids()
+
+        model_str = ""
+        for idval in ids:
+            if idval not in src_ids:
+                continue
+
+            model_str += f"Model: {idval}\n"
+            model_str += str(self.get_source(idval)) + "\n\n"
+
         return model_str
 
     def _get_show_kernel(self, id=None):
-        kernel_str = ''
-        ids = self.list_data_ids()
         if id is not None:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf.keys():
-                kernel_str += 'PSF Kernel: %s\n' % id
-                # Show the PSF parameters
-                kernel_str += self.get_psf(id).__str__() + '\n\n'
+        else:
+            ids = self.list_data_ids()
+
+        kernel_str = ""
+        for idval in ids:
+            if idval not in self._psf:
+                continue
+
+            kernel_str += f"PSF Kernel: {idval}\n"
+            # Show the PSF parameters
+            kernel_str += str(self.get_psf(idval)) + "\n\n"
+
         return kernel_str
 
     def _get_show_psf(self, id=None):
-        psf_str = ''
-        ids = self.list_data_ids()
         if id is not None:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf.keys():
-                psf_str += 'PSF Model: %s\n' % id
-                # Show the PSF dataset or PSF model
-                psf_str += self.get_psf(id).kernel.__str__() + '\n\n'
+        else:
+            ids = self.list_data_ids()
+
+        psf_str = ""
+        for idval in ids:
+            if idval not in self._psf:
+                continue
+
+            psf_str += f"PSF Model: {idval}\n"
+            # Show the PSF dataset or PSF model
+            psf_str += str(self.get_psf(idval).kernel) + "\n\n"
+
         return psf_str
 
     def _get_show_method(self):
-        return ('Optimization Method: %s\n%s\n' %
-                (type(self._current_method).__name__,
-                 self._current_method.__str__()))
+        return f"Optimization Method: {type(self._current_method).__name__}\n" + \
+            f"{self._current_method}\n"
 
     def _get_show_stat(self):
-        return ('Statistic: %s\n%s\n' %
-                (type(self._current_stat).__name__,
-                 self._current_stat.__str__()))
+        return f"Statistic: {type(self._current_stat).__name__}\n" + \
+            f"{self._current_stat}\n"
 
     def _get_show_fit(self):
         if self._fit_results is None:
@@ -1248,9 +1282,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
         funcs_list = self.get_functions()
-        funcs = ''
+        funcs = ""
         for func in funcs_list:
-            funcs += '%s\n' % func
+            funcs += f"{func}\n"
 
         send_to_pager(funcs, outfile, clobber)
 
@@ -3969,7 +4003,7 @@ class Session(NoNewAttributesAfterInit):
                 raise AttributeError("save_delchi() can not be used " +
                                      "with 2D datasets")
 
-            funcname = "get_{}_image()".format(objtype)
+            funcname = f"get_{objtype}_image()"
             """
             imgtype = getattr(self, funcname, None)
             if imgtype is None:
@@ -3983,7 +4017,7 @@ class Session(NoNewAttributesAfterInit):
             fields = [str(objtype).upper()]
 
         else:
-            funcname = "get_{}_plot".format(objtype)
+            funcname = f"get_{objtype}_plot"
             """
             plottype = getattr(self, funcname, None)
             if plottype is None:
@@ -5198,9 +5232,17 @@ class Session(NoNewAttributesAfterInit):
 
     def _add_model_types(self, module,
                          baselist=(sherpa.models.ArithmeticModel,)):
+        """Wrap all the models in the module.
+
+        Creates wrappers around all the models and adds them to the
+        "global" table for the session.
+
+        """
+
         if not isinstance(baselist, tuple):
             baselist = (baselist,)
 
+        added = False
         for name in module.__all__:
             cls = getattr(module, name)
 
@@ -5212,6 +5254,9 @@ class Session(NoNewAttributesAfterInit):
 
             name = name.lower()
             self._model_types[name] = ModelWrapper(self, cls)
+            added = True
+
+        if added:
             self._model_globals.update(self._model_types)
 
     def add_model(self, modelclass, args=(), kwargs={}):
@@ -5269,7 +5314,7 @@ class Session(NoNewAttributesAfterInit):
         name = modelclass.__name__.lower()
 
         if not _is_subclass(modelclass, sherpa.models.ArithmeticModel):
-            raise TypeError("model class '%s' is not a derived class" % name +
+            raise TypeError(f"model class '{name}' is not a derived class" +
                             " from sherpa.models.ArithmeticModel")
 
         self._model_types[name] = ModelWrapper(self, modelclass, args, kwargs)
@@ -5767,7 +5812,7 @@ class Session(NoNewAttributesAfterInit):
             has_source = key in self._sources and mod in self._sources[key]
 
             if has_model or has_source:
-                warning(f"the model component '{mod.name}' is found in model {key}" +
+                warning(f"the model component '{mod.name}' is found in model {key}"
                         " and cannot be deleted")
                 # restore the model component in use and return
                 self._model_components[name] = mod
@@ -5905,8 +5950,8 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'%s'\n is set for dataset %s. You should use get_model instead." %
-                                (mdl.name, str(id)))
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n is set for dataset {id}. " +
+                                "You should use get_model instead.")
         return self._get_item(id, self._sources, 'source',
                               'has not been set, consider using set_source()' +
                               ' or set_model()')
@@ -5977,7 +6022,7 @@ class Session(NoNewAttributesAfterInit):
                 ntokens = len(tokens)
 
                 if ntokens > 3:
-                    info("Error: Please provide a comma-separated " +
+                    info("Error: Please provide a comma-separated "
                          "list of floats; e.g. val,min,max")
                     continue
 
@@ -6204,8 +6249,7 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.pop(id, None)
         if mdl is not None:
-            warning("Clearing convolved model\n'%s'\nfor dataset %s" %
-                    (mdl.name, str(id)))
+            warning(f"Clearing convolved model\n'{mdl.name}'\nfor dataset {id}")
 
     set_source = set_model
 
@@ -6647,18 +6691,22 @@ class Session(NoNewAttributesAfterInit):
         for filename in filenames:
             tnames, tcols = sherpa.io.read_file_data(filename,
                                                      sep=sep, comment=comment)
-            if len(tcols) == 1:
+
+            ntcols = len(tcols)
+            if ntcols == 1:
                 raise sherpa.utils.err.IOErr('onecolneedtwo', filename)
-            elif len(tcols) == 2:
-                tm = TableModel(filename)
-                tm.method = method  # interpolation method
-                tm.load(*tcols)
-                tm.ampl.freeze()
-                templates.append(tm)
-            else:
+
+            if ntcols != 2:
+                # TODO: should this use ntcols rather than len(tnames)?
                 raise sherpa.utils.err.IOErr('wrongnumcols', 2, len(tnames))
 
-        assert(len(templates) == parvals.shape[0])
+            tm = TableModel(filename)
+            tm.method = method  # interpolation method
+            tm.load(*tcols)
+            tm.ampl.freeze()
+            templates.append(tm)
+
+        assert len(templates) == parvals.shape[0]
 
         templatemodel = sherpa.models.create_template_model(modelname, parnames, parvals,
                                                             templates, template_interpolator_name)
@@ -6890,7 +6938,7 @@ class Session(NoNewAttributesAfterInit):
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
         usermodel._file = filename
-        if (filename is not None):
+        if filename is not None:
             x, usermodel._y = self._read_user_model(filename, ncols, colkeys,
                                                     dstype, sep, comment)
         self._add_model_component(usermodel)
@@ -7596,6 +7644,20 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_par(par).set(val, min, max, frozen)
 
+    def _call_par_method(self, par, method):
+        """Call a method on a parameter."""
+
+        # This avoids duplication but only in two methods.
+        #
+        if _is_str(par):
+            par = self._eval_model_expression(par, "parameter or model")
+
+        try:
+            getattr(par, method)()
+        except AttributeError:
+            msg = "a parameter or model object or expression string"
+            raise ArgumentTypeErr("badarg", "par", msg) from None
+
     def freeze(self, *args):
         """Fix model parameters so they are not changed by a fit.
 
@@ -7645,14 +7707,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         for par in list(args):
-            if _is_str(par):
-                par = self._eval_model_expression(par, 'parameter or model')
-
-            try:
-                par.freeze()
-            except AttributeError:
-                raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+            self._call_par_method(par, "freeze")
 
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
@@ -7708,15 +7763,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         for par in list(args):
-            if _is_str(par):
-                par = self._eval_model_expression(par, 'parameter or model')
-
-            try:
-                par.thaw()
-            except AttributeError:
-                raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
-
+            self._call_par_method(par, "thaw")
 
     def link(self, par, val):
         """Link a parameter to a value.
@@ -7833,10 +7880,11 @@ class Session(NoNewAttributesAfterInit):
         # as input list the data sets to be fit.
         if id is None:
             all_ids = self.list_data_ids()
-            if (len(all_ids) > 0):
+            if len(all_ids) > 0:
                 id = all_ids[0]
                 del all_ids[0]
                 otherids = tuple(all_ids)
+
             if id is None:
                 id = self._fix_id(id)
 
@@ -7858,6 +7906,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             d = sherpa.data.DataSimulFit('simulfit data', datasets, numcores)
             m = sherpa.models.SimulFitModel('simulfit model', models)
+
         if not self._current_method.name == 'gridsearch':
             if m.is_discrete:
                 raise ModelErr(
@@ -7933,7 +7982,7 @@ class Session(NoNewAttributesAfterInit):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
+                statinfo.name = f"Dataset {id}"
                 statinfo.ids = (id,)
 
                 output.append(statinfo)
@@ -7941,9 +7990,9 @@ class Session(NoNewAttributesAfterInit):
         f = self._get_fit_obj(datasets, models, None)
         statinfo = f.calc_stat_info()
         if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+            statinfo.name = f"Dataset {ids}"
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
+            statinfo.name = f"Datasets {str(ids).strip('()')}"
         statinfo.ids = ids
         output.append(statinfo)
 
@@ -11018,8 +11067,8 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'" +
+                                f"\n is set for dataset {id}." +
                                 " You should use get_model_plot instead.")
 
         plotobj, data = self._get_plotobj("source", id=id, recalc=recalc)
@@ -12972,8 +13021,8 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'" +
+                                f"\n is set for dataset {id}." +
                                 " You should use plot_model instead.")
 
         plotobj = self.get_source_plot(id, recalc=not replot)

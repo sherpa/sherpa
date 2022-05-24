@@ -41,7 +41,6 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.astro import fake
-from sherpa.astro.data import DataPHA
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -349,15 +348,17 @@ class Session(sherpa.ui.utils.Session):
                 self._xspec_state = None
 
     def _get_show_data(self, id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            data = self.get_data(id)
 
-            data_str += 'Data Set: %s\n' % id
-            data_str += 'Filter: %s\n' % data.get_filter_expr()
+        data_str = ""
+        for idval in ids:
+            data = self.get_data(idval)
+
+            data_str += f"Data Set: {idval}\n"
+            data_str += f"Filter: {data.get_filter_expr()}\n"
             if isinstance(data, sherpa.astro.data.DataPHA):
 
                 nbkg = len(data.background_ids)
@@ -367,110 +368,116 @@ class Session(sherpa.ui.utils.Session):
                     if scale is None:
                         continue
 
-                    data_str += 'Bkg Scale'
+                    data_str += "Bkg Scale"
                     if nbkg > 1 or bkg_id != 1:
-                        data_str += ' {}'.format(bkg_id)
+                        data_str += f" {bkg_id}"
 
-                    data_str += ': '
+                    data_str += ": "
                     if numpy.isscalar(scale):
-                        data_str += '{:g}'.format(float(scale))
+                        data_str += f"{float(scale):g}"
                     else:
                         # would like to use sherpa.utils/print_fields style output
                         # but not available and I don't feel like it's
                         # worth it
-                        data_str += '{}[{}]'.format(scale.dtype, scale.size)
+                        data_str += f"{scale.dtype}[{scale.size}]"
 
-                    data_str += '\n'
+                    data_str += "\n"
 
-                data_str += 'Noticed Channels: %s\n' % data.get_noticed_expr()
+                data_str += f"Noticed Channels: {data.get_noticed_expr()}\n"
 
-            data_str += data.__str__() + '\n\n'
+            data_str += str(data) + "\n\n"
 
             if isinstance(data, sherpa.astro.data.DataPHA):
                 for resp_id in data.response_ids:
                     # ARF or RMF could be None
                     arf, rmf = data.get_response(resp_id)
                     if rmf is not None:
-                        data_str += 'RMF Data Set: %s:%s\n' % (id, resp_id)
-                        data_str += rmf.__str__() + '\n\n'
+                        data_str += f"RMF Data Set: {idval}:{resp_id}\n"
+                        data_str += str(rmf) + "\n\n"
                     if arf is not None:
-                        data_str += 'ARF Data Set: %s:%s\n' % (id, resp_id)
-                        data_str += arf.__str__() + '\n\n'
+                        data_str += f"ARF Data Set: {idval}:{resp_id}\n"
+                        data_str += str(arf) + "\n\n"
 
-                data_str += self._get_show_bkg(id)
+                data_str += self._get_show_bkg(idval)
 
         return data_str
 
     def _get_show_bkg(self, id=None, bkg_id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
 
-        for id in ids:
-            data = self.get_data(id)
+        data_str = ""
+        for idval in ids:
+            data = self.get_data(idval)
 
             if not isinstance(data, sherpa.astro.data.DataPHA):
                 continue
 
-            bkg_ids = data.background_ids
-            if bkg_id is not None:
+            if bkg_id is None:
+                bkg_ids = data.background_ids
+            else:
                 bkg_ids = [data._fix_background_id(bkg_id)]
 
             for bkg_id in bkg_ids:
-                bkg = self.get_bkg(id, bkg_id)
-                data_str += 'Background Data Set: %s:%s\n' % (id, bkg_id)
-                data_str += 'Filter: %s\n' % bkg.get_filter_expr()
-                data_str += 'Noticed Channels: %s\n' % bkg.get_noticed_expr()
-                data_str += bkg.__str__() + '\n\n'
+                bkg = self.get_bkg(idval, bkg_id)
+                data_str += f"Background Data Set: {idval}:{bkg_id}\n"
+                data_str += f"Filter: {bkg.get_filter_expr()}\n"
+                data_str += f"Noticed Channels: {bkg.get_noticed_expr()}\n"
+                data_str += str(bkg) + "\n\n"
 
                 for bk_rp_id in bkg.response_ids:
                     # ARF or RMF could be None
                     arf, rmf = bkg.get_response(bk_rp_id)
                     if rmf is not None:
-                        data_str += ('Background RMF Data Set: %s:%s\n' %
-                                     (id, bkg_id))
-                        data_str += rmf.__str__() + '\n\n'
+                        # TODO: should this be bkg_id, bk_rp_id, or both?
+                        data_str += f"Background RMF Data Set: {idval}:{bkg_id}\n"
+                        data_str += str(rmf) + "\n\n"
                     if arf is not None:
-                        data_str += ('Background ARF Data Set: %s:%s\n' %
-                                     (id, bkg_id))
-                        data_str += arf.__str__() + '\n\n'
+                        # TODO: should this be bkg_id, bk_rp_id, or both?
+                        data_str += f"Background ARF Data Set: {idval}:{bkg_id}\n"
+                        data_str += str(arf) + "\n\n"
 
         return data_str
 
     def _get_show_bkg_model(self, id=None, bkg_id=None):
-        model_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
+
+        model_str = ''
+        for idval in ids:
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = list(self._background_models.get(id, {}).keys())
-                bkg_ids.extend(self._background_sources.get(id, {}).keys())
+                bkg_ids = list(self._background_models.get(idval, {}).keys())
+                bkg_ids.extend(self._background_sources.get(idval, {}).keys())
                 bkg_ids = list(set(bkg_ids))
 
             for bkg_id in bkg_ids:
-                model_str += 'Background Model: %s:%s\n' % (id, bkg_id)
-                model_str += self.get_bkg_model(id, bkg_id).__str__() + '\n\n'
+                model_str += f"Background Model: {idval}:{bkg_id}\n"
+                model_str += str(self.get_bkg_model(idval, bkg_id)) + "\n\n"
 
         return model_str
 
     def _get_show_bkg_source(self, id=None, bkg_id=None):
-        model_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
+
+        model_str = ''
+        for idval in ids:
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = self._background_sources.get(id, {}).keys()
+                bkg_ids = self._background_sources.get(idval, {}).keys()
 
             for bkg_id in bkg_ids:
-                model_str += 'Background Source: %s:%s\n' % (id, bkg_id)
-                model_str += self.get_bkg_source(id, bkg_id).__str__() + '\n\n'
+                model_str += f"Background Source: {idval}:{bkg_id}\n"
+                model_str += str(self.get_bkg_source(idval, bkg_id)) + "\n\n"
 
         return model_str
 
@@ -1540,10 +1547,9 @@ class Session(sherpa.ui.utils.Session):
             ids.append(idval)
 
         if num > 1:
-            info("Multiple data sets have been input: " +
-                 "{}-{}".format(ids[0], ids[-1]))
+            info(f"Multiple data sets have been input: {ids[0]}-{ids[-1]}")
         else:
-            info("One data set has been input: {}".format(ids[0]))
+            info(f"One data set has been input: {ids[0]}")
 
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
@@ -3859,9 +3865,10 @@ class Session(sherpa.ui.utils.Session):
             if objtype == 'delchi':
                 raise AttributeError("save_delchi() does not apply for images")
 
-            imgtype = getattr(self, 'get_' + objtype + '_image', None)
+            key = f"get_{objtype}_image"
+            imgtype = getattr(self, key, None)
             if imgtype is None:
-                raise AttributeError("'get_%s_image()' not found" % objtype)
+                raise AttributeError(f"'{key}()' not found")
 
             obj = imgtype(id)
 
@@ -3875,14 +3882,14 @@ class Session(sherpa.ui.utils.Session):
                 d.y = backup
             return
 
-        funcname = 'get_'
+        funcname = "get_"
         if bkg_id is not None:
-            funcname += 'bkg_'
+            funcname += "bkg_"
 
-        plottype = getattr(self, funcname + objtype + '_plot', None)
+        key = f"{funcname}{objtype}_plot"
+        plottype = getattr(self, key, None)
         if plottype is None:
-            raise AttributeError("'%s%s_plot()' not found" % (funcname,
-                                                              objtype))
+            raise AttributeError(f"'{key}()' not found")
 
         obj = plottype(id)
         if bkg_id is not None:
@@ -3895,7 +3902,7 @@ class Session(sherpa.ui.utils.Session):
 #            args = [obj.xlo, obj.xhi, obj.y]
 #            fields = ["XLO", "XHI", str(objtype).upper()]
         if isinstance(d, sherpa.astro.data.DataPHA) and \
-           objtype in ('model', 'source'):
+           objtype in ("model", "source"):
             args = [obj.xlo, obj.xhi, obj.y]
             fields = ["XLO", "XHI", str(objtype).upper()]
         else:
@@ -5416,16 +5423,17 @@ class Session(sherpa.ui.utils.Session):
         >>> print(get_model())
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
+        id = self._fix_id(id)
+        if bkg_id is None:
+            data = self._get_pha_data(id)
+        else:
             data = self.get_bkg(id, bkg_id)
 
         arf, rmf = data.get_response(resp_id)
         if arf is None:
-            raise IdentifierErr('getitem', 'ARF data set',
+            raise IdentifierErr("getitem", "ARF data set",
                                 data._fix_response_id(resp_id),
-                                'in PHA data set %s has not been set' %
-                                str(self._fix_id(id)))
+                                f"in PHA data set {id} has not been set")
 
         if isinstance(arf, sherpa.astro.data.DataARF):
             arf = sherpa.astro.instrument.ARF1D(arf, data, rmf)
@@ -5505,9 +5513,11 @@ class Session(sherpa.ui.utils.Session):
             arf = arf._arf
         _check_type(arf, sherpa.astro.data.DataARF, 'arf', 'an ARF data set')
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            data = self._get_pha_data(id)
+        else:
             data = self.get_bkg(id, bkg_id)
+
         data.set_arf(arf, resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
@@ -5815,10 +5825,6 @@ class Session(sherpa.ui.utils.Session):
         >>> load_multi_arfs('lowstate', arfs, [1, 2, 3])
 
         """
-# if type(filenames) not in (list, tuple):
-#             raise ArgumentError('Filenames must be contained in a list')
-# if type(resp_ids) not in (list, tuple):
-#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
@@ -5889,16 +5895,17 @@ class Session(sherpa.ui.utils.Session):
         >>> print(get_model())
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
+        id = self._fix_id(id)
+        if bkg_id is None:
+            data = self._get_pha_data(id)
+        else:
             data = self.get_bkg(id, bkg_id)
 
         arf, rmf = data.get_response(resp_id)
         if rmf is None:
-            raise IdentifierErr('getitem', 'RMF data set',
+            raise IdentifierErr("getitem", "RMF data set",
                                 data._fix_response_id(resp_id),
-                                'in PHA data set %s has not been set' %
-                                str(self._fix_id(id)))
+                                f"in PHA data set {id} has not been set")
 
         if isinstance(rmf, sherpa.astro.data.DataRMF):
             rmf = sherpa.astro.instrument.RMF1D(rmf, data, arf)
@@ -5978,9 +5985,11 @@ class Session(sherpa.ui.utils.Session):
             rmf = rmf._rmf
         _check_type(rmf, sherpa.astro.data.DataRMF, 'rmf', 'an RMF data set')
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            data = self._get_pha_data(id)
+        else:
             data = self.get_bkg(id, bkg_id)
+
         data.set_rmf(rmf, resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
@@ -7533,12 +7542,11 @@ class Session(sherpa.ui.utils.Session):
 
         if val is None:
             data.grouping = None
+        elif(type(val) in (numpy.ndarray,) and
+             issubclass(val.dtype.type, numpy.integer)):
+            data.grouping = numpy.asarray(val)
         else:
-            if(type(val) in (numpy.ndarray,) and
-               issubclass(val.dtype.type, numpy.integer)):
-                data.grouping = numpy.asarray(val)
-            else:
-                data.grouping = numpy.asarray(val, SherpaInt)
+            data.grouping = numpy.asarray(val, SherpaInt)
 
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
@@ -7692,12 +7700,11 @@ class Session(sherpa.ui.utils.Session):
 
         if val is None:
             data.quality = None
+        elif(type(val) in (numpy.ndarray,) and
+             issubclass(val.dtype.type, numpy.integer)):
+            data.quality = numpy.asarray(val)
         else:
-            if(type(val) in (numpy.ndarray,) and
-               issubclass(val.dtype.type, numpy.integer)):
-                data.quality = numpy.asarray(val)
-            else:
-                data.quality = numpy.asarray(val, SherpaInt)
+            data.quality = numpy.asarray(val, SherpaInt)
 
     # DOC TODO: Need to document that routines like get_quality return
     # a reference to the data - so can change the data structure
@@ -8977,40 +8984,35 @@ class Session(sherpa.ui.utils.Session):
         >>> set_full_model("src", smodel)
 
         """
-        super().set_full_model(id, model)
-
         if model is None:
             id, model = model, id
 
+        super().set_full_model(id, model)
+
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
-            model = self.get_model(id)
+        if not isinstance(data, sherpa.astro.data.DataPHA) or not data._responses:
+            return
 
-            if data._responses:
+        model = self.get_model(id)
 
-                instruments = (sherpa.astro.instrument.RSPModel,
-                               sherpa.astro.instrument.RMFModel,
-                               sherpa.astro.instrument.ARFModel,
-                               sherpa.astro.instrument.MultiResponseSumModel,
-                               sherpa.astro.instrument.PileupRMFModel)
+        instruments = (sherpa.astro.instrument.RSPModel,
+                       sherpa.astro.instrument.RMFModel,
+                       sherpa.astro.instrument.ARFModel,
+                       sherpa.astro.instrument.MultiResponseSumModel,
+                       sherpa.astro.instrument.PileupRMFModel)
 
-                do_warning = True
-                # if type(model) in instruments:
-                # if isinstance(model, instruments):
-                if sherpa.ui.utils._is_subclass(type(model), instruments):
-                    do_warning = False
-                for part in model:
-                    # if type(part) in instruments:
-                    # if isinstance(part, instruments):
-                    if sherpa.ui.utils._is_subclass(type(part), instruments):
-                        do_warning = False
-                if do_warning:
-                    warning("PHA source model '%s' \ndoes not" %
-                            model.name +
-                            " have an associated instrument model; " +
-                            "consider using \nset_source() instead of" +
-                            " set_full_model() to include associated " +
-                            "\ninstrument automatically")
+        if sherpa.ui.utils._is_subclass(type(model), instruments):
+            return
+
+        for part in model:
+            if sherpa.ui.utils._is_subclass(type(part), instruments):
+                return
+
+        warning(f"PHA source model '{model.name}' \ndoes not"
+                " have an associated instrument model; "
+                "consider using \nset_source() instead of"
+                " set_full_model() to include associated "
+                "\ninstrument automatically")
 
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
@@ -9491,18 +9493,16 @@ class Session(sherpa.ui.utils.Session):
                            sherpa.astro.instrument.PileupRMFModel)
 
             do_warning = True
-            # if type(model) in instruments:
-            # if isinstance(model, instruments):
             if sherpa.ui.utils._is_subclass(type(model), instruments):
                 do_warning = False
+
             for part in model:
-                # if type(part) in instruments:
-                # if isinstance(part, instruments):
                 if sherpa.ui.utils._is_subclass(type(part), instruments):
                     do_warning = False
+
             if do_warning:
                 self.delete_bkg_model(id, bkg_id)
-                raise TypeError("PHA background source model '%s' \n" % model.name +
+                raise TypeError(f"PHA background source model '{model.name}' \n" +
                                 " does not have an associated instrument model;" +
                                 " consider using\n set_bkg_source() instead of" +
                                 " set_bkg_model() to include associated\n instrument" +
@@ -9608,9 +9608,8 @@ class Session(sherpa.ui.utils.Session):
         # Delete any previous model set with set_full_bkg_model()
         bkg_mdl = self._background_models.get(id, {}).pop(bkg_id, None)
         if bkg_mdl is not None:
-            warning("Clearing background convolved model\n'%s'\n" %
-                    (bkg_mdl.name) + "for dataset %s background %s" %
-                    (str(id), str(bkg_id)))
+            warning(f"Clearing background convolved model\n'{bkg_mdl.name}'\n" +
+                    f"for dataset {id} background {bkg_id}")
 
     set_bkg_source = set_bkg_model
 
@@ -9989,13 +9988,13 @@ class Session(sherpa.ui.utils.Session):
                 bkg_srcs = self._background_sources.get(id, {})
                 if d.subtracted:
                     if (bkg_models or bkg_srcs):
-                        warning(('data set %r is background-subtracted; ' +
-                                 'background models will be ignored') % id)
+                        warning("data set %s is background-subtracted; "
+                                "background models will be ignored", id)
                 elif not (bkg_models or bkg_srcs):
                     if d.background_ids and self._current_stat.name != 'wstat':
-                        warning(('data set %r has associated backgrounds, ' +
-                                 'but they have not been subtracted, ' +
-                                 'nor have background models been set') % id)
+                        warning("data set %s has associated backgrounds, "
+                                "but they have not been subtracted, "
+                                "nor have background models been set", id)
                 else:
                     bkg_ids[id] = []
                     for bkg_id in d.background_ids:
@@ -10252,9 +10251,9 @@ class Session(sherpa.ui.utils.Session):
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
         valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores')
-        for key in kwargs.keys():
+        for key in kwargs:
             if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
+                raise TypeError(f"unknown keyword argument: '{key}'")
 
         numcores = kwargs.get('numcores', 1)
 
@@ -10290,7 +10289,7 @@ class Session(sherpa.ui.utils.Session):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
+                statinfo.name = f"Dataset {id}"
                 statinfo.ids = (id,)
 
                 output.append(statinfo)
@@ -10306,8 +10305,7 @@ class Session(sherpa.ui.utils.Session):
                     bkg_f = sherpa.fit.Fit(bkg, bkg_mdl, self._current_stat)
 
                     statinfo = bkg_f.calc_stat_info()
-                    statinfo.name = ("Background %s for Dataset %s" %
-                                     (str(bkg_id), str(id)))
+                    statinfo.name = f"Background {bkg_id} for Dataset {id}"
                     statinfo.ids = (id,)
                     statinfo.bkg_ids = (bkg_id,)
 
@@ -10318,9 +10316,9 @@ class Session(sherpa.ui.utils.Session):
         f = self._get_fit_obj(datasets, models, None)
         statinfo = f.calc_stat_info()
         if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+            statinfo.name = f"Dataset {ids}"
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
+            statinfo.name = f"Datasets {str(ids).strip('()')}"
         statinfo.ids = ids
         output.append(statinfo)
 
@@ -13784,19 +13782,18 @@ class Session(sherpa.ui.utils.Session):
 
             def is_numpy_ndarray(arg, name, npars, dim1=None):
                 if not isinstance(arg, numpy.ndarray):
-                    msg = name + ' must be of type numpy.ndarray'
+                    msg = f"{name} must be of type numpy.ndarray"
                     raise IOErr(msg)
                 shape = arg.shape
                 if len(shape) != 2:
-                    msg = name + ' must be 2d numpy.ndarray'
+                    msg = f"{name} must be 2d numpy.ndarray"
                     raise IOErr(msg)
                 if shape[0] != npars:
-                    msg = name + ' must be of dimension (%d, x)' % npars
+                    msg = f"{name} must be of dimension ({npars}, x)"
                     raise IOErr(msg)
                 if dim1 is not None:
                     if shape[1] != npars:
-                        msg = name + ' must be of dimension (%d, %d)' % \
-                            (npars, npars)
+                        msg = f"{name} must be of dimension ({npars}, {npars})"
                         raise IOErr(msg)
 
             _, fit = self._get_fit(id)
