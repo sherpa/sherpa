@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from io import StringIO
+
 import numpy
 
 import pytest
@@ -409,3 +411,193 @@ def test_save_error_ascii(session, kwargs, idval, tmp_path):
     assert len(data) == 2
     assert data[0] == pytest.approx([1, 3, 5])
     assert data[1] == pytest.approx([1, 2, 6])
+
+
+@pytest.mark.parametrize("session,flag",
+                         [(Session, False),
+                          (AstroSession, True)])
+def test_show_data(session, flag):
+    """Is show_data doing anything sensible?"""
+
+    s = session()
+
+    s.load_arrays(1, [-300, -100], [-150, -50], [-200, -100], Data1DInt)
+    s.load_arrays(2, [1, 2, 10, 20], [3, 5, 12, 20])
+
+    out = StringIO()
+    s.show_data(outfile=out)
+
+    toks = out.getvalue().split("\n")
+    print(out.getvalue())
+    assert toks[0] == "Data Set: 1"
+    idx = 1
+    if flag:
+        assert toks[idx] == "Filter: -300.0000--50.0000 x"
+        idx += 1
+
+    assert toks[idx] == "name      = "
+    idx += 1
+    assert toks[idx] == "xlo       = Int64[2]"
+    idx += 1
+    assert toks[idx] == "xhi       = Int64[2]"
+    idx += 1
+    assert toks[idx] == "y         = Int64[2]"
+    idx += 1
+    assert toks[idx] == "staterror = None"
+    idx += 1
+    assert toks[idx] == "syserror  = None"
+    idx += 1
+    assert toks[idx] == ""
+    idx += 1
+    assert toks[idx] == "Data Set: 2"
+    idx += 1
+
+    if flag:
+        assert toks[idx] == "Filter: 1.0000-20.0000 x"
+        idx += 1
+
+    assert toks[idx] == "name      = "
+    idx += 1
+    assert toks[idx] == "x         = Int64[4]"
+    idx += 1
+    assert toks[idx] == "y         = Int64[4]"
+    idx += 1
+    assert toks[idx] == "staterror = None"
+    idx += 1
+    assert toks[idx] == "syserror  = None"
+    idx += 1
+    assert toks[idx] == ""
+    idx += 1
+    assert toks[idx] == ""
+    idx += 1
+    assert toks[idx] == ""
+
+    n = 19 if flag else 17
+    assert len(toks) == n
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_show_method(session):
+    """Is show_method doing anything sensible?"""
+
+    s = session()
+
+    # Select the method so we are not affected if the default changes.
+    #
+    s.set_method("levmar")
+
+    out = StringIO()
+    s.show_method(outfile=out)
+
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "Optimization Method: LevMar"
+    assert toks[1] == "name     = levmar"
+    assert toks[2] == "ftol     = 1.1920928955078125e-07"
+    assert toks[3] == "xtol     = 1.1920928955078125e-07"
+    assert toks[4] == "gtol     = 1.1920928955078125e-07"
+    assert toks[5] == "maxfev   = None"
+    assert toks[6] == "epsfcn   = 1.1920928955078125e-07"
+    assert toks[7] == "factor   = 100.0"
+    assert toks[8] == "numcores = 1"
+    assert toks[9] == "verbose  = 0"
+    assert toks[10] == ""
+    assert toks[11] == ""
+
+    assert len(toks) == 12
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_show_stat(session):
+    """Is show_stat doing anything sensible?"""
+
+    s = session()
+
+    # Select the statistic so we are not affected if the default changes.
+    #
+    s.set_stat("leastsq")
+
+    out = StringIO()
+    s.show_stat(outfile=out)
+
+    # The statistic visualization is rather large and will change
+    # whenever the docstring changes, so just check the start of the
+    # output.
+    #
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "Statistic: LeastSq"
+    assert toks[1] == "Least Squared Statistic."
+    assert toks[2] == ""
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_show_fit(session):
+    """Cover a number of internal routines to check show_fit works."""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    # Have a model for datasets 1 and 2 but only fit to 2
+    s.load_arrays(1, [-300, -100], [-200, -100])
+    s.load_arrays(2, [1, 2, 10, 20], [3, 5, 12, 20])
+
+    mdl1 = s.create_model_component("const1d", "mdl1")
+    mdl2 = s.create_model_component("gauss1d", "mdl2")
+    mdl3 = s.create_model_component("polynom1d", "mdl3")
+
+    s.set_source(1, mdl1 + mdl2)
+    s.set_source(2, mdl1 + mdl3)
+    mdl3.c0 = 0
+    mdl3.c0.freeze()
+    mdl3.c1.thaw()
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.fit(2)
+    assert s.calc_stat(2) == pytest.approx(0.9473684210526329)
+    assert mdl1.c0.val == pytest.approx(2.804511278195664)
+    assert mdl3.c1.val == pytest.approx(0.8721804511277418)
+
+    out = StringIO()
+    s.show_fit(outfile=out)
+
+    # The following is somethiing that will need to be changed
+    # whenever an underlying object has it's string representation
+    # changed, but it should not be hard to do. The main issue is
+    # going to be numeric precision.
+    #
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "Optimization Method: NelderMead"
+    assert toks[1] == "name         = simplex"
+    assert toks[2] == "ftol         = 1.1920928955078125e-07"
+    assert toks[3] == "maxfev       = None"
+    assert toks[4] == "initsimplex  = 0"
+    assert toks[5] == "finalsimplex = 9"
+    assert toks[6] == "step         = None"
+    assert toks[7] == "iquad        = 1"
+    assert toks[8] == "verbose      = 0"
+    assert toks[9] == "reflect      = True"
+    assert toks[10] == ""
+    assert toks[11] == "Statistic: LeastSq"
+    assert toks[12] == "Least Squared Statistic."
+    assert toks[13] == ""
+    assert toks[14] == "    The least-square statistic is equivalent to a chi-square"
+    assert toks[15] == "    statistic where the error on each point - sigma(i) - is 1."
+    assert toks[16] == ""
+    assert toks[17] == "    "
+    assert toks[18] == ""
+    assert toks[19] == "Fit:Dataset               = 2"
+    assert toks[20] == "Method                = neldermead"
+    assert toks[21] == "Statistic             = leastsq"
+    assert toks[22] == "Initial fit statistic = 502"
+    assert toks[23] == "Final fit statistic   = 0.947368 at function evaluation 233"
+    assert toks[24] == "Data points           = 4"
+    assert toks[25] == "Degrees of freedom    = 2"
+    assert toks[26] == "Change in statistic   = 501.053"
+    assert toks[27] == "   mdl1.c0        2.80451     "
+    assert toks[28] == "   mdl3.c1        0.87218     "
+    assert toks[29] == ""
+    assert toks[30] == ""
+    assert toks[31] == ""
+
+    assert len(toks) == 32
