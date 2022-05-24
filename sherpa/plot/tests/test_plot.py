@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -497,8 +497,10 @@ def test_source_component_arbitrary_grid(session):
         ui.set_source(regrid_model)
 
         ui.plot_source_component(regrid_model)
-        assert (ui._compsrcplot.x == x).all()
-        assert ui._compsrcplot.y == pytest.approx(yy)
+
+        splot = ui.get_source_component_plot(regrid_model, recalc=False)
+        assert (splot.x == x).all()
+        assert splot.y == pytest.approx(yy)
 
     x = [1, 2, 3]
     y = [1, 2, 3]
@@ -530,10 +532,10 @@ def test_plot_model_arbitrary_grid_integrated(session):
         ui.set_model(regrid_model)
         ui.plot_model()
 
-        # should this use ui.get_model_plot()?
-        assert ui._modelhistplot.xlo == pytest.approx(x[0])
-        assert ui._modelhistplot.xhi == pytest.approx(x[1])
-        assert ui._modelhistplot.y == pytest.approx(yy)
+        mplot = ui.get_model_plot(recalc=False)
+        assert mplot.xlo == pytest.approx(x[0])
+        assert mplot.xhi == pytest.approx(x[1])
+        assert mplot.y == pytest.approx(yy)
 
     tmp = numpy.arange(1, 5, 1)
     x = tmp[:-1], tmp[1:]
@@ -575,10 +577,10 @@ def test_source_component_arbitrary_grid_int(session):
     regrid_model = model.regrid(*re_x)
     ui.plot_source_component(regrid_model)
 
-    # should this use ui.get_source_component_plot()?
-    assert ui._compsrchistplot.xlo == pytest.approx(x[0])
-    assert ui._compsrchistplot.xhi == pytest.approx(x[1])
-    assert ui._compsrchistplot.y == pytest.approx([0.0, 0.0, 0.0])
+    splot = ui.get_source_component_plot(regrid_model, recalc=False)
+    assert splot.xlo == pytest.approx(x[0])
+    assert splot.xhi == pytest.approx(x[1])
+    assert splot.y == pytest.approx([0.0, 0.0, 0.0])
 
 
 def test_numpy_histogram_density_vs_normed(clean_astro_ui):

@@ -227,10 +227,10 @@ def change_fit(idval):
     change_model(idval)
 
 
-def check_example(xlabel='x'):
+def check_example(idval, xlabel='x'):
     """Check that the data plot has not changed"""
 
-    dplot = ui._session._dataplot
+    dplot = ui.get_data_plot(id=idval, recalc=False)
 
     assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
@@ -243,13 +243,13 @@ def check_example(xlabel='x'):
     assert dplot.yerr == pytest.approx(calc_errors(_data_y))
 
 
-def check_example_changed(xlabel='x'):
+def check_example_changed(idval, xlabel='x'):
     """Check that the data plot has changed
 
     Assumes change_example has been called
     """
 
-    dplot = ui._session._dataplot
+    dplot = ui.get_data_plot(id=idval, recalc=False)
 
     assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
@@ -274,45 +274,44 @@ def check_model_plot(plot, title='Model', xlabel='x', modelval=35):
     assert plot.yerr is None
 
 
-def check_model(xlabel='x'):
+def check_model(idval, xlabel='x'):
     """Check that the model plot has not changed"""
 
-    check_model_plot(ui._session._modelplot,
-                     title='Model', xlabel=xlabel)
+    mplot = ui.get_model_plot(id=idval, recalc=False)
+    check_model_plot(mplot, title='Model', xlabel=xlabel)
 
 
-def check_model_changed(xlabel='x'):
+def check_model_changed(idval, xlabel='x'):
     """Check that the model plot has changed
 
     Assumes change_model has been called
     """
 
-    check_model_plot(ui._session._modelplot,
-                     title='Model', xlabel=xlabel,
-                     modelval=41)
+    mplot = ui.get_model_plot(id=idval, recalc=False)
+    check_model_plot(mplot, title='Model', xlabel=xlabel, modelval=41)
 
 
-def check_source():
+def check_source(idval):
     """Check that the source plot has not changed"""
 
-    check_model_plot(ui._session._sourceplot,
-                     title='Source')
+    splot = ui.get_source_plot(id=idval, recalc=False)
+    check_model_plot(splot, title='Source')
 
 
-def check_source_changed():
+def check_source_changed(idval):
     """Check that the source plot has changed
 
     Assumes change_model has been called
     """
 
-    check_model_plot(ui._session._sourceplot,
-                     title='Source', modelval=41)
+    splot = ui.get_source_plot(id=idval, recalc=False)
+    check_model_plot(splot, title='Source', modelval=41)
 
 
-def check_resid(title='Residuals for example'):
+def check_resid(idval, title='Residuals for example'):
     """Check that the resid plot has not changed"""
 
-    rplot = ui._session._residplot
+    rplot = ui.get_resid_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -322,13 +321,13 @@ def check_resid(title='Residuals for example'):
     assert rplot.yerr == pytest.approx(calc_errors(_data_y))
 
 
-def check_resid_changed(title='Residuals for example'):
+def check_resid_changed(idval, title='Residuals for example'):
     """Check that the resid plot has changed
 
     Assumes that change_model has been called
     """
 
-    rplot = ui._session._residplot
+    rplot = ui.get_resid_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -338,13 +337,13 @@ def check_resid_changed(title='Residuals for example'):
     assert rplot.yerr == pytest.approx(calc_errors(_data_y))
 
 
-def check_resid_changed2(title='Residuals for example'):
+def check_resid_changed2(idval, title='Residuals for example'):
     """Check that the resid plot has changed
 
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui._session._residplot
+    rplot = ui.get_resid_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -354,10 +353,10 @@ def check_resid_changed2(title='Residuals for example'):
     assert rplot.yerr == pytest.approx(calc_errors(_data_y2))
 
 
-def check_ratio(title='Ratio of Data to Model for example'):
+def check_ratio(idval, title='Ratio of Data to Model for example'):
     """Check that the ratio plot has not changed"""
 
-    rplot = ui._session._ratioplot
+    rplot = ui.get_ratio_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -368,13 +367,13 @@ def check_ratio(title='Ratio of Data to Model for example'):
     assert rplot.yerr == pytest.approx(dy)
 
 
-def check_ratio_changed():
+def check_ratio_changed(idval):
     """Check that the ratio plot has changed
 
     Assumes that change_example has been called
     """
 
-    rplot = ui._session._ratioplot
+    rplot = ui.get_ratio_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == 'Ratio of Data to Model for example'
@@ -385,13 +384,13 @@ def check_ratio_changed():
     assert rplot.yerr == pytest.approx(dy)
 
 
-def check_ratio_changed2(title='Ratio of Data to Model for example'):
+def check_ratio_changed2(idval, title='Ratio of Data to Model for example'):
     """Check that the ratio plot has changed
 
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui._session._ratioplot
+    rplot = ui.get_ratio_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -402,10 +401,10 @@ def check_ratio_changed2(title='Ratio of Data to Model for example'):
     assert rplot.yerr == pytest.approx(dy)
 
 
-def check_delchi(title='Sigma Residuals for example'):
+def check_delchi(idval, title='Sigma Residuals for example'):
     """Check that the delchi plot has not changed"""
 
-    rplot = ui._session._delchiplot
+    rplot = ui.get_delchi_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -418,13 +417,13 @@ def check_delchi(title='Sigma Residuals for example'):
     assert rplot.yerr == pytest.approx([1.0 for y in _data_y])
 
 
-def check_delchi_changed(title='Sigma Residuals for example'):
+def check_delchi_changed(idval, title='Sigma Residuals for example'):
     """Check that the delchi plot has changed
 
     Assumes that change_example has been called
     """
 
-    rplot = ui._session._delchiplot
+    rplot = ui.get_delchi_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -437,13 +436,13 @@ def check_delchi_changed(title='Sigma Residuals for example'):
     assert rplot.yerr == pytest.approx([1.0 for y in _data_x])
 
 
-def check_delchi_changed2(title='Sigma Residuals for example'):
+def check_delchi_changed2(idval, title='Sigma Residuals for example'):
     """Check that the delchi plot has changed
 
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui._session._delchiplot
+    rplot = ui.get_delchi_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -456,10 +455,10 @@ def check_delchi_changed2(title='Sigma Residuals for example'):
     assert rplot.yerr == pytest.approx([1.0 for y in _data_x])
 
 
-def check_chisqr():
+def check_chisqr(idval):
     """Check that the chisqr plot has not changed"""
 
-    rplot = ui._session._chisqrplot
+    rplot = ui.get_chisqr_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -472,13 +471,13 @@ def check_chisqr():
     assert rplot.yerr is None
 
 
-def check_chisqr_changed():
+def check_chisqr_changed(idval):
     """Check that the chisqr plot has changed
 
     Assumes that change_example has been called
     """
 
-    rplot = ui._session._chisqrplot
+    rplot = ui.get_chisqr_plot(id=idval, recalc=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -491,78 +490,78 @@ def check_chisqr_changed():
     assert rplot.yerr is None
 
 
-def check_fit():
+def check_fit(idval):
     """Check that the fit plot has not changed"""
 
-    check_example()
-    check_model()
+    check_example(idval)
+    check_model(idval)
 
 
-def check_fit_changed():
+def check_fit_changed(idval):
     """Check that the fit plot has changed
 
     Assumes that change_fit has been called
     """
 
-    check_example_changed()
-    check_model_changed()
+    check_example_changed(idval)
+    check_model_changed(idval)
 
 
-def check_fit_resid():
+def check_fit_resid(idval):
     """Check that the fit + resid plot has not changed"""
 
-    check_example(xlabel='')
-    check_model(xlabel='')
-    check_resid(title='')
+    check_example(idval, xlabel='')
+    check_model(idval, xlabel='')
+    check_resid(idval, title='')
 
 
-def check_fit_resid_changed():
+def check_fit_resid_changed(idval):
     """Check that the fit + resid plot has changed
 
     Assumes that change_fit has been called
     """
 
-    check_example_changed(xlabel='')
-    check_model_changed(xlabel='')
-    check_resid_changed2(title='')
+    check_example_changed(idval, xlabel='')
+    check_model_changed(idval, xlabel='')
+    check_resid_changed2(idval, title='')
 
 
-def check_fit_ratio():
+def check_fit_ratio(idval):
     """Check that the fit + ratio plot has not changed"""
 
-    check_example(xlabel='')
-    check_model(xlabel='')
-    check_ratio(title='')
+    check_example(idval, xlabel='')
+    check_model(idval, xlabel='')
+    check_ratio(idval, title='')
 
 
-def check_fit_ratio_changed():
+def check_fit_ratio_changed(idval):
     """Check that the fit + ratio plot has changed
 
     Assumes that change_fit has been called
     """
 
-    check_example_changed(xlabel='')
-    check_model_changed(xlabel='')
-    check_ratio_changed2(title='')
+    check_example_changed(idval, xlabel='')
+    check_model_changed(idval, xlabel='')
+    check_ratio_changed2(idval, title='')
 
 
-def check_fit_delchi():
+def check_fit_delchi(idval):
     """Check that the fit + delchi plot has not changed"""
 
-    check_example(xlabel='')
-    check_model(xlabel='')
-    check_delchi(title='')
+    check_example(idval, xlabel='')
+    check_model(idval, xlabel='')
+    check_delchi(idval, title='')
 
 
-def check_fit_delchi_changed():
+def check_fit_delchi_changed(idval):
     """Check that the fit + delchi plot has changed
 
     Assumes that change_fit has been called
     """
 
-    check_example_changed(xlabel='')
-    check_model_changed(xlabel='')
-    check_delchi_changed2(title='')
+    check_example_changed(idval, xlabel='')
+    check_model_changed(idval, xlabel='')
+    check_delchi_changed2(idval, title='')
 
 
 _plot_all = [
@@ -628,7 +627,7 @@ def test_plot_xxx(idval, pfunc, checkfunc, clean_ui):
     else:
         pfunc(idval)
 
-    checkfunc()
+    checkfunc(idval)
 
 
 @requires_plotting
@@ -672,7 +671,7 @@ def test_plot_xxx_replot(idval, plotfunc, changefunc, checkfunc, clean_ui):
     else:
         plotfunc(idval, replot=True)
 
-    checkfunc()
+    checkfunc(idval)
 
 
 @requires_plotting
@@ -719,31 +718,31 @@ def test_plot_xxx_change(idval, plotfunc, changefunc, checkfunc, clean_ui):
     else:
         plotfunc(idval)
 
-    checkfunc()
+    checkfunc(idval)
 
 
-_dplot = (ui.get_data_plot_prefs, "_dataplot", ui.plot_data)
-_mplot = (ui.get_model_plot_prefs, "_modelplot", ui.plot_model)
+_dplot = (ui.get_data_plot_prefs, ui.get_data_plot, ui.plot_data)
+_mplot = (ui.get_model_plot_prefs, ui.get_model_plot, ui.plot_model)
 
 
 @requires_plotting
-@pytest.mark.parametrize("getprefs,attr,plotfunc",
+@pytest.mark.parametrize("getprefs,getplot,plotfunc",
                          [_dplot, _mplot])
-def test_prefs_change_session_objects(getprefs, attr, plotfunc, clean_ui):
+def test_prefs_change_session_objects(getprefs, getplot, plotfunc, clean_ui):
     """Is a plot-preference change also reflected in the session object?
 
     This is intended to test an assumption that will be used in the
     plot_fit_xxx routines rather than of an explicit user-visible
     behavior. The test may be "obvious behavior" given how
     get_data_plot_prefs works, but DJB wanted to ensure this
-    behavior/assumption was tested.
+    behavior/assumption was tested. The setup has changed since
+    the test was written.
     """
 
-    # This has to be retrieved here, rather than passed in in the
-    # parametrize list, as the ui._session object is changed by
-    # the clean_ui fixture.
+    # This used to access the plot object directly, but is now
+    # using an accessor function.
     #
-    session = getattr(ui._session, attr)
+    session = getplot(recalc=False)
 
     # All but the last assert are just to check things are behaving
     # as expected (and stuck into one routine rather than have a
@@ -775,13 +774,13 @@ def test_prefs_change_session_objects(getprefs, attr, plotfunc, clean_ui):
 def test_prefs_change_session_objects_fit(clean_ui):
     """Is plot-preference change reflected in the fitplot session object?
 
-    This is test_prefs_change_session_objects but for the _fitplot
-    attribute. This test encodes the current behavior - so we can see
+    This is test_prefs_change_session_objects but for the fit plot
+    object. This test encodes the current behavior - so we can see
     if things change in the future - rather than being a statement
     about what we expect/want to happen.
     """
 
-    plotobj = ui._session._fitplot
+    plotobj = ui.get_fit_plot(recalc=False)
     assert plotobj.dataplot is None
     assert plotobj.modelplot is None
 
@@ -802,19 +801,19 @@ def test_prefs_change_session_objects_fit(clean_ui):
     # We have already checked this in previous tests, but
     # just in case
     #
-    assert ui._session._dataplot.plot_prefs['xlog']
-    assert ui._session._modelplot.plot_prefs['ylog']
+    assert ui.get_data_plot(id=12, recalc=False).plot_prefs['xlog']
+    assert ui.get_model_plot(id=12, recalc=False).plot_prefs['ylog']
 
     # Now check that the fit plot has picked up these changes;
     # the simplest way is to check that the data/model plots
     # are now referencing the underlying _data/_model plot
     # attributes. An alternative would be to check that
     # plotobj.dataplot.plot_prefs['xlog'] is True
-    # which is less restrictive, but for not check the
+    # which is less restrictive, but for now check the
     # equality
     #
-    assert plotobj.dataplot is ui._session._dataplot
-    assert plotobj.modelplot is ui._session._modelplot
+    assert plotobj.dataplot is ui.get_data_plot(id=12, recalc=False)
+    assert plotobj.modelplot is ui.get_model_plot(id=12, recalc=False)
 
 
 @pytest.mark.parametrize("plotfunc", [ui.plot_cdf, ui.plot_pdf])
@@ -992,23 +991,18 @@ def test_get_kernel_plot_recalc(session):
 
 
 @requires_plotting
-@pytest.mark.parametrize("plotobj,plotfunc",
-                         [("_residplot", ui.plot_resid),
-                          ("_delchiplot", ui.plot_delchi)
+@pytest.mark.parametrize("getplot,plotfunc",
+                         [(ui.get_resid_plot, ui.plot_resid),
+                          (ui.get_delchi_plot, ui.plot_delchi)
                           ])
-def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
+def test_plot_resid_ignores_ylog(getplot, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?
 
     Note that plot_chisqr is not included in support for ignoring
     ylog (since the data should be positive in this case).
     """
 
-    # access it this way to ensure have access to the actual
-    # object used by the session object in this test (as the
-    # clean call done by the clean_ui fixture will reset the
-    # plot objects).
-    #
-    prefs = getattr(ui._session, plotobj).plot_prefs
+    prefs = getplot(recalc=False).plot_prefs
 
     setup_example(None)
 
@@ -1024,20 +1018,15 @@ def test_plot_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
 
 
 @requires_plotting
-@pytest.mark.parametrize("plotobj,plotfunc",
-                         [("_residplot", ui.plot_fit_resid),
-                          ("_delchiplot", ui.plot_fit_delchi)
+@pytest.mark.parametrize("getplot,plotfunc",
+                         [(ui.get_resid_plot, ui.plot_fit_resid),
+                          (ui.get_delchi_plot, ui.plot_fit_delchi)
                           ])
-def test_plot_fit_resid_ignores_ylog(plotobj, plotfunc, clean_ui):
+def test_plot_fit_resid_ignores_ylog(getplot, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?"""
 
-    # access it this way to ensure have access to the actual
-    # object used by the session object in this test (as the
-    # clean call done by the clean_ui fixture will reset the
-    # plot objects).
-    #
-    rprefs = getattr(ui._session, plotobj).plot_prefs
-    dprefs = ui._session._dataplot.plot_prefs
+    rprefs = getplot(recalc=False).plot_prefs
+    dprefs = ui.get_data_plot(recalc=False).plot_prefs
 
     setup_example(None)
 
