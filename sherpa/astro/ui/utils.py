@@ -147,24 +147,12 @@ class Session(sherpa.ui.utils.Session):
         self._background_models = {}
         self._background_sources = {}
 
-        self._dataphaplot = sherpa.astro.plot.DataPHAPlot()
-        self._astrosourceplot = sherpa.astro.plot.SourcePlot()
-        self._astrocompsrcplot = sherpa.astro.plot.ComponentSourcePlot()
-        self._astrocompmdlplot = sherpa.astro.plot.ComponentModelPlot()
-        self._modelhisto = sherpa.astro.plot.ModelHistogram()
-        self._bkgmodelhisto = sherpa.astro.plot.BkgModelHistogram()
-
-        # self._bkgdataplot = sherpa.astro.plot.DataPHAPlot()
-        self._bkgdataplot = sherpa.astro.plot.BkgDataPlot()
+        # The fit-model for PHA data does not get stored in a field
+        # (it is created whenever needed), so we should do the same
+        # for this case.
+        #
         self._bkgmodelplot = sherpa.astro.plot.BkgModelPHAHistogram()
-        self._bkgfitplot = sherpa.astro.plot.BkgFitPlot()
-        self._bkgchisqrplot = sherpa.astro.plot.BkgChisqrPlot()
-        self._bkgdelchiplot = sherpa.astro.plot.BkgDelchiPlot()
-        self._bkgresidplot = sherpa.astro.plot.BkgResidPlot()
-        self._bkgratioplot = sherpa.astro.plot.BkgRatioPlot()
-        self._bkgsourceplot = sherpa.astro.plot.BkgSourcePlot()
-        self._arfplot = sherpa.astro.plot.ARFPlot()
-        self._orderplot = sherpa.astro.plot.OrderPlot()
+
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
@@ -189,21 +177,25 @@ class Session(sherpa.ui.utils.Session):
         # The keys are used by the set_xlog/... calls to identify what
         # plot objects are changed by a given set_xxx(label) call.
         #
-        self._plot_types["data"].append(self._dataphaplot)
-        self._plot_types["model"].append(self._modelhisto)
-        self._plot_types["model_component"].append(self._astrocompmdlplot)
-        self._plot_types["source"].append(self._astrosourceplot)
-        self._plot_types["source_component"].append(self._astrocompsrcplot)
-        self._plot_types["arf"] = [self._arfplot]
-        self._plot_types["bkg"] = [self._bkgdataplot]
-        self._plot_types["bkg_model"] = [self._bkgmodelhisto]
-        self._plot_types["bkg_fit"] = [self._bkgfitplot]
-        self._plot_types["bkg_source"] = [self._bkgsourceplot]
-        self._plot_types["bkg_ratio"] = [self._bkgratioplot]
-        self._plot_types["bkg_resid"] = [self._bkgresidplot]
-        self._plot_types["bkg_delchi"] = [self._bkgdelchiplot]
-        self._plot_types["bkg_chisqr"] = [self._bkgchisqrplot]
-        self._plot_types["order"] = [self._orderplot]
+        self._plot_types["data"].append(sherpa.astro.plot.DataPHAPlot())
+        self._plot_types["model"].append(sherpa.astro.plot.ModelHistogram())
+        self._plot_types["model_component"].append(sherpa.astro.plot.ComponentModelPlot())
+        self._plot_types["source"].append(sherpa.astro.plot.SourcePlot())
+        self._plot_types["source_component"].append(sherpa.astro.plot.ComponentSourcePlot())
+        self._plot_types["arf"] = [sherpa.astro.plot.ARFPlot()]
+        self._plot_types["order"] = [sherpa.astro.plot.OrderPlot()]
+
+        # The bkg* plot types are special in that their "base" type
+        # is DataPHA; they are not used with Data1D/Data1DInt objects.
+        #
+        self._plot_types["bkg"] = [sherpa.astro.plot.BkgDataPlot()]
+        self._plot_types["bkg_model"] = [sherpa.astro.plot.BkgModelHistogram()]
+        self._plot_types["bkg_fit"] = [sherpa.astro.plot.BkgFitPlot()]
+        self._plot_types["bkg_source"] = [sherpa.astro.plot.BkgSourcePlot()]
+        self._plot_types["bkg_ratio"] = [sherpa.astro.plot.BkgRatioPlot()]
+        self._plot_types["bkg_resid"] = [sherpa.astro.plot.BkgResidPlot()]
+        self._plot_types["bkg_delchi"] = [sherpa.astro.plot.BkgDelchiPlot()]
+        self._plot_types["bkg_chisqr"] = [sherpa.astro.plot.BkgChisqrPlot()]
 
         # Set up temporary aliases
         #

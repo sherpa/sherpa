@@ -319,29 +319,10 @@ class Session(NoNewAttributesAfterInit):
 
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
-        self._dataplot = sherpa.plot.DataPlot()
-        self._datahistplot = sherpa.plot.DataHistogramPlot()
-        self._modelplot = sherpa.plot.ModelPlot()
-        self._modelhistplot = sherpa.plot.ModelHistogramPlot()
-
-        self._compmdlplot = sherpa.plot.ComponentModelPlot()
-        self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
-
-        self._compsrcplot = sherpa.plot.ComponentSourcePlot()
-        self._compsrchistplot = sherpa.plot.ComponentSourceHistogramPlot()
 
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
-        self._sourceplot = sherpa.plot.SourcePlot()
-        self._sourcehistplot = sherpa.plot.SourceHistogramPlot()
-        self._fitplot = sherpa.plot.FitPlot()
-        self._residplot = sherpa.plot.ResidPlot()
-        self._delchiplot = sherpa.plot.DelchiPlot()
-        self._chisqrplot = sherpa.plot.ChisqrPlot()
-        self._ratioplot = sherpa.plot.RatioPlot()
-        self._psfplot = sherpa.plot.PSFPlot()
-        self._kernelplot = sherpa.plot.PSFKernelPlot()
         self._lrplot = sherpa.plot.LRHistogram()
         self._pdfplot = sherpa.plot.PDFPlot()
         self._cdfplot = sherpa.plot.CDFPlot()
@@ -363,19 +344,27 @@ class Session(NoNewAttributesAfterInit):
         #
         # Note that not all plot_xxx commands use this structure.
         #
+        # The values are a list of plot objects related to this plot
+        # type. The first value is the "default" value and the second,
+        # if it exists, is the class used for Data1DInt data. For the
+        # astro class the plot types that have two values are extended
+        # to three, with the addition of a DataPHA specific
+        # class. This approach is not particularly extensible but at
+        # the moment it does not need to be anything more complex.
+        #
         self._plot_types = {
-            "data": [self._dataplot, self._datahistplot],
-            "model": [self._modelplot, self._modelhistplot],
-            "model_component": [self._compmdlplot, self._compmdlhistplot],
-            "source": [self._sourceplot, self._sourcehistplot],
-            "source_component": [self._compsrcplot, self._compsrchistplot],
-            "fit": [self._fitplot],
-            "resid": [self._residplot],
-            "ratio": [self._ratioplot],
-            "delchi": [self._delchiplot],
-            "chisqr": [self._chisqrplot],
-            "psf": [self._psfplot],
-            "kernel": [self._kernelplot]
+            "data": [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
+            "model": [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
+            "model_component": [sherpa.plot.ComponentModelPlot(), sherpa.plot.ComponentModelHistogramPlot()],
+            "source": [sherpa.plot.SourcePlot(), sherpa.plot.SourceHistogramPlot()],
+            "source_component": [sherpa.plot.ComponentSourcePlot(), sherpa.plot.ComponentSourceHistogramPlot()],
+            "fit": [sherpa.plot.FitPlot()],
+            "resid": [sherpa.plot.ResidPlot()],
+            "ratio": [sherpa.plot.RatioPlot()],
+            "delchi": [sherpa.plot.DelchiPlot()],
+            "chisqr": [sherpa.plot.ChisqrPlot()],
+            "psf": [sherpa.plot.PSFPlot()],
+            "kernel": [sherpa.plot.PSFKernelPlot()]
         }
 
         # Temporary aliases so that calls to set_xlog/.. will still succeed,
