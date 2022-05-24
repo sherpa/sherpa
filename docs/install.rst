@@ -401,6 +401,11 @@ C++ compilers to use if not found by ``setup.py``.
      export PYTHON_LDFLAGS=' '
 
    That is, the variable is set to a space, not the empty string.
+   For the clang compiler (which Apple confusingly aliases to ``gcc``) you
+   also need to set::
+
+       export CFLAGS='-Wno-implicit-function-declaration'
+
 
 A standard installation
 ^^^^^^^^^^^^^^^^^^^^^^^
