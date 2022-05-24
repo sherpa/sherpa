@@ -50,7 +50,8 @@ TEST2 = [4, 5, 6]
 #
 # Note: this test could be run even if plotting is not available,
 # since in that case the initial get_data_plot_prefs() call will
-# return an empty dictionary rather than a filled one.
+# return an empty dictionary rather than a filled one. However,
+# this seems to cause problems so keep the fixture.
 #
 @requires_plotting
 def test_set_log():
@@ -65,6 +66,36 @@ def test_set_log():
     assert not session.get_data_plot_prefs()['xlog']
     session.set_ylinear()
     assert not session.get_data_plot_prefs()['ylog']
+
+
+@requires_plotting
+def test_set_log_clean():
+    """Cleaning the session resets the plot preferences."""
+
+    # relies on the tests in test_set_log
+    session = Session()
+    session.set_xlog()
+    session.set_ylog()
+
+    session.clean()
+    assert not session.get_data_plot_prefs()['xlog']
+    assert not session.get_data_plot_prefs()['ylog']
+
+
+@requires_plotting
+def test_set_log_does_not_change_other_sessions():
+    """The plot preferences in different sessions are distinct.
+    """
+
+    session1 = Session()
+    session2 = Session()
+    session1.set_xlog()
+    session2.set_ylog()
+
+    assert session1.get_data_plot_prefs()['xlog']
+    assert not session1.get_data_plot_prefs()['ylog']
+    assert not session2.get_data_plot_prefs()['xlog']
+    assert session2.get_data_plot_prefs()['ylog']
 
 
 # bug #262
@@ -971,3 +1002,24 @@ def test_issue_16():
     assert s.list_data_ids() == []
     assert s.list_model_ids() == []
     assert s.list_model_components() == []
+
+
+@pytest.mark.parametrize("value", ["data", "model", "source", "fit", "resid", "ratio",
+                                   "delchi", "chisqr", "psf", "kernel", "compsource",
+                                   "compmodel", "source_component", "model_component",])
+def test_set_default_id_check_invalid(value):
+    """Check we error out with an invalid id.
+
+    There are other checks of this logic, but not as simple
+    as this. The test in
+    sherpa/astro/ui/tests/test_astro_session.py::test_id_checks_astro_session
+    adds a test for astro-specific keywords.
+
+    """
+
+    s = Session()
+
+    with pytest.raises(IdentifierErr) as err:
+        s.set_default_id(value)
+
+    assert str(err.value) == f"identifier '{value}' is a reserved word"

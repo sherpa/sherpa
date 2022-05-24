@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,28 +22,28 @@
 Objects and utilities used by multiple Sherpa subpackages
 """
 
+from configparser import ConfigParser, NoSectionError
+import inspect
 import logging
 import operator
 import os
-import inspect
-from types import FunctionType as function
-from types import MethodType as instancemethod
+import pydoc
 import string
 import sys
-from configparser import ConfigParser, NoSectionError
-import pydoc
+from types import FunctionType as function
+from types import MethodType as instancemethod
 
 import numpy
 import numpy.random
 import numpy.fft
 
+from sherpa import get_config
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
 from sherpa.utils._utils import hist1d, hist2d
 from sherpa.utils import _utils, _psf
 from sherpa.utils.err import IOErr
 
-from sherpa import get_config
 
 warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug

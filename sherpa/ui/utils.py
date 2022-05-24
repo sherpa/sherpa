@@ -17,26 +17,26 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import copyreg as copy_reg
-import pickle
+
 from configparser import ConfigParser
 import copy
+import copyreg as copy_reg
 import importlib
-import logging
-import sys
-import os
 import inspect
+import logging
+import os
+import pickle
+import sys
 
 import numpy
 
+from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, ModelErr, SessionErr
-
-from sherpa import get_config
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
