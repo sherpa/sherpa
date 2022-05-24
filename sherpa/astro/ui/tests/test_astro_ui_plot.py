@@ -4087,6 +4087,87 @@ def test_set_ylog_bkg(plot, yscale, clean_astro_ui):
     assert axes[0].yaxis.get_scale() == yscale
 
 
+SET_CPT_ARGS = [("compsource", ui.get_source_component_plot),
+                # ("source_component", ui.get_source_component_plot),
+                ("compmodel", ui.get_model_component_plot),
+                # ("model_component", ui.get_model_component_plot)
+                ]
+
+@requires_plotting
+@pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
+def test_set_ylog_foo_component_data1d(plot, get, clean_astro_ui):
+    """Check y axis after_ylog('<component type>'), Data1D data.
+
+    There has been some confusion in the code over whether this
+    works or not, so this is a regression test.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [4, 7, 5])
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 6
+
+    plotobj = get(mdl, recalc=False)
+
+    assert not plotobj.plot_prefs["xlog"]
+    assert not plotobj.plot_prefs["ylog"]
+
+    ui.set_ylog(plot)
+
+    assert not plotobj.plot_prefs["xlog"]
+    assert plotobj.plot_prefs["ylog"]
+
+
+@requires_plotting
+@pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
+def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
+    """Check y axis after_ylog('<component type>'), Data1DInt data.
+
+    There has been some confusion in the code over whether this
+    works or not, so this is a regression test.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [2, 2.5, 6], [4, 7, 5], ui.Data1DInt)
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 6
+
+    plotobj = get(mdl, recalc=False)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert not plotobj.histo_prefs["ylog"]
+
+    ui.set_ylog(plot)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert not plotobj.histo_prefs["ylog"]  # Really this should be set
+
+
+@requires_plotting
+@pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
+def test_set_ylog_foo_component_datapha(plot, get, clean_astro_ui):
+    """Check y axis after_ylog('<component type>'), DataPHA data.
+
+    There has been some confusion in the code over whether this
+    works or not, so this is a regression test.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [4, 7, 5], ui.DataPHA)
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 6
+
+    plotobj = get(mdl, recalc=False)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert not plotobj.histo_prefs["ylog"]
+
+    ui.set_ylog(plot)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert plotobj.histo_prefs["ylog"]
+
+
 @requires_plotting
 def test_pha_model_plot_filter_range_manual_1024(clean_astro_ui):
     """Check if issue #1024 is fixed.
