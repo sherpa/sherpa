@@ -982,6 +982,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
         kwargs['ignore'] = True
         self.notice(*args, **kwargs)
 
+    def get_filter_expr(self):
+        # Could probably come up with something relevant here
+        raise NotImplementedError("get_filter_expr is not over-ridden")
+
+    def get_filter(self):
+        # Could probably come up with something relevant here
+        raise NotImplementedError("get_filter is not over-ridden")
+
     def eval_model(self, modelfunc):
         return modelfunc(*self.get_indep())
 

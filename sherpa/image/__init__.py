@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -60,6 +61,9 @@ class Image(NoNewAttributesAfterInit):
 
     def __init__(self):
         NoNewAttributesAfterInit.__init__(self)
+
+    def prepare_image(self, *args, **kwargs):
+        raise NotImplementedError("The prepare_image method has not been over-ridden")
 
     def close():
         """Stop the image viewer."""

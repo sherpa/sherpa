@@ -315,6 +315,10 @@ class Plot(NoNewAttributesAfterInit):
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
 
+    def prepare(self, *args, **kwargs):
+        """Add the necessary data to plot."""
+        raise NotImplementedError("The prepare method has not been over-ridden")
+
 
 class Contour(NoNewAttributesAfterInit):
     "Base class for contour plots"
@@ -347,6 +351,10 @@ class Contour(NoNewAttributesAfterInit):
     def overcontour(self, *args, **kwargs):
         kwargs['overcontour'] = True
         self.contour(*args, **kwargs)
+
+    def prepare(self, *args, **kwargs):
+        """Add the necessary data to plot."""
+        raise NotImplementedError("The prepare method has not been over-ridden")
 
 
 class Point(NoNewAttributesAfterInit):
@@ -457,6 +465,10 @@ class Histogram(NoNewAttributesAfterInit):
     def overplot(self, *args, **kwargs):
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
+
+    def prepare(self, *args, **kwargs):
+        """Add the necessary data to plot."""
+        raise NotImplementedError("The prepare method has not been over-ridden")
 
 
 class HistogramPlot(Histogram):

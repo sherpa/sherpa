@@ -30,9 +30,12 @@
 # pylint: disable=redefined-builtin
 # pylint: disable=redefined-argument-from-local
 
+from __future__ import annotations
+
 import logging
 import os
 import sys
+from typing import Optional, Tuple, Union
 import warnings
 
 import numpy
@@ -56,6 +59,10 @@ from sherpa.astro import fake
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
+
+# How best to share these aliases?
+OptionalIdType = Union[None, int, str]
+PlotObject = Union[sherpa.plot.Plot, sherpa.plot.Histogram]
 
 
 __all__ = ('Session',)
@@ -101,7 +108,7 @@ class Session(sherpa.ui.utils.Session):
     # Standard methods
     ###########################################################################
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.clean()
         super().__init__()
@@ -361,7 +368,7 @@ class Session(sherpa.ui.utils.Session):
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
                 self._xspec_state = None
 
-    def _get_show_data(self, id=None):
+    def _get_show_data(self, id: OptionalIdType = None) -> str:
 
         # pylint: disable=too-many-branches
         if id is None:
@@ -418,7 +425,7 @@ class Session(sherpa.ui.utils.Session):
 
         return data_str
 
-    def _get_show_bkg(self, id=None, bkg_id=None):
+    def _get_show_bkg(self, id: OptionalIdType = None, bkg_id: Optional[int] = None) -> str:
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -457,7 +464,7 @@ class Session(sherpa.ui.utils.Session):
 
         return data_str
 
-    def _get_show_bkg_model(self, id=None, bkg_id=None):
+    def _get_show_bkg_model(self, id: OptionalIdType = None, bkg_id: Optional[int] = None) -> str:
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -478,7 +485,7 @@ class Session(sherpa.ui.utils.Session):
 
         return model_str
 
-    def _get_show_bkg_source(self, id=None, bkg_id=None):
+    def _get_show_bkg_source(self, id: OptionalIdType = None, bkg_id: Optional[int] = None) -> str:
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -10358,7 +10365,9 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    def _get_plotobj(self, plottype, *, id=None, recalc=False):
+    def _get_plotobj(self, plottype: str, *,
+                     id: Union[None, int, str] = None,
+                     recalc: bool = False) -> Tuple[PlotObject, Optional[sherpa.data.Data]]:
         """Select the plot object for the given plottype.
 
         The current mechanism to chose a specific type of object
@@ -14672,6 +14681,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: no reason can't k-correct wavelength range,
     # but need to work out how to identify the units
+    #
     def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
                    id=None, bkg_id=None):
         """Calculate the K correction for a model.
