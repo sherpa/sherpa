@@ -189,13 +189,11 @@ class Session(sherpa.ui.utils.Session):
         # The keys are used by the set_xlog/... calls to identify what
         # plot objects are changed by a given set_xxx(label) call.
         #
-        self._plot_types["order"] = [self._orderplot]
-        self._plot_types["source_component"].append(self._astrocompsrcplot)
-        self._plot_types["model_component"].append(self._astrocompmdlplot)
-
         self._plot_types["data"].append(self._dataphaplot)
-        self._plot_types["source"].append(self._astrosourceplot)
         self._plot_types["model"].append(self._modelhisto)
+        self._plot_types["model_component"].append(self._astrocompmdlplot)
+        self._plot_types["source"].append(self._astrosourceplot)
+        self._plot_types["source_component"].append(self._astrocompsrcplot)
         self._plot_types["arf"] = [self._arfplot]
         self._plot_types["bkg"] = [self._bkgdataplot]
         self._plot_types["bkg_model"] = [self._bkgmodelhisto]
@@ -205,6 +203,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types["bkg_resid"] = [self._bkgresidplot]
         self._plot_types["bkg_delchi"] = [self._bkgdelchiplot]
         self._plot_types["bkg_chisqr"] = [self._bkgchisqrplot]
+        self._plot_types["order"] = [self._orderplot]
 
         # Set up temporary aliases
         #
@@ -10311,37 +10310,23 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    def get_data_plot(self, id=None, recalc=True):
-        try:
-            d = self.get_data(id)
-        except IdentifierErr:
-            return super().get_data_plot(id, recalc=recalc)
+    def _get_plotobj(self, plottype, data=None):
+        """Select the plot object for the given plottype.
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._dataphaplot
-            if recalc:
-                plotobj.prepare(d, self.get_stat())
-            return plotobj
+        The current mechanism to chose a specific type of object
+        is not particularly extensible.
+        """
 
-        return super().get_data_plot(id, recalc=recalc)
+        # The assumption is that only those plottype values which have
+        # separate support for Data1D, Data1DInt, and DataPHA plots
+        # will have the data argument set.
+        #
+        if data is not None and isinstance(data, sherpa.astro.data.DataPHA):
+            return self._plot_types[plottype][2]
 
-    get_data_plot.__doc__ = sherpa.ui.utils.Session.get_data_plot.__doc__
-
-    def get_model_plot(self, id=None, recalc=True):
-        try:
-            d = self.get_data(id)
-        except IdentifierErr:
-            return super().get_model_plot(id, recalc=recalc)
-
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._modelhisto
-            if recalc:
-                plotobj.prepare(d, self.get_model(id), self.get_stat())
-            return plotobj
-
-        return super().get_model_plot(id, recalc=recalc)
-
-    get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
+        # Leave any other checks to the parent.
+        #
+        return super()._get_plotobj(plottype, data=data)
 
     # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self, id=None, lo=None, hi=None, recalc=True):
@@ -10420,47 +10405,52 @@ class Session(sherpa.ui.utils.Session):
         """
 
         try:
-            d = self.get_data(id)
+            data = self.get_data(id)
         except IdentifierErr as ie:
             if recalc:
                 raise ie
-            d = None
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._astrosourceplot
-            if recalc:
-                plotobj.prepare(d, self.get_source(id), lo=lo, hi=hi)
-            return plotobj
+            data = None
 
-        return super().get_source_plot(id, recalc=recalc)
+        plotobj = self._get_plotobj("source", data=data)
+        if recalc:
+            args = [data, self.get_source(id)]
+            kwargs = {}
+
+            if isinstance(data, sherpa.astro.data.DataPHA):
+                kwargs["lo"] = lo
+                kwargs["hi"] = hi
+
+            plotobj.prepare(*args, **kwargs)
+
+        return plotobj
 
     def get_fit_plot(self, id=None, recalc=True):
 
-        plotobj = self._fitplot
+        plotobj = self._get_plotobj("fit")
         if not recalc:
             return plotobj
 
-        d = self.get_data(id)
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        data = self.get_data(id)
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            return super().get_fit_plot(id, recalc=recalc)
 
-            dataobj = self.get_data_plot(id, recalc=recalc)
+        dataobj = self.get_data_plot(id, recalc=recalc)
 
-            # We don't use get_model_plot as that uses the ungrouped data
-            #    modelobj = self.get_model_plot(id)
-            # but we do want to use a histogram plot, not _modelplot.
-            # modelobj = self._modelplot
+        # We don't use get_model_plot as that uses the ungrouped data
+        #    modelobj = self.get_model_plot(id)
+        # but we do want to use a histogram plot, not _modelplot.
+        # modelobj = self._modelplot
 
-            # Should this object be stored in self? There's
-            # no way to get it by API (apart from get_fit_plot).
-            #
-            modelobj = sherpa.astro.plot.ModelPHAHistogram()
-            modelobj.prepare(d, self.get_model(id),
-                             self.get_stat())
+        # Should this object be stored in self? There's
+        # no way to get it by API (apart from get_fit_plot).
+        #
+        modelobj = sherpa.astro.plot.ModelPHAHistogram()
+        modelobj.prepare(data, self.get_model(id),
+                         self.get_stat())
 
-            plotobj.prepare(dataobj, modelobj)
-            return plotobj
-
-        return super().get_fit_plot(id, recalc=recalc)
+        plotobj.prepare(dataobj, modelobj)
+        return plotobj
 
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
 
@@ -10537,48 +10527,56 @@ class Session(sherpa.ui.utils.Session):
         model = self._check_model(model)
 
         try:
-            d = self.get_data(id)
+            data = self.get_data(id)
         except IdentifierErr as ie:
             if recalc:
                 raise ie
-            d = None
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._astrocompmdlplot
-            if recalc:
-                if not has_pha_response(model):
-                    try:
-                        rsp = self.get_response(id)  # TODO: bkg_id?
-                        model = rsp(model)
-                    except DataErr:
-                        # no response
-                        pass
+            data = None
 
-                plotobj.prepare(d, model, self.get_stat())
-            return plotobj
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            return super().get_model_component_plot(id, model=model, recalc=recalc)
 
-        return super().get_model_component_plot(id, model=model, recalc=recalc)
+        plotobj = self._get_plotobj("model_component", data=data)
+        if recalc:
+            if not has_pha_response(model):
+                try:
+                    rsp = self.get_response(id)  # TODO: bkg_id?
+                    model = rsp(model)
+                except DataErr:
+                    # no response
+                    pass
 
-    # copy doc string from sherpa.utils
+            plotobj.prepare(data, model, self.get_stat())
+
+        return plotobj
+
     def get_source_component_plot(self, id, model=None, recalc=True):
+
+        # The behavior with template model + PHA dataset is different
+        # to how the parent class would handle it: here we override
+        # the "use the template" path with the "use the PHA" path.
+        #
         if model is None:
             id, model = model, id
         model = self._check_model(model)
 
         try:
-            d = self.get_data(id)
+            data = self.get_data(id)
         except IdentifierErr as ie:
             if recalc:
                 raise ie
-            d = None
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
-            plotobj = self._astrocompsrcplot
-            if recalc:
-                plotobj.prepare(d, model, self.get_stat())
-            return plotobj
+            data = None
 
-        return super().get_source_component_plot(id, model=model, recalc=recalc)
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            return super().get_source_component_plot(id, model=model, recalc=recalc)
+
+        plotobj = self._get_plotobj("source_component", data=data)
+        if recalc:
+            plotobj.prepare(data, model, self.get_stat())
+
+        return plotobj
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
@@ -10643,7 +10641,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._orderplot
+        plotobj = self._get_plotobj("order")
         if recalc:
             plotobj.prepare(self._get_pha_data(id),
                             self.get_model(id), orders=orders)
@@ -10697,16 +10695,17 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._arfplot
+        plotobj = self._get_plotobj("arf")
         if not recalc:
             return plotobj
 
         id = self._fix_id(id)
-        arf = self._get_pha_data(id).get_arf(resp_id)
+        data = self._get_pha_data(id)
+        arf = data.get_arf(resp_id)
         if arf is None:
             raise DataErr('noarf', id)
 
-        plotobj.prepare(arf, self._get_pha_data(id))
+        plotobj.prepare(arf, data)
         return plotobj
 
     def get_bkg_fit_plot(self, id=None, bkg_id=None, recalc=True):
@@ -10782,7 +10781,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgfitplot
+        plotobj = self._get_plotobj("bkg_fit")
         if not recalc:
             return plotobj
 
@@ -10848,7 +10847,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgmodelhisto
+        plotobj = self._get_plotobj("bkg_model")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -10913,7 +10912,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgdataplot
+        plotobj = self._get_plotobj("bkg")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_stat())
@@ -11004,7 +11003,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgsourceplot
+        plotobj = self._get_plotobj("bkg_source")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_source(id, bkg_id),
@@ -11061,7 +11060,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgresidplot
+        plotobj = self._get_plotobj("bkg_resid")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11118,7 +11117,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgratioplot
+        plotobj = self._get_plotobj("bkg_ratio")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11176,7 +11175,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgdelchiplot
+        plotobj = self._get_plotobj("bkg_delchi")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
@@ -11234,7 +11233,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._bkgchisqrplot
+        plotobj = self._get_plotobj("bkg_chisqr")
         if recalc:
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_bkg_model(id, bkg_id),
