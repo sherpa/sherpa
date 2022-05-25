@@ -77,6 +77,28 @@ def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
+
+
+def get_plot_prefs(plotobj):
+    """Return the preferences for the plot object.
+
+    The current preference design has the attribute name be different
+    depending if this is a "histogram" style compared to a "line"
+    style, so wrap this logic up. If there is no matching preference
+    then raise an AttributeError. If the object contains both line and
+    histogram preferences then the histogram preferences are returned.
+
+    """
+
+    try:
+        return plotobj.histo_prefs
+    except AttributeError:
+        try:
+            return plotobj.plot_prefs
+        except AttributeError:
+            raise AttributeError("plot object has no preferences") from None
+
+
 ###############################################################################
 #
 # Pickling support
@@ -10825,11 +10847,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_data_plot(id, recalc=False)
-        try:
-            return plot.histo_prefs
-        except AttributeError:
-            return plot.plot_prefs
+        plotobj = self.get_data_plot(id, recalc=False)
+        return get_plot_prefs(plotobj)
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None, recalc=True):
@@ -11170,11 +11189,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_model_plot(id, recalc=False)
-        try:
-            return plot.histo_prefs
-        except AttributeError:
-            return plot.plot_prefs
+        plotobj = self.get_model_plot(id, recalc=False)
+        return get_plot_prefs(plotobj)
 
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.
@@ -12174,15 +12190,11 @@ class Session(NoNewAttributesAfterInit):
 
         for key in keys:
             for plot in self._plot_types[key]:
-                # This could be a "line" or "histogram" style plot.
-                #
                 try:
-                    plot.plot_prefs[item] = value
+                    get_plot_prefs(plot)[item] = value
                 except AttributeError:
-                    try:
-                        plot.histo_prefs[item] = value
-                    except AttributeError:
-                        pass
+                    # skip it if no preference setting
+                    pass
 
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.
@@ -13453,15 +13465,8 @@ class Session(NoNewAttributesAfterInit):
             # types of plot objects.
             #
             oldval = plot2.plot_prefs['xlog']
-            try:
-                dprefs = plot1.dataplot.histo_prefs
-            except AttributeError:
-                dprefs = plot1.dataplot.plot_prefs
-
-            try:
-                mprefs = plot1.modelplot.histo_prefs
-            except AttributeError:
-                mprefs = plot1.modelplot.plot_prefs
+            dprefs = get_plot_prefs(plot1.dataplot)
+            mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
                 plot2.plot_prefs['xlog'] = True
