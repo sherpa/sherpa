@@ -25,10 +25,11 @@ import numpy
 from sherpa.utils import get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
 
+from sherpa.astro import hc, charge_e
+
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
     filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
 from ._pileup import apply_pileup
-from sherpa.astro import hc, charge_e
 
 
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
@@ -247,7 +248,7 @@ def range_overlap_1dint(axislist, lo, hi):
     # as that makes code below easier.
     #
     if density:
-        assert lo >= axmin and lo < axmax
+        assert axmin <= lo < axmax
 
     lo = max(lo, axmin)
     hi = min(hi, axmax)
@@ -368,7 +369,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     # same (which is set by bounds_check when a density is requested).
     #
     if lo is not None and dim == 2 and lo == hi:
-        assert scale.sum() == 1, 'programmer error: sum={}'.format(scale.sum())
+        assert scale.sum() == 1, f"programmer error: sum={scale.sum()}"
         y /= numpy.abs(axislist[1] - axislist[0])
 
     flux = (scale * y).sum()
@@ -973,12 +974,12 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
         z = numpy.asarray(z)
 
     if 0 != sum(z[z < 0]):
-        raise IOErr('z<=0')
+        raise IOErr("z<=0")
 
     if obslo <= 0 or restlo <= 0 or obshi <= obslo or resthi <= restlo:
-        raise IOErr('erange')
+        raise IOErr("erange")
 
-    if hasattr(data, 'get_response'):
+    if hasattr(data, "get_response"):
         arf, rmf = data.get_response()
         elo = data.bin_lo
         ehi = data.bin_hi
@@ -992,22 +993,22 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
         elo, ehi = data.get_indep()
 
     if elo is None or ehi is None:
-        raise DataErr('noenergybins', data.name)
+        raise DataErr("noenergybins", data.name)
 
     emin = elo[0]
     emax = ehi[-1]
 
     if restlo < emin or resthi > emax:
-        raise IOErr('energoverlap', emin, emax, 'rest-frame',
-                    restlo, resthi, '')
+        raise IOErr("energoverlap", emin, emax, "rest-frame",
+                    restlo, resthi, "")
 
     if obslo * (1.0 + z.min()) < emin:
-        raise IOErr('energoverlap', emin, emax, 'observed-frame',
-                    restlo, resthi, "at a redshift of %f" % z.min())
+        raise IOErr("energoverlap", emin, emax, "observed-frame",
+                    restlo, resthi, f"at a redshift of {z.min()}")
 
     if obshi * (1.0 + z.max()) > emax:
-        raise IOErr('energoverlap', emin, emax, 'rest-frame',
-                    restlo, resthi, "at a redshift of %f" % z.min())
+        raise IOErr("energoverlap", emin, emax, "rest-frame",
+                    restlo, resthi, f"at a redshift of {z.min()}")
 
     zplus1 = z + 1.0
     flux_rest = _flux(data, restlo, resthi, model, eflux=True)
