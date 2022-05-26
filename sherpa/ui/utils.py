@@ -3851,6 +3851,9 @@ class Session(NoNewAttributesAfterInit):
     def _save_type(self, objtype, id, filename, **kwargs):
         if filename is None:
             id, filename = filename, id
+
+        _check_type(filename, string_types, 'filename', 'a string')
+
         d = self.get_data(id)
 
         args = None
@@ -4021,7 +4024,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('source', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4098,7 +4100,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('model', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4169,7 +4170,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('resid', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4240,7 +4240,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('delchi', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 

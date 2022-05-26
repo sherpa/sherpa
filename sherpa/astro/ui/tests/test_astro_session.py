@@ -232,9 +232,6 @@ def get_data(path, **kwargs):
 def test_save_model_ascii(session, kwargs, idval, tmp_path):
     """Can we use save_model?"""
 
-    if session == Session and idval is None:
-        pytest.xfail()
-
     s = session()
     outfile = tmp_path / "model.dat"
     save_ascii_file(s, kwargs, idval, outfile, s.save_model)
@@ -252,9 +249,6 @@ def test_save_model_ascii(session, kwargs, idval, tmp_path):
 @pytest.mark.parametrize("idval", [None, 1, "bob"])
 def test_save_source_ascii(session, kwargs, idval, tmp_path):
     """Can we use save_source?"""
-
-    if session == Session and idval is None:
-        pytest.xfail()
 
     s = session()
     outfile = tmp_path / "source.dat"
@@ -274,9 +268,6 @@ def test_save_source_ascii(session, kwargs, idval, tmp_path):
 def test_save_resid_ascii(session, kwargs, idval, tmp_path):
     """Can we use save_resid?"""
 
-    if session == Session and idval is None:
-        pytest.xfail()
-
     s = session()
     outfile = tmp_path / "resid.dat"
     save_ascii_file(s, kwargs, idval, outfile, s.save_resid)
@@ -294,9 +285,6 @@ def test_save_resid_ascii(session, kwargs, idval, tmp_path):
 @pytest.mark.parametrize("idval", [None, 1, "bob"])
 def test_save_delchi_ascii(session, kwargs, idval, tmp_path):
     """Can we use save_delchi?"""
-
-    if session == Session and idval is None:
-        pytest.xfail()
 
     s = session()
     outfile = tmp_path / "resid.dat"
