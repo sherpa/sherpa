@@ -162,6 +162,17 @@ known_warnings = {
             r"unclosed file .*/data.dat'.* closefd=True>",
             r"unclosed file .*/model.dat'.* closefd=True>",
             r"unclosed file .*/resid.out'.* closefd=True>",
+
+            # It would be nice if we could find this out from first principles,
+            # rather than only finding them from random CI runs
+            r"unclosed file <_io.BufferedReader name='/tmp/.*/data.dat'>",
+            r"unclosed file <_io.BufferedReader name='/tmp/.*/model.dat'>",
+            r"unclosed file <_io.BufferedReader name='/tmp/.*/resid.out'>",
+
+            # Does this replace the versions above?
+            r"unclosed file <_io.BufferedReader name='.*/aref_Cedge.fits'>",
+            r"unclosed file <_io.BufferedReader name='.*/aref_sample.fits'>",
+
         ],
     VisibleDeprecationWarning:
         [],
