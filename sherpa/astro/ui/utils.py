@@ -50,6 +50,38 @@ info = logging.getLogger(__name__).info
 __all__ = ('Session',)
 
 
+def get_pha_background(data, idval, bkg_id):
+    """Given a PHA data set, return the associated background.
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataPHA instance
+    id : int or str
+        The identifier (only used for an error message).
+    bkg_id : int
+        The background identifier
+
+    Returns
+    -------
+    bkg : sherpa.astro.data.DataPHA instance
+
+    Raises
+    ------
+    IdentifierErr
+        If there is no bkg_id background component in data.
+
+    """
+
+    assert idval is not None  # make sure id has been set
+    bkg = data.get_background(bkg_id)
+    if bkg is None:
+        raise IdentifierErr("getitem", "background data set",
+                            bkg_id,
+                            f"in PHA data set {idval} has not been set")
+
+    return bkg
+
+
 class Session(sherpa.ui.utils.Session):
 
     ###########################################################################
@@ -6309,14 +6341,10 @@ class Session(sherpa.ui.utils.Session):
         >>> bg = get_bkg('flare', 2)
 
         """
+        id = self._fix_id(id)
         data = self._get_pha_data(id)
-        bkg = data.get_background(bkg_id)
-        if bkg is None:
-            raise IdentifierErr('getitem', 'background data set',
-                                data._fix_background_id(bkg_id),
-                                'in PHA data set %s has not been set' %
-                                str(self._fix_id(id)))
-        return bkg
+        bkg_id = data._fix_background_id(bkg_id)
+        return get_pha_background(data, id, bkg_id)
 
     def set_bkg(self, id, bkg=None, bkg_id=None):
         """Set the background for a PHA data set.
