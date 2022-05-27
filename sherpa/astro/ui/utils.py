@@ -10330,23 +10330,36 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    def _get_plotobj(self, plottype, data=None):
+    def _get_plotobj(self, plottype, *, id=None, recalc=False):
         """Select the plot object for the given plottype.
 
         The current mechanism to chose a specific type of object
         is not particularly extensible.
         """
 
-        # The assumption is that only those plottype values which have
-        # separate support for Data1D, Data1DInt, and DataPHA plots
-        # will have the data argument set.
+        # This is ugly as we repeat a lot of the logic of
+        # super()._get_plotobj.
         #
-        if data is not None and isinstance(data, sherpa.astro.data.DataPHA):
-            return self._plot_types[plottype][2]
+        try:
+            data = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
 
-        # Leave any other checks to the parent.
-        #
-        return super()._get_plotobj(plottype, data=data)
+            data = None
+
+        plots = self._plot_types[plottype]
+        if len(plots) == 1 or data is None:
+            return plots[0], data
+
+        pos = 0
+        if isinstance(data, sherpa.astro.data.DataPHA):
+            pos = 2
+
+        elif isinstance(data, sherpa.data.Data1DInt):
+            pos = 1
+
+        return plots[pos], data
 
     # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self, id=None, lo=None, hi=None, recalc=True):
@@ -10424,15 +10437,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
-        plotobj = self._get_plotobj("source", data=data)
+        plotobj, data = self._get_plotobj("source", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -10448,11 +10453,10 @@ class Session(sherpa.ui.utils.Session):
 
     def get_fit_plot(self, id=None, recalc=True):
 
-        plotobj = self._get_plotobj("fit")
+        plotobj, data = self._get_plotobj("fit", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        data = self.get_data(id)
         if not isinstance(data, sherpa.astro.data.DataPHA):
             return super().get_fit_plot(id, recalc=recalc)
 
@@ -10547,21 +10551,21 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
-        if not isinstance(data, sherpa.astro.data.DataPHA):
-            return super().get_model_component_plot(id, model=model, recalc=recalc)
-
-        plotobj = self._get_plotobj("model_component", data=data)
+        plotobj, data = self._get_plotobj("model_component", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
+        # If this is not a PHA dataset then it is simple (we could
+        # call the super-class but we have already done most of the
+        # work).
+        #
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            plotobj.prepare(data, model, self.get_stat())
+            return plotobj
+
+        # If we have a PHA dataset then we want to add the response to the
+        # model, but only if it hasn't already been included.
+        #
         if not has_pha_response(model):
             try:
                 rsp = self.get_response(id)  # TODO: bkg_id?
@@ -10583,21 +10587,15 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
+        plotobj, data = self._get_plotobj("source_component", id=id, recalc=recalc)
 
         if not isinstance(data, sherpa.astro.data.DataPHA):
             return super().get_source_component_plot(id, model=model, recalc=recalc)
 
-        plotobj = self._get_plotobj("source_component", data=data)
-        if recalc:
-            plotobj.prepare(data, model, self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(data, model, self.get_stat())
         return plotobj
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
@@ -10663,12 +10661,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("order")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("order", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self._get_pha_data(id),
-                        self.get_model(id), orders=orders)
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            raise ArgumentErr("nopha", id)
+
+        plotobj.prepare(data, self.get_model(id), orders=orders)
         return plotobj
 
     def get_arf_plot(self, id=None, resp_id=None, recalc=True):
@@ -10719,12 +10720,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("arf")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("arf", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        id = self._fix_id(id)
-        data = self._get_pha_data(id)
+        if not isinstance(data, sherpa.astro.data.DataPHA):
+            raise ArgumentErr("nopha", id)
+
         arf = data.get_arf(resp_id)
         if arf is None:
             raise DataErr('noarf', id)
@@ -10805,7 +10808,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_fit")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_fit", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -10815,7 +10819,7 @@ class Session(sherpa.ui.utils.Session):
         # modelobj = self.get_bkg_model_plot(id, bkg_id, recalc=recalc)
 
         modelobj = self._bkgmodelplot
-        modelobj.prepare(self.get_bkg(id, bkg_id),
+        modelobj.prepare(get_pha_background(data, id, bkg_id),
                          self.get_bkg_model(id, bkg_id),
                          self.get_stat())
 
@@ -10871,11 +10875,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_model")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_model", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_bkg_model(id, bkg_id),
                         self.get_stat())
         return plotobj
@@ -10938,11 +10943,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_stat())
         return plotobj
 
@@ -11031,11 +11037,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_source")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_source", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_bkg_source(id, bkg_id),
                         lo=lo, hi=hi)
         return plotobj
@@ -11090,11 +11097,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_resid")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_resid", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_bkg_model(id, bkg_id),
                         self.get_stat())
         return plotobj
@@ -11149,11 +11157,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_ratio")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_ratio", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_bkg_model(id, bkg_id),
                         self.get_stat())
         return plotobj
@@ -11209,11 +11218,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_delchi")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_delchi", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_bkg_model(id, bkg_id),
                         self.get_stat())
         return plotobj
@@ -11269,11 +11279,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self._get_plotobj("bkg_chisqr")
+        id = self._fix_id(id)
+        plotobj, data = self._get_plotobj("bkg_chisqr", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_bkg(id, bkg_id),
+        plotobj.prepare(get_pha_background(data, id, bkg_id),
                         self.get_bkg_model(id, bkg_id),
                         self.get_stat())
         return plotobj

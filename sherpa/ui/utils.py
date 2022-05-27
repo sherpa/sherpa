@@ -1356,22 +1356,43 @@ class Session(NoNewAttributesAfterInit):
 
         return plottype in self._contour_types
 
-    def _get_plotobj(self, plottype, data=None):
+    def _get_plotobj(self, plottype, *, id=None, recalc=False):
         """Select the plot object for the given plottype.
 
         The current mechanism to chose a specific type of object
         is not particularly extensible.
         """
 
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False, plottype has multiple
+        # display objects, and the dataset has been changed since the
+        # last plot. It is up to the user in this case.
+        #
+        try:
+            data = self.get_data(id)
+        except IdentifierErr as ie:
+            if recalc:
+                raise ie
+
+            data = None
+
+        # If this is "untyped", that is, there is only one display
+        # object, then we can return it.
+        #
+        plots = self._plot_types[plottype]
+        if len(plots) == 1 or data is None:
+            return plots[0], data
+
         # The assumption is that only those plottype values which have
         # separate support for Data1D and Data1DInt plots will have
         # the data argument set.
         #
         pos = 0
-        if data is not None and isinstance(data, sherpa.data.Data1DInt):
+        if isinstance(data, sherpa.data.Data1DInt):
             pos = 1
 
-        return self._plot_types[plottype][pos]
+        return plots[pos], data
 
     def _get_contourobj(self, plottype):
         """Select the contour object for the given plottype."""
@@ -10777,20 +10798,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # Allow an answer to be returned if recalc is False and no
-        # data has been loaded. However, it's not obvious what the
-        # answer should be if recalc=False and the dataset has
-        # changed type since get_data_plot was last called.
-        #
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
-        plotobj = self._get_plotobj("data", data=data)
+        plotobj, data = self._get_plotobj("data", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -10948,15 +10956,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
-        plotobj = self._get_plotobj("model", data=data)
+        plotobj, data = self._get_plotobj("model", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -11022,15 +11022,7 @@ class Session(NoNewAttributesAfterInit):
                                 "\n is set for dataset {}.".format(id) +
                                 " You should use get_model_plot instead.")
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
-        plotobj = self._get_plotobj("source", data=data)
+        plotobj, data = self._get_plotobj("source", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -11098,15 +11090,7 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
-        plotobj = self._get_plotobj("model_component", data=data)
+        plotobj, data = self._get_plotobj("model_component", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
@@ -11174,19 +11158,20 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            data = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            data = None
-
         # This does not match other plots
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
+
+            try:
+                data = self.get_data(id)
+            except IdentifierErr as ie:
+                if recalc:
+                    raise ie
+
+                data = None
+
         else:
-            plotobj = self._get_plotobj("source_component", data=data)
+            plotobj, data = self._get_plotobj("source_component", id=id, recalc=recalc)
 
         if not recalc:
             return plotobj
@@ -11309,7 +11294,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("fit")
+        plotobj, _ = self._get_plotobj("fit", id=id, recalc=recalc)
+
         if not recalc:
             return plotobj
 
@@ -11373,11 +11359,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("resid")
+        plotobj, data = self._get_plotobj("resid", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_delchi_plot(self, id=None, recalc=True):
@@ -11436,11 +11422,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("delchi")
+        plotobj, data = self._get_plotobj("delchi", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_chisqr_plot(self, id=None, recalc=True):
@@ -11499,11 +11485,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("chisqr")
+        plotobj, data = self._get_plotobj("chisqr", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_ratio_plot(self, id=None, recalc=True):
@@ -11562,11 +11548,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("ratio")
+        plotobj, data = self._get_plotobj("ratio", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     def get_data_contour(self, id=None, recalc=True):
@@ -12108,11 +12094,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("psf")
+        plotobj, data = self._get_plotobj("psf", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_psf(id), self.get_data(id))
+        plotobj.prepare(self.get_psf(id), data)
         return plotobj
 
     def get_kernel_plot(self, id=None, recalc=True):
@@ -12153,11 +12139,11 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._get_plotobj("kernel")
+        plotobj, data = self._get_plotobj("kernel", id=id, recalc=recalc)
         if not recalc:
             return plotobj
 
-        plotobj.prepare(self.get_psf(id), self.get_data(id))
+        plotobj.prepare(self.get_psf(id), data)
         return plotobj
 
     #
