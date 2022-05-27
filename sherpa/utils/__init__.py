@@ -1145,8 +1145,7 @@ def bool_cast(val):
 
 
 def export_method(meth, name=None, modname=None):
-    """
-    Given a bound instance method, return a simple function that wraps
+    """Given a bound instance method, return a simple function that wraps
     it.  The only difference between the interface of the original
     method and the generated function is that the latter doesn't
     include 'self' in its argument list.  This means that when the
@@ -1163,6 +1162,11 @@ def export_method(meth, name=None, modname=None):
     be a string and will be used as the module name for the generated
     function.  Note that the caller is responsible for assigning the
     returned function to an appropriate name in the calling scope.
+
+    Annotations are copied over if available. With all the changes in
+    annotation support in Python 3.10 it is not at all obvious if this
+    is sufficient or will work with the currently-supported Python
+    verions.
 
     """
 
@@ -1215,6 +1219,13 @@ def export_method(meth, name=None, modname=None):
                             new_meth.__name__, defaults,
                             new_meth.__closure__)
     new_meth.__doc__ = doc
+
+    # Can we support annotations? There are changes in Python 3.10,
+    # but for now just do the simplest thing in the hope it works.
+    #
+    annotations = getattr(meth, "__annotations__", None)
+    if annotations is not None:
+        new_meth.__annotations__ = annotations
 
     return new_meth
 
