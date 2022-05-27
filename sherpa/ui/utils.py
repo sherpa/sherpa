@@ -10791,8 +10791,10 @@ class Session(NoNewAttributesAfterInit):
             data = None
 
         plotobj = self._get_plotobj("data", data=data)
-        if recalc:
-            plotobj.prepare(data, self.get_stat())
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(data, self.get_stat())
         return plotobj
 
     # DOC-TODO: discussion of preferences needs better handling
@@ -10955,9 +10957,10 @@ class Session(NoNewAttributesAfterInit):
             data = None
 
         plotobj = self._get_plotobj("model", data=data)
-        if recalc:
-            plotobj.prepare(data, self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(data, self.get_model(id), self.get_stat())
         return plotobj
 
     # also in sherpa.astro.utils (does not copy this docstring)
@@ -11028,9 +11031,10 @@ class Session(NoNewAttributesAfterInit):
             data = None
 
         plotobj = self._get_plotobj("source", data=data)
-        if recalc:
-            plotobj.prepare(data, self.get_source(id), self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(data, self.get_source(id), self.get_stat())
         return plotobj
 
     def get_model_component_plot(self, id, model=None, recalc=True):
@@ -11103,9 +11107,10 @@ class Session(NoNewAttributesAfterInit):
             data = None
 
         plotobj = self._get_plotobj("model_component", data=data)
-        if recalc:
-            plotobj.prepare(data, model, self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(data, model, self.get_stat())
         return plotobj
 
     def get_source_component_plot(self, id, model=None, recalc=True):
@@ -11183,9 +11188,10 @@ class Session(NoNewAttributesAfterInit):
         else:
             plotobj = self._get_plotobj("source_component", data=data)
 
-        if recalc:
-            plotobj.prepare(data, model, self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(data, model, self.get_stat())
         return plotobj
 
     def get_model_plot_prefs(self, id=None):
@@ -11304,13 +11310,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("fit")
+        if not recalc:
+            return plotobj
 
         dataobj = self.get_data_plot(id, recalc=recalc)
         modelobj = self.get_model_plot(id, recalc=recalc)
-
-        if recalc:
-            plotobj.prepare(dataobj, modelobj)
-
+        plotobj.prepare(dataobj, modelobj)
         return plotobj
 
     def get_resid_plot(self, id=None, recalc=True):
@@ -11369,9 +11374,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("resid")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_delchi_plot(self, id=None, recalc=True):
@@ -11431,9 +11437,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("delchi")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_chisqr_plot(self, id=None, recalc=True):
@@ -11493,9 +11500,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("chisqr")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_ratio_plot(self, id=None, recalc=True):
@@ -11555,9 +11563,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("ratio")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_data_contour(self, id=None, recalc=True):
@@ -11604,8 +11613,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("data")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_stat())
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_data(id), self.get_stat())
         return plotobj
 
     def get_data_contour_prefs(self):
@@ -11702,8 +11713,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("model")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_source_contour(self, id=None, recalc=True):
@@ -11750,8 +11763,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("source")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
         return plotobj
 
     def get_model_contour_prefs(self):
@@ -11852,12 +11867,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("fit")
+        if not recalc:
+            return plotobj
 
-        if recalc:
-            dataobj = self.get_data_contour(id, recalc=recalc)
-            modelobj = self.get_model_contour(id, recalc=recalc)
-            plotobj.prepare(dataobj, modelobj)
-
+        dataobj = self.get_data_contour(id, recalc=recalc)
+        modelobj = self.get_model_contour(id, recalc=recalc)
+        plotobj.prepare(dataobj, modelobj)
         return plotobj
 
     def get_resid_contour(self, id=None, recalc=True):
@@ -11905,8 +11920,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("resid")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_ratio_contour(self, id=None, recalc=True):
@@ -11954,8 +11971,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("ratio")
-        if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
         return plotobj
 
     def get_psf_contour(self, id=None, recalc=True):
@@ -11998,8 +12017,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("psf")
-        if recalc:
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
     def get_kernel_contour(self, id=None, recalc=True):
@@ -12043,8 +12064,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_contourobj("kernel")
-        if recalc:
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if not recalc:
+            return plotobj
+
+        plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
     def get_psf_plot(self, id=None, recalc=True):
@@ -12086,9 +12109,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("psf")
-        if recalc:
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
     def get_kernel_plot(self, id=None, recalc=True):
@@ -12130,9 +12154,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._get_plotobj("kernel")
-        if recalc:
-            plotobj.prepare(self.get_psf(id), self.get_data(id))
+        if not recalc:
+            return plotobj
 
+        plotobj.prepare(self.get_psf(id), self.get_data(id))
         return plotobj
 
     #
@@ -14702,15 +14727,16 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._intproj
-        if recalc:
-            par = self._check_par(par)
-            if otherids is None:
-                otherids = ()
-            ids, fit = self._get_fit(id, otherids)
-            plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
-                            fac=fac, log=log, numcores=numcores)
-            plotobj.calc(fit, par, self._methods)
+        if not recalc:
+            return plotobj
 
+        par = self._check_par(par)
+        if otherids is None:
+            otherids = ()
+        ids, fit = self._get_fit(id, otherids)
+        plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                        fac=fac, log=log, numcores=numcores)
+        plotobj.calc(fit, par, self._methods)
         return plotobj
 
     # DOC-NOTE: Check that this works (since get_int_proj may not) when
@@ -14810,16 +14836,17 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._intunc
-        if recalc:
-            par = self._check_par(par)
-            if otherids is None:
-                otherids = ()
-            ids, fit = self._get_fit(id, otherids)
-            plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
-                            fac=fac, log=sherpa.utils.bool_cast(log),
-                            numcores=numcores)
-            plotobj.calc(fit, par)
+        if not recalc:
+            return plotobj
 
+        par = self._check_par(par)
+        if otherids is None:
+            otherids = ()
+        ids, fit = self._get_fit(id, otherids)
+        plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
+                        fac=fac, log=sherpa.utils.bool_cast(log),
+                        numcores=numcores)
+        plotobj.calc(fit, par)
         return plotobj
 
     def get_reg_proj(self, par0=None, par1=None, id=None, otherids=None,
@@ -14934,18 +14961,19 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._regproj
-        if recalc:
-            par0 = self._check_par(par0, 'par0')
-            par1 = self._check_par(par1, 'par1')
-            if otherids is None:
-                otherids = ()
-            ids, fit = self._get_fit(id, otherids)
-            plotobj.prepare(fast=fast, min=min, max=max,
-                            nloop=nloop, delv=delv, fac=fac,
-                            log=log, sigma=sigma, levels=levels,
-                            numcores=numcores)
-            plotobj.calc(fit, par0, par1, self._methods)
+        if not recalc:
+            return plotobj
 
+        par0 = self._check_par(par0, 'par0')
+        par1 = self._check_par(par1, 'par1')
+        if otherids is None:
+            otherids = ()
+        ids, fit = self._get_fit(id, otherids)
+        plotobj.prepare(fast=fast, min=min, max=max,
+                        nloop=nloop, delv=delv, fac=fac,
+                        log=log, sigma=sigma, levels=levels,
+                        numcores=numcores)
+        plotobj.calc(fit, par0, par1, self._methods)
         return plotobj
 
     def get_reg_unc(self, par0=None, par1=None, id=None, otherids=None,
@@ -15060,19 +15088,20 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._regunc
-        if recalc:
-            par0 = self._check_par(par0, 'par0')
-            par1 = self._check_par(par1, 'par1')
+        if not recalc:
+            return plotobj
 
-            if otherids is None:
-                otherids = ()
-            ids, fit = self._get_fit(id, otherids)
-            plotobj.prepare(min=min, max=max,
-                            nloop=nloop, delv=delv, fac=fac,
-                            log=log, sigma=sigma, levels=levels,
-                            numcores=numcores)
-            plotobj.calc(fit, par0, par1)
+        par0 = self._check_par(par0, 'par0')
+        par1 = self._check_par(par1, 'par1')
 
+        if otherids is None:
+            otherids = ()
+        ids, fit = self._get_fit(id, otherids)
+        plotobj.prepare(min=min, max=max,
+                        nloop=nloop, delv=delv, fac=fac,
+                        log=log, sigma=sigma, levels=levels,
+                        numcores=numcores)
+        plotobj.calc(fit, par0, par1)
         return plotobj
 
     # DOC-NOTE: I am not convinced I have fac described correctly
