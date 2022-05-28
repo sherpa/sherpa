@@ -601,3 +601,37 @@ def test_show_fit(session):
     assert toks[31] == ""
 
     assert len(toks) == 32
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["proj", "unc"])
+def test_get_int_xxx_recalc_false(session, label):
+    """Check we call the recalc=False path, even with no data loaded."""
+
+    s = session()
+    getfunc= getattr(s, f"get_int_{label}")
+    plotobj = getfunc(recalc=False)
+
+    name = "Uncertainty" if label == "unc" else "Projection"
+    expected = getattr(sherpa.plot, f"Interval{name}")
+    assert isinstance(plotobj, expected)
+
+    # check it's empty (only need a single field check)
+    assert plotobj.x is None
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["proj", "unc"])
+def test_get_reg_xxx_recalc_false(session, label):
+    """Check we call the recalc=False path, even with no data loaded."""
+
+    s = session()
+    getfunc= getattr(s, f"get_reg_{label}")
+    plotobj = getfunc(recalc=False)
+
+    name = "Uncertainty" if label == "unc" else "Projection"
+    expected = getattr(sherpa.plot, f"Region{name}")
+    assert isinstance(plotobj, expected)
+
+    # check it's empty (only need a single field check)
+    assert plotobj.x0 is None
