@@ -19,12 +19,14 @@
 #
 
 from io import StringIO
+import os
 
 import numpy
 
 import pytest
 
 from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import create_arf
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1D, Data1DInt
 from sherpa.io import get_ascii_data
@@ -635,3 +637,591 @@ def test_get_reg_xxx_recalc_false(session, label):
 
     # check it's empty (only need a single field check)
     assert plotobj.x0 is None
+
+
+def setup_template_model(session, make_data_path, interp="default"):
+    """Create the template model.
+
+    The interp argument is passed to load_template_model as the
+    template_interpolator_name field: we currently don't have a lot of
+    documentation on what this is, but there is a code path which
+    allows it to be set to None, which currently triggers different
+    code paths, so it has been added to test this.
+
+    The logic is test_309() from
+    sherpa/models/tests/test_template_unit.py as this appears to be
+    the only test of template models with the UI we have.
+
+    """
+
+    ynorm = 1e9  # make the values nicer
+
+    # Need to load the data from the same directory as the index
+    basedir = os.getcwd()
+    os.chdir(make_data_path(""))
+    try:
+        session.load_template_model("bbtemp", "bb_index.dat",
+                                    template_interpolator_name=interp)
+    finally:
+        os.chdir(basedir)
+
+    bbtemp = session.get_model_component("bbtemp")
+    return bbtemp, ynorm
+
+
+@requires_data
+@requires_fits  # only for AstroSession, but not worth being clever
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_recalc_true(session, label, make_data_path):
+    """What is the intended behavior for template models?
+
+    This is a regression test as it is not obvious what the intended
+    logic is. It was added to ensure a code path was tested, but
+    this code path is highly-dependent on how the underlying code
+    is written.
+
+    """
+
+    # This sets up a template model for the default id, so try
+    # calling with this model but a different dataset.
+    #
+    s = session()
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+    s.load_data(dname)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path)
+    s.set_source(ynorm * bbtemp)
+
+    with pytest.raises(IdentifierErr,
+                       match="data set 2 has not been set"):
+        getattr(s, f"get_{label}_component_plot")(2, bbtemp, recalc=True)
+
+
+@requires_data
+@requires_fits  # only for AstroSession, but not worth being clever
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_recalc_true_no_interp(session, label, make_data_path):
+    """What is the intended behavior for template models?
+
+    Try to catch all code paths.
+
+    """
+
+    # This sets up a template model for the default id, so try
+    # calling with this model but a different dataset.
+    #
+    s = session()
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+    s.load_data(dname)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=None)
+    s.set_source(ynorm * bbtemp)
+
+    with pytest.raises(IdentifierErr,
+                       match="data set 2 has not been set"):
+        getattr(s, f"get_{label}_component_plot")(2, bbtemp, recalc=True)
+
+
+@requires_data
+@requires_fits  # only for AstroSession, but not worth being clever
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_recalc_false(session, label, make_data_path):
+    """What is the intended behavior for template models?
+
+    This is a regression test as it is not obvious what the intended
+    logic is. It was added to ensure a code path was tested, but
+    this code path is highly-dependent on how the underlying code
+    is written.
+
+    """
+
+    # This sets up a template model for the default id, so try
+    # calling with this model but a different dataset.
+    #
+    s = session()
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+    s.load_data(dname)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path)
+    s.set_source(ynorm * bbtemp)
+
+    # The plot results should be empty
+    #
+    mplot = getattr(s, f"get_{label}_plot")(2, recalc=False)
+    cplot = getattr(s, f"get_{label}_component_plot")(2, bbtemp, recalc=False)
+
+    mclass = getattr(sherpa.plot, f"{label.capitalize()}Plot")
+    assert isinstance(mplot, mclass)
+
+    cclass = getattr(sherpa.plot, f"Component{label.capitalize()}Plot")
+    assert isinstance(cplot, cclass)
+
+    # Check it's not a sub-class.
+    #
+    subclass = getattr(sherpa.plot, f"ComponentTemplate{label.capitalize()}Plot")
+    assert not isinstance(cplot, subclass)
+
+    assert mplot.x is None
+    assert cplot.x is None
+    assert mplot.title == label.capitalize()
+    assert cplot.title == label.capitalize()
+
+
+@requires_data
+@requires_fits  # only for AstroSession, but not worth being clever
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_recalc_false_no_interp(session, label, make_data_path):
+    """What is the intended behavior for template models?
+
+    This is a regresion test.
+
+    """
+
+    # This sets up a template model for the default id, so try
+    # calling with this model but a different dataset.
+    #
+    s = session()
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+    s.load_data(dname)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=None)
+    s.set_source(ynorm * bbtemp)
+
+    # The plot results should be empty
+    #
+    mplot = getattr(s, f"get_{label}_plot")(2, recalc=False)
+    cplot = getattr(s, f"get_{label}_component_plot")(2, bbtemp, recalc=False)
+
+    mclass = getattr(sherpa.plot, f"{label.capitalize()}Plot")
+    assert isinstance(mplot, mclass)
+
+    cclass = getattr(sherpa.plot, f"Component{label.capitalize()}Plot")
+    assert isinstance(cplot, cclass)
+
+    # The logic here is not-at-all obvious, but just test the current
+    # behavior.
+    #
+    subclass = getattr(sherpa.plot, f"ComponentTemplate{label.capitalize()}Plot")
+    if label == "source":
+        assert isinstance(cplot, subclass)
+    else:
+        assert not isinstance(cplot, subclass)
+
+    assert mplot.x is None
+    assert cplot.x is None
+    assert mplot.title == label.capitalize()
+    assert cplot.title == label.capitalize()
+
+
+@requires_data
+@requires_fits  # only for AstroSession, but not worth being clever
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_data1d(session, label, make_data_path):
+    """What is the intended behavior for template models?  Data1D
+
+    As this is not a PHA data set the source and model values should
+    be the same (although plot labels will be different).
+
+    This is a regression test as it is not obvious what the intended
+    logic is.
+
+    """
+
+    s = session()
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+    s.load_data(dname)
+    bbtemp, ynorm = setup_template_model(s, make_data_path)
+    s.set_source(bbtemp * ynorm)
+
+    # Because the source model is a composite, the y values of the
+    # two should differ by ynorm.
+    #
+    mplot = getattr(s, f"get_{label}_plot")()
+    cplot = getattr(s, f"get_{label}_component_plot")(bbtemp)
+
+    mclass = getattr(sherpa.plot, f"{label.capitalize()}Plot")
+    assert isinstance(mplot, mclass)
+
+    cclass = getattr(sherpa.plot, f"Component{label.capitalize()}Plot")
+    assert isinstance(cplot, cclass)
+
+    # Check it's not a sub-class.
+    #
+    subclass = getattr(sherpa.plot, f"ComponentTemplate{label.capitalize()}Plot")
+    assert not isinstance(cplot, subclass)
+
+    # Make sure we have a valid set of y values, even if we do
+    # not check the actual values.
+    #
+    assert mplot.y == pytest.approx(cplot.y * ynorm)
+    assert numpy.all(mplot.y > 0)
+
+
+@requires_data
+@requires_fits  # only for AstroSession, but not worth being clever
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_data1d_no_interp(session, label, make_data_path):
+    """What is the intended behavior for template models?  Data1D, no interpolator
+
+    As this is not a PHA data set the source and model values should
+    be the same (although plot labels will be different).
+
+    This is a regression test as it is not obvious what the intended
+    logic is.
+
+    """
+
+    s = session()
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+    s.load_data(dname)
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=None)
+    s.set_source(bbtemp * ynorm)
+
+    # Because the source model is a composite, the y values of the
+    # two should differ by ynorm.
+    #
+    mplot = getattr(s, f"get_{label}_plot")()
+    cplot = getattr(s, f"get_{label}_component_plot")(bbtemp)
+
+    mclass = getattr(sherpa.plot, f"{label.capitalize()}Plot")
+    assert isinstance(mplot, mclass)
+
+    cclass = getattr(sherpa.plot, f"Component{label.capitalize()}Plot")
+    assert isinstance(cplot, cclass)
+
+    # The logic here is not-at-all obvious, but just test the current
+    # behavior.
+    #
+    subclass = getattr(sherpa.plot, f"ComponentTemplate{label.capitalize()}Plot")
+    if label == "source":
+        assert isinstance(cplot, subclass)
+    else:
+        assert not isinstance(cplot, subclass)
+
+    # Make sure we have a valid set of y values, even if we do
+    # not check the actual values.
+    #
+    assert mplot.y == pytest.approx(cplot.y * ynorm)
+    assert numpy.all(mplot.y > 0)
+
+
+@requires_data
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_data1dint(session, label, make_data_path):
+    """What is the intended behavior for template models?  Data1DInt"""
+
+    s = session()
+
+    # The actual data isn't too relevant, but pick similar x range
+    # to load_template_with_interpolation-bb_data.dat
+    #
+    edges = numpy.arange(1, 3, 0.1) * 1e14
+    s.load_arrays(1, edges[:-1], edges[1:], edges[1:] * 0, Data1DInt)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path)
+    s.set_source(bbtemp * ynorm)
+
+    # Because the source model is a composite, the y values of the
+    # two should differ by ynorm.
+    #
+    mplot = getattr(s, f"get_{label}_plot")()
+    cplot = getattr(s, f"get_{label}_component_plot")(bbtemp)
+
+    mclass = getattr(sherpa.plot, f"{label.capitalize()}HistogramPlot")
+    assert isinstance(mplot, mclass)
+
+    cclass = getattr(sherpa.plot, f"Component{label.capitalize()}HistogramPlot")
+    assert isinstance(cplot, cclass)
+
+    # Check it's not a sub-class.
+    #
+    subclass = getattr(sherpa.plot, f"ComponentTemplate{label.capitalize()}Plot")
+    assert not isinstance(cplot, subclass)
+
+    # Make sure we have a valid set of y values, even if we do
+    # not check the actual values.
+    #
+    assert mplot.y == pytest.approx(cplot.y * ynorm)
+    assert numpy.all(mplot.y > 0)
+
+
+@requires_data
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("label", ["model", "source"])
+def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, label, make_data_path):
+    """What is the intended behavior for template models?  Data1DInt, no interpolator"""
+
+    s = session()
+
+    # The actual data isn't too relevant, but pick similar x range
+    # to load_template_with_interpolation-bb_data.dat
+    #
+    edges = numpy.arange(1, 3, 0.1) * 1e14
+    s.load_arrays(1, edges[:-1], edges[1:], edges[1:] * 0, Data1DInt)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=None)
+    s.set_source(bbtemp * ynorm)
+
+    # Because the source model is a composite, the y values of the
+    # two should differ by ynorm.
+    #
+    mplot = getattr(s, f"get_{label}_plot")()
+    cplot = getattr(s, f"get_{label}_component_plot")(bbtemp)
+
+    mclass = getattr(sherpa.plot, f"{label.capitalize()}HistogramPlot")
+    assert isinstance(mplot, mclass)
+
+    # The logic here is not-at-all obvious, but just test the current
+    # behavior.
+    #
+    # NOTE THE DIFFERENCE TO Data1DInt with interpolator whem label=spirce
+    #
+    if label == "source":
+        assert isinstance(cplot, sherpa.plot.ComponentTemplateSourcePlot)
+
+        # Unlike the normal Data1DInt case we can not compare the two
+        # plots, so just add some regression tests for now.
+        #
+        assert len(mplot.y) == 19
+        assert len(cplot.y) == 100
+
+        assert mplot.y[0] == pytest.approx(cplot.y[0] * ynorm)
+        assert numpy.all(mplot.y > 0)
+        assert numpy.all(cplot.y > 0)
+
+    else:
+
+        assert isinstance(cplot, sherpa.plot.ComponentModelHistogramPlot)
+
+        # Check it's not a sub-class.
+        #
+        assert not isinstance(cplot, sherpa.plot.ComponentTemplateModelPlot)
+
+        # Make sure we have a valid set of y values, even if we do
+        # not check the actual values.
+        #
+        assert mplot.y == pytest.approx(cplot.y * ynorm)
+        assert numpy.all(mplot.y > 0)
+
+
+@requires_data
+@pytest.mark.parametrize("interp", ["default", None])
+def test_get_source_component_plot_with_templates_datapha(interp, make_data_path):
+    """What is the intended behavior for template models?  Data1PHA, with and without interpolator
+
+    It would be nice to be able to check both source and model
+    commands with a single test, but the behavior is not guaranteed to
+    match.  This is a regression test as it's not clear what the
+    behavior should be.
+
+    """
+
+    s = AstroSession()
+
+    # The actual data isn't too relevant, but pick similar x range
+    # to load_template_with_interpolation-bb_data.dat
+    #
+    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    s.load_arrays(1, chans, chans * 0, DataPHA)
+
+    edges = numpy.linspace(1, 3, num=len(chans) + 1) * 1e4
+    arf = create_arf(edges[:-1], edges[1:])
+    s.set_arf(arf)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=interp)
+    s.set_source(bbtemp * ynorm)
+
+    # Because the source model is a composite, the y values of the
+    # two should differ by ynorm.
+    #
+    mplot = s.get_source_plot()
+    cplot = s.get_source_component_plot(bbtemp)
+
+    assert isinstance(mplot, sherpa.astro.plot.SourcePlot)
+    assert isinstance(cplot, sherpa.astro.plot.ComponentSourcePlot)
+
+    # Make sure we have a valid set of y values, even if we do
+    # not check the actual values.
+    #
+    assert mplot.y == pytest.approx(cplot.y * ynorm)
+    assert numpy.all(mplot.y > 0)
+
+
+@requires_data
+@pytest.mark.parametrize("interp", ["default", None])
+def test_get_model_component_plot_with_templates_datapha(interp, make_data_path):
+    """What is the intended behavior for template models?  Data1PHA, with and without interpolator
+
+    It would be nice to be able to check both source and model
+    commands with a single test, but the behavior is not guaranteed to
+    match.  This is a regression test as it's not clear what the
+    behavior should be.
+
+    """
+
+    s = AstroSession()
+
+    # The actual data isn't too relevant, but pick similar x range
+    # to load_template_with_interpolation-bb_data.dat
+    #
+    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    s.load_arrays(1, chans, chans * 0, DataPHA)
+
+    edges = numpy.linspace(1, 3, num=len(chans) + 1) * 1e4
+    arf = create_arf(edges[:-1], edges[1:])
+    s.set_arf(arf)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=interp)
+    s.set_source(bbtemp * ynorm)
+
+    # Because the source model is a composite, the y values of the
+    # two should differ by ynorm.
+    #
+    mplot = s.get_model_plot()
+    cplot = s.get_model_component_plot(bbtemp)
+
+    assert isinstance(mplot, sherpa.astro.plot.ModelHistogram)
+    assert isinstance(cplot, sherpa.astro.plot.ComponentModelPlot)
+
+    # Make sure we have a valid set of y values, even if we do
+    # not check the actual values.
+    #
+    assert mplot.y == pytest.approx(cplot.y * ynorm)
+    assert numpy.all(mplot.y > 0)
+
+
+@requires_data
+@pytest.mark.parametrize("interp", ["default", None])
+def test_compare_get_model_component_plot_with_templates(interp, make_data_path):
+    """Check what happens comparing DataPHA with Data1DInt and Data1D
+
+    This is a regression test as it is not clear what the intended
+    behavior is.
+
+    """
+
+    NBINS = 100
+    SPECRESP = 0.8
+    BIN_WIDTH = 200
+
+    s = AstroSession()
+
+    # Create a dataset with the same "x" axis. This is not technically
+    # possible, but knowing how model evaluation works (the first
+    # array is normally used for 1D non-integrated) we can try
+    # and get the same values used.
+    #
+    chans = numpy.arange(1, NBINS + 1, dtype=numpy.int16)
+    s.load_arrays("pha", chans, chans * 0, DataPHA)
+
+    # Give the ARF a non-unit response so we can see if it has been
+    # applied (or, can infer it has been applied since the model
+    # component will apply it).
+    #
+    edges = numpy.arange(10000, 30001, BIN_WIDTH)
+    arf = create_arf(edges[:-1], edges[1:], numpy.ones(NBINS) * SPECRESP)
+    s.set_arf("pha", arf)
+
+    ones = numpy.ones(NBINS)
+    s.load_arrays("int", edges[:-1], edges[1:], ones, Data1DInt)
+    s.load_arrays("1d", edges[:-1], ones, Data1D)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path, interp=interp)
+    s.set_source("pha", bbtemp * ynorm)
+    s.set_source("int", bbtemp * ynorm)
+    s.set_source("1d", bbtemp * ynorm)
+
+    mplot_pha = s.get_model_plot("pha")
+    cplot_pha = s.get_model_component_plot("pha", bbtemp)
+
+    mplot_int = s.get_model_plot("int")
+    cplot_int = s.get_model_component_plot("int", bbtemp)
+
+    mplot_1d = s.get_model_plot("1d")
+    cplot_1d = s.get_model_component_plot("1d", bbtemp)
+
+    # In case the pathway is different from using the default dataset
+    # identifier, check some basic things about the response.
+    #
+    assert numpy.all(cplot_pha.y > 0)
+    assert numpy.all(cplot_int.y > 0)
+    assert numpy.all(cplot_1d.y > 0)
+
+    assert cplot_int.xlo == pytest.approx(cplot_pha.xlo)
+    assert cplot_1d.x == pytest.approx(cplot_pha.xlo)
+
+    # It looks like the model is not integrated across the bin for
+    # the 1DInt case.
+    #
+    assert cplot_1d.y == pytest.approx(cplot_int.y)
+
+    # The DataPHA result, when compared to Data1D is:
+    #
+    # a) multiplied by SPECRESP
+    # b) divided by BIN_WIDTH
+    #
+    r = cplot_int.y / cplot_pha.y
+    assert r == pytest.approx(ones * BIN_WIDTH / SPECRESP)
+
+
+@requires_data
+def test_get_source_component_plot_with_templates_datapha_no_response(make_data_path):
+    """What is the behavior with no response?
+
+    It would be nice to be able to check both source and model
+    commands with a single test, but the behavior is not guaranteed to
+    match.  This is a regression test as it's not clear what the
+    behavior should be.
+
+    """
+
+    s = AstroSession()
+
+    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    s.load_arrays(1, chans, chans * 0, DataPHA)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path)
+    s.set_source(bbtemp * ynorm)
+
+    with pytest.raises(DataErr,
+                       match="Response does not specify energy bins"):
+        s.get_source_plot()
+
+    with pytest.raises(DataErr,
+                       match="Response does not specify energy bins"):
+        s.get_source_component_plot(bbtemp)
+
+
+@requires_data
+def test_get_model_component_plot_with_templates_datapha_no_response(make_data_path):
+    """What is the behavior with no response?
+
+    It would be nice to be able to check both source and model
+    commands with a single test, but the behavior is not guaranteed to
+    match.  This is a regression test as it's not clear what the
+    behavior should be.
+
+    """
+
+    s = AstroSession()
+
+    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    s.load_arrays(1, chans, chans * 0, DataPHA)
+
+    bbtemp, ynorm = setup_template_model(s, make_data_path)
+    s.set_source(bbtemp * ynorm)
+
+    with pytest.raises(DataErr,
+                       match="^No instrument response found for dataset $"):
+        s.get_model_plot()
+
+    cplot = s.get_model_component_plot(bbtemp)
+    assert cplot.title == "Model component: template.bbtemp"
+    assert numpy.all(cplot.y > 0)
