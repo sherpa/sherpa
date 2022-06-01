@@ -18,6 +18,18 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
+
+# We have many redefinitions of id, min, max so exclude them for the
+# whole file, rather than per-routine.
+#
+# pylint: disable=redefined-builtin
+# pylint: disable=redefined-argument-from-local
+
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
@@ -224,6 +236,8 @@ def _assign_model_to_main(name, model):
 #
 ###############################################################################
 class Session(NoNewAttributesAfterInit):
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
 
     ###########################################################################
     # Standard methods
@@ -2439,6 +2453,7 @@ class Session(NoNewAttributesAfterInit):
         self._set_item(id, data, self._data, sherpa.data.Data, 'data',
                        'a data set')
 
+    # pylint: disable-next=no-self-use
     def _read_error(self, filename, *args, **kwargs):
         err = sherpa.io.get_ascii_data(filename, *args, **kwargs)[1].pop()
         return err
@@ -3674,6 +3689,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: What data types are supported here?
+    #
+    # pylint: disable-next=no-self-use
     def unpack_arrays(self, *args):
         """Create a sherpa data object from arrays of data.
 
@@ -4033,6 +4050,8 @@ class Session(NoNewAttributesAfterInit):
         sherpa.io.write_arrays(filename, args, fields, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
+    #
+    # pylint: disable-next=no-self-use
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Write a list of arrays to an ASCII file.
@@ -5830,6 +5849,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _eval_model_expression(self, expr, typestr='model'):
         try:
+            # pylint: disable=eval-used
             return eval(expr, self._model_globals, self._model_components)
         except Exception as exc:
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1]) from exc
@@ -6715,6 +6735,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: description of template interpolation needs a lot of work.
     # @loggable()
+    #
+    # pylint: disable-next=no-self-use
     def load_template_interpolator(self, name, interpolator_class, **kwargs):
         """Set the template interpolation scheme.
 
@@ -7061,6 +7083,8 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(newusermodel)
 
     # DOC-TODO: Improve priors documentation
+    #
+    # pylint: disable-next=no-self-use
     def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
                        priors={}):
         """Create a user-defined statistic.
@@ -9277,6 +9301,7 @@ class Session(NoNewAttributesAfterInit):
     # New "wrappers" to access estimation methods without calling
     # get_proj(), etc.
 
+    # pylint: disable-next=no-self-use
     def _check_estmethod_opt(self, estmethod, optname):
         _check_str_type(optname, "optname")
         if optname not in estmethod.config:
@@ -12260,6 +12285,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.backend.end()
 
+    # pylint: disable-next=no-self-use
     def _plot(self, plotobj, **kwargs):
         """Display a plot object
 
@@ -14152,6 +14178,7 @@ class Session(NoNewAttributesAfterInit):
     # Contours
     #
 
+    # pylint: disable-next=no-self-use
     def _contour(self, plotobj, overcontour=False, **kwargs):
         """Display a plot object
 
@@ -16779,6 +16806,7 @@ class Session(NoNewAttributesAfterInit):
     # through unbound functions of the Image class--always talking to
     # the same instance of the Image backend, so OK for now
 
+    # pylint: disable-next=no-self-use
     def image_deleteframes(self):
         """Delete all the frames open in the image viewer.
 
@@ -16803,6 +16831,7 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.delete_frames()
 
+    # pylint: disable-next=no-self-use
     def image_open(self):
         """Start the image viewer.
 
@@ -16839,6 +16868,7 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.open()
 
+    # pylint: disable-next=no-self-use
     def image_close(self):
         """Close the image viewer.
 
@@ -16863,6 +16893,8 @@ class Session(NoNewAttributesAfterInit):
         sherpa.image.Image.close()
 
     # DOC-TODO: what is the "default" coordinate system
+    #
+    # pylint: disable-next=no-self-use
     def image_getregion(self, coord=''):
         """Return the region defined in the image viewer.
 
@@ -16902,6 +16934,8 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.image.Image.get_region(coord)
 
     # DOC-TODO: what is the "default" coordinate system
+    #
+    # pylint: disable-next=no-self-use
     def image_setregion(self, reg, coord=''):
         """Set the region to display in the image viewer.
 
@@ -16945,6 +16979,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: check the ds9 link when it is working
     # DOC-TODO: is there a link of ds9 commands we can link to?
+    #
+    # pylint: disable-next=no-self-use
     def image_xpaget(self, arg):
         """Return the result of an XPA call to the image viewer.
 
@@ -16997,6 +17033,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: check the ds9 link when it is working
     # DOC-TODO: is there a link of ds9 commands we can link to?
+    #
+    # pylint: disable-next=no-self-use
     def image_xpaset(self, arg, data=None):
         """Return the result of an XPA call to the image viewer.
 
