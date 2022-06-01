@@ -48,8 +48,6 @@ numpy.set_printoptions(threshold=int(config.get('verbosity',
                                                 'arraylength',
                                                 fallback=1000000)))
 
-string_types = (str, )
-
 __all__ = ('ModelWrapper', 'Session')
 
 BUILTINS = sys.modules["builtins"]
@@ -63,18 +61,53 @@ _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 ###############################################################################
 
 
-def _check_type(arg, argtype, argname, argdesc, nottype=None):
-    if ((not isinstance(arg, argtype)) or
-            ((nottype is not None) and isinstance(arg, nottype))):
-        raise ArgumentTypeErr('badarg', argname, argdesc)
+def _check_type(arg, argtype, argname, argdesc):
+    if isinstance(arg, argtype):
+        return
+
+    raise ArgumentTypeErr('badarg', argname, argdesc)
+
+
+def _check_str_type(arg: str, argname: str) -> None:
+    """Ensure that arg (with name argname) is a string"""
+    if _is_str(arg):
+        return
+
+    raise ArgumentTypeErr('badarg', argname, "a string")
 
 
 def _is_integer(val):
     return isinstance(val, (int, numpy.integer))
 
 
+def _is_str(val):
+    return isinstance(val, (str, ))
+
+
 def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
+
+
+
+
+def get_plot_prefs(plotobj):
+    """Return the preferences for the plot object.
+
+    The current preference design has the attribute name be different
+    depending if this is a "histogram" style compared to a "line"
+    style, so wrap this logic up. If there is no matching preference
+    then raise an AttributeError. If the object contains both line and
+    histogram preferences then the histogram preferences are returned.
+
+    """
+
+    try:
+        return plotobj.histo_prefs
+    except AttributeError:
+        try:
+            return plotobj.plot_prefs
+        except AttributeError:
+            raise AttributeError("plot object has no preferences") from None
 
 
 ###############################################################################
@@ -121,7 +154,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__init__(self)
 
     def __call__(self, name):
-        _check_type(name, string_types, 'name', 'a string')
+        _check_str_type(name, "name")
 
         m = self._session._get_model_component(name)
         if (m is not None) and isinstance(m, self.modeltype):
@@ -441,7 +474,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, "filename")
         clobber = sherpa.utils.bool_cast(clobber)
 
         if os.path.isfile(filename) and not clobber:
@@ -497,7 +530,7 @@ class Session(NoNewAttributesAfterInit):
         >>> restore('/data/m31/setup.sherpa')
 
         """
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, "filename")
 
         fin = open(filename, 'rb')
         try:
@@ -1250,7 +1283,7 @@ class Session(NoNewAttributesAfterInit):
 
         This does not treat None as a valid identifier.
         """
-        return (_is_integer(id) or isinstance(id, string_types))
+        return (_is_integer(id) or _is_str(id))
 
     def _fix_id(self, id):
         """Validate the dataset id.
@@ -1479,7 +1512,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if name is None:
             return self._current_method
-        _check_type(name, string_types, 'name', 'a string')
+
+        _check_str_type(name, "name")
         return self._get_method_by_name(name)
 
     # DOC-TODO: is this guaranteed to be the same as get_method().name
@@ -1587,15 +1621,15 @@ class Session(NoNewAttributesAfterInit):
         >>> set_method('neldermead')
 
         """
-        if isinstance(meth, string_types):
+        if _is_str(meth):
             meth = self._get_method_by_name(meth)
         else:
             _check_type(meth, sherpa.optmethods.OptMethod, 'meth',
                         'a method name or object')
         self._current_method = meth
 
-    def _check_method_opt(self, optname):
-        _check_type(optname, string_types, 'optname', 'a string')
+    def _check_method_opt(self, optname: str) -> None:
+        _check_str_type(optname, "optname")
         if optname not in self._current_method.config:
             raise ArgumentErr('badopt', optname, self.get_method_name())
 
@@ -1755,7 +1789,7 @@ class Session(NoNewAttributesAfterInit):
         if optname is None:
             return itermethod_opts
 
-        _check_type(optname, string_types, 'optname', 'a string')
+        _check_str_type(optname, "optname")
         if optname not in itermethod_opts:
             raise ArgumentErr(
                 'badopt', optname, self._current_itermethod['name'])
@@ -1878,13 +1912,12 @@ class Session(NoNewAttributesAfterInit):
         >>> set_iter_method('none')
 
         """
-        if not isinstance(meth, string_types):
-            raise ArgumentTypeErr('badarg', meth, 'a string')
+        _check_str_type(meth, "meth")
 
-        if meth in self._itermethods:
-            self._current_itermethod = self._itermethods[meth]
-        else:
+        if meth not in self._itermethods:
             raise TypeError(f'{meth} is not an iterative fitting method')
+
+        self._current_itermethod = self._itermethods[meth]
 
     def set_iter_method_opt(self, optname, val):
         """Set an option for the iterative-fitting scheme.
@@ -1946,11 +1979,12 @@ class Session(NoNewAttributesAfterInit):
         >>> fit()
 
         """
-        _check_type(optname, string_types, 'optname', 'a string')
+        _check_str_type(optname, "optname")
         if (optname not in self._current_itermethod or
                 optname == 'name'):
             raise ArgumentErr(
                 'badopt', optname, self._current_itermethod['name'])
+
         self._current_itermethod[optname] = val
 
     ###########################################################################
@@ -2041,7 +2075,8 @@ class Session(NoNewAttributesAfterInit):
         """
         if name is None:
             return self._current_stat
-        _check_type(name, string_types, 'name', 'a string')
+
+        _check_str_type(name, "name")
         return self._get_stat_by_name(name)
 
     def get_stat_name(self):
@@ -2160,7 +2195,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_stat('cash')
 
         """
-        if isinstance(stat, string_types):
+        if _is_str(stat):
             stat = self._get_stat_by_name(stat)
         else:
             _check_type(stat, sherpa.stats.Stat, 'stat',
@@ -3531,7 +3566,7 @@ class Session(NoNewAttributesAfterInit):
 
     @staticmethod
     def _read_data(readfunc, filename, *args, **kwargs):
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, "filename")
         return readfunc(filename, *args, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils
@@ -3851,6 +3886,9 @@ class Session(NoNewAttributesAfterInit):
     def _save_type(self, objtype, id, filename, **kwargs):
         if filename is None:
             id, filename = filename, id
+
+        _check_str_type(filename, "filename")
+
         d = self.get_data(id)
 
         args = None
@@ -3945,7 +3983,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, "filename")
         sherpa.io.write_arrays(filename, args, fields, sep, comment, clobber,
                                linebreak, format)
 
@@ -4021,7 +4059,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('source', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4098,7 +4135,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('model', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4169,7 +4205,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('resid', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4240,7 +4275,6 @@ class Session(NoNewAttributesAfterInit):
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
-        _check_type(filename, string_types, 'filename', 'a string')
         self._save_type('delchi', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
@@ -4321,7 +4355,8 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+
+        _check_str_type(filename, "filename")
         sherpa.io.write_data(filename, self.get_data(id), fields, sep,
                              comment, clobber, linebreak, format)
 
@@ -4388,7 +4423,8 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+
+        _check_str_type(filename, "filename")
         d = self.get_data(id)
         id = self._fix_id(id)
         if d.mask is False:
@@ -4473,7 +4509,8 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+
+        _check_str_type(filename, "filename")
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_staterror(id, filter=False)
         self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
@@ -4550,7 +4587,8 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+
+        _check_str_type(filename, "filename")
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_syserror(id, filter=False)
         self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
@@ -4634,7 +4672,8 @@ class Session(NoNewAttributesAfterInit):
         clobber = sherpa.utils.bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+
+        _check_str_type(filename, "filename")
         x = self.get_data(id).get_indep(filter=False)[0]
         err = self.get_error(id, filter=False)
         self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
@@ -5458,7 +5497,7 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(name, sherpa.models.Model):
             return name
 
-        _check_type(name, string_types, 'name', 'a string')
+        _check_str_type(name, "name")
         return self._get_model_component(name, require=True)
 
     def create_model_component(self, typename=None, name=None):
@@ -5532,8 +5571,8 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(typename, sherpa.models.Model) and name is None:
             return typename
 
-        _check_type(typename, string_types, 'typename', 'a string')
-        _check_type(name, string_types, 'name', 'a string')
+        _check_str_type(typename, "typename")
+        _check_str_type(name, "name")
 
         typename = typename.lower()
         cls = self._model_types.get(typename)
@@ -5641,7 +5680,7 @@ class Session(NoNewAttributesAfterInit):
         >>> delete_model_component('pl')
 
         """
-        _check_type(name, string_types, 'name', 'a string')
+        _check_str_type(name, "name")
         mod = self._model_components.pop(name, None)
         if mod is None:
             raise IdentifierErr('nomodelcmpt', name)
@@ -5957,7 +5996,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
 
         self._set_item(id, model, self._models, sherpa.models.Model, 'model',
@@ -6083,7 +6122,7 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
 
         self._set_item(id, model, self._sources, sherpa.models.Model,
@@ -6141,7 +6180,7 @@ class Session(NoNewAttributesAfterInit):
         self._sources.pop(id, None)
 
     def _check_model(self, model):
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -6853,7 +6892,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        _check_type(modelname, string_types, 'model name', 'a string')
+        _check_str_type(modelname, "model name")
 
         usermodel = self._get_model_component(modelname)
         if (usermodel is None or
@@ -7048,7 +7087,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kernel = filename_or_model
-        if isinstance(filename_or_model, string_types):
+        if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -7112,7 +7151,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         kernel = filename_or_model
-        if isinstance(filename_or_model, string_types):
+        if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -7239,7 +7278,7 @@ class Session(NoNewAttributesAfterInit):
             id, psf, = psf, id
         id = self._fix_id(id)
 
-        if isinstance(psf, string_types):
+        if _is_str(psf):
             psf = self._eval_model_expression(psf)
 
         self._set_item(id, psf, self._psf, sherpa.instrument.PSFModel, 'psf',
@@ -7378,7 +7417,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def _check_par(self, par, argname='par'):
-        if isinstance(par, string_types):
+        if _is_str(par):
             par = self._eval_model_expression(par, 'parameter')
         _check_type(par, sherpa.models.Parameter, argname,
                     'a parameter object or parameter expression string')
@@ -7537,7 +7576,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         for par in list(args):
-            if isinstance(par, string_types):
+            if _is_str(par):
                 par = self._eval_model_expression(par, 'parameter or model')
 
             try:
@@ -7600,7 +7639,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         for par in list(args):
-            if isinstance(par, string_types):
+            if _is_str(par):
                 par = self._eval_model_expression(par, 'parameter or model')
 
             try:
@@ -7678,7 +7717,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         par = self._check_par(par)
-        if isinstance(val, string_types):
+        if _is_str(val):
             val = self._eval_model_expression(val, 'parameter link')
         par.link = val
 
@@ -9121,7 +9160,7 @@ class Session(NoNewAttributesAfterInit):
     # get_proj(), etc.
 
     def _check_estmethod_opt(self, estmethod, optname):
-        _check_type(optname, string_types, 'optname', 'a string')
+        _check_str_type(optname, "optname")
         if optname not in estmethod.config:
             raise ArgumentErr('badopt', optname, estmethod.name)
 
@@ -10826,11 +10865,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_data_plot(id, recalc=False)
-        try:
-            return plot.histo_prefs
-        except AttributeError:
-            return plot.plot_prefs
+        plotobj = self.get_data_plot(id, recalc=False)
+        return get_plot_prefs(plotobj)
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None, recalc=True):
@@ -11171,11 +11207,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot = self.get_model_plot(id, recalc=False)
-        try:
-            return plot.histo_prefs
-        except AttributeError:
-            return plot.plot_prefs
+        plotobj = self.get_model_plot(id, recalc=False)
+        return get_plot_prefs(plotobj)
 
     def get_fit_plot(self, id=None, recalc=True):
         """Return the data used to create the fit plot.
@@ -12085,7 +12118,7 @@ class Session(NoNewAttributesAfterInit):
 
         while args:
             plottype = args.pop(0)
-            _check_type(plottype, string_types, 'plottype', 'a string')
+            _check_str_type(plottype, "plottype")
             plottype = plottype.lower()
 
             try:
@@ -12161,6 +12194,8 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.backend.end()
 
     def _set_plot_item(self, plottype, item, value):
+
+        _check_str_type(plottype, 'plottype')
         keys = list(self._plot_types.keys())
 
         plottype = plottype.strip().lower()
@@ -12173,15 +12208,11 @@ class Session(NoNewAttributesAfterInit):
 
         for key in keys:
             for plot in self._plot_types[key]:
-                # This could be a "line" or "histogram" style plot.
-                #
                 try:
-                    plot.plot_prefs[item] = value
+                    get_plot_prefs(plot)[item] = value
                 except AttributeError:
-                    try:
-                        plot.histo_prefs[item] = value
-                    except AttributeError:
-                        pass
+                    # skip it if no preference setting
+                    pass
 
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.
@@ -13452,15 +13483,8 @@ class Session(NoNewAttributesAfterInit):
             # types of plot objects.
             #
             oldval = plot2.plot_prefs['xlog']
-            try:
-                dprefs = plot1.dataplot.histo_prefs
-            except AttributeError:
-                dprefs = plot1.dataplot.plot_prefs
-
-            try:
-                mprefs = plot1.modelplot.histo_prefs
-            except AttributeError:
-                mprefs = plot1.modelplot.plot_prefs
+            dprefs = get_plot_prefs(plot1.dataplot)
+            mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
                 plot2.plot_prefs['xlog'] = True

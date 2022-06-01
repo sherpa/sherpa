@@ -28,7 +28,7 @@ import numpy
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _check_type
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
@@ -47,9 +47,6 @@ warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 
-string_types = (str, )
-
-
 __all__ = ('Session',)
 
 
@@ -62,7 +59,7 @@ class Session(sherpa.ui.utils.Session):
     def __init__(self):
 
         self.clean()
-        sherpa.ui.utils.Session.__init__(self)
+        super().__init__()
 
     ###########################################################################
     # High-level utilities
@@ -125,7 +122,7 @@ class Session(sherpa.ui.utils.Session):
             self.__dict__['_background_sources'] = state.pop(
                 '_background_models')
 
-        sherpa.ui.utils.Session.__setstate__(self, state)
+        super().__setstate__(state)
 
     def clean(self):
         """Clear out the current Sherpa session.
@@ -185,7 +182,7 @@ class Session(sherpa.ui.utils.Session):
         #
         self._xspec_state = None
 
-        sherpa.ui.utils.Session.clean(self)
+        super().clean()
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
 
@@ -278,7 +275,8 @@ class Session(sherpa.ui.utils.Session):
             self._xspec_state = sherpa.astro.xspec.get_xsstate()
         else:
             self._xspec_state = None
-        sherpa.ui.utils.Session.save(self, filename, clobber)
+
+        super().save(filename, clobber)
 
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
@@ -324,7 +322,7 @@ class Session(sherpa.ui.utils.Session):
         >>> restore('/data/m31/setup.sherpa')
 
         """
-        sherpa.ui.utils.Session.restore(self, filename)
+        super().restore(filename)
         if hasattr(sherpa.astro, "xspec"):
             if self._xspec_state is not None:
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
@@ -3828,7 +3826,7 @@ class Session(sherpa.ui.utils.Session):
     def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4353,7 +4351,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         id = self._fix_id(id)
 
         if bkg_id is not None:
@@ -4458,7 +4456,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4548,7 +4546,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4645,7 +4643,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4730,7 +4728,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4808,7 +4806,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         id = self._fix_id(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4893,7 +4891,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         id = self._fix_id(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4971,7 +4969,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
 
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii=ascii, clobber=clobber)
@@ -5041,7 +5039,7 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         id = self._fix_id(id)
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
                                     ascii=ascii, clobber=clobber)
@@ -5121,7 +5119,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, string_types, 'filename', 'a string')
+        _check_str_type(filename, 'filename')
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
         else:
@@ -6533,8 +6531,8 @@ class Session(sherpa.ui.utils.Session):
         if quantity is None:
             id, quantity = quantity, id
 
-        _check_type(quantity, string_types, 'quantity', 'a string')
-        _check_type(type, string_types, 'type', 'a string')
+        _check_str_type(quantity, "quantity")
+        _check_str_type(type, "type")
 
         ids = self.list_data_ids()
         if id is not None:
@@ -6660,7 +6658,7 @@ class Session(sherpa.ui.utils.Session):
         if coord is None:
             id, coord = coord, id
 
-        _check_type(coord, string_types, 'coord', 'a string')
+        _check_str_type(coord, "coord")
 
         ids = self.list_data_ids()
         if id is not None:
@@ -6776,7 +6774,8 @@ class Session(sherpa.ui.utils.Session):
 
         if lo is not None or hi is not None:
             self._notice_warning()
-        sherpa.ui.utils.Session.notice(self, lo, hi, **kwargs)
+
+        super().notice(lo, hi, **kwargs)
 
     notice.__doc__ = sherpa.ui.utils.Session.notice.__doc__
 
@@ -6784,7 +6783,8 @@ class Session(sherpa.ui.utils.Session):
 
         if lo is not None or hi is not None:
             self._notice_warning()
-        sherpa.ui.utils.Session.ignore(self, lo, hi, **kwargs)
+
+        super().ignore(lo, hi, **kwargs)
 
     ignore.__doc__ = sherpa.ui.utils.Session.ignore.__doc__
 
@@ -8872,7 +8872,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         kernel = filename_or_model
-        if isinstance(filename_or_model, string_types):
+        if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -8961,7 +8961,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_full_model("src", smodel)
 
         """
-        sherpa.ui.utils.Session.set_full_model(self, id, model)
+        super().set_full_model(id, model)
 
         if model is None:
             id, model = model, id
@@ -9261,7 +9261,7 @@ class Session(sherpa.ui.utils.Session):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         self._set_item(id, model, self._pileup_models, sherpa.models.Model,
                        'model', 'a model object or model expression string')
@@ -9458,7 +9458,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         bkg_id = self._fix_background_id(id, bkg_id)
 
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -9580,7 +9580,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         bkg_id = self._fix_background_id(id, bkg_id)
 
-        if isinstance(model, string_types):
+        if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -14805,7 +14805,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if isinstance(outfile, string_types):
+        if _is_str(outfile):
             if os.path.isfile(outfile):
                 if sherpa.utils.bool_cast(clobber):
                     os.remove(outfile)

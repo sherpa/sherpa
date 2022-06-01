@@ -134,7 +134,7 @@ def test_set_iter_method_type_not_string():
     with pytest.raises(ArgumentTypeErr) as te:
         ui.set_iter_method(23)
 
-    assert str(te.value) == "'23' must be a string"
+    assert str(te.value) == "'meth' must be a string"
 
 
 def test_set_iter_method_type_not_enumeration():
