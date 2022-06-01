@@ -18,6 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
+
 """
 Objects and utilities used by multiple Sherpa subpackages
 """
@@ -1198,6 +1204,7 @@ def export_method(meth, name=None, modname=None):
         g["__name__"] = modname
 
     fdef = f"def {name}({argspec}):  return {old_name}({argspec})"
+    # pylint: disable=exec-used
     exec(fdef, g)
 
     # Create another new function from the one we just made, this time
@@ -3233,6 +3240,8 @@ def neville2d(xinterp, yinterp, x, y, fval):
 
 class NumDeriv:
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, func, fval0):
         self.nfev, self.func = func_counter(func)
         self.fval_0 = fval0
@@ -3275,6 +3284,8 @@ class NumDerivCentralOrdinary(NumDeriv):
 
     """
 
+    # pylint: disable=too-few-public-methods
+
     # TODO: can we remove this as it is the only class that allows
     # fval0 to be optional?
     #
@@ -3289,6 +3300,7 @@ class NumDerivCentralOrdinary(NumDeriv):
 
 class NumDerivFowardPartial(NumDeriv):
 
+    # pylint: disable=too-few-public-methods
 
     def __call__(self, x, h, *args):
 
@@ -3352,6 +3364,7 @@ class NumDerivCentralPartial(NumDeriv):
         h ~ r^1/4
     """
 
+    # pylint: disable=too-few-public-methods
 
     def __call__(self, x, h, *args):
 
@@ -3397,6 +3410,8 @@ class NumDerivCentralPartial(NumDeriv):
 
 class NoRichardsonExtrapolation:
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, sequence, verbose=False):
         self.sequence = sequence
         self.verbose = verbose
@@ -3419,6 +3434,7 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
     2. Richardson, L. F. (1927). \" The deferred approach to the limit \".
     Philosophical Transactions of the Royal Society of London, Series A 226:"""
 
+    # pylint: disable=too-few-public-methods
 
     def __call__(self, x, t, tol, maxiter, h, *args):
 
@@ -3662,6 +3678,8 @@ class OutOfBoundErr:
 class QuadEquaRealRoot:
     """ solve for the real roots of the quadratic equation:
     a * x^2 + b * x + c = 0"""
+
+    # pylint: disable=too-few-public-methods
 
     def __call__(self, a, b, c):
 

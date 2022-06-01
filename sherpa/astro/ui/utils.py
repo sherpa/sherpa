@@ -18,6 +18,18 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
+
+# We have many redefinitions of id, min, max so exclude them for the
+# whole file, rather than per-routine.
+#
+# pylint: disable=redefined-builtin
+# pylint: disable=redefined-argument-from-local
+
 import logging
 import os
 import sys
@@ -50,6 +62,8 @@ __all__ = ('Session',)
 
 
 class Session(sherpa.ui.utils.Session):
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
 
     ###########################################################################
     # Standard methods
@@ -324,6 +338,8 @@ class Session(sherpa.ui.utils.Session):
                 self._xspec_state = None
 
     def _get_show_data(self, id=None):
+
+        # pylint: disable=too-many-branches
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -927,6 +943,8 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, self.unpack_arrays(*args))
 
     # DOC-TODO: should unpack_ascii be merged into this?
+    #
+    # pylint: disable-next=no-self-use
     def unpack_table(self, filename, ncols=2, colkeys=None, dstype=Data1D):
         """Unpack a FITS binary file into a data structure.
 
@@ -1117,6 +1135,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: I am going to ignore the crates support here as
     # it is somewhat meaningless, since the crate could
     # have been read from a FITS binary table.
+    #
+    # pylint: disable-next=no-self-use
     def unpack_ascii(self, filename, ncols=2, colkeys=None,
                      dstype=Data1D, sep=' ', comment='#'):
         """Unpack an ASCII file into a data structure.
@@ -1603,6 +1623,7 @@ class Session(sherpa.ui.utils.Session):
         datasets = self.unpack_data(filename, *args, **kwargs)
         self._load_data(id, datasets)
 
+    # pylint: disable-next=no-self-use
     def unpack_image(self, arg, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
         """Create an image data structure.
@@ -1716,6 +1737,8 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
     # DOC-TODO: what does this return when given a PHA2 file?
+    #
+    # pylint: disable-next=no-self-use
     def unpack_pha(self, arg, use_errors=False):
         """Create a PHA data structure.
 
@@ -1768,6 +1791,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors)
 
     # DOC-TODO: what does this return when given a PHA2 file?
+    #
+    # pylint: disable-next=no-self-use
     def unpack_bkg(self, arg, use_errors=False):
         """Create a PHA data structure for a background data set.
 
@@ -5494,6 +5519,7 @@ class Session(sherpa.ui.utils.Session):
         if data.units == 'channel':
             data._set_initial_quantity()
 
+    # pylint: disable-next=no-self-use
     def unpack_arf(self, arg):
         """Create an ARF data structure.
 
@@ -5966,6 +5992,7 @@ class Session(sherpa.ui.utils.Session):
         if data.units == 'channel':
             data._set_initial_quantity()
 
+    # pylint: disable-next=no-self-use
     def unpack_rmf(self, arg):
         """Create a RMF data structure.
 
@@ -8752,6 +8779,8 @@ class Session(sherpa.ui.utils.Session):
         ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
         """
+
+        # pylint: disable=too-many-branches,too-many-statements
         id = self._fix_id(id)
 
         if id in self._data:
@@ -9730,6 +9759,7 @@ class Session(sherpa.ui.utils.Session):
         """
 
         try:
+            # pylint: disable=import-outside-toplevel
             from sherpa.astro import xspec
         except ImportError as exc:
             # TODO: what is the best error to raise here?
@@ -13605,6 +13635,7 @@ class Session(sherpa.ui.utils.Session):
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None,
                 error=False, params=None, otherids=(), niter=1000,
                 covar_matrix=None):
+        # pylint: disable=too-many-statements
         """Calculate the equivalent width of an emission or absorption line.
 
         The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_

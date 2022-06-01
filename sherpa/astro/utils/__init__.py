@@ -18,6 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
+
 import logging
 
 import numpy
@@ -350,6 +356,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
         assert mask is not None
 
         # no bin found
+        # pylint: disable=invalid-unary-operand-type
         if numpy.all(~mask):
             return 0.0
 
