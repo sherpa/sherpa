@@ -79,21 +79,21 @@ def test_zero_division_calc_stat():
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_get_iter_method_name_default(session):
-    s = Session()
+    s = session()
     assert s.get_iter_method_name() == "none"
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("opt", ["none", "sigmarej"])
 def test_set_iter_method_valid(session, opt):
-    s = Session()
+    s = session()
     s.set_iter_method(opt)
     assert s.get_iter_method_name() == opt
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_set_iter_method_unknown_string(session):
-    s = Session()
+    s = session()
     with pytest.raises(TypeError,
                        match="^not a method is not an iterative fitting method$"):
         s.set_iter_method("not a method")
@@ -101,7 +101,7 @@ def test_set_iter_method_unknown_string(session):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_set_iter_method_not_a_string(session):
-    s = Session()
+    s = session()
     with pytest.raises(ArgumentTypeErr,
                        match="^'meth' must be a string$"):
         s.set_iter_method(23)
@@ -109,13 +109,13 @@ def test_set_iter_method_not_a_string(session):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_get_iter_method_opt_default(session):
-    s = Session()
+    s = session()
     assert s.get_iter_method_opt() == {}
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_get_iter_method_opt_sigmarej(session):
-    s = Session()
+    s = session()
     s.set_iter_method("sigmarej")
     out = s.get_iter_method_opt()
 
@@ -125,7 +125,7 @@ def test_get_iter_method_opt_sigmarej(session):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_get_iter_method_opt_sigmarej_lrej(session):
-    s = Session()
+    s = session()
     s.set_iter_method("sigmarej")
     assert s.get_iter_method_opt("lrej") == pytest.approx(3)
 
@@ -133,7 +133,7 @@ def test_get_iter_method_opt_sigmarej_lrej(session):
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("opt,key", [("none", "lrej"), ("sigmarej", "fast")])
 def test_get_iter_method_opt_unknown(session, opt, key):
-    s = Session()
+    s = session()
     s.set_iter_method(opt)
     with pytest.raises(ArgumentErr,
                        match=f"^'{key}' is not a valid option for method {opt}$"):
@@ -142,7 +142,7 @@ def test_get_iter_method_opt_unknown(session, opt, key):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_set_iter_method_opt_sigmarej_lrej(session):
-    s = Session()
+    s = session()
     s.set_iter_method("sigmarej")
     s.set_iter_method_opt("lrej", 5)
     assert s.get_iter_method_opt("lrej") == pytest.approx(5)
