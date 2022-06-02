@@ -315,8 +315,6 @@ def test_save_data_ascii(session, kwargs, idval, tmp_path):
     outfile = tmp_path / "data.dat"
     save_ascii_file(s, kwargs, idval, outfile, s.save_data)
 
-    print(outfile.read_text())
-
     names, data = get_data(outfile, ncols=4)
     assert names == ["XLO", "XHI", "Y", "STATERROR"]
     assert len(data) == 4
@@ -430,7 +428,6 @@ def test_show_data(session, flag):
     s.show_data(outfile=out)
 
     toks = out.getvalue().split("\n")
-    print(out.getvalue())
     assert toks[0] == "Data Set: 1"
     idx = 1
     if flag:
