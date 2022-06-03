@@ -348,9 +348,6 @@ def test_paramprompt():
     assert f4.c0.min == pytest.approx(- parameter.hugeval)
     assert f4.c0.max == pytest.approx(parameter.hugeval)
 
-    # TODO: test error cases
-    #
-
 
 def test_list_model_ids():
     """Does list_model_ids work?"""
@@ -824,6 +821,31 @@ def test_paramprompt_single_parameter_check_invalid_max_out_of_bound(caplog):
     assert mdl.c0.val == pytest.approx(-200)
     assert mdl.c0.min < -3e38
     assert mdl.c0.max == pytest.approx(-200)
+
+
+def test_paramprompt_single_parameter_check_too_many_commas(caplog):
+    """Check we tell users there was a problem"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO(",,,,\n12")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "Error: Please provide a comma-separated list of floats; e.g. val,min,max"
+
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(12)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max > 3e38
 
 
 def test_add_user_pars_modelname_not_a_string():
