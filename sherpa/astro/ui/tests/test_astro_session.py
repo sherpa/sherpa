@@ -22,6 +22,7 @@
 # pylint: disable=invalid-name
 
 from io import StringIO
+import logging
 import os
 
 import numpy
@@ -665,6 +666,58 @@ def test_show_data_datapha_bkg_no_response():
     assert len(toks) == 73
 
 
+def test_show_bkg_datapha_no_response():
+    """Is show_bkg doing anything sensible with PHA data (single background, no response)"""
+
+    s = AstroSession()
+
+    chans = numpy.arange(1, 6, dtype=int)
+    counts = numpy.asarray([10, 20, 15, 12, 10], dtype=int)
+    data = DataPHA("src", chans, counts)
+    bkg = DataPHA("down", chans, counts)
+
+    s.set_data(data)
+    s.set_bkg(1, bkg)
+
+    s.set_exposure(400)
+    s.set_exposure(200, bkg_id=1)
+
+    # filter one of the background components
+    s.ignore_id(lo=2, hi=3, ids=1, bkg_id=1)
+
+    out = StringIO()
+    s.show_bkg(outfile=out)
+
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "Background Data Set: 1:1"
+    assert toks[1] == "Filter: 1,4-5 Channel"
+    assert toks[2] == "Noticed Channels: 1,4-5"
+    assert toks[3] == "name           = down"
+    assert toks[4] == "channel        = Int64[5]"
+    assert toks[5] == "counts         = Int64[5]"
+    assert toks[6] == "staterror      = None"
+    assert toks[7] == "syserror       = None"
+    assert toks[8] == "bin_lo         = None"
+    assert toks[9] == "bin_hi         = None"
+    assert toks[10] == "grouping       = None"
+    assert toks[11] == "quality        = None"
+    assert toks[12] == "exposure       = 200.0"
+    assert toks[13] == "backscal       = None"
+    assert toks[14] == "areascal       = None"
+    assert toks[15] == "grouped        = False"
+    assert toks[16] == "subtracted     = False"
+    assert toks[17] == "units          = channel"
+    assert toks[18] == "rate           = True"
+    assert toks[19] == "plot_fac       = 0"
+    assert toks[20] == "response_ids   = []"
+    assert toks[21] == "background_ids = []"
+    assert toks[22] == ""
+    assert toks[23] == ""
+    assert toks[24] == ""
+
+    assert len(toks) == 25
+
+
 def test_show_data_datapha_bkg():
     """Is show_data doing anything sensible with PHA data (background and responses)"""
 
@@ -842,6 +895,73 @@ def test_show_bkg_source_output():
     assert toks[9] == ""
 
     assert len(toks) == 10
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("idval", [None, "foo"])
+def test_show_filter(idval, session):
+    """Is show_filter doing anything sensible?"""
+
+    s = session()
+    s.set_default_id("foo")
+
+    s.load_arrays("foo", [1, 3, 5], [3, 4, 8], [1, 2, 3], Data1DInt)
+    s.ignore(2, 4)
+
+    out = StringIO()
+    s.show_filter(id=idval, outfile=out)
+
+    toks = out.getvalue().split("\n")
+
+    assert toks[0] == "Data Set Filter: foo"
+    assert toks[1] == "5.0000-8.0000 x"
+    assert toks[2] == ""
+    assert toks[3] == ""
+    assert toks[4] == ""
+
+    assert len(toks) == 5
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("idval", [None, 1])
+@pytest.mark.parametrize("label", ["source", "model"])
+def test_show_model(idval, label, session):
+    """Is show_model/source doing anything sensible?
+
+    In this case the output is the same for source and model.
+
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 3, 5], [1, 2, 3], Data1D)
+
+    s.create_model_component("gauss1d", "g1")
+    s1 = s.create_model_component("scale1d", "s1")
+    s.set_source(s1)
+
+    show = getattr(s, f"show_{label}")
+    out = StringIO()
+    show(id=idval, outfile=out)
+
+    toks = out.getvalue().split("\n")
+
+    assert toks[0] == "Model: 1"
+    assert toks[1] == "scale1d.s1"
+
+    # Assume the remaining three lines are the model, so just do a
+    # minimal check.
+    #
+    assert toks[2].strip().startswith("Param ")
+    assert toks[3].strip().startswith("----- ")
+    assert toks[4].strip().startswith("s1.c0 ")
+
+    assert toks[5] == ""
+    assert toks[6] == ""
+    assert toks[7] == ""
+
+    assert len(toks) == 8
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
@@ -1591,3 +1711,242 @@ def test_get_model_component_plot_with_templates_datapha_no_response(make_data_p
     cplot = s.get_model_component_plot(bbtemp)
     assert cplot.title == "Model component: template.bbtemp"
     assert numpy.all(cplot.y > 0)
+
+
+def check_stat_info_basic(sinfo, name, ids, numpoints, statval):
+    """Check the "basic" result"""
+
+    assert sinfo.name == name
+    assert sinfo.ids == ids
+    assert sinfo.bkg_ids is None  # TODO: why does Session class have this?
+    assert sinfo.numpoints == numpoints
+    assert sinfo.dof == (numpoints - 1)
+    assert sinfo.qval is None
+    assert sinfo.rstat is None
+
+    assert sinfo.statname == "leastsq"
+    assert sinfo.statval == pytest.approx(statval)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_get_stat_info_basic_one(session):
+    """Check get_stat_info with one dataset"""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.set_stat("leastsq")
+
+    data = Data1D("example", [1, 2, 5], [3, 7, 6])
+    s.set_data(data)
+
+    cpt = s.create_model_component("scale1d", "scale")
+    cpt.c0 = 5
+    s.set_source(cpt)
+
+    sinfo = s.get_stat_info()
+    assert len(sinfo) == 1
+
+    check_stat_info_basic(sinfo[0], "Dataset [1]", [1], 3, 9)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_get_stat_info_basic_two(session):
+    """Check get_stat_info with two datasets"""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.set_stat("leastsq")
+
+    data1 = Data1D("example1", [1, 2, 5], [3, 7, 6])
+    data2 = Data1D("example2", [1, 2, 5], [4, 6, 5])
+    s.set_data(1, data1)
+    s.set_data(2, data2)
+
+    cpt = s.create_model_component("scale1d", "scale")
+    cpt.c0 = 5
+    s.set_source(1, cpt)
+    s.set_source(2, cpt)
+
+    sinfo = s.get_stat_info()
+    assert len(sinfo) == 3
+
+    check_stat_info_basic(sinfo[0], "Dataset 1", (1, ), 3, 9)
+    check_stat_info_basic(sinfo[1], "Dataset 2", (2, ), 3, 2)
+    check_stat_info_basic(sinfo[2], "Datasets [1, 2]", [1, 2], 6, 11)
+
+
+def test_get_stat_info_astro_one(caplog):
+    """Check get_stat_info with one dataset and a background"""
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+    s.set_stat("leastsq")
+
+    data = DataPHA("example", [1, 2, 3], [3, 7, 6])
+    bkg = DataPHA("background", [1, 2, 3], [1, 1, 2])
+
+    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    data.set_arf(arf)
+    bkg.set_arf(arf)
+    data.set_background(bkg)
+
+    s.set_data(data)
+    s.subtract()
+
+    cpt = s.create_model_component("scale1d", "scale")
+    cpt.c0 = 5
+    s.set_source(cpt)
+
+    assert len(caplog.record_tuples) == 0
+    sinfo = s.get_stat_info()
+    assert len(caplog.record_tuples) == 0
+    assert len(sinfo) == 1
+
+    check_stat_info_basic(sinfo[0], "Dataset [1]", [1], 3, 11)
+
+
+def test_get_stat_info_astro_two(caplog):
+    """Check get_stat_info with two datasets and a background"""
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+    s.set_stat("leastsq")
+
+    data1 = DataPHA("example1", [1, 2, 3], [3, 7, 6])
+    data2 = DataPHA("example2", [1, 2, 3], [4, 6, 5])
+
+    bkg2 = DataPHA("background2", [1, 2, 3], [1, 1, 2])
+
+    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    data1.set_arf(arf)
+    data2.set_arf(arf)
+
+    bkg2.set_arf(arf)
+    data2.set_background(bkg2)
+
+    s.set_data(1, data1)
+    s.set_data(2, data2)
+
+    s.subtract(2)
+
+    cpt = s.create_model_component("scale1d", "scale")
+    cpt.c0 = 5
+    s.set_source(1, cpt)
+    s.set_source(2, cpt)
+
+    assert len(caplog.record_tuples) == 0
+    sinfo = s.get_stat_info()
+    assert len(caplog.record_tuples) == 0
+    assert len(sinfo) == 3
+
+    check_stat_info_basic(sinfo[0], "Dataset 1", (1, ), 3, 9)
+    check_stat_info_basic(sinfo[1], "Dataset 2", (2, ), 3, 8)
+    check_stat_info_basic(sinfo[2], "Datasets [1, 2]", [1, 2], 6, 17)
+
+
+class DummyClass:
+    "A dummy class"
+    pass
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_add_model_errors_out(session):
+    """The model class needs to be derived from ArithmeticModel."""
+
+    msg = "^model class 'dummyclass' is not a derived class from " + \
+        "sherpa.models.ArithmeticModel$"
+
+    s = session()
+    with pytest.raises(TypeError, match=msg):
+        s.add_model(DummyClass)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_get_source_with_convolved_model(session):
+    """Check we get an error.
+
+    The obvous way to check this would be with a PHA dataset
+    but then we can not test the ui.Session, so here we
+    use set_full_model to simulate this (the fact that
+    this is not really a case that needs set_full_model is
+    not relevant here).
+
+    It turns out that with Session we do not need to set a dataset but
+    we do with AstroSession.
+
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2], [2, 4])
+
+    gmdl = s.create_model_component("gauss1d", "gmdl")
+    s.set_full_model(gmdl)
+
+    msg = "^Convolved model\n'gauss1d.gmdl'\n is set for " + \
+        "dataset 1. You should use get_model instead.$"
+
+    with pytest.raises(IdentifierErr, match=msg):
+        s.get_source()
+
+
+def test_bkg_model_warns_after_full(caplog):
+    """Check we get a warning"""
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    # It looks like you can't use load_arrays to set the background.
+    #
+    s.load_arrays(1, [1, 2, 3], [10, 11, 12], DataPHA)
+
+    bkg = DataPHA("bg", [1, 2, 3], [2, 1, 3])
+    s.set_bkg(bkg)
+
+    # It does not matter what model is being used.
+    #
+    cpt1 = s.create_model_component("gauss1d", "g1")
+    cpt2 = s.create_model_component("polynom1d", "p1")
+
+    assert len(caplog.record_tuples) == 0
+    s.set_bkg_full_model(cpt1)
+    assert len(caplog.record_tuples) == 0
+    s.set_bkg_model(cpt2)
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.astro.ui.utils"
+    assert lvl == logging.WARNING
+    assert msg =="Clearing background convolved model\n'gauss1d.g1'\nfor dataset 1 background 1"
+
+
+# Note: the Session message can be either fit() or Fit.fit(), so
+# fortunately it is easy to check (it is not obvious what causes
+# the difference, but it has been seen on a CI run).
+#
+@pytest.mark.parametrize("session,msg",
+                         [(Session, r"fit\(\) got an unexpected keyword argument 'unknown_argument'"),
+                          (AstroSession, "unknown keyword argument: 'unknown_argument'")])
+def test_fit_checks_kwarg(session, msg):
+    """Check what happens if fit is sent an unknown argument.
+
+    This is just a regression test so we know if anyting ever changes.
+
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.set_stat("leastsq")
+
+    data = Data1D("example", [1, 2, 5], [3, 7, 6])
+    s.set_data(data)
+
+    cpt = s.create_model_component("scale1d", "scale")
+    cpt.c0 = 5
+    s.set_source(cpt)
+
+    with pytest.raises(TypeError, match=msg):
+        s.fit(unknown_argument=True)
