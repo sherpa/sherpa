@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2017, 2020, 2021
+#  Copyright (C) 2007, 2017, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -192,6 +192,9 @@ in a fit then `reset` will change them back to the values before a
 fit.
 
 """
+
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
 
 import logging
 import numpy

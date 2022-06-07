@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,6 +17,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
+# pylint: disable=too-many-lines
 
 import logging
 
@@ -835,6 +839,7 @@ class Polynom1D(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
+        # pylint: disable=too-many-locals
         xmin = args[0].min()
         xmax = args[0].max()
         ymin = dep.min()
@@ -1673,6 +1678,7 @@ class NormGauss2D(RegriddableModel2D):
 
 
 class Polynom2D(RegriddableModel2D):
+    # pylint: disable=too-many-instance-attributes
     """Two-dimensional polynomial function.
 
     The maximum order of the polynomial is 2.
@@ -1734,6 +1740,7 @@ class Polynom2D(RegriddableModel2D):
         self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
+        # pylint: disable=too-many-locals
         x0min = args[0].min()
         x0max = args[0].max()
         x1min = args[1].min()

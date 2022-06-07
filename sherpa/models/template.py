@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2019, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +17,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
 
 import operator
 

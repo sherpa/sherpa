@@ -317,6 +317,10 @@ sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
 
 """
 
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
+# pylint: disable=too-many-lines
+# pylint: disable=redefined-builtin
 
 import functools
 import logging
@@ -1587,6 +1591,8 @@ def modelcomponents_to_list(model):
 
 
 def html_model(mdl):
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-locals
     """Construct the HTML to display the model."""
 
     # Note that as this is a specialized table we do not use

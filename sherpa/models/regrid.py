@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,6 +27,9 @@ data - e.g. a larger grid, since the convolution will account
 for signal outside the data range - and then be regridded to
 match the desired grid.
 """
+
+# pylint: disable=line-too-long
+# pylint: disable=invalid-name
 
 import logging
 import warnings
