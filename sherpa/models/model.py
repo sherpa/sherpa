@@ -322,8 +322,11 @@ sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
 # pylint: disable=too-many-lines
 # pylint: disable=redefined-builtin
 
+from __future__ import annotations
+
 import functools
 import logging
+from typing import Dict, List, Optional, Sequence, SupportsFloat
 import warnings
 
 import numpy
@@ -356,7 +359,19 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
 
-def boolean_to_byte(boolean_value):
+# Typing aliases.
+#
+# numpy 1.20 adds typing support, but we do not have this as our
+# mimimum required version so we can not use numpy.floating[Any],
+# for instance.
+#
+FloatingSequence = Sequence[SupportsFloat]
+
+Cache = Dict[str, numpy.ndarray]  # TODO: what is the best way tp type the value?
+CacheCounter = Dict[str, int]
+
+
+def boolean_to_byte(boolean_value: bool) -> bytes:
     """Convert a boolean to a byte value.
 
     Parameters
@@ -492,10 +507,10 @@ class Model(NoNewAttributesAfterInit):
 
     """
 
-    ndim = None
+    ndim: Optional[int] = None
     "The dimensionality of the model, if defined, or None."
 
-    def __init__(self, name, pars=()):
+    def __init__(self, name: str, pars: Sequence[Parameter] = ()) -> None:
         self.name = name
         self.type = self.__class__.__name__.lower()
         self.pars = tuple(pars)
@@ -532,7 +547,7 @@ class Model(NoNewAttributesAfterInit):
                       (p.fullname, tp, p.val, p.min, p.max, p.units))
         return s
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model
         """
         return html_model(self)
@@ -592,7 +607,7 @@ class Model(NoNewAttributesAfterInit):
                     for alias in val.aliases:
                         self._par_index[alias] = val
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool=False) -> None:
         """Called before a model may be evaluated multiple times.
 
         Parameters
@@ -622,7 +637,7 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def teardown(self):
+    def teardown(self) -> None:
         """Called after a model may be evaluated multiple times.
 
         See Also
@@ -655,10 +670,10 @@ class Model(NoNewAttributesAfterInit):
             return self
         return self.calc([p.val for p in self.pars], *args, **kwargs)
 
-    def _get_thawed_pars(self):
+    def _get_thawed_pars(self) -> List[float]:
         return [p.val for p in self.pars if not p.frozen]
 
-    def _set_thawed_pars(self, vals):
+    def _set_thawed_pars(self, vals: FloatingSequence) -> None:
         tpars = [p for p in self.pars if not p.frozen]
 
         ngot = len(vals)
@@ -688,10 +703,10 @@ class Model(NoNewAttributesAfterInit):
                           '--------\n' +
                           'thawedparmaxes, thawedparmins\n')
 
-    def _get_thawed_par_mins(self):
+    def _get_thawed_par_mins(self) -> List[float]:
         return [p.min for p in self.pars if not p.frozen]
 
-    def _set_thawed_pars_mins(self, vals):
+    def _set_thawed_pars_mins(self, vals: FloatingSequence) -> None:
         tpars = [p for p in self.pars if not p.frozen]
 
         ngot = len(vals)
@@ -724,10 +739,10 @@ class Model(NoNewAttributesAfterInit):
                              '--------\n' +
                              'thawedpars, thawedarhardmins, thawedparmaxes\n')
 
-    def _get_thawed_par_maxes(self):
+    def _get_thawed_par_maxes(self) -> List[float]:
         return [p.max for p in self.pars if not p.frozen]
 
-    def _set_thawed_pars_maxes(self, vals):
+    def _set_thawed_pars_maxes(self, vals: FloatingSequence):
         tpars = [p for p in self.pars if not p.frozen]
 
         ngot = len(vals)
@@ -760,7 +775,7 @@ class Model(NoNewAttributesAfterInit):
                               '--------\n' +
                               'thawedpars, thawedarhardmaxes, thawedparmins\n')
 
-    def _get_thawed_par_hardmins(self):
+    def _get_thawed_par_hardmins(self) -> List[float]:
         return [p.hard_min for p in self.pars if not p.frozen]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
@@ -773,7 +788,7 @@ class Model(NoNewAttributesAfterInit):
                                  '--------\n' +
                                  'thawedparhardmaxes, thawedparmins\n')
 
-    def _get_thawed_par_hardmaxes(self):
+    def _get_thawed_par_hardmaxes(self) -> List[float]:
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
@@ -786,7 +801,7 @@ class Model(NoNewAttributesAfterInit):
                                   '--------\n' +
                                   'thawedparhardmins, thawedparmaxes\n')
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the parameter values.
 
         Restores each parameter to the last value it was set to.
@@ -797,13 +812,13 @@ class Model(NoNewAttributesAfterInit):
         for p in self.pars:
             p.reset()
 
-    def freeze(self):
+    def freeze(self) -> None:
         """Freeze any thawed parameters of the model."""
 
         for p in self.pars:
             p.freeze()
 
-    def thaw(self):
+    def thaw(self) -> None:
         """Thaw any frozen parameters of the model.
 
         Those parameters that are marked as "always frozen" are
@@ -861,7 +876,7 @@ class CompositeModel(Model):
 
     """
 
-    def __init__(self, name, parts):
+    def __init__(self, name: str, parts: Sequence[Model]) -> None:
         self.parts = tuple(parts)
         allpars = []
         model_with_dim = None
@@ -900,7 +915,7 @@ class CompositeModel(Model):
     def __iter__(self):
         return iter(self._get_parts())
 
-    def _get_parts(self):
+    def _get_parts(self) -> List[Model]:
         parts = []
 
         for p in self.parts:
@@ -920,13 +935,13 @@ class CompositeModel(Model):
 
         return parts
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool=False) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
-    def cache_clear(self):
+    def cache_clear(self) -> None:
         """Clear the cache for each component."""
         for p in self.parts:
             try:
@@ -934,7 +949,7 @@ class CompositeModel(Model):
             except AttributeError:
                 pass
 
-    def cache_status(self):
+    def cache_status(self) -> None:
         """Display the cache status of each component.
 
         Information on the cache - the number of "hits", "misses", and
@@ -992,12 +1007,12 @@ class SimulFitModel(CompositeModel):
     def __iter__(self):
         return iter(self.parts)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         for part in self:
             part.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         for part in self:
             part.teardown()
         CompositeModel.teardown(self)
@@ -1024,7 +1039,7 @@ class ArithmeticConstantModel(Model):
 
     """
 
-    def __init__(self, val, name=None):
+    def __init__(self, val: SupportsFloat, name: Optional[str] = None) -> None:
         val = SherpaFloat(val)
         if name is None:
             if numpy.isscalar(val):
@@ -1045,10 +1060,10 @@ class ArithmeticConstantModel(Model):
 
         Model.__init__(self, self.name)
 
-    def _get_val(self):
+    def _get_val(self) -> numpy.ndarray:  # TODO: is the typing here wrong?
         return self._val
 
-    def _set_val(self, val):
+    def _set_val(self, val: SupportsFloat) -> None:
         val = SherpaFloat(val)
         if val.ndim > 1:
             raise ModelErr('The constant must be a scalar or 1D, not 2D')
@@ -1058,13 +1073,13 @@ class ArithmeticConstantModel(Model):
     val = property(_get_val, _set_val,
                    doc='The constant value (scalar or 1D).')
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool=False) -> None:
         pass
 
     def calc(self, p, *args, **kwargs):
         return self.val
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
 
@@ -1087,10 +1102,10 @@ def _make_binop(op, opstr):
 class ArithmeticModel(Model):
     """Support combining model expressions and caching results."""
 
-    cache = 5
+    cache: int = 5
     """The maximum size of the cache."""
 
-    def __init__(self, name, pars=()):
+    def __init__(self, name: str, pars: Sequence[Parameter] = ()) -> None:
         self.integrate = True
 
         # Model caching ability
@@ -1099,14 +1114,14 @@ class ArithmeticModel(Model):
         self.cache_clear()
         Model.__init__(self, name, pars)
 
-    def cache_clear(self):
+    def cache_clear(self) -> None:
         """Clear the cache."""
         # It is not obvious what to set the queue length to
         self._queue = ['']
-        self._cache = {}
-        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+        self._cache: Cache = {}
+        self._cache_ctr: CacheCounter = {"hits": 0, "misses": 0, "check": 0}
 
-    def cache_status(self):
+    def cache_status(self) -> None:
         """Display the cache status.
 
         Information on the cache - the number of "hits", "misses", and
@@ -1157,7 +1172,7 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool=False) -> None:
         self.cache_clear()
         self._use_caching = cache
         if int(self.cache) > 0:
@@ -1166,7 +1181,7 @@ class ArithmeticModel(Model):
             if len(frozen) > 0 and frozen.all():
                 self._use_caching = cache
 
-    def teardown(self):
+    def teardown(self) -> None:
         self._use_caching = False
 
     def apply(self, outer, *otherargs, **otherkwargs):
@@ -1181,7 +1196,7 @@ class RegriddableModel(ArithmeticModel):
 class RegriddableModel1D(RegriddableModel):
     """Allow 1D models to be regridded."""
 
-    ndim = 1
+    ndim: int = 1
     "A one-dimensional model."
 
     def regrid(self, *args, **kwargs):
@@ -1211,7 +1226,7 @@ class RegriddableModel1D(RegriddableModel):
 class RegriddableModel2D(RegriddableModel):
     """Allow 2D models to be regridded."""
 
-    ndim = 2
+    ndim: int = 2
     "A two-dimensional model."
 
     def regrid(self, *args, **kwargs):
