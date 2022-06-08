@@ -274,7 +274,7 @@ def test_paramprompt():
     # raised, and the text, but then we don't get to test the
     # behaviour of the paramprompt code.
     #
-    with patch("sys.stdin", StringIO(u"2.1")):
+    with patch("sys.stdin", StringIO("2.1")):
         s.set_model('const1d.mx')
 
     assert s.list_model_ids() == [1]
@@ -284,7 +284,7 @@ def test_paramprompt():
     mx = s.get_model_component('mx')
     assert mx.c0.val == pytest.approx(2.1)
 
-    with patch("sys.stdin", StringIO(u"2.1e-3 , 2.0e-3, 1.2e-2")):
+    with patch("sys.stdin", StringIO("2.1e-3 , 2.0e-3, 1.2e-2")):
         s.set_model('x', 'const1d.my')
 
     assert set(s.list_model_ids()) == set([1, 'x'])
@@ -296,7 +296,7 @@ def test_paramprompt():
     assert my.c0.min == pytest.approx(2.0e-3)
     assert my.c0.max == pytest.approx(1.2e-2)
 
-    with patch("sys.stdin", StringIO(u"2.1e-3 ,, 1.2e-2")):
+    with patch("sys.stdin", StringIO("2.1e-3 ,, 1.2e-2")):
         s.set_model(2, 'const1d.mz')
 
     assert set(s.list_model_ids()) == set([1, 2, 'x'])
@@ -308,7 +308,7 @@ def test_paramprompt():
     assert mz.c0.min == pytest.approx(- parameter.hugeval)
     assert mz.c0.max == pytest.approx(1.2e-2)
 
-    with patch("sys.stdin", StringIO(u"-12.1,-12.1")):
+    with patch("sys.stdin", StringIO("-12.1,-12.1")):
         s.set_model('const1d.f1')
 
     assert set(s.list_model_ids()) == set([1, 2, 'x'])
@@ -320,7 +320,7 @@ def test_paramprompt():
     assert f1.c0.min == pytest.approx(-12.1)
     assert f1.c0.max == pytest.approx(parameter.hugeval)
 
-    with patch("sys.stdin", StringIO(u" ,-12.1")):
+    with patch("sys.stdin", StringIO(" ,-12.1")):
         s.set_model('const1d.f2')
 
     # stop checking list_model_ids
@@ -332,7 +332,7 @@ def test_paramprompt():
     assert f2.c0.min == pytest.approx(-12.1)
     assert f2.c0.max == pytest.approx(parameter.hugeval)
 
-    with patch("sys.stdin", StringIO(u" ,")):
+    with patch("sys.stdin", StringIO(" ,")):
         s.set_model('const1d.f3')
 
     f3 = s.get_model_component('f3')
@@ -340,16 +340,13 @@ def test_paramprompt():
     assert f3.c0.min == pytest.approx(- parameter.hugeval)
     assert f3.c0.max == pytest.approx(parameter.hugeval)
 
-    with patch("sys.stdin", StringIO(u" ,, ")):
+    with patch("sys.stdin", StringIO(" ,, ")):
         s.set_model('const1d.f4')
 
     f4 = s.get_model_component('f4')
     assert f4.c0.val == pytest.approx(1.0)
     assert f4.c0.min == pytest.approx(- parameter.hugeval)
     assert f4.c0.max == pytest.approx(parameter.hugeval)
-
-    # TODO: test error cases
-    #
 
 
 def test_list_model_ids():
@@ -824,6 +821,31 @@ def test_paramprompt_single_parameter_check_invalid_max_out_of_bound(caplog):
     assert mdl.c0.val == pytest.approx(-200)
     assert mdl.c0.min < -3e38
     assert mdl.c0.max == pytest.approx(-200)
+
+
+def test_paramprompt_single_parameter_check_too_many_commas(caplog):
+    """Check we tell users there was a problem"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.paramprompt(True)
+    assert len(caplog.records) == 0
+
+    with SherpaVerbosity('INFO'):
+        with patch("sys.stdin", StringIO(",,,,\n12")):
+            s.set_source("scale1d.bob")
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "Error: Please provide a comma-separated list of floats; e.g. val,min,max"
+
+    mdl = s.get_model_component('bob')
+    assert mdl.c0.val == pytest.approx(12)
+    assert mdl.c0.min < -3e38
+    assert mdl.c0.max > 3e38
 
 
 def test_add_user_pars_modelname_not_a_string():

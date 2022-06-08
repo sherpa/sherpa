@@ -805,22 +805,45 @@ def test_get_bkg_fit_plot_energy(idval, clean_astro_ui):
     assert mp.y == pytest.approx(yexp)
 
 
-def check_bkg_fit(plotfunc, isfit=True):
+def check_bkg_fit(plotfunc, idval, isfit=True):
     """Is the background fit displayed?
 
     This only checks the plot object, not the plot "hardcopy" output
     (e.g. the pixel display/PNG output).
     """
 
-    dplot = ui._session._bkgdataplot
-    mplot = ui._session._bkgmodelplot
+    dplot = ui.get_bkg_plot(idval, recalc=False)
+    mplot = ui.get_bkg_model_plot(idval, recalc=False)
     assert isinstance(dplot, sherpa.astro.plot.BkgDataPlot)
-    assert isinstance(mplot, sherpa.astro.plot.BkgModelPHAHistogram)
+
+    # The model for a PHA fit uses a specialized class that ignores
+    # the grouping of the PHA data set. This makes it hard to
+    # check, because there is no API to access this class other than
+    # via get_bkg_fit_plot().modelplot. That is,
+    # get_bkg_model_plot call does **not** return this particular object,
+    # which we can check here.
+    #
+    assert isinstance(mplot, sherpa.astro.plot.BkgModelHistogram)
 
     # check the "source" plots are not set
-    for plot in [ui._session._dataplot, ui._session._modelplot]:
+    for get in [ui.get_data_plot,
+                ui.get_model_plot]:
+        plot = get(idval, recalc=False)
         assert plot.x is None
         assert plot.y is None
+
+    # check get_bkg_model_plot is not set
+    assert mplot.x is None
+    assert mplot.y is None
+    assert mplot.xlabel is None
+    assert mplot.ylabel is None
+
+    # grab the model plot from the get_bkg_fit_plot call.
+    #
+    fplot = ui.get_bkg_fit_plot(idval, recalc=False)
+    assert fplot.dataplot is dplot
+    mplot = fplot.modelplot
+    assert isinstance(mplot, sherpa.astro.plot.BkgModelPHAHistogram)
 
     xlabel = 'Channel' if plotfunc == ui.plot_bkg_fit else ''
 
@@ -842,7 +865,7 @@ def check_bkg_fit(plotfunc, isfit=True):
     assert mplot.y == pytest.approx(yexp)
 
 
-def check_bkg_resid(plotfunc, isfit=True):
+def check_bkg_resid(plotfunc, idval, isfit=True):
     """Is the background residual displayed?
 
     This only checks the plot object, not the plot "hardcopy" output
@@ -857,14 +880,15 @@ def check_bkg_resid(plotfunc, isfit=True):
 
     # check the "other" background plots are not set
     plot = None
-    for pfs, pd in [([ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi], ui._session._bkgdelchiplot),
-                    ([ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio], ui._session._bkgratioplot),
-                    ([ui.plot_bkg_resid, ui.plot_bkg_fit_resid], ui._session._bkgresidplot)]:
+    for pfs, get in [([ui.plot_bkg_delchi, ui.plot_bkg_fit_delchi], ui.get_bkg_delchi_plot),
+                     ([ui.plot_bkg_ratio, ui.plot_bkg_fit_ratio], ui.get_bkg_ratio_plot),
+                     ([ui.plot_bkg_resid, ui.plot_bkg_fit_resid], ui.get_bkg_resid_plot)]:
         if plotfunc in pfs:
             assert plot is None  # a precaution
-            plot = pd
+            plot = get(idval, recalc=False)
             continue
         else:
+            pd = get(idval, recalc=False)
             assert pd.x is None
             assert pd.y is None
 
@@ -907,17 +931,18 @@ def check_bkg_resid(plotfunc, isfit=True):
         assert np.all(plot.y < 0)
 
 
-def check_bkg_chisqr(plotfunc, isfit=True):
+def check_bkg_chisqr(plotfunc, idval, isfit=True):
     """Is the background residual displayed?"""
 
     # check the "other" background plots are not set
-    for pd in [ui._session._bkgdelchiplot,
-               ui._session._bkgratioplot,
-               ui._session._bkgresidplot]:
+    for get in [ui.get_delchi_plot,
+                ui.get_bkg_ratio_plot,
+                ui.get_bkg_resid_plot]:
+        pd = get(idval, recalc=False)
         assert pd.x is None
         assert pd.y is None
 
-    plot = ui._session._bkgchisqrplot
+    plot = ui.get_bkg_chisqr_plot(idval, recalc=False)
     assert plot.x is not None
     assert plot.y is not None
 
@@ -932,22 +957,24 @@ def check_bkg_chisqr(plotfunc, isfit=True):
     assert np.all(plot.y >= 0)
 
 
-def check_bkg_model(plotfunc, isfit=True):
+def check_bkg_model(plotfunc, idval, isfit=True):
     """Is the background model displayed?"""
 
     # check the "other" background plots are not set
-    for pd in [ui._session._bkgdelchiplot,
-               ui._session._bkgratioplot,
-               ui._session._bkgresidplot,
-               ui._session._bkgchisqrplot]:
+    for get in [ui.get_bkg_delchi_plot,
+                ui.get_bkg_ratio_plot,
+                ui.get_bkg_resid_plot,
+                ui.get_bkg_chisqr_plot]:
+        pd = get(idval, recalc=False)
         assert pd.x is None
         assert pd.y is None
 
-    assert ui._session._bkgsourceplot.xlo is None
-    assert ui._session._bkgsourceplot.xhi is None
-    assert ui._session._bkgsourceplot.y is None
+    splot = ui.get_bkg_source_plot(idval, recalc=False)
+    assert splot.xlo is None
+    assert splot.xhi is None
+    assert splot.y is None
 
-    plot = ui._session._bkgmodelhisto
+    plot = ui.get_bkg_model_plot(idval, recalc=False)
     assert isinstance(plot, sherpa.astro.plot.BkgModelHistogram)
     assert plot.xlo is not None
     assert plot.xhi is not None
@@ -960,23 +987,25 @@ def check_bkg_model(plotfunc, isfit=True):
     assert np.all(plot.y >= 0)
 
 
-def check_bkg_source(plotfunc, isfit=True):
+def check_bkg_source(plotfunc, idval, isfit=True):
     """Is the background source model displayed?"""
 
     # check the "other" background plots are not set
-    for pd in [ui._session._bkgdelchiplot,
-               ui._session._bkgratioplot,
-               ui._session._bkgresidplot,
-               ui._session._bkgchisqrplot]:
+    for get in [ui.get_bkg_delchi_plot,
+                ui.get_bkg_ratio_plot,
+                ui.get_bkg_resid_plot,
+                ui.get_bkg_chisqr_plot]:
+        pd = get(idval, recalc=False)
         assert pd.x is None
         assert pd.y is None
 
     # check the background model is not set
-    assert ui._session._bkgmodelhisto.xlo is None
-    assert ui._session._bkgmodelhisto.xhi is None
-    assert ui._session._bkgmodelhisto.y is None
+    mplot = ui.get_bkg_model_plot(idval, recalc=False)
+    assert mplot.xlo is None
+    assert mplot.xhi is None
+    assert mplot.y is None
 
-    plot = ui._session._bkgsourceplot
+    plot = ui.get_bkg_source_plot(idval, recalc=False)
     assert isinstance(plot, sherpa.astro.plot.BkgSourcePlot)
     assert plot.xlo is not None
     assert plot.xhi is not None
@@ -1021,7 +1050,7 @@ def test_bkg_plot_xxx(idval, plotfunc, checkfuncs, clean_astro_ui):
     #
     isfit = checkfuncs[0] == check_bkg_fit
     for checkfunc in checkfuncs:
-        checkfunc(plotfunc, isfit=isfit)
+        checkfunc(plotfunc, idval, isfit=isfit)
 
 
 # The following tests were added in a separate PR to those above, and
@@ -3851,6 +3880,52 @@ def test_set_plot_opt_explicit(cls):
         assert ax.get_yscale() == 'linear', idx
 
 
+@requires_plotting
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+@pytest.mark.parametrize("name,extraargs",
+                         [("data", []), ("model", []), ("source", []),
+                          pytest.param("model_component", ["mdl"], marks=pytest.mark.xfail),
+                          pytest.param("source_component", ["mdl"], marks=pytest.mark.xfail)
+                          ])
+def test_set_plot_opt_changes_fields(cls, name, extraargs):
+    """Does "all" change all the type-specific plots?
+
+    This is a regression test for whether "all" changes
+    all the plots related to a plot type. We only check
+    a subset of the plot types.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    getfunc = getattr(s, f"get_{name}_plot")
+    p1 = getfunc(1, *extraargs, recalc=False)
+    p2 = getfunc(2, *extraargs, recalc=False)
+
+    assert not p1.plot_prefs["xlog"]
+    assert not p1.plot_prefs["ylog"]
+    assert not p2.histo_prefs["xlog"]
+    assert not p2.histo_prefs["ylog"]
+
+    s.set_xlog("all")
+
+    assert p1.plot_prefs["xlog"]
+    assert not p1.plot_prefs["ylog"]
+    assert p2.histo_prefs["xlog"]
+    assert not p2.histo_prefs["ylog"]
+
+
 @requires_pylab
 def test_set_plot_opt_explicit_astro():
     """Check we can call set_xlog('data') with astro data.
@@ -4010,6 +4085,87 @@ def test_set_ylog_bkg(plot, yscale, clean_astro_ui):
     assert len(axes) == 1
     assert axes[0].xaxis.get_scale() == 'linear'
     assert axes[0].yaxis.get_scale() == yscale
+
+
+SET_CPT_ARGS = [("compsource", ui.get_source_component_plot),
+                # ("source_component", ui.get_source_component_plot),
+                ("compmodel", ui.get_model_component_plot),
+                # ("model_component", ui.get_model_component_plot)
+                ]
+
+@requires_plotting
+@pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
+def test_set_ylog_foo_component_data1d(plot, get, clean_astro_ui):
+    """Check y axis after_ylog('<component type>'), Data1D data.
+
+    There has been some confusion in the code over whether this
+    works or not, so this is a regression test.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [4, 7, 5])
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 6
+
+    plotobj = get(mdl, recalc=False)
+
+    assert not plotobj.plot_prefs["xlog"]
+    assert not plotobj.plot_prefs["ylog"]
+
+    ui.set_ylog(plot)
+
+    assert not plotobj.plot_prefs["xlog"]
+    assert plotobj.plot_prefs["ylog"]
+
+
+@requires_plotting
+@pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
+def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
+    """Check y axis after_ylog('<component type>'), Data1DInt data.
+
+    There has been some confusion in the code over whether this
+    works or not, so this is a regression test.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [2, 2.5, 6], [4, 7, 5], ui.Data1DInt)
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 6
+
+    plotobj = get(mdl, recalc=False)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert not plotobj.histo_prefs["ylog"]
+
+    ui.set_ylog(plot)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert not plotobj.histo_prefs["ylog"]  # Really this should be set
+
+
+@requires_plotting
+@pytest.mark.parametrize("plot,get", SET_CPT_ARGS)
+def test_set_ylog_foo_component_datapha(plot, get, clean_astro_ui):
+    """Check y axis after_ylog('<component type>'), DataPHA data.
+
+    There has been some confusion in the code over whether this
+    works or not, so this is a regression test.
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [4, 7, 5], ui.DataPHA)
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 6
+
+    plotobj = get(mdl, recalc=False)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert not plotobj.histo_prefs["ylog"]
+
+    ui.set_ylog(plot)
+
+    assert not plotobj.histo_prefs["xlog"]
+    assert plotobj.histo_prefs["ylog"]
 
 
 @requires_plotting

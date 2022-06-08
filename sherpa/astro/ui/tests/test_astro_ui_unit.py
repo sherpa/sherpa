@@ -2423,3 +2423,26 @@ def test_pha_set_filter_masked_wrong(simple_pha):
         ui.set_filter(np.asarray([True, False]))
 
     assert str(err.value) == "size mismatch between 5 and 2"
+
+
+def test_get_arf_not_pha(clean_astro_ui):
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    ui.load_arrays(2, [1, 2], [1, 2])
+    with pytest.raises(ArgumentErr,
+                       match="data set 2 does not contain PHA data"):
+        ui.get_arf_plot(2)
+
+
+def test_get_arf_no_pha(clean_astro_ui):
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    with pytest.raises(DataErr,
+                       match="data set '1' does not have an associated ARF"):
+        ui.get_arf_plot()
+
+
+def test_get_order_not_pha(clean_astro_ui):
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    ui.load_arrays(2, [1, 2], [1, 2])
+    with pytest.raises(ArgumentErr,
+                       match="data set 2 does not contain PHA data"):
+        ui.get_order_plot(2)
