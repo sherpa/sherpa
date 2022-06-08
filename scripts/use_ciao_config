@@ -98,5 +98,5 @@ sed -i="" "s|#xspec_include_dirs = None|xspec_include_dirs=${CONDA_PREFIX}/inclu
 sed -i="" "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#xspec_version = .*|xspec_version = ${xspec_version}|" $cfg
 
-# The notgnused version makes a temporary file. Remove it if it exists.
+# Depending on the version of sed, there might be a temporary file. Remove it if it exists.
 rm -r setup.cfg=
