@@ -99,4 +99,4 @@ sed -i="" "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#xspec_version = .*|xspec_version = ${xspec_version}|" $cfg
 
 # Depending on the version of sed, there might be a temporary file. Remove it if it exists.
-rm -r setup.cfg=
+rm -f setup.cfg=
