@@ -2303,8 +2303,29 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
+    def _get_data(self, id):
+        """Return a data set or None.
+
+        The same as get_data except that it returns None if the
+        dataset does not exist.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        instance : sherpa.data.Data or None
+
+        """
+
+        return self._data.get(self._fix_id(id))
+
     # DOC-TODO: terrible synopsis
     def set_data(self, id, data=None):
+
         """Set a data set.
 
         Parameters
@@ -10749,21 +10770,18 @@ class Session(NoNewAttributesAfterInit):
         # answer should be if recalc=False and the dataset has
         # changed type since get_data_plot was last called.
         #
-        try:
-            is_int = isinstance(self.get_data(id), sherpa.data.Data1DInt)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
 
-            is_int = False
-
-        if is_int:
+        if isinstance(data, sherpa.data.Data1DInt):
             plotobj = self._datahistplot
         else:
             plotobj = self._dataplot
 
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_stat())
+            plotobj.prepare(data, self.get_stat())
         return plotobj
 
     # DOC-TODO: discussion of preferences needs better handling
@@ -10917,20 +10935,18 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
 
-        if isinstance(d, sherpa.data.Data1DInt):
+        if isinstance(data, sherpa.data.Data1DInt):
             plotobj = self._modelhistplot
         else:
             plotobj = self._modelplot
 
         if recalc:
-            plotobj.prepare(d, self.get_model(id), self.get_stat())
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -10993,20 +11009,18 @@ class Session(NoNewAttributesAfterInit):
                                 "\n is set for dataset {}.".format(id) +
                                 " You should use get_model_plot instead.")
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
 
-        if isinstance(d, sherpa.data.Data1DInt):
+        if isinstance(data, sherpa.data.Data1DInt):
             plotobj = self._sourcehistplot
         else:
             plotobj = self._sourceplot
 
         if recalc:
-            plotobj.prepare(d, self.get_source(id), self.get_stat())
+            plotobj.prepare(data, self.get_source(id), self.get_stat())
 
         return plotobj
 
@@ -11071,20 +11085,18 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
 
-        if isinstance(d, sherpa.data.Data1DInt):
+        if isinstance(data, sherpa.data.Data1DInt):
             plotobj = self._compmdlhistplot
         else:
             plotobj = self._compmdlplot
 
         if recalc:
-            plotobj.prepare(d, model, self.get_stat())
+            plotobj.prepare(data, model, self.get_stat())
 
         return plotobj
 
@@ -11150,22 +11162,20 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
 
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
-        elif isinstance(d, sherpa.data.Data1DInt):
+        elif isinstance(data, sherpa.data.Data1DInt):
             plotobj = self._compsrchistplot
         else:
             plotobj = self._compsrcplot
 
         if recalc:
-            plotobj.prepare(d, model, self.get_stat())
+            plotobj.prepare(data, model, self.get_stat())
 
         return plotobj
 
@@ -11286,10 +11296,9 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._fitplot
 
-        dataobj = self.get_data_plot(id, recalc=recalc)
-        modelobj = self.get_model_plot(id, recalc=recalc)
-
         if recalc:
+            dataobj = self.get_data_plot(id, recalc=recalc)
+            modelobj = self.get_model_plot(id, recalc=recalc)
             plotobj.prepare(dataobj, modelobj)
 
         return plotobj
@@ -11833,10 +11842,9 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self._fitcontour
-
-        dataobj = self.get_data_contour(id, recalc=recalc)
-        modelobj = self.get_model_contour(id, recalc=recalc)
         if recalc:
+            dataobj = self.get_data_contour(id, recalc=recalc)
+            modelobj = self.get_model_contour(id, recalc=recalc)
             plotobj.prepare(dataobj, modelobj)
 
         return plotobj
