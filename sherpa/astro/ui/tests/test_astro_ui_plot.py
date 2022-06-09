@@ -3783,7 +3783,7 @@ def test_set_opt_not_string(cls, name):
                                   # future, at which point they can be added to the test.
                                   #
                                   # "compsource", "compmodel"
-                                  "astrodata", "astrosource", "astromodel",
+                                  # "astrodata", "astrosource", "astromodel",
                                   "flux",
                                   # "bkgmodel", "bkgsource", "bkgfit", "bkgresid", "bkgratio", "bkgchisqr", "bkgdelchi"
                                   ])
@@ -3834,6 +3834,7 @@ def test_set_opt_valid(cls, name):
 @pytest.mark.parametrize("name", ["bkg",
                                   "bkg_fit", "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio", "bkg_delchi", "bkg_chisqr",
                                   "bkgfit", "bkgmodel", "bkgsource", "bkgresid", "bkgratio", "bkgdelchi", "bkgchisqr",  # temporary
+                                  "astrodata", "astrosource", "astromodel",
                                   "order"])
 def test_set_opt_valid_astro(name):
     """What names are accepted for set_xlog/ylog/...? Astro Session only

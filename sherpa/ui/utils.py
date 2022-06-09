@@ -334,10 +334,15 @@ class Session(NoNewAttributesAfterInit):
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
-        # The keys are used by the set_xlog/... calls to identify what
-        # plot objects are changed by a given set_xxx(label) call. It
-        # is also used by the get_<key>_plot calls to access the
-        # relevant contour class.
+        # The keys of _plot_types are used to define:
+        # a) the mapping from get_<key>_plot to the plot objects
+        #    (that is, there must be a matching get_<key>_plot method)
+        # b) valid arguments for the plot() call
+        # c) the arguments that set_xlog/... accept
+        # d) a set of names that can not be used as a dataset identifier
+        #    (because of point b); see also _contour_types
+        #
+        # Note that not all plot_xxx commands use this structure.
         #
         # Unlike the contour case, we have different plot classes to
         # handle different types of plot. There are either plot types
@@ -372,30 +377,15 @@ class Session(NoNewAttributesAfterInit):
         # name. These keys are also used, along with _plot_type_names,
         # to determine the set of forbidden identifiers.
         #
-        # We could use _plot_type_names to identify this mapping,
-        # by identifying those cases when the key does not equal the
-        # value, but _plot_type_names is also used for the plot()
-        # command, and so has other labels that are currently not
-        # supported by set_xlog/...
-        #
         self._plot_types_alias = {
             "compsource": "source_component",
             "compmodel": "model_component"
         }
 
-        # The keys define the labels that can be used in calls to
-        # plot(). The keys are also used to determine the set of
-        # forbidden identifiers.
-        #
-        self._plot_type_names = {k: k for k in self._plot_types.keys()}
-
-        # Now over-ride the compsource/model labels.
-        #
-        self._plot_type_names['compsource'] = 'source_component'
-        self._plot_type_names['compmodel'] = 'model_component'
-
         # This is used by the get_<key>_contour calls to access the
-        # relevant contour class.
+        # relevant contour class. The keys define the labels that can be
+        # used in calls to contour(), and are also used to determine
+        # the set of forbidden identifiers.
         #
         self._contour_types = {
             "data": sherpa.plot.DataContour(),
@@ -407,12 +397,6 @@ class Session(NoNewAttributesAfterInit):
             "psf": sherpa.plot.PSFContour(),
             "kernel": sherpa.plot.PSFKernelContour()
         }
-
-        # The keys define the labels that can be used in calls to
-        # contour(). The keys are also used to determine the set of
-        # forbidden identifiers.
-        #
-        self._contour_type_names = {k: k for k in self._contour_types.keys()}
 
         # This is used by the get_<key>_image calls to access the
         # relevant image class. The keys are not included in any check
@@ -1388,8 +1372,7 @@ class Session(NoNewAttributesAfterInit):
         """Is this a valid plot type (including aliases)?"""
 
         return plottype in self._plot_types or \
-            plottype in self._plot_types_alias or \
-            plottype in self._plot_type_names
+            plottype in self._plot_types_alias
 
     def _get_contourtype(self, plottype):
         """Return the name to refer to a given contour type."""

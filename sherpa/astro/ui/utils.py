@@ -210,28 +210,15 @@ class Session(sherpa.ui.utils.Session):
         for key in ["model", "fit", "source", "ratio", "resid", "delchi", "chisqr"]:
             self._plot_types_alias[f"bkg{key}"] = f"bkg_{key}"
 
-        # The keys of _plot_type_names are used to define the
-        # labels that can be used in plot() calls.
+        # These are left-over from earlier, when they may have meant
+        # something different but no-longer do. It is probably
+        # time to remove them.
         #
-        self._plot_type_names['arf'] = 'arf'
-        self._plot_type_names['order'] = 'order'
-
-        # Set up the background commands (bkg_xxx) as well as the
-        # aliases (bkgxxx).
-        #
-        self._plot_type_names['bkg'] = 'bkg'
-        for key in ["model", "fit", "source", "ratio", "resid", "delchi", "chisqr"]:
-            label = f"bkg_{key}"
-            self._plot_type_names[label] = label
-            self._plot_type_names[f"bkg{key}"] = label
-
-        # Are these meaningful or worth keeping?
-        #
-        self._plot_type_names['astrodata'] = 'data'
-        self._plot_type_names['astrosource'] = 'source'
-        self._plot_type_names['astromodel'] = 'model'
-        self._plot_type_names['astrocompsource'] = 'source_component'
-        self._plot_type_names['astrocompmodel'] = 'model_componentl'  # NOTE: typo here
+        self._plot_types_alias["astrocompsource"] = "source_component"
+        self._plot_types_alias["astrocompmodel"] = "model_componentl"  # NOTE typo here
+        self._plot_types_alias["astrodata"] = "data"
+        self._plot_types_alias["astrosource"] = "source"
+        self._plot_types_alias["astromodel"] = "model"
 
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
