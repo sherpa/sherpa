@@ -3885,8 +3885,8 @@ def test_set_plot_opt_explicit(cls):
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name,extraargs",
                          [("data", []), ("model", []), ("source", []),
-                          pytest.param("model_component", ["mdl"], marks=pytest.mark.xfail),
-                          pytest.param("source_component", ["mdl"], marks=pytest.mark.xfail)
+                          ("model_component", ["mdl"]),
+                          ("source_component", ["mdl"])
                           ])
 def test_set_plot_opt_changes_fields(cls, name, extraargs):
     """Does "all" change all the type-specific plots?
@@ -4140,7 +4140,7 @@ def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
     ui.set_ylog(plot)
 
     assert not plotobj.histo_prefs["xlog"]
-    assert not plotobj.histo_prefs["ylog"]  # Really this should be set
+    assert plotobj.histo_prefs["ylog"]
 
 
 @requires_plotting
