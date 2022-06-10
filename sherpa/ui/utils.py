@@ -2254,14 +2254,13 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        instance
-           An instance of a sherpa.Data.Data-derived class.
+        instance : sherpa.data.Data
+           The data instance.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
-           If no model expression has been set for the data set
-           (with `set_model` or `set_source`).
+           No data has been loaded for this data set.
 
         See Also
         --------
