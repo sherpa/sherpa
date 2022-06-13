@@ -1327,11 +1327,14 @@ class Session(NoNewAttributesAfterInit):
             return self._default_id
 
         if not self._valid_id(id):
-            raise ArgumentTypeErr('intstr')
+            raise ArgumentTypeErr("intstr")
+
+        if _is_integer(id):
+            return id
 
         badkeys = self._plot_type_names.keys() | self._contour_type_names.keys()
         if id in badkeys:
-            raise IdentifierErr('badid', id)
+            raise IdentifierErr("badid", id)
 
         return id
 
@@ -12104,15 +12107,65 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
 
-    def _multi_plot(self, args, plotmeth='plot', **kwargs):
-        if len(args) == 0:
-            raise ArgumentTypeErr('plotargs')
+    def _multi_plot(self, args, plotmeth="plot", **kwargs):
+        """Handle the plot() or contour() call.
 
-        if plotmeth not in ['plot', 'contour']:
-            raise ArgumentErr("Unsupported plotmeth={}".format(plotmeth))
+        The arguments are split up into groups - a "command" followed
+        by optional arguments - and then each group is used to create
+        a plot/contour.
+
+        Parameters
+        ----------
+        args : list
+            The arguments to the call. It can not be empty.
+        plotmeth : {"plot", "contour"}
+            The call.
+        kwargs
+            The keyword arguments to apply to each plot or contour.
+
+        Notes
+        -----
+        Each group consists of the name of the plot/contour, followed
+        by optional arguments. So
+
+            self._multi_plot(["data", "data", "org"], plotmeth="plot")
+
+        has two "data" style plots, the first with the default
+        identifier and the second with the identifer "org". It is the
+        need to scan through the arguments that leads to the ban on
+        identifiers matching the plot/contour "command names".
+
+        Each plot/contour command matches a key in the
+        _plot/contour_type_names dictionary, and the value is used to
+        get the underlying "plot objet" via get_<value>_plot or
+        get_<value>_contour.
+
+        Multiple arguments can be sent, but they rely on positional
+        ordering only, so
+
+            args = ["model_component", mdl, "model_component", 2, mdl]
+            plotmeth = "plot"
+
+        only works if
+
+            get_model_component_plot(mdl)
+            get_model_component_plot(2, mdl)
+
+        are meaningful calls.
+
+        """
+
+        # This is an internal routine so it is not expected to be
+        # called incorrectly, but make sure we catch any such problem.
+        #
+        if len(args) == 0:
+            raise ArgumentTypeErr("plotargs")
+
+        if plotmeth not in ["plot", "contour"]:
+            raise ArgumentErr(f"Unsupported plotmeth={plotmeth}")
 
         plots = []
-        allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))
+        allowed_types = getattr(self, f"_{plotmeth}_type_names")
         args = list(args)
 
         while args:
@@ -12123,7 +12176,7 @@ class Session(NoNewAttributesAfterInit):
             try:
                 plotname = allowed_types[plottype]
             except KeyError:
-                raise ArgumentErr('badplottype', plottype) from None
+                raise ArgumentErr("badplottype", plottype) from None
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
@@ -12136,7 +12189,7 @@ class Session(NoNewAttributesAfterInit):
 
                 getargs.append(args.pop(0))
 
-            funcname = 'get_{}_{}'.format(plotname, plotmeth)
+            funcname = f"get_{plotname}_{plotmeth}"
             getfunc = getattr(self, funcname)
 
             # Need to make sure we have a copy of each plot
@@ -12146,7 +12199,7 @@ class Session(NoNewAttributesAfterInit):
             plots.append(copy.deepcopy(getfunc(*getargs)))
 
         if len(plots) == 1:
-            plotmeth = getattr(self, '_' + plotmeth)
+            plotmeth = getattr(self, f"_{plotmeth}")
             plotmeth(plots[0], **kwargs)
             return
 
@@ -12154,7 +12207,7 @@ class Session(NoNewAttributesAfterInit):
         ncols = int((len(plots) + 1) / 2.0)
         sp = self._splitplot
         sp.reset(nrows, ncols)
-        plotmeth = getattr(sp, 'add' + plotmeth)
+        plotmeth = getattr(sp, f"add{plotmeth}")
 
         try:
             sherpa.plot.backend.begin()
@@ -12193,15 +12246,40 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.backend.end()
 
     def _set_plot_item(self, plottype, item, value):
+        """Change a plot setting.
 
-        _check_str_type(plottype, 'plottype')
-        keys = list(self._plot_types.keys())
+        This will change all related plot classes; that is setting
+        plottype to "data" will change all the associated plot classes
+        for "data".
+
+        Parameters
+        ----------
+        plottype : str
+            A valid plot (currently taken from _plot_types) or "all".
+        item : str
+            The plot setting to change. If there is no such item then
+            nothing happens.
+        value
+            The value to set the item to. There is no validation of
+            this value.
+
+        Raises
+        ------
+        sherpa.utils.err.PlotErr
+           An invalid plottype value.
+
+        """
+
+        _check_str_type(plottype, "plottype")
+        allowed = list(self._plot_types)
 
         plottype = plottype.strip().lower()
-        if plottype != "all":
+        if plottype == "all":
+            keys = allowed
+        else:
             if plottype not in self._plot_types:
                 raise sherpa.utils.err.PlotErr(
-                    'wrongtype', plottype, str(keys))
+                    "wrongtype", plottype, str(allowed))
 
             keys = [plottype]
 
