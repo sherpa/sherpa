@@ -215,6 +215,126 @@ def test_id_checks_astro_session(session, success, setting):
             s.load_arrays(setting, [1, 2], [1, 2])
 
 
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("plottype", ["source_component", "compsource",
+                                      "model_component", "compmodel"])
+def test_plot_component(session, plottype):
+    """Can we call plot with a "component" call.
+
+    This is a regression test to see if compsource/model works
+    with the plot call. As a check we include the "full" names
+    (e.g. source_component).
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.load_arrays(1, [1, 2, 3], [5, 2, 3])
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_source(mdl)
+
+    # All we do is check we can call the routine. We do not check it
+    # has done anything sensible, but we do check you can call it
+    # with and without a dataset identifier.
+    #
+    s.plot(plottype, 1, mdl)
+    s.plot(plottype, mdl)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("plottype", ["source_component", "compsource",
+                                      "model_component", "compmodel"])
+def test_plot_component_fails(session, plottype):
+    """Can we call plot with a "component" call and get it to error out
+
+    This is a regression test to see both whether we can use
+    the compsource/model label, and to check how it errors out
+    when no argument is given.
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.load_arrays(1, [1, 2, 3], [5, 2, 3])
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_source(mdl)
+
+    # This is a low-level error that we don't catch and convert (at
+    # least at the moment), so just check the current behavior.
+    #
+    with pytest.raises(TypeError,
+                       match=r"_plot\(\) missing 1 required positional argument: 'id'"):
+        s.plot(plottype)
+
+
+@pytest.mark.parametrize("label", ["chisqr", "delchi", "fit", "model", "ratio",
+                                   "resid", "source"])
+def test_astro_plot_bkgxxx(label):
+    """A regression test of plot("bkg<label>")
+
+    This is astro-specific and is just a check to see if we can
+    make the call, not to check what the actual plot looks like.
+
+    See also test_astro_plot_bkg_xxx which has been separated out to
+    allow different behavior over time.
+
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    data = DataPHA("data", [1, 2, 3], [5, 2, 3])
+    bkg = DataPHA("bkg", [1, 2, 3], [2, 1, 2])
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+
+    s.set_data(data)
+    s.set_bkg(bkg)
+
+    s.set_arf(arf, bkg_id=1)
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_bkg_source(mdl)
+
+    s.plot(f"bkg{label}")
+
+
+@pytest.mark.parametrize("label", ["chisqr", "delchi", "fit", "model", "ratio",
+                                   "resid", "source"])
+def test_astro_plot_bkg_xxx(label):
+    """A regression test of plot("bkg_<label>")
+
+    This is astro-specific and is just a check to see if we can
+    make the call, not to check what the actual plot looks like.
+
+    See also test_astro_plot_bkgxxx which has been separated out to
+    allow different behavior over time.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    data = DataPHA("data", [1, 2, 3], [5, 2, 3])
+    bkg = DataPHA("bkg", [1, 2, 3], [2, 1, 2])
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+
+    s.set_data(data)
+    s.set_bkg(bkg)
+
+    s.set_arf(arf, bkg_id=1)
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_bkg_source(mdl)
+
+    plot = f"bkg_{label}"
+    with pytest.raises(ArgumentErr,
+                       match=f"^'{plot}' is not a valid plot type$"):
+        s.plot(plot)
+
+
 def save_ascii_file(s, kwargs, idval, outfile, savefunc, syserr=False):
     """create data and save a file based on it"""
 
