@@ -1359,8 +1359,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_integer(id):
             return id
 
-        badkeys = self._plot_type_names.keys() | self._plot_types_alias.keys() | self._contour_type_names.keys()
-        if id in badkeys:
+        if self._check_plottype(id) or self._check_contourtype(id):
             raise IdentifierErr("badid", id)
 
         return id
@@ -1405,6 +1404,27 @@ class Session(NoNewAttributesAfterInit):
         #
         warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
         return answer
+
+    def _check_plottype(self, plottype):
+        """Is this a valid plot type (including aliases)?"""
+
+        return plottype in self._plot_types or \
+            plottype in self._plot_types_alias or \
+            plottype in self._plot_type_names
+
+    def _get_contourtype(self, plottype):
+        """Return the name to refer to a given contour type."""
+
+        if plottype in self._contour_types:
+            return plottype
+
+        allowed = list(self._contour_types)
+        raise PlotErr("wrongtype", plottype, str(allowed))
+
+    def _check_contourtype(self, plottype):
+        """Is this a valid contour type?"""
+
+        return plottype in self._contour_types
 
     def _get_item(self, id, itemdict, itemdesc, errdesc):
         id = self._fix_id(id)
@@ -12240,19 +12260,15 @@ class Session(NoNewAttributesAfterInit):
         if plotmeth not in ["plot", "contour"]:
             raise ArgumentErr(f"Unsupported plotmeth={plotmeth}")
 
-        plots = []
-        allowed_types = getattr(self, f"_{plotmeth}_type_names")
-        args = list(args)
+        get = getattr(self, f"_get_{plotmeth}type")
+        check = getattr(self, f"_check_{plotmeth}type")
 
+        plots = []
+        args = list(args)
         while args:
             plottype = args.pop(0)
             _check_str_type(plottype, "plottype")
-            plottype = plottype.lower()
-
-            try:
-                plotname = allowed_types[plottype]
-            except KeyError:
-                raise ArgumentErr("badplottype", plottype) from None
+            plottype = get(plottype.lower())
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
@@ -12260,12 +12276,12 @@ class Session(NoNewAttributesAfterInit):
             #
             getargs = []
             while args:
-                if args[0] in allowed_types:
+                if check(args[0]):
                     break
 
                 getargs.append(args.pop(0))
 
-            funcname = f"get_{plotname}_{plotmeth}"
+            funcname = f"get_{plottype}_{plotmeth}"
             getfunc = getattr(self, funcname)
 
             # Need to make sure we have a copy of each plot

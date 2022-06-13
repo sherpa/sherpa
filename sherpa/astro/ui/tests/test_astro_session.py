@@ -169,6 +169,7 @@ def test_set_iter_method_opt_sigmarej_lrej(session):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("setting", ['chisqr', 'compmodel', 'compsource', 'data',
+                                     "model_component", "source_component",
                                      'delchi', 'fit', 'kernel', 'model',
                                      'psf', 'ratio', 'resid', 'source'])
 def test_id_checks_session(session, setting):
@@ -181,10 +182,7 @@ def test_id_checks_session(session, setting):
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
-@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace',
-                                     "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
-                                     "bkg_delchi", "bkg_chisqr", "bkg_fit"
-                                     ])
+@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace'])
 def test_id_checks_session_unexpected(session, setting):
     """These identifiers are allowed. Should they be?"""
 
@@ -198,8 +196,9 @@ def test_id_checks_session_unexpected(session, setting):
                          [(Session, True), (AstroSession, False)])
 @pytest.mark.parametrize("setting", ['arf', 'bkg', 'bkgchisqr', 'bkgdelchi', 'bkgfit',
                                      'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
+                                     "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
+                                     "bkg_delchi", "bkg_chisqr", "bkg_fit",
                                      'order',
-                                     # "energy", "photon",  these are currently both valid for astro
                                      "astrocompsource", "astrocompmodel", "astrodata",
                                      "astrosource", "astromodel"])
 def test_id_checks_astro_session(session, success, setting):
@@ -330,10 +329,7 @@ def test_astro_plot_bkg_xxx(label):
     mdl = s.create_model_component("const1d", "mdl")
     s.set_bkg_source(mdl)
 
-    plot = f"bkg_{label}"
-    with pytest.raises(ArgumentErr,
-                       match=f"^'{plot}' is not a valid plot type$"):
-        s.plot(plot)
+    s.plot(f"bkg_{label}")
 
 
 def save_ascii_file(s, kwargs, idval, outfile, savefunc, syserr=False):

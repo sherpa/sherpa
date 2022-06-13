@@ -3960,7 +3960,7 @@ def test_set_plot_opt_explicit_astro():
     s.set_source(1, mdl)
     s.set_bkg_source(1, mdl)
 
-    s.plot('data', 'model', 'bkg', 'bkgmodel')
+    s.plot('data', 'model', 'bkg', 'bkg_model')
 
     fig = plt.gcf()
     assert len(fig.axes) == 4
@@ -3986,7 +3986,7 @@ def test_set_plot_opt_explicit_astro():
     #
     s.set_ylog('model')
 
-    s.plot('data', 'model', 'bkg', 'bkgmodel')
+    s.plot('data', 'model', 'bkg', 'bkg_model')
 
     fig = plt.gcf()
     assert len(fig.axes) == 4
@@ -4004,6 +4004,47 @@ def test_set_plot_opt_explicit_astro():
     assert fig.axes[3].get_yscale() == 'linear'
 
     plt.close(fig)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_plot_opt_alias(cls, caplog):
+    """Check that at least one alias works.
+
+    While we support aliases we should check we see the
+    messages.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    assert len(caplog.record_tuples) == 0
+    s.plot("compmodel", "m1", "compsource", 2, "m1")
+    assert len(caplog.record_tuples) == 2
+
+    for loc, lvl, _ in caplog.record_tuples:
+        assert loc == "sherpa.ui.utils"
+        assert lvl == logging.WARNING
+
+    assert caplog.record_tuples[0][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
+    assert caplog.record_tuples[1][2] == "The argument 'compsource' is deprecated and 'source_component' should be used instead"
+
+    # Check we see the message multiple times; that is, it is not like
+    # a deprecation warning which is only shown once.
+    #
+    s.plot("compmodel", "m1")
+    assert len(caplog.record_tuples) == 3
+    assert caplog.record_tuples[2][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
 
 
 def check_plot2_xscale(xscale):
@@ -4031,7 +4072,7 @@ def check_plot2_xscale(xscale):
 @pytest.mark.parametrize("plottype,xscale", [('data', 'log'),
                                              ('resid', 'log'),
                                              ('bkg', 'linear'),
-                                             ('bkgresid', 'linear')])
+                                             ('bkg_resid', 'linear')])
 def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
     """Check that set_xlog handling for plot_fit_resid.
 
@@ -4051,7 +4092,7 @@ def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
 @pytest.mark.parametrize("plottype,xscale", [('data', 'linear'),
                                              ('resid', 'linear'),
                                              ('bkg', 'log'),
-                                             ('bkgresid', 'log')])
+                                             ('bkg_resid', 'log')])
 def test_plot_bkg_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
     """Check that set_xlog handling for plot_bkg_fit_resid.
 
