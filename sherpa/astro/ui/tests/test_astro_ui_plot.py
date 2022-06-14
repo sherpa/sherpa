@@ -3824,7 +3824,7 @@ def test_set_opt_valid(cls, name):
 
 
 @pytest.mark.parametrize("name", ["bkg", "bkgfit", "bkgresid", "bkgratio", "bkgdelchi",
-                                  "order", "energy", "photon"])
+                                  "order"])
 def test_set_opt_valid_astro(name):
     """What names are accepted for set_xlog/ylog/...? Astro Session only
     """

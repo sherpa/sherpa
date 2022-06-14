@@ -165,6 +165,7 @@ class Session(sherpa.ui.utils.Session):
         self._bkgsourceplot = sherpa.astro.plot.BkgSourcePlot()
         self._arfplot = sherpa.astro.plot.ARFPlot()
         self._orderplot = sherpa.astro.plot.OrderPlot()
+
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
@@ -189,16 +190,15 @@ class Session(sherpa.ui.utils.Session):
         # The keys are used by the set_xlog/... calls to identify what
         # plot objects are changed by a given set_xxx(label) call.
         #
-        self._plot_types['order'] = [self._orderplot]
-        self._plot_types['energy'] = [self._energyfluxplot]
-        self._plot_types['photon'] = [self._photonfluxplot]
-        self._plot_types['compsource'].append(self._astrocompsrcplot)
-        self._plot_types['compmodel'].append(self._astrocompmdlplot)
-
         self._plot_types['data'].append(self._dataphaplot)
-        self._plot_types['source'].append(self._astrosourceplot)
         self._plot_types['model'].append(self._modelhisto)
+        self._plot_types['compmodel'].append(self._astrocompmdlplot)
+        self._plot_types['source'].append(self._astrosourceplot)
+        self._plot_types['compsource'].append(self._astrocompsrcplot)
+
         self._plot_types['arf'] = [self._arfplot]
+        self._plot_types['order'] = [self._orderplot]
+
         self._plot_types['bkg'] = [self._bkgdataplot]
         self._plot_types['bkgmodel'] = [self._bkgmodelhisto]
         self._plot_types['bkgfit'] = [self._bkgfitplot]

@@ -373,16 +373,16 @@ class Session(NoNewAttributesAfterInit):
         self._plot_types = {
             'data': [self._dataplot, self._datahistplot],
             'model': [self._modelplot, self._modelhistplot],
+            'compmodel': [self._compmdlplot, self._compmdlhistplot],
             'source': [self._sourceplot, self._sourcehistplot],
+            'compsource': [self._compsrcplot, self._compsrchistplot],
             'fit': [self._fitplot],
             'resid': [self._residplot],
             'ratio': [self._ratioplot],
             'delchi': [self._delchiplot],
             'chisqr': [self._chisqrplot],
             'psf': [self._psfplot],
-            'kernel': [self._kernelplot],
-            'compsource': [self._compsrcplot, self._compsrchistplot],
-            'compmodel': [self._compmdlplot, self._compmdlhistplot]
+            'kernel': [self._kernelplot]
         }
 
         # The keys define the labels that can be used in calls to
