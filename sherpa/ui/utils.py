@@ -12491,6 +12491,11 @@ class Session(NoNewAttributesAfterInit):
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
 
+        .. versionchanged:: 4.15.0
+           A number of labels, such as "bkgfit", are marked as
+           deprecated and using them will cause a warning message to
+           be displayed, indicating the new label to use.
+
         .. versionchanged:: 4.12.2
            Keyword arguments, such as alpha and ylog, can be sent to
            each plot.
@@ -12498,7 +12503,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           The data set does not support the requested plot type.
+           The label is invalid.
 
         See Also
         ---------
@@ -12514,9 +12519,9 @@ class Session(NoNewAttributesAfterInit):
         The supported plot types depend on the data set type, and
         include the following list. There are also individual
         functions, with ``plot_`` prepended to the plot type, such as
-        `plot_data` (the ``bkg`` variants use a prefix of
-        ``plot_bkg_``). There are also several multiple-plot commands,
-        such as `plot_fit_ratio`, `plot_fit_resid`, and `plot_fit_delchi`.
+        `plot_data`. There are also several multiple-plot commands,
+        such as `plot_fit_ratio`, `plot_fit_resid`, and
+        `plot_fit_delchi`.
 
         ``arf``
            The ARF for the data set (only for `DataPHA` data sets).
@@ -12524,30 +12529,30 @@ class Session(NoNewAttributesAfterInit):
         ``bkg``
            The background.
 
-        ``bkgchisqr``
+        ``bkg_chisqr``
            The chi-squared statistic calculated for each bin when
            fitting the background.
 
-        ``bkgdelchi``
+        ``bkg_delchi``
            The residuals for each bin, calculated as (data-model)
            divided by the error, for the background.
 
-        ``bkgfit``
+        ``bkg_fit``
            The data (as points) and the convolved model (as a line),
            for the background data set.
 
-        ``bkgmodel``
+        ``bkg_model``
            The convolved background model.
 
-        ``bkgratio``
+        ``bkg_ratio``
            The residuals for each bin, calculated as data/model,
            for the background data set.
 
-        ``bkgresid``
+        ``bkg_resid``
            The residuals for each bin, calculated as (data-model),
            for the background data set.
 
-        ``bkgsource``
+        ``bkg_source``
            The un-convolved background model.
 
         ``chisqr``
@@ -12569,6 +12574,12 @@ class Session(NoNewAttributesAfterInit):
         ``model``
            The convolved model.
 
+        ``model_component``
+           Part of the full model expression (convolved).
+
+        ``order``
+          Plot the model for a selected response
+
         ``psf``
            The unfiltered PSF kernel associated with the data set.
 
@@ -12580,6 +12591,9 @@ class Session(NoNewAttributesAfterInit):
 
         ``source``
            The un-convolved model.
+
+        ``source_component``
+           Part of the full model expression (un-convolved).
 
         The plots can be specialized for a particular data type,
         such as the `set_analysis` command controlling the units
@@ -12630,10 +12644,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", "model", ylog=True)
 
-        Plot the backgrounds for dataset 1 using the 'up' and 'down'
+        Plot the backgrounds for dataset 1 using the "up" and "down"
         components (in this case the background identifier):
 
-        >>> plot('bkg', 1, 'up', 'bkg', 1, 'down')
+        >>> plot("bkg", 1, "up", "bkg", 1, "down")
 
         """
         self._multi_plot(args, **kwargs)
