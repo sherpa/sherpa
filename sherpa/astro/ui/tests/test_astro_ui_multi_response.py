@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,12 +33,12 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_plotting
-
 from sherpa.astro import ui
 from sherpa.astro.instrument import create_arf
 from sherpa.astro.data import DataRMF
+from sherpa.utils.err import PlotErr
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_plotting
 
 
 def get_egrid():
@@ -457,16 +458,8 @@ def test_eval_multi_arfrmf_reorder(clean_astro_ui):
     check_eval_multi_arfrmf()
 
 
-@requires_data
-@requires_fits
-@requires_plotting
-def test_plot_order_multi(make_data_path, clean_astro_ui):
-    """Rather than fake data, use a known dataset.
-
-    Here we pretend we have three orders but with the same
-    response (except that the ARF is 0.5, 0.4, 0.25 of the
-    normal ARF).
-    """
+def setup_order_plot(make_data_path):
+    """Set up a faked dataset with multiple orders."""
 
     pha = make_data_path('3c273.pi')
     ui.load_pha(pha)
@@ -486,6 +479,18 @@ def test_plot_order_multi(make_data_path, clean_astro_ui):
 
     ui.notice(0.5, 7)
     ui.ignore(3, 4)
+
+@requires_data
+@requires_fits
+def test_get_order_plot_multi(make_data_path, clean_astro_ui):
+    """Rather than fake data, use a known dataset.
+
+    Here we pretend we have three orders but with the same
+    response (except that the ARF is 0.5, 0.4, 0.25 of the
+    normal ARF).
+    """
+
+    setup_order_plot(make_data_path)
 
     fplot = ui.get_fit_plot()
     oplot = ui.get_order_plot()
@@ -541,3 +546,53 @@ def test_plot_order_multi(make_data_path, clean_astro_ui):
     #
     # y = oplot.y[0] + oplot.y[1] + oplot.y[2]
     # assert y == pytest.approx(mplot.y)
+
+
+@requires_data
+@requires_fits
+@requires_plotting
+def test_plot_order_multi(make_data_path, clean_astro_ui):
+    """Rather than fake data, use a known dataset.
+
+    Most of the testing is done by test_get_order_plot_multi;
+    this just checks we can make an actual plot.
+    """
+
+    setup_order_plot(make_data_path)
+
+    # All we are doing is checking we can call plot_order.
+    #
+    ui.plot_order()
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("orders", [9, [9], [1, 2, 9]])
+def test_get_plot_order_knows_bad_response_multiple(orders, make_data_path, clean_astro_ui):
+    """Check we error out when we have multiple orders"""
+
+    setup_order_plot(make_data_path)
+    with pytest.raises(PlotErr, match="'9' is not a valid order"):
+        ui.get_order_plot(orders=orders)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("orders", [2, [2], [1, 2]])
+def test_get_plot_order_knows_bad_response_single(orders, make_data_path, clean_astro_ui):
+    """Historically the order-plot code would not error out when there was
+    only one response. So check on this behavior as a regression test.
+
+    There is an argument to say that maybe we should just ignore the
+    order argument when we know there's only one response, but this
+    does not seem particularly sensible.
+
+    """
+
+    pha = make_data_path('3c273.pi')
+    ui.load_pha(pha)
+    ui.set_source(ui.powlaw1d.pl)
+
+    # This currently works, no matter the order value.
+    #
+    ui.get_order_plot(orders=orders)
