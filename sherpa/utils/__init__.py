@@ -193,18 +193,18 @@ def calc_ftest(dof1, stat1, dof2, stat2):
 
     Parameters
     ----------
-    dof1 : int or array/list/tuple of int
+    dof1 : int or sequence of int
        degrees of freedom of the simple model
-    stat1 : number or array/list/tuple of number
+    stat1 : number or sequence of number
        best-fit chi-square statistic value of the simple model
-    dof2 : int or array/list/tuple of int
+    dof2 : int or sequence of int
        degrees of freedom of the complex model
-    stat2 : number or array/list/tuple of number
+    stat2 : number or sequence of number
        best-fit chi-square statistic value of the complex model
 
     Returns
     -------
-    sig : number
+    sig : number or ndarray
        The significance, or p-value. A standard threshold for
        selecting the more complex model is significance < 0.05 (the
        '95% criterion' of statistics).
@@ -273,14 +273,14 @@ def calc_mlr(delta_dof, delta_stat):
 
     Parameters
     ----------
-    delta_dof : int
+    delta_dof : int or sequence of int
        change in the number of degrees of freedom
-    delta_stat : number
+    delta_stat : number or sequence of number
        change in the best-fit statistic value
 
     Returns
     -------
-    sig : number
+    sig : number or ndarray
        The significance, or p-value. A standard threshold for
        selecting the more complex model is significance < 0.05 (the
        '95% criterion' of statistics).
