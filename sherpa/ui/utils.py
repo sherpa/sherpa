@@ -180,15 +180,48 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
 
 def _assign_obj_to_main(name, obj):
+    """Create a "global" symbol.
+
+    Parameters
+    ----------
+    name : str
+        The name to use.
+    obj : object
+        The value for the symbol.
+
+    """
     sys.modules["__main__"].__dict__[name] = obj
     BUILTINS.__dict__[name] = obj
 
 
 def _assign_model_to_main(name, model):
+    """Ensure the model is added to the "global" symbol table.
+
+    Parameters
+    ----------
+    name : str
+        The name to use.
+    model : sherpa.models.model.Model instance
+        The model. The name field will be changed to match the
+        "<instance>.<name>" scheme.
+
+    """
     # Ask sys what the __main__ module is; packages such
     # as IPython can add their own __main__ module.
     model.name = '%s.%s' % (type(model).__name__.lower(), name)
     _assign_obj_to_main(name, model)
+
+
+def _remove_obj_from_main(name):
+    """Remove the symbol."""
+
+    # Is this sufficient or overkill?
+    #
+    for base in [BUILTINS, sys.modules["__main__"]]:
+        try:
+            del base.__dict__[name]
+        except KeyError:
+            pass
 
 
 ###############################################################################
@@ -252,6 +285,10 @@ class Session(NoNewAttributesAfterInit):
         assignments, and restores the default settings for the
         optimisation and fit statistic.
 
+        .. versionchanged:: 4.15.0
+           The model names are now removed from the global symbol
+           table.
+
         See Also
         --------
         save : Save the current Sherpa session to a file.
@@ -263,7 +300,34 @@ class Session(NoNewAttributesAfterInit):
 
         >>> clean()
 
+        After the call to `clean`, the `line` and `bgnd` variables
+        will be removed, so accessing them would cause a NameError.
+
+        >>> set_source(gauss1d.line + const1d.bgnd)
+        >>> bgnd.c0.min = 0
+        >>> print(line)
+        >>> clean()
+
         """
+
+        # Best-guess attempt at removing all the symbols we have
+        # created (e.g. from creating model instances). We only do
+        # this when the _assign_model_to_main routine is in place:
+        # this is not ideal, as it could have been changed after some
+        # symbols were created, but assume that if the user is going
+        # to do this then they can deal with the consequences.
+        #
+        # It looks like _model_components stores all the various models,
+        # such as table and psf models.
+        #
+        try:
+            if self._model_autoassign_func == _assign_model_to_main:
+                for name in self._model_components.keys():
+                    _remove_obj_from_main(name)
+
+        except AttributeError:
+            pass
+
         self._sherpa_version = sherpa.__version__
         self._sherpa_version_string = sherpa.__version__
 
@@ -5704,8 +5768,7 @@ class Session(NoNewAttributesAfterInit):
                 self._model_components[name] = mod
                 return
 
-        del sys.modules["__main__"].__dict__[name]
-        del BUILTINS.__dict__[name]
+        _remove_obj_from_main(name)
 
     # Back-compatibility
     # create_model = create_model_component

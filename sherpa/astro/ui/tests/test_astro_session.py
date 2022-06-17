@@ -162,12 +162,9 @@ def test_does_clean_remove_model_identifiers(session):
 
     s.clean()
 
-    for store in [globals(), locals()]:
+    for store in [globals(), locals(), sys.modules["__main__"].__dict__]:
         assert "mdl1" not in store
         assert "mdl2" not in store
-
-    assert "mdl1" in sys.modules["__main__"].__dict__
-    assert "mdl2" in sys.modules["__main__"].__dict__
 
 
 def test_astro_does_clean_remove_model_identifiers():
@@ -185,12 +182,9 @@ def test_astro_does_clean_remove_model_identifiers():
 
     s.clean()
 
-    for store in [globals(), locals()]:
+    for store in [globals(), locals(), sys.modules["__main__"].__dict__]:
         assert "mdl1" not in store
         assert "mdl2" not in store
-
-    assert "mdl1" in sys.modules["__main__"].__dict__
-    assert "mdl2" in sys.modules["__main__"].__dict__
 
 
 @pytest.mark.parametrize("label", ["arf", "rmf"])
