@@ -957,20 +957,18 @@ def test_delete_model_component_invalid_argument():
 
     tst = s.create_model_component('gauss1d', 'gmdl')
 
-    with pytest.raises(ArgumentTypeErr) as te:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'name' must be a string"):
         s.delete_model_component(tst)
-
-    assert str(te.value) == "'name' must be a string"
 
 
 def test_delete_model_component_not_a_component():
-    """Check correct error message for non-exitant model"""
+    """Check correct error message for non-existant model"""
 
     s = Session()
-    with pytest.raises(IdentifierErr) as te:
+    with pytest.raises(IdentifierErr,
+                       match="model component 'tst' does not exist"):
         s.delete_model_component('tst')
-
-    assert str(te.value) == "model component 'tst' does not exist"
 
 
 def test_delete_model_component_warning(caplog):

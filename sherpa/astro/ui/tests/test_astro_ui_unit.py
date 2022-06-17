@@ -27,6 +27,8 @@ this duplication? Yes, we can parametrize by Session class
 and run on both, to avoid duplication.
 """
 
+import sys
+
 import numpy as np
 
 import pytest
@@ -34,6 +36,7 @@ import pytest
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import io
 from sherpa.astro import ui
+import sherpa.models.basic
 from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, StatErr
@@ -61,6 +64,54 @@ def check_table(hdu, colinfo):
         assert hdu[k] == pytest.approx(v)
 
     assert len(hdu) == len(colinfo)
+
+
+@pytest.mark.parametrize("as_string", [True, False])
+def test_model_identifiers_set_globally(as_string, clean_astro_ui):
+    """Check we create a global symbol for the models.
+
+    See also the same test in
+      sherpa/astro/ui/tests/test_astro_session.py
+      sherpa/astro/ui/tests/test_astro_ui_import.py
+
+    """
+
+    # The "global" symbol table depends on what has been run before. We
+    # could try and make sure that we are "clean", but this makes checking
+    # what this test is doing hard to do, so we remove the symbols just
+    # in case.
+    #
+    for name in ["mdl1", "mdl2"]:
+        try:
+            del sys.modules["__main__"].__dict__[name]
+        except KeyError:
+            pass
+
+    ui.dataspace1d(1, 10, 1)
+
+    for store in [globals(), locals(), sys.modules["__main__"].__dict__]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
+
+    if as_string:
+        ui.set_source("const1d.mdl1 + gauss1d.mdl2")
+    else:
+        # unlike the direct result in test_astro_session.py we can
+        # call set_source without a string.
+        #
+        ui.set_source(ui.const1d.mdl1 + ui.gauss1d.mdl2)
+
+    for store in [globals(), locals()]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
+
+    assert "mdl1" in sys.modules["__main__"].__dict__
+    assert "mdl2" in sys.modules["__main__"].__dict__
+
+    assert isinstance(sys.modules["__main__"].__dict__["mdl1"],
+                      sherpa.models.basic.Const1D)
+    assert isinstance(sys.modules["__main__"].__dict__["mdl2"],
+                      sherpa.models.basic.Gauss1D)
 
 
 # This is part of #397
