@@ -3505,98 +3505,95 @@ must be an integer.""")
                 else:
                     area = self.apply_grouping(area, self._middle)
                 staterr = staterr / area
+
             """
 
-        if (staterr is not None) and self.subtracted:
-            bkg_staterr_list = []
+        if staterr is None:
+            return None
 
-            # for bkg in self._backgrounds.values():
-            for key in self.background_ids:
-                bkg = self.get_background(key)
-                berr = bkg.staterror
-                if filter:
-                    berr = self.apply_filter(berr, self._sum_sq)
-                else:
-                    berr = self.apply_grouping(berr, self._sum_sq)
+        if not self.subtracted:
+            return staterr
 
-                if (berr is None) and (staterrfunc is not None):
-                    bkg_cnts = bkg.counts
-                    if filter:
-                        bkg_cnts = self.apply_filter(bkg_cnts)
-                    else:
-                        bkg_cnts = self.apply_grouping(bkg_cnts)
+        bkg_staterr_list = []
 
-                    # TODO: shouldn't the following logic be somewhere
-                    #       else more general?
-                    if hasattr(staterrfunc, '__name__') and \
-                       staterrfunc.__name__ == 'calc_chi2datavar_errors' and \
-                       0.0 in bkg_cnts:
-                        mask = (numpy.asarray(bkg_cnts) != 0.0)
-                        berr = numpy.zeros(len(bkg_cnts))
-                        berr[mask] = staterrfunc(bkg_cnts[mask])
-                    else:
-                        berr = staterrfunc(bkg_cnts)
-
-                # FIXME: handle this
-                # assert (berr is not None)
-
-                # This case appears when the source dataset has an error
-                # column and at least one of the background(s) do not.
-                # Because the staterr is not None and staterrfunc is, I think
-                # we should return None.  This way the user knows to call with
-                # staterrfunc next time.
-                if berr is None:
-                    return None
-
-                bksl = bkg.backscal
-                if bksl is not None:
-                    bksl = self._check_scale(bksl, filter=filter)
-                    berr = berr / bksl
-
-                # Need to apply filter/grouping of the source dataset
-                # to the background areascal, so can not just say
-                #   area = bkg.get_areascal(filter=filter)
-                #
-                area = bkg.areascal
-                if area is not None:
-                    area = self._check_scale(area, filter=filter)
-                    berr = berr / area
-
-                if bkg.exposure is not None:
-                    berr = berr / bkg.exposure
-
-                berr = berr * berr
-                bkg_staterr_list.append(berr)
-
-            nbkg = len(bkg_staterr_list)
-            assert nbkg > 0  # TODO: should we remove this assert?
-            if nbkg == 1:
-                bkgsum = bkg_staterr_list[0]
+        for key in self.background_ids:
+            bkg = self.get_background(key)
+            berr = bkg.staterror
+            if filter:
+                berr = self.apply_filter(berr, self._sum_sq)
             else:
-                bkgsum = sum(bkg_staterr_list)
+                berr = self.apply_grouping(berr, self._sum_sq)
 
-            bscal = self.backscal
-            if bscal is not None:
-                bscal = self._check_scale(bscal, filter=filter)
-                bkgsum = (bscal * bscal) * bkgsum
+            if (berr is None) and (staterrfunc is not None):
+                bkg_cnts = bkg.counts
+                if filter:
+                    bkg_cnts = self.apply_filter(bkg_cnts)
+                else:
+                    bkg_cnts = self.apply_grouping(bkg_cnts)
 
-            # Correct the background counts by the source AREASCAL
-            # setting. Is this correct?
-            ascal = self.areascal
-            if ascal is not None:
-                ascal = self._check_scale(ascal, filter=filter)
-                bkgsum = (ascal * ascal) * bkgsum
+                # TODO: shouldn't the following logic be somewhere
+                #       else more general?
+                if hasattr(staterrfunc, '__name__') and \
+                   staterrfunc.__name__ == 'calc_chi2datavar_errors' and \
+                   0.0 in bkg_cnts:
+                    mask = (numpy.asarray(bkg_cnts) != 0.0)
+                    berr = numpy.zeros(len(bkg_cnts))
+                    berr[mask] = staterrfunc(bkg_cnts[mask])
+                else:
+                    berr = staterrfunc(bkg_cnts)
 
-            if self.exposure is not None:
-                bkgsum = (self.exposure * self.exposure) * bkgsum
+            # This case appears when the source dataset has an error
+            # column and at least one of the background(s) do not.
+            # Because the staterr is not None and staterrfunc is, I think
+            # we should return None.  This way the user knows to call with
+            # staterrfunc next time.
+            if berr is None:
+                return None
 
-            nbkg = SherpaFloat(nbkg)
+            bksl = bkg.backscal
+            if bksl is not None:
+                bksl = self._check_scale(bksl, filter=filter)
+                berr = berr / bksl
 
-            if staterr is not None:
-                staterr = staterr * staterr + bkgsum / (nbkg * nbkg)
-                staterr = numpy.sqrt(staterr)
+            # Need to apply filter/grouping of the source dataset
+            # to the background areascal, so can not just say
+            #   area = bkg.get_areascal(filter=filter)
+            #
+            area = bkg.areascal
+            if area is not None:
+                area = self._check_scale(area, filter=filter)
+                berr = berr / area
 
-        return staterr
+            if bkg.exposure is not None:
+                berr = berr / bkg.exposure
+
+            berr = berr * berr
+            bkg_staterr_list.append(berr)
+
+        nbkg = len(bkg_staterr_list)
+        if nbkg == 1:
+            bkgsum = bkg_staterr_list[0]
+        else:
+            bkgsum = sum(bkg_staterr_list)
+
+        bscal = self.backscal
+        if bscal is not None:
+            bscal = self._check_scale(bscal, filter=filter)
+            bkgsum = (bscal * bscal) * bkgsum
+
+        # Correct the background counts by the source AREASCAL
+        # setting. Is this correct?
+        ascal = self.areascal
+        if ascal is not None:
+            ascal = self._check_scale(ascal, filter=filter)
+            bkgsum = (ascal * ascal) * bkgsum
+
+        if self.exposure is not None:
+            bkgsum = (self.exposure * self.exposure) * bkgsum
+
+        nbkg = SherpaFloat(nbkg)
+        staterr = staterr * staterr + bkgsum / (nbkg * nbkg)
+        return numpy.sqrt(staterr)
 
     def get_syserror(self, filter=False):
         """Return any systematic error.
