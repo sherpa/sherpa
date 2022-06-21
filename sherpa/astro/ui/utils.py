@@ -8539,8 +8539,8 @@ class Session(sherpa.ui.utils.Session):
 
         where src_exposure and bg_exposure are the source and
         background exposure times, and src_backscal and bg_backscal
-        are the source and background backscales.  The backscale, `read
-        from the ``BACKSCAL`` header keyword of the PHA file
+        are the source and background backscales.  The backscale, read
+        from the ``BACKSCAL`` header keyword of the `PHA file
         <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html>`_,
         is the ratio of data extraction area to total detector area.
 
