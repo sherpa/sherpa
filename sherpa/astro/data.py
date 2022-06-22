@@ -3531,16 +3531,7 @@ must be an integer.""")
                 else:
                     bkg_cnts = self.apply_grouping(bkg_cnts)
 
-                # TODO: shouldn't the following logic be somewhere
-                #       else more general?
-                if hasattr(staterrfunc, '__name__') and \
-                   staterrfunc.__name__ == 'calc_chi2datavar_errors' and \
-                   0.0 in bkg_cnts:
-                    mask = (numpy.asarray(bkg_cnts) != 0.0)
-                    berr = numpy.zeros(len(bkg_cnts))
-                    berr[mask] = staterrfunc(bkg_cnts[mask])
-                else:
-                    berr = staterrfunc(bkg_cnts)
+                berr = staterrfunc(bkg_cnts)
 
             # This case appears when the source dataset has an error
             # column and at least one of the background(s) do not.
