@@ -3468,123 +3468,92 @@ must be an integer.""")
         >>> dy = dset.get_staterror(staterrfunc=stat.calc_staterror)
 
         """
-        staterr = self.staterror
 
         filter = bool_cast(filter)
         if filter:
-            staterr = self.apply_filter(staterr, self._sum_sq)
+            filterfunc = self.apply_filter
         else:
-            staterr = self.apply_grouping(staterr, self._sum_sq)
+            filterfunc = self.apply_grouping
 
-        # The source AREASCAL is not applied here, but the
-        # background term is.
+        # This is pulled out into a separate local routine to point
+        # out the same logic is used for the source and background
+        # data objects (and that we always use the source filtering
+        # and grouping, not the background, when calling filterfunc).
         #
-        if (staterr is None) and (staterrfunc is not None):
-            cnts = self.counts
+        def get_error(dataobj):
+            if dataobj.staterror is None:
+                if staterrfunc is None:
+                    return None
 
-            if filter:
-                cnts = self.apply_filter(cnts)
-            else:
-                cnts = self.apply_grouping(cnts)
+                cnts = filterfunc(dataobj.counts)
+                return staterrfunc(cnts)
 
-            staterr = staterrfunc(cnts)
+            return filterfunc(dataobj.staterror,
+                              groupfunc=dataobj._sum_sq)
 
-            # Need to apply the area scaling to the calculated
-            # errors. Grouping and filtering complicate this; is
-            # _middle the best choice here?
-            #
-            """
-            area = self.areascal
-            if staterr is not None and area is not None:
-                if numpy.isscalar(area):
-                    area = numpy.zeros(self.channel.size) + area
-
-                # TODO: replace with _check_scale?
-                if filter:
-                    area = self.apply_filter(area, self._middle)
-                else:
-                    area = self.apply_grouping(area, self._middle)
-                staterr = staterr / area
-
-            """
-
+        staterr = get_error(self)
         if staterr is None:
             return None
 
         if not self.subtracted:
             return staterr
 
-        bkg_staterr_list = []
-
+        # For each background dataset we filter and/or group the
+        # errors to match the source dataset, and then apply the
+        # various scaling factors (areascal, backscal, and exposure
+        # scaling) to correct them to match the source dataset.  The
+        # per-group variance is then stored, so that it can be
+        # combined to create the overall background contribution,
+        # which can then have the "source" side of the scaling values
+        # applied to it before being added to the source erroor term.
+        #
+        bkg_variances = []
         for key in self.background_ids:
             bkg = self.get_background(key)
-            berr = bkg.staterror
-            if filter:
-                berr = self.apply_filter(berr, self._sum_sq)
-            else:
-                berr = self.apply_grouping(berr, self._sum_sq)
-
-            if (berr is None) and (staterrfunc is not None):
-                bkg_cnts = bkg.counts
-                if filter:
-                    bkg_cnts = self.apply_filter(bkg_cnts)
-                else:
-                    bkg_cnts = self.apply_grouping(bkg_cnts)
-
-                berr = staterrfunc(bkg_cnts)
-
-            # This case appears when the source dataset has an error
-            # column and at least one of the background(s) do not.
-            # Because the staterr is not None and staterrfunc is, I think
-            # we should return None.  This way the user knows to call with
-            # staterrfunc next time.
+            berr = get_error(bkg)
             if berr is None:
+                # We do not know how to generate an error, so
+                # return None. An alternative would be to raise an
+                # error, since we have an error from the source.
+                #
                 return None
 
-            bksl = bkg.backscal
-            if bksl is not None:
-                bksl = self._check_scale(bksl, filter=filter)
+            if bkg.backscal is not None:
+                bksl = self._check_scale(bkg.backscal, filter=filter)
                 berr = berr / bksl
 
-            # Need to apply filter/grouping of the source dataset
-            # to the background areascal, so can not just say
-            #   area = bkg.get_areascal(filter=filter)
-            #
-            area = bkg.areascal
-            if area is not None:
-                area = self._check_scale(area, filter=filter)
+            if bkg.areascal is not None:
+                area = self._check_scale(bkg.areascal, filter=filter)
                 berr = berr / area
 
             if bkg.exposure is not None:
                 berr = berr / bkg.exposure
 
-            berr = berr * berr
-            bkg_staterr_list.append(berr)
+            bkg_variances.append(berr * berr)
 
-        nbkg = len(bkg_staterr_list)
+        nbkg = len(bkg_variances)
         if nbkg == 1:
-            bkgsum = bkg_staterr_list[0]
+            bkgvar = bkg_variances[0]
         else:
-            bkgsum = sum(bkg_staterr_list)
+            bkgvar = sum(bkg_variances)
 
-        bscal = self.backscal
-        if bscal is not None:
-            bscal = self._check_scale(bscal, filter=filter)
-            bkgsum = (bscal * bscal) * bkgsum
+        if self.backscal is not None:
+            bscal = self._check_scale(self.backscal, filter=filter)
+            bkgvar = (bscal * bscal) * bkgvar
 
         # Correct the background counts by the source AREASCAL
         # setting. Is this correct?
-        ascal = self.areascal
-        if ascal is not None:
-            ascal = self._check_scale(ascal, filter=filter)
-            bkgsum = (ascal * ascal) * bkgsum
+        #
+        if self.areascal is not None:
+            ascal = self._check_scale(self.areascal, filter=filter)
+            bkgvar = (ascal * ascal) * bkgvar
 
         if self.exposure is not None:
-            bkgsum = (self.exposure * self.exposure) * bkgsum
+            bkgvar = (self.exposure * self.exposure) * bkgvar
 
         nbkg = SherpaFloat(nbkg)
-        staterr = staterr * staterr + bkgsum / (nbkg * nbkg)
-        return numpy.sqrt(staterr)
+        statvar = staterr * staterr + bkgvar / (nbkg * nbkg)
+        return numpy.sqrt(statvar)
 
     def get_syserror(self, filter=False):
         """Return any systematic error.
