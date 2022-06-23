@@ -5098,12 +5098,7 @@ class Session(NoNewAttributesAfterInit):
         -----
         Setting this to ``True`` only makes sense in an interactive
         environment.  It is designed to be similar to the parameter
-        prompting provided by X-Spec [1]_.
-
-        References
-        ----------
-
-        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/
+        prompting provided by `XSPEC <https://heasarc.gsfc.nasa.gov/xanadu/xspec/>`_.
 
         Examples
         --------
@@ -7647,7 +7642,6 @@ class Session(NoNewAttributesAfterInit):
             except AttributeError:
                 raise ArgumentTypeErr('badarg', 'par',
                                       'a parameter or model object or expression string')
-
 
     def link(self, par, val):
         """Link a parameter to a value.
@@ -15702,7 +15696,6 @@ class Session(NoNewAttributesAfterInit):
         imageobj.prepare_image(data, source)
         return imageobj
 
-
     def get_model_component_image(self, id, model=None):
         """Return the data used by image_model_component.
 
@@ -16032,12 +16025,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16103,12 +16091,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16184,12 +16167,7 @@ class Session(NoNewAttributesAfterInit):
         respectively.
 
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16261,12 +16239,7 @@ class Session(NoNewAttributesAfterInit):
         respectively.
 
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16329,12 +16302,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16402,12 +16370,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16477,12 +16440,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16549,12 +16507,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16605,12 +16558,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16663,12 +16611,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16730,12 +16673,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         Image visualization is optional, and provided by the
-        DS9 application [1]_.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/site/Home.html
+        `DS9 application <https://ds9.si.edu/>`_.
 
         Examples
         --------
@@ -16882,13 +16820,8 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The XPA access point [1]_ of the ds9 image viewer lets
-        commands and queries to be sent to the viewer.
-
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/ref/xpa.html
+        The XPA access point of the ds9 image viewer lets commands and
+        queries to be sent to the viewer.
 
         Examples
         --------
@@ -16932,13 +16865,9 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The XPA access point [1]_ of the ds9 image viewer lets
-        commands and queries to be sent to the viewer.
+        The XPA access point of the ds9 image viewer lets commands and
+        queries to be sent to the viewer.
 
-        References
-        ----------
-
-        .. [1] http://ds9.si.edu/ref/xpa.html
 
         Examples
         --------
