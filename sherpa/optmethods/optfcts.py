@@ -73,7 +73,8 @@ import numpy
 from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
-
+from sherpa.models.parameter import hugeval
+from sherpa.optmethods.transformation import check_transformation
 from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
 
@@ -226,6 +227,7 @@ def _set_limits(x, xmin, xmax):
         return 1
 
     return 0
+
 
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -470,7 +472,8 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 # C-version of minim
 #
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
+          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True,
+          transformation=False):
 
     # TODO: rework so do not have two stat_cb0 functions which
     #       are both used
@@ -494,10 +497,17 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
             return FUNC_MAX
         return orig_fcn(x_new)
 
+    tfmt = check_transformation(transformation, xmin, xmax)
+
+    def cb0(arg):
+        return stat_cb0(tfmt.int2ext(arg))
+
     init = 0
-    x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
-                                           iquad, simp, ftol, step, \
-                                           xmin, xmax, x, stat_cb0)
+    result = _saoopt.minim(reflect, verbose, maxfev, init, iquad, simp, ftol,
+                           step, tfmt.ext2int(xmin), tfmt.ext2int(xmax),
+                           tfmt.ext2int(x), cb0)
+    xint, fval, neval, ifault = result
+    x = tfmt.int2ext(xint)
 
     key = {
         0: (True, 'successful termination'),
@@ -738,7 +748,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 #
 def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                initsimplex=0, finalsimplex=9, step=None, iquad=1,
-               verbose=0, reflect=True):
+               verbose=0, reflect=True, transformation=False):
     r"""Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
@@ -964,6 +974,11 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             return FUNC_MAX
         return orig_fcn(x_new)
 
+    tfmt = check_transformation(transformation, xmin, xmax)
+
+    def cb0(arg):
+        return stat_cb0(tfmt.int2ext(arg))
+
     # for internal use only
     debug = False
 
@@ -1010,9 +1025,6 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if maxfev is None:
         maxfev = 1024 * len(x)
 
-    if debug:
-        print('opfcts.py neldermead() finalsimplex=%s\tisscalar=%s\titerable=%d' % (finalsimplex, numpy.isscalar(finalsimplex), numpy.iterable(finalsimplex)))
-
     def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
                 myfcn, debug, ofval=FUNC_MAX):
 
@@ -1036,8 +1048,11 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         else:
             return xx, ff, nf, er
 
-    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, finalsimplex,
-                                 ftol, step, xmin, xmax, x, stat_cb0, debug)
+    result =  simplex(verbose, maxfev, initsimplex, finalsimplex,
+                      ftol, step, tfmt.ext2int(xmin), tfmt.ext2int(xmax),
+                      tfmt.ext2int(x), cb0, debug)
+    xint, fval, nfev, ier = result
+    x = tfmt.int2ext(xint)
     if debug:
         print('f%s=%e in %d nfev' % (x, fval, nfev))
 
@@ -1045,7 +1060,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     covarerr = None
     if len(finalsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
-                       maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
+                       maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect,
+                       transformation=transformation)
         nelmea_x = numpy.asarray(nelmea[1], numpy.float_)
         nelmea_nfev = nelmea[4].get('nfev')
         info = nelmea[4].get('info')
@@ -1080,7 +1096,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
+          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0,
+          transformation=False):
     """Levenberg-Marquardt optimization method.
 
     The Levenberg-Marquardt method is an interface to the MINPACK
@@ -1185,6 +1202,25 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
                 params.append(tmp_pars)
             return tuple(params)
 
+
+    class fdJacTransform(fdJac):
+        def __init__(self, func, fvec, pars):
+            fdJac.__init__(self, func, fvec, pars)
+            return
+
+        def __call__(self, param):
+            wa = self.func(param[1:])
+            val = (wa - self.fvec) / self.h[int(param[0])]
+            return (wa - self.fvec) / self.h[int(param[0])]
+
+        def calc(self, fvec, params):
+            result = []
+            for ii, par in enumerate(params):
+                wa = self.func(par[1:])
+                result.append((wa - self.fvec) / self.h[ii])
+            fjac = numpy.concatenate(result)
+            return fjac
+
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if maxfev is None:
@@ -1197,7 +1233,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         return fcn(pars)[1]
 
     def fcn_parallel(pars, fvec):
-        fd_jac = fdJac(stat_cb1, fvec, pars)
+        fd_jac = fdJac(cb1, fvec, pars)
         params = fd_jac.calc_params()
         fjac = parallel_map(fd_jac, params, numcores)
         return numpy.concatenate(fjac)
@@ -1212,19 +1248,22 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     n = len(x)
     fjac = numpy.empty((m*n,))
 
-    x, fval, nfev, info, fjac = \
-        _saoopt.cpp_lmdif(stat_cb1, fcn_parallel_counter, numcores, m, x, ftol,
-                          xtol, gtol, maxfev, epsfcn, factor, verbose, xmin,
-                          xmax, fjac)
+    tfmt = check_transformation(transformation, xmin, xmax)
 
-    if info > 0:
-        fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
+    def cb1(arg):
+        val = stat_cb1(tfmt.int2ext(arg))
+        return val
 
-        if m != n:
-            covar = fjac[:n, :n]
-        else:
-            covar = fjac
+    result = _saoopt.cpp_lmdif(cb1, fcn_parallel_counter, numcores, m,
+                               tfmt.ext2int(x), ftol, xtol, gtol, maxfev,
+                               epsfcn, factor, verbose, tfmt.ext2int(xmin),
+                               tfmt.ext2int(xmax), fjac)
+    xint, fval, nfev, info, fjac = result
+    x = tfmt.int2ext(xint)
 
+    covar = tfmt.calc_covar(m, n, xint, info, fjac)
+
+    if info > 0 and transformation is False:
         if _par_at_boundary(xmin, x, xmax, xtol):
             nm_result = neldermead(fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol),
                                    maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
@@ -1246,8 +1285,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     if info == 0:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar,
                                      'num_parallel_map': num_parallel_map[0]})
+        if covar is not None:
+            rv[4]['covar'] = covar
+
     else:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
                                      'num_parallel_map': num_parallel_map[0]})
