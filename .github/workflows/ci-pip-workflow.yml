@@ -10,6 +10,10 @@ on:
 
 jobs:
   tests:
+    defaults:
+      run:
+        shell: bash
+
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -71,7 +75,6 @@ jobs:
         NUMPYVER: ${{ matrix.numpy-pkg }}
         FITSBUILD: ${{ matrix.fits-pkg }}
         MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }}
-      shell: bash
       run: |
         # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
@@ -83,25 +86,21 @@ jobs:
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
-      shell: bash
       run: |
         python setup.py ${{ matrix.install-type }}
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
-      shell: bash
       run: |
         python setup.py ${{ matrix.install-type }}
 
     - name: install pytest-xvfb
       if: matrix.test-data == 'package'
-      shell: bash
       run: |
         pip install pytest-xvfb
 
     - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
-      shell: bash
       env:
         TEST: ${{ matrix.test-data }}
       run: |
@@ -111,7 +110,6 @@ jobs:
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
-      shell: bash
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov
@@ -126,7 +124,6 @@ jobs:
         verbose: true
 
     - name: Smoke Test
-      shell: bash
       env:
         FITS: ${{ matrix.fits-pkg }}
       run: |

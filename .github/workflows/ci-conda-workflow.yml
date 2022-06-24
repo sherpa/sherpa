@@ -16,6 +16,10 @@ env:
 
 jobs:
   tests:
+    defaults:
+      run:
+        shell: bash
+
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -98,12 +102,10 @@ jobs:
     # https://stackoverflow.com/questions/63648591/how-to-install-x11-before-testing-with-github-actions-for-macos
     - name: Install XQuartz on macOS
       if: runner.os == 'macOS'
-      shell: bash
       run: |
         brew install --cask xquartz
 
     - name: Conda Setup
-      shell: bash
       env:
         PYTHONVER: ${{ matrix.python-version }}
         NUMPYVER: ${{ matrix.numpy-version }}
@@ -114,7 +116,6 @@ jobs:
         source .github/scripts/setup_conda.sh
 
     - name: Conda Setup (Xspec and DS9)
-      shell: bash
       if: matrix.xspec-version != ''
       env:
         XSPECVER: ${{ matrix.xspec-version }}
@@ -128,13 +129,11 @@ jobs:
       if: runner.os == 'macOS'
       env:
         DISPLAY: ${{ matrix.display }}
-      shell: bash
       run: |
         sudo /opt/X11/bin/Xvfb ${DISPLAY} -ac -screen 0 1024x768x8 &
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
-      shell: bash
       env:
         PYTHON_LDFLAGS: " "
       run: |
@@ -144,7 +143,6 @@ jobs:
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
-      shell: bash
       env:
         PYTHON_LDFLAGS: " "
       run: |
@@ -153,7 +151,6 @@ jobs:
         python setup.py ${{ matrix.install-type }}
 
     - name: Install the test data?
-      shell: bash
       if: matrix.test-data == 'package'
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
@@ -162,14 +159,12 @@ jobs:
         pip install pytest-xvfb
 
     - name: Remove submodule
-      shell: bash
       if: matrix.test-data == 'none' || matrix.test-data == 'package'
       run: |
         git submodule deinit -f .
 
     # run the smoke test first as it's small/quick to do
     - name: Smoke Tests
-      shell: bash
       env:
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }}
@@ -185,7 +180,6 @@ jobs:
 
     - name: Internal check
       if: matrix.test-data == 'submodule' && matrix.install-type != 'develop'
-      shell: bash
       env:
         INSTALLTYPE: ${{ matrix.install-type }}
       run: |
@@ -200,7 +194,6 @@ jobs:
 
     - name: Submodule Tests
       if: matrix.test-data == 'submodule'
-      shell: bash
       env:
         INSTALLTYPE: ${{ matrix.install-type }}
       run: |
@@ -215,7 +208,6 @@ jobs:
 
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
-      shell: bash
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
