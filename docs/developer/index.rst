@@ -98,6 +98,31 @@ run allows us to generate a coverage report after that::
 The report is in ``report/index.html``, which links to individual
 files and shows exactly which lines were excuted while running the tests.
 
+Run doctests locally
+--------------------
+If `doctestplus <https://pypi.org/project/pytest-doctestplus/>` is installed
+(and it probably is because it's part of
+`sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`,
+which is required to build the documentation locally), you can
+run the the examples in the documentation or in the doctrings of individual
+functions:
+
+   pytest --doctest-plus /Users/guenther/code/sherpa/sherpa/astro/data.py
+   pytest --doctest-plus /Users/guenther/code/sherpa/sherpa/data.py
+   pytest --doctest-rst docs/quick.rst
+   pytest --doctest-rst docs/evaluation/combine.rst
+
+This guarantees that the examples actually work and don't have typos or outdated
+parameters, which might confuse a user.
+
+Running `pytest --doctest-plus` or `pytest --doctest-rst` (without extra parameters)
+will run all usual tests and also the doctests on all files not specifically
+excluded in `pytest.ini`.
+If you fix examples to pass these tests, remove them from the exclusion list in
+`pytest.ini`! The goal is to eventually pass on all files.
+
+Note: Doctests are not currently run on CI.
+
 
 How do I ...
 ============
