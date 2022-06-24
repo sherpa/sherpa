@@ -38,7 +38,7 @@ xpa_tar=xpa.${ds9_os}.2.1.20.tar.gz
 
 # Fetch them
 download $ds9_base_url/$ds9_os/$ds9_tar
-download  $ds9_base_url/$ds9_os/$xpa_tar
+download $ds9_base_url/$ds9_os/$xpa_tar
 
 # untar them
 echo "* unpacking ds9/XPA"
