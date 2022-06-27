@@ -164,9 +164,12 @@ def test_fake_pha_background_pha(reset_seed):
     assert data.counts.sum() < 200
 
 
-def test_fake_pha_bkg_model():
+def test_fake_pha_bkg_model(reset_seed):
     """Test background model
     """
+
+    np.random.seed(5329853)
+
     data = DataPHA("any", channels, counts, exposure=1000.)
 
     bkg = DataPHA("bkg", channels, bcounts,
@@ -185,6 +188,16 @@ def test_fake_pha_bkg_model():
     bmdl = Const1D("bmdl")
     bmdl.c0 = 2
 
+    # With no background model the simulated source counts
+    # are 0.
+    #
+    fake_pha(data, mdl, is_source=True, add_bkgs=False,
+             bkg_models={"used-bkg": bmdl})
+
+    assert data.counts == pytest.approx([0, 0, 0])
+
+    # Check we have created source counts this time.
+    #
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
              bkg_models={"used-bkg": bmdl})
 
@@ -202,24 +215,19 @@ def test_fake_pha_bkg_model():
     assert bkg.counts == pytest.approx(bcounts)
     assert bkg.exposure == pytest.approx(2000)
 
-    # check we've faked counts (the scaling is such that it is
-    # very improbable that this condition will fail)
-    assert (data.counts > counts).all()
-
+    # Apply a number of regression checks to test the output. These
+    # can expect to change if the randomization changes (either
+    # explicitly or implicity). There used to be a number of checks
+    # that compares the simulated data to the input values, but these
+    # could occasionally fail, and so the seed was fixed for these
+    # tests.
+    #
     # For reference the predicted signal is
     #    [200, 400, 400]
     # but, unlike in the test above, this time it's all coming
     # from the background.
     #
-    # What we'd like to say is that the predicted counts are
-    # similar, but this is not easy to do. What we can try
-    # is summing the counts (to average over the randomness)
-    # and then a simple check
-    #
-    assert data.counts.sum() > 500
-    assert data.counts.sum() < 1500
-    # This is more likely to fail by chance, but still very unlikely
-    assert data.counts[1] > 1.5 * data.counts[0]
+    assert data.counts == pytest.approx([186, 411, 405])
 
     # Now add a second set of arf/rmf for the data.
     # However, all the signal is background, so this does not change
@@ -228,9 +236,8 @@ def test_fake_pha_bkg_model():
     data.set_rmf(rmf, 2)
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
              bkg_models={"used-bkg": bmdl})
-    assert data.counts.sum() > 500
-    assert data.counts.sum() < 1500
-    assert data.counts[1] > 1.5 * data.counts[0]
+
+    assert data.counts == pytest.approx([197, 396, 389])
 
 
 @requires_fits
