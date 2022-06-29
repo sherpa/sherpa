@@ -10,6 +10,10 @@ on:
 
 jobs:
   tests:
+    defaults:
+      run:
+        shell: bash
+
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -68,11 +72,11 @@ jobs:
 
     - name: Pip Testing Setup - Dependencies
       env:
-        NUMPYVER: ${{ matrix.numpy-pkg }}           #: Required: numpy OR '...'
-        FITSBUILD: ${{ matrix.fits-pkg }}                   #: Optional: '' OR '...'
-        MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }} #: Optional: '' OR '...'
-      shell: bash
+        NUMPYVER: ${{ matrix.numpy-pkg }}
+        FITSBUILD: ${{ matrix.fits-pkg }}
+        MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }}
       run: |
+        # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
@@ -80,9 +84,20 @@ jobs:
         # Ensure we use an old-enough setuptools: see issue #1456
         pip install 'setuptools < 60'
 
-    - name: Build Sherpa
+    - name: Build Sherpa (install)
+      if: matrix.install-type == 'install'
       run: |
         python setup.py ${{ matrix.install-type }}
+
+    - name: Build Sherpa (develop)
+      if: matrix.install-type == 'develop'
+      run: |
+        python setup.py ${{ matrix.install-type }}
+
+    - name: install pytest-xvfb
+      if: matrix.test-data == 'package'
+      run: |
+        pip install pytest-xvfb
 
     - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
@@ -90,10 +105,8 @@ jobs:
         TEST: ${{ matrix.test-data }}
       run: |
         git submodule deinit -f .
-        if [ ${TEST} == package ] ; then
-            pip install pytest-xvfb
-        fi
-        sherpa_test || exit 1
+        pip install pytest-cov
+        sherpa_test --cov=sherpa --cov-report=xml
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
@@ -118,5 +131,6 @@ jobs:
         if [ ${FITS} != '' ] ; then
             smokevars="-f ${FITS} ${smokevars}"
         fi
+        echo "** smoke test: ${smokevars}"
         cd ${HOME}
-        sherpa_smoke ${smokevars} || exit 1
+        sherpa_smoke ${smokevars}
