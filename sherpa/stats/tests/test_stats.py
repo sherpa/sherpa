@@ -731,7 +731,6 @@ def test_wstat_calc_stat_info(hide_logging, make_data_path, clean_astro_ui):
     ui.get_stat_info()
 
 
-@pytest.mark.xfail(reason='y errors are not calculated correctly')
 @pytest.mark.parametrize("sexp,bexp,sscal,bscal,yexp,dyexp",
                          [(1, 1, 1, 1,
                            [0, -1, -3, 1, 3, 0, -2, 2, 0],
@@ -793,7 +792,6 @@ def test_xspecvar_zero_handling(sexp, bexp, sscal, bscal, yexp, dyexp):
     assert dy == pytest.approx(dyexp)
 
 
-@pytest.mark.xfail(reason='y errors are not calculated correctly')
 def test_xspecvar_zero_handling_variable():
     """How does XSPEC variance handle variable BACKSCAL?
 
