@@ -36,7 +36,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, ModelErr, SessionErr
+    IdentifierErr, ModelErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -319,103 +319,93 @@ class Session(NoNewAttributesAfterInit):
 
         self._splitplot = sherpa.plot.SplitPlot()
         self._jointplot = sherpa.plot.JointPlot()
-        self._dataplot = sherpa.plot.DataPlot()
-        self._datahistplot = sherpa.plot.DataHistogramPlot()
-        self._modelplot = sherpa.plot.ModelPlot()
-        self._modelhistplot = sherpa.plot.ModelHistogramPlot()
-
-        self._compmdlplot = sherpa.plot.ComponentModelPlot()
-        self._compmdlhistplot = sherpa.plot.ComponentModelHistogramPlot()
-
-        self._compsrcplot = sherpa.plot.ComponentSourcePlot()
-        self._compsrchistplot = sherpa.plot.ComponentSourceHistogramPlot()
 
         # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
-        self._sourceplot = sherpa.plot.SourcePlot()
-        self._sourcehistplot = sherpa.plot.SourceHistogramPlot()
-        self._fitplot = sherpa.plot.FitPlot()
-        self._residplot = sherpa.plot.ResidPlot()
-        self._delchiplot = sherpa.plot.DelchiPlot()
-        self._chisqrplot = sherpa.plot.ChisqrPlot()
-        self._ratioplot = sherpa.plot.RatioPlot()
-        self._psfplot = sherpa.plot.PSFPlot()
-        self._kernelplot = sherpa.plot.PSFKernelPlot()
         self._lrplot = sherpa.plot.LRHistogram()
         self._pdfplot = sherpa.plot.PDFPlot()
         self._cdfplot = sherpa.plot.CDFPlot()
         self._traceplot = sherpa.plot.TracePlot()
         self._scatterplot = sherpa.plot.ScatterPlot()
 
-        self._datacontour = sherpa.plot.DataContour()
-        self._modelcontour = sherpa.plot.ModelContour()
-        self._sourcecontour = sherpa.plot.SourceContour()
-        self._fitcontour = sherpa.plot.FitContour()
-        self._residcontour = sherpa.plot.ResidContour()
-        self._ratiocontour = sherpa.plot.RatioContour()
-        self._psfcontour = sherpa.plot.PSFContour()
-        self._kernelcontour = sherpa.plot.PSFKernelContour()
-
         self._intproj = sherpa.plot.IntervalProjection()
         self._intunc = sherpa.plot.IntervalUncertainty()
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
+        # The keys of _plot_types are used to define:
+        # a) the mapping from get_<key>_plot to the plot objects
+        #    (that is, there must be a matching get_<key>_plot method)
+        # b) valid arguments for the plot() call
+        # c) the arguments that set_xlog/... accept
+        # d) a set of names that can not be used as a dataset identifier
+        #    (because of point b); see also _contour_types
+        #
+        # Note that not all plot_xxx commands use this structure.
+        #
+        # Unlike the contour case, we have different plot classes to
+        # handle different types of plot. There are either plot types
+        # with only one plot class, such as "fit", or those that
+        # support a version that depends on the data type, such as
+        # "data". A list is used in both cases, with the first element
+        # being the "generic" case and, for those that support it, the
+        # second being the Data1DInt plot class.
+        #
+        # There is an argument to be made to have the "singleton"
+        # plots, such as "fit", storing the object directly, and not
+        # as a single-element list, but it was felt that having a
+        # consistent access pattern was cleaner.
+        #
         self._plot_types = {
-            'data': [self._dataplot, self._datahistplot],
-            'model': [self._modelplot, self._modelhistplot],
-            'source': [self._sourceplot, self._sourcehistplot],
-            'fit': [self._fitplot],
-            'resid': [self._residplot],
-            'ratio': [self._ratioplot],
-            'delchi': [self._delchiplot],
-            'chisqr': [self._chisqrplot],
-            'psf': [self._psfplot],
-            'kernel': [self._kernelplot],
-            'compsource': [self._compsrcplot],
-            'compmodel': [self._compmdlplot]
+            'data': [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
+            'model': [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
+            'model_component': [sherpa.plot.ComponentModelPlot(), sherpa.plot.ComponentModelHistogramPlot()],
+            'source': [sherpa.plot.SourcePlot(), sherpa.plot.SourceHistogramPlot()],
+            'source_component': [sherpa.plot.ComponentSourcePlot(), sherpa.plot.ComponentSourceHistogramPlot()],
+            'fit': [sherpa.plot.FitPlot()],
+            'resid': [sherpa.plot.ResidPlot()],
+            'ratio': [sherpa.plot.RatioPlot()],
+            'delchi': [sherpa.plot.DelchiPlot()],
+            'chisqr': [sherpa.plot.ChisqrPlot()],
+            'psf': [sherpa.plot.PSFPlot()],
+            'kernel': [sherpa.plot.PSFKernelPlot()]
         }
 
-        self._plot_type_names = {
-            'data': 'data',
-            'model': 'model',
-            'source': 'source',
-            'fit': 'fit',
-            'resid': 'resid',
-            'ratio': 'ratio',
-            'delchi': 'delchi',
-            'chisqr': 'chisqr',
-            'psf': 'psf',
-            'kernel': 'kernel',
-            'source_component': 'source_component',
-            'model_component': 'model_component',
-            'compsource': 'source_component',
-            'compmodel': 'model_component',
+        # Set up aliases so that calls to set_xlog/.. will still
+        # succeed, but the user will be told to use the new
+        # name. These keys are also used, along with _plot_type_names,
+        # to determine the set of forbidden identifiers.
+        #
+        self._plot_types_alias = {
+            "compsource": "source_component",
+            "compmodel": "model_component"
         }
 
+        # This is used by the get_<key>_contour calls to access the
+        # relevant contour class. The keys define the labels that can be
+        # used in calls to contour(), and are also used to determine
+        # the set of forbidden identifiers.
+        #
         self._contour_types = {
-            'data': self._datacontour,
-            'model': self._modelcontour,
-            'source': self._sourcecontour,
-            'fit': self._fitcontour,
-            'resid': self._residcontour,
-            'ratio': self._ratiocontour,
-            'psf': self._psfcontour,
-            'kernel': self._kernelcontour
+            "data": sherpa.plot.DataContour(),
+            "model": sherpa.plot.ModelContour(),
+            "source": sherpa.plot.SourceContour(),
+            "fit": sherpa.plot.FitContour(),
+            "resid": sherpa.plot.ResidContour(),
+            "ratio": sherpa.plot.RatioContour(),
+            "psf": sherpa.plot.PSFContour(),
+            "kernel": sherpa.plot.PSFKernelContour()
         }
 
-        self._contour_type_names = {
-            'data': 'data',
-            'model': 'model',
-            'source': 'source',
-            'fit': 'fit',
-            'resid': 'resid',
-            'ratio': 'ratio',
-            'psf': 'psf',
-            'kernel': 'kernel',
-        }
-
+        # This is used by the get_<key>_image calls to access the
+        # relevant image class. The keys are not included in any check
+        # of valid identifiers. unlike the plot and contour cases, as
+        # there is
+        #
+        # - no image() call that acts like plot() or contour();
+        # - and no set_xlog/... like call to change the image displays.
+        #
         self._image_types = {
             'data': sherpa.image.DataImage(),
             'model': sherpa.image.ModelImage(),
@@ -1327,13 +1317,76 @@ class Session(NoNewAttributesAfterInit):
             return self._default_id
 
         if not self._valid_id(id):
-            raise ArgumentTypeErr('intstr')
+            raise ArgumentTypeErr("intstr")
 
-        badkeys = self._plot_type_names.keys() | self._contour_type_names.keys()
-        if id in badkeys:
-            raise IdentifierErr('badid', id)
+        if _is_integer(id):
+            return id
+
+        if self._check_plottype(id) or self._check_contourtype(id):
+            raise IdentifierErr("badid", id)
 
         return id
+
+    def _get_plottype(self, plottype):
+        """Return the name to refer to a given plot type.
+
+        This supports aliases for the plot name. If an alias is used
+        then a warning message is logged, telling the user the name
+        they should use instead.
+
+        Parameters
+        ----------
+        plottype : str
+            The requested plot type, such as "data".
+
+        Returns
+        -------
+        answer : str
+            The actual plot type (which may match the input).
+
+        Raises
+        ------
+        PlotErr
+            The plottype argument is not valid.
+
+        """
+
+        if plottype in self._plot_types:
+            return plottype
+
+        try:
+            answer = self._plot_types_alias[plottype]
+        except KeyError:
+            allowed = list(self._plot_types)
+            raise PlotErr("wrongtype", plottype, str(allowed)) from None
+
+        # This could be a warnings.warn(..., DeprecationWarning)
+        # message but then most users would not see the message, so we
+        # use the logger interface instead. It does mean that the
+        # message will be repeated each time it is used.
+        #
+        warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
+        return answer
+
+    def _check_plottype(self, plottype):
+        """Is this a valid plot type (including aliases)?"""
+
+        return plottype in self._plot_types or \
+            plottype in self._plot_types_alias
+
+    def _get_contourtype(self, plottype):
+        """Return the name to refer to a given contour type."""
+
+        if plottype in self._contour_types:
+            return plottype
+
+        allowed = list(self._contour_types)
+        raise PlotErr("wrongtype", plottype, str(allowed))
+
+    def _check_contourtype(self, plottype):
+        """Is this a valid contour type?"""
+
+        return plottype in self._contour_types
 
     def _get_item(self, id, itemdict, itemdesc, errdesc):
         id = self._fix_id(id)
@@ -2254,14 +2307,13 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        instance
-           An instance of a sherpa.Data.Data-derived class.
+        instance : sherpa.data.Data
+           The data instance.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
-           If no model expression has been set for the data set
-           (with `set_model` or `set_source`).
+           No data has been loaded for this data set.
 
         See Also
         --------
@@ -2288,8 +2340,29 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
+    def _get_data(self, id):
+        """Return a data set or None.
+
+        The same as get_data except that it returns None if the
+        dataset does not exist.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        instance : sherpa.data.Data or None
+
+        """
+
+        return self._data.get(self._fix_id(id))
+
     # DOC-TODO: terrible synopsis
     def set_data(self, id, data=None):
+
         """Set a data set.
 
         Parameters
@@ -10728,21 +10801,18 @@ class Session(NoNewAttributesAfterInit):
         # answer should be if recalc=False and the dataset has
         # changed type since get_data_plot was last called.
         #
-        try:
-            is_int = isinstance(self.get_data(id), sherpa.data.Data1DInt)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-
-            is_int = False
-
-        if is_int:
-            plotobj = self._datahistplot
-        else:
-            plotobj = self._dataplot
-
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["data"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_stat())
+
         return plotobj
 
     # DOC-TODO: discussion of preferences needs better handling
@@ -10896,20 +10966,15 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        if isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._modelhistplot
-        else:
-            plotobj = self._modelplot
-
         if recalc:
-            plotobj.prepare(d, self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["model"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -10972,20 +11037,15 @@ class Session(NoNewAttributesAfterInit):
                                 "\n is set for dataset {}.".format(id) +
                                 " You should use get_model_plot instead.")
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        if isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._sourcehistplot
-        else:
-            plotobj = self._sourceplot
-
         if recalc:
-            plotobj.prepare(d, self.get_source(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["source"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_source(id), self.get_stat())
 
         return plotobj
 
@@ -11050,20 +11110,15 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
-
-        if isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._compmdlhistplot
-        else:
-            plotobj = self._compmdlplot
-
         if recalc:
-            plotobj.prepare(d, model, self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["model_component"][idx]
+        if recalc:
+            plotobj.prepare(data, model, self.get_stat())
 
         return plotobj
 
@@ -11129,22 +11184,19 @@ class Session(NoNewAttributesAfterInit):
             id, model = model, id
         model = self._check_model(model)
 
-        try:
-            d = self.get_data(id)
-        except IdentifierErr as ie:
-            if recalc:
-                raise ie
-            d = None
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
 
         if isinstance(model, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
-        elif isinstance(d, sherpa.data.Data1DInt):
-            plotobj = self._compsrchistplot
         else:
-            plotobj = self._compsrcplot
+            idx = isinstance(data, sherpa.data.Data1DInt)
+            plotobj = self._plot_types["source_component"][idx]
 
         if recalc:
-            plotobj.prepare(d, model, self.get_stat())
+            plotobj.prepare(data, model, self.get_stat())
 
         return plotobj
 
@@ -11263,12 +11315,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._fitplot
-
-        dataobj = self.get_data_plot(id, recalc=recalc)
-        modelobj = self.get_model_plot(id, recalc=recalc)
-
+        plotobj = self._plot_types["fit"][0]
         if recalc:
+            dataobj = self.get_data_plot(id, recalc=recalc)
+            modelobj = self.get_model_plot(id, recalc=recalc)
             plotobj.prepare(dataobj, modelobj)
 
         return plotobj
@@ -11328,7 +11378,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._residplot
+        plotobj = self._plot_types["resid"][0]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
@@ -11390,7 +11440,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._delchiplot
+        plotobj = self._plot_types["delchi"][0]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
@@ -11452,7 +11502,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._chisqrplot
+        plotobj = self._plot_types["chisqr"][0]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
@@ -11514,7 +11564,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._ratioplot
+        plotobj = self._plot_types["ratio"][0]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
@@ -11563,9 +11613,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._datacontour
+        plotobj = self._contour_types["data"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_stat())
+
         return plotobj
 
     def get_data_contour_prefs(self):
@@ -11661,9 +11712,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._modelcontour
+        plotobj = self._contour_types["model"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
     def get_source_contour(self, id=None, recalc=True):
@@ -11709,9 +11761,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._sourcecontour
+        plotobj = self._contour_types["source"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
+
         return plotobj
 
     def get_model_contour_prefs(self):
@@ -11811,11 +11864,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._fitcontour
-
-        dataobj = self.get_data_contour(id, recalc=recalc)
-        modelobj = self.get_model_contour(id, recalc=recalc)
+        plotobj = self._contour_types["fit"]
         if recalc:
+            dataobj = self.get_data_contour(id, recalc=recalc)
+            modelobj = self.get_model_contour(id, recalc=recalc)
             plotobj.prepare(dataobj, modelobj)
 
         return plotobj
@@ -11864,9 +11916,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._residcontour
+        plotobj = self._contour_types["resid"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
     def get_ratio_contour(self, id=None, recalc=True):
@@ -11913,9 +11966,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._ratiocontour
+        plotobj = self._contour_types["ratio"]
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+
         return plotobj
 
     def get_psf_contour(self, id=None, recalc=True):
@@ -11957,9 +12011,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfcontour
+        plotobj = self._contour_types["psf"]
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
+
         return plotobj
 
     def get_kernel_contour(self, id=None, recalc=True):
@@ -12002,9 +12057,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelcontour
+        plotobj = self._contour_types["kernel"]
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
+
         return plotobj
 
     def get_psf_plot(self, id=None, recalc=True):
@@ -12045,7 +12101,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._psfplot
+        plotobj = self._plot_types["psf"][0]
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
 
@@ -12089,7 +12145,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._kernelplot
+        plotobj = self._plot_types["kernel"][0]
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
 
@@ -12099,26 +12155,72 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
 
-    def _multi_plot(self, args, plotmeth='plot', **kwargs):
-        if len(args) == 0:
-            raise ArgumentTypeErr('plotargs')
+    def _multi_plot(self, args, plotmeth="plot", **kwargs):
+        """Handle the plot() or contour() call.
 
-        if plotmeth not in ['plot', 'contour']:
-            raise ArgumentErr("Unsupported plotmeth={}".format(plotmeth))
+        The arguments are split up into groups - a "command" followed
+        by optional arguments - and then each group is used to create
+        a plot/contour.
+
+        Parameters
+        ----------
+        args : list
+            The arguments to the call. It can not be empty.
+        plotmeth : {"plot", "contour"}
+            The call.
+        kwargs
+            The keyword arguments to apply to each plot or contour.
+
+        Notes
+        -----
+        Each group consists of the name of the plot/contour, followed
+        by optional arguments. So
+
+            self._multi_plot(["data", "data", "org"], plotmeth="plot")
+
+        has two "data" style plots, the first with the default
+        identifier and the second with the identifer "org". It is the
+        need to scan through the arguments that leads to the ban on
+        identifiers matching the plot/contour "command names".
+
+        Each plot/contour command matches a key in the
+        _plot/contour_type_names dictionary, and the value is used to
+        get the underlying "plot objet" via get_<value>_plot or
+        get_<value>_contour.
+
+        Multiple arguments can be sent, but they rely on positional
+        ordering only, so
+
+            args = ["model_component", mdl, "model_component", 2, mdl]
+            plotmeth = "plot"
+
+        only works if
+
+            get_model_component_plot(mdl)
+            get_model_component_plot(2, mdl)
+
+        are meaningful calls.
+
+        """
+
+        # This is an internal routine so it is not expected to be
+        # called incorrectly, but make sure we catch any such problem.
+        #
+        if len(args) == 0:
+            raise ArgumentTypeErr("plotargs")
+
+        if plotmeth not in ["plot", "contour"]:
+            raise ArgumentErr(f"Unsupported plotmeth={plotmeth}")
+
+        get = getattr(self, f"_get_{plotmeth}type")
+        check = getattr(self, f"_check_{plotmeth}type")
 
         plots = []
-        allowed_types = getattr(self, '_{}_type_names'.format(plotmeth))
         args = list(args)
-
         while args:
             plottype = args.pop(0)
             _check_str_type(plottype, "plottype")
-            plottype = plottype.lower()
-
-            try:
-                plotname = allowed_types[plottype]
-            except KeyError:
-                raise ArgumentErr('badplottype', plottype) from None
+            plottype = get(plottype.lower())
 
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
@@ -12126,12 +12228,12 @@ class Session(NoNewAttributesAfterInit):
             #
             getargs = []
             while args:
-                if args[0] in allowed_types:
+                if check(args[0]):
                     break
 
                 getargs.append(args.pop(0))
 
-            funcname = 'get_{}_{}'.format(plotname, plotmeth)
+            funcname = f"get_{plottype}_{plotmeth}"
             getfunc = getattr(self, funcname)
 
             # Need to make sure we have a copy of each plot
@@ -12141,7 +12243,7 @@ class Session(NoNewAttributesAfterInit):
             plots.append(copy.deepcopy(getfunc(*getargs)))
 
         if len(plots) == 1:
-            plotmeth = getattr(self, '_' + plotmeth)
+            plotmeth = getattr(self, f"_{plotmeth}")
             plotmeth(plots[0], **kwargs)
             return
 
@@ -12149,7 +12251,7 @@ class Session(NoNewAttributesAfterInit):
         ncols = int((len(plots) + 1) / 2.0)
         sp = self._splitplot
         sp.reset(nrows, ncols)
-        plotmeth = getattr(sp, 'add' + plotmeth)
+        plotmeth = getattr(sp, f"add{plotmeth}")
 
         try:
             sherpa.plot.backend.begin()
@@ -12188,17 +12290,38 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.backend.end()
 
     def _set_plot_item(self, plottype, item, value):
+        """Change a plot setting.
 
-        _check_str_type(plottype, 'plottype')
-        keys = list(self._plot_types.keys())
+        This will change all related plot classes; that is setting
+        plottype to "data" will change all the associated plot classes
+        for "data".
+
+        Parameters
+        ----------
+        plottype : str
+            A valid plot (currently taken from _plot_types) or "all".
+        item : str
+            The plot setting to change. If there is no such item then
+            nothing happens.
+        value
+            The value to set the item to. There is no validation of
+            this value.
+
+        Raises
+        ------
+        sherpa.utils.err.PlotErr
+           An invalid plottype value.
+
+        """
+
+        _check_str_type(plottype, "plottype")
+        allowed = list(self._plot_types)
 
         plottype = plottype.strip().lower()
-        if plottype != "all":
-            if plottype not in self._plot_types:
-                raise sherpa.utils.err.PlotErr(
-                    'wrongtype', plottype, str(keys))
-
-            keys = [plottype]
+        if plottype == "all":
+            keys = allowed
+        else:
+            keys = [self._get_plottype(plottype)]
 
         for key in keys:
             for plot in self._plot_types[key]:
@@ -12362,6 +12485,11 @@ class Session(NoNewAttributesAfterInit):
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
 
+        .. versionchanged:: 4.15.0
+           A number of labels, such as "bkgfit", are marked as
+           deprecated and using them will cause a warning message to
+           be displayed, indicating the new label to use.
+
         .. versionchanged:: 4.12.2
            Keyword arguments, such as alpha and ylog, can be sent to
            each plot.
@@ -12369,7 +12497,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           The data set does not support the requested plot type.
+           The label is invalid.
 
         See Also
         ---------
@@ -12385,9 +12513,9 @@ class Session(NoNewAttributesAfterInit):
         The supported plot types depend on the data set type, and
         include the following list. There are also individual
         functions, with ``plot_`` prepended to the plot type, such as
-        `plot_data` (the ``bkg`` variants use a prefix of
-        ``plot_bkg_``). There are also several multiple-plot commands,
-        such as `plot_fit_ratio`, `plot_fit_resid`, and `plot_fit_delchi`.
+        `plot_data`. There are also several multiple-plot commands,
+        such as `plot_fit_ratio`, `plot_fit_resid`, and
+        `plot_fit_delchi`.
 
         ``arf``
            The ARF for the data set (only for `DataPHA` data sets).
@@ -12395,30 +12523,30 @@ class Session(NoNewAttributesAfterInit):
         ``bkg``
            The background.
 
-        ``bkgchisqr``
+        ``bkg_chisqr``
            The chi-squared statistic calculated for each bin when
            fitting the background.
 
-        ``bkgdelchi``
+        ``bkg_delchi``
            The residuals for each bin, calculated as (data-model)
            divided by the error, for the background.
 
-        ``bkgfit``
+        ``bkg_fit``
            The data (as points) and the convolved model (as a line),
            for the background data set.
 
-        ``bkgmodel``
+        ``bkg_model``
            The convolved background model.
 
-        ``bkgratio``
+        ``bkg_ratio``
            The residuals for each bin, calculated as data/model,
            for the background data set.
 
-        ``bkgresid``
+        ``bkg_resid``
            The residuals for each bin, calculated as (data-model),
            for the background data set.
 
-        ``bkgsource``
+        ``bkg_source``
            The un-convolved background model.
 
         ``chisqr``
@@ -12440,6 +12568,12 @@ class Session(NoNewAttributesAfterInit):
         ``model``
            The convolved model.
 
+        ``model_component``
+           Part of the full model expression (convolved).
+
+        ``order``
+          Plot the model for a selected response
+
         ``psf``
            The unfiltered PSF kernel associated with the data set.
 
@@ -12451,6 +12585,9 @@ class Session(NoNewAttributesAfterInit):
 
         ``source``
            The un-convolved model.
+
+        ``source_component``
+           Part of the full model expression (un-convolved).
 
         The plots can be specialized for a particular data type,
         such as the `set_analysis` command controlling the units
@@ -12501,10 +12638,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", "model", ylog=True)
 
-        Plot the backgrounds for dataset 1 using the 'up' and 'down'
+        Plot the backgrounds for dataset 1 using the "up" and "down"
         components (in this case the background identifier):
 
-        >>> plot('bkg', 1, 'up', 'bkg', 1, 'down')
+        >>> plot("bkg", 1, "up", "bkg", 1, "down")
 
         """
         self._multi_plot(args, **kwargs)

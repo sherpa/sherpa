@@ -37,7 +37,8 @@ from sherpa.io import get_ascii_data
 from sherpa.models import Const1D
 import sherpa.models.basic
 from sherpa.ui.utils import Session
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, IdentifierErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IdentifierErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -168,6 +169,7 @@ def test_set_iter_method_opt_sigmarej_lrej(session):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("setting", ['chisqr', 'compmodel', 'compsource', 'data',
+                                     "model_component", "source_component",
                                      'delchi', 'fit', 'kernel', 'model',
                                      'psf', 'ratio', 'resid', 'source'])
 def test_id_checks_session(session, setting):
@@ -180,10 +182,7 @@ def test_id_checks_session(session, setting):
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
-@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace',
-                                     "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
-                                     "bkg_delchi", "bkg_chisqr", "bkg_fit"
-                                     ])
+@pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace'])
 def test_id_checks_session_unexpected(session, setting):
     """These identifiers are allowed. Should they be?"""
 
@@ -197,8 +196,9 @@ def test_id_checks_session_unexpected(session, setting):
                          [(Session, True), (AstroSession, False)])
 @pytest.mark.parametrize("setting", ['arf', 'bkg', 'bkgchisqr', 'bkgdelchi', 'bkgfit',
                                      'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
+                                     "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio",
+                                     "bkg_delchi", "bkg_chisqr", "bkg_fit",
                                      'order',
-                                     # "energy", "photon",  these are currently both valid for astro
                                      "astrocompsource", "astrocompmodel", "astrodata",
                                      "astrosource", "astromodel"])
 def test_id_checks_astro_session(session, success, setting):
@@ -213,6 +213,123 @@ def test_id_checks_astro_session(session, success, setting):
         with pytest.raises(IdentifierErr,
                            match=f"identifier '{setting}' is a reserved word"):
             s.load_arrays(setting, [1, 2], [1, 2])
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("plottype", ["source_component", "compsource",
+                                      "model_component", "compmodel"])
+def test_plot_component(session, plottype):
+    """Can we call plot with a "component" call.
+
+    This is a regression test to see if compsource/model works
+    with the plot call. As a check we include the "full" names
+    (e.g. source_component).
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.load_arrays(1, [1, 2, 3], [5, 2, 3])
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_source(mdl)
+
+    # All we do is check we can call the routine. We do not check it
+    # has done anything sensible, but we do check you can call it
+    # with and without a dataset identifier.
+    #
+    s.plot(plottype, 1, mdl)
+    s.plot(plottype, mdl)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("plottype", ["source_component", "compsource",
+                                      "model_component", "compmodel"])
+def test_plot_component_fails(session, plottype):
+    """Can we call plot with a "component" call and get it to error out
+
+    This is a regression test to see both whether we can use
+    the compsource/model label, and to check how it errors out
+    when no argument is given.
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s.load_arrays(1, [1, 2, 3], [5, 2, 3])
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_source(mdl)
+
+    # This is a low-level error that we don't catch and convert (at
+    # least at the moment), so just check the current behavior.
+    #
+    with pytest.raises(TypeError,
+                       match=r"_plot\(\) missing 1 required positional argument: 'id'"):
+        s.plot(plottype)
+
+
+@pytest.mark.parametrize("label", ["chisqr", "delchi", "fit", "model", "ratio",
+                                   "resid", "source"])
+def test_astro_plot_bkgxxx(label):
+    """A regression test of plot("bkg<label>")
+
+    This is astro-specific and is just a check to see if we can
+    make the call, not to check what the actual plot looks like.
+
+    See also test_astro_plot_bkg_xxx which has been separated out to
+    allow different behavior over time.
+
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    data = DataPHA("data", [1, 2, 3], [5, 2, 3])
+    bkg = DataPHA("bkg", [1, 2, 3], [2, 1, 2])
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+
+    s.set_data(data)
+    s.set_bkg(bkg)
+
+    s.set_arf(arf, bkg_id=1)
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_bkg_source(mdl)
+
+    s.plot(f"bkg{label}")
+
+
+@pytest.mark.parametrize("label", ["chisqr", "delchi", "fit", "model", "ratio",
+                                   "resid", "source"])
+def test_astro_plot_bkg_xxx(label):
+    """A regression test of plot("bkg_<label>")
+
+    This is astro-specific and is just a check to see if we can
+    make the call, not to check what the actual plot looks like.
+
+    See also test_astro_plot_bkgxxx which has been separated out to
+    allow different behavior over time.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    data = DataPHA("data", [1, 2, 3], [5, 2, 3])
+    bkg = DataPHA("bkg", [1, 2, 3], [2, 1, 2])
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+
+    s.set_data(data)
+    s.set_bkg(bkg)
+
+    s.set_arf(arf, bkg_id=1)
+
+    mdl = s.create_model_component("const1d", "mdl")
+    s.set_bkg_source(mdl)
+
+    s.plot(f"bkg_{label}")
 
 
 def save_ascii_file(s, kwargs, idval, outfile, savefunc, syserr=False):
@@ -1950,3 +2067,58 @@ def test_fit_checks_kwarg(session, msg):
 
     with pytest.raises(TypeError, match=msg):
         s.fit(unknown_argument=True)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("alias,original",
+                         [("compsource", "source_component"),
+                          ("compmodel", "model_component")])
+def test_plot_alias_warning(session, alias, original, caplog):
+    """Check we get a deprecated warning from using a plot alias.
+
+    Support for aliases is intended to be short-term, but ensure
+    they are tested. This is only relevant for the set_xlog/...
+    family of commands.
+    """
+
+    s = session()
+    assert len(caplog.record_tuples) == 0
+    s.set_xlog(alias)
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.WARNING
+    assert msg == f"The argument '{alias}' is deprecated and '{original}' should be used instead"
+
+
+@pytest.mark.parametrize("session,success", [(Session, False), (AstroSession, True)])
+@pytest.mark.parametrize("key", ["model", "fit", "source", "ratio", "resid", "delchi", "chisqr"])
+def test_astro_plot_alias_warning(session, success, key, caplog):
+    """Check we get a deprecated warning from using a plot alias.
+
+    Support for aliases is intended to be short-term, but ensure
+    they are tested. This is only relevant for the set_xlog/...
+    family of commands.
+    """
+
+    alias = f"bkg{key}"
+    original = f"bkg_{key}"
+
+    s = session()
+    assert len(caplog.record_tuples) == 0
+
+    if success:
+        s.set_xlog(alias)
+        assert len(caplog.record_tuples) == 1
+
+        loc, lvl, msg = caplog.record_tuples[0]
+        assert loc == "sherpa.ui.utils"
+        assert lvl == logging.WARNING
+        assert msg == f"The argument '{alias}' is deprecated and '{original}' should be used instead"
+
+    else:
+        # Check this errors out (i.e. is not an alias).
+        #
+        with pytest.raises(PlotErr, match=rf"^Plot type '{alias}' not found in \[.*\]$"):
+            s.set_xlog(alias)

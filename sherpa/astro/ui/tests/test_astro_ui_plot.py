@@ -3777,10 +3777,16 @@ def test_set_opt_not_string(cls, name):
 @pytest.mark.parametrize("cls",
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name", ["notdata",  "fit-allthe-things", " fi", "fi",
-                                  "source_component", "model_component",
-                                  "astrodata", "astrosource", "astromodel",
+                                  # Comment-out those names which are currently aliases;
+                                  # that is, they can be used in a call but are expected
+                                  # to change to being unsupported at some point in the
+                                  # future, at which point they can be added to the test.
+                                  #
+                                  # "compsource", "compmodel"
+                                  # "astrodata", "astrosource", "astromodel",
                                   "flux",
-                                  "bkg_model", "bkg_source", "bkg_fit", "bkg_resid", "bkg_ratio", "bkg_chisqr", "bkg_delchi"])
+                                  # "bkgmodel", "bkgsource", "bkgfit", "bkgresid", "bkgratio", "bkgchisqr", "bkgdelchi"
+                                  ])
 def test_set_opt_invalid(cls, name):
     """Check we error out if called with an invalid option.
 
@@ -3788,6 +3794,7 @@ def test_set_opt_invalid(cls, name):
     has not really been documented, so just test some possible names
     which do not work. This is a regression test, so values may be
     added or removed over time.
+
     """
 
     s = cls()
@@ -3805,6 +3812,7 @@ def test_set_opt_invalid(cls, name):
                                   "source", "model",
                                   "resid", "ratio", "delchi", "chisqr",
                                   "fit",
+                                  "model_component", "source_component",
                                   "compmodel", "compsource"])
 def test_set_opt_valid(cls, name):
     """What names are accepted for set_xlog/ylog/...?
@@ -3823,8 +3831,11 @@ def test_set_opt_valid(cls, name):
     s.set_ylinear(name)
 
 
-@pytest.mark.parametrize("name", ["bkg", "bkgfit", "bkgresid", "bkgratio", "bkgdelchi",
-                                  "order", "energy", "photon"])
+@pytest.mark.parametrize("name", ["bkg",
+                                  "bkg_fit", "bkg_model", "bkg_source", "bkg_resid", "bkg_ratio", "bkg_delchi", "bkg_chisqr",
+                                  "bkgfit", "bkgmodel", "bkgsource", "bkgresid", "bkgratio", "bkgdelchi", "bkgchisqr",  # temporary
+                                  "astrodata", "astrosource", "astromodel",
+                                  "order"])
 def test_set_opt_valid_astro(name):
     """What names are accepted for set_xlog/ylog/...? Astro Session only
     """
@@ -3885,8 +3896,8 @@ def test_set_plot_opt_explicit(cls):
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name,extraargs",
                          [("data", []), ("model", []), ("source", []),
-                          pytest.param("model_component", ["mdl"], marks=pytest.mark.xfail),
-                          pytest.param("source_component", ["mdl"], marks=pytest.mark.xfail)
+                          ("model_component", ["mdl"]),
+                          ("source_component", ["mdl"])
                           ])
 def test_set_plot_opt_changes_fields(cls, name, extraargs):
     """Does "all" change all the type-specific plots?
@@ -3950,7 +3961,7 @@ def test_set_plot_opt_explicit_astro():
     s.set_source(1, mdl)
     s.set_bkg_source(1, mdl)
 
-    s.plot('data', 'model', 'bkg', 'bkgmodel')
+    s.plot('data', 'model', 'bkg', 'bkg_model')
 
     fig = plt.gcf()
     assert len(fig.axes) == 4
@@ -3976,7 +3987,7 @@ def test_set_plot_opt_explicit_astro():
     #
     s.set_ylog('model')
 
-    s.plot('data', 'model', 'bkg', 'bkgmodel')
+    s.plot('data', 'model', 'bkg', 'bkg_model')
 
     fig = plt.gcf()
     assert len(fig.axes) == 4
@@ -3994,6 +4005,47 @@ def test_set_plot_opt_explicit_astro():
     assert fig.axes[3].get_yscale() == 'linear'
 
     plt.close(fig)
+
+
+@pytest.mark.parametrize("cls",
+                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+def test_set_plot_opt_alias(cls, caplog):
+    """Check that at least one alias works.
+
+    While we support aliases we should check we see the
+    messages.
+    """
+
+    s = cls()
+    s._add_model_types(basic)
+
+    d1 = example_data1d()
+    d2 = example_data1dint()
+
+    s.set_data(1, d1)
+    s.set_data(2, d2)
+
+    mdl = s.create_model_component('polynom1d', 'm1')
+    s.set_source(1, mdl)
+    s.set_source(2, mdl)
+
+    assert len(caplog.record_tuples) == 0
+    s.plot("compmodel", "m1", "compsource", 2, "m1")
+    assert len(caplog.record_tuples) == 2
+
+    for loc, lvl, _ in caplog.record_tuples:
+        assert loc == "sherpa.ui.utils"
+        assert lvl == logging.WARNING
+
+    assert caplog.record_tuples[0][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
+    assert caplog.record_tuples[1][2] == "The argument 'compsource' is deprecated and 'source_component' should be used instead"
+
+    # Check we see the message multiple times; that is, it is not like
+    # a deprecation warning which is only shown once.
+    #
+    s.plot("compmodel", "m1")
+    assert len(caplog.record_tuples) == 3
+    assert caplog.record_tuples[2][2] == "The argument 'compmodel' is deprecated and 'model_component' should be used instead"
 
 
 def check_plot2_xscale(xscale):
@@ -4021,7 +4073,7 @@ def check_plot2_xscale(xscale):
 @pytest.mark.parametrize("plottype,xscale", [('data', 'log'),
                                              ('resid', 'log'),
                                              ('bkg', 'linear'),
-                                             ('bkgresid', 'linear')])
+                                             ('bkg_resid', 'linear')])
 def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
     """Check that set_xlog handling for plot_fit_resid.
 
@@ -4041,7 +4093,7 @@ def test_plot_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
 @pytest.mark.parametrize("plottype,xscale", [('data', 'linear'),
                                              ('resid', 'linear'),
                                              ('bkg', 'log'),
-                                             ('bkgresid', 'log')])
+                                             ('bkg_resid', 'log')])
 def test_plot_bkg_fit_resid_set_xlog(idval, plottype, xscale, clean_astro_ui):
     """Check that set_xlog handling for plot_bkg_fit_resid.
 
@@ -4088,9 +4140,9 @@ def test_set_ylog_bkg(plot, yscale, clean_astro_ui):
 
 
 SET_CPT_ARGS = [("compsource", ui.get_source_component_plot),
-                # ("source_component", ui.get_source_component_plot),
+                ("source_component", ui.get_source_component_plot),
                 ("compmodel", ui.get_model_component_plot),
-                # ("model_component", ui.get_model_component_plot)
+                ("model_component", ui.get_model_component_plot)
                 ]
 
 @requires_plotting
@@ -4140,7 +4192,7 @@ def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
     ui.set_ylog(plot)
 
     assert not plotobj.histo_prefs["xlog"]
-    assert not plotobj.histo_prefs["ylog"]  # Really this should be set
+    assert plotobj.histo_prefs["ylog"]
 
 
 @requires_plotting
