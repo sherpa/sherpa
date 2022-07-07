@@ -113,6 +113,20 @@ class sherpa_config(Command):
 
     def build_configure(self):
 
+        # The sherpa[-standalone].rc files used to be installed with
+        # the options.data_files option, but this is deprecated. In
+        # moving the files into options.package_data it turns out
+        # that the data_files element has been removed. So this is
+        # a simple way to allow the code below still to work, but it
+        # is not ideal as the suggestion is that data_files is going
+        # to go away, and the way we use it below is only to install
+        # the stack and group "modules" outside any namespace, which
+        # is something we want to fix:
+        # https://github.com/sherpa/sherpa/issues/50
+        #
+        if self.distribution.data_files is None:
+            self.distribution.data_files = []
+
         # can we find ascdm.h (if so we can support FITS region files as long
         # as the other settings are set up to include ascdm)?
         #
