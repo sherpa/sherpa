@@ -29,7 +29,7 @@ from .deps import clean_deps
 class sdist(_sdist):
 
     def add_defaults(self):
-        _sdist.add_defaults(self)
+        super().add_defaults()
 
         dist = self.distribution
 
@@ -51,4 +51,4 @@ class sdist(_sdist):
         clean_deps()
         # There is no build_configure step for xspec_config
         self.get_finalized_command('sherpa_config', True).build_configure()
-        _sdist.run(self)
+        super().run()
