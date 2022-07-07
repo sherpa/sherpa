@@ -19,33 +19,14 @@
 #
 
 
-# How do we replace numpy.distutils.misc_util.get_data_files?
-#
 from setuptools.command.sdist import sdist as _sdist
-from numpy.distutils.misc_util import get_data_files
 from .deps import clean_deps
 
 
 class sdist(_sdist):
 
     def add_defaults(self):
-        super().add_defaults()
-
-        dist = self.distribution
-
-        if dist.has_data_files():
-            for data in dist.data_files:
-                self.filelist.extend(get_data_files(data))
-
-        if dist.has_headers():
-            headers = []
-            for h in dist.headers:
-                hdr = h if isinstance(h, str) else h[1]
-                headers.append(hdr)
-
-            self.filelist.extend(headers)
-
-        return
+        raise NotImplementedError("Apparently we do need sdist.add_defaults")
 
     def run(self):
         clean_deps()
