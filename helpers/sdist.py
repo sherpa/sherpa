@@ -19,7 +19,11 @@
 #
 
 
-from setuptools.command.sdist import sdist as _sdist
+# It looks like setuptools sdist is currently incomplete, see
+# https://github.com/numpy/numpy/pull/7131
+#
+# from setuptools.command.sdist import sdist as _sdist
+from numpy.distutils.command.sdist import sdist as _sdist
 from .deps import clean_deps
 
 
