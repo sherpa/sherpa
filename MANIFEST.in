@@ -10,6 +10,9 @@ include RELEASE_NOTES
 include CITATION
 include CONTRIBUTING.md
 
+# Why is this needed but other compiled code is picked up automatically?
+include sherpa/astro/xspec/src/_xspec.cc
+
 recursive-include helpers *.py
 
 # HTML/notebook representation
