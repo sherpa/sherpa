@@ -20,7 +20,15 @@
 
 import re
 
-from . import _xspec
+try:
+    from . import _xspec
+except ImportError as ie:
+    # It would be nicer for the user to say "from None" rather than
+    # "from ie" here but it may lose important information (in the
+    # case there is some problem initializing the XSPEC library,
+    # rather than it just not being built).
+    #
+    raise ImportError("XSPEC support is not enabled") from ie
 
 __all__ = ['ModelMeta', 'include_if', 'version_at_least']
 

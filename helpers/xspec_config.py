@@ -117,30 +117,10 @@ class xspec_config(Command):
         pass
 
     def run(self):
-        package = 'sherpa.astro.xspec'
-        dist_packages = self.distribution.packages
-        dist_data = self.distribution.package_data
-
         if not self.with_xspec:
-            if package in dist_packages:
-                dist_packages.remove(package)
-            if package in dist_data:
-                del dist_data[package]
-
             return
 
-        # It is not obvious why we do this since the distribution
-        # fields should be set up correctly. Is this needed or left
-        # over from some old piece of code?
-        #
-        if package not in dist_packages:
-            dist_packages.append(package)
-
-        if package not in dist_data:
-            dist_data[package] = ['tests/test_*.py']
-
         macros = []
-
         if self.xspec_version:
             self.announce(f"Found XSPEC version: {self.xspec_version}", 2)
             xspec_version = get_version(self.xspec_version)
@@ -158,5 +138,4 @@ class xspec_config(Command):
 
         extension = build_ext(self, 'xspec', 'xspec', 'cfitsio', 'ccfits',
                               'wcslib', 'gfortran', define_macros=macros)
-
         self.distribution.ext_modules.append(extension)
