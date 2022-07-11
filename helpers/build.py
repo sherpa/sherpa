@@ -18,7 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 from setuptools.command.build import build as _build
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -53,12 +52,12 @@ class build_ext(_build_ext):
             sherpa_config = self.get_finalized_command('sherpa_config', True)
             if not sherpa_config.disable_group:
                 self.copy_file(sherpa_config.group_location,
-                               "group.so")
+                               "sherpa/group.so")
                 self.announce("install group extension locally")
 
             if not sherpa_config.disable_stk:
                 self.copy_file(sherpa_config.stk_location,
-                               "stk.so")
+                               "sherpa/stk.so")
                 self.announce("install stk extension locally")
 
         super().run()
