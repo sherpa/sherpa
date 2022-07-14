@@ -208,7 +208,7 @@ class Session(sherpa.ui.utils.Session):
 
     clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
 
-    # Add ability to save attributes sepcific to the astro package.
+    # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.

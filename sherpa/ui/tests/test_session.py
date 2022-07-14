@@ -999,7 +999,7 @@ def test_delete_model_component_invalid_argument():
 
 
 def test_delete_model_component_not_a_component():
-    """Check correct error message for non-existant model"""
+    """Check correct error message for non-existent model"""
 
     s = Session()
     with pytest.raises(IdentifierErr,
