@@ -376,7 +376,7 @@ void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 // of XSPEC being used when the sherpa.astro.xspec module is
 // being created. As the version requires a run-time check (that
 // is, the get_version call is made) then we know that we need to
-// initalize the XSPEC code when the Python module is installed.
+// initialize the XSPEC code when the Python module is installed.
 // So we no-longer need to support the lazy loading.
 //
 
