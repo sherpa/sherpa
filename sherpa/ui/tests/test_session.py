@@ -663,6 +663,9 @@ def test_paramprompt_single_parameter_works(caplog):
     assert mdl.c0.min < -3e38
     assert mdl.c0.max > 3e38
 
+    # remove the bob symbol from the global table
+    s.clean()
+
 
 def test_paramprompt_single_parameter_min_works(caplog):
 
@@ -681,6 +684,9 @@ def test_paramprompt_single_parameter_min_works(caplog):
     assert mdl.c0.val == pytest.approx(1)
     assert mdl.c0.min == pytest.approx(-100)
     assert mdl.c0.max > 3e38
+
+    # remove the bob symbol from the global table
+    s.clean()
 
 
 def test_paramprompt_single_parameter_max_works(caplog):
@@ -701,6 +707,9 @@ def test_paramprompt_single_parameter_max_works(caplog):
     assert mdl.c0.min < -3e38
     assert mdl.c0.max == pytest.approx(100)
 
+    # remove the bob symbol from the global table
+    s.clean()
+
 
 def test_paramprompt_single_parameter_combo_works(caplog):
 
@@ -719,6 +728,9 @@ def test_paramprompt_single_parameter_combo_works(caplog):
     assert mdl.c0.val == pytest.approx(-2)
     assert mdl.c0.min == pytest.approx(-10)
     assert mdl.c0.max == pytest.approx(10)
+
+    # remove the bob symbol from the global table
+    s.clean()
 
 
 def test_paramprompt_single_parameter_check_invalid(caplog):
@@ -744,6 +756,9 @@ def test_paramprompt_single_parameter_check_invalid(caplog):
     assert mdl.c0.min < -3e38
     assert mdl.c0.max > 3e38
 
+    # remove the bob symbol from the global table
+    s.clean()
+
 
 def test_paramprompt_single_parameter_check_invalid_min(caplog):
 
@@ -768,6 +783,9 @@ def test_paramprompt_single_parameter_check_invalid_min(caplog):
     assert mdl.c0.min == pytest.approx(-200)
     assert mdl.c0.max > 3e38
 
+    # remove the bob symbol from the global table
+    s.clean()
+
 
 def test_paramprompt_single_parameter_check_invalid_max(caplog):
 
@@ -791,6 +809,9 @@ def test_paramprompt_single_parameter_check_invalid_max(caplog):
     assert mdl.c0.val == pytest.approx(-200)
     assert mdl.c0.min < -3e38
     assert mdl.c0.max == pytest.approx(-2)
+
+    # remove the bob symbol from the global table
+    s.clean()
 
 
 def test_paramprompt_single_parameter_check_invalid_max_out_of_bound(caplog):
@@ -822,6 +843,9 @@ def test_paramprompt_single_parameter_check_invalid_max_out_of_bound(caplog):
     assert mdl.c0.min < -3e38
     assert mdl.c0.max == pytest.approx(-200)
 
+    # remove the bob symbol from the global table
+    s.clean()
+
 
 def test_paramprompt_single_parameter_check_too_many_commas(caplog):
     """Check we tell users there was a problem"""
@@ -846,6 +870,9 @@ def test_paramprompt_single_parameter_check_too_many_commas(caplog):
     assert mdl.c0.val == pytest.approx(12)
     assert mdl.c0.min < -3e38
     assert mdl.c0.max > 3e38
+
+    # remove the bob symbol from the global table
+    s.clean()
 
 
 def test_add_user_pars_modelname_not_a_string():
@@ -876,6 +903,9 @@ def test_add_user_pars_modelname_not_a_model2():
         s.add_user_pars('foo', ['x'])
 
     assert str(exc.value) == "'foo' must be a user model"
+
+    # remove the foo symbol from the global table
+    s.clean()
 
 
 def test_paramprompt_multi_parameter(caplog):
@@ -911,6 +941,9 @@ def test_paramprompt_multi_parameter(caplog):
     assert cpt2.ampl.val == pytest.approx(-5)
     assert cpt2.ampl.min == pytest.approx(-5)
     assert cpt2.ampl.max == pytest.approx(0)
+
+    # remove the bob and fred symbols from the global table
+    s.clean()
 
 
 def test_paramprompt_eof(caplog):
@@ -948,6 +981,9 @@ def test_paramprompt_eof(caplog):
     assert cpt2.ampl.min < -3e38
     assert cpt2.ampl.max > 3e38
 
+    # remove the bob and fred symbols from the global table
+    s.clean()
+
 
 def test_delete_model_component_invalid_argument():
     """We could allow the component to be deleted this way"""
@@ -957,20 +993,18 @@ def test_delete_model_component_invalid_argument():
 
     tst = s.create_model_component('gauss1d', 'gmdl')
 
-    with pytest.raises(ArgumentTypeErr) as te:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'name' must be a string"):
         s.delete_model_component(tst)
-
-    assert str(te.value) == "'name' must be a string"
 
 
 def test_delete_model_component_not_a_component():
-    """Check correct error message for non-exitant model"""
+    """Check correct error message for non-existent model"""
 
     s = Session()
-    with pytest.raises(IdentifierErr) as te:
+    with pytest.raises(IdentifierErr,
+                       match="model component 'tst' does not exist"):
         s.delete_model_component('tst')
-
-    assert str(te.value) == "model component 'tst' does not exist"
 
 
 def test_delete_model_component_warning(caplog):
@@ -992,6 +1026,9 @@ def test_delete_model_component_warning(caplog):
     assert msg == "the model component 'gauss1d.mdl2' is found in model 1 and cannot be deleted"
 
     assert s.list_model_components() == ['mdl', 'mdl2']
+
+    # remove the mdl1 and mdl2 symbols from the global table
+    s.clean()
 
 
 def test_issue_16():

@@ -24,6 +24,7 @@
 from io import StringIO
 import logging
 import os
+import sys
 
 import numpy
 
@@ -41,6 +42,150 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("as_string", [True, False])
+def test_model_identifiers_set_globally(session, as_string):
+    """Check we create a global symbol for the models.
+
+    See also the same test in
+      sherpa/astro/ui/tests/test_astro_ui_import.py
+      sherpa/astro/ui/tests/test_astro_ui_unit.py
+
+    There shouldn't be anything do in the astro class that changes the
+    behavior here, but run tests on both just in case.
+
+    """
+
+    # The "global" symbol table depends on what has been run before. We
+    # could try and make sure that we are "clean", but this makes checking
+    # what this test is doing hard to do, so we remove the symbols just
+    # in case.
+    #
+    for name in ["mdl1", "mdl2"]:
+        try:
+            del sys.modules["__main__"].__dict__[name]
+        except KeyError:
+            pass
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.dataspace1d(1, 10, 1)
+
+    for store in [globals(), locals(), sys.modules["__main__"].__dict__]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
+
+    if as_string:
+        s.set_source("const1d.mdl1 + gauss1d.mdl2")
+    else:
+        # Unlike 'from sherpa[.astro].ui import *', the models are not
+        # added to the global symbol table, so this can not use
+        #
+        #     s.set_source(const1d.mdl1 + gauss1d.mdl2)
+        #
+        # so the create_model_component call is used instead.
+        #
+        s.create_model_component("const1d", "mdl1")
+        s.create_model_component("gauss1d", "mdl2")
+
+    for store in [globals(), locals()]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
+
+    assert "mdl1" in sys.modules["__main__"].__dict__
+    assert "mdl2" in sys.modules["__main__"].__dict__
+
+    assert isinstance(sys.modules["__main__"].__dict__["mdl1"],
+                      sherpa.models.basic.Const1D)
+    assert isinstance(sys.modules["__main__"].__dict__["mdl2"],
+                      sherpa.models.basic.Gauss1D)
+
+    s.clean()
+
+
+def test_astro_model_identifiers_set_globally():
+    """Check we create a global symbol for the background/pileup models."""
+
+    # The "global" symbol table depends on what has been run before. We
+    # could try and make sure that we are "clean", but this makes checking
+    # what this test is doing hard to do, so we remove the symbols just
+    # in case.
+    #
+    for name in ["mdl1", "mdl2"]:
+        try:
+            del sys.modules["__main__"].__dict__[name]
+        except KeyError:
+            pass
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.dataspace1d(1, 10, 1, dstype=DataPHA)
+
+    # Technically gauss1d is not a pileup model but it is accepted.
+    #
+    s.set_bkg_source("const1d.mdl1")
+    s.set_pileup_model("gauss1d.mdl2")
+
+    for store in [globals(), locals()]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
+
+    assert "mdl1" in sys.modules["__main__"].__dict__
+    assert "mdl2" in sys.modules["__main__"].__dict__
+
+    assert isinstance(sys.modules["__main__"].__dict__["mdl1"],
+                      sherpa.models.basic.Const1D)
+    assert isinstance(sys.modules["__main__"].__dict__["mdl2"],
+                      sherpa.models.basic.Gauss1D)
+
+    s.clean()
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_does_clean_remove_model_identifiers(session):
+    """Check whether clean() will remove model identifiers.
+
+    There shouldn't be anything do in the astro class that changes the
+    behavior here, but run tests on both just in case.
+
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.dataspace1d(1, 10, 1)
+
+    s.create_model_component("const1d", "mdl1")
+    s.create_model_component("gauss1d", "mdl2")
+
+    s.clean()
+
+    for store in [globals(), locals(), sys.modules["__main__"].__dict__]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
+
+
+def test_astro_does_clean_remove_model_identifiers():
+    """Check a few astro-related symbols."""
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.dataspace1d(1, 10, 1, dstype=DataPHA)
+
+    # Technically gauss1d is not a pileup model but it is accepted.
+    #
+    s.set_bkg_source("const1d.mdl1")
+    s.set_pileup_model("gauss1d.mdl2")
+
+    s.clean()
+
+    for store in [globals(), locals(), sys.modules["__main__"].__dict__]:
+        assert "mdl1" not in store
+        assert "mdl2" not in store
 
 
 @pytest.mark.parametrize("label", ["arf", "rmf"])

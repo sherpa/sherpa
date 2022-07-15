@@ -125,24 +125,6 @@ class Session(sherpa.ui.utils.Session):
         super().__setstate__(state)
 
     def clean(self):
-        """Clear out the current Sherpa session.
-
-        The `clean` function removes all data sets and model
-        assignments, and restores the default settings for the
-        optimisation and fit statistic.
-
-        See Also
-        --------
-        save : Save the current Sherpa session to a file.
-        restore : Load in a Sherpa session from a file.
-        save_all : Save the Sherpa session as an ASCII file.
-
-        Examples
-        --------
-
-        >>> clean()
-
-        """
         self._pileup_models = {}
         self._background_models = {}
         self._background_sources = {}
@@ -220,7 +202,9 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types_alias["astrosource"] = "source"
         self._plot_types_alias["astromodel"] = "model"
 
-    # Add ability to save attributes sepcific to the astro package.
+    clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
+
+    # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
