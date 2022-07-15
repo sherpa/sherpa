@@ -507,10 +507,6 @@ static void create_output(int nbins, T &a, T &b) {
       class PyArgTupleBase {
       public:
         PyArgTupleBase( ) {
-#ifdef INIT_XSPEC
-	if ( EXIT_SUCCESS != INIT_XSPEC() )
-          throw std::runtime_error("Unable to initialize XSpec");
-#endif
         }
 
       };
