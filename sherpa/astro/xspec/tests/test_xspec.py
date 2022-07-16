@@ -19,7 +19,6 @@
 #
 
 import numpy
-from numpy.testing import assert_allclose
 
 import pytest
 
@@ -763,7 +762,4 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert_is_finite(evals2, modelcls, "energy")
     assert_is_finite(wvals2, modelcls, "wavelength")
 
-    emsg = "{} non-contiguous model evaluation ".format(modelcls) + \
-        "failed: "
-    assert_allclose(evals2, wvals2,
-                    err_msg=emsg + "energy to wavelength")
+    assert wvals2 == pytest.approx(evals2)
