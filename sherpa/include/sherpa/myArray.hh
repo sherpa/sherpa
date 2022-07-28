@@ -1,5 +1,6 @@
 // 
-//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021, 2022
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -66,6 +67,8 @@ public:
   Array1D(T *a, T *b) : vec(a, b) {}
 
   Array1D(const Array1D &arg) { vec = arg.get_vec(); }
+
+  virtual ~Array1D() {}  // TODO: should this try to free vec?
 
   virtual bool operator<(const Array1D<T> &rhs) const {
     int num = vec.size() - 1;

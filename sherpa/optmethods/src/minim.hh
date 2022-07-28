@@ -35,6 +35,8 @@ namespace sherpa {
 
     Minim( Func func, Data xdata ) : usr_func(func), usr_data(xdata) { }
 
+    virtual ~Minim() {}  // TODO: should this try to free usr_func, usr_data?
+
     int operator( )( int iprint, int maxfev, real tol, int npar,
                      int initsimplex, const std::vector<int>& finalsimplex,
                      const sherpa::Bounds<real>& bounds,
