@@ -848,8 +848,8 @@ namespace sherpa {
 
     virtual void check_limits( sherpa::Array2D<sherpa::Array1D<real>, real>& G,
                                int I, int IROW,
-                               const std::vector<real>& lb,
-                               const std::vector<real>& ub ) {
+                               const sherpa::Array1D<real>& lb,
+                               const sherpa::Array1D<real>& ub ) {
       G[IROW-1][I-1] = std::max(lb[I-1], std::min(G[IROW-1][I-1], ub[I-1]));
       return;
     }
