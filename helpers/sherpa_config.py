@@ -135,11 +135,11 @@ class sherpa_config(Command):
 
         if not self.disable_group:
             configure.append('--enable-group')
-            self.distribution.data_files.append(('', [self.group_location,]))
+            self.distribution.data_files.append(('sherpa', [self.group_location,]))
 
         if not self.disable_stk:
             configure.append('--enable-stk')
-            self.distribution.data_files.append(('', [self.stk_location,]))
+            self.distribution.data_files.append(('sherpa', [self.stk_location,]))
 
         if self.wcs != 'local':
             configure.append('--enable-wcs')
