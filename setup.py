@@ -24,11 +24,11 @@ import sys
 # Ideally we would rely on the configuration in setup.cfg to avoid
 # this situation, but as we may have users who still use old systems
 # add an error message. As Sherpa releases occur the minimum-supported
-# Python version is going to incrose (beyond 3.7) but it is not really
+# Python version is going to increase (beyond 3.7) but it is not really
 # worth spending a lot of time on the error message here.
 #
 # This is done before we load in any non-core modules to avoid people
-# installnig software that they can not use.
+# installing software that they can not use.
 #
 if sys.version_info < (3, 7):
     sys.stderr.write("Sherpa 4.14 (and later) requires Python 3.7 or later.\n\n")

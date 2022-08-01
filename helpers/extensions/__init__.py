@@ -115,7 +115,7 @@ def clean(xs):
 
 
 def build_ext(command, name, *args, **kwargs):
-    """Set up the requesites for building an extension.
+    """Set up the requisites for building an extension.
 
     Parameters
     ----------
